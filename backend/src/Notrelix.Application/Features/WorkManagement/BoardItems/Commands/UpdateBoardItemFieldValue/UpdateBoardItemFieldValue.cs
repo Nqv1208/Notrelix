@@ -3,13 +3,14 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 
+[IdempotencyOperation("work-management.board-items.update-board-item-field-value.v1")]
 public record UpdateBoardItemFieldValueCommand(
     Guid ItemId,
     Guid FieldId,
-    object? Value) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
+    object? Value) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, ItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);
     public RealtimeTopic Topic => new("board", "BoardItem", ItemId);
 }
 

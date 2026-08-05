@@ -35,7 +35,7 @@ public class V4DomainRulesTests
 
         Action act = () => form.AddQuestion(question, _actorId, _now);
 
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
@@ -64,17 +64,14 @@ public class V4DomainRulesTests
         var itemC = Guid.NewGuid();
 
         // Graph: A -> B -> C -> A (introducing cycle)
-        var dependencies = new Dictionary<Guid, List<Guid>>
+        var graph = new Dictionary<Guid, ItemDependencySnapshot>
         {
-            { itemA, new List<Guid> { itemB } },
-            { itemB, new List<Guid> { itemC } },
-            { itemC, new List<Guid>() } // We want to add C -> A
+            [itemA] = new ItemDependencySnapshot(itemA, new List<Guid> { itemB }),
+            [itemB] = new ItemDependencySnapshot(itemB, new List<Guid> { itemC }),
+            [itemC] = new ItemDependencySnapshot(itemC, new List<Guid>())
         };
 
-        Func<Guid, IEnumerable<Guid>> getDependencies = id =>
-            dependencies.TryGetValue(id, out var list) ? list : Enumerable.Empty<Guid>();
-
-        Action act = () => DependencyRules.EnsureNoCycle(itemC, itemA, getDependencies);
+        Action act = () => DependencyRules.EnsureNoCycle(itemC, itemA, graph);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("Adding this dependency would create a cycle.");
     }
@@ -83,7 +80,7 @@ public class V4DomainRulesTests
     public void BoardItem_SetTimeline_ShouldThrow_WhenDueDateIsBeforeStartDate()
     {
         var group = BoardGroup.Create(Guid.NewGuid(), _workspaceId, _boardId, "Group", Color.Create("#0079BF"), FractionalIndex.Initial(), _actorId, _now);
-        var item = BoardItem.Create(Guid.NewGuid(), _workspaceId, _boardId, group.Id, "Item", FractionalIndex.Initial(), _actorId, _now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), _workspaceId, _boardId, group.Id, "Item", FractionalIndex.Initial(), _actorId, _now);
 
         Action act = () => item.SetTimeline(_now, _now.AddDays(-1), _actorId, _now);
 
@@ -155,7 +152,7 @@ public class V4DomainRulesTests
     {
         var link = ShareLink.Create(Guid.NewGuid(),
             _workspaceId,
-            ResourceType.Board,
+            ResourceKind.Create("work-management.board"),
             _boardId,
             ShareLinkTokenHash.Create("tokenhash"),
             ShareLinkAccessMode.Public,

@@ -19,7 +19,7 @@ public sealed class WorkspaceActivityLogRecord
     public string? TargetType { get; private set; }
     public Guid? TargetId { get; private set; }
     public string? TargetDisplayName { get; private set; }
-    public string? ResourceType { get; private set; }
+    public string? ResourceKind { get; private set; }
     public Guid? ResourceId { get; private set; }
     public string? ResourceDisplayName { get; private set; }
     public string Title { get; private set; } = null!;
@@ -75,7 +75,7 @@ public sealed class WorkspaceActivityLogRecord
             TargetType = targetType,
             TargetId = targetId,
             TargetDisplayName = targetDisplayName,
-            ResourceType = resourceType,
+            ResourceKind = resourceType,
             ResourceId = resourceId,
             ResourceDisplayName = resourceDisplayName,
             Title = title,

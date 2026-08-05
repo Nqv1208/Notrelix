@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Boards.Events;
 
+[EventName("work-management.board-background-updated")]
 public sealed record BoardBackgroundUpdatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +9,4 @@ public sealed record BoardBackgroundUpdatedDomainEvent(
     string NewBackground,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

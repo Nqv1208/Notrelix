@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.FieldOptions.Commands.CreateFieldOption;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.FieldOptions;
 
 public class CreateFieldOptionTests : WorkManagementHandlerTestBase
@@ -77,13 +78,16 @@ public class CreateFieldOptionTests : WorkManagementHandlerTestBase
 
     private BoardField CreateBoardField(FieldType type)
     {
+        var settings = type == FieldType.Status
+            ? FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!)
+            : FieldSettings.Empty();
         return BoardField.Create(
             TestAccountId,
             TestWorkspaceId,
             Guid.CreateVersion7(),
             "Test Field",
             type,
-            FieldSettings.Empty(),
+            settings,
             FractionalIndex.Create("a0"),
             TestUserId,
             TestNow);

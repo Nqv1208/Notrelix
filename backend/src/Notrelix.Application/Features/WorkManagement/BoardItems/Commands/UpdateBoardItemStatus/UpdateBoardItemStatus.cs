@@ -3,7 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 
-public record UpdateBoardItemStatusCommand(Guid BoardItemId, string Status) : ICommand<Result>, ITransactionalRequest;
+[IdempotencyOperation("work-management.board-items.update-board-item-status.v1")]
+public record UpdateBoardItemStatusCommand(Guid BoardItemId, string Status) : ICommand<Result>, ITransactionalRequest, IIdempotentRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.UpdateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
+}
 
 public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardItemStatusCommand, Result>
 {
@@ -33,7 +38,7 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
 
         var statusField = statusFields.FirstOrDefault();
         if (statusField == null)
-            return Result.Failure("No status field found on this board.");
+            return Result.Failure(new ApplicationError("work.board-item.no-status-field", "No status field found on this board.", ApplicationErrorType.BusinessRule));
 
         var now = _timeProvider.UtcNow;
         var fieldValue = FieldValue.Create(JsonValue.Create(System.Text.Json.JsonSerializer.Serialize(request.Status)));

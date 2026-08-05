@@ -21,7 +21,7 @@ public class AiAgentRunTests
     public void Start_ShouldTransition_AndRaiseEvent()
     {
         var run = CreateRun();
-        run.ClearDomainEvents();
+        ((IHasDomainEvents)run).ClearDomainEvents();
 
         run.Start(DateTimeOffset.UtcNow);
 
@@ -54,7 +54,7 @@ public class AiAgentRunTests
     {
         var run = CreateRun();
         run.Start(DateTimeOffset.UtcNow);
-        run.ClearDomainEvents();
+        ((IHasDomainEvents)run).ClearDomainEvents();
 
         run.Succeed(JsonValue.Create("{\"result\":\"ok\"}"), DateTimeOffset.UtcNow);
 
@@ -86,7 +86,7 @@ public class AiAgentRunTests
     {
         var run = CreateRun();
         run.Start(DateTimeOffset.UtcNow);
-        run.ClearDomainEvents();
+        ((IHasDomainEvents)run).ClearDomainEvents();
 
         run.Fail(JsonValue.Create("{\"error\":\"timeout\"}"), DateTimeOffset.UtcNow);
 
@@ -129,7 +129,7 @@ public class AiAgentRunTests
     {
         var run = CreateRun();
         run.Start(DateTimeOffset.UtcNow);
-        run.ClearDomainEvents();
+        ((IHasDomainEvents)run).ClearDomainEvents();
 
         run.Cancel(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -148,12 +148,12 @@ public class AiAgentRunTests
     }
 
     [Fact]
-    public void Cancel_WhenQueued_ShouldNotDelete()
+    public void Cancel_WhenQueued_ShouldTransitionToCancelled()
     {
         var run = CreateRun();
         run.Cancel(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        run.IsDeleted.Should().BeFalse();
+        run.Status.Should().Be(AiAgentRunStatus.Cancelled);
     }
 
     private static AiAgentRun CreateRun()

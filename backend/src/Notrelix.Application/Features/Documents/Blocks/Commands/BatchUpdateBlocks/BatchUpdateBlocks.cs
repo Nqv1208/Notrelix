@@ -1,6 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
-
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks;
 
 public record BatchUpdateBlocksCommand(
@@ -9,7 +9,7 @@ public record BatchUpdateBlocksCommand(
 ) : ICommand<Result<List<Guid>>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public record BatchUpdateBlockItem(
@@ -51,7 +51,31 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
             if (patch.Position is not null || patch.ParentBlockId is not null)
             {
                 var newPosition = patch.Position is not null ? FractionalIndex.Create(patch.Position) : block.Position;
-                block.Move(patch.ParentBlockId, newPosition, _currentUser.UserId, now);
+                if (patch.ParentBlockId is null)
+                {
+                    block.MoveToRoot(newPosition, _currentUser.UserId, now);
+                }
+                else
+                {
+                    var parentBlock = await _context.Blocks
+                        .FirstOrDefaultAsync(b => b.Id == patch.ParentBlockId.Value && b.PageId == request.PageId && !b.IsDeleted, ct);
+                    if (parentBlock is null)
+                        return Result<List<Guid>>.Failure($"Parent block '{patch.ParentBlockId}' was not found on page '{request.PageId}'.");
+
+                    var ancestorIds = new List<Guid>();
+                    var currentParentId = parentBlock.ParentId;
+                    while (currentParentId.HasValue)
+                    {
+                        ancestorIds.Add(currentParentId.Value);
+                        var ancestor = await _context.Blocks
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(b => b.Id == currentParentId.Value && b.PageId == request.PageId, ct);
+                        currentParentId = ancestor?.ParentId;
+                    }
+
+                    var parentPath = BlockAncestorPath.Create(parentBlock.AccountId, parentBlock.WorkspaceId, parentBlock.PageId, parentBlock.Id, ancestorIds);
+                    block.MoveUnder(parentPath, newPosition, _currentUser.UserId, now);
+                }
             }
             updatedIds.Add(block.Id);
         }

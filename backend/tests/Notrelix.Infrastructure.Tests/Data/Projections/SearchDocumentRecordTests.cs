@@ -21,7 +21,7 @@ public class SearchDocumentRecordTests
         record.Id.Should().Be(id);
         record.AccountId.Should().Be(accountId);
         record.WorkspaceId.Should().Be(workspaceId);
-        record.ResourceType.Should().Be("BoardItem");
+        record.ResourceKind.Should().Be("BoardItem");
         record.ResourceId.Should().Be(resourceId);
         record.Title.Should().Be("Test Title");
         record.Content.Should().Be("Test content");

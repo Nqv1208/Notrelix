@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Invitations;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -60,34 +58,12 @@ public class WorkspaceInvitationTests
     {
         var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"), 1, Guid.NewGuid(), DateTimeOffset.UtcNow);
         invitation.Expire(DateTimeOffset.UtcNow);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.Expire(DateTimeOffset.UtcNow);
 
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Expired);
         invitation.DomainEvents.Should().NotContain(e => e is WorkspaceInvitationExpiredDomainEvent);
-    }
-
-    [Fact]
-    public void Accept_ShouldThrow_WhenDeleted()
-    {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"), 1, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        Action act = () => invitation.Accept(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
-    public void Revoke_ShouldThrow_WhenDeleted()
-    {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"), 1, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        Action act = () => invitation.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
     [Fact]
@@ -189,24 +165,6 @@ public class WorkspaceInvitationTests
     }
 
     [Fact]
-    public void Decline_ShouldThrow_WhenDeleted()
-    {
-        var invitation = WorkspaceInvitation.Create(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            "test@example.com",
-            WorkspaceRole.Member,
-            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
-            1,
-            Guid.NewGuid(),
-            DateTimeOffset.UtcNow);
-        invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        var act = () => invitation.Decline(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
     public void ChangeRole_ShouldSucceed_AndRaiseEvent()
     {
         var invitation = WorkspaceInvitation.Create(
@@ -238,7 +196,7 @@ public class WorkspaceInvitationTests
             1,
             Guid.NewGuid(),
             DateTimeOffset.UtcNow);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.ChangeRole(WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -277,5 +235,164 @@ public class WorkspaceInvitationTests
             DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*owner*");
+    }
+
+    [Fact]
+    public void Accept_Expired_ShouldNotMutateStatus()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            now,
+            TimeSpan.FromDays(1));
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
+        var originalStatus = invitation.Status;
+
+        var act = () => invitation.Accept(Guid.NewGuid(), now.AddDays(2));
+
+        act.Should().Throw<BusinessRuleException>();
+        invitation.Status.Should().Be(originalStatus);
+        invitation.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Accept_NotPending_ShouldNotMutateStatus()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        invitation.Expire(DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
+        var originalStatus = invitation.Status;
+
+        var act = () => invitation.Accept(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        invitation.Status.Should().Be(originalStatus);
+        invitation.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Decline_NotPending_ShouldNotMutateStatus()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        invitation.Expire(DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
+        var originalStatus = invitation.Status;
+
+        var act = () => invitation.Decline(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        invitation.Status.Should().Be(originalStatus);
+        invitation.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeRole_NotPending_ShouldNotMutateRole()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        invitation.Expire(DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
+        var originalRole = invitation.Role;
+
+        var act = () => invitation.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        invitation.Role.Should().Be(originalRole);
+        invitation.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeRole_OwnerRole_ShouldNotMutateRole()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
+        var originalRole = invitation.Role;
+
+        var act = () => invitation.ChangeRole(WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        invitation.Role.Should().Be(originalRole);
+        invitation.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Accept_EmptyActor_ShouldNotMutateStatus()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
+        var originalStatus = invitation.Status;
+
+        var act = () => invitation.Accept(Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        invitation.Status.Should().Be(originalStatus);
+        invitation.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Decline_EmptyActor_ShouldNotMutateStatus()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
+        var originalStatus = invitation.Status;
+
+        var act = () => invitation.Decline(Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        invitation.Status.Should().Be(originalStatus);
+        invitation.DomainEvents.Should().BeEmpty();
     }
 }

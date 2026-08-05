@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Spaces;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -46,7 +45,7 @@ public class SpaceTests
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         space.Unarchive(actor, DateTimeOffset.UtcNow);
@@ -59,7 +58,7 @@ public class SpaceTests
     public void Unarchive_WhenAlreadyActive_ShouldBeNoOp()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -68,10 +67,10 @@ public class SpaceTests
     }
 
     [Fact]
-    public void Unarchive_SoftDeleted_ShouldThrow()
+    public void Unarchive_Deleted_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => space.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -81,7 +80,7 @@ public class SpaceTests
     public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         space.UpdateDescription("Campaign tracking", actor, DateTimeOffset.UtcNow);
@@ -98,7 +97,7 @@ public class SpaceTests
     public void UpdateDescription_ShouldClearDescription_WhenSetToNull()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow, description: "Initial");
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.UpdateDescription(null, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -110,7 +109,7 @@ public class SpaceTests
     public void UpdateDescription_WhenSameValue_ShouldBeNoOp()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow, description: "Same");
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.UpdateDescription("Same", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -131,7 +130,7 @@ public class SpaceTests
     public void ChangeVisibility_ShouldSucceed_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         space.ChangeVisibility(SpaceVisibility.Private, actor, DateTimeOffset.UtcNow);
@@ -148,7 +147,7 @@ public class SpaceTests
     public void ChangeVisibility_WhenSameValue_ShouldBeNoOp()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.ChangeVisibility(SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -169,7 +168,7 @@ public class SpaceTests
     public void ChangeType_ShouldSucceed_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         space.ChangeType(SpaceType.Portfolio, actor, DateTimeOffset.UtcNow);
@@ -186,7 +185,7 @@ public class SpaceTests
     public void ChangeType_WhenSameValue_ShouldBeNoOp()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.ChangeType(SpaceType.Folder, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -204,27 +203,25 @@ public class SpaceTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
+    public void Delete_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        space.Status.Should().Be(SpaceStatus.SoftDeleted);
         space.IsDeleted.Should().BeTrue();
-        space.DomainEvents.Should().Contain(e => e is SpaceSoftDeletedDomainEvent);
+        space.DomainEvents.Should().Contain(e => e is SpaceDeletedDomainEvent);
     }
 
     [Fact]
-    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
+    public void Restore_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        space.Status.Should().Be(SpaceStatus.Active);
         space.IsDeleted.Should().BeFalse();
         space.DomainEvents.Should().Contain(e => e is SpaceRestoredDomainEvent);
     }
@@ -233,9 +230,97 @@ public class SpaceTests
     public void Rename_OnDeletedSpace_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted and cannot be modified*");
+    }
+
+    [Fact]
+    public void Rename_ArchivedSpace_ShouldNotMutateName()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalName = space.Name;
+
+        var act = () => space.Rename("New Name", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Name.Should().Be(originalName);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateDescription_ArchivedSpace_ShouldNotMutateDescription()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow, description: "Original");
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalDescription = space.Description;
+
+        var act = () => space.UpdateDescription("New description", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Description.Should().Be(originalDescription);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeVisibility_ArchivedSpace_ShouldNotMutateVisibility()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalVisibility = space.Visibility;
+
+        var act = () => space.ChangeVisibility(SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Visibility.Should().Be(originalVisibility);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeType_ArchivedSpace_ShouldNotMutateType()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalType = space.SpaceType;
+
+        var act = () => space.ChangeType(SpaceType.Portfolio, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.SpaceType.Should().Be(originalType);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Rename_EmptyActor_ShouldNotMutateName()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalName = space.Name;
+
+        var act = () => space.Rename("New Name", Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Name.Should().Be(originalName);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Archive_EmptyActor_ShouldNotMutateStatus()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalStatus = space.Status;
+
+        var act = () => space.Archive(Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Status.Should().Be(originalStatus);
+        space.DomainEvents.Should().BeEmpty();
     }
 }

@@ -22,18 +22,17 @@ public class IntegrationConnectionConfiguration : IEntityTypeConfiguration<Integ
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasMany(x => x.Scopes)
-            .WithOne()
-            .HasForeignKey(x => x.ConnectionId);
+        builder.Property(x => x.CurrentSecretVersion).HasColumnName("current_secret_version").HasMaxLength(256);
+        builder.Property(x => x.SecretRotatedAt).HasColumnName("secret_rotated_at");
 
-        builder.HasMany(x => x.SecretVersions)
+        builder.Ignore(x => x.CurrentSecretRef);
+
+        builder.HasMany(x => x.Scopes)
             .WithOne()
             .HasForeignKey(x => x.ConnectionId);
 

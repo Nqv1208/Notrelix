@@ -11,8 +11,11 @@ public static class CacheRegistration
     public static IServiceCollection AddCaching(
         this IServiceCollection services, IConfiguration configuration, IHostEnvironment? environment = null)
     {
-        var redisConnectionString = configuration.GetConnectionString("Redis")
-            ?? throw new InvalidOperationException("Redis connection string is missing");
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        if (string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            throw new InvalidOperationException("Redis connection string is missing");
+        }
 
         services.AddSingleton<IConnectionMultiplexer>(sp =>
         {

@@ -25,10 +25,10 @@ public abstract class OneTimeUseToken : AggregateRoot
         Guard.NotNull(tokenHash);
 
         if (hashVersion <= 0)
-            throw new BusinessRuleException("Token hash version must be positive.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_HashVersionMustBePositive, "Token hash version must be positive.");
 
         if (expiresAt <= createdAt)
-            throw new BusinessRuleException("Token expiration time must be after creation time.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_ExpirationMustBeAfterCreation, "Token expiration time must be after creation time.");
 
         UserId = userId;
         TokenHash = tokenHash;
@@ -39,37 +39,35 @@ public abstract class OneTimeUseToken : AggregateRoot
 
     public void MarkUsed(DateTimeOffset usedAt, DomainEvent? domainEvent = null)
     {
-        EnsureNotDeleted();
-
         if (Status == UserTokenStatus.Used)
-            throw new BusinessRuleException("Token has already been used.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_AlreadyUsed, "Token has already been used.");
 
         if (Status is UserTokenStatus.Expired or UserTokenStatus.Revoked || usedAt >= ExpiresAt)
-            throw new BusinessRuleException("Cannot use an expired token.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_CannotUseExpired, "Cannot use an expired token.");
 
+        var pending = PrepareAuditUpdate(UserId, usedAt);
         Status = UserTokenStatus.Used;
         UsedAt = usedAt;
-        SetAuditOnUpdate(UserId, usedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        if (domainEvent != null) AddDomainEvent(domainEvent);
+        if (domainEvent != null) RaiseDomainEvent(domainEvent);
     }
 
     public bool TryExpire(DateTimeOffset expiredAt, DomainEvent? domainEvent = null)
     {
-        EnsureNotDeleted();
-
         if (Status == UserTokenStatus.Expired) return false;
 
         if (Status == UserTokenStatus.Used)
-            throw new BusinessRuleException("Cannot expire a used token.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_CannotExpireUsed, "Cannot expire a used token.");
 
         if (Status == UserTokenStatus.Revoked) return false;
 
+        var pending = PrepareAuditUpdate(UserId, expiredAt);
         Status = UserTokenStatus.Expired;
         ExpiredAt = expiredAt;
-        SetAuditOnUpdate(UserId, expiredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        if (domainEvent != null) AddDomainEvent(domainEvent);
+        if (domainEvent != null) RaiseDomainEvent(domainEvent);
         return true;
     }
 
@@ -78,7 +76,6 @@ public abstract class OneTimeUseToken : AggregateRoot
         string revocationReason,
         DomainEvent? domainEvent = null)
     {
-        EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(revocationReason);
         Guard.MaxLength(revocationReason, 256);
 
@@ -88,12 +85,13 @@ public abstract class OneTimeUseToken : AggregateRoot
         if (Status is UserTokenStatus.Used or UserTokenStatus.Expired)
             return false;
 
+        var pending = PrepareAuditUpdate(UserId, revokedAt);
         Status = UserTokenStatus.Revoked;
         RevokedAt = revokedAt;
         RevocationReason = revocationReason.Trim();
-        SetAuditOnUpdate(UserId, revokedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        if (domainEvent != null) AddDomainEvent(domainEvent);
+        if (domainEvent != null) RaiseDomainEvent(domainEvent);
         return true;
     }
 }

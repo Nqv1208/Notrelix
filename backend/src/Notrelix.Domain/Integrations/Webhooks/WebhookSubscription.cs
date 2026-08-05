@@ -1,6 +1,7 @@
+using Notrelix.Domain.Integrations.Webhooks.Events;
 namespace Notrelix.Domain.Integrations.Webhooks;
 
-public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
+public class WebhookSubscription : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -27,7 +28,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         };
 
         subscription.SetAuditOnCreate(createdBy, createdAt);
-        subscription.AddDomainEvent(new WebhookSubscriptionCreatedDomainEvent(accountId, subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
+        subscription.RaiseDomainEvent(new WebhookSubscriptionCreatedDomainEvent(accountId, subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
 
         return subscription;
     }
@@ -37,10 +38,11 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (IsActive) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsActive = true;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionEnabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
+        RaiseDomainEvent(new WebhookSubscriptionEnabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
@@ -48,10 +50,11 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (!IsActive) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsActive = false;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionDisabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
+        RaiseDomainEvent(new WebhookSubscriptionDisabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public void RotateSecret(WebhookSecretHash newHash, Guid updatedBy, DateTimeOffset updatedAt)
@@ -59,18 +62,20 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotNull(newHash);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         SecretHash = newHash;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
+        RaiseDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         IsActive = false;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
     }
 }

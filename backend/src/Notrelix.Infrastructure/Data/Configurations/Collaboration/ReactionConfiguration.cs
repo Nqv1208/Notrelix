@@ -1,5 +1,7 @@
 using Notrelix.Domain.Collaboration.Reactions;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Collaboration;
 
 public class ReactionConfiguration : IEntityTypeConfiguration<Reaction>
@@ -17,10 +19,10 @@ public class ReactionConfiguration : IEntityTypeConfiguration<Reaction>
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.ResourceType).HasColumnName("resource_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("resource_id").IsRequired();
             target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
-            target.HasIndex(t => new { t.ResourceType, t.ResourceId }).HasDatabaseName("idx_reactions_resource");
+            target.HasIndex(t => new { t.Kind, t.ResourceId }).HasDatabaseName("idx_reactions_resource");
             target.HasIndex(t => new { t.ResourceId }).HasDatabaseName("idx_reactions_target_resource_id");
         });
 

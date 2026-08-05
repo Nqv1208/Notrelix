@@ -37,7 +37,7 @@ public class UserSessionTests
     {
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
 
         var revokeTime = now.AddDays(1);
         session.Revoke(revokeTime);
@@ -55,7 +55,7 @@ public class UserSessionTests
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
         session.Revoke(now.AddDays(1));
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
 
         session.Revoke(now.AddDays(2));
 
@@ -88,7 +88,7 @@ public class UserSessionTests
     {
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
 
         var expireTime = now.AddDays(1);
         session.Expire(expireTime);
@@ -107,7 +107,7 @@ public class UserSessionTests
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
         session.Expire(now.AddDays(1));
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
 
         session.Expire(now.AddDays(2));
 
@@ -136,6 +136,24 @@ public class UserSessionTests
         var act = () => session.Expire(now.AddDays(2));
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*revoked session*");
+    }
+
+    [Fact]
+    public void UpdateRefreshToken_ShouldRotateTokenAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
+        ((IHasDomainEvents)session).ClearDomainEvents();
+
+        var newToken = RefreshTokenHash.Create("new-token");
+        session.UpdateRefreshToken(newToken, now.AddDays(1));
+
+        session.RefreshTokenHash.Should().Be(newToken);
+        session.DomainEvents.Should().ContainSingle(e => e is UserSessionRefreshTokenRotatedDomainEvent);
+        var evt = (UserSessionRefreshTokenRotatedDomainEvent)session.DomainEvents.Single(e => e is UserSessionRefreshTokenRotatedDomainEvent);
+        evt.SessionId.Should().Be(session.Id);
+        evt.UserId.Should().Be(session.UserId);
+        evt.OccurredAt.Should().Be(now.AddDays(1));
     }
 
     [Fact]

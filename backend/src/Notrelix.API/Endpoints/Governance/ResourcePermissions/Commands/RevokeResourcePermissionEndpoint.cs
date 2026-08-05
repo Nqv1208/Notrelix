@@ -22,7 +22,7 @@ public static class RevokeResourcePermissionEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new RevokeResourcePermissionCommand(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, permissionId),
+            new RevokeResourcePermissionCommand(resourceType, resourceId, permissionId),
             cancellationToken);
         return result.ToNoContentResult();
     }

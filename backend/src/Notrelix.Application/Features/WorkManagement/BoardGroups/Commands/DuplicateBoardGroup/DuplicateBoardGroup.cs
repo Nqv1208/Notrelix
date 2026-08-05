@@ -1,12 +1,14 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
-public record DuplicateBoardGroupCommand(Guid GroupId) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("work-management.board-groups.duplicate-board-group.v1")]
+public record DuplicateBoardGroupCommand(Guid GroupId) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
 }
 
 public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardGroupCommand, Result<Guid>>
@@ -65,7 +67,7 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
 
     internal static BoardItem CloneCard(BoardItem source, Guid accountId, Guid groupId, Guid boardId, Guid workspaceId, Guid createdByUserId, string name, FractionalIndex position, DateTimeOffset createdAt)
     {
-        var copy = BoardItem.Create(
+        var copy = BoardItem.CreateRoot(
             accountId,
             workspaceId,
             boardId,

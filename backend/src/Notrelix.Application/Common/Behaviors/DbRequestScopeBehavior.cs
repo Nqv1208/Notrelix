@@ -5,21 +5,18 @@ namespace Notrelix.Application.Common.Behaviors;
 public class DbRequestScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly IApplicationDbContext _db;
-    private readonly IRlsSessionContext _rls;
+    private readonly IRequestDataSession _dataSession;
     private readonly ILogger<DbRequestScopeBehavior<TRequest, TResponse>> _logger;
 
     public DbRequestScopeBehavior(
-        IApplicationDbContext db,
-        IRlsSessionContext rls,
+        IRequestDataSession dataSession,
         ILogger<DbRequestScopeBehavior<TRequest, TResponse>> logger)
     {
-        _db = db;
-        _rls = rls;
+        _dataSession = dataSession;
         _logger = logger;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
     {
         var profile = RequestExecutionClassifier.Classify(request);
 
@@ -30,7 +27,7 @@ public class DbRequestScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
         }
 
         if (!profile.NeedsDbScope)
-            return await next();
+            return next();
 
         _logger.LogTrace(
             "Opening DB scope for {RequestType} (write={IsTransactional}, rls={RequiresRls}, global={IsGlobal})",
@@ -39,39 +36,13 @@ public class DbRequestScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
             profile.RequiresRls,
             profile.IsGlobal);
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
-        try
-        {
-            if (profile.IsReadOnlyDbScope)
-            {
-                _logger.LogTrace("Setting READ ONLY for read-scope {RequestType}", profile.RequestName);
-                await _db.Database.ExecuteSqlRawAsync("SET TRANSACTION READ ONLY", ct);
-            }
+        var options = new RequestDataSessionOptions(
+            Access: profile.IsTransactional
+                ? RequestDataAccess.Transactional
+                : RequestDataAccess.ReadOnly,
+            ApplyTenantScope: profile.IsTenantScoped,
+            ApplyResourceScope: profile.IsResourceScoped);
 
-            if (profile.RequiresRls)
-            {
-                _logger.LogTrace("Applying RLS session for {RequestType}", profile.RequestName);
-                await _rls.ApplyAsync(_db.Database, ct);
-            }
-
-            var response = await next();
-
-            if (profile.IsTransactional)
-            {
-                _logger.LogTrace("Saving changes for {RequestType}", profile.RequestName);
-                await _db.SaveChangesAsync(ct);
-            }
-
-            await transaction.CommitAsync(ct);
-            _logger.LogTrace("Committed DB scope for {RequestType}", profile.RequestName);
-
-            return response;
-        }
-        catch
-        {
-            _logger.LogWarning("Rolling back DB scope for {RequestType}", profile.RequestName);
-            await transaction.RollbackAsync(ct);
-            throw;
-        }
+        return _dataSession.ExecuteAsync(options, _ => next(), ct);
     }
 }

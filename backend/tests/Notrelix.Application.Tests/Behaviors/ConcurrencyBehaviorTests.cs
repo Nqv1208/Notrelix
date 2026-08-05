@@ -6,7 +6,7 @@ public class ConcurrencyBehaviorTests
 
     public sealed record VersionedCommand : IRequest<string>, IExpectedVersionRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, ResourceId);
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), ResourceId);
         public long ExpectedVersion { get; init; } = 1;
     }
 
@@ -78,7 +78,7 @@ public class ConcurrencyBehaviorTests
     }
 
     [Fact]
-    public async Task VersionMismatch_ShouldThrowConflict()
+    public async Task VersionMismatch_ShouldThrowPreconditionFailed()
     {
         var reader = CreateReader(version: 2);
         var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
@@ -88,7 +88,7 @@ public class ConcurrencyBehaviorTests
             _ => Task.FromResult("ok"),
             default);
 
-        await act.Should().ThrowAsync<ConflictException>()
+        await act.Should().ThrowAsync<PreconditionFailedException>()
             .WithMessage($"*version mismatch*");
     }
 
@@ -112,7 +112,7 @@ public class ConcurrencyBehaviorTests
     {
         var reader = new Mock<IResourceVersionReader>();
         reader.Setup(x => x.GetVersionAsync(It.IsAny<ResourceRef>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new NotSupportedException("ResourceType 'Widget' not supported"));
+            .ThrowsAsync(new NotSupportedException("ResourceKind 'Widget' not supported"));
         var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
 
         var act = () => behavior.Handle(

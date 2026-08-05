@@ -14,6 +14,18 @@ public class ApplicationArchitectureTests
         return Path.Combine(current, "src", "Notrelix.Application");
     }
 
+    private static string GetInfrastructurePath()
+    {
+        var current = AppContext.BaseDirectory;
+        while (current != null && !File.Exists(Path.Combine(current, "backend.slnx")))
+        {
+            current = Path.GetDirectoryName(current);
+        }
+        if (current == null)
+            throw new DirectoryNotFoundException("Could not find backend.slnx root.");
+        return Path.Combine(current, "src", "Notrelix.Infrastructure");
+    }
+
     private static string[] GetApplicationFeatureFiles()
     {
         var appPath = GetApplicationPath();
@@ -57,23 +69,25 @@ public class ApplicationArchitectureTests
                      && (f.Contains($"{Path.DirectorySeparatorChar}Commands{Path.DirectorySeparatorChar}")
                       || f.Contains($"{Path.DirectorySeparatorChar}Queries{Path.DirectorySeparatorChar}")))
             .ToArray();
-        // Result DTOs that live in Commands/Queries folders but are not requests
-        var resultDtoExclusions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        // Build handler registry: collect every TRequest that has an IRequestHandler<,>
+        var applicationAssembly = typeof(ICommand<>).Assembly;
+        var handledRequestTypes = new HashSet<Type>();
+
+        foreach (var type in applicationAssembly.GetTypes())
         {
-            "SendWelcomeEmailResult.cs",
-            "AcceptInvitation.cs",
-            "ReorderBlocks.cs",
-            "GetBoard.cs",
-            "GetBoardSchemaQuery.cs",
-        };
+            foreach (var iface in type.GetInterfaces())
+            {
+                if (!iface.IsGenericType) continue;
+                var def = iface.GetGenericTypeDefinition();
+                if (def == typeof(IRequestHandler<,>))
+                    handledRequestTypes.Add(iface.GetGenericArguments()[0]);
+            }
+        }
 
         var violations = new List<string>();
 
         foreach (var file in requestFiles)
         {
-            if (resultDtoExclusions.Contains(Path.GetFileName(file)))
-                continue;
-
             var content = RemoveComments(File.ReadAllText(file));
 
             var lines = content.Split('\n');
@@ -100,10 +114,21 @@ public class ApplicationArchitectureTests
                 if (declaration.Contains("class ") || declaration.Contains("static "))
                     continue;
 
-                var hasICommand = declaration.Contains(": ICommand") || declaration.Contains(", ICommand");
-                var hasIQuery = declaration.Contains(": IQuery") || declaration.Contains(", IQuery");
+                var recordName = declaration
+                    .Replace("public sealed record", "")
+                    .Replace("public record", "")
+                    .TrimStart()
+                    .Split(' ', '(', ':', '<', ',')[0]
+                    .Trim();
 
-                if (!hasICommand && !hasIQuery)
+                var recordType = applicationAssembly.GetTypes()
+                    .FirstOrDefault(t => t.Name == recordName);
+                if (recordType == null) continue;
+
+                // Only validate if this type is actually handled by a handler
+                if (!handledRequestTypes.Contains(recordType)) continue;
+
+                if (!ImplementsCommandOrQuery(recordType))
                 {
                     violations.Add($"{Path.GetFileName(file)}: {declaration}");
                 }
@@ -313,12 +338,12 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void RlsSessionContextIsRequiredInDbRequestScope()
+    public void RlsSessionContextIsRequiredInDataSession()
     {
-        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "DbRequestScopeBehavior.cs");
-        var content = File.ReadAllText(behaviorPath);
+        var sessionPath = Path.Combine(GetInfrastructurePath(), "Data", "EfRequestDataSession.cs");
+        var content = File.ReadAllText(sessionPath);
 
-        content.Should().Contain("IRlsSessionContext", "DbRequestScopeBehavior must inject IRlsSessionContext for RLS enforcement");
+        content.Should().Contain("IRlsSessionContext", "EfRequestDataSession must inject IRlsSessionContext for RLS enforcement");
     }
 
     [Fact]
@@ -441,11 +466,11 @@ public class ApplicationArchitectureTests
     [Fact]
     public void ReadScope_SetsReadOnlyTransaction()
     {
-        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "DbRequestScopeBehavior.cs");
-        var content = File.ReadAllText(behaviorPath);
+        var sessionPath = Path.Combine(GetInfrastructurePath(), "Data", "EfRequestDataSession.cs");
+        var content = File.ReadAllText(sessionPath);
 
         content.Should().Contain("SET TRANSACTION READ ONLY",
-            "DbRequestScopeBehavior must set READ ONLY for non-write scopes to prevent accidental writes");
+            "EfRequestDataSession must set READ ONLY for non-write scopes to prevent accidental writes");
     }
 
     [Fact]
@@ -480,13 +505,13 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void EntityFrameworkCoreRelational_IsReferencedByApplication()
+    public void EntityFrameworkCoreRelational_IsNotReferencedByApplication()
     {
         var csprojPath = Path.Combine(GetApplicationPath(), "Notrelix.Application.csproj");
         var content = File.ReadAllText(csprojPath);
 
-        content.Should().Contain("Microsoft.EntityFrameworkCore.Relational",
-            "Application must reference EF Core Relational to use ExecuteSqlRawAsync for SET TRANSACTION READ ONLY");
+        content.Should().NotContain("Microsoft.EntityFrameworkCore.Relational",
+            "Application must not reference EF Core Relational — raw SQL belongs in Infrastructure");
     }
 
     [Fact]
@@ -866,6 +891,17 @@ public class ApplicationArchitectureTests
 
         violations.Should().BeEmpty(
             "Cache behaviors must use CacheKeyFactory: " + string.Join(", ", violations));
+    }
+
+    private static bool ImplementsCommandOrQuery(Type type)
+    {
+        var commandGeneric = typeof(ICommand<>);
+        var queryGeneric = typeof(IQuery<>);
+        return type.GetInterfaces().Any(i =>
+            i == typeof(ICommand) ||
+            (i.IsGenericType &&
+             (i.GetGenericTypeDefinition() == commandGeneric ||
+              i.GetGenericTypeDefinition() == queryGeneric)));
     }
 
     private static string RemoveComments(string input)

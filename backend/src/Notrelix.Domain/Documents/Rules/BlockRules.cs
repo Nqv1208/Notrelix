@@ -7,6 +7,6 @@ public static class BlockContentValidator
         // For now, we just ensure content is not null (already handled by Guard in Block.cs)
         // In a real implementation, we would validate the JSON schema based on the BlockType.
         if (content.Data.Value == null)
-            throw new BusinessRuleException("Block content data cannot be null.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_Block_ContentCannotBeNull, "Block content data cannot be null.");
     }
 }

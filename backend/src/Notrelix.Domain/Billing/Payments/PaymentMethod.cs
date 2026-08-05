@@ -1,3 +1,5 @@
+using Notrelix.Domain.Billing.Payments.Events;
+
 namespace Notrelix.Domain.Billing.Payments;
 
 public class PaymentMethod : AggregateRoot, IWorkspaceScoped
@@ -18,6 +20,7 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(providerMethodId);
+        Guard.NotEmpty(createdBy);
 
         var method = new PaymentMethod
         {
@@ -32,61 +35,51 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
         };
 
         method.SetAuditOnCreate(createdBy, createdAt);
-        method.AddDomainEvent(new PaymentMethodAddedDomainEvent(accountId, workspaceId, method.Id, provider, last4, brand, createdAt));
+        method.RaiseDomainEvent(new PaymentMethodAddedDomainEvent(accountId, workspaceId, method.Id, provider, last4, brand, createdAt));
         return method;
     }
 
     public void SetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (IsDefault) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = true;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void UnsetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (!IsDefault) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = false;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Deactivate(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == PaymentMethodStatus.Expired) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PaymentMethodStatus.Expired;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Reactivate(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == PaymentMethodStatus.Active) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PaymentMethodStatus.Active;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        IncrementVersion();
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        IncrementVersion();
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }

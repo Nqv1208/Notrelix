@@ -1,6 +1,7 @@
+using Notrelix.Domain.Documents.ResourceLinks.Events;
 namespace Notrelix.Domain.Documents.ResourceLinks;
 
-public class ResourceLink : AggregateRoot, IWorkspaceScoped
+public class ResourceLink : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -18,10 +19,10 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(target);
 
         if (source == target)
-            throw new BusinessRuleException("Cannot create a self-referencing resource link.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_ResourceLink_CannotCreateSelfReferencing, "Cannot create a self-referencing resource link.");
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId != source.WorkspaceId)
-            throw new BusinessRuleException("Target resource must belong to the same workspace as the source resource.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_ResourceLink_TargetMustBeInSameWorkspace, "Target resource must belong to the same workspace as the source resource.");
 
         var link = new ResourceLink
         {
@@ -33,16 +34,27 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         };
 
         link.SetAuditOnCreate(createdBy, createdAt);
-        link.AddDomainEvent(new ResourceLinkCreatedDomainEvent(accountId, workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
+        link.RaiseDomainEvent(new ResourceLinkCreatedDomainEvent(accountId, workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
         return link;
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        AddDomainEvent(new ResourceLinkDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
+        RaiseDomainEvent(new ResourceLinkDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        Guard.NotEmpty(restoredBy);
+        if (!IsDeleted) return;
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
+        IncrementVersion();
+        RaiseDomainEvent(new ResourceLinkRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

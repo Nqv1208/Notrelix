@@ -7,6 +7,7 @@ using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data.Notifications;
+using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Fields;
@@ -117,7 +118,10 @@ internal static class InitDb
     private static void ClearDomainEvents(ApplicationDbContext context)
     {
         foreach (var entity in context.ChangeTracker.Entries<Entity>().Select(e => e.Entity))
-            entity.ClearDomainEvents();
+        {
+            if (entity is IHasDomainEvents hasDomainEvents)
+                hasDomainEvents.ClearDomainEvents();
+        }
     }
 
     private static async Task<List<User>> CreateUsersAsync(
@@ -411,7 +415,7 @@ internal static class InitDb
                         _ => $"Task {itemIndex + 1}"
                     };
 
-                    var item = BoardItem.Create(
+                    var item = BoardItem.CreateRoot(
                         account.Id, bs.Board.WorkspaceId, bs.Board.Id, group.Id,
                         itemName, FractionalIndex.Create($"a{i}"),
                         creator.Id, Epoch.AddDays(itemIndex));
@@ -510,7 +514,7 @@ internal static class InitDb
                 var blocksPerPage = targets.BlockCount / targets.PageCount;
                 for (int b = 0; b < blocksPerPage; b++)
                 {
-                    var block = Block.Create(
+                    var block = Block.CreateRoot(
                         account.Id, ws.Id, page.Id, BlockType.Text,
                         BlockContent.Create(JsonValue.Create($"\"Content block {b + 1} for page {pageIndex + 1}\"")),
                         FractionalIndex.Create($"a{b}"),
@@ -561,7 +565,7 @@ internal static class InitDb
             var comment = Comment.Create(
                 account.Id,
                 item.WorkspaceId,
-                ResourceRef.Create(ResourceType.BoardItem, item.Id),
+                ResourceRef.Create(ResourceKind.Create("work-management.board-item"), item.Id),
                 text, author.Id, Epoch.AddDays(1));
             context.Comments.Add(comment);
         }

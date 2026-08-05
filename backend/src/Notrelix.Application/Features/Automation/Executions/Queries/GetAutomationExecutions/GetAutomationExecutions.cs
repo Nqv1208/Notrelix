@@ -8,7 +8,7 @@ public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, 
     : IQuery<Result<IReadOnlyList<AutomationExecutionDto>>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.AutomationRule, AutomationRuleId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
 }
 
 public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomationExecutionsQuery, Result<IReadOnlyList<AutomationExecutionDto>>>

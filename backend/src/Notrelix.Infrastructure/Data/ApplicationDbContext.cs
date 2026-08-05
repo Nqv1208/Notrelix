@@ -19,11 +19,11 @@ using Notrelix.Domain.Documents.Versions;
 using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.Integrations.Sync;
 using Notrelix.Domain.Billing.Usage;
+using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Infrastructure.Data;
 
 public partial class ApplicationDbContext : DbContext,
-    IApplicationDbContext,
     IWorkspaceDbContext,
     IWorkManagementDbContext,
     IIdentityDbContext,
@@ -80,7 +80,8 @@ public partial class ApplicationDbContext : DbContext,
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            var isSoftDeletable = typeof(SoftDeletableEntity).IsAssignableFrom(entityType.ClrType);
+            var isSoftDeletable = typeof(SoftDeletableEntity).IsAssignableFrom(entityType.ClrType)
+                               || typeof(SoftDeletableAggregateRoot).IsAssignableFrom(entityType.ClrType);
             var isWorkspaceScoped = typeof(IWorkspaceScoped).IsAssignableFrom(entityType.ClrType);
 
             if (!isSoftDeletable && !isWorkspaceScoped)

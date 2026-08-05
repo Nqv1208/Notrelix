@@ -8,6 +8,7 @@ public static class RemoveLabelFromBoardItemEndpoint
     public static IEndpointRouteBuilder MapRemoveLabelFromBoardItem(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/labels/{labelId:guid}", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.RemoveLabel")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Remove a label from board item");

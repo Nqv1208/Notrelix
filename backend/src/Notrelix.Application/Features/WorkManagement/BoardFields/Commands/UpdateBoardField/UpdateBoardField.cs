@@ -3,10 +3,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 
-public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? FieldType, string? Settings) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("work-management.board-fields.update-board-field.v1")]
+public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? FieldType, string? Settings, long? ExpectedVersion = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, ColumnId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), ColumnId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
+    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCommand, Result>

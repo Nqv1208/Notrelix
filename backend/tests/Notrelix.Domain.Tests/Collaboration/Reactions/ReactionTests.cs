@@ -9,7 +9,7 @@ public class ReactionTests
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), workspaceId);
         var userId = Guid.NewGuid();
         var emoji = Emoji.Create("+1");
 
@@ -26,17 +26,17 @@ public class ReactionTests
     public void Create_WithWorkspaceMismatch_ShouldThrow()
     {
         var workspaceId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), Guid.NewGuid());
+        var target = ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => Reaction.Create(Guid.NewGuid(), workspaceId, target, Guid.NewGuid(), Emoji.Create("heart"), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Remove_ShouldRaiseEvent()
     {
         var reaction = CreateReaction();
-        reaction.ClearDomainEvents();
+        ((IHasDomainEvents)reaction).ClearDomainEvents();
 
         reaction.Remove(DateTimeOffset.UtcNow);
 
@@ -46,6 +46,6 @@ public class ReactionTests
     private static Reaction CreateReaction()
     {
         var workspaceId = Guid.NewGuid();
-        return Reaction.Create(Guid.NewGuid(), workspaceId, ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId), Guid.NewGuid(), Emoji.Create("rocket"), DateTimeOffset.UtcNow);
+        return Reaction.Create(Guid.NewGuid(), workspaceId, ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), workspaceId), Guid.NewGuid(), Emoji.Create("rocket"), DateTimeOffset.UtcNow);
     }
 }

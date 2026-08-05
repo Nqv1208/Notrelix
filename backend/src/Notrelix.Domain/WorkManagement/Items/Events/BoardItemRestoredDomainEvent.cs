@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-restored")]
 public sealed record BoardItemRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record BoardItemRestoredDomainEvent(
     Guid BoardId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RestoredBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

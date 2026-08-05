@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Teams;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -11,7 +10,7 @@ public class TeamTests
         var workspaceId = Guid.NewGuid();
         var team = Team.Create(Guid.NewGuid(), workspaceId, "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
         team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -22,28 +21,26 @@ public class TeamTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
+    public void Delete_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
-        team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        team.Status.Should().Be(TeamStatus.SoftDeleted);
         team.IsDeleted.Should().BeTrue();
-        team.DomainEvents.Should().Contain(e => e is TeamSoftDeletedDomainEvent);
+        team.DomainEvents.Should().Contain(e => e is TeamDeletedDomainEvent);
     }
 
     [Fact]
-    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
+    public void Restore_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        team.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
         team.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        team.Status.Should().Be(TeamStatus.Active);
         team.IsDeleted.Should().BeFalse();
         team.DomainEvents.Should().Contain(e => e is TeamRestoredDomainEvent);
     }
@@ -76,7 +73,7 @@ public class TeamTests
     public void AddMember_ShouldThrow_WhenDeleted()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => team.AddMember(Guid.NewGuid(), TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -97,14 +94,17 @@ public class TeamTests
     }
 
     [Fact]
-    public void AddMember_DuplicateActiveMember_ShouldThrow()
+    public void AddMember_DuplicateActiveMember_ShouldBeNoOp()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
-        var act = () => team.AddMember(userId, TeamMemberRole.Lead, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<BusinessRuleException>().WithMessage("*already a member of this team*");
+        team.AddMember(userId, TeamMemberRole.Lead, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        team.Members.Should().HaveCount(1);
+        team.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class TeamTests
         team.AddMember(userId, TeamMemberRole.Member, actor, DateTimeOffset.UtcNow);
         team.RemoveMember(userId, actor, DateTimeOffset.UtcNow);
         team.Members.First(m => m.UserId == userId).Status.Should().Be(TeamMemberStatus.Removed);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
         var reactivateTime = DateTimeOffset.UtcNow.AddMinutes(5);
         team.AddMember(userId, TeamMemberRole.Lead, actor, reactivateTime);
@@ -135,7 +135,7 @@ public class TeamTests
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
         team.Rename("QA Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -158,7 +158,7 @@ public class TeamTests
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         team.Unarchive(actor, DateTimeOffset.UtcNow);
@@ -171,7 +171,7 @@ public class TeamTests
     public void Unarchive_WhenAlreadyActive_ShouldBeNoOp()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
         team.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -180,10 +180,10 @@ public class TeamTests
     }
 
     [Fact]
-    public void Unarchive_SoftDeleted_ShouldThrow()
+    public void Unarchive_Deleted_ShouldThrow()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => team.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -193,7 +193,7 @@ public class TeamTests
     public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         team.UpdateDescription("Core product team", actor, DateTimeOffset.UtcNow);
@@ -211,7 +211,7 @@ public class TeamTests
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.UpdateDescription("Initial desc", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
         team.UpdateDescription(null, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -224,7 +224,7 @@ public class TeamTests
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.UpdateDescription("Same", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
         team.UpdateDescription("Same", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -247,7 +247,7 @@ public class TeamTests
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         team.ChangeMemberRole(userId, TeamMemberRole.Lead, actor, DateTimeOffset.UtcNow);
@@ -266,7 +266,7 @@ public class TeamTests
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
 
         team.ChangeMemberRole(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -333,5 +333,112 @@ public class TeamTests
 
         var act = () => team.RemoveMember(leadId, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot remove the last lead from a team.");
+    }
+
+    [Fact]
+    public void Rename_ArchivedTeam_ShouldNotMutateName()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
+        var originalName = team.Name;
+
+        var act = () => team.Rename("New Name", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        team.Name.Should().Be(originalName);
+        team.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateDescription_ArchivedTeam_ShouldNotMutateDescription()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
+        var originalDescription = team.Description;
+
+        var act = () => team.UpdateDescription("New description", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        team.Description.Should().Be(originalDescription);
+        team.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void AddMember_ArchivedTeam_ShouldNotAddMember()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
+        var originalCount = team.Members.Count;
+
+        var act = () => team.AddMember(Guid.NewGuid(), TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        team.Members.Count.Should().Be(originalCount);
+        team.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RemoveMember_ArchivedTeam_ShouldNotRemoveMember()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var userId = Guid.NewGuid();
+        team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
+        var originalCount = team.Members.Count;
+
+        var act = () => team.RemoveMember(userId, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        team.Members.Count.Should().Be(originalCount);
+        team.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeMemberRole_ArchivedTeam_ShouldNotMutateRole()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var userId = Guid.NewGuid();
+        team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
+        var originalRole = team.Members.First(m => m.UserId == userId).Role;
+
+        var act = () => team.ChangeMemberRole(userId, TeamMemberRole.Lead, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        team.Members.First(m => m.UserId == userId).Role.Should().Be(originalRole);
+        team.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Rename_EmptyActor_ShouldNotMutateName()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
+        var originalName = team.Name;
+
+        var act = () => team.Rename("New Name", Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        team.Name.Should().Be(originalName);
+        team.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Archive_EmptyActor_ShouldNotMutateStatus()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
+        var originalStatus = team.Status;
+
+        var act = () => team.Archive(Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        team.Status.Should().Be(originalStatus);
+        team.DomainEvents.Should().BeEmpty();
     }
 }

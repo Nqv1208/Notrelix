@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Comments.Events;
 
+[EventName("collaboration.comment-created")]
 public sealed record CommentCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record CommentCreatedDomainEvent(
     ResourceRef Target,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, CreatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

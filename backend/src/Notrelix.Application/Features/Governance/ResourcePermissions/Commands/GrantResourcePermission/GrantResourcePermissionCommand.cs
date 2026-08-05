@@ -5,21 +5,28 @@ using Notrelix.Application.Features.Governance.DTOs;
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
 
 public record GrantResourcePermissionCommand(
-    ResourceType ResourceType,
+    string ResourceKind,
     Guid ResourceId,
     string SubjectType,
     Guid SubjectId,
     string Level,
     DateTime? ExpiresAt = null) : ICommand<Result<ResourcePermissionDto>>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
-    PermissionAction IRequirePermission.Action => ResourceType switch
+    internal ResourceKind Kind => ParseKind(ResourceKind);
+
+    PermissionAction IRequirePermission.Action => Kind.Value switch
     {
-        ResourceType.Board => PermissionAction.ManageBoardPermission,
-        ResourceType.Page => PermissionAction.SharePage,
+        "work-management.board" => PermissionAction.ManageBoardPermission,
+        "documents.page" => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType, ResourceId);
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
+
+    private static ResourceKind ParseKind(string value) =>
+        global::Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(value, out var kind)
+            ? kind
+            : throw new ArgumentException($"Invalid resource kind '{value}'. Expected a canonical kind such as 'work-management.board'.", nameof(value));
 }
 
 public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResourcePermissionCommand, Result<ResourcePermissionDto>>
@@ -54,17 +61,18 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         var workspaceId = _requestContext.RequireWorkspaceId();
         var accountId = _requestContext.RequireAccountId();
         var actorId = _requestContext.UserId;
+        var kind = request.Kind;
 
         var existingPermission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId &&
-                                      p.ResourceType == request.ResourceType &&
+                                      p.ResourceKind == kind &&
                                       p.ResourceId == request.ResourceId &&
                                       p.SubjectType == subjectType &&
                                       p.SubjectId == request.SubjectId, cancellationToken);
 
         var granterPermission = await _context.ResourcePermissions
             .Where(p => p.WorkspaceId == workspaceId &&
-                        p.ResourceType == request.ResourceType &&
+                        p.ResourceKind == kind &&
                         p.ResourceId == request.ResourceId &&
                         p.SubjectType == PermissionSubjectType.User &&
                         p.SubjectId == actorId &&
@@ -82,7 +90,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         var permission = ResourcePermission.Grant(
             accountId,
             workspaceId,
-            request.ResourceType,
+            kind,
             request.ResourceId,
             subjectType,
             request.SubjectId,
@@ -97,7 +105,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
             workspaceId,
             actorId,
             "GrantResourcePermission",
-            ResourceRef.Create(request.ResourceType, request.ResourceId),
+            ResourceRef.Create(kind, request.ResourceId),
             AuditMetadata.Create(),
             AuditSeverity.Info,
             cancellationToken: cancellationToken);
@@ -105,7 +113,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         var dto = new ResourcePermissionDto(
             permission.Id,
             permission.WorkspaceId,
-            permission.ResourceType.ToString(),
+            permission.ResourceKind.Value,
             permission.ResourceId,
             permission.SubjectType.ToString(),
             permission.SubjectId,

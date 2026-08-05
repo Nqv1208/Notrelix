@@ -6,7 +6,7 @@ using Notrelix.Domain.Accounts.Invitations;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Accounts.Regions;
 using Notrelix.Domain.Accounts.Scim;
-using Notrelix.Domain.Accounts.Settings;
+using Notrelix.Application.Features.Accounts.Abstractions.Records;
 using Notrelix.Domain.Accounts.WorkspaceRoutes;
 
 // Identity
@@ -39,11 +39,9 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Forms;
-using Notrelix.Domain.WorkManagement.Formulas;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Domain.WorkManagement.Relations;
-using Notrelix.Domain.WorkManagement.Rollups;
 using Notrelix.Domain.WorkManagement.Templates;
 using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.WorkManagement.Workload;
@@ -112,7 +110,7 @@ public partial class ApplicationDbContext
     public DbSet<AccountMember> AccountMembers => Set<AccountMember>();
     public DbSet<AccountInvitation> AccountInvitations => Set<AccountInvitation>();
     public DbSet<AccountDomain> AccountDomains => Set<AccountDomain>();
-    public DbSet<AccountSettings> AccountSettingsEntities => Set<AccountSettings>();
+    public DbSet<AccountSettingRecord> AccountSettingsEntities => Set<AccountSettingRecord>();
     public DbSet<AccountRegion> AccountRegions => Set<AccountRegion>();
     public DbSet<AccountIdentityProvider> AccountIdentityProviders => Set<AccountIdentityProvider>();
     public DbSet<ScimDirectory> ScimDirectories => Set<ScimDirectory>();
@@ -171,8 +169,6 @@ public partial class ApplicationDbContext
     public DbSet<ItemDependency> ItemDependencies => Set<ItemDependency>();
     public DbSet<TimeTrackingEntry> TimeTrackingEntries => Set<TimeTrackingEntry>();
     public DbSet<RelationFieldConfig> RelationFieldConfigs => Set<RelationFieldConfig>();
-    public DbSet<FormulaDependency> FormulaDependencies => Set<FormulaDependency>();
-    public DbSet<RollupSnapshot> RollupSnapshots => Set<RollupSnapshot>();
     public DbSet<Form> Forms => Set<Form>();
     public DbSet<FormQuestion> FormQuestions => Set<FormQuestion>();
     public DbSet<FormSubmission> FormSubmissions => Set<FormSubmission>();
@@ -242,7 +238,7 @@ public partial class ApplicationDbContext
     public DbSet<SearchIndexJobRecord> SearchIndexJobs => Set<SearchIndexJobRecord>();
 
     // Ops infrastructure records
-    public DbSet<IdempotencyKeyRecord> IdempotencyKeys => Set<IdempotencyKeyRecord>();
+    public DbSet<Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord> IdempotencyRecords => Set<Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord>();
     public DbSet<ImportJobRecord> ImportJobs => Set<ImportJobRecord>();
     public DbSet<ExportJobRecord> ExportJobs => Set<ExportJobRecord>();
     public DbSet<JobLockRecord> JobLocks => Set<JobLockRecord>();

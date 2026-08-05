@@ -8,6 +8,7 @@ public static class UnlinkPageFromBoardItemEndpoint
     public static IEndpointRouteBuilder MapUnlinkPageFromBoardItem(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/link-page", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.UnlinkPage")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Unlink page from board item");

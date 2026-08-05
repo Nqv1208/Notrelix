@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Fields.Events;
 
+[EventName("work-management.board-field-created")]
 public sealed record BoardFieldCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -9,4 +10,4 @@ public sealed record BoardFieldCreatedDomainEvent(
     FieldType Type,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, CreatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

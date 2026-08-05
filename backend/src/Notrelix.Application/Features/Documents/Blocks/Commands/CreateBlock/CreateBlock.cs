@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
 
 public record CreateBlockCommand(
@@ -12,7 +13,7 @@ public record CreateBlockCommand(
 ) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Result<Guid>>
@@ -36,8 +37,36 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
 
         var content = BlockContent.Create(JsonValue.Create(request.Properties ?? "{}"));
         var position = FractionalIndex.Create(request.Position);
+        var accountId = _requestContext.RequireAccountId();
 
-        var block = Block.Create(_requestContext.RequireAccountId(), page.WorkspaceId, request.PageId, request.Type, content, position, _requestContext.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
+        Block block;
+        if (request.ParentBlockId.HasValue)
+        {
+            var parentBlock = await _context.Blocks.AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == request.ParentBlockId.Value && !b.IsDeleted, ct);
+            if (parentBlock is null) throw new NotFoundException(nameof(Block), request.ParentBlockId.Value);
+
+            var ancestorIds = await _context.Blocks.AsNoTracking()
+                .Where(b => b.PageId == request.PageId && !b.IsDeleted)
+                .Select(b => new { b.Id, b.ParentId })
+                .ToListAsync(ct);
+
+            var ancestors = new List<Guid>();
+            var current = parentBlock.ParentId;
+            while (current.HasValue)
+            {
+                ancestors.Insert(0, current.Value);
+                current = ancestorIds.FirstOrDefault(a => a.Id == current.Value)?.ParentId;
+            }
+
+            var parentPath = BlockAncestorPath.Create(accountId, page.WorkspaceId, request.PageId, parentBlock.Id, ancestors);
+            block = Block.CreateChild(accountId, page.WorkspaceId, request.PageId, request.Type, content, position, _requestContext.UserId, _dateTimeProvider.UtcNow, parentPath);
+        }
+        else
+        {
+            block = Block.CreateRoot(accountId, page.WorkspaceId, request.PageId, request.Type, content, position, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        }
+
         _context.Blocks.Add(block);
         return Result<Guid>.Success(block.Id);
     }

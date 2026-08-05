@@ -3,10 +3,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 
-public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("work-management.board-fields.delete-board-field.v1")]
+public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.DeleteField;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, ColumnId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), ColumnId);
 }
 
 public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCommand, Result>
@@ -32,7 +33,7 @@ public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCo
         if (column is null) throw new NotFoundException(nameof(BoardField), request.ColumnId);
 
         var now = _dateTimeProvider.UtcNow;
-        column.SoftDelete(_currentUser.UserId, now);
+        column.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
 }

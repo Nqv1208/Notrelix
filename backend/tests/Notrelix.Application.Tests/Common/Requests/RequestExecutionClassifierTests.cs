@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Requests.Execution;
-using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 
 namespace Notrelix.Application.Tests.Common.Requests;
@@ -15,7 +13,7 @@ public class RequestExecutionClassifierTests
 
     private sealed record ResourcePermissionReadRequest : IRequest<string>, IResourceScopedRequest, IRequirePermission, IRlsReadRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
         public PermissionAction Action => PermissionAction.ViewBoard;
     }
 
@@ -28,12 +26,12 @@ public class RequestExecutionClassifierTests
     private sealed record GlobalPermissionRequest : IRequest<string>, IGlobalRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
-    private sealed record SystemInternalRequest : IRequest<string>, ISystemInternalRequest;
+    private sealed record SystemInternalRequest : IRequest<string>, ISystemInternalRequest, IGlobalRequest;
 
-    private sealed record AnonymousSystemInternalRequest : IRequest<string>, IAnonymousRequest, ISystemInternalRequest;
+    private sealed record AnonymousSystemInternalRequest : IRequest<string>, IAnonymousRequest, ISystemInternalRequest, IGlobalRequest;
 
     private sealed record SubscriptionRequest : IRequest<string>, IWorkspaceRequest, IRequireSubscription
     {
@@ -161,20 +159,18 @@ public class RequestExecutionClassifierTests
 
         profile.IsSystemInternal.Should().BeTrue();
         profile.IsAnonymous.Should().BeFalse();
-        profile.IsGlobal.Should().BeFalse();
+        profile.IsGlobal.Should().BeTrue();
         profile.RequiresRls.Should().BeFalse();
         profile.NeedsDbScope.Should().BeFalse();
     }
 
     [Fact]
-    public void AnonymousSystemInternal_Profile_HasBothMarkers()
+    public void AnonymousSystemInternal_Profile_ThrowsMultiplePrincipals()
     {
-        var profile = Classify(new AnonymousSystemInternalRequest());
+        var act = () => Classify(new AnonymousSystemInternalRequest());
 
-        profile.IsAnonymous.Should().BeTrue();
-        profile.IsSystemInternal.Should().BeTrue();
-
-        // Guard should reject this combination
+        act.Should().Throw<SecurityMisconfigurationException>()
+            .WithMessage("*multiple principal markers*");
     }
 
     [Fact]

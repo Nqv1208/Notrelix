@@ -121,7 +121,7 @@ public class UserProfileTests
     public void UpdateTimezone_OnDeletedProfile_ShouldThrow()
     {
         var profile = UserProfile.Create(Guid.NewGuid(), SampleCreatedAt);
-        profile.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        profile.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => profile.UpdateTimezone("UTC", DateTimeOffset.UtcNow);
 

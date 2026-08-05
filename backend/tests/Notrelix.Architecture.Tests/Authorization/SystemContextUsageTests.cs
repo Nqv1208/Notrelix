@@ -25,11 +25,11 @@ public class SystemContextUsageTests
         "RestoreWorkspace.cs",
         "RestoreSpace.cs",
         "RestoreTeam.cs",
-        "RestoreMember.cs",
         "TenantBootstrapStore.cs",
         "ResourceScopeResolver.cs",
         "EmailTemplateMaterialization.cs",
         "EmailVerificationTokenIssuer.cs",
+        "ActiveVerificationTokenLocker.cs",
     ];
 
     [Fact]

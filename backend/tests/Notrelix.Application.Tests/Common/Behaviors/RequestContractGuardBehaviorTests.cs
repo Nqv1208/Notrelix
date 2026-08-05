@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Requests.Scoping;
-
 namespace Notrelix.Application.Tests.Common.Behaviors;
 
 public class RequestContractGuardBehaviorTests
@@ -13,13 +11,13 @@ public class RequestContractGuardBehaviorTests
 
     private sealed record GlobalResourceRequest : IRequest<string>, IGlobalRequest, IResourceScopedRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     private sealed record GlobalPermissionRequest : IRequest<string>, IGlobalRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     private sealed record AnonymousWorkspaceRequest : IRequest<string>, IAnonymousRequest, IWorkspaceRequest
@@ -29,7 +27,7 @@ public class RequestContractGuardBehaviorTests
 
     private sealed record AnonymousResourceRequest : IRequest<string>, IAnonymousRequest, IResourceScopedRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     private sealed record PublicCacheWorkspaceRequest : IRequest<string>, IPublicCacheableQuery<string>, IWorkspaceRequest
@@ -39,7 +37,7 @@ public class RequestContractGuardBehaviorTests
         public TimeSpan? Ttl => null;
     }
 
-    private sealed record PublicCacheAuthorizedCacheRequest : IRequest<string>, IPublicCacheableQuery<string>, IAuthorizedCacheableRequest
+    private sealed record PublicCacheAuthorizedCacheRequest : IRequest<string>, IPublicCacheableQuery<string>, IAuthorizedCacheableRequest, IGlobalRequest
     {
         public object CacheIdentity => "test-public";
         public TimeSpan? Ttl => null;
@@ -54,7 +52,7 @@ public class RequestContractGuardBehaviorTests
     {
         public Guid WorkspaceId => Guid.NewGuid();
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     // --- Helpers ---
@@ -71,7 +69,7 @@ public class RequestContractGuardBehaviorTests
         var behavior = CreateBehavior<GlobalWorkspaceRequest>();
         Func<Task> act = () => behavior.Handle(new GlobalWorkspaceRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
         await act.Should().ThrowAsync<SecurityMisconfigurationException>()
-            .WithMessage("*Global request cannot also be account/workspace/resource scoped.*");
+            .WithMessage("*multiple scope markers*");
     }
 
     [Fact]
@@ -80,7 +78,7 @@ public class RequestContractGuardBehaviorTests
         var behavior = CreateBehavior<GlobalResourceRequest>();
         Func<Task> act = () => behavior.Handle(new GlobalResourceRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
         await act.Should().ThrowAsync<SecurityMisconfigurationException>()
-            .WithMessage("*Global request cannot also be account/workspace/resource scoped.*");
+            .WithMessage("*multiple scope markers*");
     }
 
     [Fact]
@@ -120,7 +118,7 @@ public class RequestContractGuardBehaviorTests
         var behavior = CreateBehavior<PublicCacheWorkspaceRequest>();
         Func<Task> act = () => behavior.Handle(new PublicCacheWorkspaceRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
         await act.Should().ThrowAsync<SecurityMisconfigurationException>()
-            .WithMessage("*Public cache cannot be used for tenant/account/workspace/resource scoped requests.*");
+            .WithMessage("*Public cache cannot be used for tenant-scoped requests.*");
     }
 
     [Fact]
@@ -129,7 +127,7 @@ public class RequestContractGuardBehaviorTests
         var behavior = CreateBehavior<PublicCacheAuthorizedCacheRequest>();
         Func<Task> act = () => behavior.Handle(new PublicCacheAuthorizedCacheRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
         await act.Should().ThrowAsync<SecurityMisconfigurationException>()
-            .WithMessage("*A request cannot use both public cache and authorized/private cache.*");
+            .WithMessage("*both*cache*");
     }
 
     // --- Test: Valid requests pass ---

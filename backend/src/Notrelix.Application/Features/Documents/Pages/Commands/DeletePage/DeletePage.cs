@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
 public record DeletePageCommand(Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class DeletePageCommandHandler : IRequestHandler<DeletePageCommand, Result>
@@ -26,7 +26,7 @@ public class DeletePageCommandHandler : IRequestHandler<DeletePageCommand, Resul
         var page = await _context.Pages.FirstOrDefaultAsync(page => page.Id == request.PageId && !page.IsDeleted, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
-        page.SoftDelete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        page.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

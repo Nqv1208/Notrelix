@@ -5,11 +5,11 @@ public class CalendarEvent : Entity
     public Guid IntegrationId { get; private set; }
     public string ExternalEventId { get; private set; } = null!;
     public ResourceRef Target { get; private set; } = null!;
-    public SyncHash SyncHash { get; private set; } = null!;
+    public CalendarSyncFingerprint SyncHash { get; private set; } = null!;
 
     private CalendarEvent() : base() { }
 
-    public static CalendarEvent Create(Guid integrationId, string externalEventId, ResourceRef target, SyncHash syncHash)
+    public static CalendarEvent Create(Guid integrationId, string externalEventId, ResourceRef target, CalendarSyncFingerprint syncHash)
     {
         Guard.NotEmpty(integrationId);
         Guard.NotNullOrWhiteSpace(externalEventId);
@@ -25,7 +25,7 @@ public class CalendarEvent : Entity
         };
     }
 
-    public void UpdateSyncHash(SyncHash syncHash)
+    public void UpdateSyncHash(CalendarSyncFingerprint syncHash)
     {
         SyncHash = syncHash ?? throw new ArgumentNullException(nameof(syncHash));
     }

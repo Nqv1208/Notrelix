@@ -51,7 +51,7 @@ public class AuthorizedCacheBehaviorTests
     private static Mock<IRedisCacheService> CreateCacheService()
     {
         var mock = new Mock<IRedisCacheService>();
-        mock.Setup(x => x.GetAsync<string>(It.IsAny<string>()))
+        mock.Setup(x => x.GetAsync<string>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
         return mock;
     }
@@ -122,7 +122,7 @@ public class AuthorizedCacheBehaviorTests
             default);
 
         provider.Verify(x => x.GetVersionAsync(AccountId, WorkspaceId, UserId, It.IsAny<CancellationToken>()), Times.Once);
-        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains("custom-version-2"))), Times.Once);
+        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains("custom-version-2")), It.IsAny<CancellationToken>()), Times.Once);
         handlerInvoked.Should().BeTrue();
     }
 
@@ -146,7 +146,7 @@ public class AuthorizedCacheBehaviorTests
     public async Task CacheHit_ReturnsCachedResponse_WithoutCallingHandler()
     {
         var cache = new Mock<IRedisCacheService>();
-        cache.Setup(x => x.GetAsync<string>(It.IsAny<string>()))
+        cache.Setup(x => x.GetAsync<string>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("cached-value");
 
         var behavior = CreateBehavior<WorkspaceScopedQuery>(cache: cache);
@@ -173,7 +173,7 @@ public class AuthorizedCacheBehaviorTests
             default);
 
         response.Should().Be("fresh-value");
-        cache.Verify(x => x.SetAsync(It.IsAny<string>(), "fresh-value", It.IsAny<TimeSpan>()), Times.Once);
+        cache.Verify(x => x.SetAsync(It.IsAny<string>(), "fresh-value", It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class AuthorizedCacheBehaviorTests
 
         response.Should().Be("passthrough");
         handlerInvoked.Should().BeTrue();
-        cache.Verify(x => x.GetAsync<string>(It.IsAny<string>()), Times.Never);
+        cache.Verify(x => x.GetAsync<string>(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public class AuthorizedCacheBehaviorTests
             default);
 
         response.Should().BeNull();
-        cache.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<TimeSpan>()), Times.Never);
+        cache.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -233,8 +233,8 @@ public class AuthorizedCacheBehaviorTests
             _ => Task.FromResult("response"),
             default);
 
-        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains("account"))), Times.Once);
-        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains(AccountId.ToString()))), Times.Once);
+        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains("account")), It.IsAny<CancellationToken>()), Times.Once);
+        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains(AccountId.ToString())), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -248,9 +248,9 @@ public class AuthorizedCacheBehaviorTests
             _ => Task.FromResult("response"),
             default);
 
-        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains("workspace"))), Times.Once);
-        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains(AccountId.ToString()))), Times.Once);
-        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains(WorkspaceId.ToString()))), Times.Once);
+        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains("workspace")), It.IsAny<CancellationToken>()), Times.Once);
+        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains(AccountId.ToString())), It.IsAny<CancellationToken>()), Times.Once);
+        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains(WorkspaceId.ToString())), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -264,8 +264,8 @@ public class AuthorizedCacheBehaviorTests
             _ => Task.FromResult("response"),
             default);
 
-        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains("user"))), Times.Once);
-        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains(UserId.ToString()))), Times.Once);
+        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains("user")), It.IsAny<CancellationToken>()), Times.Once);
+        cache.Verify(x => x.GetAsync<string>(It.Is<string>(k => k.Contains(UserId.ToString())), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

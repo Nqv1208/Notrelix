@@ -76,9 +76,6 @@ public class IgnoreQueryFiltersArchitectureTests
         ["RestoreTeam.cs"] = new("RestoreTeam.cs", AllowlistClassification.Intentional,
             "Restore operation must see soft-deleted teams to restore them",
             "Keep as Intentional — restore requires IgnoreQueryFilters"),
-        ["RestoreMember.cs"] = new("RestoreMember.cs", AllowlistClassification.Intentional,
-            "Restore operation must see soft-deleted members to restore them",
-            "Keep as Intentional — restore requires IgnoreQueryFilters"),
         ["ApplicationDbContextInitialiser.cs"] = new("ApplicationDbContextInitialiser.cs", AllowlistClassification.SystemCommand,
             "Database seed/reset must clear all tables regardless of query filters",
             "Keep as SystemCommand — infrastructure maintenance operation"),
@@ -98,6 +95,9 @@ public class IgnoreQueryFiltersArchitectureTests
         ["EmailVerificationTokenIssuer.cs"] = new("EmailVerificationTokenIssuer.cs", AllowlistClassification.Intentional,
             "Token issuer bypasses EF query filter to revoke prior tokens across tenant boundaries",
             "Keep as Intentional — cross-tenant token revocation"),
+        ["ActiveVerificationTokenLocker.cs"] = new("ActiveVerificationTokenLocker.cs", AllowlistClassification.Intentional,
+            "Token locker bypasses EF query filter to lock active verification tokens across tenant boundaries",
+            "Keep as Intentional — cross-tenant token locking"),
     };
 
     [Fact]

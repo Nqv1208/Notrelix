@@ -1,9 +1,19 @@
+using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Context;
+using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.Tests.Data.Rls;
 
 public class RlsSessionContextTests
 {
+    private static ApplicationDbContext CreateMockDbContext()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        return new ApplicationDbContext(options);
+    }
+
     private static RlsSessionContext CreateContext(
         bool setSessionContext,
         ICurrentTenantContext tenant)
@@ -15,7 +25,7 @@ public class RlsSessionContextTests
                 SetSessionContext = setSessionContext,
                 ApplyPoliciesOnStartup = false
             });
-        return new RlsSessionContext(options, tenant);
+        return new RlsSessionContext(CreateMockDbContext(), options, tenant);
     }
 
     private static Mock<ICurrentTenantContext> CreateTenant(
@@ -38,7 +48,7 @@ public class RlsSessionContextTests
         var tenant = CreateTenant(isSystem: false, accountId: Guid.NewGuid());
         var context = CreateContext(setSessionContext: false, tenant.Object);
 
-        var act = () => context.ApplyAsync(null!, CancellationToken.None);
+        var act = () => context.ApplyAsync(CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*SetSessionContext*disabled*");
@@ -50,7 +60,7 @@ public class RlsSessionContextTests
         var tenant = CreateTenant(isSystem: true);
         var context = CreateContext(setSessionContext: false, tenant.Object);
 
-        var act = () => context.ApplyAsync(null!, CancellationToken.None);
+        var act = () => context.ApplyAsync(CancellationToken.None);
 
         await act.Should().NotThrowAsync();
     }
@@ -61,7 +71,7 @@ public class RlsSessionContextTests
         var tenant = CreateTenant(isSystem: false, accountId: null, workspaceId: Guid.NewGuid());
         var context = CreateContext(setSessionContext: true, tenant.Object);
 
-        var act = () => context.ApplyAsync(null!, CancellationToken.None);
+        var act = () => context.ApplyAsync(CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*AccountId*required*");
@@ -73,10 +83,11 @@ public class RlsSessionContextTests
         var tenant = CreateTenant(isSystem: false, accountId: Guid.NewGuid(), workspaceId: Guid.NewGuid());
         var context = CreateContext(setSessionContext: true, tenant.Object);
 
-        var act = () => context.ApplyAsync(null!, CancellationToken.None);
+        var act = () => context.ApplyAsync(CancellationToken.None);
 
         var ex = await Record.ExceptionAsync(act);
-        ex.Should().NotBeNull("should fail because database is null");
-        ex.Should().NotBeOfType<InvalidOperationException>("tenant validation should pass");
+        ex.Should().NotBeNull("should fail at database level, not validation");
+        ex!.Message.Should().NotContain("AccountId is required",
+            "tenant validation should pass before database access");
     }
 }

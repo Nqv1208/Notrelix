@@ -9,7 +9,7 @@ public class MentionTests
     public void Create_ShouldSucceed()
     {
         var workspaceId = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId);
+        var source = ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), workspaceId);
 
         var mention = Mention.Create(Guid.NewGuid(), workspaceId, source, MentionType.User, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -23,7 +23,7 @@ public class MentionTests
     public void Create_WithDifferentMentionTypes_ShouldSucceed()
     {
         var workspaceId = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), workspaceId);
 
         var teamMention = Mention.Create(Guid.NewGuid(), workspaceId, source, MentionType.Team, Guid.NewGuid(), DateTimeOffset.UtcNow);
         var pageMention = Mention.Create(Guid.NewGuid(), workspaceId, source, MentionType.Page, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -38,16 +38,16 @@ public class MentionTests
     public void Create_WithWorkspaceMismatch_ShouldThrow()
     {
         var workspaceId = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), Guid.NewGuid());
+        var source = ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => Mention.Create(Guid.NewGuid(), workspaceId, source, MentionType.User, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithEmptyMentionedId_ShouldThrow()
     {
-        var act = () => Mention.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), MentionType.User, Guid.Empty, DateTimeOffset.UtcNow);
+        var act = () => Mention.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid()), MentionType.User, Guid.Empty, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 }

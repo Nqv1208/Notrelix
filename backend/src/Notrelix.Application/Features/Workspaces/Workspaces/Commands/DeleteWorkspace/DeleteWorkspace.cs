@@ -9,7 +9,7 @@ public record DeleteWorkspaceCommand(
 ) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
@@ -35,7 +35,7 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
-        workspace.SoftDelete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        workspace.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

@@ -1,5 +1,7 @@
 using Notrelix.Domain.WorkManagement.Approvals;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
 
 public class ApprovalRequestConfiguration : IEntityTypeConfiguration<ApprovalRequest>
@@ -20,7 +22,7 @@ public class ApprovalRequestConfiguration : IEntityTypeConfiguration<ApprovalReq
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.ResourceType).HasColumnName("target_type").IsRequired().HasMaxLength(100);
+            target.Property(t => t.Kind).HasColumnName("target_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("target_id").IsRequired();
         });
 
@@ -33,8 +35,6 @@ public class ApprovalRequestConfiguration : IEntityTypeConfiguration<ApprovalReq
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

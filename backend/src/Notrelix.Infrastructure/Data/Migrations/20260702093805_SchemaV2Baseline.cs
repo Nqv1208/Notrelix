@@ -1,6 +1,6 @@
 ﻿#nullable disable
 
-namespace Notrelix.Infrastructure.Migrations
+namespace Notrelix.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
     public partial class SchemaV2Baseline : Migration
@@ -108,7 +108,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     domain = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    verification_status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    verification_status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     verification_token_hash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     verified_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     auto_join_enabled = table.Column<bool>(type: "boolean", nullable: false),
@@ -116,11 +116,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -146,11 +141,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -174,11 +164,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -200,12 +185,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -269,12 +252,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -320,11 +301,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -352,12 +328,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -385,11 +359,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -405,7 +374,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    target_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     target_id = table.Column<Guid>(type: "uuid", nullable: false),
                     title = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
                     description = table.Column<string>(type: "text", nullable: true),
@@ -415,12 +384,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -435,7 +402,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -448,12 +415,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -508,12 +473,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
                     delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     configuration = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
@@ -536,12 +499,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -561,11 +522,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -589,11 +545,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -616,12 +567,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -651,12 +600,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -679,12 +626,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -699,7 +644,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     parent_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -711,12 +656,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -746,11 +689,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -775,11 +713,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -802,11 +735,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -830,11 +758,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -908,14 +831,13 @@ namespace Notrelix.Infrastructure.Migrations
                     recipient_user_id = table.Column<Guid>(type: "uuid", nullable: true),
                     recipient_email = table.Column<string>(type: "text", nullable: false),
                     recipient_name = table.Column<string>(type: "character varying(240)", maxLength: 240, nullable: true),
+                    content_mode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     template_name = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
                     template_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
                     subject = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
                     body_html = table.Column<string>(type: "text", nullable: true),
                     body_text = table.Column<string>(type: "text", nullable: true),
                     template_data_json = table.Column<string>(type: "jsonb", nullable: true),
-                    content_mode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "Templated"),
-                    lock_token = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: true),
                     headers_json = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
                     priority = table.Column<int>(type: "integer", nullable: false, defaultValue: 100),
                     status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, defaultValue: "Pending"),
@@ -924,20 +846,23 @@ namespace Notrelix.Infrastructure.Migrations
                     next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     processing_started_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     locked_by = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
+                    lock_token = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: true),
                     locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     provider = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
                     provider_message_id = table.Column<string>(type: "character varying(240)", maxLength: 240, nullable: true),
                     sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     last_error_code = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
                     error_message = table.Column<string>(type: "text", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    sensitive_payload_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     sensitive_payload_cleared_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    sensitive_payload_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_email_outbox", x => x.id);
+                    table.CheckConstraint("ck_email_outbox_content_mode", "(content_mode = 'Rendered' AND subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL) AND template_data_json IS NULL) OR (content_mode = 'Templated' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NOT NULL AND template_data_json <> '{}'::jsonb) OR (content_mode = 'Purged' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NULL AND sensitive_payload_cleared_at IS NOT NULL)");
+                    table.CheckConstraint("ck_email_outbox_sensitive_payload_state", "sensitive_payload_cleared_at IS NULL OR template_data_json IS NULL");
                 });
 
             migrationBuilder.CreateTable(
@@ -946,26 +871,21 @@ namespace Notrelix.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    email_snapshot = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     token_hash = table.Column<string>(type: "text", nullable: false),
+                    hash_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     used_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     expired_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    hash_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
-                    email_snapshot = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
-                    revocation_reason = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    revocation_reason = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -993,11 +913,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -1121,12 +1036,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1134,44 +1047,27 @@ namespace Notrelix.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "formula_dependencies",
-                schema: "work",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    formula_field_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    depends_on_field_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_formula_dependencies", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "idempotency_keys",
+                name: "idempotency_records",
                 schema: "ops",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    user_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    scope = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    idempotency_key = table.Column<string>(type: "character varying(260)", maxLength: 260, nullable: false),
-                    request_method = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    request_path = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    request_hash = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    response_status_code = table.Column<int>(type: "integer", nullable: true),
-                    response_body_json = table.Column<string>(type: "jsonb", nullable: true),
-                    error_message = table.Column<string>(type: "text", nullable: true),
-                    locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    scope = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    operation = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    key_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    request_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    state = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    result_json = table.Column<string>(type: "jsonb", nullable: true),
+                    result_contract = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    completed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    completed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_idempotency_keys", x => x.id);
+                    table.PrimaryKey("pk_idempotency_records", x => x.id);
+                    table.CheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
+                    table.CheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
                 });
 
             migrationBuilder.CreateTable(
@@ -1224,11 +1120,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -1247,21 +1138,38 @@ namespace Notrelix.Infrastructure.Migrations
                     provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     provider_account_id = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    error_detail = table.Column<string>(type: "text", nullable: true),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    current_secret_version = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    secret_rotated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_integration_connections", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "integration_secret_versions",
+                schema: "integration",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    connection_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    version = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    secret_reference = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_integration_secret_versions", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -1316,11 +1224,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -1374,7 +1277,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    source_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    source_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     source_id = table.Column<Guid>(type: "uuid", nullable: false),
                     source_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -1524,6 +1427,7 @@ namespace Notrelix.Infrastructure.Migrations
                     max_retries = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
                     next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     processing_started_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    lock_id = table.Column<Guid>(type: "uuid", nullable: true),
                     locked_by = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
                     locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -1555,11 +1459,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -1585,12 +1484,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1614,21 +1511,16 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     token_hash = table.Column<string>(type: "text", nullable: false),
+                    hash_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     used_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     expired_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    hash_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
-                    revocation_reason = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    revocation_reason = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1653,11 +1545,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -1674,7 +1561,7 @@ namespace Notrelix.Infrastructure.Migrations
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
                     scope_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    resource_type = table.Column<int>(type: "integer", maxLength: 50, nullable: true),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: true),
                     subject_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     subject_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1690,12 +1577,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1708,22 +1593,18 @@ namespace Notrelix.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     description = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
-                    target_resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    target_resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     permissions_json = table.Column<string>(type: "jsonb", nullable: false),
-                    is_system = table.Column<bool>(type: "boolean", nullable: false),
+                    scope = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -1764,11 +1645,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -1787,7 +1663,9 @@ namespace Notrelix.Infrastructure.Migrations
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     connection_id = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    last_seen_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    last_seen_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1832,7 +1710,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1841,11 +1719,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -1881,6 +1754,7 @@ namespace Notrelix.Infrastructure.Migrations
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
                     report_type = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    schema_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
                     data = table.Column<string>(type: "jsonb", nullable: false),
                     captured_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
@@ -1897,21 +1771,19 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    source_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    source_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     source_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    target_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     target_id = table.Column<Guid>(type: "uuid", nullable: false),
                     link_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1957,7 +1829,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     subject_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     subject_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1969,12 +1841,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2011,7 +1881,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    target_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     target_id = table.Column<Guid>(type: "uuid", nullable: false),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     watch_level = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -2019,11 +1889,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2042,6 +1907,7 @@ namespace Notrelix.Infrastructure.Migrations
                     rule_id = table.Column<Guid>(type: "uuid", nullable: false),
                     cron_expression = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     timezone = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, defaultValue: "UTC"),
+                    schedule_schema_version = table.Column<int>(type: "integer", nullable: false),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     next_run_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     last_run_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -2049,12 +1915,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2078,11 +1942,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2205,7 +2064,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     token_hash = table.Column<string>(type: "text", nullable: false),
                     access_mode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -2215,11 +2074,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2244,12 +2098,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2289,11 +2141,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2316,12 +2163,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2344,11 +2189,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2373,11 +2213,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2403,11 +2238,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2432,11 +2262,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2462,11 +2287,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2481,24 +2301,22 @@ namespace Notrelix.Infrastructure.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    email_confirmed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    email_confirmed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     normalized_email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     avatar = table.Column<string>(type: "text", nullable: true),
                     password_hash = table.Column<string>(type: "text", nullable: false),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    email_confirmed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    email_confirmed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     last_login_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2529,11 +2347,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2556,12 +2369,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2580,8 +2391,7 @@ namespace Notrelix.Infrastructure.Migrations
                     item_id = table.Column<Guid>(type: "uuid", nullable: true),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     allocation_date = table.Column<DateTime>(type: "date", nullable: false),
-                    allocated_minutes = table.Column<int>(type: "integer", nullable: false),
-                    version = table.Column<long>(type: "bigint", nullable: false)
+                    allocated_minutes = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -2644,11 +2454,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2676,11 +2481,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2703,11 +2503,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2750,7 +2545,12 @@ namespace Notrelix.Infrastructure.Migrations
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    delete_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2801,12 +2601,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2860,11 +2658,6 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
                     version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
@@ -2896,19 +2689,14 @@ namespace Notrelix.Infrastructure.Migrations
                     is_system = table.Column<bool>(type: "boolean", nullable: false),
                     data_classification = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     is_sensitive = table.Column<bool>(type: "boolean", nullable: false),
-                    is_formula = table.Column<bool>(type: "boolean", nullable: false),
-                    formula_expression = table.Column<string>(type: "text", nullable: true),
-                    mirror_source_json = table.Column<string>(type: "text", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2935,15 +2723,15 @@ namespace Notrelix.Infrastructure.Migrations
                     color = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     position = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     is_collapsed = table.Column<bool>(type: "boolean", nullable: false),
+                    is_archived = table.Column<bool>(type: "boolean", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3001,12 +2789,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3068,16 +2854,15 @@ namespace Notrelix.Infrastructure.Migrations
                     type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     config = table.Column<string>(type: "jsonb", nullable: false),
                     is_default = table.Column<bool>(type: "boolean", nullable: false),
+                    is_archived = table.Column<bool>(type: "boolean", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3107,12 +2892,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3142,12 +2925,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3192,7 +2973,7 @@ namespace Notrelix.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     integration_id = table.Column<Guid>(type: "uuid", nullable: false),
                     external_event_id = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     sync_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
@@ -3352,29 +3133,6 @@ namespace Notrelix.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "integration_secret_versions",
-                schema: "integration",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    connection_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    version = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    secret_reference = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_integration_secret_versions", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_integration_secret_versions_integration_connections_connect",
-                        column: x => x.connection_id,
-                        principalSchema: "integration",
-                        principalTable: "integration_connections",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "notification_recipients",
                 schema: "notifications",
                 columns: table => new
@@ -3425,12 +3183,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3566,12 +3322,11 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3652,16 +3407,15 @@ namespace Notrelix.Infrastructure.Migrations
                     started_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     due_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     completed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    is_archived = table.Column<bool>(type: "boolean", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3764,12 +3518,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3800,12 +3552,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3862,7 +3612,7 @@ namespace Notrelix.Infrastructure.Migrations
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
                     board_id = table.Column<Guid>(type: "uuid", nullable: false),
                     source_item_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    target_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     target_id = table.Column<Guid>(type: "uuid", nullable: false),
                     link_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
@@ -3950,12 +3700,10 @@ namespace Notrelix.Infrastructure.Migrations
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -3989,9 +3737,7 @@ namespace Notrelix.Infrastructure.Migrations
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
                     deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true)
+                    delete_reason = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -4013,29 +3759,6 @@ namespace Notrelix.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "rollup_snapshots",
-                schema: "work",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    item_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    field_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    value = table.Column<string>(type: "jsonb", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_rollup_snapshots", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_rollup_snapshots_board_items_item_id",
-                        column: x => x.item_id,
-                        principalSchema: "work",
-                        principalTable: "board_items",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "time_tracking_entries",
                 schema: "work",
                 columns: table => new
@@ -4050,16 +3773,11 @@ namespace Notrelix.Infrastructure.Migrations
                     ended_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     note = table.Column<string>(type: "text", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    deleted_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    delete_reason = table.Column<string>(type: "text", nullable: true),
-                    restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    restored_by = table.Column<Guid>(type: "uuid", nullable: true)
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
                 },
                 constraints: table =>
                 {
@@ -4277,8 +3995,7 @@ namespace Notrelix.Infrastructure.Migrations
                 name: "idx_account_slug",
                 schema: "account",
                 table: "accounts",
-                column: "slug",
-                unique: false);
+                column: "slug");
 
             migrationBuilder.CreateIndex(
                 name: "ix_activity_read_states_workspace_id_user_id",
@@ -4856,8 +4573,7 @@ namespace Notrelix.Infrastructure.Migrations
                 name: "idx_email_verification_tokens_expires",
                 schema: "identity",
                 table: "email_verification_tokens",
-                column: "expires_at",
-                filter: "deleted_at IS NULL");
+                column: "expires_at");
 
             migrationBuilder.CreateIndex(
                 name: "ux_email_verification_tokens_one_active_per_user",
@@ -4865,7 +4581,7 @@ namespace Notrelix.Infrastructure.Migrations
                 table: "email_verification_tokens",
                 column: "user_id",
                 unique: true,
-                filter: "status = 'Active' AND deleted_at IS NULL");
+                filter: "status = 'Active'");
 
             migrationBuilder.CreateIndex(
                 name: "idx_entitlements_account_id",
@@ -4968,29 +4684,16 @@ namespace Notrelix.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "idx_formula_dependencies_depends_on",
-                schema: "work",
-                table: "formula_dependencies",
-                column: "depends_on_field_id");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_formula_dependencies_pair",
-                schema: "work",
-                table: "formula_dependencies",
-                columns: new[] { "formula_field_id", "depends_on_field_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_idempotency_keys_expires_at",
+                name: "ix_idempotency_records_expires_at",
                 schema: "ops",
-                table: "idempotency_keys",
+                table: "idempotency_records",
                 column: "expires_at");
 
             migrationBuilder.CreateIndex(
-                name: "ix_idempotency_keys_scope_key",
+                name: "ix_idempotency_records_scope_op_key",
                 schema: "ops",
-                table: "idempotency_keys",
-                columns: new[] { "scope", "idempotency_key" },
+                table: "idempotency_records",
+                columns: new[] { "scope", "operation", "key_hash" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -5344,7 +5047,7 @@ namespace Notrelix.Infrastructure.Migrations
                 schema: "docs",
                 table: "page_templates",
                 column: "workspace_id",
-                filter: "workspace_id IS NOT NULL AND deleted_at IS NULL");
+                filter: "workspace_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "idx_pages_parent_id",
@@ -5364,8 +5067,7 @@ namespace Notrelix.Infrastructure.Migrations
                 name: "idx_password_reset_tokens_expires",
                 schema: "identity",
                 table: "password_reset_tokens",
-                column: "expires_at",
-                filter: "deleted_at IS NULL");
+                column: "expires_at");
 
             migrationBuilder.CreateIndex(
                 name: "idx_password_reset_tokens_user_id",
@@ -5408,7 +5110,7 @@ namespace Notrelix.Infrastructure.Migrations
                 schema: "governance",
                 table: "permission_templates",
                 column: "workspace_id",
-                filter: "workspace_id IS NOT NULL AND deleted_at IS NULL");
+                filter: "workspace_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "idx_plan_limits_plan_id",
@@ -5569,13 +5271,6 @@ namespace Notrelix.Infrastructure.Migrations
                 schema: "collab",
                 table: "resource_watchers",
                 columns: new[] { "user_id", "workspace_id" });
-
-            migrationBuilder.CreateIndex(
-                name: "idx_rollup_snapshots_item_field",
-                schema: "work",
-                table: "rollup_snapshots",
-                columns: new[] { "item_id", "field_id" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_saved_filter_rules_saved_filter_id",
@@ -5749,15 +5444,13 @@ namespace Notrelix.Infrastructure.Migrations
                 name: "idx_time_tracking_item_user",
                 schema: "work",
                 table: "time_tracking_entries",
-                columns: new[] { "item_id", "user_id" },
-                filter: "deleted_at IS NULL");
+                columns: new[] { "item_id", "user_id" });
 
             migrationBuilder.CreateIndex(
                 name: "idx_time_tracking_status",
                 schema: "work",
                 table: "time_tracking_entries",
-                column: "status",
-                filter: "deleted_at IS NULL");
+                column: "status");
 
             migrationBuilder.CreateIndex(
                 name: "ix_time_tracking_entries_board_id",
@@ -5813,8 +5506,7 @@ namespace Notrelix.Infrastructure.Migrations
                 name: "idx_user_sessions_expires",
                 schema: "identity",
                 table: "user_sessions",
-                column: "expires_at",
-                filter: "deleted_at IS NULL");
+                column: "expires_at");
 
             migrationBuilder.CreateIndex(
                 name: "idx_user_sessions_user_id",
@@ -5947,13 +5639,6 @@ namespace Notrelix.Infrastructure.Migrations
                 column: "workspace_id");
 
             migrationBuilder.CreateIndex(
-                name: "ux_workspace_invitations_token_hash",
-                schema: "workspace",
-                table: "workspace_invitations",
-                column: "token_hash",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "idx_workspace_members_user_id",
                 schema: "workspace",
                 table: "workspace_members",
@@ -5978,6 +5663,12 @@ namespace Notrelix.Infrastructure.Migrations
                 table: "workspace_routes",
                 columns: new[] { "account_id", "route_slug" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "idx_workspace_routes_is_deleted",
+                schema: "account",
+                table: "workspace_routes",
+                column: "is_deleted");
 
             migrationBuilder.CreateIndex(
                 name: "ix_workspace_usage_daily_usage_date",
@@ -6007,18 +5698,6 @@ namespace Notrelix.Infrastructure.Migrations
                 columns: new[] { "account_id", "slug" },
                 unique: true,
                 filter: "deleted_at IS NULL");
-
-            migrationBuilder.AddCheckConstraint(
-                name: "ck_email_outbox_content_mode",
-                schema: "notifications",
-                table: "email_outbox",
-                sql: "(content_mode = 'Rendered' AND subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL) AND template_data_json IS NULL) OR (content_mode = 'Templated' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NOT NULL AND template_data_json <> '{}'::jsonb) OR (content_mode = 'Purged' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NULL AND sensitive_payload_cleared_at IS NOT NULL)");
-
-            migrationBuilder.AddCheckConstraint(
-                name: "ck_email_outbox_sensitive_payload_state",
-                schema: "notifications",
-                table: "email_outbox",
-                sql: "sensitive_payload_cleared_at IS NULL OR template_data_json IS NULL");
         }
 
         /// <inheritdoc />
@@ -6225,11 +5904,7 @@ namespace Notrelix.Infrastructure.Migrations
                 schema: "work");
 
             migrationBuilder.DropTable(
-                name: "formula_dependencies",
-                schema: "work");
-
-            migrationBuilder.DropTable(
-                name: "idempotency_keys",
+                name: "idempotency_records",
                 schema: "ops");
 
             migrationBuilder.DropTable(
@@ -6375,10 +6050,6 @@ namespace Notrelix.Infrastructure.Migrations
             migrationBuilder.DropTable(
                 name: "resource_watchers",
                 schema: "collab");
-
-            migrationBuilder.DropTable(
-                name: "rollup_snapshots",
-                schema: "work");
 
             migrationBuilder.DropTable(
                 name: "saved_filter_rules",

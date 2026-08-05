@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.ItemLinks;
 
 public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
@@ -58,7 +59,7 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
     {
         var sourceItem = CreateBoardItem();
         var otherWorkspaceId = Guid.CreateVersion7();
-        var targetItem = BoardItem.Create(
+        var targetItem = BoardItem.CreateRoot(
             TestAccountId,
             otherWorkspaceId,
             sourceItem.BoardId,

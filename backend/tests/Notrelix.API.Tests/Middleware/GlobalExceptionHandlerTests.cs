@@ -2,11 +2,11 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Notrelix.API.ErrorHandling;
-using DomainNotFoundException = Notrelix.Domain.Common.Exceptions.NotFoundException;
-using DomainForbiddenException = Notrelix.Domain.Common.Exceptions.ForbiddenException;
-using DomainConflictException = Notrelix.Domain.Common.Exceptions.ConflictException;
-using DomainBusinessRuleViolationException = Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException;
-using DomainValidationException = Notrelix.Domain.Common.Exceptions.DomainValidationException;
+using DomainNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
+using DomainForbiddenException = Notrelix.Application.Common.Exceptions.ForbiddenException;
+using DomainConflictException = Notrelix.Application.Common.Exceptions.ConflictException;
+using DomainBusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
+using AppValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.API.Tests.Middleware;
 
@@ -17,11 +17,31 @@ public class GlobalExceptionHandlerTests
 
     public GlobalExceptionHandlerTests()
     {
-        _handler = new GlobalExceptionHandler(Mock.Of<ILogger<GlobalExceptionHandler>>());
+        _handler = new GlobalExceptionHandler(
+            Mock.Of<ILogger<GlobalExceptionHandler>>(),
+            Microsoft.Extensions.Options.Options.Create(new IdempotencyOptions()));
         _context = new DefaultHttpContext();
         _context.Response.Body = new MemoryStream();
         _context.Request.Path = "/api/test";
         _context.TraceIdentifier = "test-trace-id";
+    }
+
+    [Fact]
+    public async Task IdempotencyIncompleteState_ShouldReturn503WithRetryAfter()
+    {
+        // Spec 3.8: committed active Processing is incomplete state — the API answers
+        // 503 + Retry-After (from IdempotencyOptions) and never a replayed success.
+        var exception = new IdempotencyIncompleteStateException("work-management.create-board-item.v1");
+
+        await _handler.TryHandleAsync(_context, exception, default);
+
+        var pd = await ReadProblemDetailsAsync(_context);
+        pd.Status.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        pd.Extensions!["errorCode"].ToString().Should().Be("idempotency_state_incomplete");
+        pd.Type.Should().Be("https://docs.notrelix.com/problems/idempotency_state_incomplete");
+
+        _context.Response.Headers.RetryAfter.ToString()
+            .Should().Be(((int)new IdempotencyOptions().IncompleteStateRetryAfter.TotalSeconds).ToString());
     }
 
     [Fact]
@@ -47,9 +67,9 @@ public class GlobalExceptionHandlerTests
     }
 
     [Fact]
-    public async Task DomainValidationException_ShouldReturn400WithErrors()
+    public async Task AppValidationException_ShouldReturn400WithErrors()
     {
-        var exception = new DomainValidationException("title", "Title is required");
+        var exception = new AppValidationException("Title is required");
 
         await _handler.TryHandleAsync(_context, exception, default);
 
@@ -61,7 +81,7 @@ public class GlobalExceptionHandlerTests
     [Fact]
     public async Task BusinessRuleViolationException_ShouldReturn400()
     {
-        var exception = new DomainBusinessRuleViolationException("board_archived", "Board is archived");
+        var exception = new DomainBusinessRuleException("board_archived", "Board is archived");
 
         await _handler.TryHandleAsync(_context, exception, default);
 

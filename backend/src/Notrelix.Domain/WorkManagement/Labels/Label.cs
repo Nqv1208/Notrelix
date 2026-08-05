@@ -1,8 +1,9 @@
+using Notrelix.Domain.WorkManagement.Labels.Events;
 namespace Notrelix.Domain.WorkManagement.Labels;
 
 public sealed class LabelColor : ValueObject
 {
-    public string Hex { get; }
+    public string Hex { get; } = null!;
 
     private LabelColor() { }
     private LabelColor(string hex)
@@ -22,7 +23,7 @@ public sealed class LabelColor : ValueObject
     }
 }
 
-public class Label : AggregateRoot, IWorkspaceScoped
+public class Label : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -52,32 +53,46 @@ public class Label : AggregateRoot, IWorkspaceScoped
         };
 
         label.SetAuditOnCreate(createdBy, createdAt);
-        label.AddDomainEvent(new LabelCreatedDomainEvent(accountId, workspaceId, boardId, label.Id, label.Name, createdAt));
+        label.RaiseDomainEvent(new LabelCreatedDomainEvent(accountId, workspaceId, boardId, label.Id, label.Name, createdAt));
 
         return label;
     }
 
     public void Update(string name, LabelColor color, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        Name = name.Trim();
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.NotNull(color);
+
+        var normalizedName = name.Trim();
+        if (Name == normalizedName && Color == color) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Name = normalizedName;
         Color = color;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new LabelUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new LabelSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new LabelRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new LabelUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+    }
+
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        Guard.NotEmpty(deletedBy);
+        if (IsDeleted) return;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        IncrementVersion();
+        RaiseDomainEvent(new LabelDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        Guard.NotEmpty(restoredBy);
+        if (!IsDeleted) return;
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
+        IncrementVersion();
+        RaiseDomainEvent(new LabelRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

@@ -1,11 +1,16 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardField;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
 
-public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest;
+[IdempotencyOperation("work-management.boards.create-board-by-slug.v1")]
+public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IIdempotentRequest, IGlobalRequest
+{
+}
 
 public class CreateBoardBySlugCommandHandler : IRequestHandler<CreateBoardBySlugCommand, Result<Guid>>
 {

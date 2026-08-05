@@ -1,3 +1,5 @@
+using Notrelix.Domain.Workspaces.Members.Events;
+using Notrelix.Domain.Workspaces.Rules;
 namespace Notrelix.Domain.Workspaces.Members;
 
 public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
@@ -27,7 +29,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         };
 
         member.SetAuditOnCreate(addedBy, createdAt);
-        member.AddDomainEvent(new WorkspaceMemberAddedDomainEvent(accountId, workspaceId, member.Id, userId, role, addedBy, createdAt));
+        member.RaiseDomainEvent(new WorkspaceMemberAddedDomainEvent(accountId, workspaceId, member.Id, userId, role, addedBy, createdAt));
         return member;
     }
 
@@ -37,49 +39,50 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         int activeOwnerCount,
         DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
         if (newRole == WorkspaceRole.Owner)
         {
             throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Member_CannotDirectlyAssignOwner,
                 "Ownership must be transferred through the ownership transfer workflow.");
         }
 
         if (Status != WorkspaceMemberStatus.Active)
         {
-            throw new BusinessRuleException("Cannot change role of an inactive or suspended member.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
         }
 
         WorkspaceOwnerRules.EnsureCanDowngradeOwner(Role, newRole, activeOwnerCount);
 
         if (Role == newRole) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldRole = Role;
         Role = newRole;
 
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
+        RaiseDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
             AccountId, WorkspaceId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
     }
 
     public void PromoteToOwner(Guid promotedBy, DateTimeOffset promotedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(promotedBy);
 
         if (Status != WorkspaceMemberStatus.Active)
-            throw new BusinessRuleException("Cannot promote an inactive member to owner.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotPromoteInactiveToOwner, "Cannot promote an inactive member to owner.");
 
         if (Role == WorkspaceRole.Owner) return;
 
+        var audit = PrepareAuditUpdate(promotedBy, promotedAt);
         var oldRole = Role;
         Role = WorkspaceRole.Owner;
 
-        SetAuditOnUpdate(promotedBy, promotedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
+        RaiseDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
             AccountId, WorkspaceId, Id, UserId, oldRole, WorkspaceRole.Owner, promotedBy, promotedAt));
     }
 
@@ -88,78 +91,54 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         DateTimeOffset updatedAt,
         int activeOwnerCount)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
-        WorkspaceOwnerRules.EnsureCanSuspendOwner(Role, activeOwnerCount);
+        if (Status == WorkspaceMemberStatus.Removed)
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotSuspendRemoved, "Cannot suspend a removed member.");
 
         if (Status == WorkspaceMemberStatus.Suspended) return;
 
+        WorkspaceOwnerRules.EnsureCanSuspendOwner(Role, activeOwnerCount);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = WorkspaceMemberStatus.Suspended;
 
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberSuspendedDomainEvent(
+        RaiseDomainEvent(new WorkspaceMemberSuspendedDomainEvent(
             AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
     public void Activate(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-
-        if (Status == WorkspaceMemberStatus.Active) return;
 
         if (Status == WorkspaceMemberStatus.Removed)
         {
-            throw new BusinessRuleException("Cannot activate a removed member. Restore the member first.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member.");
         }
 
+        if (Status == WorkspaceMemberStatus.Active) return;
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = WorkspaceMemberStatus.Active;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberActivatedDomainEvent(AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-
-        if (IsDeleted) return;
-
-        Status = WorkspaceMemberStatus.Removed;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, deletedBy, deletedAt));
+        RaiseDomainEvent(new WorkspaceMemberActivatedDomainEvent(AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
     public void Remove(int activeOwnerCount, Guid removedBy, DateTimeOffset removedAt, string? reason = null)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(removedBy);
+
+        if (Status == WorkspaceMemberStatus.Removed) return;
 
         WorkspaceOwnerRules.EnsureCanRemoveOwner(Role, activeOwnerCount);
 
-        SoftDelete(removedBy, removedAt, reason);
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-
-        Guard.NotEmpty(restoredBy);
-
-        Status = WorkspaceMemberStatus.Active;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var audit = PrepareAuditUpdate(removedBy, removedAt);
+        Status = WorkspaceMemberStatus.Removed;
+        ApplyAuditUpdate(audit);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRestoredDomainEvent(
-            AccountId,
-            WorkspaceId,
-            Id,
-            UserId,
-            restoredBy,
-            restoredAt));
+        RaiseDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, removedBy, removedAt));
     }
 }

@@ -43,78 +43,46 @@ public class PaymentMethodTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldMarkDeleted()
+    public void SetAsDefault_ShouldSetFlag_WhenNotDefault()
     {
-        var method = PaymentMethod.Create(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            PaymentProvider.Stripe,
-            "pm_456",
-            "1111",
-            "Amex",
-            Guid.NewGuid(),
-            DateTimeOffset.UtcNow);
+        var method = PaymentMethod.Create(Guid.NewGuid(), Guid.NewGuid(), PaymentProvider.Stripe, "pm_1", "4242", "Visa", Guid.NewGuid(), DateTimeOffset.UtcNow, isDefault: false);
+        method.IsDefault.Should().BeFalse();
 
-        method.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        method.SetAsDefault(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        method.IsDeleted.Should().BeTrue();
+        method.IsDefault.Should().BeTrue();
     }
 
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void UnsetAsDefault_ShouldClearFlag_WhenDefault()
     {
-        var method = PaymentMethod.Create(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            PaymentProvider.Manual,
-            "manual_1",
-            "9999",
-            "Manual",
-            Guid.NewGuid(),
-            DateTimeOffset.UtcNow);
-        method.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var method = PaymentMethod.Create(Guid.NewGuid(), Guid.NewGuid(), PaymentProvider.Stripe, "pm_1", "4242", "Visa", Guid.NewGuid(), DateTimeOffset.UtcNow, isDefault: true);
+        method.IsDefault.Should().BeTrue();
 
-        method.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        method.UnsetAsDefault(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        method.IsDeleted.Should().BeTrue();
+        method.IsDefault.Should().BeFalse();
     }
 
     [Fact]
-    public void Restore_ShouldRestore()
+    public void Deactivate_ShouldExpireMethod()
     {
-        var method = PaymentMethod.Create(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            PaymentProvider.Stripe,
-            "pm_789",
-            "5555",
-            "MC",
-            Guid.NewGuid(),
-            DateTimeOffset.UtcNow);
-        method.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var method = PaymentMethod.Create(Guid.NewGuid(), Guid.NewGuid(), PaymentProvider.Stripe, "pm_1", "4242", "Visa", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        method.Status.Should().Be(PaymentMethodStatus.Active);
 
-        method.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        method.Deactivate(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        method.IsDeleted.Should().BeFalse();
+        method.Status.Should().Be(PaymentMethodStatus.Expired);
     }
 
     [Fact]
-    public void Restore_WhenNotDeleted_ShouldBeNoOp()
+    public void Reactivate_ShouldRestoreMethod_WhenExpired()
     {
-        var method = PaymentMethod.Create(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            PaymentProvider.Stripe,
-            "pm_000",
-            "1234",
-            "Visa",
-            Guid.NewGuid(),
-            DateTimeOffset.UtcNow);
-        method.ClearDomainEvents();
+        var method = PaymentMethod.Create(Guid.NewGuid(), Guid.NewGuid(), PaymentProvider.Stripe, "pm_1", "4242", "Visa", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        method.Deactivate(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        method.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        method.Reactivate(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        method.IsDeleted.Should().BeFalse();
-        method.DomainEvents.Should().BeEmpty();
+        method.Status.Should().Be(PaymentMethodStatus.Active);
     }
 }

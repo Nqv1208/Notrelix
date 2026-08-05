@@ -52,7 +52,7 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
         SetupBoards(board);
 
         var item = CreateBoardItem(boardId: board.Id);
-        item.SoftDelete(TestUserId, TestNow);
+        item.Delete(TestUserId, TestNow);
         SetupBoardItems(item);
 
         var member = CreateBoardItemMember(itemId: item.Id, userId: TestUserId);

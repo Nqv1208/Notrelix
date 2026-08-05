@@ -9,7 +9,7 @@ public record DeleteSpaceCommand(
 ) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public class DeleteSpaceCommandHandler : IRequestHandler<DeleteSpaceCommand, Result>
@@ -33,7 +33,7 @@ public class DeleteSpaceCommandHandler : IRequestHandler<DeleteSpaceCommand, Res
         if (space is null)
             throw new NotFoundException(nameof(Space), request.SpaceId);
 
-        space.SoftDelete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        space.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

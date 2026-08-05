@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Invitations.Events;
 
+[EventName("workspaces.workspace-invitation-accepted")]
 public sealed record WorkspaceInvitationAcceptedDomainEvent(
     Guid AccountId,
     Guid InvitationId,
@@ -7,4 +8,4 @@ public sealed record WorkspaceInvitationAcceptedDomainEvent(
     Guid UserId,
     Guid AcceptedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, AcceptedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

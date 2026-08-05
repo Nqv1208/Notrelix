@@ -22,12 +22,6 @@ public class TimeTrackingEntryConfiguration : IEntityTypeConfiguration<TimeTrack
         builder.Property(x => x.Note).HasColumnName("note");
         builder.Property(x => x.Version).HasColumnName("version");
 
-        builder.Ignore(x => x.IsDeleted);
-        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
-        builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
-        builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -43,7 +37,7 @@ public class TimeTrackingEntryConfiguration : IEntityTypeConfiguration<TimeTrack
             .HasForeignKey(x => x.BoardId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.ItemId, x.UserId }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_time_tracking_item_user");
-        builder.HasIndex(x => x.Status).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_time_tracking_status");
+        builder.HasIndex(x => new { x.ItemId, x.UserId }).HasDatabaseName("idx_time_tracking_item_user");
+        builder.HasIndex(x => x.Status).HasDatabaseName("idx_time_tracking_status");
     }
 }

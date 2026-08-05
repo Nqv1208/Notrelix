@@ -1,9 +1,3 @@
-using Notrelix.Domain.WorkManagement.Approvals;
-using Notrelix.Domain.WorkManagement.Forms;
-using Notrelix.Domain.WorkManagement.Formulas;
-using Notrelix.Domain.WorkManagement.Relations;
-using Notrelix.Domain.WorkManagement.Rollups;
-using Notrelix.Domain.WorkManagement.Templates;
 using Notrelix.Domain.WorkManagement.Workload;
 // ReSharper disable InconsistentNaming — intentionally mirrors DbContext member naming
 
@@ -36,10 +30,6 @@ public interface IWorkManagementDbContext
     DbSet<ItemDependency> ItemDependencies { get; }
     DbSet<TimeTrackingEntry> TimeTrackingEntries { get; }
     DbSet<RelationFieldConfig> RelationFieldConfigs { get; }
-
-    // Formulas & Rollups
-    DbSet<FormulaDependency> FormulaDependencies { get; }
-    DbSet<RollupSnapshot> RollupSnapshots { get; }
 
     // Checklists
     DbSet<Checklist> Checklists { get; }

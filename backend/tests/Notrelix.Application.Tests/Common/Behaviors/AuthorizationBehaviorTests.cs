@@ -17,7 +17,7 @@ public class AuthorizationBehaviorTests
     {
         public Guid WorkspaceId => Guid.NewGuid();
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid(), Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid(), Guid.NewGuid());
     }
 
     public sealed record WorkspaceSystemInternalRequest : IRequest<string>, IWorkspaceRequest, ISystemInternalRequest
@@ -38,7 +38,7 @@ public class AuthorizationBehaviorTests
     public sealed record AccountWithNonNullResourceRequest : IRequest<string>, IAccountRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     public sealed record AccountNullResourceRequest : IRequest<string>, IAccountRequest, IRequirePermission
@@ -355,7 +355,7 @@ public class AuthorizationBehaviorTests
         permissionService.Verify(
             x => x.EvaluateAsync(
                 It.Is<PermissionContext>(ctx =>
-                    ctx.ResourceType == ResourceType.Account &&
+                    ctx.ResourceKind == ResourceKind.Create("accounts.account") &&
                     ctx.ResourceId == accountId &&
                     ctx.Scope == Notrelix.Application.Common.Security.PermissionScope.Account),
                 It.IsAny<CancellationToken>()),
@@ -402,7 +402,7 @@ public class AuthorizationBehaviorTests
         permissionService.Verify(
             x => x.EvaluateAsync(
                 It.Is<PermissionContext>(ctx =>
-                    ctx.ResourceType == ResourceType.Account &&
+                    ctx.ResourceKind == ResourceKind.Create("accounts.account") &&
                     ctx.ResourceId == accountId &&
                     ctx.Scope == Notrelix.Application.Common.Security.PermissionScope.Account),
                 It.IsAny<CancellationToken>()),

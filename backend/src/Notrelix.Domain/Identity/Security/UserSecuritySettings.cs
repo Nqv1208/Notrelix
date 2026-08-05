@@ -3,7 +3,7 @@ using Notrelix.Domain.Identity.Security.Events;
 
 namespace Notrelix.Domain.Identity.Security;
 
-public class UserSecuritySettings : AggregateRoot
+public sealed class UserSecuritySettings : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public bool IsMfaEnabled { get; private set; }
@@ -25,95 +25,68 @@ public class UserSecuritySettings : AggregateRoot
             SettingsJson = JsonValue.Create("{}")
         };
         settings.SetAuditOnCreate(userId, createdAt);
-        settings.AddDomainEvent(new UserSecuritySettingsCreatedDomainEvent(settings.Id, userId, createdAt));
+        settings.RaiseDomainEvent(new UserSecuritySettingsCreatedDomainEvent(settings.Id, userId, createdAt));
         return settings;
     }
 
     public void EnableMfa(MfaMethodType method, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
-
         if (IsMfaEnabled && PreferredMfaMethod == method) return;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsMfaEnabled = true;
         PreferredMfaMethod = method;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserMfaRequirementEnabledDomainEvent(UserId, method, updatedAt));
+        RaiseDomainEvent(new UserMfaRequirementEnabledDomainEvent(UserId, method, updatedAt));
     }
 
     public void DisableMfa(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
-
         if (!IsMfaEnabled) return;
 
         var previousMethod = PreferredMfaMethod;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsMfaEnabled = false;
         PreferredMfaMethod = null;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserMfaRequirementDisabledDomainEvent(UserId, previousMethod, updatedAt));
+        RaiseDomainEvent(new UserMfaRequirementDisabledDomainEvent(UserId, previousMethod, updatedAt));
     }
 
     public void RequirePasswordChangeNow(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
-
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         RequirePasswordChange = true;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new PasswordChangeRequiredDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new PasswordChangeRequiredDomainEvent(UserId, updatedAt));
     }
 
     public void MarkPasswordChanged(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
-
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         RequirePasswordChange = false;
         PasswordChangedAt = updatedAt;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserSecurityPasswordChangedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserSecurityPasswordChangedDomainEvent(UserId, updatedAt));
     }
 
     public void UpdateSettings(JsonValue settings, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(settings);
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         SettingsJson = settings;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        AddDomainEvent(new UserSecuritySettingsSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        AddDomainEvent(new UserSecuritySettingsRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
     }
 }

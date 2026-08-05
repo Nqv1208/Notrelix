@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Sessions.Events;
 
 namespace Notrelix.Domain.Identity.Sessions;
 
-public class UserSession : AggregateRoot
+public sealed class UserSession : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public RefreshTokenHash RefreshTokenHash { get; private set; } = null!;
@@ -28,7 +28,7 @@ public class UserSession : AggregateRoot
 
         if (expiresAt <= createdAt)
         {
-            throw new BusinessRuleException("Session expiration time must be after creation time.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_ExpirationMustBeAfterCreation, "Session expiration time must be after creation time.");
         }
 
         var session = new UserSession
@@ -42,78 +42,58 @@ public class UserSession : AggregateRoot
         };
 
         session.SetAuditOnCreate(userId, createdAt);
-        session.AddDomainEvent(new UserSessionCreatedDomainEvent(session.Id, userId, createdAt));
+        session.RaiseDomainEvent(new UserSessionCreatedDomainEvent(session.Id, userId, createdAt));
 
         return session;
     }
 
     public void UpdateRefreshToken(RefreshTokenHash newTokenHash, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(newTokenHash);
 
         if (Status != SessionStatus.Active)
         {
-            throw new BusinessRuleException("Cannot update refresh token for an inactive session.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotUpdateRefreshTokenOfInactive, "Cannot update refresh token for an inactive session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         RefreshTokenHash = newTokenHash;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, updatedAt));
+        RaiseDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, updatedAt));
     }
 
     public void Revoke(DateTimeOffset revokedAt, string? reason = null)
     {
-        EnsureNotDeleted();
         if (Status == SessionStatus.Revoked) return;
 
         if (Status == SessionStatus.Expired)
         {
-            throw new BusinessRuleException("Cannot revoke an expired session.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotRevokeExpired, "Cannot revoke an expired session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, revokedAt);
         Status = SessionStatus.Revoked;
         RevokedAt = revokedAt;
-
-        SetAuditOnUpdate(UserId, revokedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserSessionRevokedDomainEvent(Id, UserId, revokedAt, reason));
+        RaiseDomainEvent(new UserSessionRevokedDomainEvent(Id, UserId, revokedAt, reason));
     }
 
     public void Expire(DateTimeOffset expiredAt)
     {
-        EnsureNotDeleted();
         if (Status == SessionStatus.Expired) return;
 
         if (Status == SessionStatus.Revoked)
         {
-            throw new BusinessRuleException("Cannot expire a revoked session.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotExpireRevoked, "Cannot expire a revoked session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, expiredAt);
         Status = SessionStatus.Expired;
         ExpiredAt = expiredAt;
-
-        SetAuditOnUpdate(UserId, expiredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        AddDomainEvent(new UserSessionSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        AddDomainEvent(new UserSessionRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
     }
 }

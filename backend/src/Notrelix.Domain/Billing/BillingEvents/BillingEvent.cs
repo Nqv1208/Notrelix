@@ -28,32 +28,32 @@ public class BillingEvent : AggregateRoot
 
     public void MarkProcessed(Guid updatedBy, DateTimeOffset processedAt)
     {
-        EnsureNotDeleted();
         if (Status != BillingEventStatus.Received) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, processedAt);
         Status = BillingEventStatus.Processed;
-        SetAuditOnUpdate(updatedBy, processedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void MarkFailed(string error, Guid updatedBy, DateTimeOffset failedAt)
     {
-        EnsureNotDeleted();
         if (Status == BillingEventStatus.Failed) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, failedAt);
         Status = BillingEventStatus.Failed;
         Error = error;
-        SetAuditOnUpdate(updatedBy, failedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void MarkIgnored(Guid updatedBy, DateTimeOffset ignoredAt)
     {
-        EnsureNotDeleted();
         if (Status != BillingEventStatus.Received) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, ignoredAt);
         Status = BillingEventStatus.Ignored;
-        SetAuditOnUpdate(updatedBy, ignoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }

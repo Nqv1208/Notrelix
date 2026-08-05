@@ -9,7 +9,7 @@ public record DeleteTeamCommand(
 ) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public class DeleteTeamCommandHandler : IRequestHandler<DeleteTeamCommand, Result>
@@ -33,7 +33,7 @@ public class DeleteTeamCommandHandler : IRequestHandler<DeleteTeamCommand, Resul
         if (team is null)
             throw new NotFoundException(nameof(Team), request.TeamId);
 
-        team.SoftDelete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        team.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

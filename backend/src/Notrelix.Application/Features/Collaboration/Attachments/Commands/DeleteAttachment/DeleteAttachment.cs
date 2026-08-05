@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.Delet
 public record DeleteAttachmentCommand(Guid AttachmentId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Attachment, AttachmentId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.attachment"), AttachmentId);
 }
 
 public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCommand, Result>
@@ -34,7 +34,7 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
             throw new NotFoundException(nameof(Attachment), request.AttachmentId);
 
         var now = _dateTimeProvider.UtcNow;
-        attachment.SoftDelete(_currentUser.UserId, now);
+        attachment.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
 }

@@ -54,13 +54,6 @@ public class NewMemberEndpointTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
-    public async Task RestoreMember_WithExistingMember_ReturnsSuccess()
-    {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}/restore", null);
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task AddMember_Unauthenticated_ReturnsUnauthorized()
     {
         var factory = new NotrelixApiFactory();

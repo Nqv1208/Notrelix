@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items;
 
-public class TimeTrackingEntry : SoftDeletableEntity, IWorkspaceScoped
+public class TimeTrackingEntry : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -11,7 +11,6 @@ public class TimeTrackingEntry : SoftDeletableEntity, IWorkspaceScoped
     public DateTimeOffset? EndedAt { get; private set; }
     public TimeTrackingStatus Status { get; private set; } = TimeTrackingStatus.Running;
     public string? Note { get; private set; }
-    public long Version { get; private set; } = 1;
 
     public int? DurationSeconds
     {
@@ -58,16 +57,17 @@ public class TimeTrackingEntry : SoftDeletableEntity, IWorkspaceScoped
 
     public void Stop(DateTimeOffset endedAt, Guid stoppedBy)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(stoppedBy);
         if (Status != TimeTrackingStatus.Running)
-            throw new BusinessRuleException("Cannot stop a timer that is not running.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_TimeTracking_CannotStopNotRunning, "Cannot stop a timer that is not running.");
 
         if (endedAt < StartedAt)
-            throw new BusinessRuleException("End time must be after start time.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_TimeTracking_EndTimeMustBeAfterStart, "End time must be after start time.");
 
+        var pending = PrepareAuditUpdate(stoppedBy, endedAt);
         EndedAt = endedAt;
         Status = TimeTrackingStatus.Stopped;
-        SetAuditOnUpdate(stoppedBy, endedAt);
-        Version++;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
     }
 }

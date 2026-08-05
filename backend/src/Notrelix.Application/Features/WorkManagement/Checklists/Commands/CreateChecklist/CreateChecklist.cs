@@ -1,12 +1,14 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklist;
 
-public record CreateChecklistCommand(Guid BoardItemId, string Title) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("work-management.checklists.create-checklist.v1")]
+public record CreateChecklistCommand(Guid BoardItemId, string Title) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistCommand, Result<Guid>>

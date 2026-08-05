@@ -1,7 +1,9 @@
+using Notrelix.Domain.Accounts.Accounts.Events;
 namespace Notrelix.Domain.Accounts.Accounts;
 
-public class Account : AggregateRoot
+public class Account : SoftDeletableAggregateRoot, IAccountScoped
 {
+    public Guid AccountId => Id;
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public string? LegalName { get; private set; }
@@ -36,7 +38,7 @@ public class Account : AggregateRoot
         };
 
         account.SetAuditOnCreate(createdBy, createdAt);
-        account.AddDomainEvent(new AccountCreatedDomainEvent(
+        account.RaiseDomainEvent(new AccountCreatedDomainEvent(
             account.Id, account.Name, account.Slug, account.Type, createdBy, createdAt));
 
         return account;
@@ -45,87 +47,111 @@ public class Account : AggregateRoot
     public void Rename(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(newName);
         Guard.MaxLength(newName, 160);
 
         if (Status == AccountStatus.Closed)
-            throw new BusinessRuleException("Cannot rename a closed account.");
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Account_CannotRenameClosed, "Cannot rename a closed account.");
 
         var oldName = Name;
         if (Name == newName.Trim()) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = newName.Trim();
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AccountRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new AccountRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (Status == AccountStatus.Closed) return;
 
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = AccountStatus.Closed;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AccountArchivedDomainEvent(Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new AccountArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
 
     public void Suspend(Guid suspendedBy, DateTimeOffset suspendedAt, string? reason = null)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(suspendedBy);
         if (Status == AccountStatus.Suspended) return;
 
         var previousStatus = Status;
+        var pending = PrepareAuditUpdate(suspendedBy, suspendedAt);
         Status = AccountStatus.Suspended;
-        SetAuditOnUpdate(suspendedBy, suspendedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AccountSuspendedDomainEvent(Id, previousStatus, suspendedBy, suspendedAt, reason));
+        RaiseDomainEvent(new AccountSuspendedDomainEvent(Id, previousStatus, suspendedBy, suspendedAt, reason));
     }
 
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(activatedBy);
         if (Status == AccountStatus.Active || Status == AccountStatus.Trialing) return;
 
+        var previousStatus = Status;
+        var pending = PrepareAuditUpdate(activatedBy, activatedAt);
         Status = AccountStatus.Active;
-        SetAuditOnUpdate(activatedBy, activatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
+        RaiseDomainEvent(new AccountActivatedDomainEvent(Id, previousStatus, activatedBy, activatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        Status = AccountStatus.SoftDeleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        AddDomainEvent(new AccountSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new AccountDeletedDomainEvent(Id, Status, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        Status = AccountStatus.Active;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        AddDomainEvent(new AccountRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new AccountRestoredDomainEvent(Id, Status, restoredBy, restoredAt));
     }
 
     public void UpdatePlanCode(string? planCode, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        PlanCode = planCode;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        Guard.NotEmpty(updatedBy);
+        var normalized = planCode?.Trim();
+        if (PlanCode == normalized) return;
+
+        var oldPlanCode = PlanCode;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        PlanCode = normalized;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
+        RaiseDomainEvent(new AccountPlanCodeChangedDomainEvent(Id, oldPlanCode, PlanCode, updatedBy, updatedAt));
     }
 
     public void UpdateDefaultRegion(string? regionCode, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        DefaultRegionCode = regionCode;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        Guard.NotEmpty(updatedBy);
+        var normalized = regionCode?.Trim();
+        if (DefaultRegionCode == normalized) return;
+
+        var oldRegionCode = DefaultRegionCode;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        DefaultRegionCode = normalized;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
+        RaiseDomainEvent(new AccountDefaultRegionChangedDomainEvent(Id, oldRegionCode, DefaultRegionCode, updatedBy, updatedAt));
     }
 }

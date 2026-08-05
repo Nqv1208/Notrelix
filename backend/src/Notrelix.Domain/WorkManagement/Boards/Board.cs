@@ -1,6 +1,7 @@
+using Notrelix.Domain.WorkManagement.Boards.Events;
 namespace Notrelix.Domain.WorkManagement.Boards;
 
-public class Board : AggregateRoot, IWorkspaceScoped
+public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -55,133 +56,153 @@ public class Board : AggregateRoot, IWorkspaceScoped
         };
 
         board.SetAuditOnCreate(createdBy, createdAt);
-        board.AddDomainEvent(new BoardCreatedDomainEvent(accountId, workspaceId, board.Id, board.Title, createdBy, createdAt));
+        board.RaiseDomainEvent(new BoardCreatedDomainEvent(accountId, workspaceId, board.Id, board.Title, createdBy, createdAt));
         return board;
     }
 
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         Guard.MaxLength(title, 255);
 
         if (IsArchived)
-            throw new BusinessRuleException("Cannot rename an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot rename an archived board.");
 
-        var oldTitle = Title;
         var normalizedTitle = title.Trim();
         if (Title == normalizedTitle) return;
 
+        var oldTitle = Title;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Title = normalizedTitle;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardRenamedDomainEvent(AccountId, WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardRenamedDomainEvent(AccountId, WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void UpdateDescription(string? description, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.MaxLength(description, 5000);
 
         if (IsArchived)
-            throw new BusinessRuleException("Cannot update description of an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotUpdateDescriptionArchived, "Cannot update description of an archived board.");
         var normalized = description?.Trim();
         if (Description == normalized) return;
         var oldDescription = Description;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Description = normalized;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardDescriptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardDescriptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
     public void UpdateBackground(string background, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (IsArchived)
-            throw new BusinessRuleException("Cannot update background of an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotUpdateBackgroundArchived, "Cannot update background of an archived board.");
         if (string.IsNullOrWhiteSpace(background) || Background == background) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldBackground = Background;
         Background = background;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardBackgroundUpdatedDomainEvent(AccountId, WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardBackgroundUpdatedDomainEvent(AccountId, WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
 
         if (IsArchived)
-            throw new BusinessRuleException("Cannot change visibility of an archived board.");
-        var oldVisibility = Visibility;
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotChangeVisibilityArchived, "Cannot change visibility of an archived board.");
         if (Visibility == visibility) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldVisibility = Visibility;
         Visibility = visibility;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (IsArchived) return;
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         IsArchived = true;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new BoardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
         if (!IsArchived) return;
+        var pending = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         IsArchived = false;
-        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
+        RaiseDomainEvent(new BoardUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        AddDomainEvent(new BoardSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void SetDefaultGroup(Guid groupId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (IsArchived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board.");
         if (DefaultItemGroupId == groupId) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         DefaultItemGroupId = groupId;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardDefaultGroupSetDomainEvent(AccountId, WorkspaceId, Id, groupId, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardDefaultGroupSetDomainEvent(AccountId, WorkspaceId, Id, groupId, updatedBy, updatedAt));
     }
 
     public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(actorUserId);
         if (IsArchived)
-            throw new BusinessRuleException("Cannot generate item identity for an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotGenerateIdentityArchived, "Cannot generate item identity for an archived board.");
+        var pending = PrepareAuditUpdate(actorUserId, now);
         ItemSequence++;
         var key = string.IsNullOrWhiteSpace(ItemKeyPrefix)
             ? ItemSequence.ToString()
             : $"{ItemKeyPrefix}-{ItemSequence}";
-        SetAuditOnUpdate(actorUserId, now);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardItemIdentityGeneratedDomainEvent(AccountId, WorkspaceId, Id, ItemSequence, key, actorUserId, now));
+        RaiseDomainEvent(new BoardItemIdentityGeneratedDomainEvent(AccountId, WorkspaceId, Id, ItemSequence, key, actorUserId, now));
         return (ItemSequence, key);
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        AddDomainEvent(new BoardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new BoardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

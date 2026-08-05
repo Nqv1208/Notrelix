@@ -3,10 +3,12 @@ namespace Notrelix.Architecture.Tests;
 public class DomainModelContractChecks : ArchitectureTestBase
 {
     [Fact]
-    public void ResourceType_IncludesLabel()
+    public void ResourceKind_Label_Kind_Is_Canonical()
     {
-        var content = File.ReadAllText(Path.Combine(GetDomainPath(), "SharedKernel", "ResourceType.cs"));
-        content.Should().Contain("Label", "ResourceType enum must include Label for label resources");
+        var content = File.ReadAllText(
+            Path.Combine(GetInfrastructurePath(), "Services", "ResourceScopeResolver.cs"));
+        content.Should().Contain("work-management.label",
+            "label resources must map through the canonical ResourceKind kind string");
     }
 
     [Fact]

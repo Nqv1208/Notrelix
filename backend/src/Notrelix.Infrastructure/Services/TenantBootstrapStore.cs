@@ -1,9 +1,9 @@
 using System.Data;
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Domain.Accounts.Members;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Workspaces;
 
@@ -11,6 +11,7 @@ namespace Notrelix.Infrastructure.Services;
 
 public sealed class TenantBootstrapStore : ITenantBootstrapStore
 {
+    private static readonly Notrelix.Domain.SharedKernel.ResourceKind WorkspaceKind = Notrelix.Domain.SharedKernel.ResourceKind.Create("workspaces.workspace");
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IAccountDbContext _accountContext;
     private readonly IPermissionEvaluator _permissionEvaluator;
@@ -49,7 +50,7 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
         var isActive = workspace.Status == WorkspaceStatus.Active;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
-            new PermissionContext(actorUserId, workspace.AccountId, workspaceId, ResourceType.Workspace, null, PermissionAction.ViewWorkspace, Notrelix.Application.Common.Security.PermissionScope.Workspace),
+            new PermissionContext(actorUserId, workspace.AccountId, workspaceId, WorkspaceKind, null, PermissionAction.ViewWorkspace, Notrelix.Application.Common.Security.PermissionScope.Workspace),
             ct);
 
         return new WorkspaceAccessSnapshot(

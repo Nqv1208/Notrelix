@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 
@@ -7,7 +8,8 @@ namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail;
 public sealed record UpdateEmailCommand(string Email)
     : ICommand<Result<UpdateEmailResultDto>>,
       IAuthenticatedRequest,
-      ITransactionalRequest;
+      ITransactionalRequest,
+      IGlobalRequest;
 
 public sealed record UpdateEmailResultDto(
     bool EmailConfirmed,
@@ -55,7 +57,7 @@ public sealed class UpdateEmailCommandHandler
             return Result<UpdateEmailResultDto>.Failure("Email is already in use.");
 
         var now = _dateTimeProvider.UtcNow;
-        user.UpdateEmail(normalizedEmail, now);
+        user.UpdateEmail(normalizedEmail, _requestContext.UserId, now);
         await _tokenIssuer.IssueAsync(user, user.Id, now, cancellationToken);
 
         return Result<UpdateEmailResultDto>.Success(

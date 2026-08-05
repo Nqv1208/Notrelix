@@ -90,29 +90,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    public void Increase_WhenDeleted_ShouldThrow()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.SoftDelete(Guid.NewGuid(), now);
-
-        var act = () => metric.Increase(3, 5, isHardLimit: true, now);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
-    public void Decrease_WhenDeleted_ShouldThrow()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.Increase(5, 10, isHardLimit: true, now);
-        metric.SoftDelete(Guid.NewGuid(), now);
-
-        var act = () => metric.Decrease(2, now);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
     public void Decrease_WithNonPositiveAmount_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
@@ -129,62 +106,11 @@ public class UsageMetricTests
         var now = DateTimeOffset.UtcNow;
         var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
         metric.Increase(5, 10, isHardLimit: true, now);
-        metric.ClearDomainEvents();
+        ((IHasDomainEvents)metric).ClearDomainEvents();
 
         metric.Decrease(2, now);
 
         metric.DomainEvents.Should().Contain(e => e is UsageMetricDecreasedDomainEvent);
     }
 
-    [Fact]
-    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.ClearDomainEvents();
-
-        metric.SoftDelete(Guid.NewGuid(), now);
-
-        metric.IsDeleted.Should().BeTrue();
-        metric.DomainEvents.Should().Contain(e => e is UsageMetricSoftDeletedDomainEvent);
-    }
-
-    [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.SoftDelete(Guid.NewGuid(), now);
-        metric.ClearDomainEvents();
-
-        metric.SoftDelete(Guid.NewGuid(), now);
-
-        metric.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void Restore_ShouldRestore_AndRaiseEvent()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.SoftDelete(Guid.NewGuid(), now);
-        metric.ClearDomainEvents();
-
-        metric.Restore(Guid.NewGuid(), now);
-
-        metric.IsDeleted.Should().BeFalse();
-        metric.DomainEvents.Should().Contain(e => e is UsageMetricRestoredDomainEvent);
-    }
-
-    [Fact]
-    public void Restore_WhenNotDeleted_ShouldBeNoOp()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.ClearDomainEvents();
-
-        metric.Restore(Guid.NewGuid(), now);
-
-        metric.DomainEvents.Should().BeEmpty();
-    }
 }

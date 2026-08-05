@@ -14,8 +14,8 @@ public class LabelEventTests
     public void Label_Restore_ShouldRaiseEvent()
     {
         var label = Label.Create(Guid.NewGuid(), WsA, BoardA, "Bug", LabelColor.Create("#FF0000"), Actor, Now);
-        label.SoftDelete(Actor, Now);
-        label.ClearDomainEvents();
+        label.Delete(Actor, Now);
+        ((IHasDomainEvents)label).ClearDomainEvents();
         var version = label.Version;
 
         label.Restore(Actor, Now);
@@ -29,7 +29,7 @@ public class LabelEventTests
     public void Label_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var label = Label.Create(Guid.NewGuid(), WsA, BoardA, "Bug", LabelColor.Create("#FF0000"), Actor, Now);
-        label.ClearDomainEvents();
+        ((IHasDomainEvents)label).ClearDomainEvents();
         var version = label.Version;
 
         label.Restore(Actor, Now);

@@ -30,7 +30,7 @@ public sealed class WorkspaceActivityLogRecordConfiguration : IEntityTypeConfigu
         builder.Property(x => x.TargetId).HasColumnName("target_id");
         builder.Property(x => x.TargetDisplayName).HasColumnName("target_display_name").HasMaxLength(300);
 
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").HasMaxLength(160);
+        builder.Property(x => x.ResourceKind).HasColumnName("resource_type").HasMaxLength(160);
         builder.Property(x => x.ResourceId).HasColumnName("resource_id");
         builder.Property(x => x.ResourceDisplayName).HasColumnName("resource_display_name").HasMaxLength(300);
 
@@ -53,7 +53,7 @@ public sealed class WorkspaceActivityLogRecordConfiguration : IEntityTypeConfigu
             .IsDescending(false, true).HasFilter("\"actor_user_id\" IS NOT NULL AND \"deleted_at\" IS NULL");
         builder.HasIndex(x => new { x.ActivityType, x.OccurredAt }).HasDatabaseName("ix_activity_workspace_logs_type")
             .IsDescending(false, true).HasFilter("\"deleted_at\" IS NULL");
-        builder.HasIndex(x => new { x.ResourceType, x.ResourceId, x.OccurredAt }).HasDatabaseName("ix_activity_workspace_logs_resource")
+        builder.HasIndex(x => new { x.ResourceKind, x.ResourceId, x.OccurredAt }).HasDatabaseName("ix_activity_workspace_logs_resource")
             .IsDescending(false, false, true).HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL AND \"deleted_at\" IS NULL");
         builder.HasIndex(x => x.SourceEventId).HasDatabaseName("ix_activity_workspace_logs_source_event")
             .HasFilter("\"source_event_id\" IS NOT NULL");

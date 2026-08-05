@@ -1,6 +1,7 @@
+using Notrelix.Domain.WorkManagement.Views.Events;
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class SavedFilter : AggregateRoot, IWorkspaceScoped
+public class SavedFilter : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -54,7 +55,7 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
             filter._sortRules.AddRange(sortRules);
 
         filter.SetAuditOnCreate(createdBy, createdAt);
-        filter.AddDomainEvent(new SavedFilterCreatedDomainEvent(filter.Id, accountId, workspaceId, boardId, filter.Name, createdBy, createdAt, viewId));
+        filter.RaiseDomainEvent(new SavedFilterCreatedDomainEvent(filter.Id, accountId, workspaceId, boardId, filter.Name, createdBy, createdAt, viewId));
 
         return filter;
     }
@@ -62,73 +63,85 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = name.Trim();
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new SavedFilterRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Name, updatedBy, updatedAt));
     }
 
     public void UpdateVisibility(SavedFilterVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Visibility = visibility;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterVisibilityUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, visibility, updatedBy, updatedAt));
+        RaiseDomainEvent(new SavedFilterVisibilityUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, visibility, updatedBy, updatedAt));
     }
 
     public void UpdateFilters(IEnumerable<FilterRule> rules, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(rules);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _rules.Clear();
         _rules.AddRange(rules);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterFiltersUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        RaiseDomainEvent(new SavedFilterFiltersUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void UpdateSorts(IEnumerable<SortRule> sortRules, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(sortRules);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _sortRules.Clear();
         _sortRules.AddRange(sortRules);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterSortsUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        RaiseDomainEvent(new SavedFilterSortsUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void UpdateGroup(GroupRule? groupRule, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         GroupRule = groupRule;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterGroupUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        RaiseDomainEvent(new SavedFilterGroupUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        RaiseDomainEvent(new SavedFilterDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        RaiseDomainEvent(new SavedFilterRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

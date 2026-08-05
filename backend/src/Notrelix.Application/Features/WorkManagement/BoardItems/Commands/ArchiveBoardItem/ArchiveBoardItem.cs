@@ -3,10 +3,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 
-public record ArchiveBoardItemCommand(Guid BoardItemId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("work-management.board-items.archive-board-item.v1")]
+public record ArchiveBoardItemCommand(Guid BoardItemId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCommand, Result>
@@ -27,13 +28,11 @@ public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCo
 
     public async Task<Result> Handle(ArchiveBoardItemCommand request, CancellationToken ct)
     {
-        var card = await _context.BoardItems
-            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
-        if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
+        var item = await _context.BoardItems
+            .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
+        if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var now = _timeProvider.UtcNow;
-        card.SoftDelete(_currentUser.UserId, now);
-
+        item.Archive(_currentUser.UserId, _timeProvider.UtcNow);
         return Result.Success();
     }
 }

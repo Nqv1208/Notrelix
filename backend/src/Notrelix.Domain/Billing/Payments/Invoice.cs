@@ -1,3 +1,6 @@
+using Notrelix.Domain.Billing.Payments.Events;
+using static Notrelix.Domain.Billing.BillingRuleCodes;
+
 namespace Notrelix.Domain.Billing.Payments;
 
 public class Invoice : AggregateRoot, IAccountScoped
@@ -12,7 +15,7 @@ public class Invoice : AggregateRoot, IAccountScoped
 
     private Invoice() : base() { }
 
-    public static Invoice Create(Guid accountId, Guid subscriptionId, string number, Money amount, DateTimeOffset dueAt, DateTimeOffset createdAt, Guid? workspaceId = null)
+    public static Invoice Create(Guid accountId, Guid subscriptionId, string number, Money amount, DateTimeOffset dueAt, DateTimeOffset createdAt, Guid? workspaceId = null, Guid? createdBy = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotNullOrWhiteSpace(number);
@@ -29,68 +32,59 @@ public class Invoice : AggregateRoot, IAccountScoped
             DueAt = dueAt
         };
 
-        invoice.SetAuditOnCreate(null, createdAt);
-        invoice.AddDomainEvent(new InvoiceCreatedDomainEvent(accountId, invoice.Id, workspaceId, amount, dueAt, createdAt));
+        invoice.SetAuditOnCreate(createdBy, createdAt);
+        invoice.RaiseDomainEvent(new InvoiceCreatedDomainEvent(accountId, invoice.Id, workspaceId, amount, dueAt, createdAt));
         return invoice;
     }
 
     public void Issue(DateTimeOffset issuedAt)
     {
         if (Status != InvoiceStatus.Draft)
-            throw new BusinessRuleException("Only draft invoices can be issued.");
+            throw new BusinessRuleException(Billing_Invoice_CannotIssueUnlessDraft, "Only draft invoices can be issued.");
+        var pending = PrepareAuditUpdate(null, issuedAt);
         Status = InvoiceStatus.Open;
-        SetAuditOnUpdate(null, issuedAt);
-        AddDomainEvent(new InvoiceIssuedDomainEvent(AccountId, Id, WorkspaceId, Amount, issuedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new InvoiceIssuedDomainEvent(AccountId, Id, WorkspaceId, Amount, issuedAt));
     }
 
     public void MarkPaid(DateTimeOffset paidAt)
     {
         if (Status == InvoiceStatus.Void)
-            throw new BusinessRuleException("Cannot mark a void invoice as paid.");
+            throw new BusinessRuleException(Billing_Invoice_CannotMarkVoidAsPaid, "Cannot mark a void invoice as paid.");
         if (Status == InvoiceStatus.Paid) return;
 
+        var pending = PrepareAuditUpdate(null, paidAt);
         Status = InvoiceStatus.Paid;
-        SetAuditOnUpdate(null, paidAt);
-        AddDomainEvent(new InvoicePaidDomainEvent(AccountId, Id, WorkspaceId, paidAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new InvoicePaidDomainEvent(AccountId, Id, WorkspaceId, paidAt));
     }
 
     public void MarkFailed(string reason, DateTimeOffset failedAt)
     {
         if (Status == InvoiceStatus.Paid)
-            throw new BusinessRuleException("Cannot fail a paid invoice.");
+            throw new BusinessRuleException(Billing_Invoice_CannotFailPaid, "Cannot fail a paid invoice.");
         if (Status == InvoiceStatus.Void)
-            throw new BusinessRuleException("Cannot fail a void invoice.");
+            throw new BusinessRuleException(Billing_Invoice_CannotFailVoid, "Cannot fail a void invoice.");
 
+        var pending = PrepareAuditUpdate(null, failedAt);
         Status = InvoiceStatus.Uncollectible;
-        SetAuditOnUpdate(null, failedAt);
-        AddDomainEvent(new InvoiceFailedDomainEvent(AccountId, Id, WorkspaceId, reason, failedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new InvoiceFailedDomainEvent(AccountId, Id, WorkspaceId, reason, failedAt));
     }
 
     public void Void(DateTimeOffset voidedAt)
     {
         if (Status == InvoiceStatus.Paid)
-            throw new BusinessRuleException("Cannot void a paid invoice.");
+            throw new BusinessRuleException(Billing_Invoice_CannotVoidPaid, "Cannot void a paid invoice.");
         if (Status == InvoiceStatus.Void) return;
 
+        var pending = PrepareAuditUpdate(null, voidedAt);
         Status = InvoiceStatus.Void;
-        SetAuditOnUpdate(null, voidedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new InvoiceVoidedDomainEvent(AccountId, Id, WorkspaceId, voidedAt));
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        IncrementVersion();
-        AddDomainEvent(new InvoiceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        IncrementVersion();
-        AddDomainEvent(new InvoiceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new InvoiceVoidedDomainEvent(AccountId, Id, WorkspaceId, voidedAt));
     }
 }

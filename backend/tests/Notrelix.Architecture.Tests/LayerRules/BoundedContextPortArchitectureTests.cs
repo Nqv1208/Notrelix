@@ -42,7 +42,7 @@ public class BoundedContextPortArchitectureTests
     ];
 
     [Fact]
-    public void MigratedWorkspaceHandlers_ShouldNotInject_IApplicationDbContext()
+    public void MigratedWorkspaceHandlers_ShouldNotInject_ApplicationDbContext()
     {
         var files = GetFeatureFiles();
         var violations = new List<string>();
@@ -56,7 +56,7 @@ public class BoundedContextPortArchitectureTests
             var content = RemoveComments(File.ReadAllText(file));
             if (!content.Contains("IRequestHandler<")) continue;
 
-            if (content.Contains("IApplicationDbContext"))
+            if (content.Contains("ApplicationDbContext"))
             {
                 violations.Add(fileName);
             }
@@ -64,7 +64,7 @@ public class BoundedContextPortArchitectureTests
 
         violations.Should().BeEmpty(
             $"Migrated handlers must use bounded-context DbContext interfaces (IWorkspaceDbContext/IWorkManagementDbContext) " +
-            $"instead of IApplicationDbContext. Violations: {string.Join(", ", violations)}");
+            $"instead of ApplicationDbContext. Violations: {string.Join(", ", violations)}");
     }
 
     [Fact]

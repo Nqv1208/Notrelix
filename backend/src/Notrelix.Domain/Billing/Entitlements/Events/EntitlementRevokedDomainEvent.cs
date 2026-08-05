@@ -1,6 +1,8 @@
+using Notrelix.Domain.Billing.Common;
 namespace Notrelix.Domain.Billing.Entitlements.Events;
 
-public record EntitlementRevokedDomainEvent : BillingAccountScopedDomainEvent
+[EventName("billing.entitlement-revoked")]
+public sealed record EntitlementRevokedDomainEvent : BillingAccountScopedDomainEvent
 {
     public Guid EntitlementId { get; }
     public string FeatureCode { get; }
@@ -10,9 +12,8 @@ public record EntitlementRevokedDomainEvent : BillingAccountScopedDomainEvent
         Guid? workspaceId,
         Guid entitlementId,
         string featureCode,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         EntitlementId = entitlementId;
         FeatureCode = featureCode;

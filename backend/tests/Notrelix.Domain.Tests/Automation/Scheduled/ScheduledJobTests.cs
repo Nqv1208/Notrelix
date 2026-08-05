@@ -20,7 +20,7 @@ public class ScheduledJobTests
     public void Pause_ShouldSetStatus_AndRaiseEvent()
     {
         var job = CreateJob();
-        job.ClearDomainEvents();
+        ((IHasDomainEvents)job).ClearDomainEvents();
 
         job.Pause(DateTimeOffset.UtcNow);
 
@@ -33,7 +33,7 @@ public class ScheduledJobTests
     {
         var job = CreateJob();
         job.Pause(DateTimeOffset.UtcNow);
-        job.ClearDomainEvents();
+        ((IHasDomainEvents)job).ClearDomainEvents();
 
         job.Pause(DateTimeOffset.UtcNow);
 

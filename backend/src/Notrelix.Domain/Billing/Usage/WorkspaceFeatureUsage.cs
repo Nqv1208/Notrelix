@@ -1,3 +1,5 @@
+using Notrelix.Domain.Billing.Usage.Events;
+using Notrelix.Domain.Billing.Plans;
 namespace Notrelix.Domain.Billing.Usage;
 
 public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
@@ -30,19 +32,19 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(feature);
 
         if (currentUsage < 0)
-            throw new BusinessRuleException("Current usage cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_CurrentCannotBeNegative, "Current usage cannot be negative.");
 
         if (hardLimit < 0)
-            throw new BusinessRuleException("Hard limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_HardLimitCannotBeNegative, "Hard limit cannot be negative.");
 
         if (softLimit < 0)
-            throw new BusinessRuleException("Soft limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_SoftLimitCannotBeNegative, "Soft limit cannot be negative.");
 
         if (softLimit.HasValue && hardLimit.HasValue && softLimit > hardLimit)
-            throw new BusinessRuleException("Soft limit cannot exceed hard limit.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_SoftLimitCannotExceedHard, "Soft limit cannot exceed hard limit.");
 
         if (!overageAllowed && hardLimit.HasValue && currentUsage > hardLimit.Value)
-            throw new BusinessRuleException("Current usage exceeds hard limit and overage is not allowed.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_ExceedsHardLimitNoOverage, "Current usage exceeds hard limit and overage is not allowed.");
 
         var usage = new WorkspaceFeatureUsage
         {
@@ -56,70 +58,54 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
             ResetPeriod = resetPeriod
         };
 
-        usage.AddDomainEvent(new WorkspaceFeatureUsageInitializedDomainEvent(
+        usage.RaiseDomainEvent(new WorkspaceFeatureUsageInitializedDomainEvent(
             accountId, workspaceId, feature, currentUsage, hardLimit, softLimit, createdAt));
         return usage;
     }
 
     public void Consume(decimal amount, Guid actorUserId, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         if (amount <= 0)
-            throw new BusinessRuleException("Amount to consume must be positive.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_ConsumeAmountMustBePositive, "Amount to consume must be positive.");
 
         if (HardLimit.HasValue && !OverageAllowed && CurrentUsage + amount > HardLimit.Value)
         {
-            AddDomainEvent(new QuotaExceededDomainEvent(AccountId, WorkspaceId, Feature.Code, HardLimit.Value, occurredAt));
-            throw new BusinessRuleException($"Feature usage limit exceeded for '{Feature.Code}'. Limit: {HardLimit.Value}, Requested total: {CurrentUsage + amount}.");
+            RaiseDomainEvent(new QuotaExceededDomainEvent(AccountId, WorkspaceId, Feature.Code, HardLimit.Value, occurredAt));
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_FeatureLimitExceeded, $"Feature usage limit exceeded for '{Feature.Code}'. Limit: {HardLimit.Value}, Requested total: {CurrentUsage + amount}.");
         }
 
         var oldUsage = CurrentUsage;
+        var pending = PrepareAuditUpdate(actorUserId, occurredAt);
         CurrentUsage += amount;
-        SetAuditOnUpdate(actorUserId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new FeatureUsageConsumedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, actorUserId, occurredAt));
+        RaiseDomainEvent(new FeatureUsageConsumedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, occurredAt));
     }
 
     public void Release(decimal amount, Guid actorUserId, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         if (amount <= 0)
-            throw new BusinessRuleException("Amount to release must be positive.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_ReleaseAmountMustBePositive, "Amount to release must be positive.");
 
         if (CurrentUsage - amount < 0)
-            throw new BusinessRuleException("Usage cannot be released below zero.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_CannotReleaseBelowZero, "Usage cannot be released below zero.");
 
+        var pending = PrepareAuditUpdate(actorUserId, occurredAt);
         CurrentUsage -= amount;
-        SetAuditOnUpdate(actorUserId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new FeatureUsageReleasedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, actorUserId, occurredAt));
+        RaiseDomainEvent(new FeatureUsageReleasedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, occurredAt));
     }
 
     public void Reset(DateTimeOffset resetAt, Guid actorUserId)
     {
-        EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(actorUserId, resetAt);
         CurrentUsage = 0;
         LastResetAt = resetAt;
-        SetAuditOnUpdate(actorUserId, resetAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceFeatureUsageResetDomainEvent(AccountId, WorkspaceId, Feature, resetAt));
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        IncrementVersion();
-        AddDomainEvent(new WorkspaceFeatureUsageSoftDeletedDomainEvent(AccountId, WorkspaceId, Feature, deletedBy, deletedAt));
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        IncrementVersion();
-        AddDomainEvent(new WorkspaceFeatureUsageRestoredDomainEvent(AccountId, WorkspaceId, Feature, restoredBy, restoredAt));
+        RaiseDomainEvent(new WorkspaceFeatureUsageResetDomainEvent(AccountId, WorkspaceId, Feature, resetAt));
     }
 }

@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Tokens.Events;
 
 namespace Notrelix.Domain.Identity.Tokens;
 
-public class ApiToken : AggregateRoot, IWorkspaceScoped
+public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -47,54 +47,40 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         };
 
         token.SetAuditOnCreate(createdBy, createdAt);
-        token.AddDomainEvent(new ApiTokenCreatedDomainEvent(accountId, workspaceId, token.Id, name, createdBy, createdAt));
+        token.RaiseDomainEvent(new ApiTokenCreatedDomainEvent(accountId, workspaceId, token.Id, name, createdAt));
         return token;
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(revokedBy);
         if (Status == ApiTokenStatus.Revoked) return;
 
+        var pending = PrepareAuditUpdate(revokedBy, revokedAt);
         Status = ApiTokenStatus.Revoked;
         RevokedAt = revokedAt;
         RevokedBy = revokedBy;
-        SetAuditOnUpdate(revokedBy, revokedAt);
-        AddDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedBy, revokedAt));
+        ApplyAuditUpdate(pending);
+        RaiseDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedAt));
         IncrementVersion();
     }
 
     public void RecordUse(DateTimeOffset usedAt)
     {
-        EnsureNotDeleted();
+        if (Status != ApiTokenStatus.Active)
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_CannotUseInactive, "Cannot use an inactive API token.");
+
         if (ExpiresAt.HasValue && usedAt > ExpiresAt.Value)
         {
             Status = ApiTokenStatus.Expired;
-            throw new BusinessRuleException("Cannot use an expired API token.");
+            IncrementVersion();
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_CannotUseExpired, "Cannot use an expired API token.");
         }
 
-        if (Status != ApiTokenStatus.Active)
-            throw new BusinessRuleException("Cannot use an inactive API token.");
-
+        var pending = PrepareAuditUpdate(AccountId, usedAt);
         LastUsedAt = usedAt;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        AddDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        AddDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new ApiTokenRecordedUseDomainEvent(AccountId, WorkspaceId, Id, usedAt));
     }
 }

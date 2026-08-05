@@ -32,7 +32,7 @@ public class AiAgentTests
     public void Update_ShouldUpdate_AndRaiseEvent()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.Update("Updated", "Desc", JsonValue.EmptyObject(), JsonValue.EmptyObject(), JsonValue.EmptyObject(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -45,7 +45,7 @@ public class AiAgentTests
     public void Update_WhenDeleted_ShouldThrow()
     {
         var agent = CreateAgent();
-        agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        agent.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => agent.Update("Name", null, JsonValue.EmptyObject(), JsonValue.EmptyObject(), JsonValue.EmptyObject(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -55,7 +55,7 @@ public class AiAgentTests
     public void ChangeStatus_ShouldUpdateStatus_AndRaiseEvent()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.ChangeStatus(AiAgentStatus.Enabled, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -67,7 +67,7 @@ public class AiAgentTests
     public void ChangeStatus_WhenSameStatus_ShouldBeNoOp()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.ChangeStatus(AiAgentStatus.Draft, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -75,10 +75,10 @@ public class AiAgentTests
     }
 
     [Fact]
-    public void ChangeStatus_ToDeleted_ShouldCallSoftDelete()
+    public void ChangeStatus_ToDeleted_ShouldCallDelete()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.ChangeStatus(AiAgentStatus.Deleted, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -91,19 +91,19 @@ public class AiAgentTests
     public void ChangeStatus_WhenDeleted_ShouldThrow()
     {
         var agent = CreateAgent();
-        agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        agent.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => agent.ChangeStatus(AiAgentStatus.Enabled, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
     [Fact]
-    public void SoftDelete_ShouldSetDeleted_AndRaiseEvent()
+    public void Delete_ShouldSetDeleted_AndRaiseEvent()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
-        agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        agent.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         agent.IsDeleted.Should().BeTrue();
         agent.Status.Should().Be(AiAgentStatus.Deleted);
@@ -111,13 +111,13 @@ public class AiAgentTests
     }
 
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var agent = CreateAgent();
-        agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        agent.ClearDomainEvents();
+        agent.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
-        agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        agent.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         agent.DomainEvents.Should().BeEmpty();
     }
@@ -126,8 +126,8 @@ public class AiAgentTests
     public void Restore_ShouldSetDraft_AndRaiseEvent()
     {
         var agent = CreateAgent();
-        agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        agent.ClearDomainEvents();
+        agent.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -140,7 +140,7 @@ public class AiAgentTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

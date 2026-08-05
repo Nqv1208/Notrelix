@@ -1,7 +1,9 @@
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;
 
+[IdempotencyOperation("workspaces.provisioning.provision-personal-workspace.v1")]
 public sealed record ProvisionPersonalWorkspaceCommand(
     Guid UserId,
     Guid AccountId,
@@ -18,12 +20,12 @@ public sealed record ProvisionPersonalWorkspaceCommand(
     ITransactionalRequest,
     IMessageTriggeredRequest,
     IIdempotentRequest,
-    ISystemOperation
+    ISystemOperation,
+    IGlobalRequest
 {
     public string ConsumerName => ConsumerNames.PersonalWorkspaceProvisioning;
     public Guid? WorkspaceId => null;
 
-    public string IdempotencyKey => $"account-default-workspace:{AccountId}";
     public string OperationName => "ProvisionPersonalWorkspace";
     public SystemOperationReason Reason => new("Workspaces", "Auto-provision personal workspace for new user");
     Guid ISystemOperation.CorrelationId => MessageId;

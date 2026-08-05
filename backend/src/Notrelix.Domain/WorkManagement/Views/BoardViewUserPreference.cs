@@ -1,6 +1,7 @@
+using Notrelix.Domain.WorkManagement.Views.Events;
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
+public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     private readonly List<FilterRule> _filterRules = new();
     private readonly List<SortRule> _sortRules = new();
@@ -42,7 +43,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 
         pref.SetAuditOnCreate(userId, createdAt);
 
-        pref.AddDomainEvent(new BoardViewUserPreferenceCreatedDomainEvent(
+        pref.RaiseDomainEvent(new BoardViewUserPreferenceCreatedDomainEvent(
             accountId,
             workspaceId,
             boardId,
@@ -65,12 +66,12 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 
         BoardViewPreferenceRules.EnsureValidFilterRules(normalizedRules);
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         _filterRules.Clear();
         _filterRules.AddRange(normalizedRules);
+        ApplyAuditUpdate(pending);
 
-        SetAuditOnUpdate(UserId, updatedAt);
-
-        AddDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(
+        RaiseDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(
             AccountId,
             WorkspaceId,
             BoardId,
@@ -91,12 +92,12 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 
         BoardViewPreferenceRules.EnsureValidSortRules(normalizedRules);
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         _sortRules.Clear();
         _sortRules.AddRange(normalizedRules);
+        ApplyAuditUpdate(pending);
 
-        SetAuditOnUpdate(UserId, updatedAt);
-
-        AddDomainEvent(new BoardViewUserPreferenceSortChangedDomainEvent(
+        RaiseDomainEvent(new BoardViewUserPreferenceSortChangedDomainEvent(
             AccountId,
             WorkspaceId,
             BoardId,
@@ -115,11 +116,11 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
         if (groupRule is not null)
             BoardViewPreferenceRules.EnsureValidGroupRule(groupRule);
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         GroupRule = groupRule;
+        ApplyAuditUpdate(pending);
 
-        SetAuditOnUpdate(UserId, updatedAt);
-
-        AddDomainEvent(new BoardViewUserPreferenceGroupChangedDomainEvent(
+        RaiseDomainEvent(new BoardViewUserPreferenceGroupChangedDomainEvent(
             AccountId,
             WorkspaceId,
             BoardId,

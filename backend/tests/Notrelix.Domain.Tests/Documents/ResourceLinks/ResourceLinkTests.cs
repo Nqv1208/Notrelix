@@ -9,8 +9,8 @@ public class ResourceLinkTests
     public void Create_ShouldSucceed()
     {
         var workspaceId = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), workspaceId);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), workspaceId);
 
         var link = ResourceLink.Create(Guid.NewGuid(), workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -25,7 +25,7 @@ public class ResourceLinkTests
     public void Create_WithSelfReference_ShouldThrow()
     {
         var workspaceId = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), workspaceId);
 
         var act = () => ResourceLink.Create(Guid.NewGuid(), workspaceId, source, source, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -36,8 +36,8 @@ public class ResourceLinkTests
     public void Create_WhenTargetWorkspaceMismatch_ShouldThrow()
     {
         var workspaceId = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), Guid.NewGuid());
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => ResourceLink.Create(Guid.NewGuid(), workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -47,8 +47,8 @@ public class ResourceLinkTests
     [Fact]
     public void Create_WithEmptyWorkspaceId_ShouldThrow()
     {
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), Guid.NewGuid());
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), Guid.NewGuid());
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), Guid.NewGuid());
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => ResourceLink.Create(Guid.NewGuid(), Guid.Empty, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -56,25 +56,25 @@ public class ResourceLinkTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldRaiseEvent()
+    public void Delete_ShouldRaiseEvent()
     {
         var link = CreateLink();
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
 
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         link.IsDeleted.Should().BeTrue();
         link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkDeletedDomainEvent);
     }
 
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var link = CreateLink();
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        link.ClearDomainEvents();
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)link).ClearDomainEvents();
 
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         link.DomainEvents.Should().BeEmpty();
     }
@@ -82,8 +82,8 @@ public class ResourceLinkTests
     private static ResourceLink CreateLink()
     {
         var workspaceId = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), workspaceId);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), workspaceId);
         return ResourceLink.Create(Guid.NewGuid(), workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
     }
 }

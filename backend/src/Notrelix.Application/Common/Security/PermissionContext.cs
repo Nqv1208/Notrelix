@@ -5,7 +5,7 @@ public sealed record PermissionContext(
     Guid UserId,
     Guid AccountId,
     Guid? WorkspaceId,
-    ResourceType ResourceType,
+    ResourceKind ResourceKind,
     Guid? ResourceId,
     PermissionAction Action,
     PermissionScope Scope,

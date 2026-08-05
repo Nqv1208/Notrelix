@@ -1,0 +1,29 @@
+using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
+
+namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.DeleteBoardTemplate;
+
+[IdempotencyOperation("work-management.templates.delete-board-template.v1")]
+public record DeleteBoardTemplateCommand(Guid TemplateId)
+    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), TemplateId);
+}
+
+public class DeleteBoardTemplateCommandHandler : IRequestHandler<DeleteBoardTemplateCommand, Result>
+{
+    private readonly IWorkManagementDbContext _context;
+
+    public DeleteBoardTemplateCommandHandler(IWorkManagementDbContext context) => _context = context;
+
+    public async Task<Result> Handle(DeleteBoardTemplateCommand request, CancellationToken ct)
+    {
+        var template = await _context.BoardTemplates
+            .FirstOrDefaultAsync(t => t.Id == request.TemplateId, ct);
+        if (template is null) throw new NotFoundException(nameof(BoardTemplate), request.TemplateId);
+
+        _context.BoardTemplates.Remove(template);
+        return Result.Success();
+    }
+}

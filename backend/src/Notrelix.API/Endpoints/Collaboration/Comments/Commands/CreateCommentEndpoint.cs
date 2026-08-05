@@ -26,13 +26,13 @@ public static class CreateCommentEndpoint
 
     private static async Task<IResult> CreateBoardItemCommentAsync(Guid boardItemId, CreateCommentRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateCommentCommand(Enum.Parse<ResourceType>("BoardItem", ignoreCase: true), boardItemId, body.ContentMd, body.ParentCommentId));
+        var result = await sender.Send(CreateCommentCommand.ForBoardItem(boardItemId, body.ContentMd, body.ParentCommentId));
         return result.ToCreatedResult();
     }
 
     private static async Task<IResult> CreatePageCommentAsync(Guid pageId, CreateCommentRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateCommentCommand(Enum.Parse<ResourceType>("Page", ignoreCase: true), pageId, body.ContentMd, body.ParentCommentId));
+        var result = await sender.Send(CreateCommentCommand.ForPage(pageId, body.ContentMd, body.ParentCommentId));
         return result.ToCreatedResult();
     }
 }

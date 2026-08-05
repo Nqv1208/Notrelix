@@ -4,6 +4,9 @@ namespace Notrelix.Application.Common.Security;
 
 public class WorkspacePermissionService : IWorkspacePermissionService
 {
+    private static readonly ResourceKind WorkspaceKind = ResourceKind.Create("workspaces.workspace");
+    private static readonly ResourceKind BoardKind = ResourceKind.Create("work-management.board");
+
     private readonly IPermissionEvaluator _permissionEvaluator;
     private readonly IWorkManagementDbContext _context;
 
@@ -25,7 +28,7 @@ public class WorkspacePermissionService : IWorkspacePermissionService
         if (workspaceId == Guid.Empty) return false;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
-            new PermissionContext(userId, Guid.Empty, workspaceId, ResourceType.Workspace, null, PermissionAction.ViewWorkspace, PermissionScope.Workspace),
+            new PermissionContext(userId, Guid.Empty, workspaceId, WorkspaceKind, null, PermissionAction.ViewWorkspace, PermissionScope.Workspace),
             cancellationToken);
 
         return decision.IsAllowed;
@@ -37,7 +40,7 @@ public class WorkspacePermissionService : IWorkspacePermissionService
         if (workspaceId == Guid.Empty) return false;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
-            new PermissionContext(userId, Guid.Empty, workspaceId, ResourceType.Workspace, null, PermissionAction.ManageWorkspace, PermissionScope.Workspace),
+            new PermissionContext(userId, Guid.Empty, workspaceId, WorkspaceKind, null, PermissionAction.ManageWorkspace, PermissionScope.Workspace),
             cancellationToken);
 
         return decision.IsAllowed;
@@ -49,7 +52,7 @@ public class WorkspacePermissionService : IWorkspacePermissionService
         if (workspaceId == Guid.Empty) return false;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
-            new PermissionContext(userId, Guid.Empty, workspaceId, ResourceType.Workspace, null, PermissionAction.DeleteWorkspace, PermissionScope.Workspace),
+            new PermissionContext(userId, Guid.Empty, workspaceId, WorkspaceKind, null, PermissionAction.DeleteWorkspace, PermissionScope.Workspace),
             cancellationToken);
 
         return decision.IsAllowed;
@@ -64,7 +67,7 @@ public class WorkspacePermissionService : IWorkspacePermissionService
         if (workspaceId is null) return false;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
-            new PermissionContext(userId, Guid.Empty, workspaceId.Value, ResourceType.Board, boardId, PermissionAction.UpdateItem, PermissionScope.Resource),
+            new PermissionContext(userId, Guid.Empty, workspaceId.Value, BoardKind, boardId, PermissionAction.UpdateItem, PermissionScope.Resource),
             cancellationToken);
 
         return decision.IsAllowed;
@@ -79,7 +82,7 @@ public class WorkspacePermissionService : IWorkspacePermissionService
         if (workspaceId is null) return false;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
-            new PermissionContext(userId, Guid.Empty, workspaceId.Value, ResourceType.Board, boardId, PermissionAction.ManageBoardPermission, PermissionScope.Resource),
+            new PermissionContext(userId, Guid.Empty, workspaceId.Value, BoardKind, boardId, PermissionAction.ManageBoardPermission, PermissionScope.Resource),
             cancellationToken);
 
         return decision.IsAllowed;

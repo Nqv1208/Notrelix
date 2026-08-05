@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Checklists.Events;
 namespace Notrelix.Domain.WorkManagement.Checklists;
 
 public class ChecklistItem : Entity
@@ -26,14 +27,14 @@ public class ChecklistItem : Entity
         };
     }
 
-    public void Toggle(DateTimeOffset toggledAt)
+    internal void Toggle(DateTimeOffset toggledAt)
     {
         Status = Status == ChecklistItemStatus.Open ? ChecklistItemStatus.Done : ChecklistItemStatus.Open;
         CompletedAt = Status == ChecklistItemStatus.Done ? toggledAt : null;
     }
 }
 
-public class Checklist : AggregateRoot, IWorkspaceScoped
+public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -64,7 +65,7 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
         };
 
         checklist.SetAuditOnCreate(createdBy, createdAt);
-        checklist.AddDomainEvent(new ChecklistCreatedDomainEvent(accountId, workspaceId, itemId, checklist.Id, checklist.Title, createdAt));
+        checklist.RaiseDomainEvent(new ChecklistCreatedDomainEvent(accountId, workspaceId, itemId, checklist.Id, checklist.Title, createdAt));
 
         return checklist;
     }
@@ -72,69 +73,86 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
     public void AddItem(string title, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(addedBy);
         Guard.NotNull(position);
+        var pending = PrepareAuditUpdate(addedBy, addedAt);
         var item = ChecklistItem.Create(Id, title, position);
         _items.Add(item);
-        SetAuditOnUpdate(addedBy, addedAt);
-        AddDomainEvent(new ChecklistItemAddedDomainEvent(AccountId, WorkspaceId, Id, item.Id, title, addedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChecklistItemAddedDomainEvent(AccountId, WorkspaceId, Id, item.Id, title, addedAt));
     }
 
     public void ToggleItem(Guid itemId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         var item = _items.FirstOrDefault(x => x.Id == itemId);
-        if (item == null) throw new BusinessRuleException($"Item {itemId} not found");
+        if (item == null) throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Checklist_ItemNotFound, $"Item {itemId} not found");
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         item.Toggle(updatedAt);
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new ChecklistItemToggledDomainEvent(AccountId, WorkspaceId, Id, item.Id, item.Status == ChecklistItemStatus.Done, updatedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChecklistItemToggledDomainEvent(AccountId, WorkspaceId, Id, item.Id, item.Status == ChecklistItemStatus.Done, updatedAt));
     }
 
     public void RemoveItem(Guid itemId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         var item = _items.FirstOrDefault(x => x.Id == itemId);
         if (item == null) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _items.Remove(item);
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new ChecklistItemRemovedDomainEvent(AccountId, WorkspaceId, Id, item.Id, updatedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChecklistItemRemovedDomainEvent(AccountId, WorkspaceId, Id, item.Id, updatedAt));
     }
 
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         var normalizedTitle = title.Trim();
         if (Title == normalizedTitle) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Title = normalizedTitle;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
     }
 
     public void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(position);
         if (Position.Value == position.Value) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Position = position;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        AddDomainEvent(new ChecklistSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new ChecklistDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        AddDomainEvent(new ChecklistRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new ChecklistRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

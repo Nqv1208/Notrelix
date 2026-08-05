@@ -1,5 +1,7 @@
+using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Analytics.Rules;
 using Notrelix.Domain.Analytics.Widgets;
+using static Notrelix.Domain.Analytics.AnalyticsRuleCodes;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
@@ -34,95 +36,110 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         };
 
         dashboard.SetAuditOnCreate(createdBy, createdAt);
-        dashboard.AddDomainEvent(new DashboardCreatedDomainEvent(accountId, workspaceId, dashboard.Id, createdBy, createdAt));
+        dashboard.RaiseDomainEvent(new DashboardCreatedDomainEvent(accountId, workspaceId, dashboard.Id, createdBy, createdAt));
         return dashboard;
     }
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
         var normalizedName = name.Trim();
         if (Name == normalizedName) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = normalizedName;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new DashboardRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
         if (Visibility == visibility) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Visibility = visibility;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new DashboardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, Visibility, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
 
     public void AddWidget(string title, DashboardWidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         WidgetRules.ValidatePosition(position);
 
         if (_widgets.Count >= MaxWidgets)
-            throw new BusinessRuleException($"Cannot add more than {MaxWidgets} widgets to a dashboard.");
+            throw new BusinessRuleException(Analytics_Dashboard_WidgetLimitExceeded, $"Cannot add more than {MaxWidgets} widgets to a dashboard.");
 
-        var widget = DashboardWidget.Create(Id, title, type, config, position);
+        var widget = DashboardWidget.Create(AccountId, WorkspaceId, Id, title, type, config, position);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _widgets.Add(widget);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetAddedDomainEvent(AccountId, WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardWidgetAddedDomainEvent(AccountId, WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
     }
 
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _widgets.Remove(widget);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetRemovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardWidgetRemovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, updatedBy, updatedAt));
     }
 
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
+        WidgetRules.ValidatePosition(newPosition);
+
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null)
         {
-            throw new DomainException($"Widget '{widgetId}' not found on this dashboard.");
+            throw new BusinessRuleException(Analytics_Dashboard_WidgetNotFound, $"Widget '{widgetId}' not found on this dashboard.");
         }
 
+        if (widget.Position == newPosition) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         widget.UpdatePosition(newPosition);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
-        if (IsDeleted) return;
+        if (Status == DashboardStatus.Archived) return;
+
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = DashboardStatus.Archived;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new DashboardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new DashboardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    private void EnsureActive()
     {
-        if (!IsDeleted) return;
-        Status = DashboardStatus.Active;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        AddDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        if (Status != DashboardStatus.Active)
+        {
+            throw new BusinessRuleException(
+                Analytics_Dashboard_ArchivedReadOnly,
+                "Archived dashboards cannot be modified.");
+        }
     }
 }

@@ -11,26 +11,24 @@ public class PermissionTemplateConfiguration : IEntityTypeConfiguration<Permissi
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id");
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
-        builder.Property(x => x.TargetResourceType).HasColumnName("target_resource_type").HasConversion<string>().HasMaxLength(50);
-        builder.Property(x => x.PermissionsJson).HasColumnName("permissions_json").HasColumnType("jsonb").IsRequired();
-        builder.Property(x => x.IsSystem).HasColumnName("is_system");
+        builder.Property(x => x.TargetResourceKind).HasColumnName("target_resource_type").HasConversion<Notrelix.Infrastructure.Data.Converters.ResourceKindConverter>().HasMaxLength(128);
+        builder.Property(x => x.Definition).HasColumnName("permissions_json").HasColumnType("jsonb").IsRequired()
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<PermissionTemplateDefinition>(v, (System.Text.Json.JsonSerializerOptions?)null)!);
+        builder.Property(x => x.Scope).HasColumnName("scope").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
-        builder.Ignore(x => x.IsDeleted);
-        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
-        builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
-        builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.WorkspaceId).HasFilter("workspace_id IS NOT NULL AND deleted_at IS NULL").HasDatabaseName("idx_permission_templates_workspace_id");
+        builder.HasIndex(x => x.WorkspaceId).HasFilter("workspace_id IS NOT NULL").HasDatabaseName("idx_permission_templates_workspace_id");
         builder.HasIndex(x => x.Name).HasDatabaseName("idx_permission_templates_name");
     }
 }

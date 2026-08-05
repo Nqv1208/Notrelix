@@ -7,7 +7,7 @@ public record GetWorkspaceActivityQuery(Guid WorkspaceId, int Page = 1, int Page
 {
     Guid IWorkspaceRequest.WorkspaceId => WorkspaceId;
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActivityQuery, Result<object>>

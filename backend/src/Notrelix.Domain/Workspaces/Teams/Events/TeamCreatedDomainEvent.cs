@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Teams.Events;
 
+[EventName("workspaces.team-created")]
 public sealed record TeamCreatedDomainEvent(
     Guid TeamId,
     Guid AccountId,
@@ -7,4 +8,4 @@ public sealed record TeamCreatedDomainEvent(
     string Name,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, CreatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

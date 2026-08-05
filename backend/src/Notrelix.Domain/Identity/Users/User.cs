@@ -5,7 +5,7 @@ using Notrelix.Domain.Identity.Users.Events;
 
 namespace Notrelix.Domain.Identity.Users;
 
-public class User : AggregateRoot
+public sealed class User : SoftDeletableAggregateRoot
 {
     public Email Email { get; private set; } = null!;
     public string NormalizedEmail { get; private set; } = string.Empty;
@@ -51,32 +51,42 @@ public class User : AggregateRoot
         };
 
         user.SetAuditOnCreate(null, createdAt);
-        user.AddDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email.Value, user.Name, createdAt));
+        user.RaiseDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email.Value, user.Name, createdAt));
         return user;
     }
 
     public void UpdateProfile(
         string name,
         string? avatar,
+        Guid updatedBy,
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 100);
 
-        Name = name.Trim();
-        Avatar = avatar?.Trim();
+        var trimmedName = name.Trim();
+        var normalizedAvatar = avatar?.Trim();
 
-        SetAuditOnUpdate(Id, updatedAt);
+        if (trimmedName == Name && normalizedAvatar == Avatar)
+            return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Name = trimmedName;
+        Avatar = normalizedAvatar;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedBy, updatedAt));
     }
 
     public void UpdateEmail(
         string email,
+        Guid updatedBy,
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
 
         var emailValue = Email.Create(email);
 
@@ -84,43 +94,54 @@ public class User : AggregateRoot
 
         var oldEmail = Email;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Email = emailValue;
         NormalizedEmail = NormalizeEmail(emailValue.Value);
         EmailConfirmed = false;
         EmailConfirmedAt = null;
-
-        SetAuditOnUpdate(Id, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserEmailChangedDomainEvent(
+        RaiseDomainEvent(new UserEmailChangedDomainEvent(
             Id,
             oldEmail,
             Email,
+            updatedBy,
             updatedAt));
     }
 
     public void UpdatePassword(
         string passwordHash,
+        Guid updatedBy,
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(passwordHash);
 
-        PasswordHash = passwordHash;
+        if (string.Equals(PasswordHash, passwordHash, StringComparison.Ordinal))
+            return;
 
-        SetAuditOnUpdate(Id, updatedAt);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        PasswordHash = passwordHash;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserPasswordChangedDomainEvent(Id, updatedAt));
+        RaiseDomainEvent(new UserPasswordChangedDomainEvent(Id, updatedBy, updatedAt));
     }
 
     public void RecordLogin(DateTimeOffset loggedInAt)
     {
         EnsureNotDeleted();
 
-        LastLoginAt = loggedInAt;
+        if (LastLoginAt.HasValue && loggedInAt <= LastLoginAt.Value)
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_Login_TimeCannotMoveBackwards,
+                "Login timestamp cannot move backwards.");
 
-        SetAuditOnUpdate(Id, loggedInAt);
+        var pending = PrepareAuditUpdate(Id, loggedInAt);
+        LastLoginAt = loggedInAt;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserLoggedInDomainEvent(Id, loggedInAt));
+        RaiseDomainEvent(new UserLoggedInDomainEvent(Id, loggedInAt));
     }
 
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt, string? reason = null)
@@ -131,12 +152,12 @@ public class User : AggregateRoot
         if (Status == UserStatus.Active) return;
 
         var previousStatus = Status;
-
+        var pending = PrepareAuditUpdate(activatedBy, activatedAt);
         Status = UserStatus.Active;
-        SetAuditOnUpdate(activatedBy, activatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new UserActivatedDomainEvent(
+        RaiseDomainEvent(new UserActivatedDomainEvent(
             Id,
             previousStatus,
             activatedBy,
@@ -155,12 +176,12 @@ public class User : AggregateRoot
         if (Status == UserStatus.Inactive) return;
 
         var previousStatus = Status;
-
+        var pending = PrepareAuditUpdate(deactivatedBy, deactivatedAt);
         Status = UserStatus.Inactive;
-        SetAuditOnUpdate(deactivatedBy, deactivatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new UserDeactivatedDomainEvent(
+        RaiseDomainEvent(new UserDeactivatedDomainEvent(
             Id,
             previousStatus,
             deactivatedBy,
@@ -179,12 +200,12 @@ public class User : AggregateRoot
         if (Status == UserStatus.Suspended) return;
 
         var previousStatus = Status;
-
+        var pending = PrepareAuditUpdate(suspendedBy, suspendedAt);
         Status = UserStatus.Suspended;
-        SetAuditOnUpdate(suspendedBy, suspendedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new UserSuspendedDomainEvent(
+        RaiseDomainEvent(new UserSuspendedDomainEvent(
             Id,
             previousStatus,
             suspendedBy,
@@ -192,13 +213,14 @@ public class User : AggregateRoot
             string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()));
     }
 
-    public void ConfirmEmail(DateTimeOffset confirmedAt)
+    public void ConfirmEmail(Guid? confirmedBy, DateTimeOffset confirmedAt)
     {
         EnsureNotDeleted();
 
         if (EmailConfirmed)
             return;
 
+        var pending = PrepareAuditUpdate(confirmedBy, confirmedAt);
         EmailConfirmed = true;
         EmailConfirmedAt = confirmedAt;
 
@@ -206,91 +228,130 @@ public class User : AggregateRoot
         {
             Status = UserStatus.Active;
         }
-
-        SetAuditOnUpdate(Id, confirmedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new UserEmailConfirmedDomainEvent(
-            Id, Email.Value, confirmedAt));
+        RaiseDomainEvent(new UserEmailConfirmedDomainEvent(
+            Id, Email.Value, confirmedBy, confirmedAt));
     }
 
     public void LinkOAuthAccount(
         OAuthProvider provider,
         string providerId,
-        JsonValue rawProfile,
+        OAuthProfileSnapshot profileSnapshot,
         OAuthToken? token,
+        Guid linkedBy,
         DateTimeOffset linkedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(linkedBy);
         Guard.NotNullOrWhiteSpace(providerId);
-        Guard.NotNull(rawProfile);
+        Guard.NotNull(profileSnapshot);
+
+        if (profileSnapshot.Provider != provider)
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_OAuthProviderMismatch,
+                $"Profile snapshot provider ({profileSnapshot.Provider}) does not match link provider ({provider}).");
 
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing != null)
-        {
-            if (existing.ProviderId != providerId.Trim())
-            {
-                throw new BusinessRuleException($"Provider {provider} is already linked with a different account.");
-            }
-            if (token != null)
-            {
-                existing.UpdateToken(token);
-            }
-        }
-        else
-        {
-            var oauth = OAuthAccount.Create(Id, provider, providerId, rawProfile, token);
-            _oauthAccounts.Add(oauth);
-        }
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_OAuthProviderAlreadyLinked,
+                $"Provider {provider} is already linked. Use UpdateOAuthProfile or RotateOAuthToken instead.");
 
-        SetAuditOnUpdate(Id, linkedAt);
+        var pending = PrepareAuditUpdate(linkedBy, linkedAt);
+
+        var oauth = OAuthAccount.Create(Id, provider, providerId, profileSnapshot, token);
+        _oauthAccounts.Add(oauth);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new OAuthAccountLinkedDomainEvent(Id, provider, providerId, linkedAt));
+        RaiseDomainEvent(new OAuthAccountLinkedDomainEvent(Id, provider, providerId, linkedBy, linkedAt));
     }
 
-    public void UnlinkOAuthAccount(OAuthProvider provider, DateTimeOffset unlinkedAt)
+    public void UpdateOAuthProfile(
+        OAuthProvider provider,
+        OAuthProfileSnapshot profileSnapshot,
+        Guid updatedBy,
+        DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNull(profileSnapshot);
+
+        if (profileSnapshot.Provider != provider)
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_OAuthProviderMismatch,
+                $"Profile snapshot provider ({profileSnapshot.Provider}) does not match provider ({provider}).");
+
+        var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
+        if (existing == null)
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_NoOAuthAccountForProvider,
+                $"No OAuth account linked for provider {provider}.");
+
+        if (existing.ProfileSnapshot == profileSnapshot)
+            return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        existing.UpdateProfileSnapshot(profileSnapshot);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new OAuthProfileUpdatedDomainEvent(Id, provider, updatedBy, updatedAt));
+    }
+
+    public void UnlinkOAuthAccount(OAuthProvider provider, Guid unlinkedBy, DateTimeOffset unlinkedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(unlinkedBy);
+
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null) return;
 
+        var pending = PrepareAuditUpdate(unlinkedBy, unlinkedAt);
         _oauthAccounts.Remove(existing);
-        SetAuditOnUpdate(Id, unlinkedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new OAuthAccountUnlinkedDomainEvent(Id, provider, existing.ProviderId, unlinkedAt));
+        RaiseDomainEvent(new OAuthAccountUnlinkedDomainEvent(Id, provider, existing.ProviderId, unlinkedBy, unlinkedAt));
     }
 
-    public void RotateOAuthToken(OAuthProvider provider, OAuthToken newToken, DateTimeOffset rotatedAt)
+    public void RotateOAuthToken(OAuthProvider provider, OAuthToken newToken, Guid rotatedBy, DateTimeOffset rotatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(rotatedBy);
         Guard.NotNull(newToken);
+
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null)
         {
-            throw new BusinessRuleException($"No OAuth account linked for provider {provider}.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_User_NoOAuthAccountForProvider, $"No OAuth account linked for provider {provider}.");
         }
 
+        if (existing.Token == newToken) return;
+
+        var pending = PrepareAuditUpdate(rotatedBy, rotatedAt);
         existing.UpdateToken(newToken);
-        SetAuditOnUpdate(Id, rotatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedAt));
+        RaiseDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedBy, rotatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        AddDomainEvent(new UserSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new UserDeletedDomainEvent(Id, Status, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        AddDomainEvent(new UserRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserRestoredDomainEvent(Id, Status, restoredBy, restoredAt));
     }
 }

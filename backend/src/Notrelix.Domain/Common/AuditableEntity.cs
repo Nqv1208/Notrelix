@@ -1,7 +1,13 @@
+using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
+
 namespace Notrelix.Domain.Common;
 
 public abstract class AuditableEntity : Entity
 {
+    public readonly record struct PendingAuditUpdate(
+        Guid? ActorId,
+        DateTimeOffset OccurredAt);
+
     public DateTimeOffset CreatedAt { get; protected set; }
     public Guid? CreatedBy { get; protected set; }
     public DateTimeOffset? UpdatedAt { get; protected set; }
@@ -15,15 +21,61 @@ public abstract class AuditableEntity : Entity
     {
     }
 
-    public void SetAuditOnCreate(Guid? createdBy, DateTimeOffset createdAt)
+    protected void SetAuditOnCreate(Guid? createdBy, DateTimeOffset createdAt)
     {
+        if (createdAt == default || createdAt == DateTimeOffset.MinValue)
+            throw new BusinessRuleException(
+                Common_Audit_InvalidTimestamp,
+                "Created timestamp must be a valid date.");
+
+        if (createdBy.HasValue && createdBy.Value == Guid.Empty)
+            throw new BusinessRuleException(
+                Common_Audit_EmptyActor,
+                "CreatedBy actor cannot be Guid.Empty.");
+
+        if (CreatedAt != default)
+            throw new BusinessRuleException(
+                Common_Audit_CreatedAtAlreadySet,
+                "CreatedAt has already been set and cannot be changed.");
+
         CreatedBy = createdBy;
         CreatedAt = createdAt;
     }
 
-    public void SetAuditOnUpdate(Guid? updatedBy, DateTimeOffset updatedAt)
+    protected PendingAuditUpdate PrepareAuditUpdate(
+        Guid? actorId,
+        DateTimeOffset occurredAt)
     {
-        UpdatedBy = updatedBy;
-        UpdatedAt = updatedAt;
+        ValidateAuditUpdate(actorId, occurredAt);
+        return new PendingAuditUpdate(actorId, occurredAt);
+    }
+
+    protected void ApplyAuditUpdate(PendingAuditUpdate update)
+    {
+        UpdatedBy = update.ActorId;
+        UpdatedAt = update.OccurredAt;
+    }
+
+    private void ValidateAuditUpdate(Guid? actorId, DateTimeOffset occurredAt)
+    {
+        if (occurredAt == default || occurredAt == DateTimeOffset.MinValue)
+            throw new BusinessRuleException(
+                Common_Audit_InvalidTimestamp,
+                "Updated timestamp must be a valid date.");
+
+        if (actorId.HasValue && actorId.Value == Guid.Empty)
+            throw new BusinessRuleException(
+                Common_Audit_EmptyActor,
+                "UpdatedBy actor cannot be Guid.Empty.");
+
+        if (CreatedAt != default && occurredAt < CreatedAt)
+            throw new BusinessRuleException(
+                Common_Audit_UpdatedAtBeforeCreatedAt,
+                "Updated timestamp cannot be earlier than created timestamp.");
+
+        if (UpdatedAt.HasValue && occurredAt < UpdatedAt.Value)
+            throw new BusinessRuleException(
+                Common_Audit_UpdatedAtRegression,
+                "Updated timestamp cannot be earlier than previous UpdatedAt.");
     }
 }

@@ -25,7 +25,7 @@ public class WebhookDeliveryTests
     public void MarkDelivered_ShouldTransition_AndRaiseEvent()
     {
         var delivery = CreateDelivery();
-        delivery.ClearDomainEvents();
+        ((IHasDomainEvents)delivery).ClearDomainEvents();
 
         delivery.MarkDelivered(200, "{\"ok\":true}", Now);
 
@@ -49,7 +49,7 @@ public class WebhookDeliveryTests
     public void MarkFailed_ShouldTransition_AndRaiseEvent()
     {
         var delivery = CreateDelivery();
-        delivery.ClearDomainEvents();
+        ((IHasDomainEvents)delivery).ClearDomainEvents();
 
         delivery.MarkFailed(500, "Internal Error", Now, "Server error");
 

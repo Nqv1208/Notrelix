@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -33,7 +32,7 @@ public class WorkspaceMemberTests
     public void ChangeMemberRole_ShouldChangeRole_AndRaiseEvent()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -61,7 +60,7 @@ public class WorkspaceMemberTests
     public void Suspend_ShouldSetStatusToSuspended_AndRaiseEvent()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -89,7 +88,7 @@ public class WorkspaceMemberTests
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 2);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -103,23 +102,22 @@ public class WorkspaceMemberTests
     public void Activate_FromRemoved_ShouldThrow()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => member.Activate(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted and cannot be modified*");
+        act.Should().Throw<DomainException>().WithMessage("*removed member*");
     }
 
     [Fact]
-    public void RemoveMember_ShouldSetIsDeleted_AndRaiseEvent()
+    public void RemoveMember_ShouldSetStatusToRemoved_AndRaiseEvent()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
         member.Remove(2, actor, now);
 
-        member.IsDeleted.Should().BeTrue();
         member.Status.Should().Be(WorkspaceMemberStatus.Removed);
         member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRemovedDomainEvent);
     }
@@ -135,23 +133,7 @@ public class WorkspaceMemberTests
     }
 
     [Fact]
-    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
-    {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.ClearDomainEvents();
-        var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
-
-        member.Restore(actor, now);
-
-        member.Status.Should().Be(WorkspaceMemberStatus.Active);
-        member.IsDeleted.Should().BeFalse();
-        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRestoredDomainEvent);
-    }
-
-    [Fact]
-    public void ChangeRole_OnDeletedMember_ShouldThrow()
+    public void ChangeRole_OnRemovedMember_ShouldThrow()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -168,5 +150,61 @@ public class WorkspaceMemberTests
 
         var act = () => member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 2);
         act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void ChangeRole_LastOwner_ShouldNotMutateRole()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)member).ClearDomainEvents();
+        var originalRole = member.Role;
+
+        var act = () => member.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), 1, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        member.Role.Should().Be(originalRole);
+        member.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Suspend_LastOwner_ShouldNotMutateStatus()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)member).ClearDomainEvents();
+        var originalStatus = member.Status;
+
+        var act = () => member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 1);
+
+        act.Should().Throw<BusinessRuleException>();
+        member.Status.Should().Be(originalStatus);
+        member.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeRole_EmptyActor_ShouldNotMutateRole()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)member).ClearDomainEvents();
+        var originalRole = member.Role;
+
+        var act = () => member.ChangeRole(WorkspaceRole.Admin, Guid.Empty, 2, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        member.Role.Should().Be(originalRole);
+        member.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Suspend_EmptyActor_ShouldNotMutateStatus()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)member).ClearDomainEvents();
+        var originalStatus = member.Status;
+
+        var act = () => member.Suspend(Guid.Empty, DateTimeOffset.UtcNow, 2);
+
+        act.Should().Throw<BusinessRuleException>();
+        member.Status.Should().Be(originalStatus);
+        member.DomainEvents.Should().BeEmpty();
     }
 }

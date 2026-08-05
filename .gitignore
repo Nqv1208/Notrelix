@@ -10,6 +10,7 @@
 .gemini/
 .opencode/
 .antigravitycli/
+.qwen/
 .mimocode/
 .playwright-cli/
 

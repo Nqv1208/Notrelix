@@ -10,42 +10,42 @@ public class ApprovalRequestEventTests
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [Fact]
-    public void ApprovalRequest_SoftDelete_ShouldRaiseEvent()
+    public void ApprovalRequest_Delete_ShouldRaiseEvent()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
-        request.ClearDomainEvents();
+        ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
 
-        request.SoftDelete(Actor, Now);
+        request.Delete(Actor, Now);
 
         request.IsDeleted.Should().BeTrue();
         request.Version.Should().Be(version + 1);
-        request.DomainEvents.Should().ContainSingle(e => e is ApprovalRequestSoftDeletedDomainEvent);
+        request.DomainEvents.Should().ContainSingle(e => e is ApprovalRequestDeletedDomainEvent);
     }
 
     [Fact]
-    public void ApprovalRequest_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
+    public void ApprovalRequest_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
-        request.SoftDelete(Actor, Now);
-        request.ClearDomainEvents();
+        request.Delete(Actor, Now);
+        ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
 
-        request.SoftDelete(Actor, Now);
+        request.Delete(Actor, Now);
 
         request.Version.Should().Be(version);
-        request.DomainEvents.Should().NotContain(e => e is ApprovalRequestSoftDeletedDomainEvent);
+        request.DomainEvents.Should().NotContain(e => e is ApprovalRequestDeletedDomainEvent);
     }
 
     [Fact]
     public void ApprovalRequest_Restore_ShouldRaiseEvent()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
-        request.SoftDelete(Actor, Now);
-        request.ClearDomainEvents();
+        request.Delete(Actor, Now);
+        ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
 
         request.Restore(Actor, Now);
@@ -58,9 +58,9 @@ public class ApprovalRequestEventTests
     [Fact]
     public void ApprovalRequest_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
-        request.ClearDomainEvents();
+        ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
 
         request.Restore(Actor, Now);

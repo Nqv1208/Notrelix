@@ -4,10 +4,19 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 
-public record GetCommentsQuery(ResourceType ResourceType, Guid ResourceId) : IQuery<Result<List<CommentDto>>>, IResourceScopedRequest, IRequirePermission
+public record GetCommentsQuery(ResourceKind ResourceKind, Guid ResourceId) : IQuery<Result<List<CommentDto>>>, IResourceScopedRequest, IRequirePermission
 {
+    public static GetCommentsQuery ForBoardItem(Guid boardItemId)
+        => new(ResourceKind.Create(BoardItemKind), boardItemId);
+
+    public static GetCommentsQuery ForPage(Guid pageId)
+        => new(ResourceKind.Create(PageKind), pageId);
+
+    private const string BoardItemKind = "work-management.board-item";
+    private const string PageKind = "documents.page";
+
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType, ResourceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind, ResourceId);
 }
 
 public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<List<CommentDto>>>
@@ -23,7 +32,7 @@ public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<
     public async Task<Result<List<CommentDto>>> Handle(GetCommentsQuery request, CancellationToken ct)
     {
         var comments = await _context.Comments.AsNoTracking()
-            .Where(c => c.Target.ResourceType == request.ResourceType && c.Target.ResourceId == request.ResourceId && !c.IsDeleted)
+            .Where(c => c.Target.Kind == request.ResourceKind && c.Target.ResourceId == request.ResourceId && !c.IsDeleted)
             .OrderBy(c => c.CreatedAt)
             .ToListAsync(ct);
 

@@ -1,5 +1,7 @@
 using Notrelix.Domain.Collaboration.Watchers;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Collaboration;
 
 public class ResourceWatcherConfiguration : IEntityTypeConfiguration<ResourceWatcher>
@@ -18,17 +20,11 @@ public class ResourceWatcherConfiguration : IEntityTypeConfiguration<ResourceWat
 
         builder.OwnsOne(x => x.Target, t =>
         {
-            t.Property(p => p.ResourceType).HasColumnName("target_type").IsRequired().HasMaxLength(50);
+            t.Property(p => p.Kind).HasColumnName("target_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             t.Property(p => p.ResourceId).HasColumnName("target_id").IsRequired();
-            t.HasIndex(p => new { p.ResourceType, p.ResourceId }).HasDatabaseName("idx_resource_watchers_target");
+            t.HasIndex(p => new { p.Kind, p.ResourceId }).HasDatabaseName("idx_resource_watchers_target");
         });
 
-        builder.Ignore(x => x.IsDeleted);
-        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
-        builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
-        builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

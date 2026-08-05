@@ -56,7 +56,7 @@ public class UpdateBoardItemTests : WorkManagementHandlerTestBase
     public async Task Handle_DeletedItem_ThrowsNotFoundException()
     {
         var item = CreateBoardItem();
-        item.SoftDelete(TestUserId, TestNow);
+        item.Delete(TestUserId, TestNow);
         SetupBoardItems(item);
 
         var command = new UpdateBoardItemCommand(item.Id, "Title", null, null, null, null, null);

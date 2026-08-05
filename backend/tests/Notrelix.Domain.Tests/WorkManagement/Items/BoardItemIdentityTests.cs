@@ -13,7 +13,7 @@ public class BoardItemIdentityTests
     public void GenerateNextItemIdentity_FirstItem_ShouldReturnSequenceOne()
     {
         var board = Board.Create(Guid.NewGuid(), WsA, Actor, "Board", null, Now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var (sequence, key) = board.GenerateNextItemIdentity(Actor, Now);
 
@@ -26,7 +26,7 @@ public class BoardItemIdentityTests
     public void GenerateNextItemIdentity_WithPrefix_ShouldApplyPrefix()
     {
         var board = Board.Create(Guid.NewGuid(), WsA, Actor, "Board", null, Now, itemKeyPrefix: "TASK");
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var (sequence, key) = board.GenerateNextItemIdentity(Actor, Now);
 
@@ -38,7 +38,7 @@ public class BoardItemIdentityTests
     public void GenerateNextItemIdentity_ShouldIncrementSequentially()
     {
         var board = Board.Create(Guid.NewGuid(), WsA, Actor, "Board", null, Now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var (seq1, _) = board.GenerateNextItemIdentity(Actor, Now);
         var (seq2, key2) = board.GenerateNextItemIdentity(Actor, Now);
@@ -52,7 +52,7 @@ public class BoardItemIdentityTests
     public void GenerateNextItemIdentity_ShouldEmitEvent()
     {
         var board = Board.Create(Guid.NewGuid(), WsA, Actor, "Board", null, Now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var (sequence, key) = board.GenerateNextItemIdentity(Actor, Now);
 

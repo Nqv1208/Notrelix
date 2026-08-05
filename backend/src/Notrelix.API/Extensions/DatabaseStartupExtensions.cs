@@ -58,6 +58,11 @@ public static class DatabaseStartupExtensions
         return true;
     }
 
+    /// <summary>
+    /// Normal web startup database initialization.
+    /// Fail-closed: Staging/Production throw when auto-migrate or auto-seed is enabled.
+    /// Development may explicitly opt in.
+    /// </summary>
     public static async Task InitialiseDatabaseOnStartupAsync(
         this WebApplication app)
     {
@@ -72,8 +77,14 @@ public static class DatabaseStartupExtensions
 
         if (!app.Environment.IsDevelopment())
         {
-            app.Logger.LogWarning(
-                "Database startup initialization is enabled outside Development. Ensure this is intentional.");
+            var enabled = new List<string>();
+            if (migrateOnStartup) enabled.Add("Database:MigrateOnStartup");
+            if (seedEnabled && seedRunOnStartup) enabled.Add("SeedData:RunOnStartup");
+
+            throw new InvalidOperationException(
+                $"Database startup mutation is forbidden in {app.Environment.EnvironmentName}. " +
+                $"Config [{string.Join(", ", enabled)}] must not be enabled outside Development. " +
+                "Use explicit command modes (--migrate, --seed, --rls-apply) for deployment operations.");
         }
 
         using var scope = app.Services.CreateScope();
@@ -84,13 +95,13 @@ public static class DatabaseStartupExtensions
         if (migrateOnStartup)
         {
             await initialiser.InitialiseAsync();
-            app.Logger.LogInformation("Startup database migration completed.");
+            app.Logger.LogInformation("Startup database migration completed (Development only).");
         }
 
         if (seedEnabled && seedRunOnStartup)
         {
             await initialiser.SeedAsync();
-            app.Logger.LogInformation("Startup database seed completed.");
+            app.Logger.LogInformation("Startup database seed completed (Development only).");
         }
     }
 }

@@ -1,5 +1,8 @@
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
+using DomainException = Notrelix.Domain.Common.Exceptions.DomainException;
+using NotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardGroups;
 
 public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase
@@ -18,10 +21,10 @@ public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_DeletedGroup_RestoresGroup()
+    public async Task Handle_ArchivedGroup_UnarchivesGroup()
     {
         var group = CreateBoardGroup();
-        group.SoftDelete(TestUserId, TestNow);
+        group.Archive(TestUserId, TestNow);
         SetupBoardGroups(group);
 
         var command = new UnarchiveBoardGroupCommand(group.Id);
@@ -29,6 +32,19 @@ public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_DeletedGroup_ThrowsDomainException()
+    {
+        var group = CreateBoardGroup();
+        group.Delete(TestUserId, TestNow);
+        SetupBoardGroups(group);
+
+        var command = new UnarchiveBoardGroupCommand(group.Id);
+
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<DomainException>();
     }
 
     [Fact]

@@ -11,7 +11,7 @@ public class AttachmentWorkspaceScopeTests
     [Fact]
     public void Create_WithMatchingWorkspace_ShouldSucceed()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var meta = FileMetadata.Create("f.pdf", 100, "application/pdf");
         var attachment = Attachment.Create(Guid.NewGuid(), WsA, target, AttachmentType.Document, meta, Guid.NewGuid(), DateTimeOffset.UtcNow);
         attachment.WorkspaceId.Should().Be(WsA);
@@ -20,16 +20,16 @@ public class AttachmentWorkspaceScopeTests
     [Fact]
     public void Create_WithMismatchedWorkspace_ShouldThrow()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsB);
         var meta = FileMetadata.Create("f.pdf", 100, "application/pdf");
         var act = () => Attachment.Create(Guid.NewGuid(), WsA, target, AttachmentType.Document, meta, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithUnscopedResourceRef_ShouldSucceed()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid());
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid());
         var meta = FileMetadata.Create("f.pdf", 100, "application/pdf");
         var attachment = Attachment.Create(Guid.NewGuid(), WsA, target, AttachmentType.Document, meta, Guid.NewGuid(), DateTimeOffset.UtcNow);
         attachment.WorkspaceId.Should().Be(WsA);

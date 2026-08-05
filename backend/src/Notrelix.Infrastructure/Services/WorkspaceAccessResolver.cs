@@ -1,5 +1,5 @@
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Workspaces;
 
@@ -7,6 +7,7 @@ namespace Notrelix.Infrastructure.Services;
 
 public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
 {
+    private static readonly Notrelix.Domain.SharedKernel.ResourceKind WorkspaceKind = Notrelix.Domain.SharedKernel.ResourceKind.Create("workspaces.workspace");
     private readonly IWorkspaceDbContext _context;
     private readonly IPermissionEvaluator _permissionEvaluator;
 
@@ -43,7 +44,7 @@ public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
                 actorUserId,
                 workspace.AccountId,
                 workspaceId,
-                ResourceType.Workspace,
+                WorkspaceKind,
                 null,
                 PermissionAction.ViewWorkspace,
                 Notrelix.Application.Common.Security.PermissionScope.Workspace),

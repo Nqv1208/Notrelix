@@ -1,6 +1,7 @@
+using Notrelix.Domain.WorkManagement.Templates.Events;
 namespace Notrelix.Domain.WorkManagement.Templates;
 
-public class BoardTemplate : AggregateRoot
+public class BoardTemplate : SoftDeletableAggregateRoot
 {
     public Guid? WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -23,12 +24,89 @@ public class BoardTemplate : AggregateRoot
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new BoardTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
+        template.SetAuditOnCreate(null, createdAt);
+        template.RaiseDomainEvent(new BoardTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
         return template;
+    }
+
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 255);
+
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Name = normalizedName;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    public void Draft(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (Status == TemplateStatus.Draft) return;
+        if (Status == TemplateStatus.Archived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CannotDraftArchived, "Cannot draft an archived template. Restore it first.");
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Status = TemplateStatus.Draft;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (Status == TemplateStatus.Published) return;
+        if (Status == TemplateStatus.Archived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CannotPublishArchived, "Cannot publish an archived template. Restore it first.");
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Status = TemplateStatus.Published;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
+        if (Status == TemplateStatus.Archived) return;
+
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
+        Status = TemplateStatus.Archived;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        Guard.NotEmpty(deletedBy);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        IncrementVersion();
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        Guard.NotEmpty(restoredBy);
+        if (!IsDeleted && Status != TemplateStatus.Archived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived or deleted templates can be restored.");
+
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
+        Status = TemplateStatus.Draft;
+        IncrementVersion();
     }
 }
 
-public class ItemTemplate : AggregateRoot, IWorkspaceScoped
+public class ItemTemplate : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -57,7 +135,84 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new ItemTemplateCreatedDomainEvent(accountId, workspaceId, template.Id, template.Name, createdAt));
+        template.SetAuditOnCreate(null, createdAt);
+        template.RaiseDomainEvent(new ItemTemplateCreatedDomainEvent(accountId, workspaceId, template.Id, template.Name, createdAt));
         return template;
+    }
+
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 255);
+
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Name = normalizedName;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    public void Draft(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (Status == TemplateStatus.Draft) return;
+        if (Status == TemplateStatus.Archived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CannotDraftArchived, "Cannot draft an archived template. Restore it first.");
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Status = TemplateStatus.Draft;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (Status == TemplateStatus.Published) return;
+        if (Status == TemplateStatus.Archived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CannotPublishArchived, "Cannot publish an archived template. Restore it first.");
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Status = TemplateStatus.Published;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
+        if (Status == TemplateStatus.Archived) return;
+
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
+        Status = TemplateStatus.Archived;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        Guard.NotEmpty(deletedBy);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        IncrementVersion();
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        Guard.NotEmpty(restoredBy);
+        if (!IsDeleted && Status != TemplateStatus.Archived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived or deleted templates can be restored.");
+
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
+        Status = TemplateStatus.Draft;
+        IncrementVersion();
     }
 }

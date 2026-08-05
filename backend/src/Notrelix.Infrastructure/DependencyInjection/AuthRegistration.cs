@@ -33,6 +33,10 @@ public static class AuthRegistration
         // Post-commit action queue for cache invalidation and realtime dispatch.
         services.AddScoped<IPostCommitActionQueue, PostCommitActionQueue>();
 
+        // Verification token locking (FOR UPDATE) — relational operation behind Application port.
+        services.AddScoped<Notrelix.Application.Features.Identity.Verification.Abstractions.IActiveVerificationTokenLocker,
+            ActiveVerificationTokenLocker>();
+
         services.AddJwtBearer(configuration);
 
         return services;

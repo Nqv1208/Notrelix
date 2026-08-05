@@ -1,12 +1,14 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist;
 
-public record UpdateChecklistCommand(Guid ChecklistId, string? Title, double? Position) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("work-management.checklists.update-checklist.v1")]
+public record UpdateChecklistCommand(Guid ChecklistId, string? Title, double? Position) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Checklist, ChecklistId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist"), ChecklistId);
 }
 
 public class UpdateChecklistCommandHandler : IRequestHandler<UpdateChecklistCommand, Result>
@@ -36,7 +38,7 @@ public class UpdateChecklistCommandHandler : IRequestHandler<UpdateChecklistComm
             checklist.Rename(request.Title, _currentUser.UserId, now);
 
         if (request.Position.HasValue)
-            checklist.UpdatePosition(FractionalIndex.Create(request.Position.Value.ToString("F0")), _currentUser.UserId, now);
+            checklist.UpdatePosition(FractionalIndexGenerator.GenerateKeyBetween(null, null), _currentUser.UserId, now);
 
         return Result.Success();
     }

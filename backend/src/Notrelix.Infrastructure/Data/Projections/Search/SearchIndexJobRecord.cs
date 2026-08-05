@@ -4,7 +4,7 @@ public sealed class SearchIndexJobRecord
 {
     public Guid Id { get; private set; }
     public Guid? WorkspaceId { get; private set; }
-    public string ResourceType { get; private set; } = null!;
+    public string ResourceKind { get; private set; } = null!;
     public Guid ResourceId { get; private set; }
     public string Operation { get; private set; } = null!;
     public string Status { get; private set; } = null!;
@@ -43,7 +43,7 @@ public sealed class SearchIndexJobRecord
         {
             Id = id,
             WorkspaceId = workspaceId,
-            ResourceType = resourceType,
+            ResourceKind = resourceType,
             ResourceId = resourceId,
             Operation = operation,
             Status = status,

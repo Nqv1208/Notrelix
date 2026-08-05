@@ -1,4 +1,5 @@
 using Notrelix.Domain.Governance.ShareLinks;
+using Notrelix.Infrastructure.Data.Converters;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Governance;
 
@@ -12,7 +13,7 @@ public class ShareLinkConfiguration : IEntityTypeConfiguration<ShareLink>
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.ResourceKind).HasColumnName("resource_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
         builder.Property(x => x.ResourceId).HasColumnName("resource_id").IsRequired();
         builder.Property(x => x.AccessMode).HasColumnName("access_mode").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
@@ -23,12 +24,6 @@ public class ShareLinkConfiguration : IEntityTypeConfiguration<ShareLink>
             token.Property(t => t.Hash).HasColumnName("token_hash").IsRequired();
         });
 
-        builder.Ignore(x => x.IsDeleted);
-        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
-        builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
-        builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

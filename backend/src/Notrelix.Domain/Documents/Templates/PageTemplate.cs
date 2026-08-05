@@ -1,3 +1,4 @@
+using Notrelix.Domain.Documents.Templates.Events;
 namespace Notrelix.Domain.Documents.Templates;
 
 public class PageTemplate : AggregateRoot
@@ -12,7 +13,7 @@ public class PageTemplate : AggregateRoot
 
     private PageTemplate() : base() { }
 
-    public static PageTemplate Create(string name, JsonValue pageSnapshot, JsonValue blocksSnapshot, DateTimeOffset createdAt, Guid? workspaceId = null)
+    public static PageTemplate Create(string name, JsonValue pageSnapshot, JsonValue blocksSnapshot, DateTimeOffset createdAt, Guid? workspaceId = null, Guid? createdBy = null)
     {
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(pageSnapshot);
@@ -26,26 +27,35 @@ public class PageTemplate : AggregateRoot
             Status = PageTemplateStatus.Draft
         };
 
-        template.SetAuditOnCreate(null, createdAt);
-        template.AddDomainEvent(new PageTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
+        template.SetAuditOnCreate(createdBy, createdAt);
+        template.RaiseDomainEvent(new PageTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
         return template;
     }
 
     public void Publish(Guid publishedBy, DateTimeOffset publishedAt)
     {
+        Guard.NotEmpty(publishedBy);
         if (Status == PageTemplateStatus.Archived)
-            throw new BusinessRuleException("Cannot publish an archived template.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_PageTemplate_CannotPublishArchived, "Cannot publish an archived template.");
 
+        if (Status == PageTemplateStatus.Published) return;
+
+        var pending = PrepareAuditUpdate(publishedBy, publishedAt);
         Status = PageTemplateStatus.Published;
-        SetAuditOnUpdate(publishedBy, publishedAt);
-        AddDomainEvent(new PageTemplatePublishedDomainEvent(Id, publishedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new PageTemplatePublishedDomainEvent(Id, publishedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
+        Guard.NotEmpty(archivedBy);
         if (Status == PageTemplateStatus.Archived) return;
 
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = PageTemplateStatus.Archived;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new PageTemplateArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
 }

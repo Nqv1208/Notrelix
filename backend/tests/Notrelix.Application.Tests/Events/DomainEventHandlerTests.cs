@@ -1,3 +1,4 @@
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Events;
 
 public class DomainEventHandlerTests
@@ -61,7 +62,7 @@ public class DomainEventHandlerTests
         var now = DateTimeOffset.UtcNow;
         var position = FractionalIndex.Initial();
 
-        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Task", position, createdBy, now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), workspaceId, boardId, groupId, "Task", position, createdBy, now);
 
         var domainEvents = item.DomainEvents;
         domainEvents.Should().ContainSingle(e => e is BoardItemCreatedDomainEvent);
@@ -73,8 +74,8 @@ public class DomainEventHandlerTests
     [Fact]
     public void ResourceType_ShouldContainExpectedTypes()
     {
-        ResourceType.Board.Should().Be(ResourceType.Board);
-        ResourceType.BoardItem.Should().Be(ResourceType.BoardItem);
-        ResourceType.Workspace.Should().Be(ResourceType.Workspace);
+        ResourceKind.Create("work-management.board").Should().Be(ResourceKind.Create("work-management.board"));
+        ResourceKind.Create("work-management.board-item").Should().Be(ResourceKind.Create("work-management.board-item"));
+        ResourceKind.Create("workspaces.workspace").Should().Be(ResourceKind.Create("workspaces.workspace"));
     }
 }

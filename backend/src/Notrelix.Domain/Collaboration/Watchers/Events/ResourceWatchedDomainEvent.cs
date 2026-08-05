@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Watchers.Events;
 
+[EventName("collaboration.resource-watched")]
 public sealed record ResourceWatchedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record ResourceWatchedDomainEvent(
     ResourceRef Target,
     Guid UserId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

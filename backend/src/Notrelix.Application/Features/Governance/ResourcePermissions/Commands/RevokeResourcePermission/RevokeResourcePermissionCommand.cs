@@ -4,18 +4,25 @@ using Notrelix.Application.Features.Governance.Abstractions;
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
 
 public record RevokeResourcePermissionCommand(
-    ResourceType ResourceType,
+    string ResourceKind,
     Guid ResourceId,
     Guid PermissionId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
-    PermissionAction IRequirePermission.Action => ResourceType switch
+    internal ResourceKind Kind => ParseKind(ResourceKind);
+
+    PermissionAction IRequirePermission.Action => Kind.Value switch
     {
-        ResourceType.Board => PermissionAction.ManageBoardPermission,
-        ResourceType.Page => PermissionAction.SharePage,
+        "work-management.board" => PermissionAction.ManageBoardPermission,
+        "documents.page" => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType, ResourceId);
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
+
+    private static ResourceKind ParseKind(string value) =>
+        global::Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(value, out var kind)
+            ? kind
+            : throw new ArgumentException($"Invalid resource kind '{value}'. Expected a canonical kind such as 'work-management.board'.", nameof(value));
 }
 
 public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
@@ -42,11 +49,12 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
         CancellationToken cancellationToken)
     {
         var workspaceId = _requestContext.RequireWorkspaceId();
+        var kind = request.Kind;
 
         var permission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.Id == request.PermissionId &&
                                       p.WorkspaceId == workspaceId &&
-                                      p.ResourceType == request.ResourceType &&
+                                      p.ResourceKind == kind &&
                                       p.ResourceId == request.ResourceId, cancellationToken);
 
         if (permission == null)
@@ -62,7 +70,7 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
             workspaceId,
             actorId,
             "RevokeResourcePermission",
-            ResourceRef.Create(request.ResourceType, request.ResourceId),
+            ResourceRef.Create(kind, request.ResourceId),
             AuditMetadata.Create(),
             AuditSeverity.Info,
             cancellationToken: cancellationToken);

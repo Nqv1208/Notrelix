@@ -1,0 +1,105 @@
+using FluentAssertions;
+using Notrelix.Domain.Integrations.Webhooks;
+
+namespace Notrelix.Domain.Tests.Integrations.Webhooks;
+
+public class WebhookSubscriptionContractTests
+{
+    private static readonly Guid AccountId = Guid.NewGuid();
+    private static readonly Guid WorkspaceId = Guid.NewGuid();
+    private static readonly Guid Actor = Guid.NewGuid();
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
+
+    private static WebhookSubscription CreateActive()
+    {
+        var url = Url.Create("https://example.com/hook");
+        return WebhookSubscription.Create(AccountId, WorkspaceId, url, Actor, Now);
+    }
+
+    [Fact]
+    public void Create_ShouldSetActive()
+    {
+        var url = Url.Create("https://example.com/hook");
+        var sub = WebhookSubscription.Create(AccountId, WorkspaceId, url, Actor, Now);
+        sub.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Create_ShouldRaiseEvent()
+    {
+        var url = Url.Create("https://example.com/hook");
+        var sub = WebhookSubscription.Create(AccountId, WorkspaceId, url, Actor, Now);
+        sub.DomainEvents.Should().ContainSingle(e => e is WebhookSubscriptionCreatedDomainEvent);
+    }
+
+    [Fact]
+    public void Enable_ShouldActivate()
+    {
+        var sub = CreateActive();
+        sub.Disable(Actor, Now);
+        sub.Enable(Actor, Now);
+        sub.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Enable_NoOp_ShouldNotRaiseEvent()
+    {
+        var sub = CreateActive();
+        sub.Enable(Actor, Now);
+        sub.DomainEvents.Should().ContainSingle(e => e is WebhookSubscriptionCreatedDomainEvent);
+    }
+
+    [Fact]
+    public void Disable_ShouldDeactivate()
+    {
+        var sub = CreateActive();
+        sub.Disable(Actor, Now);
+        sub.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Disable_NoOp_ShouldNotRaiseEvent()
+    {
+        var sub = CreateActive();
+        sub.Disable(Actor, Now);
+        ((IHasDomainEvents)sub).ClearDomainEvents();
+        sub.Disable(Actor, Now);
+        sub.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RotateSecret_ShouldUpdateHash()
+    {
+        var sub = CreateActive();
+        var hash = WebhookSecretHash.Create("newhash");
+        sub.RotateSecret(hash, Actor, Now);
+        sub.SecretHash.Should().Be(hash);
+    }
+
+    [Fact]
+    public void RotateSecret_WithNullHash_ShouldThrow()
+    {
+        var sub = CreateActive();
+        var act = () => sub.RotateSecret(null!, Actor, Now);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Delete_ShouldDeactivate()
+    {
+        var sub = CreateActive();
+        sub.Delete(Actor, Now);
+        sub.IsDeleted.Should().BeTrue();
+        sub.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Delete_NoOp_ShouldNotChangeState()
+    {
+        var sub = CreateActive();
+        sub.Delete(Actor, Now);
+        var before = sub.Version;
+        sub.Delete(Actor, Now);
+        sub.Version.Should().Be(before);
+    }
+}

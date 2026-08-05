@@ -1,3 +1,4 @@
+using Notrelix.Domain.Workspaces.Members;
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
 public static class WorkspaceFactory

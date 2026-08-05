@@ -1,3 +1,4 @@
+using Notrelix.Domain.Documents.Versions.Events;
 namespace Notrelix.Domain.Documents.Versions;
 
 public class DocumentVersion : AggregateRoot, IWorkspaceScoped
@@ -30,12 +31,16 @@ public class DocumentVersion : AggregateRoot, IWorkspaceScoped
         };
 
         version.SetAuditOnCreate(createdBy, createdAt);
-        version.AddDomainEvent(new DocumentVersionCreatedDomainEvent(accountId, workspaceId, pageId, versionNumber, createdAt));
+        version.RaiseDomainEvent(new DocumentVersionCreatedDomainEvent(accountId, workspaceId, pageId, versionNumber, createdAt));
         return version;
     }
 
     public void ApplyRestore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        AddDomainEvent(new DocumentVersionRestoredDomainEvent(AccountId, WorkspaceId, PageId, VersionNumber, restoredAt));
+        Guard.NotEmpty(restoredBy);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new DocumentVersionRestoredDomainEvent(AccountId, WorkspaceId, PageId, VersionNumber, restoredAt));
     }
 }

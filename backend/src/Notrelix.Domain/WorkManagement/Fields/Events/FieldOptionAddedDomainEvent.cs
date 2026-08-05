@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Fields.Events;
 
+[EventName("work-management.field-option-added")]
 public sealed record FieldOptionAddedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +9,4 @@ public sealed record FieldOptionAddedDomainEvent(
     string Name,
     Guid AddedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, AddedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

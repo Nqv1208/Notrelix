@@ -9,7 +9,7 @@ using NpgsqlTypes;
 
 #nullable disable
 
-namespace Notrelix.Infrastructure.Migrations
+namespace Notrelix.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -25,6 +25,54 @@ namespace Notrelix.Infrastructure.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pgcrypto");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Notrelix.Application.Features.Accounts.Abstractions.Records.AccountSettingRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("SettingKey")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("setting_key");
+
+                    b.Property<string>("SettingValue")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("setting_value");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_account_settings");
+
+                    b.HasIndex("AccountId", "SettingKey")
+                        .IsUnique()
+                        .HasDatabaseName("idx_account_settings_key");
+
+                    b.ToTable("account_settings", "account");
+                });
 
             modelBuilder.Entity("Notrelix.Domain.Accounts.Accounts.Account", b =>
                 {
@@ -72,14 +120,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
                         .HasColumnName("plan_code");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -145,31 +185,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Domain")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("domain");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -181,8 +201,8 @@ namespace Notrelix.Infrastructure.Migrations
 
                     b.Property<string>("VerificationStatus")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("verification_status");
 
                     b.Property<string>("VerificationTokenHash")
@@ -234,18 +254,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Issuer")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -267,14 +275,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("provider_type");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("SsoUrl")
                         .IsRequired()
@@ -326,18 +326,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(320)
@@ -351,14 +339,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid>("InvitedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -425,14 +405,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -559,18 +531,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<Guid?>("IdentityProviderId")
                         .HasColumnType("uuid")
                         .HasColumnName("identity_provider_id");
@@ -584,14 +544,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -690,53 +642,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("scim_sync_runs", "account");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Accounts.Settings.AccountSettings", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("account_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("SettingKey")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("setting_key");
-
-                    b.Property<string>("SettingValue")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("setting_value");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id")
-                        .HasName("pk_account_settings");
-
-                    b.HasIndex("AccountId", "SettingKey")
-                        .IsUnique()
-                        .HasDatabaseName("idx_account_settings_key");
-
-                    b.ToTable("account_settings", "account");
-                });
-
             modelBuilder.Entity("Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute", b =>
                 {
                     b.Property<Guid>("Id")
@@ -755,9 +660,28 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("DeleteReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("delete_reason");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
                     b.Property<bool>("IsDefault")
                         .HasColumnType("boolean")
                         .HasColumnName("is_default");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("RouteSlug")
                         .IsRequired()
@@ -773,12 +697,22 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
                     b.Property<Guid?>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
 
                     b.HasKey("Id")
                         .HasName("pk_workspace_routes");
+
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("idx_workspace_routes_is_deleted");
 
                     b.HasIndex("AccountId", "RouteSlug")
                         .IsUnique()
@@ -805,31 +739,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -901,30 +815,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("dashboard_id");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Filter")
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("filter");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("SourceType")
                         .IsRequired()
@@ -1032,6 +926,12 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("report_type");
 
+                    b.Property<int>("SchemaVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("schema_version");
+
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
@@ -1095,14 +995,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<Guid?>("ScopeResourceId")
                         .HasColumnType("uuid")
@@ -1186,18 +1078,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Error")
                         .HasColumnType("jsonb")
                         .HasColumnName("error");
@@ -1215,14 +1095,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("output");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1305,18 +1177,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Error")
                         .HasColumnType("text")
                         .HasColumnName("error");
@@ -1332,14 +1192,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<string>("Payload")
                         .HasColumnType("jsonb")
                         .HasColumnName("payload");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<Guid>("RuleId")
                         .HasColumnType("uuid")
@@ -1472,14 +1324,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1551,14 +1395,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("NextRunAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("next_run_at");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<Guid>("RuleId")
                         .HasColumnType("uuid")
@@ -1652,14 +1488,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1707,18 +1535,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Error")
                         .HasColumnType("text")
                         .HasColumnName("error");
@@ -1737,14 +1553,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("ReceivedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("received_at");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1803,31 +1611,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("ProviderCustomerId")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("provider_customer_id");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1881,18 +1669,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
@@ -1906,14 +1682,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<int>("Limit")
                         .HasColumnType("integer")
                         .HasColumnName("limit_value");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1996,18 +1764,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset>("DueAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("due_at");
@@ -2017,14 +1773,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("number");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -2134,18 +1882,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<bool>("IsDefault")
                         .HasColumnType("boolean")
                         .HasColumnName("is_default");
@@ -2167,14 +1903,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("provider_method_id");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -2224,18 +1952,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
@@ -2252,14 +1968,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("period");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -2389,29 +2097,9 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("current_period_start");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<Guid>("PlanId")
                         .HasColumnType("uuid")
                         .HasColumnName("plan_id");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -2559,31 +2247,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("current_value");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Key")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("metric_key");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2662,18 +2330,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("current_usage");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Feature")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -2697,14 +2353,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("reset_period");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<decimal?>("SoftLimit")
                         .HasColumnType("decimal(18,2)")
@@ -2767,14 +2415,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -2851,14 +2491,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid")
                         .HasColumnName("parent_id");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2940,6 +2572,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("connection_id");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
                     b.Property<DateTimeOffset>("LastSeenAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_seen_at");
@@ -2949,6 +2585,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -2987,26 +2627,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
-
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3066,7 +2686,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
@@ -3093,7 +2713,7 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_resource_read_states");
 
-                    b.HasIndex("WorkspaceId", "UserId", "ResourceType", "ResourceId")
+                    b.HasIndex("WorkspaceId", "UserId", "ResourceKind", "ResourceId")
                         .IsUnique()
                         .HasDatabaseName("ux_collab_resource_read_states_user_resource");
 
@@ -3121,31 +2741,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Level")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("watch_level");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3222,14 +2822,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("position");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -3316,14 +2908,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("parent_id");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -3405,14 +2989,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -3471,18 +3047,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)")
@@ -3498,14 +3062,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("page_snapshot");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -3541,7 +3097,7 @@ namespace Notrelix.Infrastructure.Migrations
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_page_templates_workspace_id")
-                        .HasFilter("workspace_id IS NOT NULL AND deleted_at IS NULL");
+                        .HasFilter("workspace_id IS NOT NULL");
 
                     b.ToTable("page_templates", "docs");
                 });
@@ -3569,29 +3125,9 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<Guid>("PageId")
                         .HasColumnType("uuid")
                         .HasColumnName("page_id");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Snapshot")
                         .IsRequired()
@@ -3770,18 +3306,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<int?>("ResourceType")
-                        .HasMaxLength(50)
-                        .HasColumnType("integer")
+                    b.Property<string>("ResourceKind")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("resource_type");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("ScopeType")
                         .IsRequired()
@@ -3905,19 +3433,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("resource_type");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<Guid>("SubjectId")
                         .HasColumnType("uuid")
@@ -3954,7 +3474,7 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasIndex("SubjectId")
                         .HasDatabaseName("idx_resource_permissions_subject_id");
 
-                    b.HasIndex("ResourceType", "ResourceId")
+                    b.HasIndex("ResourceKind", "ResourceId")
                         .HasDatabaseName("idx_resource_permissions_resource");
 
                     b.ToTable("resource_permissions", "governance");
@@ -4017,18 +3537,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Description")
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
@@ -4043,14 +3551,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -4186,18 +3686,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
@@ -4206,19 +3694,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("resource_type");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -4260,6 +3740,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -4268,26 +3752,15 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
+                    b.Property<string>("Definition")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("permissions_json");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)")
                         .HasColumnName("description");
-
-                    b.Property<bool>("IsSystem")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_system");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -4295,18 +3768,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
-                    b.Property<string>("PermissionsJson")
+                    b.Property<string>("Scope")
                         .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("permissions_json");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("scope");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -4314,9 +3780,9 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("status");
 
-                    b.Property<string>("TargetResourceType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                    b.Property<string>("TargetResourceKind")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("target_resource_type");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -4346,7 +3812,7 @@ namespace Notrelix.Infrastructure.Migrations
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_permission_templates_workspace_id")
-                        .HasFilter("workspace_id IS NOT NULL AND deleted_at IS NULL");
+                        .HasFilter("workspace_id IS NOT NULL");
 
                     b.ToTable("permission_templates", "governance");
                 });
@@ -4365,18 +3831,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("DestinationMasked")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
@@ -4389,14 +3843,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<bool>("IsPrimary")
                         .HasColumnType("boolean")
                         .HasColumnName("is_primary");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("SecretRef")
                         .HasColumnType("text")
@@ -4452,6 +3898,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("ProfileSnapshot")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("raw_profile");
+
                     b.Property<string>("Provider")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -4463,11 +3914,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("provider_id");
-
-                    b.Property<string>("RawProfile")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("raw_profile");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -4512,6 +3958,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
                     b.Property<string>("Locale")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -4526,14 +3976,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("jsonb")
                         .HasDefaultValue("{}")
                         .HasColumnName("preferences_json");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Theme")
                         .IsRequired()
@@ -4599,18 +4041,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("FailureReason")
                         .HasColumnType("text")
                         .HasColumnName("failure_reason");
@@ -4623,14 +4053,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_at");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<bool>("Succeeded")
                         .HasColumnType("boolean")
@@ -4686,18 +4108,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<bool>("IsMfaEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("is_mfa_enabled");
@@ -4718,14 +4128,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<bool>("RequirePasswordChange")
                         .HasColumnType("boolean")
                         .HasColumnName("require_password_change");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("SettingsJson")
                         .IsRequired()
@@ -4775,18 +4177,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset?>("ExpiredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expired_at");
@@ -4799,14 +4189,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(45)
                         .HasColumnType("character varying(45)")
                         .HasColumnName("ip_address");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4846,8 +4228,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasName("pk_user_sessions");
 
                     b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("idx_user_sessions_expires")
-                        .HasFilter("deleted_at IS NULL");
+                        .HasDatabaseName("idx_user_sessions_expires");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_user_sessions_user_id");
@@ -4873,18 +4254,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
@@ -4898,14 +4267,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4979,18 +4340,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset?>("ExpiredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expired_at");
@@ -5009,14 +4358,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email_snapshot");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("RevocationReason")
                         .HasMaxLength(256)
@@ -5065,13 +4406,12 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasName("pk_email_verification_tokens");
 
                     b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("idx_email_verification_tokens_expires")
-                        .HasFilter("deleted_at IS NULL");
+                        .HasDatabaseName("idx_email_verification_tokens_expires");
 
                     b.HasIndex("UserId")
                         .IsUnique()
                         .HasDatabaseName("ux_email_verification_tokens_one_active_per_user")
-                        .HasFilter("status = 'Active' AND deleted_at IS NULL");
+                        .HasFilter("status = 'Active'");
 
                     b.ToTable("email_verification_tokens", "identity");
                 });
@@ -5090,18 +4430,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset?>("ExpiredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expired_at");
@@ -5115,14 +4443,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(1)
                         .HasColumnName("hash_version");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("RevocationReason")
                         .HasMaxLength(256)
@@ -5171,8 +4491,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasName("pk_password_reset_tokens");
 
                     b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("idx_password_reset_tokens_expires")
-                        .HasFilter("deleted_at IS NULL");
+                        .HasDatabaseName("idx_password_reset_tokens_expires");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_password_reset_tokens_user_id");
@@ -5240,14 +4559,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -5386,14 +4697,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("provider");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<string>("SyncDirection")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -5446,6 +4749,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("CurrentSecretVersion")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("current_secret_version");
+
                     b.Property<string>("DeleteReason")
                         .HasColumnType("text")
                         .HasColumnName("delete_reason");
@@ -5457,6 +4765,10 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
+
+                    b.Property<string>("ErrorDetail")
+                        .HasColumnType("text")
+                        .HasColumnName("error_detail");
 
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
@@ -5473,13 +4785,9 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("provider_account_id");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
+                    b.Property<DateTimeOffset?>("SecretRotatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
+                        .HasColumnName("secret_rotated_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -5595,7 +4903,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_synced_at");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -5604,7 +4912,7 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_integration_sync_cursors");
 
-                    b.HasIndex("ConnectionId", "ResourceType")
+                    b.HasIndex("ConnectionId", "ResourceKind")
                         .HasDatabaseName("idx_integration_sync_cursors_connection_resource");
 
                     b.ToTable("integration_sync_cursors", "integration");
@@ -5623,18 +4931,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
-
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
 
                     b.Property<string>("EventType")
                         .IsRequired()
@@ -5661,14 +4957,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("ReceivedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("received_at");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -5716,18 +5004,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset?>("DeliveredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("delivered_at");
@@ -5766,14 +5042,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<int?>("ResponseStatusCode")
                         .HasColumnType("integer")
                         .HasColumnName("response_status_code");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<int>("RetryCount")
                         .HasColumnType("integer")
@@ -5854,14 +5122,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -5927,14 +5187,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid>("RequestedByUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("requested_by_user_id");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -6052,6 +5304,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
                     b.Property<bool>("IsCollapsed")
                         .HasColumnType("boolean")
                         .HasColumnName("is_collapsed");
@@ -6061,14 +5317,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("position");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -6083,6 +5331,13 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
 
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
@@ -6167,14 +5422,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<long>("ItemSequence")
                         .HasColumnType("bigint")
                         .HasColumnName("item_sequence");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<Guid?>("SpaceId")
                         .HasColumnType("uuid")
@@ -6358,14 +5605,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("position");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -6493,14 +5732,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
-                    b.Property<string>("FormulaExpression")
-                        .HasColumnType("text")
-                        .HasColumnName("formula_expression");
-
-                    b.Property<bool>("IsFormula")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_formula");
-
                     b.Property<bool>("IsSensitive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_sensitive");
@@ -6508,11 +5739,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<bool>("IsSystem")
                         .HasColumnType("boolean")
                         .HasColumnName("is_system");
-
-                    b.Property<string>("MirrorSourceJson")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("mirror_source_json");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -6524,14 +5750,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("position");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -6637,14 +5855,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("SettingsJson")
                         .IsRequired()
@@ -6852,33 +6062,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("form_submissions", "work");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Formulas.FormulaDependency", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("DependsOnFieldId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("depends_on_field_id");
-
-                    b.Property<Guid>("FormulaFieldId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("formula_field_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_formula_dependencies");
-
-                    b.HasIndex("DependsOnFieldId")
-                        .HasDatabaseName("idx_formula_dependencies_depends_on");
-
-                    b.HasIndex("FormulaFieldId", "DependsOnFieldId")
-                        .IsUnique()
-                        .HasDatabaseName("idx_formula_dependencies_pair");
-
-                    b.ToTable("formula_dependencies", "work");
-                });
-
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6925,6 +6108,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("group_id");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
                     b.Property<string>("ItemKey")
                         .HasColumnType("text")
                         .HasColumnName("item_key");
@@ -6951,14 +6138,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("position");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -7211,14 +6390,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("predecessor_item_id");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<Guid>("SuccessorItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("successor_item_id");
@@ -7276,18 +6447,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<DateTimeOffset?>("EndedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ended_at");
@@ -7299,14 +6458,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<string>("Note")
                         .HasColumnType("text")
                         .HasColumnName("note");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<DateTimeOffset>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -7331,7 +6482,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
                         .HasColumnName("version");
 
                     b.Property<Guid>("WorkspaceId")
@@ -7345,12 +6499,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDatabaseName("ix_time_tracking_entries_board_id");
 
                     b.HasIndex("Status")
-                        .HasDatabaseName("idx_time_tracking_status")
-                        .HasFilter("deleted_at IS NULL");
+                        .HasDatabaseName("idx_time_tracking_status");
 
                     b.HasIndex("ItemId", "UserId")
-                        .HasDatabaseName("idx_time_tracking_item_user")
-                        .HasFilter("deleted_at IS NULL");
+                        .HasDatabaseName("idx_time_tracking_item_user");
 
                     b.ToTable("time_tracking_entries", "work");
                 });
@@ -7394,14 +6546,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -7555,14 +6699,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("relation_type");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<Guid>("SourceBoardId")
                         .HasColumnType("uuid")
@@ -7730,39 +6866,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("relation_field_configs", "work");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Rollups.RollupSnapshot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("FieldId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("field_id");
-
-                    b.Property<Guid>("ItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("item_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("value");
-
-                    b.HasKey("Id")
-                        .HasName("pk_rollup_snapshots");
-
-                    b.HasIndex("ItemId", "FieldId")
-                        .IsUnique()
-                        .HasDatabaseName("idx_rollup_snapshots_item_field");
-
-                    b.ToTable("rollup_snapshots", "work");
-                });
-
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Templates.BoardTemplate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7798,14 +6901,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -7883,14 +6978,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -7965,6 +7052,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
                     b.Property<bool>("IsDefault")
                         .HasColumnType("boolean")
                         .HasColumnName("is_default");
@@ -7974,14 +7065,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -8112,14 +7195,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("group_rule_id");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -8202,14 +7277,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -8282,10 +7349,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.Property<long>("Version")
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
@@ -8320,18 +7383,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -8351,14 +7402,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid>("InvitedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -8426,26 +7469,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
-
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -8536,14 +7559,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
                     b.Property<string>("SpaceType")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -8630,14 +7645,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -8781,14 +7788,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -9064,7 +8063,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -9119,7 +8118,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDatabaseName("ix_audit_logs_workspace_id_occurred_at")
                         .HasFilter("\"workspace_id\" IS NOT NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "OccurredAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "OccurredAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_audit_logs_resource_type_resource_id_occurred_at")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL");
@@ -9180,7 +8179,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -9541,7 +8540,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -9578,10 +8577,10 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_resource_permission_inheritance_cache");
 
-                    b.HasIndex("WorkspaceId", "SubjectType", "SubjectId", "ResourceType", "ResourceId", "Action")
+                    b.HasIndex("WorkspaceId", "SubjectType", "SubjectId", "ResourceKind", "ResourceId", "Action")
                         .HasDatabaseName("ix_governance_permission_inheritance_cache_lookup");
 
-                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "SubjectType", "SubjectId", "SubjectKey", "Action")
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "SubjectType", "SubjectId", "SubjectKey", "Action")
                         .IsUnique()
                         .HasDatabaseName("ux_governance_permission_inheritance_cache");
 
@@ -9653,6 +8652,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("last_error_code");
+
+                    b.Property<Guid?>("LockId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lock_id");
 
                     b.Property<string>("LockedBy")
                         .HasMaxLength(160)
@@ -10405,7 +9408,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -10502,7 +9505,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDatabaseName("ix_notifications_items_workspace_time")
                         .HasFilter("\"workspace_id\" IS NOT NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "CreatedAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "CreatedAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_notifications_items_resource")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL");
@@ -10800,97 +9803,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("export_jobs", "ops");
                 });
 
-            modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.IdempotencyKeyRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("completed_at");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("text")
-                        .HasColumnName("error_message");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("IdempotencyKey")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("character varying(260)")
-                        .HasColumnName("idempotency_key");
-
-                    b.Property<DateTimeOffset?>("LockedUntil")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("locked_until");
-
-                    b.Property<string>("RequestHash")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("request_hash");
-
-                    b.Property<string>("RequestMethod")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("request_method");
-
-                    b.Property<string>("RequestPath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("request_path");
-
-                    b.Property<string>("ResponseBodyJson")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("response_body_json");
-
-                    b.Property<int?>("ResponseStatusCode")
-                        .HasColumnType("integer")
-                        .HasColumnName("response_status_code");
-
-                    b.Property<string>("Scope")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("scope");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid?>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_idempotency_keys");
-
-                    b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("ix_idempotency_keys_expires_at");
-
-                    b.HasIndex("Scope", "IdempotencyKey")
-                        .IsUnique()
-                        .HasDatabaseName("ix_idempotency_keys_scope_key");
-
-                    b.ToTable("idempotency_keys", "ops");
-                });
-
             modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.ImportJobRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11156,7 +10068,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -11253,7 +10165,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDatabaseName("ix_activity_workspace_logs_workspace_time")
                         .HasFilter("\"deleted_at\" IS NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "OccurredAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "OccurredAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_activity_workspace_logs_resource")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL AND \"deleted_at\" IS NULL");
@@ -11296,7 +10208,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -11332,10 +10244,10 @@ namespace Notrelix.Infrastructure.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "gin");
 
-                    b.HasIndex("AccountId", "WorkspaceId", "ResourceType")
+                    b.HasIndex("AccountId", "WorkspaceId", "ResourceKind")
                         .HasDatabaseName("ix_search_documents_account_workspace_type");
 
-                    b.HasIndex("AccountId", "WorkspaceId", "ResourceType", "ResourceId")
+                    b.HasIndex("AccountId", "WorkspaceId", "ResourceKind", "ResourceId")
                         .IsUnique()
                         .HasDatabaseName("ux_search_documents_resource");
 
@@ -11417,7 +10329,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -11448,11 +10360,86 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasIndex("Status", "Priority", "AvailableAt", "CreatedAt")
                         .HasDatabaseName("ix_search_index_jobs_pending");
 
-                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "CreatedAt")
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "CreatedAt")
                         .IsDescending(false, false, false, true)
                         .HasDatabaseName("ix_search_index_jobs_resource");
 
                     b.ToTable("search_index_jobs", "search");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("key_hash");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("operation");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_hash");
+
+                    b.Property<string>("ResultContract")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("result_contract");
+
+                    b.Property<string>("ResultJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("result_json");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("scope");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("state");
+
+                    b.HasKey("Id")
+                        .HasName("pk_idempotency_records");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_idempotency_records_expires_at");
+
+                    b.HasIndex("Scope", "Operation", "KeyHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_idempotency_records_scope_op_key");
+
+                    b.ToTable("idempotency_records", "ops", t =>
+                        {
+                            t.HasCheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
+                        });
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Analytics.Dashboards.DashboardWidget", b =>
@@ -11526,6 +10513,9 @@ namespace Notrelix.Infrastructure.Migrations
                             b1.Property<Guid>("AutomationRuleId")
                                 .HasColumnType("uuid");
 
+                            b1.Property<int>("SchemaVersion")
+                                .HasColumnType("integer");
+
                             b1.HasKey("AutomationRuleId");
 
                             b1.ToTable("automation_rules", "automation");
@@ -11543,6 +10533,9 @@ namespace Notrelix.Infrastructure.Migrations
 
                                     b2.Property<string>("Configuration")
                                         .HasColumnType("text");
+
+                                    b2.Property<int>("SchemaVersion")
+                                        .HasColumnType("integer");
 
                                     b2.Property<string>("Type")
                                         .IsRequired()
@@ -11568,6 +10561,9 @@ namespace Notrelix.Infrastructure.Migrations
                                         .IsRequired()
                                         .HasColumnType("text");
 
+                                    b2.Property<int>("SchemaVersion")
+                                        .HasColumnType("integer");
+
                                     b2.HasKey("AutomationConfigurationAutomationRuleId");
 
                                     b2.ToTable("automation_rules", "automation");
@@ -11586,6 +10582,9 @@ namespace Notrelix.Infrastructure.Migrations
 
                                     b2.Property<string>("Configuration")
                                         .HasColumnType("text");
+
+                                    b2.Property<int>("SchemaVersion")
+                                        .HasColumnType("integer");
 
                                     b2.Property<string>("Type")
                                         .IsRequired()
@@ -11628,6 +10627,10 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasMaxLength(100)
                                 .HasColumnType("character varying(100)")
                                 .HasColumnName("cron_expression");
+
+                            b1.Property<int>("SchemaVersion")
+                                .HasColumnType("integer")
+                                .HasColumnName("schedule_schema_version");
 
                             b1.Property<string>("TimeZone")
                                 .IsRequired()
@@ -11773,15 +10776,15 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("resource_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("resource_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
 
                             b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
@@ -11789,7 +10792,7 @@ namespace Notrelix.Infrastructure.Migrations
 
                             b1.HasKey("AttachmentId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("Kind", "ResourceId")
                                 .HasDatabaseName("idx_attachments_resource");
 
                             b1.ToTable("attachments", "collab");
@@ -11861,15 +10864,15 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("resource_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("resource_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
 
                             b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
@@ -11877,7 +10880,7 @@ namespace Notrelix.Infrastructure.Migrations
 
                             b1.HasKey("CommentId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("Kind", "ResourceId")
                                 .HasDatabaseName("idx_comments_resource");
 
                             b1.ToTable("comments", "collab");
@@ -11926,15 +10929,15 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("source_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("source_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("source_type");
 
                             b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
@@ -11942,7 +10945,7 @@ namespace Notrelix.Infrastructure.Migrations
 
                             b1.HasKey("MentionId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("Kind", "ResourceId")
                                 .HasDatabaseName("idx_mentions_source");
 
                             b1.ToTable("mentions", "collab");
@@ -11985,15 +10988,15 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("resource_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("resource_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
 
                             b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
@@ -12004,7 +11007,7 @@ namespace Notrelix.Infrastructure.Migrations
                             b1.HasIndex("ResourceId")
                                 .HasDatabaseName("idx_reactions_target_resource_id");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("Kind", "ResourceId")
                                 .HasDatabaseName("idx_reactions_resource");
 
                             b1.ToTable("reactions", "collab");
@@ -12029,19 +11032,19 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("target_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
-
                             b1.HasKey("ResourceWatcherId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("Kind", "ResourceId")
                                 .HasDatabaseName("idx_resource_watchers_target");
 
                             b1.ToTable("resource_watchers", "collab");
@@ -12134,19 +11137,19 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("source_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("source_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("source_type");
-
                             b1.HasKey("ResourceLinkId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("Kind", "ResourceId")
                                 .HasDatabaseName("idx_resource_links_source");
 
                             b1.ToTable("resource_links", "docs");
@@ -12162,19 +11165,19 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("target_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
-
                             b1.HasKey("ResourceLinkId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("Kind", "ResourceId")
                                 .HasDatabaseName("idx_resource_links_target");
 
                             b1.ToTable("resource_links", "docs");
@@ -12422,15 +11425,15 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("resource_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("resource_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
 
                             b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
@@ -12438,7 +11441,7 @@ namespace Notrelix.Infrastructure.Migrations
 
                             b1.HasKey("CalendarEventId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("Kind", "ResourceId")
                                 .HasDatabaseName("idx_calendar_events_resource");
 
                             b1.ToTable("calendar_events", "integration");
@@ -12448,7 +11451,7 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasConstraintName("fk_calendar_events_calendar_events_id");
                         });
 
-                    b.OwnsOne("Notrelix.Domain.SharedKernel.SyncHash", "SyncHash", b1 =>
+                    b.OwnsOne("Notrelix.Domain.Integrations.Calendar.CalendarSyncFingerprint", "SyncHash", b1 =>
                         {
                             b1.Property<Guid>("CalendarEventId")
                                 .HasColumnType("uuid")
@@ -12494,16 +11497,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_integration_scopes_integration_connections_connection_id");
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Integrations.Connections.IntegrationSecretVersion", b =>
-                {
-                    b.HasOne("Notrelix.Domain.Integrations.Connections.IntegrationConnection", null)
-                        .WithMany("SecretVersions")
-                        .HasForeignKey("ConnectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_integration_secret_versions_integration_connections_connect");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Integrations.Webhooks.WebhookSubscription", b =>
@@ -12563,15 +11556,15 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("target_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
 
                             b1.HasKey("ApprovalRequestId");
 
@@ -12833,15 +11826,15 @@ namespace Notrelix.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("target_type");
+
                             b1.Property<Guid>("ResourceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
 
                             b1.HasKey("BoardItemLinkId");
 
@@ -13009,16 +12002,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_mirror_value_snapshots_board_item_connections_connection_id");
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Rollups.RollupSnapshot", b =>
-                {
-                    b.HasOne("Notrelix.Domain.WorkManagement.Items.BoardItem", null)
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_rollup_snapshots_board_items_item_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Templates.ItemTemplate", b =>
@@ -13368,8 +12351,6 @@ namespace Notrelix.Infrastructure.Migrations
             modelBuilder.Entity("Notrelix.Domain.Integrations.Connections.IntegrationConnection", b =>
                 {
                     b.Navigation("Scopes");
-
-                    b.Navigation("SecretVersions");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest", b =>

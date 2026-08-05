@@ -3,11 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
 
+[IdempotencyOperation("work-management.board-views.delete-board-view.v1")]
 public record DeleteBoardViewCommand(Guid BoardId, Guid ViewId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
 }
 
 public class DeleteBoardViewCommandHandler : IRequestHandler<DeleteBoardViewCommand, Result>
@@ -35,7 +36,7 @@ public class DeleteBoardViewCommandHandler : IRequestHandler<DeleteBoardViewComm
             throw new NotFoundException(nameof(BoardView), request.ViewId);
 
         var now = _dateTimeProvider.UtcNow;
-        view.SoftDelete(_currentUser.UserId, now);
+        view.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
 }

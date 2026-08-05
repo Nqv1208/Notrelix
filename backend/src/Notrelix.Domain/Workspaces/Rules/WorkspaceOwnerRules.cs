@@ -1,3 +1,4 @@
+using Notrelix.Domain.Workspaces.Members;
 namespace Notrelix.Domain.Workspaces.Rules;
 
 public static class WorkspaceOwnerRules
@@ -8,7 +9,7 @@ public static class WorkspaceOwnerRules
         {
             if (activeOwnerCount <= 1)
             {
-                throw new BusinessRuleException("Cannot downgrade the last owner of the workspace.");
+                throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Owner_CannotDowngradeLastOwner, "Cannot downgrade the last owner of the workspace.");
             }
         }
     }
@@ -17,7 +18,7 @@ public static class WorkspaceOwnerRules
     {
         if (currentRole == WorkspaceRole.Owner && activeOwnerCount <= 1)
         {
-            throw new BusinessRuleException("Cannot suspend the last owner of the workspace.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Owner_CannotSuspendLastOwner, "Cannot suspend the last owner of the workspace.");
         }
     }
 
@@ -25,7 +26,7 @@ public static class WorkspaceOwnerRules
     {
         if (currentRole == WorkspaceRole.Owner && activeOwnerCount <= 1)
         {
-            throw new BusinessRuleException("Cannot remove the last owner of the workspace.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Owner_CannotRemoveLastOwner, "Cannot remove the last owner of the workspace.");
         }
     }
 }

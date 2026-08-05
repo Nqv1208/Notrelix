@@ -3,10 +3,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem;
 
-public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("work-management.board-items.link-page-to-board-item.v1")]
+public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoardItemCommand, Result>
@@ -41,7 +42,7 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
             throw new NotFoundException(nameof(Page), request.PageId);
 
         if (card.WorkspaceId != pageWorkspaceId.Value)
-            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
 
         var now = _timeProvider.UtcNow;
 
@@ -50,7 +51,7 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
             card.WorkspaceId,
             card.BoardId,
             card.Id,
-            ResourceRef.Create(ResourceType.Page, request.PageId, card.WorkspaceId),
+            ResourceRef.Create(ResourceKind.Create("documents.page"), request.PageId, card.WorkspaceId),
             BoardItemLinkType.Reference,
             _requestContext.UserId,
             now);

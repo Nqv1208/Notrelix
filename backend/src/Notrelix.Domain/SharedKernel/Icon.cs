@@ -1,11 +1,8 @@
 namespace Notrelix.Domain.SharedKernel;
 
-/// <summary>
-/// Value Object đại diện cho icon (emoji hoặc icon name)
-/// </summary>
-public class Icon : ValueObject
+public sealed class Icon : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; } = null!;
     public IconType Type { get; }
 
     private Icon() { }
@@ -18,7 +15,7 @@ public class Icon : ValueObject
     public static Icon FromEmoji(string emoji)
     {
         if (string.IsNullOrWhiteSpace(emoji))
-            throw new ArgumentException("Emoji không được để trống", nameof(emoji));
+            throw new ArgumentException("Emoji cannot be empty.", nameof(emoji));
 
         return new Icon(emoji.Trim(), IconType.Emoji);
     }
@@ -26,12 +23,10 @@ public class Icon : ValueObject
     public static Icon FromName(string iconName)
     {
         if (string.IsNullOrWhiteSpace(iconName))
-            throw new ArgumentException("Icon name không được để trống", nameof(iconName));
+            throw new ArgumentException("Icon name cannot be empty.", nameof(iconName));
 
         return new Icon(iconName.Trim().ToLowerInvariant(), IconType.IconName);
     }
-
-    public static Icon Default => FromEmoji("📝");
 
     protected override IEnumerable<object> GetEqualityComponents()
     {

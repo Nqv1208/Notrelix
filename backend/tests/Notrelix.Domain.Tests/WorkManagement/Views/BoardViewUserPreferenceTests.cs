@@ -27,7 +27,7 @@ public class BoardViewUserPreferenceTests
     public void ApplyFilter_ShouldUpdateFilterRules()
     {
         var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
-        pref.ClearDomainEvents();
+        ((IHasDomainEvents)pref).ClearDomainEvents();
 
         var rules = new[] { FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "value") };
         pref.ApplyFilter(rules, DateTimeOffset.UtcNow);
@@ -40,7 +40,7 @@ public class BoardViewUserPreferenceTests
     public void ApplySort_ShouldUpdateSortRules()
     {
         var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
-        pref.ClearDomainEvents();
+        ((IHasDomainEvents)pref).ClearDomainEvents();
 
         var sorts = new[] { SortRule.Create(Guid.NewGuid(), SortDirection.Ascending) };
         pref.ApplySort(sorts, DateTimeOffset.UtcNow);
@@ -53,7 +53,7 @@ public class BoardViewUserPreferenceTests
     public void ApplyGroup_ShouldSetGroupRule()
     {
         var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
-        pref.ClearDomainEvents();
+        ((IHasDomainEvents)pref).ClearDomainEvents();
 
         var group = GroupRule.Create(Guid.NewGuid());
         pref.ApplyGroup(group, DateTimeOffset.UtcNow);
@@ -67,7 +67,7 @@ public class BoardViewUserPreferenceTests
     public void ApplyGroup_WithNull_ShouldClearGroup()
     {
         var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
-        pref.ClearDomainEvents();
+        ((IHasDomainEvents)pref).ClearDomainEvents();
 
         pref.ApplyGroup(null, DateTimeOffset.UtcNow);
 
@@ -78,7 +78,7 @@ public class BoardViewUserPreferenceTests
     public void DuplicateFilter_ShouldThrow()
     {
         var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
-        pref.ClearDomainEvents();
+        ((IHasDomainEvents)pref).ClearDomainEvents();
 
         var fieldId = Guid.NewGuid();
         var rules = new[]
@@ -95,7 +95,7 @@ public class BoardViewUserPreferenceTests
     public void DuplicateSort_ShouldThrow()
     {
         var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
-        pref.ClearDomainEvents();
+        ((IHasDomainEvents)pref).ClearDomainEvents();
 
         var fieldId = Guid.NewGuid();
         var sorts = new[]

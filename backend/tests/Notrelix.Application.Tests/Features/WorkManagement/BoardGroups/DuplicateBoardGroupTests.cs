@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardGroups;
 
 public class DuplicateBoardGroupTests : WorkManagementHandlerTestBase
@@ -44,7 +45,7 @@ public class DuplicateBoardGroupTests : WorkManagementHandlerTestBase
     {
         var board = CreateBoard();
         var group = CreateBoardGroup(boardId: board.Id);
-        group.SoftDelete(TestUserId, TestNow);
+        group.Delete(TestUserId, TestNow);
         SetupBoards(board);
         SetupBoardGroups(group);
 

@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
-public record ResetPasswordCommand : ICommand<Result>, ITransactionalRequest, IGlobalRequest
+public record ResetPasswordCommand : ICommand<Result>, ITransactionalRequest, IGlobalRequest, IAnonymousRequest
 {
     public required string Email { get; init; }
     public required string Code { get; init; }
@@ -43,13 +43,13 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         var attempts = await _otpService.GetAttemptsAsync("forgot-password", email);
         if (attempts >= 5)
         {
-            return Result.Failure("Too many failed attempts. Please request a new code.");
+            return Result.Failure(new ApplicationError("identity.auth.too-many-attempts", "Too many failed attempts. Please request a new code.", ApplicationErrorType.BusinessRule));
         }
 
         var isValid = await _otpService.ValidateAsync("forgot-password", email, request.Code);
         if (!isValid)
         {
-            return Result.Failure("Invalid or expired code");
+            return Result.Failure(new ApplicationError("identity.auth.invalid-code", "Invalid or expired code.", ApplicationErrorType.Validation));
         }
 
         var user = await _context.Users
@@ -57,12 +57,12 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
 
         if (user is null)
         {
-            return Result.Failure("User not found");
+            return Result.Failure(new ApplicationError("identity.auth.user-not-found", "User not found.", ApplicationErrorType.NotFound));
         }
 
         var now = _dateTimeProvider.UtcNow;
         var hash = _passwordHasher.HashPassword(request.NewPassword);
-        user.UpdatePassword(hash, now);
+        user.UpdatePassword(hash, user.Id, now);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)

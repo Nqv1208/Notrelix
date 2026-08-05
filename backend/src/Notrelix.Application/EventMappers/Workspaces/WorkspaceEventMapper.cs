@@ -13,16 +13,14 @@ public sealed class WorkspaceEventMapper :
 {
     public override WorkspaceCreatedIntegrationEvent? Map(WorkspaceCreatedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new WorkspaceCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             WorkspaceId: domainEvent.WorkspaceId,
             Name: domainEvent.Name,
             Slug: domainEvent.Slug,
             OwnerId: domainEvent.CreatedBy,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.CreatedBy,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
         );
@@ -30,15 +28,13 @@ public sealed class WorkspaceEventMapper :
 
     public WorkspaceMemberAddedIntegrationEvent? Map(WorkspaceMemberAddedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new WorkspaceMemberAddedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             WorkspaceId: domainEvent.WorkspaceId,
             UserId: domainEvent.UserId,
             Role: domainEvent.Role.ToString(),
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.ActorId,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
         );
@@ -46,14 +42,12 @@ public sealed class WorkspaceEventMapper :
 
     public WorkspaceMemberRemovedIntegrationEvent? Map(WorkspaceMemberRemovedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new WorkspaceMemberRemovedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             WorkspaceId: domainEvent.WorkspaceId,
             UserId: domainEvent.UserId,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.ActorId,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
         );
@@ -61,57 +55,49 @@ public sealed class WorkspaceEventMapper :
 
     public WorkspaceArchivedIntegrationEvent? Map(WorkspaceArchivedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new WorkspaceArchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             WorkspaceId: domainEvent.WorkspaceId,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.ArchivedBy,
             OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public WorkspaceUnarchivedIntegrationEvent? Map(WorkspaceUnarchivedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new WorkspaceUnarchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             WorkspaceId: domainEvent.WorkspaceId,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.UnarchivedBy,
             OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public SpaceCreatedIntegrationEvent? Map(SpaceCreatedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new SpaceCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             WorkspaceId: domainEvent.WorkspaceId,
             SpaceId: domainEvent.SpaceId,
             Name: domainEvent.Name,
             Visibility: "Workspace",
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.CreatedBy,
             OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public TeamCreatedIntegrationEvent? Map(TeamCreatedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new TeamCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             WorkspaceId: domainEvent.WorkspaceId,
             TeamId: domainEvent.TeamId,
             Name: domainEvent.Name,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.CreatedBy,
             OccurredAt: domainEvent.OccurredAt
         );
     }

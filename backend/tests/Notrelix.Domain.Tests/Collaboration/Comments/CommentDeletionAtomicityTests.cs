@@ -1,0 +1,93 @@
+using FluentAssertions;
+using Notrelix.Domain.Collaboration.Comments;
+
+namespace Notrelix.Domain.Tests.Collaboration.Comments;
+
+public class CommentDeletionAtomicityTests
+{
+    private readonly Guid _accountId = Guid.NewGuid();
+    private readonly Guid _workspaceId = Guid.NewGuid();
+    private readonly Guid _actorId = Guid.NewGuid();
+    private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
+
+    private ResourceRef Target => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
+
+    [Fact]
+    public void Delete_ShouldTransitionStatus()
+    {
+        var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
+        comment.Delete(_actorId, _now);
+        comment.IsDeleted.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Delete_ShouldRaiseEvent()
+    {
+        var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
+        ((IHasDomainEvents)comment).ClearDomainEvents();
+        comment.Delete(_actorId, _now);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentDeletedDomainEvent);
+    }
+
+    [Fact]
+    public void Delete_ShouldIncrementVersion()
+    {
+        var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
+        var before = comment.Version;
+        comment.Delete(_actorId, _now);
+        comment.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
+    {
+        var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
+        comment.Delete(_actorId, _now);
+        var before = comment.Version;
+        ((IHasDomainEvents)comment).ClearDomainEvents();
+        comment.Delete(_actorId, _now);
+        comment.Version.Should().Be(before);
+        comment.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Restore_AfterDelete_ShouldRevertStatus()
+    {
+        var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
+        comment.Delete(_actorId, _now);
+        comment.Restore(_actorId, _now);
+        comment.CommentStatus.Should().Be(CommentStatus.Active);
+        comment.IsDeleted.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Restore_ShouldRaiseEvent()
+    {
+        var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
+        comment.Delete(_actorId, _now);
+        ((IHasDomainEvents)comment).ClearDomainEvents();
+        comment.Restore(_actorId, _now);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentRestoredDomainEvent);
+    }
+
+    [Fact]
+    public void Restore_ShouldIncrementVersion()
+    {
+        var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
+        comment.Delete(_actorId, _now);
+        var before = comment.Version;
+        comment.Restore(_actorId, _now);
+        comment.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void Restore_WhenNotDeleted_ShouldBeNoOp()
+    {
+        var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
+        var before = comment.Version;
+        ((IHasDomainEvents)comment).ClearDomainEvents();
+        comment.Restore(_actorId, _now);
+        comment.Version.Should().Be(before);
+        comment.DomainEvents.Should().BeEmpty();
+    }
+}

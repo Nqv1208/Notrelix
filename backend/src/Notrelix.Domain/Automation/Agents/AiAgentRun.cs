@@ -64,63 +64,63 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         };
 
         run.SetAuditOnCreate(actorUserId, createdAt);
-        run.AddDomainEvent(new AiAgentRunQueuedDomainEvent(accountId, workspaceId, run.Id, aiAgentId, createdAt));
+        run.RaiseDomainEvent(new AiAgentRunQueuedDomainEvent(accountId, workspaceId, run.Id, aiAgentId, createdAt));
         return run;
     }
 
     public void Start(DateTimeOffset startedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Queued)
-            throw new BusinessRuleException("Run can only start from Queued state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only start from Queued state.");
 
+        var pending = PrepareAuditUpdate(ActorUserId, startedAt);
         Status = AiAgentRunStatus.Running;
         StartedAt = startedAt;
-        SetAuditOnUpdate(ActorUserId, startedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunStartedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, startedAt));
+        RaiseDomainEvent(new AiAgentRunStartedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, startedAt));
     }
 
     public void Succeed(JsonValue output, DateTimeOffset finishedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException("Run can only succeed from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only succeed from Running state.");
         Guard.NotNull(output);
 
+        var pending = PrepareAuditUpdate(ActorUserId, finishedAt);
         Status = AiAgentRunStatus.Succeeded;
         Output = output;
         FinishedAt = finishedAt;
-        SetAuditOnUpdate(ActorUserId, finishedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunSucceededDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, finishedAt));
+        RaiseDomainEvent(new AiAgentRunSucceededDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, finishedAt));
     }
 
     public void Fail(JsonValue error, DateTimeOffset finishedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException("Run can only fail from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only fail from Running state.");
         Guard.NotNull(error);
 
+        var pending = PrepareAuditUpdate(ActorUserId, finishedAt);
         Status = AiAgentRunStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
-        SetAuditOnUpdate(ActorUserId, finishedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunFailedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
+        RaiseDomainEvent(new AiAgentRunFailedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
     }
 
     public void Cancel(Guid? cancelledBy, DateTimeOffset cancelledAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Queued && Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException("Run can only be cancelled from Queued or Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only be cancelled from Queued or Running state.");
 
+        var pending = PrepareAuditUpdate(cancelledBy, cancelledAt);
         Status = AiAgentRunStatus.Cancelled;
         FinishedAt = cancelledAt;
-        SetAuditOnUpdate(cancelledBy, cancelledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunCancelledDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
+        RaiseDomainEvent(new AiAgentRunCancelledDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
     }
 }

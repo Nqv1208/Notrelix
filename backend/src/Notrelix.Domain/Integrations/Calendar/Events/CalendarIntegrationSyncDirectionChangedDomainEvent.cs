@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Calendar.Events;
 
+[EventName("integrations.calendar-integration-sync-direction-changed")]
 public sealed record CalendarIntegrationSyncDirectionChangedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record CalendarIntegrationSyncDirectionChangedDomainEvent(
     CalendarSyncDirection NewDirection,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

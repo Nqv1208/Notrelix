@@ -8,7 +8,7 @@ public sealed class Email : ValueObject
         @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private Email() { }
     private Email(string value)
@@ -22,7 +22,11 @@ public sealed class Email : ValueObject
 
         value = value.Trim().ToLowerInvariant();
 
-        Guard.Assert(EmailRegex.IsMatch(value), $"'{value}' is not a valid email address.");
+        if (value.Length > 254)
+            throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_Email_InvalidFormat, "Email address exceeds maximum length of 254 characters.");
+
+        if (!EmailRegex.IsMatch(value))
+            throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_Email_InvalidFormat, $"'{value}' is not a valid email address.");
 
         return new Email(value);
     }

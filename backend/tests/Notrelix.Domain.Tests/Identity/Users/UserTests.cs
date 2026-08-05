@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Identity.OAuth;
 
 namespace Notrelix.Domain.Tests.Identity;
 
@@ -36,9 +37,9 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
-        var loginTime = new DateTimeOffset(2026, 6, 11, 10, 0, 0, TimeSpan.Zero);
+        var loginTime = now.AddHours(1);
         user.RecordLogin(loginTime);
 
         user.LastLoginAt.Should().Be(loginTime);
@@ -52,10 +53,10 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
-        var updateTime = new DateTimeOffset(2026, 6, 11, 12, 0, 0, TimeSpan.Zero);
-        user.UpdateProfile("New Name", "avatar.png", updateTime);
+        var updateTime = now.AddHours(1);
+        user.UpdateProfile("New Name", "avatar.png", user.Id, updateTime);
 
         user.Name.Should().Be("New Name");
         user.Avatar.Should().Be("avatar.png");
@@ -67,9 +68,9 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.SoftDelete(Guid.NewGuid(), now);
+        user.Delete(Guid.NewGuid(), now);
 
-        var act = () => user.UpdateProfile("New Name", null, now);
+        var act = () => user.UpdateProfile("New Name", null, user.Id, now);
 
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
@@ -80,7 +81,7 @@ public class UserTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("old@example.com", "Test User", "hash123", now);
 
-        user.UpdateEmail("new@example.com", now);
+        user.UpdateEmail("new@example.com", user.Id, now);
 
         user.Email.Value.Should().Be("new@example.com");
     }
@@ -91,7 +92,7 @@ public class UserTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "oldhash", now);
 
-        user.UpdatePassword("newhash", now);
+        user.UpdatePassword("newhash", user.Id, now);
 
         user.PasswordHash.Should().Be("newhash");
     }
@@ -142,5 +143,88 @@ public class UserTests
 
         var hasRevokeSessionMethod = user.GetType().GetMethod("RevokeSession");
         hasRevokeSessionMethod.Should().BeNull("session revocation belongs to UserSession aggregate");
+    }
+
+    [Fact]
+    public void UpdatePassword_SameHash_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
+        var version = user.Version;
+
+        user.UpdatePassword("hash123", user.Id, now);
+
+        user.PasswordHash.Should().Be("hash123");
+        user.Version.Should().Be(version);
+        user.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdatePassword_DifferentHash_ShouldChangePassword()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "oldhash", now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
+        var version = user.Version;
+
+        user.UpdatePassword("newhash", user.Id, now);
+
+        user.PasswordHash.Should().Be("newhash");
+        user.Version.Should().Be(version + 1);
+        user.DomainEvents.Should().ContainSingle(e => e is UserPasswordChangedDomainEvent);
+    }
+
+    [Fact]
+    public void RotateOAuthToken_SameToken_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var token = OAuthToken.Create(SecretRef.Create("access"), SecretRef.Create("refresh"), now.AddHours(1));
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
+            token, user.Id, now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
+        var version = user.Version;
+
+        user.RotateOAuthToken(OAuthProvider.Google, token, user.Id, now.AddMinutes(5));
+
+        user.OAuthAccounts.Single().Token.Should().Be(token);
+        user.Version.Should().Be(version);
+        user.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RotateOAuthToken_DifferentToken_ShouldRotate()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var oldToken = OAuthToken.Create(SecretRef.Create("old-access"));
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
+            oldToken, user.Id, now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
+        var version = user.Version;
+
+        var newToken = OAuthToken.Create(SecretRef.Create("new-access"));
+        user.RotateOAuthToken(OAuthProvider.Google, newToken, user.Id, now.AddMinutes(5));
+
+        user.OAuthAccounts.Single().Token.Should().Be(newToken);
+        user.Version.Should().Be(version + 1);
+        user.DomainEvents.Should().ContainSingle(e => e is OAuthTokenReferenceRotatedDomainEvent);
+    }
+
+    [Fact]
+    public void UnlinkOAuthAccount_EmptyActor_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
+            null, user.Id, now);
+
+        var act = () => user.UnlinkOAuthAccount(OAuthProvider.Google, Guid.Empty, now);
+
+        act.Should().Throw<BusinessRuleException>();
     }
 }

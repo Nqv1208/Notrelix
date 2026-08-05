@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
@@ -30,6 +31,8 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     private static readonly JsonValue EmptyProfile = JsonValue.EmptyObject();
+    private static OAuthProfileSnapshot EmptySnapshot(OAuthProvider provider) =>
+        OAuthProfileSnapshot.Create(provider, 1, JsonValue.EmptyObject());
     private static readonly OAuthLoginState ValidState = new(
         "test-state", "test-nonce", "test-code-verifier",
         OAuthProvider.Google, null,
@@ -69,7 +72,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             providerClient.Object,
             optionsProvider.Object,
             context,
-            context,
+            new AccountProvisioningService(context),
             sessionIssuer.Object,
             passwordHasher.Object,
             dateTimeProvider.Object,
@@ -179,7 +182,8 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("oauth-linked@example.com", "OAuth User", "hashed", now);
-        user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-123", EmptyProfile, null, now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-123",
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, EmptyProfile), null, user.Id, now);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
@@ -221,7 +225,8 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("suspended@example.com", "Suspended User", "hashed", now);
-        user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-suspended", EmptyProfile, null, now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-suspended",
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, EmptyProfile), null, user.Id, now);
         user.Suspend(Guid.NewGuid(), now, "Testing");
         context.Users.Add(user);
         await context.SaveChangesAsync();

@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 
 public class MoveBoardItemTests : WorkManagementHandlerTestBase

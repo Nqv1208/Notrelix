@@ -1,28 +1,28 @@
 using System.Text.Json;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 
 public record GetFullBoardQuery(Guid BoardId) : IQuery<Result<FullBoardDto>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Result<FullBoardDto>>
 {
     private readonly IWorkManagementDbContext _context;
     private readonly IActorLookupService _actorLookup;
-    private readonly ICollaborationDbContext _collabContext;
+    private readonly IWorkManagementCollaborationReadPort _collabReadPort;
 
-    public GetFullBoardQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, ICollaborationDbContext collabContext)
+    public GetFullBoardQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort)
     {
         _context = context;
         _actorLookup = actorLookup;
-        _collabContext = collabContext;
+        _collabReadPort = collabReadPort;
     }
 
     public async Task<Result<FullBoardDto>> Handle(GetFullBoardQuery request, CancellationToken cancellationToken)
@@ -91,19 +91,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 (item, checklist) => new { checklist.ItemId, IsDone = item.Status == ChecklistItemStatus.Done })
             .ToListAsync(cancellationToken);
 
-        var commentCounts = await _collabContext.Comments
-            .AsNoTracking()
-            .Where(comment => comment.Target.ResourceType == ResourceType.BoardItem && cardIds.Contains(comment.Target.ResourceId))
-            .GroupBy(comment => comment.Target.ResourceId)
-            .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
-            .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);
-
-        var attachmentCounts = await _collabContext.Attachments
-            .AsNoTracking()
-            .Where(attachment => attachment.Target.ResourceType == ResourceType.BoardItem && cardIds.Contains(attachment.Target.ResourceId))
-            .GroupBy(attachment => attachment.Target.ResourceId)
-            .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
-            .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);
+        var collaborationCounts = await _collabReadPort.GetCountsAsync(cardIds, cancellationToken);
 
         var membersByCardId = cardMembers
             .GroupBy(member => member.ItemId)
@@ -128,6 +116,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 .Select(card =>
                 {
                     checklistStatsByCardId.TryGetValue(card.Id, out var checklistStats);
+                    collaborationCounts.TryGetValue(card.Id, out var collaborationStats);
 
                     return new BoardItemSummaryDto(
                         card.Id,
@@ -137,8 +126,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         labelsByCardId.TryGetValue(card.Id, out var labelDtos) ? labelDtos : [],
                         checklistStats?.Done ?? 0,
                         checklistStats?.Total ?? 0,
-                        commentCounts.GetValueOrDefault(card.Id),
-                        attachmentCounts.GetValueOrDefault(card.Id),
+                        collaborationStats?.CommentCount ?? 0,
+                        collaborationStats?.AttachmentCount ?? 0,
                         card.Position.Value,
                         card.CreatedAt.DateTime,
                         card.UpdatedAt?.DateTime
@@ -166,7 +155,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.Name,
                 column.Type.ToString(),
                 JsonSerializer.Serialize(column.Settings, (JsonSerializerOptions?)null),
-                column.DefaultValue,
+                column.DefaultValue == null ? null : column.DefaultValue.Data.Value,
                 column.Position.Value,
                 column.IsSystem,
                 column.IsDeleted

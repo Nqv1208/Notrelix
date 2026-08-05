@@ -3,11 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.UpdateLabel;
 
+[IdempotencyOperation("work-management.labels.update-label.v1")]
 public record UpdateLabelCommand(Guid LabelId, string? Name, string? Color)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Label, LabelId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.label"), LabelId);
 }
 
 public class UpdateLabelCommandHandler : IRequestHandler<UpdateLabelCommand, Result>

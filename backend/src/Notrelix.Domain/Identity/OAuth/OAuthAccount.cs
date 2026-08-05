@@ -1,12 +1,12 @@
 namespace Notrelix.Domain.Identity.OAuth;
 
-public class OAuthAccount : Entity
+public sealed class OAuthAccount : Entity
 {
     public Guid UserId { get; private set; }
     public OAuthProvider Provider { get; private set; }
     public string ProviderId { get; private set; } = null!;
     public OAuthToken? Token { get; private set; }
-    public JsonValue RawProfile { get; private set; } = null!;
+    public OAuthProfileSnapshot ProfileSnapshot { get; private set; } = null!;
 
     private OAuthAccount() : base() { }
 
@@ -14,12 +14,12 @@ public class OAuthAccount : Entity
         Guid userId,
         OAuthProvider provider,
         string providerId,
-        JsonValue rawProfile,
+        OAuthProfileSnapshot profileSnapshot,
         OAuthToken? token = null)
     {
         Guard.NotEmpty(userId);
         Guard.NotNullOrWhiteSpace(providerId);
-        Guard.NotNull(rawProfile);
+        Guard.NotNull(profileSnapshot);
 
         return new OAuthAccount
         {
@@ -27,7 +27,7 @@ public class OAuthAccount : Entity
             Provider = provider,
             ProviderId = providerId.Trim(),
             Token = token,
-            RawProfile = rawProfile
+            ProfileSnapshot = profileSnapshot
         };
     }
 
@@ -35,5 +35,11 @@ public class OAuthAccount : Entity
     {
         Guard.NotNull(token);
         Token = token;
+    }
+
+    internal void UpdateProfileSnapshot(OAuthProfileSnapshot profileSnapshot)
+    {
+        Guard.NotNull(profileSnapshot);
+        ProfileSnapshot = profileSnapshot;
     }
 }

@@ -1,11 +1,12 @@
+using Notrelix.Domain.Governance.Permissions.Events;
 namespace Notrelix.Domain.Governance.Permissions;
 
-public class PermissionRule : AggregateRoot, IWorkspaceScoped
+public class PermissionRule : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public PermissionScopeType ScopeType { get; private set; }
-    public ResourceType? ResourceType { get; private set; }
+    public ResourceKind? ResourceKind { get; private set; }
     public Guid? ResourceId { get; private set; }
     public PermissionSubjectType SubjectType { get; private set; }
     public Guid? SubjectId { get; private set; }
@@ -24,7 +25,7 @@ public class PermissionRule : AggregateRoot, IWorkspaceScoped
         Guid accountId,
         Guid workspaceId,
         PermissionScopeType scopeType,
-        ResourceType? resourceType,
+        ResourceKind? resourceKind,
         Guid? resourceId,
         PermissionSubjectType subjectType,
         Guid? subjectId,
@@ -46,7 +47,7 @@ public class PermissionRule : AggregateRoot, IWorkspaceScoped
             AccountId = accountId,
             WorkspaceId = workspaceId,
             ScopeType = scopeType,
-            ResourceType = resourceType,
+            ResourceKind = resourceKind,
             ResourceId = resourceId,
             SubjectType = subjectType,
             SubjectId = subjectId,
@@ -61,35 +62,40 @@ public class PermissionRule : AggregateRoot, IWorkspaceScoped
         };
 
         rule.SetAuditOnCreate(createdBy, createdAt);
-        rule.AddDomainEvent(new PermissionRuleCreatedDomainEvent(accountId, workspaceId, rule.Id, action.ToString(), createdBy, createdAt));
+        rule.RaiseDomainEvent(new PermissionRuleCreatedDomainEvent(accountId, workspaceId, rule.Id, action.ToString(), createdAt));
         return rule;
     }
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == PermissionRuleStatus.Disabled) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PermissionRuleStatus.Disabled;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new PermissionRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        ApplyAuditUpdate(pending);
+        RaiseDomainEvent(new PermissionRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
         IncrementVersion();
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new PermissionRuleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        ApplyDeletion(pendingDeletion);
+        RaiseDomainEvent(new PermissionRuleDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new PermissionRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        ApplyRestore(pendingRestore);
+        RaiseDomainEvent(new PermissionRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }
 
     public bool IsActive(DateTimeOffset now)

@@ -19,7 +19,7 @@ public enum AiAgentStatus
     Deleted
 }
 
-public class AiAgent : AggregateRoot, IWorkspaceScoped
+public class AiAgent : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -74,7 +74,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         };
 
         agent.SetAuditOnCreate(createdBy, createdAt);
-        agent.AddDomainEvent(new AiAgentCreatedDomainEvent(accountId, workspaceId, agent.Id, name, createdBy, createdAt));
+        agent.RaiseDomainEvent(new AiAgentCreatedDomainEvent(accountId, workspaceId, agent.Id, name, createdAt));
         return agent;
     }
 
@@ -93,15 +93,15 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(instruction);
         Guard.NotNull(toolPermissions);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = name.Trim();
         Description = description?.Trim();
         ModelPolicy = modelPolicy;
         Instruction = instruction;
         ToolPermissions = toolPermissions;
-
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AiAgentUpdatedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new AiAgentUpdatedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedAt));
     }
 
     public void ChangeStatus(AiAgentStatus newStatus, Guid updatedBy, DateTimeOffset updatedAt)
@@ -111,7 +111,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
 
         if (newStatus == AiAgentStatus.Deleted)
         {
-            SoftDelete(updatedBy, updatedAt);
+            Delete(updatedBy, updatedAt);
             return;
         }
 
@@ -125,31 +125,34 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         };
 
         if (!validTransitions.Contains(newStatus))
-            throw new BusinessRuleException($"Cannot transition from {Status} to {newStatus}.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, $"Cannot transition from {Status} to {newStatus}.");
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = newStatus;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, updatedBy, updatedAt));
+        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (Status == AiAgentStatus.Deleted) return;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         Status = AiAgentStatus.Deleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        AddDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, deletedBy, deletedAt));
+        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (Status != AiAgentStatus.Deleted) return;
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         Status = AiAgentStatus.Draft;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        AddDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, restoredBy, restoredAt));
+        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, restoredAt));
     }
 }

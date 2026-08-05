@@ -1,6 +1,7 @@
+using Notrelix.Domain.WorkManagement.Relations.Events;
 namespace Notrelix.Domain.WorkManagement.Relations;
 
-public class BoardRelation : AggregateRoot, IWorkspaceScoped
+public class BoardRelation : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -15,6 +16,20 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
     public string ConfigJson { get; private set; } = "{}";
 
     private BoardRelation() : base() { }
+
+    private static string ValidateJson(string? value)
+    {
+        var json = value ?? "{}";
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldSettings_InvalidJsonFormat, "ConfigJson must be valid JSON.");
+        }
+        return json;
+    }
 
     public static BoardRelation Create(
         Guid accountId,
@@ -35,7 +50,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(targetBoardId);
 
         if (sourceBoardId == targetBoardId)
-            throw new BusinessRuleException("Cannot create a relation from a board to itself.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Relation_CannotCreateSelfReferencing, "Cannot create a relation from a board to itself.");
 
         Guard.NotEmpty(accountId);
 
@@ -50,62 +65,72 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
             RelationType = relationType,
             Direction = direction,
             SyncMode = syncMode,
-            ConfigJson = configJson ?? "{}",
+            ConfigJson = ValidateJson(configJson),
             Status = BoardRelationStatus.Active
         };
 
         relation.SetAuditOnCreate(createdBy, createdAt);
-        relation.AddDomainEvent(new BoardRelationCreatedDomainEvent(accountId, workspaceId, relation.Id, sourceBoardId, targetBoardId, createdBy, createdAt));
+        relation.RaiseDomainEvent(new BoardRelationCreatedDomainEvent(accountId, workspaceId, relation.Id, sourceBoardId, targetBoardId, createdAt));
         return relation;
     }
 
     public void Pause(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == BoardRelationStatus.Paused) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = BoardRelationStatus.Paused;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationPausedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardRelationPausedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Resume(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == BoardRelationStatus.Active) return;
+        if (Status == BoardRelationStatus.Broken)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Relation_CannotResumeBroken, "Cannot resume a broken relation. Repair it first.");
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = BoardRelationStatus.Active;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationResumedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardRelationResumedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void MarkBroken(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == BoardRelationStatus.Broken) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = BoardRelationStatus.Broken;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationMarkedBrokenDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardRelationMarkedBrokenDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        Status = BoardRelationStatus.Deleted;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardRelationDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        Status = BoardRelationStatus.Active;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new BoardRelationRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

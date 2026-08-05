@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteCo
 public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Comment, CommentId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.comment"), CommentId);
 }
 
 public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand, Result>
@@ -25,7 +25,7 @@ public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand,
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.CommentId, ct);
         if (comment is null) throw new NotFoundException(nameof(Comment), request.CommentId);
-        comment.SoftDelete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        comment.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

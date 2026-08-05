@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
 using Notrelix.Domain.WorkManagement.Checklists;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.Checklists;
 
 public class ToggleChecklistItemTests : WorkManagementHandlerTestBase
@@ -21,7 +22,7 @@ public class ToggleChecklistItemTests : WorkManagementHandlerTestBase
     public async Task Handle_ValidCommand_TogglesChecklistItem()
     {
         var checklist = CreateChecklist();
-        checklist.AddItem("Task", FractionalIndex.Create("b0"), TestUserId, TestNow);
+        checklist.AddItem("Task", FractionalIndex.Create("a1"), TestUserId, TestNow);
         var item = checklist.Items.First();
         SetupChecklists(checklist);
 
@@ -45,7 +46,7 @@ public class ToggleChecklistItemTests : WorkManagementHandlerTestBase
     public async Task Handle_ToggleTwice_ReturnsToOriginalState()
     {
         var checklist = CreateChecklist();
-        checklist.AddItem("Task", FractionalIndex.Create("b0"), TestUserId, TestNow);
+        checklist.AddItem("Task", FractionalIndex.Create("a1"), TestUserId, TestNow);
         var item = checklist.Items.First();
         SetupChecklists(checklist);
 

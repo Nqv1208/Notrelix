@@ -1,3 +1,4 @@
+using Notrelix.Domain.Billing.Subscriptions.Events;
 namespace Notrelix.Domain.Billing.Subscriptions;
 
 public class Subscription : AggregateRoot, IAccountScoped
@@ -13,13 +14,13 @@ public class Subscription : AggregateRoot, IAccountScoped
 
     private Subscription() : base() { }
 
-    public static Subscription Create(Guid accountId, Guid planId, SubscriptionTier tier, DateTimeOffset start, DateTimeOffset end, Guid createdBy, DateTimeOffset createdAt, Guid? workspaceId = null)
+    public static Subscription Create(Guid accountId, Guid planId, SubscriptionTier tier, DateTimeOffset start, DateTimeOffset end, Guid? createdBy, DateTimeOffset createdAt, Guid? workspaceId = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(planId);
 
         if (start >= end)
-            throw new BusinessRuleException("Subscription period start must be before end.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_PeriodStartMustBeBeforeEnd, "Subscription period start must be before end.");
 
         var subscription = new Subscription
         {
@@ -33,93 +34,105 @@ public class Subscription : AggregateRoot, IAccountScoped
         };
 
         subscription.SetAuditOnCreate(createdBy, createdAt);
-        subscription.AddDomainEvent(new SubscriptionStartedDomainEvent(accountId, workspaceId, subscription.Id, planId, createdAt));
+        subscription.RaiseDomainEvent(new SubscriptionStartedDomainEvent(accountId, workspaceId, subscription.Id, planId, createdAt));
         return subscription;
     }
 
     public void ChangePlan(Guid newPlanId, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(newPlanId);
+        Guard.NotEmpty(updatedBy);
 
         if (Status is SubscriptionStatus.Canceled or SubscriptionStatus.Expired)
-            throw new BusinessRuleException("Cannot change plan of an inactive subscription.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_CannotChangePlanOfInactive, "Cannot change plan of an inactive subscription.");
+
+        if (PlanId == newPlanId) return;
 
         var oldPlanId = PlanId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         PlanId = newPlanId;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionChangedDomainEvent(AccountId, WorkspaceId, Id, oldPlanId, newPlanId, updatedAt));
+        RaiseDomainEvent(new SubscriptionChangedDomainEvent(AccountId, WorkspaceId, Id, oldPlanId, newPlanId, updatedAt));
     }
 
     public void ScheduleCancellation(Guid updatedBy, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (CancelAtPeriodEnd) return;
+
+        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot schedule cancellation from status '{Status}'.");
+
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         CancelAtPeriodEnd = true;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionCancellationScheduledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        RaiseDomainEvent(new SubscriptionCancellationScheduledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void CancelImmediately(Guid updatedBy, DateTimeOffset cancelledAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == SubscriptionStatus.Canceled) return;
+
+        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue or SubscriptionStatus.Trialing))
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot cancel from status '{Status}'.");
+
+        var pending = PrepareAuditUpdate(updatedBy, cancelledAt);
         Status = SubscriptionStatus.Canceled;
-        SetAuditOnUpdate(updatedBy, cancelledAt);
+        CancelAtPeriodEnd = false;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionCanceledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, cancelledAt));
+        RaiseDomainEvent(new SubscriptionCanceledDomainEvent(AccountId, WorkspaceId, Id, cancelledAt));
     }
 
     public void Renew(DateTimeOffset newStart, DateTimeOffset newEnd, Guid updatedBy, DateTimeOffset renewedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (newStart >= newEnd)
-            throw new BusinessRuleException("Renewal period start must be before end.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_PeriodStartMustBeBeforeEnd, "Renewal period start must be before end.");
 
+        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot renew from status '{Status}'.");
+
+        var pending = PrepareAuditUpdate(updatedBy, renewedAt);
         CurrentPeriodStart = newStart;
         CurrentPeriodEnd = newEnd;
         CancelAtPeriodEnd = false;
         Status = SubscriptionStatus.Active;
-        SetAuditOnUpdate(updatedBy, renewedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionRenewedDomainEvent(AccountId, WorkspaceId, Id, newStart, newEnd, renewedAt));
+        RaiseDomainEvent(new SubscriptionRenewedDomainEvent(AccountId, WorkspaceId, Id, newStart, newEnd, renewedAt));
     }
 
     public void Expire(Guid updatedBy, DateTimeOffset expiredAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == SubscriptionStatus.Expired) return;
+
+        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot expire from status '{Status}'.");
+
+        var pending = PrepareAuditUpdate(updatedBy, expiredAt);
         Status = SubscriptionStatus.Expired;
-        SetAuditOnUpdate(updatedBy, expiredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionExpiredDomainEvent(AccountId, WorkspaceId, Id, expiredAt));
+        RaiseDomainEvent(new SubscriptionExpiredDomainEvent(AccountId, WorkspaceId, Id, expiredAt));
     }
 
     public void MarkPastDue(Guid updatedBy, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == SubscriptionStatus.PastDue) return;
+
+        if (Status is not SubscriptionStatus.Active)
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot mark past due from status '{Status}'.");
+
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         Status = SubscriptionStatus.PastDue;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionPastDueDomainEvent(AccountId, WorkspaceId, Id, occurredAt));
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        IncrementVersion();
-        AddDomainEvent(new SubscriptionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        IncrementVersion();
-        AddDomainEvent(new SubscriptionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new SubscriptionPastDueDomainEvent(AccountId, WorkspaceId, Id, occurredAt));
     }
 }

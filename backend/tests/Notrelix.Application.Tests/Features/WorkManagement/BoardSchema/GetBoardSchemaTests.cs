@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardSchema;
 
 public class GetBoardSchemaTests : WorkManagementHandlerTestBase
@@ -44,7 +45,7 @@ public class GetBoardSchemaTests : WorkManagementHandlerTestBase
         SetupBoards(board);
         var field = BoardField.Create(
             TestAccountId, TestWorkspaceId, board.Id, "Status",
-            FieldType.Status, FieldSettings.Empty(),
+            FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!),
             FractionalIndex.Create("a0"), TestUserId, TestNow);
         SetupBoardFields(field);
 

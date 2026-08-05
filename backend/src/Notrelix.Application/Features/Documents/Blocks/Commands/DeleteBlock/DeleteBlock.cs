@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock;
 public record DeleteBlockCommand(Guid BlockId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Block, BlockId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.block"), BlockId);
 }
 
 public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Result>
@@ -26,7 +26,7 @@ public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Res
         var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && !block.IsDeleted, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
-        block.SoftDelete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        block.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

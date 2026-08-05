@@ -7,6 +7,9 @@ namespace Notrelix.Application.Common.Security;
 
 public class PermissionService : IPermissionService, IPermissionEvaluator, IAuthorizationDecisionStore
 {
+    private static readonly ResourceKind BoardKind = ResourceKind.Create("work-management.board");
+    private static readonly ResourceKind WorkspaceKind = ResourceKind.Create("workspaces.workspace");
+
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IWorkManagementDbContext _workContext;
     private readonly IGovernanceDbContext _governanceContext;
@@ -32,7 +35,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         {
             throw new SecurityMisconfigurationException(
                 $"Permission evaluation requires WorkspaceId for scope {context.Scope} " +
-                $"but WorkspaceId is null. ResourceType={context.ResourceType} Action={context.Action}");
+                $"but WorkspaceId is null. ResourceKind={context.ResourceKind} Action={context.Action}");
         }
 
         // Resolve AccountId from workspace if not provided
@@ -78,7 +81,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         }
 
         // 5. Resource specific permissions (legacy fallback)
-        if (context.ResourceType == ResourceType.Board && context.ResourceId.HasValue)
+        if (context.ResourceKind == BoardKind && context.ResourceId.HasValue)
         {
             var board = await _workContext.Boards
                 .FirstOrDefaultAsync(b => b.Id == context.ResourceId.Value && b.WorkspaceId == context.WorkspaceId, cancellationToken);
@@ -97,7 +100,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
 
                 var hasExplicitPermission = await _governanceContext.ResourcePermissions
                     .AnyAsync(p => p.WorkspaceId == context.WorkspaceId &&
-                                   p.ResourceType == ResourceType.Board &&
+                                   p.ResourceKind == BoardKind &&
                                    p.ResourceId == board.Id &&
                                    p.SubjectType == PermissionSubjectType.User &&
                                    p.SubjectId == context.UserId &&
@@ -195,7 +198,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         if (rule.ScopeType == PermissionScopeType.Workspace)
             return true;
 
-        if (rule.ResourceType.HasValue && rule.ResourceType.Value != context.ResourceType)
+        if (rule.ResourceKind.HasValue && rule.ResourceKind.Value != context.ResourceKind)
             return false;
 
         if (rule.ResourceId.HasValue && rule.ResourceId.Value != context.ResourceId)
@@ -243,12 +246,12 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
     public async Task<bool> AuthorizeAsync(
         Guid userId,
         Guid workspaceId,
-        ResourceType resourceType,
+        ResourceKind resourceKind,
         Guid resourceId,
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, resourceType, resourceId, action, PermissionScope.Resource), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, resourceKind, resourceId, action, PermissionScope.Resource), cancellationToken);
         return decision.IsAllowed;
     }
 
@@ -258,19 +261,19 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, ResourceType.Workspace, null, action, PermissionScope.Workspace), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, WorkspaceKind, null, action, PermissionScope.Workspace), cancellationToken);
         return decision.IsAllowed;
     }
 
     public async Task<bool> HasPermissionAsync(
         Guid userId,
         Guid workspaceId,
-        ResourceType resourceType,
+        ResourceKind resourceKind,
         Guid? resourceId,
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, resourceType, resourceId, action, PermissionScope.Resource), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, resourceKind, resourceId, action, PermissionScope.Resource), cancellationToken);
         return decision.IsAllowed;
     }
 }

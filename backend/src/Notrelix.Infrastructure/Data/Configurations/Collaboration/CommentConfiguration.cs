@@ -1,5 +1,7 @@
 using Notrelix.Domain.Collaboration.Comments;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Collaboration;
 
 public class CommentConfiguration : IEntityTypeConfiguration<Comment>
@@ -14,15 +16,21 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.ParentId).HasColumnName("parent_id");
-        builder.Property(x => x.Content).HasColumnName("content").HasColumnType("jsonb").IsRequired();
+        builder.Property(x => x.Content)
+            .HasColumnName("content")
+            .HasColumnType("jsonb")
+            .IsRequired()
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<string>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? string.Empty);
         builder.Property(x => x.CommentStatus).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.ResourceType).HasColumnName("resource_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("resource_id").IsRequired();
             target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
-            target.HasIndex(t => new { t.ResourceType, t.ResourceId }).HasDatabaseName("idx_comments_resource");
+            target.HasIndex(t => new { t.Kind, t.ResourceId }).HasDatabaseName("idx_comments_resource");
         });
 
         builder.OwnsOne(x => x.Anchor, anchor =>
@@ -35,8 +43,6 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

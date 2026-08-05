@@ -9,6 +9,7 @@ public static class UpdateBoardGroupEndpoint
     public static IEndpointRouteBuilder MapUpdateBoardGroup(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardGroups.Update")
             .WithTags("WorkManagement.BoardGroups")
             .WithSummary("Update group title and color");

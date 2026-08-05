@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Mfa.Events;
 
 namespace Notrelix.Domain.Identity.Mfa;
 
-public class UserMfaMethod : AggregateRoot
+public sealed class UserMfaMethod : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public MfaMethodType Type { get; private set; }
@@ -38,87 +38,69 @@ public class UserMfaMethod : AggregateRoot
         };
 
         method.SetAuditOnCreate(userId, createdAt);
-        method.AddDomainEvent(new UserMfaMethodAddedDomainEvent(method.Id, userId, type, createdAt));
+        method.RaiseDomainEvent(new UserMfaMethodAddedDomainEvent(method.Id, userId, type, createdAt));
 
         return method;
     }
 
     public void Verify(DateTimeOffset verifiedAt)
     {
-        EnsureNotDeleted();
         if (Status == MfaMethodStatus.Active) return;
 
         if (Status == MfaMethodStatus.Disabled)
         {
-            throw new BusinessRuleException("Cannot verify a disabled MFA method.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_CannotVerifyDisabled, "Cannot verify a disabled MFA method.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, verifiedAt);
         Status = MfaMethodStatus.Active;
         VerifiedAt = verifiedAt;
-        SetAuditOnUpdate(UserId, verifiedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new UserMfaMethodVerifiedDomainEvent(Id, UserId, Type, verifiedAt));
+        RaiseDomainEvent(new UserMfaMethodVerifiedDomainEvent(Id, UserId, Type, verifiedAt));
     }
 
     public void SetAsPrimary(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         if (Status != MfaMethodStatus.Active)
         {
-            throw new BusinessRuleException("Only verified and active MFA methods can be set as primary.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_CannotSetPrimaryUnlessVerifiedActive, "Only verified and active MFA methods can be set as primary.");
         }
 
         if (IsPrimary) return;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsPrimary = true;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new UserMfaMethodSetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
+        RaiseDomainEvent(new UserMfaMethodSetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
     }
 
     public void UnsetAsPrimary(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         if (!IsPrimary) return;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsPrimary = false;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new UserMfaMethodUnsetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
+        RaiseDomainEvent(new UserMfaMethodUnsetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
     }
 
     public void Disable(DateTimeOffset disabledAt)
     {
-        EnsureNotDeleted();
         if (Status == MfaMethodStatus.Disabled) return;
 
+        var pending = PrepareAuditUpdate(UserId, disabledAt);
         Status = MfaMethodStatus.Disabled;
         IsPrimary = false;
         DisabledAt = disabledAt;
-        SetAuditOnUpdate(UserId, disabledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
-        AddDomainEvent(new UserMfaMethodDisabledDomainEvent(Id, UserId, Type, disabledAt));
-    }
-
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        AddDomainEvent(new UserMfaMethodSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
-    }
-
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        AddDomainEvent(new UserMfaMethodRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserMfaMethodDisabledDomainEvent(Id, UserId, Type, disabledAt));
     }
 }

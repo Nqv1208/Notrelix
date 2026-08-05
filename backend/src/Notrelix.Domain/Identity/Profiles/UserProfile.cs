@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Profiles.Events;
 
 namespace Notrelix.Domain.Identity.Profiles;
 
-public class UserProfile : AggregateRoot
+public sealed class UserProfile : SoftDeletableAggregateRoot
 {
     public Guid UserId { get; private set; }
     public string Timezone { get; private set; } = "UTC";
@@ -20,31 +20,34 @@ public class UserProfile : AggregateRoot
             UserId = userId
         };
         profile.SetAuditOnCreate(userId, createdAt);
-        profile.AddDomainEvent(new UserProfileCreatedDomainEvent(profile.Id, userId, createdAt));
+        profile.RaiseDomainEvent(new UserProfileCreatedDomainEvent(profile.Id, userId, createdAt));
         return profile;
     }
 
     public void UpdateTimezone(string timezone, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         Timezone = string.IsNullOrWhiteSpace(timezone) ? "UTC" : timezone.Trim();
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdateLocale(string locale, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         Locale = string.IsNullOrWhiteSpace(locale) ? "vi" : locale.Trim();
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdateTheme(string theme, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         if (string.IsNullOrWhiteSpace(theme))
         {
             Theme = "system";
@@ -53,13 +56,13 @@ public class UserProfile : AggregateRoot
         {
             if (!UserProfileTheme.IsValid(theme))
             {
-                throw new BusinessRuleException($"Invalid profile theme: {theme}.");
+                throw new BusinessRuleException(IdentityRuleCodes.Identity_Profile_InvalidTheme, $"Invalid profile theme: {theme}.");
             }
             Theme = theme.Trim().ToLowerInvariant();
         }
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdatePreferences(string preferences, DateTimeOffset updatedAt)
@@ -72,11 +75,32 @@ public class UserProfile : AggregateRoot
         }
         catch (System.Text.Json.JsonException)
         {
-            throw new BusinessRuleException("Preferences must be a valid JSON string.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Profile_InvalidPreferencesJson, "Preferences must be a valid JSON string.");
         }
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         Preferences = json;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
+    }
+
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        Guard.NotEmpty(deletedBy);
+        if (IsDeleted) return;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        IncrementVersion();
+        RaiseDomainEvent(new UserProfileDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, pendingDeletion.Reason));
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        Guard.NotEmpty(restoredBy);
+        if (!IsDeleted) return;
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
+        IncrementVersion();
+        RaiseDomainEvent(new UserProfileRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

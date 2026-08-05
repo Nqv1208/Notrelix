@@ -26,7 +26,7 @@ public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<Not
 
         builder.Property(x => x.SubjectType).HasColumnName("subject_type").HasMaxLength(160);
         builder.Property(x => x.SubjectId).HasColumnName("subject_id");
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").HasMaxLength(160);
+        builder.Property(x => x.ResourceKind).HasColumnName("resource_type").HasMaxLength(160);
         builder.Property(x => x.ResourceId).HasColumnName("resource_id");
 
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(320);
@@ -44,8 +44,6 @@ public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<Not
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
 
         builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken().HasDefaultValue(1L);
 
@@ -57,7 +55,7 @@ public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<Not
             .HasFilter("\"source_event_id\" IS NOT NULL");
         builder.HasIndex(x => new { x.SubjectType, x.SubjectId, x.CreatedAt }).HasDatabaseName("ix_notifications_items_subject")
             .IsDescending(false, false, true).HasFilter("\"subject_type\" IS NOT NULL AND \"subject_id\" IS NOT NULL");
-        builder.HasIndex(x => new { x.ResourceType, x.ResourceId, x.CreatedAt }).HasDatabaseName("ix_notifications_items_resource")
+        builder.HasIndex(x => new { x.ResourceKind, x.ResourceId, x.CreatedAt }).HasDatabaseName("ix_notifications_items_resource")
             .IsDescending(false, false, true).HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL");
     }
 }

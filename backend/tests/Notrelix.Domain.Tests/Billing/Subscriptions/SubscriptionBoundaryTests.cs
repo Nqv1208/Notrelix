@@ -22,7 +22,7 @@ public class SubscriptionBoundaryTests
     public void Subscription_ChangePlan_WhenActive_ShouldSucceed()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
-        sub.ClearDomainEvents();
+        ((IHasDomainEvents)sub).ClearDomainEvents();
         var newPlanId = Guid.NewGuid();
         sub.ChangePlan(newPlanId, Actor, Now);
         sub.PlanId.Should().Be(newPlanId);

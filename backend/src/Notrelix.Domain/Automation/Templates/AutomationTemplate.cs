@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Automation.Templates;
 
-public class AutomationTemplate : AggregateRoot
+public class AutomationTemplate : SoftDeletableAggregateRoot
 {
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -25,7 +25,7 @@ public class AutomationTemplate : AggregateRoot
         };
 
         template.SetAuditOnCreate(createdBy, createdAt);
-        template.AddDomainEvent(new Events.AutomationTemplateCreatedDomainEvent(
+        template.RaiseDomainEvent(new Events.AutomationTemplateCreatedDomainEvent(
             template.Id, template.Name, createdAt));
 
         return template;
@@ -34,51 +34,59 @@ public class AutomationTemplate : AggregateRoot
     public void UpdateName(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(newName);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = newName.Trim();
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new Events.AutomationTemplateUpdatedDomainEvent(Id, updatedAt));
+        ApplyAuditUpdate(pending);
+        RaiseDomainEvent(new Events.AutomationTemplateUpdatedDomainEvent(Id, updatedAt));
     }
 
     public void UpdateDefinition(JsonValue newDefinition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNull(newDefinition);
+        Guard.NotEmpty(updatedBy);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Definition = newDefinition;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new Events.AutomationTemplateUpdatedDomainEvent(Id, updatedAt));
+        ApplyAuditUpdate(pending);
+        RaiseDomainEvent(new Events.AutomationTemplateUpdatedDomainEvent(Id, updatedAt));
     }
 
     public void Publish(DateTimeOffset publishedAt)
     {
         EnsureNotDeleted();
         if (Status == AutomationTemplateStatus.Published) return;
+        var pending = PrepareAuditUpdate(null, publishedAt);
         Status = AutomationTemplateStatus.Published;
-        SetAuditOnUpdate(null, publishedAt);
-        AddDomainEvent(new Events.AutomationTemplatePublishedDomainEvent(Id, publishedAt));
+        ApplyAuditUpdate(pending);
+        RaiseDomainEvent(new Events.AutomationTemplatePublishedDomainEvent(Id, publishedAt));
     }
 
     public void Archive(DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
         if (Status == AutomationTemplateStatus.Archived)
-            throw new BusinessRuleException("Template is already archived.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Template_AlreadyArchived, "Template is already archived.");
+        var pending = PrepareAuditUpdate(null, archivedAt);
         Status = AutomationTemplateStatus.Archived;
-        SetAuditOnUpdate(null, archivedAt);
-        AddDomainEvent(new Events.AutomationTemplateArchivedDomainEvent(Id, archivedAt));
+        ApplyAuditUpdate(pending);
+        RaiseDomainEvent(new Events.AutomationTemplateArchivedDomainEvent(Id, archivedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         EnsureNotDeleted();
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new Events.AutomationTemplateSoftDeletedDomainEvent(Id, deletedAt));
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        RaiseDomainEvent(new Events.AutomationTemplateDeletedDomainEvent(Id, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new Events.AutomationTemplateRestoredDomainEvent(Id, restoredAt));
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
+        RaiseDomainEvent(new Events.AutomationTemplateRestoredDomainEvent(Id, restoredAt));
     }
 }

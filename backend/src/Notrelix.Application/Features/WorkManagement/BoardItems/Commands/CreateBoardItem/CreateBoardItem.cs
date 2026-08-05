@@ -1,16 +1,18 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 
+[IdempotencyOperation("work-management.board-items.create-board-item.v1")]
 public record CreateBoardItemCommand(
     Guid BoardId,
     Guid GroupId,
     string Title,
-    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
+    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 
@@ -36,9 +38,9 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
             throw new NotFoundException("BoardGroup", request.GroupId);
 
         var now = _timeProvider.UtcNow;
-        var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var position = FractionalIndexGenerator.GenerateKeyBetween(null, null);
 
-        var item = BoardItem.Create(
+        var item = BoardItem.CreateRoot(
             _requestContext.RequireAccountId(),
             _requestContext.RequireWorkspaceId(),
             request.BoardId,

@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
-public record ForgotPasswordCommand : ICommand<Result>, IGlobalRequest
+public record ForgotPasswordCommand : ICommand<Result>, IGlobalRequest, IAnonymousRequest
 {
     public required string Email { get; init; }
 }
@@ -40,7 +40,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
 
         if (isLimited)
         {
-            return Result.Failure("Too many requests. Please try again later.");
+            return Result.Failure(new ApplicationError("identity.auth.rate-limited", "Too many requests. Please try again later.", ApplicationErrorType.BusinessRule));
         }
 
         var user = await _context.Users
@@ -63,7 +63,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send forgot password email to {Email}", email);
-            return Result.Failure("Failed to send email. Please try again.");
+            return Result.Failure(new ApplicationError("identity.auth.email-send-failed", "Failed to send email. Please try again.", ApplicationErrorType.BusinessRule));
         }
 
         return Result.Success();

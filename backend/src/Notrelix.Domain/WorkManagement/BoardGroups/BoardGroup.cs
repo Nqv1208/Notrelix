@@ -1,6 +1,7 @@
+using Notrelix.Domain.WorkManagement.BoardGroups.Events;
 namespace Notrelix.Domain.WorkManagement.BoardGroups;
 
-public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
+public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -9,6 +10,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
     public Color Color { get; private set; } = null!;
     public FractionalIndex Position { get; private set; } = null!;
     public bool IsCollapsed { get; private set; }
+    public bool IsArchived { get; private set; }
 
     private BoardGroup() : base() { }
 
@@ -35,65 +37,112 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         };
 
         group.SetAuditOnCreate(createdBy, createdAt);
-        group.AddDomainEvent(new BoardGroupCreatedDomainEvent(accountId, workspaceId, boardId, group.Id, group.Title, createdBy, createdAt));
+        group.RaiseDomainEvent(new BoardGroupCreatedDomainEvent(accountId, workspaceId, boardId, group.Id, group.Title, createdBy, createdAt));
         return group;
     }
 
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         Guard.MaxLength(title, 255);
 
-        var oldTitle = Title;
         var normalizedTitle = title.Trim();
         if (Title == normalizedTitle) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Title = normalizedTitle;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldTitle, Title, updatedBy, updatedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Title, normalizedTitle, updatedBy, updatedAt));
     }
 
     public void UpdateColor(Color color, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(color);
         if (Color == color) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldColor = Color;
         Color = color;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupColorChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, oldColor, color, updatedBy, updatedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupColorChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, oldColor, color, updatedBy, updatedAt));
     }
 
     public void UpdatePosition(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(newPosition);
         if (Position == newPosition) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Position = newPosition;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardGroupSoftDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
     }
 
     public void ValidateNotDefaultGroup(Guid? defaultGroupId)
     {
         if (defaultGroupId.HasValue && Id == defaultGroupId.Value)
-            throw new BusinessRuleException("Cannot delete the board's default group.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotDeleteDefaultGroup, "Cannot delete the board's default group.");
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new BoardGroupRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
+        if (IsArchived) return;
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
+        IsArchived = true;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+    }
+
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
+        if (!IsArchived) return;
+        var pending = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
+        IsArchived = false;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
+    }
+
+    private void EnsureNotArchived()
+    {
+        if (IsArchived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board group.");
     }
 }

@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Workspaces.Spaces;
 
 public enum SpaceStatus
 {
-    Active,
-    Archived,
-    SoftDeleted
+    Active = 0,
+    Archived = 1,
+    // 2 retired: SoftDeleted
 }

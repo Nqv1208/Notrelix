@@ -1,3 +1,6 @@
+using Notrelix.Domain.Integrations.Calendar.Events;
+using static Notrelix.Domain.Integrations.IntegrationRuleCodes;
+
 namespace Notrelix.Domain.Integrations.Calendar;
 
 public class CalendarEventLink : Entity
@@ -30,7 +33,7 @@ public class CalendarEventLink : Entity
     }
 }
 
-public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
+public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -61,7 +64,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
         };
 
         integration.SetAuditOnCreate(createdBy, createdAt);
-        integration.AddDomainEvent(new CalendarIntegrationConnectedDomainEvent(accountId, workspaceId, connectionId, createdAt));
+        integration.RaiseDomainEvent(new CalendarIntegrationConnectedDomainEvent(accountId, workspaceId, connectionId, createdAt));
 
         return integration;
     }
@@ -71,9 +74,11 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (IsActive) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         IsActive = true;
-        SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void Deactivate(Guid updatedBy, DateTimeOffset occurredAt)
@@ -81,34 +86,38 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (!IsActive) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         IsActive = false;
-        SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void ChangeSyncDirection(CalendarSyncDirection newDirection, Guid updatedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
         if (!IsActive)
-            throw new DomainException("Cannot change sync direction on a deactivated calendar integration.");
+            throw new BusinessRuleException(Integrations_Calendar_CannotChangeDirectionDeactivated, "Cannot change sync direction on a deactivated calendar integration.");
         if (SyncDirection == newDirection) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         SyncDirection = newDirection;
-        SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(AccountId, WorkspaceId, Id, newDirection, updatedBy, occurredAt));
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(AccountId, WorkspaceId, Id, newDirection, updatedBy, occurredAt));
     }
 
     public void LinkEvent(Guid internalEventId, string externalEventId, string? eTag = null)
     {
         EnsureNotDeleted();
         if (!IsActive)
-            throw new DomainException("Cannot link events on a deactivated calendar integration.");
+            throw new BusinessRuleException(Integrations_Calendar_CannotLinkEventsDeactivated, "Cannot link events on a deactivated calendar integration.");
         Guard.NotEmpty(internalEventId);
         Guard.NotNullOrWhiteSpace(externalEventId);
 
         if (_eventLinks.Any(l => l.InternalEventId == internalEventId || l.ExternalEventId == externalEventId))
         {
-            throw new DomainException("An event link already exists for this internal or external event.");
+            throw new BusinessRuleException(Integrations_Calendar_EventLinkAlreadyExists, "An event link already exists for this internal or external event.");
         }
 
         _eventLinks.Add(CalendarEventLink.Create(Id, internalEventId, externalEventId, eTag));
@@ -120,8 +129,29 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
         var link = _eventLinks.FirstOrDefault(l => l.InternalEventId == internalEventId);
         if (link == null)
         {
-            throw new DomainException($"No event link found for internal event '{internalEventId}'.");
+            throw new BusinessRuleException(Integrations_Calendar_EventLinkNotFound, $"No event link found for internal event '{internalEventId}'.");
         }
         link.UpdateETag(newETag);
+    }
+
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        Guard.NotEmpty(deletedBy);
+        if (IsDeleted) return;
+        IsActive = false;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        IncrementVersion();
+        RaiseDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        Guard.NotEmpty(restoredBy);
+        if (!IsDeleted) return;
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
+        IncrementVersion();
+        RaiseDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

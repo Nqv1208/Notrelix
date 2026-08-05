@@ -4,22 +4,22 @@ namespace Notrelix.Infrastructure.Data.Services;
 
 public sealed class ResourceVersionReader : IResourceVersionReader
 {
-    private static readonly Dictionary<ResourceType, (string Schema, string Table)> TableMap = new()
+    private static readonly Dictionary<ResourceKind, (string Schema, string Table)> TableMap = new()
     {
-        [ResourceType.Board] = (DbSchemas.Work, "boards"),
-        [ResourceType.BoardItem] = (DbSchemas.Work, "board_items"),
-        [ResourceType.BoardGroup] = (DbSchemas.Work, "board_groups"),
-        [ResourceType.BoardField] = (DbSchemas.Work, "board_fields"),
-        [ResourceType.BoardView] = (DbSchemas.Work, "board_views"),
-        [ResourceType.Workspace] = (DbSchemas.Workspace, "workspaces"),
-        [ResourceType.Page] = (DbSchemas.Docs, "pages"),
-        [ResourceType.Block] = (DbSchemas.Docs, "blocks"),
-        [ResourceType.Comment] = (DbSchemas.Collab, "comments"),
-        [ResourceType.AutomationRule] = (DbSchemas.Automation, "automation_rules"),
-        [ResourceType.Form] = (DbSchemas.Work, "forms"),
-        [ResourceType.Checklist] = (DbSchemas.Work, "checklists"),
-        [ResourceType.ApprovalRequest] = (DbSchemas.Work, "approval_requests"),
-        [ResourceType.Dashboard] = (DbSchemas.Work, "dashboards"),
+        [ResourceKind.Create("work-management.board")] = (DbSchemas.Work, "boards"),
+        [ResourceKind.Create("work-management.board-item")] = (DbSchemas.Work, "board_items"),
+        [ResourceKind.Create("work-management.board-group")] = (DbSchemas.Work, "board_groups"),
+        [ResourceKind.Create("work-management.board-field")] = (DbSchemas.Work, "board_fields"),
+        [ResourceKind.Create("work-management.board-view")] = (DbSchemas.Work, "board_views"),
+        [ResourceKind.Create("workspaces.workspace")] = (DbSchemas.Workspace, "workspaces"),
+        [ResourceKind.Create("documents.page")] = (DbSchemas.Docs, "pages"),
+        [ResourceKind.Create("documents.block")] = (DbSchemas.Docs, "blocks"),
+        [ResourceKind.Create("collaboration.comment")] = (DbSchemas.Collab, "comments"),
+        [ResourceKind.Create("automation.rule")] = (DbSchemas.Automation, "automation_rules"),
+        [ResourceKind.Create("work-management.form")] = (DbSchemas.Work, "forms"),
+        [ResourceKind.Create("work-management.checklist")] = (DbSchemas.Work, "checklists"),
+        [ResourceKind.Create("work-management.approval-request")] = (DbSchemas.Work, "approval_requests"),
+        [ResourceKind.Create("analytics.dashboard")] = (DbSchemas.Work, "dashboards"),
     };
 
     private readonly ApplicationDbContext _db;
@@ -35,10 +35,10 @@ public sealed class ResourceVersionReader : IResourceVersionReader
 
     public async Task<long?> GetVersionAsync(ResourceRef resource, CancellationToken cancellationToken)
     {
-        if (!TableMap.TryGetValue(resource.ResourceType, out var mapping))
+        if (!TableMap.TryGetValue(resource.Kind, out var mapping))
         {
             throw new NotSupportedException(
-                $"ResourceType '{resource.ResourceType}' is not supported for version reading. " +
+                $"ResourceKind '{resource.Kind.Value}' is not supported for version reading. " +
                 $"Add a table mapping in {nameof(ResourceVersionReader)}.");
         }
 

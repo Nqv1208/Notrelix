@@ -47,32 +47,39 @@ public class TeamMember : AuditableEntity, IWorkspaceScoped
     {
         Guard.NotEmpty(activatedBy);
 
+        var audit = PrepareAuditUpdate(activatedBy, activatedAt);
+
         if (Status == TeamMemberStatus.Active)
-            throw new BusinessRuleException("Team member is already active.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_TeamMember_AlreadyActive, "Team member is already active.");
 
         Status = TeamMemberStatus.Active;
         Role = role;
         WorkspaceMemberId = workspaceMemberId;
-        SetAuditOnUpdate(activatedBy, activatedAt);
+        ApplyAuditUpdate(audit);
     }
 
     public void ChangeRole(TeamMemberRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
     {
         Guard.NotEmpty(updatedBy);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
         if (Status != TeamMemberStatus.Active)
-            throw new BusinessRuleException("Cannot change the role of an inactive team member.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_TeamMember_CannotChangeRoleOfInactive, "Cannot change the role of an inactive team member.");
         if (Role == newRole) return;
         Role = newRole;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
     }
 
     public void Remove(Guid removedBy, DateTimeOffset removedAt)
     {
         Guard.NotEmpty(removedBy);
 
+        var audit = PrepareAuditUpdate(removedBy, removedAt);
+
         if (Status == TeamMemberStatus.Removed) return;
 
         Status = TeamMemberStatus.Removed;
-        SetAuditOnUpdate(removedBy, removedAt);
+        ApplyAuditUpdate(audit);
     }
 }

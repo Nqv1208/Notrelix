@@ -15,7 +15,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.Rename("Renamed", Actor, Now);
@@ -31,7 +31,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.UpdateVisibility(SavedFilterVisibility.Public, Actor, Now);
@@ -45,7 +45,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.UpdateFilters(new[] { FilterRule.Create(Guid.NewGuid(), FilterOperator.NotEquals, "other") }, Actor, Now);
@@ -59,7 +59,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.UpdateSorts(new[] { SortRule.Create(Guid.NewGuid(), SortDirection.Ascending) }, Actor, Now);
@@ -73,7 +73,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.UpdateGroup(GroupRule.Create(Guid.NewGuid()), Actor, Now);
@@ -83,33 +83,33 @@ public class SavedFilterEventTests
     }
 
     [Fact]
-    public void SavedFilter_SoftDelete_ShouldRaiseEvent()
+    public void SavedFilter_Delete_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
-        filter.SoftDelete(Actor, Now);
+        filter.Delete(Actor, Now);
 
         filter.IsDeleted.Should().BeTrue();
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterSoftDeletedDomainEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterDeletedDomainEvent);
     }
 
     [Fact]
-    public void SavedFilter_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
+    public void SavedFilter_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.SoftDelete(Actor, Now);
-        filter.ClearDomainEvents();
+        filter.Delete(Actor, Now);
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
-        filter.SoftDelete(Actor, Now);
+        filter.Delete(Actor, Now);
 
         filter.Version.Should().Be(version);
-        filter.DomainEvents.Should().NotContain(e => e is SavedFilterSoftDeletedDomainEvent);
+        filter.DomainEvents.Should().NotContain(e => e is SavedFilterDeletedDomainEvent);
     }
 
     [Fact]
@@ -117,8 +117,8 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.SoftDelete(Actor, Now);
-        filter.ClearDomainEvents();
+        filter.Delete(Actor, Now);
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.Restore(Actor, Now);
@@ -133,7 +133,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.Restore(Actor, Now);

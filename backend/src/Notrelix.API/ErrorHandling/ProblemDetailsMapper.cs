@@ -2,36 +2,16 @@ using AppForbiddenException = Notrelix.Application.Common.Exceptions.ForbiddenEx
 using AppBusinessRuleException = Notrelix.Application.Common.Exceptions.BusinessRuleException;
 using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictException;
 using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
-using DomainNotFoundException = Notrelix.Domain.Common.Exceptions.NotFoundException;
-using DomainForbiddenException = Notrelix.Domain.Common.Exceptions.ForbiddenException;
-using DomainBusinessRuleViolationException = Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException;
-using DomainConflictException = Notrelix.Domain.Common.Exceptions.ConflictException;
-using DomainValidationException = Notrelix.Domain.Common.Exceptions.DomainValidationException;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
+using AppValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.API.ErrorHandling;
 
 public static class ProblemDetailsMapper
 {
-    private static bool IsWorkspaceSlugUniqueViolation(Exception exception)
-    {
-        return exception is DbUpdateException { InnerException: PostgresException pg } &&
-               pg.SqlState == PostgresErrorCodes.UniqueViolation &&
-               pg.ConstraintName == "ux_workspaces_account_slug_active";
-    }
-
     public static ProblemDetails Map(HttpContext context, Exception exception)
     {
         (int StatusCode, string ErrorCode, string Title, string Detail, IReadOnlyDictionary<string, string[]>? Errors) mapped = exception switch
         {
-            _ when IsWorkspaceSlugUniqueViolation(exception) => (
-                StatusCodes.Status409Conflict,
-                ErrorCodes.Conflict,
-                "Slug conflict",
-                "A workspace with this slug already exists in your account.",
-                null
-            ),
             FluentValidation.ValidationException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.ValidationFailed,
@@ -39,19 +19,12 @@ public static class ProblemDetailsMapper
                 "One or more validation errors occurred.",
                 (IReadOnlyDictionary<string, string[]>)ex.Errors
             ),
-            Notrelix.Application.Common.Exceptions.ValidationException ex => (
+            AppValidationException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.ValidationFailed,
                 "Validation failed",
                 "One or more validation errors occurred.",
                 (IReadOnlyDictionary<string, string[]>)ex.Errors
-            ),
-            DomainValidationException ex => (
-                StatusCodes.Status400BadRequest,
-                ErrorCodes.ValidationFailed,
-                "Validation failed",
-                "One or more domain validation errors occurred.",
-                ex.Errors
             ),
             AppBusinessRuleException ex => (
                 StatusCodes.Status400BadRequest,
@@ -60,7 +33,7 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
-            DomainBusinessRuleViolationException ex => (
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.BusinessRuleViolation,
                 "Business rule violation",
@@ -81,13 +54,6 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
-            DomainForbiddenException => (
-                StatusCodes.Status403Forbidden,
-                ErrorCodes.Forbidden,
-                "Forbidden",
-                exception.Message,
-                null
-            ),
             AppNotFoundException => (
                 StatusCodes.Status404NotFound,
                 ErrorCodes.ResourceNotFound,
@@ -95,10 +61,10 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
-            DomainNotFoundException => (
-                StatusCodes.Status404NotFound,
-                ErrorCodes.ResourceNotFound,
-                "Resource not found",
+            Notrelix.Application.Common.Idempotency.IdempotencyPayloadMismatchException => (
+                StatusCodes.Status409Conflict,
+                ErrorCodes.IdempotencyPayloadMismatch,
+                "Idempotency conflict",
                 exception.Message,
                 null
             ),
@@ -109,11 +75,18 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
-            DomainConflictException => (
-                StatusCodes.Status409Conflict,
-                ErrorCodes.Conflict,
-                "Conflict",
-                exception.Message,
+            Notrelix.Application.Common.Exceptions.PreconditionFailedException precondition => (
+                StatusCodes.Status412PreconditionFailed,
+                precondition.ErrorCode,
+                "Precondition failed",
+                precondition.Message,
+                null
+            ),
+            Notrelix.Application.Common.Idempotency.IdempotencyIncompleteStateException => (
+                StatusCodes.Status503ServiceUnavailable,
+                ErrorCodes.IdempotencyStateIncomplete,
+                "Service unavailable",
+                "The operation is being processed. Retry shortly with the same Idempotency-Key.",
                 null
             ),
             _ => (

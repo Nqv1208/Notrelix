@@ -1,12 +1,15 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Notrelix.Domain.SharedKernel;
 
 public sealed class JsonValue : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private JsonValue() { }
+
+    [JsonConstructor]
     private JsonValue(string value)
     {
         Value = value;
@@ -19,11 +22,15 @@ public sealed class JsonValue : ValueObject
         try
         {
             using var document = JsonDocument.Parse(jsonString);
-            return new JsonValue(jsonString);
+            // Store compact form for deterministic equality.
+            var compact = JsonSerializer.Serialize(document.RootElement);
+            return new JsonValue(compact);
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
-            throw new BusinessRuleException($"Invalid JSON format: {ex.Message}");
+            throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_Json_InvalidFormat,
+                "Invalid JSON format.");
         }
     }
 

@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Queries.GetBoa
 public record GetBoardViewQuery(Guid BoardId) : IQuery<Result<object>>, IRequirePermission, IResourceScopedRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class GetBoardViewQueryHandler : IRequestHandler<GetBoardViewQuery, Result<object>>

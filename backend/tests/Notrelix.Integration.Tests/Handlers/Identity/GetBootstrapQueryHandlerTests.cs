@@ -3,6 +3,7 @@ using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.ReadPorts.Identity;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -35,9 +36,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = Guid.NewGuid() };
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain("User not found");
@@ -55,9 +57,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = user.Id };
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.User.Id.Should().Be(user.Id);
@@ -84,9 +87,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         context.WorkspaceMembers.Add(member);
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = user.Id };
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.Workspaces.Should().HaveCount(1);
@@ -112,9 +116,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         context.Workspaces.Add(personalWorkspace);
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = user.Id };
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.PersonalWorkspace.Status.Should().Be("ready");
@@ -134,12 +139,44 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = user.Id };
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.PersonalWorkspace.Status.Should().Be("pending");
         result.Data.PersonalWorkspace.WorkspaceId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_DoesNotReturnAnotherUsersWorkspaces()
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
+        var now = DateTimeOffset.UtcNow;
+
+        var caller = User.Create("caller@example.com", "Caller", "hashedpassword", now);
+        var other = User.Create("other@example.com", "Other", "hashedpassword", now);
+        context.Users.Add(caller);
+        context.Users.Add(other);
+        context.AccountMembers.Add(AccountMember.Create(Guid.NewGuid(), caller.Id, AccountRole.Owner, caller.Id, now));
+        context.AccountMembers.Add(AccountMember.Create(Guid.NewGuid(), other.Id, AccountRole.Owner, other.Id, now));
+
+        var otherWorkspace = Workspace.Create(other.Id, other.Id, "Other Workspace", "other-workspace", now);
+        context.Workspaces.Add(otherWorkspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(other.Id, otherWorkspace.Id, other.Id, WorkspaceRole.Admin, other.Id, now));
+        await context.SaveChangesAsync();
+
+        var currentUser = new FakeCurrentUser { UserId = caller.Id };
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
+
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.User.Id.Should().Be(caller.Id);
+        result.Data.Workspaces.Should().BeEmpty(
+            "the caller must only see workspaces they are a member of");
     }
 }

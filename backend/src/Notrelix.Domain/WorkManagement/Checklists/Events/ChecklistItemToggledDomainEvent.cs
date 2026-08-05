@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Checklists.Events;
 
+[EventName("work-management.checklist-item-toggled")]
 public sealed record ChecklistItemToggledDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record ChecklistItemToggledDomainEvent(
     Guid ItemId,
     bool IsDone,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

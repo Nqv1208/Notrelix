@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardFields;
 
 public class DeleteBoardFieldTests : WorkManagementHandlerTestBase
@@ -57,7 +58,7 @@ public class DeleteBoardFieldTests : WorkManagementHandlerTestBase
     public async Task Handle_AlreadyDeleted_IsIdempotent()
     {
         var field = CreateBoardField();
-        field.SoftDelete(TestUserId, TestNow);
+        field.Delete(TestUserId, TestNow);
         SetupBoardFields(field);
 
         var command = new DeleteBoardFieldCommand(field.BoardId, field.Id);

@@ -1,12 +1,13 @@
+using Notrelix.Domain.Governance.Permissions.Events;
 namespace Notrelix.Domain.Governance.Permissions;
 
-public class ResourcePermission : AggregateRoot, IWorkspaceScoped
+public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
-    private bool _suppressSoftDeleteEvent;
+    private bool _suppressDeleteEvent;
 
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
-    public ResourceType ResourceType { get; private set; }
+    public ResourceKind ResourceKind { get; private set; }
     public Guid ResourceId { get; private set; }
     public PermissionSubjectType SubjectType { get; private set; }
     public Guid SubjectId { get; private set; }
@@ -20,7 +21,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
     public static ResourcePermission Grant(
         Guid accountId,
         Guid workspaceId,
-        ResourceType resourceType,
+        ResourceKind resourceKind,
         Guid resourceId,
         PermissionSubjectType subjectType,
         Guid subjectId,
@@ -38,13 +39,13 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(accountId);
 
         if (!PermissionRules.CanGrant(granterLevel, level))
-            throw new BusinessRuleException("Cannot grant a permission level higher than the granter's own level.");
+            throw new BusinessRuleException(GovernanceRuleCodes.Governance_Permission_CannotGrantHigherThanGranter, "Cannot grant a permission level higher than the granter's own level.");
 
         var permission = new ResourcePermission
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
-            ResourceType = resourceType,
+            ResourceKind = resourceKind,
             ResourceId = resourceId,
             SubjectType = subjectType,
             SubjectId = subjectId,
@@ -55,8 +56,8 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         };
 
         permission.SetAuditOnCreate(grantedBy, grantedAt);
-        permission.AddDomainEvent(new ResourcePermissionGrantedDomainEvent(
-            accountId, workspaceId, permission.Id, resourceType, resourceId, subjectType, subjectId, level, grantedBy, grantedAt));
+        permission.RaiseDomainEvent(new ResourcePermissionGrantedDomainEvent(
+            accountId, workspaceId, permission.Id, resourceKind, resourceId, subjectType, subjectId, level, grantedBy, grantedAt));
 
         return permission;
     }
@@ -66,39 +67,42 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Level == newLevel) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldLevel = Level;
         Level = newLevel;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        AddDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
+        RaiseDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceKind, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         IncrementVersion();
-        if (!_suppressSoftDeleteEvent)
-            AddDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+        ApplyDeletion(pendingDeletion);
+        if (!_suppressDeleteEvent)
+            RaiseDomainEvent(new ResourcePermissionDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceKind, ResourceId, deletedBy, deletedAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
         EnsureNotDeleted();
 
-        _suppressSoftDeleteEvent = true;
-        SoftDelete(revokedBy, revokedAt);
-        _suppressSoftDeleteEvent = false;
-        AddDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
+        _suppressDeleteEvent = true;
+        Delete(revokedBy, revokedAt);
+        _suppressDeleteEvent = false;
+        RaiseDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceKind, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
+        ApplyRestore(pendingRestore);
+        RaiseDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceKind, ResourceId, restoredBy, restoredAt));
     }
 }

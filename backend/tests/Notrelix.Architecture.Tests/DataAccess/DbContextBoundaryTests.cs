@@ -14,19 +14,6 @@ public class DbContextBoundaryTests
         return Path.Combine(current, "src", "Notrelix.Application");
     }
 
-    /// <summary>
-    /// Existing handlers that legitimately access multiple bounded contexts.
-    /// These are known cross-context dependencies that should be migrated
-    /// to service/projection/event patterns over time.
-    /// </summary>
-    private static readonly HashSet<string> CrossContextAllowlist =
-    [
-        "GetBootstrap.cs",
-        "RegisterCommandHandler.cs",
-        "GetBoardItem.cs",
-        "GetFullBoard.cs",
-    ];
-
     [Fact]
     public void NewHandlers_ShouldNotInjectGlobalIApplicationDbContext()
     {
@@ -54,7 +41,7 @@ public class DbContextBoundaryTests
     [Fact]
     public void CrossContextDbContextInjection_ShouldBeAllowlisted()
     {
-        // Verify that the 4 known cross-context violations are still the only ones.
+        // Verify that no handler injects a foreign bounded-context DbContext.
         // If this test fails, a NEW cross-context dependency was introduced without review.
         var appPath = GetApplicationPath();
         var violations = new List<string>();
@@ -100,9 +87,6 @@ public class DbContextBoundaryTests
                     handlerContext.Equals(featureName, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                // Allowlisted cross-context usage
-                if (CrossContextAllowlist.Contains(fileName)) continue;
-
                 violations.Add($"{fileName} uses {contextInterface} (belongs to {featureName}) from {handlerContext ?? "unknown"} context");
             }
         }
@@ -129,7 +113,6 @@ public class DbContextBoundaryTests
             "IIntegrationDbContext",
             "IReportingDbContext",
             "IAccountDbContext",
-            "IApplicationDbContext",
         };
 
         var violations = new List<string>();
