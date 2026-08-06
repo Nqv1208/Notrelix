@@ -106,6 +106,24 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
                 $"Event version mismatch for '{envelope.EventName}': expected {expectedVersion}, got {envelope.EventVersion}.");
         }
 
+        if (envelope.Id == Guid.Empty)
+        {
+            // A message without identity cannot be idempotency-keyed, poison-tracked
+            // or redelivered safely; it fails observably as a contract violation
+            // before ordering, semaphore, handler or poison tracking.
+            _logger?.LogWarning("Message contract violation for {EventName}: envelope has no message id",
+                envelope.EventName);
+            _diagnosticEvents.Publish(new DeliveryFailedEvent
+            {
+                EventName = envelope.EventName,
+                Error = "Message contract violation: empty message id",
+            });
+            throw new MessageContractException(
+                $"Message contract violation for '{envelope.EventName}': the envelope must carry a non-empty message id.");
+        }
+
+        var poisonKey = new PoisonMessageKey(envelope.EventName, envelope.Id);
+
         OrderingLease? orderingLease = null;
 
         if (registration.Options.OrderingRequired)
@@ -201,7 +219,7 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
             // handler leaves the sequence uncommitted so a retry of the same
             // message is accepted.
             orderingLease?.Commit();
-            poisonDetector.Reset(envelope.EventName);
+            poisonDetector.Reset(poisonKey);
             _metrics.EventDelivered();
             _diagnosticEvents.Publish(new DeliverySucceededEvent
             {
@@ -219,7 +237,7 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
             // threshold a typed dead-letter recommendation wraps it. Handler failures
             // are never swallowed into a false delivery success.
             _logger?.LogError(ex, "Consumer {EventName} failed processing {Id}", envelope.EventName, envelope.Id);
-            var detection = poisonDetector.RecordFailure(envelope.EventName);
+            var detection = poisonDetector.RecordFailure(poisonKey);
 
             _metrics.EventDeliveryFailed();
             _diagnosticEvents.Publish(new DeliveryFailedEvent

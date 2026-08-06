@@ -274,6 +274,7 @@ public sealed class ConsumerHostTests
 
     private static EventEnvelope CreateEnvelope(string eventName) => new()
     {
+        Id = Guid.NewGuid(),
         EventName = eventName,
         EventVersion = 1,
         CorrelationId = Guid.NewGuid(),

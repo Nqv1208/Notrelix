@@ -9,6 +9,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
+  <!-- Test seam: internal poison identity types are exercised by Platform tests. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Notrelix.Platform.Tests" />
+  </ItemGroup>
+
   <!-- Project References -->
   <ItemGroup>
     <ProjectReference Include="..\Notrelix.Domain\Notrelix.Domain.csproj" />

@@ -371,4 +371,118 @@ public sealed class ConsumerHostDeliveryContractTests
 
         partitionBHandled.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task EmptyMessageId_IsRejectedBeforeHandler()
+    {
+        var handled = false;
+        _sut.Register("test.event", (_, _) =>
+        {
+            handled = true;
+            return Task.CompletedTask;
+        });
+
+        var act = () => _sut.DispatchAsync(CreateEnvelope("test.event") with { Id = Guid.Empty });
+
+        await act.Should().ThrowAsync<MessageContractException>();
+        handled.Should().BeFalse("an envelope without a message id must not reach the handler");
+    }
+
+    [Fact]
+    public async Task EmptyMessageId_DoesNotAcquireOrderingLease()
+    {
+        var handled = false;
+        _sut.Register("test.event", (_, _) =>
+        {
+            handled = true;
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
+
+        var aggregateId = Guid.NewGuid();
+        var invalid = CreateOrderedEnvelope(aggregateId, sequence: 1) with { Id = Guid.Empty };
+
+        var act = () => _sut.DispatchAsync(invalid);
+        await act.Should().ThrowAsync<MessageContractException>();
+
+        // The partition gate must not be held by the rejected message: a valid
+        // sequence 1 must still be acquirable without waiting.
+        await _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+        handled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task EmptyMessageId_DoesNotRecordPoisonFailure()
+    {
+        _sut.Register("test.event", (_, _) =>
+            throw new InvalidOperationException("boom"), o => o.PoisonThreshold = 1);
+
+        // If the empty-ID path recorded poison, the first dispatch would already
+        // throw PoisonMessageException instead of the contract exception.
+        for (var i = 0; i < 3; i++)
+        {
+            var act = () => _sut.DispatchAsync(CreateEnvelope("test.event") with { Id = Guid.Empty });
+            await act.Should().ThrowAsync<MessageContractException>();
+        }
+    }
+
+    [Fact]
+    public async Task DifferentMessageIds_DoNotPoisonEachOther()
+    {
+        _sut.Register("test.event", (_, _) =>
+            throw new InvalidOperationException("boom"), o => o.PoisonThreshold = 2);
+
+        var first = CreateEnvelope("test.event");
+        var second = CreateEnvelope("test.event");
+
+        await DispatchThrowsAsync<InvalidOperationException>(first);
+        await DispatchThrowsAsync<InvalidOperationException>(second);
+        await DispatchThrowsAsync<PoisonMessageException>(first);
+        await DispatchThrowsAsync<PoisonMessageException>(second);
+    }
+
+    [Fact]
+    public async Task SameMessageId_ReachesPoisonThreshold()
+    {
+        _sut.Register("test.event", (_, _) =>
+            throw new InvalidOperationException("boom"), o => o.PoisonThreshold = 2);
+
+        var envelope = CreateEnvelope("test.event");
+
+        await DispatchThrowsAsync<InvalidOperationException>(envelope);
+        await DispatchThrowsAsync<PoisonMessageException>(envelope);
+    }
+
+    [Fact]
+    public async Task SuccessfulRetry_ResetsCurrentMessageCounter()
+    {
+        var fail = true;
+        _sut.Register("test.event", (_, _) =>
+        {
+            if (fail)
+            {
+                throw new InvalidOperationException("boom");
+            }
+
+            return Task.CompletedTask;
+        }, o => o.PoisonThreshold = 2);
+
+        var envelope = CreateEnvelope("test.event");
+
+        await DispatchThrowsAsync<InvalidOperationException>(envelope);
+
+        fail = false;
+        await _sut.DispatchAsync(envelope);
+
+        fail = true;
+        // Counter was reset by the successful delivery: failures start from zero.
+        await DispatchThrowsAsync<InvalidOperationException>(envelope);
+        await DispatchThrowsAsync<PoisonMessageException>(envelope);
+    }
+
+    private async Task DispatchThrowsAsync<TException>(EventEnvelope envelope)
+        where TException : Exception
+    {
+        var act = () => _sut.DispatchAsync(envelope);
+        await act.Should().ThrowAsync<TException>();
+    }
 }
