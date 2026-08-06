@@ -3,6 +3,12 @@ namespace Notrelix.Platform.Messaging.Consumers;
 public sealed class ConsumerOptions
 {
     public int ConcurrencyLimit { get; set; } = 1;
+
+    /// <summary>
+    /// Enables process-local partition serialization and sequence validation.
+    /// The transport must provide partition affinity so one partition reaches one
+    /// host instance; this option alone is not a distributed ordering guarantee.
+    /// </summary>
     public bool OrderingRequired { get; set; }
     public int PoisonThreshold { get; set; } = 10;
     public bool Enabled { get; set; } = true;

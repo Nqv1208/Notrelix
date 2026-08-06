@@ -9,9 +9,9 @@ public sealed record EventEnvelope
     public int EventVersion { get; init; }
 
     /// <summary>
-    /// Producer-assigned ordering sequence within the aggregate/partition. Ordered
-    /// consumers validate this value; a null sequence is auto-assigned the next
-    /// expected value in arrival order so ordered delivery never silently drops.
+    /// Producer-assigned ordering sequence within the aggregate/partition.
+    /// Required, positive and non-null for ordered consumers; the host never
+    /// synthesizes a sequence.
     /// </summary>
     public long? Sequence { get; init; }
     public string? SourceContext { get; init; }

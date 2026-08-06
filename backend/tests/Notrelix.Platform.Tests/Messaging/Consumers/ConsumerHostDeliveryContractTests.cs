@@ -26,6 +26,7 @@ public sealed class ConsumerHostDeliveryContractTests
 
     private static EventEnvelope CreateEnvelope(string eventName, int eventVersion = 1, long? sequence = null) => new()
     {
+        Id = Guid.NewGuid(),
         EventName = eventName,
         EventVersion = eventVersion,
         CorrelationId = Guid.NewGuid(),
@@ -173,6 +174,7 @@ public sealed class ConsumerHostDeliveryContractTests
 
     private static EventEnvelope CreateOrderedEnvelope(Guid aggregateId, long sequence) => new()
     {
+        Id = Guid.NewGuid(),
         EventName = "test.event",
         EventVersion = 1,
         CorrelationId = Guid.NewGuid(),
@@ -182,4 +184,191 @@ public sealed class ConsumerHostDeliveryContractTests
         Data = new byte[0],
         ContentType = "application/json",
     };
+
+    [Fact]
+    public async Task OrderedHandlerSuccess_CommitsSequence()
+    {
+        var handled = 0;
+        _sut.Register("test.event", (_, _) =>
+        {
+            Interlocked.Increment(ref handled);
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
+
+        var aggregateId = Guid.NewGuid();
+        await _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+
+        // The same sequence is now a duplicate: the successful handler committed it.
+        var act = () => _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+        await act.Should().ThrowAsync<MessageOrderingException>();
+
+        handled.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task OrderedHandlerFailure_DoesNotCommitSequence()
+    {
+        var fail = true;
+        var handled = 0;
+        _sut.Register("test.event", (_, _) =>
+        {
+            Interlocked.Increment(ref handled);
+            if (fail)
+            {
+                throw new InvalidOperationException("boom");
+            }
+
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
+
+        var aggregateId = Guid.NewGuid();
+
+        var first = () => _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+        await first.Should().ThrowAsync<InvalidOperationException>();
+
+        // Same sequence is still acceptable: failure must not have committed it.
+        fail = false;
+        await _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+
+        handled.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task OrderedHandlerFailure_RetrySameSequenceSucceeds()
+    {
+        var failures = 0;
+        _sut.Register("test.event", (_, _) =>
+        {
+            if (Interlocked.Increment(ref failures) == 1)
+            {
+                throw new InvalidOperationException("boom");
+            }
+
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
+
+        var aggregateId = Guid.NewGuid();
+
+        var first = () => _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+        await first.Should().ThrowAsync<InvalidOperationException>();
+
+        var retry = () => _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+        await retry.Should().NotThrowAsync();
+
+        failures.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task SuccessfulRetry_AllowsNextSequence()
+    {
+        var failures = 0;
+        var handled = 0;
+        _sut.Register("test.event", (_, _) =>
+        {
+            if (Interlocked.Increment(ref failures) == 1)
+            {
+                throw new InvalidOperationException("boom");
+            }
+
+            Interlocked.Increment(ref handled);
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
+
+        var aggregateId = Guid.NewGuid();
+
+        var first = () => _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+        await first.Should().ThrowAsync<InvalidOperationException>();
+
+        await _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+        await _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 2));
+
+        handled.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task OrderingDenial_DoesNotInvokeHandler()
+    {
+        var handled = 0;
+        _sut.Register("test.event", (_, _) =>
+        {
+            Interlocked.Increment(ref handled);
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
+
+        var aggregateId = Guid.NewGuid();
+        await _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+
+        var act = () => _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+        await act.Should().ThrowAsync<MessageOrderingException>();
+
+        handled.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task OrderingDenial_DoesNotIncrementPoisonCounter()
+    {
+        var handled = 0;
+        _sut.Register("test.event", (_, _) =>
+        {
+            Interlocked.Increment(ref handled);
+            return Task.CompletedTask;
+        }, o =>
+        {
+            o.OrderingRequired = true;
+            o.PoisonThreshold = 1;
+        });
+
+        var aggregateId = Guid.NewGuid();
+        await _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+
+        // Repeated denials must never reach the poison threshold: they bypass the
+        // handler-failure catch entirely (a poison path would throw
+        // PoisonMessageException instead of MessageOrderingException).
+        for (var i = 0; i < 3; i++)
+        {
+            var act = () => _sut.DispatchAsync(CreateOrderedEnvelope(aggregateId, sequence: 1));
+            await act.Should().ThrowAsync<MessageOrderingException>();
+        }
+
+        handled.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SamePartitionBacklog_DoesNotConsumeAllGlobalHandlerSlots()
+    {
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var aggregateA = Guid.NewGuid();
+        var aggregateB = Guid.NewGuid();
+        var partitionBHandled = false;
+
+        _sut.Register("test.event", (envelope, _) =>
+        {
+            if (envelope.AggregateId == aggregateB)
+            {
+                partitionBHandled = true;
+            }
+
+            return envelope.AggregateId == aggregateA ? release.Task : Task.CompletedTask;
+        }, o =>
+        {
+            o.OrderingRequired = true;
+            o.ConcurrencyLimit = 2;
+            o.QueueWaitTimeout = TimeSpan.FromMilliseconds(100);
+        });
+
+        var first = _sut.DispatchAsync(CreateOrderedEnvelope(aggregateA, sequence: 1));
+        var backlogged = _sut.DispatchAsync(CreateOrderedEnvelope(aggregateA, sequence: 2));
+
+        // Partition B (same event, same semaphore, different partition) must still
+        // obtain a handler slot while partition A holds its gate, because the lease
+        // precedes the semaphore. With the old order, partition A would occupy both
+        // slots and B would time out with ConsumerBackpressureException.
+        await _sut.DispatchAsync(CreateOrderedEnvelope(aggregateB, sequence: 1));
+
+        release.TrySetResult();
+        await first;
+        await backlogged;
+
+        partitionBHandled.Should().BeTrue();
+    }
 }
