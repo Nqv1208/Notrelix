@@ -372,6 +372,7 @@ jobs:
     name: Foundation provider tests
     runs-on: ubuntu-latest
     needs: quality
+    timeout-minutes: 30
 
     services:
       redis:
@@ -417,45 +418,89 @@ jobs:
         working-directory: backend
         run: dotnet build backend.slnx --no-restore --configuration $DOTNET_CONFIGURATION
 
-      - name: Foundation — idempotency store, tenancy, inbox/outbox, DI graph
+      - name: Foundation — idempotency
         working-directory: backend
         run: >
-          dotnet test
+          scripts/ci/run-required-test-filter.sh
           tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
-          --filter
-          "FullyQualifiedName~IdempotencyStoreIntegrationTests|FullyQualifiedName~TenantIsolationTests|FullyQualifiedName~CrossTenantIsolationTests|FullyQualifiedName~DeduplicationConsumeFilterIntegrationTests|FullyQualifiedName~DeduplicationConsumeFilterFullIntegrationTests|FullyQualifiedName~MigrationSmokeTests|FullyQualifiedName~ProductionCompositionTests|FullyQualifiedName~RlsRuntimeEnforcementTests|FullyQualifiedName~OutboxDispatchContractTests|FullyQualifiedName~OutboxClaimReclaimTests|FullyQualifiedName~OutboxAtomicityTests|FullyQualifiedName~RedisCacheBehaviorTests|FullyQualifiedName~RealtimeDispatchContractTests|FullyQualifiedName~ProductionGraphTests"
+          foundation-idempotency
+          "FullyQualifiedName~IdempotencyStoreIntegrationTests"
+          Notrelix.Integration.Tests.Data.Ops.IdempotencyStoreIntegrationTests
 
-      - name: Foundation — RLS policy verification and outbox interceptor
+      - name: Foundation — tenancy and RLS runtime
         working-directory: backend
         run: >
-          dotnet test
+          scripts/ci/run-required-test-filter.sh
+          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
+          foundation-tenancy-rls
+          "FullyQualifiedName~TenantIsolationTests|FullyQualifiedName~CrossTenantIsolationTests|FullyQualifiedName~RlsRuntimeEnforcementTests"
+          Notrelix.Integration.Tests.Integration.TenantIsolationTests
+          Notrelix.Integration.Tests.Integration.CrossTenantIsolationTests
+          Notrelix.Integration.Tests.Integration.RlsRuntimeEnforcementTests
+
+      - name: Foundation — inbox/outbox delivery
+        working-directory: backend
+        run: >
+          scripts/ci/run-required-test-filter.sh
+          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
+          foundation-inbox-outbox
+          "FullyQualifiedName~DeduplicationConsumeFilterIntegrationTests|FullyQualifiedName~DeduplicationConsumeFilterFullIntegrationTests|FullyQualifiedName~OutboxDispatchContractTests|FullyQualifiedName~OutboxClaimReclaimTests|FullyQualifiedName~OutboxAtomicityTests"
+          Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterIntegrationTests
+          Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests
+          Notrelix.Integration.Tests.Data.OutboxDispatchContractTests
+          Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests
+          Notrelix.Integration.Tests.Data.OutboxAtomicityTests
+
+      - name: Foundation — migrations and Production graph
+        working-directory: backend
+        run: >
+          scripts/ci/run-required-test-filter.sh
+          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
+          foundation-migrations-production
+          "FullyQualifiedName~MigrationSmokeTests|FullyQualifiedName~ProductionCompositionTests|FullyQualifiedName~ProductionGraphTests"
+          Notrelix.Integration.Tests.Data.MigrationSmokeTests
+          Notrelix.Integration.Tests.Integration.ProductionCompositionTests
+          Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests
+
+      - name: Foundation — Redis cache and realtime
+        working-directory: backend
+        run: >
+          scripts/ci/run-required-test-filter.sh
+          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
+          foundation-cache-realtime
+          "FullyQualifiedName~RedisCacheBehaviorTests|FullyQualifiedName~RealtimeDispatchContractTests"
+          Notrelix.Integration.Tests.Caching.RedisCacheBehaviorTests
+          Notrelix.Integration.Tests.Integration.Realtime.RealtimeDispatchContractTests
+
+      - name: Foundation — infrastructure RLS/interceptor
+        working-directory: backend
+        run: >
+          scripts/ci/run-required-test-filter.sh
           tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
-          --filter
+          foundation-infrastructure-guards
           "FullyQualifiedName~RlsPolicyVerificationTests|FullyQualifiedName~DomainEventInterceptorTests"
+          Notrelix.Infrastructure.Tests.Data.Rls.RlsPolicyVerificationTests
+          Notrelix.Infrastructure.Tests.Data.DomainEventInterceptorTests
 
-      - name: Foundation — API idempotency integration
+      - name: Foundation — API idempotency
         working-directory: backend
         run: >
-          dotnet test
+          scripts/ci/run-required-test-filter.sh
           tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
-          --filter
+          foundation-api-idempotency
           "FullyQualifiedName~IdempotencyEndpointContractTests"
+          Notrelix.API.Tests.Idempotency.IdempotencyEndpointContractTests
 
       - name: Foundation — platform messaging reliability
         working-directory: backend
         run: >
-          dotnet test
+          scripts/ci/run-required-test-filter.sh
           tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
-          --filter
-          "FullyQualifiedName~Messaging.Reliability|FullyQualifiedName~ConsumerHostDeliveryContractTests"
+          foundation-platform-reliability
+          "FullyQualifiedName~OrderingEnforcerTests|FullyQualifiedName~PoisonDetectorTests|FullyQualifiedName~ConsumerHostDeliveryContractTests"
+          Notrelix.Platform.Tests.Messaging.Reliability.OrderingEnforcerTests
+          Notrelix.Platform.Tests.Messaging.Reliability.PoisonDetectorTests
+          Notrelix.Platform.Tests.Messaging.Consumers.ConsumerHostDeliveryContractTests
 
   docker-build:
     name: Docker build
