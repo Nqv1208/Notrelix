@@ -8,7 +8,7 @@ public record ListBoardTemplatesQuery(Guid WorkspaceId)
     : IQuery<Result<List<BoardTemplateDto>>>, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
 }
 
 public class ListBoardTemplatesQueryHandler : IRequestHandler<ListBoardTemplatesQuery, Result<List<BoardTemplateDto>>>

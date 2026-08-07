@@ -7,8 +7,8 @@ public record DisableShareLinkCommand(
     Guid ShareLinkId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ManageWorkspace;
-    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType.ShareLink, ShareLinkId);
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.ShareLink, ShareLinkId);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceKind.Create("governance.share-link"), ShareLinkId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("governance.share-link"), ShareLinkId);
 }
 
 public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCommand, Result>

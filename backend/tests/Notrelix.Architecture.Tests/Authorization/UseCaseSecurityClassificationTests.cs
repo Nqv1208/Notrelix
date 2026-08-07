@@ -135,8 +135,6 @@ public class UseCaseSecurityClassificationTests
             "External N8n webhook callback handler", "Keep as-is", Feature: "Automation"),
 
         // === Bootstrap/queries with no workspace/account scope ===
-        ["GetBootstrapQuery"] = new("GetBootstrapQuery", AllowlistClassification.PublicCommand,
-            "Public bootstrap data query", "Add IAnonymousRequest", Feature: "Accounts"),
         ["GetCurrentUserQuery"] = new("GetCurrentUserQuery", AllowlistClassification.PublicCommand,
             "Public current user query", "Add IAuthenticatedRequest", Feature: "Identity"),
 

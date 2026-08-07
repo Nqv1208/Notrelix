@@ -3,14 +3,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission;
 
+[IdempotencyOperation("work-management.forms.reject-form-submission.v1")]
 public record RejectFormSubmissionCommand(
-    Guid SubmissionId,
-    string? IdempotencyKey = null)
+    Guid SubmissionId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.FormSubmission, SubmissionId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"reject-submission:{SubmissionId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form-submission"), SubmissionId);
 }
 
 public class RejectFormSubmissionCommandHandler : IRequestHandler<RejectFormSubmissionCommand, Result>

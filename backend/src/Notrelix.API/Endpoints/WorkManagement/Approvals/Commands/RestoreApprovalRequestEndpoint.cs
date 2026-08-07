@@ -8,6 +8,7 @@ public static class RestoreApprovalRequestEndpoint
     public static IEndpointRouteBuilder MapRestoreApprovalRequest(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/restore", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Approvals.Restore")
             .WithTags("WorkManagement.Approvals")
             .WithSummary("Restore a soft-deleted approval request");

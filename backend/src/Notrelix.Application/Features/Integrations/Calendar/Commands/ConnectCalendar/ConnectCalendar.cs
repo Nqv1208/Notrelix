@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 
 namespace Notrelix.Application.Features.Integrations.Calendar.Commands.ConnectCalendar;
 
@@ -8,7 +9,7 @@ public record ConnectCalendarCommand(
     string? RefreshToken,
     Guid? WorkspaceId,
     string? SyncDirection
-) : ICommand<Result<Guid>>;
+) : ICommand<Result<Guid>>, IGlobalRequest;
 
 public class ConnectCalendarCommandHandler : IRequestHandler<ConnectCalendarCommand, Result<Guid>>
 {

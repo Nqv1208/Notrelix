@@ -8,6 +8,7 @@ public static class DeleteBoardRelationEndpoint
     public static IEndpointRouteBuilder MapDeleteBoardRelation(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Relations.Delete")
             .WithTags("WorkManagement.Relations")
             .WithSummary("Delete a board relation");

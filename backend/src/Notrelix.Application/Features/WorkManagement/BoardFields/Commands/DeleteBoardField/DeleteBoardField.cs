@@ -3,11 +3,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 
-public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+[IdempotencyOperation("work-management.board-fields.delete-board-field.v1")]
+public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.DeleteField;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, ColumnId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-field:{ColumnId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), ColumnId);
 }
 
 public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCommand, Result>

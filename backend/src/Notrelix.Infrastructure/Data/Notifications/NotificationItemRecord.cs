@@ -16,7 +16,7 @@ public sealed class NotificationItemRecord
     public NotificationSeverity Severity { get; private set; }
     public string? SubjectType { get; private set; }
     public Guid? SubjectId { get; private set; }
-    public string? ResourceType { get; private set; }
+    public string? ResourceKind { get; private set; }
     public Guid? ResourceId { get; private set; }
     public string Title { get; private set; } = null!;
     public string? Body { get; private set; }
@@ -72,7 +72,7 @@ public sealed class NotificationItemRecord
             Severity = severity,
             SubjectType = subjectType,
             SubjectId = subjectId,
-            ResourceType = resourceType,
+            ResourceKind = resourceType,
             ResourceId = resourceId,
             Title = title.Trim(),
             Body = body?.Trim(),

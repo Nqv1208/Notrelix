@@ -8,6 +8,7 @@ public static class DeleteApprovalRequestEndpoint
     public static IEndpointRouteBuilder MapDeleteApprovalRequest(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Approvals.Delete")
             .WithTags("WorkManagement.Approvals")
             .WithSummary("Soft delete an approval request");

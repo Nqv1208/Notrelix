@@ -3,16 +3,15 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Relations.Commands.CreateBoardRelation;
 
+[IdempotencyOperation("work-management.relations.create-board-relation.v1")]
 public record CreateBoardRelationCommand(
     Guid SourceBoardId,
     Guid TargetBoardId,
-    string RelationType,
-    string? IdempotencyKey = null)
+    string RelationType)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, SourceBoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-board-relation:{SourceBoardId}:{TargetBoardId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), SourceBoardId);
 }
 
 public class CreateBoardRelationCommandHandler : IRequestHandler<CreateBoardRelationCommand, Result<Guid>>

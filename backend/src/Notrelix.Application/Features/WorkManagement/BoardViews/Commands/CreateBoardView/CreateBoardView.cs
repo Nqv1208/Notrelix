@@ -3,17 +3,16 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.CreateBoardView;
 
+[IdempotencyOperation("work-management.board-views.create-board-view.v1")]
 public record CreateBoardViewCommand(
     Guid BoardId,
     string Name,
     string ViewMode,
-    string ConfigJson,
-    string? IdempotencyKey = null) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoardView;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-view:{BoardId}:{Name}";
 }
 
 public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewCommand, BoardViewDto>

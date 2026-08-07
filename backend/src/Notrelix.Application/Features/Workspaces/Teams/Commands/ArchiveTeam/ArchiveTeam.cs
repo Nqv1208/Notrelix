@@ -9,7 +9,7 @@ public record ArchiveTeamCommand(
 ) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public class ArchiveTeamCommandHandler : IRequestHandler<ArchiveTeamCommand, Result>

@@ -1,5 +1,7 @@
 using Notrelix.Domain.Documents.ResourceLinks;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Documents;
 
 public class ResourceLinkConfiguration : IEntityTypeConfiguration<ResourceLink>
@@ -17,16 +19,16 @@ public class ResourceLinkConfiguration : IEntityTypeConfiguration<ResourceLink>
 
         builder.OwnsOne(x => x.Source, s =>
         {
-            s.Property(p => p.ResourceType).HasColumnName("source_type").IsRequired().HasMaxLength(50);
+            s.Property(p => p.Kind).HasColumnName("source_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             s.Property(p => p.ResourceId).HasColumnName("source_id").IsRequired();
-            s.HasIndex(p => new { p.ResourceType, p.ResourceId }).HasDatabaseName("idx_resource_links_source");
+            s.HasIndex(p => new { p.Kind, p.ResourceId }).HasDatabaseName("idx_resource_links_source");
         });
 
         builder.OwnsOne(x => x.Target, t =>
         {
-            t.Property(p => p.ResourceType).HasColumnName("target_type").IsRequired().HasMaxLength(50);
+            t.Property(p => p.Kind).HasColumnName("target_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             t.Property(p => p.ResourceId).HasColumnName("target_id").IsRequired();
-            t.HasIndex(p => new { p.ResourceType, p.ResourceId }).HasDatabaseName("idx_resource_links_target");
+            t.HasIndex(p => new { p.Kind, p.ResourceId }).HasDatabaseName("idx_resource_links_target");
         });
 
         builder.Ignore(x => x.IsDeleted);

@@ -3,6 +3,8 @@ namespace Notrelix.Application.Common.Behaviors;
 public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
+    private static readonly ResourceKind AccountKind = ResourceKind.Create("accounts.account");
+
     private readonly ICurrentUser _currentUser;
     private readonly ICurrentTenantContext _tenant;
     private readonly IAuthorizationDecisionStore _authorizationDecisionStore;
@@ -108,14 +110,14 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             {
                 var resource = accountPermission.Resource;
                 _logger.LogError(
-                    "Security misconfiguration: Account request {RequestType} specifies a Resource ({ResourceType}/{ResourceId}). " +
+                    "Security misconfiguration: Account request {RequestType} specifies a Resource ({ResourceKind}/{ResourceId}). " +
                     "Account-scoped requests must not specify a Resource; it is resolved from tenant context.",
                     typeof(TRequest).Name,
-                    resource.ResourceType,
+                    resource.Kind,
                     resource.ResourceId);
 
                 throw new SecurityMisconfigurationException(
-                    $"{typeof(TRequest).Name} is account-scoped but specifies a Resource ({resource.ResourceType}/{resource.ResourceId}). " +
+                    $"{typeof(TRequest).Name} is account-scoped but specifies a Resource ({resource.Kind}/{resource.ResourceId}). " +
                     "Account-scoped requests must not specify a Resource; it is resolved from tenant context.");
             }
         }
@@ -141,7 +143,7 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             }
             else if (scope == Security.PermissionScope.Account)
             {
-                resolvedResource = ResourceRef.Create(ResourceType.Account, _tenant.RequireAccountId());
+                resolvedResource = ResourceRef.Create(AccountKind, _tenant.RequireAccountId());
             }
             else
             {
@@ -164,7 +166,7 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     userId,
                     _tenant.RequireAccountId(),
                     workspaceId,
-                    resolvedResource.ResourceType,
+                    resolvedResource.Kind,
                     resolvedResource.ResourceId,
                     requirePermission.Action,
                     scope),
@@ -173,17 +175,17 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             if (!decision.IsAllowed)
             {
                 _logger.LogWarning(
-                    "Permission denied: UserId={UserId} Action={Action} ResourceType={ResourceType} ResourceId={ResourceId} WorkspaceId={WorkspaceId} Reason={Reason}",
+                    "Permission denied: UserId={UserId} Action={Action} ResourceKind={ResourceKind} ResourceId={ResourceId} WorkspaceId={WorkspaceId} Reason={Reason}",
                     userId,
                     requirePermission.Action,
-                    resolvedResource.ResourceType,
+                    resolvedResource.Kind,
                     resolvedResource.ResourceId,
                     resolvedResource.WorkspaceId,
                     decision.ReasonCode);
 
                 if (decision.ReasonCode == "resource_not_found")
                 {
-                    throw new NotFoundException(resolvedResource.ResourceType.ToString(), resolvedResource.ResourceId);
+                    throw new NotFoundException(resolvedResource.Kind.ToString(), resolvedResource.ResourceId);
                 }
                 throw new ForbiddenException("You do not have permission to perform this action.");
             }

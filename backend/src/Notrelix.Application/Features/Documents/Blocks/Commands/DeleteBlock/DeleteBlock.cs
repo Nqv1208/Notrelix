@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock;
 public record DeleteBlockCommand(Guid BlockId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Block, BlockId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.block"), BlockId);
 }
 
 public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Result>

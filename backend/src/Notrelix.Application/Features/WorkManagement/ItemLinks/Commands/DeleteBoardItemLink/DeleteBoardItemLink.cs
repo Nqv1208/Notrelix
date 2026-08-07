@@ -3,11 +3,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.DeleteBoardItemLink;
 
-public record DeleteBoardItemLinkCommand(Guid BoardItemLinkId, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+[IdempotencyOperation("work-management.item-links.delete-board-item-link.v1")]
+public record DeleteBoardItemLinkCommand(Guid BoardItemLinkId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemLinkId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemLinkId);
     public PermissionAction Action => PermissionAction.UpdateItem;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-item-link:{BoardItemLinkId}";
 }
 
 public class DeleteBoardItemLinkCommandHandler(

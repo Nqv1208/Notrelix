@@ -5,7 +5,7 @@ public sealed record ResourcePermissionRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid PermissionId,
-    ResourceType ResourceType,
+    ResourceKind ResourceKind,
     Guid ResourceId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt

@@ -1,12 +1,14 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 
 public record GetUserWorkspacesQuery
     : IQuery<Result<List<WorkspaceDto>>>,
-      IAuthenticatedRequest;
+      IAuthenticatedRequest,
+      IGlobalRequest;
 
 public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>
 {

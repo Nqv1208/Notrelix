@@ -9,6 +9,7 @@ public static class RenameSavedFilterEndpoint
     public static IEndpointRouteBuilder MapRenameSavedFilter(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/rename", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.SavedFilters.Rename")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("Rename a saved filter");

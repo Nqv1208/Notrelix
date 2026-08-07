@@ -114,7 +114,7 @@ public abstract class WorkManagementHandlerTestBase
         bool isDeleted = false)
     {
         var targetBoardId = boardId ?? Guid.CreateVersion7();
-        var target = ResourceRef.Create(ResourceType.Board, targetBoardId, TestWorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board"), targetBoardId, TestWorkspaceId);
         var request = ApprovalRequest.Create(
             TestAccountId,
             TestWorkspaceId,
@@ -195,7 +195,7 @@ public abstract class WorkManagementHandlerTestBase
             TestWorkspaceId,
             Guid.CreateVersion7(),
             sourceItemId ?? Guid.CreateVersion7(),
-            ResourceRef.Create(ResourceType.BoardItem, targetItemId ?? Guid.CreateVersion7(), TestWorkspaceId),
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), targetItemId ?? Guid.CreateVersion7(), TestWorkspaceId),
             BoardItemLinkType.Reference,
             TestUserId,
             TestNow);

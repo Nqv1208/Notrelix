@@ -8,6 +8,7 @@ public static class DeleteBoardGroupEndpoint
     public static IEndpointRouteBuilder MapDeleteBoardGroup(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardGroups.Delete")
             .WithTags("WorkManagement.BoardGroups")
             .WithSummary("Delete a board group");

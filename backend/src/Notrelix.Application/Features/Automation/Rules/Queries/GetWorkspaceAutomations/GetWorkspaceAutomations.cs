@@ -5,7 +5,7 @@ using Notrelix.Application.Features.Automation.DTOs;
 
 namespace Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations;
 
-public record GetWorkspaceAutomationsQuery(Guid WorkspaceId) : IQuery<Result<IReadOnlyList<AutomationRuleDto>>>;
+public record GetWorkspaceAutomationsQuery(Guid WorkspaceId) : IQuery<Result<IReadOnlyList<AutomationRuleDto>>>, IWorkspaceRequest;
 
 public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceAutomationsQuery, Result<IReadOnlyList<AutomationRuleDto>>>
 {

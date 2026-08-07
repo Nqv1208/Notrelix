@@ -476,8 +476,8 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Boards.AddRange(boardA, boardB);
         await context.SaveChangesAsync();
 
-        var targetA = ResourceRef.Create(ResourceType.Board, boardA.Id, wsA);
-        var targetB = ResourceRef.Create(ResourceType.Board, boardB.Id, wsB);
+        var targetA = ResourceRef.Create(ResourceKind.Create("work-management.board"), boardA.Id, wsA);
+        var targetB = ResourceRef.Create(ResourceKind.Create("work-management.board"), boardB.Id, wsB);
         var commentA = Comment.Create(AccountId, wsA, targetA, "\"Comment A\"", OwnerId, FixedTime);
         var commentB = Comment.Create(AccountId, wsB, targetB, "\"Comment B\"", OwnerId, FixedTime);
         context.Comments.AddRange(commentA, commentB);
@@ -580,8 +580,8 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Pages.Add(Page.Create(AccountId, wsA, "Page A", OwnerId, FixedTime));
         context.Pages.Add(Page.Create(AccountId, wsB, "Page B", OwnerId, FixedTime));
 
-        var targetA = ResourceRef.Create(ResourceType.Board, boardA.Id, wsA);
-        var targetB = ResourceRef.Create(ResourceType.Board, boardB.Id, wsB);
+        var targetA = ResourceRef.Create(ResourceKind.Create("work-management.board"), boardA.Id, wsA);
+        var targetB = ResourceRef.Create(ResourceKind.Create("work-management.board"), boardB.Id, wsB);
         context.Comments.Add(Comment.Create(AccountId, wsA, targetA, "\"Comment A\"", OwnerId, FixedTime));
         context.Comments.Add(Comment.Create(AccountId, wsB, targetB, "\"Comment B\"", OwnerId, FixedTime));
 

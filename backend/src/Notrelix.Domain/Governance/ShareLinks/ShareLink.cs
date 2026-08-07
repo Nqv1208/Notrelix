@@ -5,7 +5,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
-    public ResourceType ResourceType { get; private set; }
+    public ResourceKind ResourceKind { get; private set; }
     public Guid ResourceId { get; private set; }
     public ShareLinkTokenHash TokenHash { get; private set; } = null!;
     public ShareLinkAccessMode AccessMode { get; private set; }
@@ -17,7 +17,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
     public static ShareLink Create(
         Guid accountId,
         Guid workspaceId,
-        ResourceType resourceType,
+        ResourceKind resourceKind,
         Guid resourceId,
         ShareLinkTokenHash tokenHash,
         ShareLinkAccessMode accessMode,
@@ -37,7 +37,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
-            ResourceType = resourceType,
+            ResourceKind = resourceKind,
             ResourceId = resourceId,
             TokenHash = tokenHash,
             AccessMode = accessMode,
@@ -46,7 +46,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         };
 
         link.SetAuditOnCreate(createdBy, createdAt);
-        link.RaiseDomainEvent(new ShareLinkCreatedDomainEvent(accountId, workspaceId, link.Id, resourceType, resourceId, createdBy, createdAt));
+        link.RaiseDomainEvent(new ShareLinkCreatedDomainEvent(accountId, workspaceId, link.Id, resourceKind, resourceId, createdBy, createdAt));
 
         return link;
     }

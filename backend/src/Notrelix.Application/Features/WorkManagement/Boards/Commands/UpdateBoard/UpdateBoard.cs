@@ -4,20 +4,19 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 
+[IdempotencyOperation("work-management.boards.update-board.v1")]
 public record UpdateBoardCommand(
     Guid BoardId,
     string? Title,
     string? Description,
     string? Background,
     BoardVisibility? Visibility,
-    long? ExpectedVersion,
-    string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
+    long? ExpectedVersion) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-board:{BoardId}";
 }
 
 public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, Result>

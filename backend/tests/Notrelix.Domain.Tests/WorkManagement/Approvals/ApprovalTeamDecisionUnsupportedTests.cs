@@ -11,7 +11,7 @@ public class ApprovalTeamDecisionUnsupportedTests
 
     private ApprovalRequest CreateRequestWithTeamStep()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Test", Guid.NewGuid(), Now);
         var teamId = Guid.NewGuid();
         request.AddStep(1, Guid.NewGuid(), Now, approverTeamId: teamId);
@@ -52,7 +52,7 @@ public class ApprovalTeamDecisionUnsupportedTests
     [Fact]
     public void Approve_UserAssignedStep_ShouldSucceed()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Test", Guid.NewGuid(), Now);
         var userId = Guid.NewGuid();
         request.AddStep(1, Guid.NewGuid(), Now, approverUserId: userId);
@@ -64,7 +64,7 @@ public class ApprovalTeamDecisionUnsupportedTests
     [Fact]
     public void Reject_UserAssignedStep_ShouldSucceed()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Test", Guid.NewGuid(), Now);
         var userId = Guid.NewGuid();
         request.AddStep(1, Guid.NewGuid(), Now, approverUserId: userId);
@@ -76,7 +76,7 @@ public class ApprovalTeamDecisionUnsupportedTests
     [Fact]
     public void Approve_OtherUserStep_ShouldThrow()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Test", Guid.NewGuid(), Now);
         var userId = Guid.NewGuid();
         request.AddStep(1, Guid.NewGuid(), Now, approverUserId: userId);

@@ -5,7 +5,7 @@ public sealed record ResourcePermissionLevelChangedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid PermissionId,
-    ResourceType ResourceType,
+    ResourceKind ResourceKind,
     Guid ResourceId,
     PermissionSubjectType Subject,
     Guid SubjectId,

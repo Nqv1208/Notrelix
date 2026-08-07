@@ -9,6 +9,7 @@ public static class UpdateBoardVisibilityEndpoint
     public static IEndpointRouteBuilder MapUpdateBoardVisibility(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/visibility", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.UpdateVisibility")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Update board visibility");

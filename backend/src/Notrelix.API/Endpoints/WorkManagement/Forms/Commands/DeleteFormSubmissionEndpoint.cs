@@ -8,6 +8,7 @@ public static class DeleteFormSubmissionEndpoint
     public static IEndpointRouteBuilder MapDeleteFormSubmission(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.DeleteSubmission")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Delete a form submission");

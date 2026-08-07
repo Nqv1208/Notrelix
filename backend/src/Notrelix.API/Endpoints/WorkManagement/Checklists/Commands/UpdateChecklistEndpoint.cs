@@ -9,6 +9,7 @@ public static class UpdateChecklistEndpoint
     public static IEndpointRouteBuilder MapUpdateChecklist(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Checklists.Update")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Update a checklist");

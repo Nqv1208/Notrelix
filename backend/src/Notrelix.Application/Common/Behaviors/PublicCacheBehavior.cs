@@ -42,20 +42,34 @@ public class PublicCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         var cacheKey = _keyFactory.Public(requestName, requestHash);
         var ttl = cacheable.Ttl ?? DefaultTtl;
 
-        var cached = await _cache.GetAsync<TResponse>(cacheKey);
-        if (cached is not null)
+        try
         {
-            _logger.LogTrace("Cache HIT for {CacheKey} ({RequestType})", cacheKey, typeof(TRequest).Name);
-            return cached;
-        }
+            var cached = await _cache.GetAsync<TResponse>(cacheKey);
+            if (cached is not null)
+            {
+                _logger.LogTrace("Cache HIT for {CacheKey} ({RequestType})", cacheKey, typeof(TRequest).Name);
+                return cached;
+            }
 
-        _logger.LogTrace("Cache MISS for {CacheKey} ({RequestType})", cacheKey, typeof(TRequest).Name);
+            _logger.LogTrace("Cache MISS for {CacheKey} ({RequestType})", cacheKey, typeof(TRequest).Name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Public cache unavailable for {RequestType} — bypassing cache", typeof(TRequest).Name);
+        }
 
         var response = await next();
 
         if (response is not null)
         {
-            await _cache.SetAsync(cacheKey, response, ttl);
+            try
+            {
+                await _cache.SetAsync(cacheKey, response, ttl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Public cache write unavailable for {RequestType} — response served without caching", typeof(TRequest).Name);
+            }
         }
 
         return response;

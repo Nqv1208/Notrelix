@@ -9,7 +9,7 @@ public sealed class AuditLog
     public Guid? ActorUserId { get; private set; }
     public string ActorType { get; private set; } = "User";
     public string Action { get; private set; } = null!;
-    public string? ResourceType { get; private set; }
+    public string? ResourceKind { get; private set; }
     public Guid? ResourceId { get; private set; }
     public string? SubjectType { get; private set; }
     public Guid? SubjectId { get; private set; }
@@ -55,7 +55,7 @@ public sealed class AuditLog
         ActorUserId = actorUserId;
         ActorType = actorType;
         Action = action;
-        ResourceType = resourceType;
+        ResourceKind = resourceType;
         ResourceId = resourceId;
         SubjectType = subjectType;
         SubjectId = subjectId;

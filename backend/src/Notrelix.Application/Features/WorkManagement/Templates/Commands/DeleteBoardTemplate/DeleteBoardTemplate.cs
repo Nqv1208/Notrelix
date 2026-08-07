@@ -3,12 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.DeleteBoardTemplate;
 
-public record DeleteBoardTemplateCommand(Guid TemplateId, string? IdempotencyKey = null)
+[IdempotencyOperation("work-management.templates.delete-board-template.v1")]
+public record DeleteBoardTemplateCommand(Guid TemplateId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, TemplateId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-board-template:{TemplateId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), TemplateId);
 }
 
 public class DeleteBoardTemplateCommandHandler : IRequestHandler<DeleteBoardTemplateCommand, Result>

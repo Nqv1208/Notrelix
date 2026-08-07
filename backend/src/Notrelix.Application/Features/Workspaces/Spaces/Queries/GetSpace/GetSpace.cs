@@ -19,7 +19,7 @@ public record GetSpaceQuery(
 ) : IQuery<Result<SpaceDto>>, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public class GetSpaceQueryHandler : IRequestHandler<GetSpaceQuery, Result<SpaceDto>>

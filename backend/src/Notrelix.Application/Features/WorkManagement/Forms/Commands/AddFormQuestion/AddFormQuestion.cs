@@ -4,6 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.AddFormQuestion;
 
+[IdempotencyOperation("work-management.forms.add-form-question.v1")]
 public record AddFormQuestionCommand(
     Guid FormId,
     string QuestionKey,
@@ -11,13 +12,11 @@ public record AddFormQuestionCommand(
     string Label,
     bool IsRequired,
     string? ConfigJson,
-    string? Position,
-    string? IdempotencyKey = null)
+    string? Position)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"add-form-question:{FormId}:{QuestionKey}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
 }
 
 public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionCommand, Result>

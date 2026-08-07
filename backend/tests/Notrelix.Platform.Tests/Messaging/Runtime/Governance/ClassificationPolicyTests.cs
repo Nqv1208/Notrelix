@@ -62,6 +62,7 @@ public sealed class ClassificationPolicyTests
 
     private static EventEnvelope CreateEnvelope(EventClassification classification) => new()
     {
+        Id = Guid.NewGuid(),
         EventName = "test.event",
         EventVersion = 1,
         CorrelationId = Guid.NewGuid(),

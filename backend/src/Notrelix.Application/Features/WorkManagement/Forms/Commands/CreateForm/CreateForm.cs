@@ -3,18 +3,17 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.CreateForm;
 
+[IdempotencyOperation("work-management.forms.create-form.v1")]
 public record CreateFormCommand(
     Guid BoardId,
     string Title,
     BoardVisibility? Visibility = null,
     string? SettingsJson = null,
-    string? SubmitterPolicyJson = null,
-    string? IdempotencyKey = null)
+    string? SubmitterPolicyJson = null)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-form:{BoardId}:{Title}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class CreateFormCommandHandler : IRequestHandler<CreateFormCommand, Result<Guid>>

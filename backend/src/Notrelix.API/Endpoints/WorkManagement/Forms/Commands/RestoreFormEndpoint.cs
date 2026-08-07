@@ -8,6 +8,7 @@ public static class RestoreFormEndpoint
     public static IEndpointRouteBuilder MapRestoreForm(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/restore", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.Restore")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Restore a soft-deleted form");

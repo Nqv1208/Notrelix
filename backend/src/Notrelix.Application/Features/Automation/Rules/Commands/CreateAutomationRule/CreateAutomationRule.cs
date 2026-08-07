@@ -9,7 +9,7 @@ public record CreateAutomationRuleCommand(
     string Name,
     string TriggerEvent,
     string ActionType,
-    string Configuration) : ICommand<Result<Guid>>, ITransactionalRequest;
+    string Configuration) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest;
 
 public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomationRuleCommand, Result<Guid>>
 {

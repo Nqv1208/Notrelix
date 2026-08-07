@@ -37,7 +37,7 @@ public class IntegrationSyncCursorTests
         var cursor = IntegrationSyncCursor.Create(Guid.NewGuid(), "boards", cursorValue, DateTimeOffset.UtcNow);
 
         cursor.Cursor.Should().Be(cursorValue);
-        cursor.ResourceType.Should().Be("boards");
+        cursor.ResourceKind.Should().Be("boards");
     }
 
     [Fact]

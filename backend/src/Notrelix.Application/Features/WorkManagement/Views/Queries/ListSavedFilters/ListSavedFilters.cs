@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Views.Queries.ListSavedFi
 public record ListSavedFiltersQuery(Guid BoardId) : IQuery<Result<List<SavedFilterDto>>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class ListSavedFiltersQueryHandler : IRequestHandler<ListSavedFiltersQuery, Result<List<SavedFilterDto>>>

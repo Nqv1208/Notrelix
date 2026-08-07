@@ -4,11 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklistItem;
 
-public record CreateChecklistItemCommand(Guid ChecklistId, string Title, string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+[IdempotencyOperation("work-management.checklists.create-checklist-item.v1")]
+public record CreateChecklistItemCommand(Guid ChecklistId, string Title) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Checklist, ChecklistId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-checklist-item:{ChecklistId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist"), ChecklistId);
 }
 
 public class CreateChecklistItemCommandHandler : IRequestHandler<CreateChecklistItemCommand, Result<Guid>>

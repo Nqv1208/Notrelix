@@ -18,12 +18,15 @@ public static class MapBoardFieldEndpoints
             .WithOpenApi();
 
         group.MapResourcePost("/", HandleCreateBoardField)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Create")
             .WithSummary("Create a new field in a board");
         group.MapResourcePatch("/{fieldId:guid}", HandleUpdateBoardField)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Update")
             .WithSummary("Update details or settings of a board field");
         group.MapResourceDelete("/{fieldId:guid}", HandleDeleteBoardField)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Delete")
             .WithSummary("Delete a field from a board");
         group.MapResourcePost("/reorder", HandleReorderBoardFields)

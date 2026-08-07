@@ -15,7 +15,7 @@ public class PermissionTemplateConfiguration : IEntityTypeConfiguration<Permissi
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
-        builder.Property(x => x.TargetResourceType).HasColumnName("target_resource_type").HasConversion<string>().HasMaxLength(50);
+        builder.Property(x => x.TargetResourceKind).HasColumnName("target_resource_type").HasConversion<Notrelix.Infrastructure.Data.Converters.ResourceKindConverter>().HasMaxLength(128);
         builder.Property(x => x.Definition).HasColumnName("permissions_json").HasColumnType("jsonb").IsRequired()
             .HasConversion(
                 v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),

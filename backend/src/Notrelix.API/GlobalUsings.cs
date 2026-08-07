@@ -5,8 +5,10 @@ global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.AspNetCore.Http.HttpResults;
 global using Microsoft.OpenApi.Models;
 
+// API (endpoint contract extensions)
+global using Notrelix.API.Idempotency;
+
 // Domain
-global using Notrelix.Domain.SharedKernel;
 global using Notrelix.Domain.WorkManagement;
 global using Notrelix.Domain.WorkManagement.Boards;
 global using Notrelix.Domain.Workspaces.Members;

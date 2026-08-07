@@ -5,7 +5,7 @@ public sealed record ResourcePermissionRevokedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid PermissionId,
-    ResourceType ResourceType,
+    ResourceKind ResourceKind,
     Guid ResourceId,
     PermissionSubjectType Subject,
     Guid SubjectId,

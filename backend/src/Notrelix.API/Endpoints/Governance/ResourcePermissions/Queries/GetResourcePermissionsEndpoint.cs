@@ -20,7 +20,7 @@ public static class GetResourcePermissionsEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetResourcePermissionsQuery(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId), cancellationToken);
+        var result = await sender.Send(new GetResourcePermissionsQuery(resourceType, resourceId), cancellationToken);
         return result.ToApiResult();
     }
 }

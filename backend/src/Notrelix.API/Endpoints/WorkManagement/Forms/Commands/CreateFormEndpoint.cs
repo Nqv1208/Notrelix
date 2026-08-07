@@ -9,6 +9,7 @@ public static class CreateFormEndpoint
     public static IEndpointRouteBuilder MapCreateForm(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.Create")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Create a new form");

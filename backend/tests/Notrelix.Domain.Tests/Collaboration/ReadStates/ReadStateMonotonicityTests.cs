@@ -9,7 +9,7 @@ public class ReadStateMonotonicityTests
     public void MarkAsRead_ShouldUpdateLastReadAt()
     {
         var state = ResourceReadState.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), DateTimeOffset.UtcNow);
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid()), DateTimeOffset.UtcNow);
         var readAt = DateTimeOffset.UtcNow.AddMinutes(5);
 
         state.MarkAsRead(readAt);
@@ -22,7 +22,7 @@ public class ReadStateMonotonicityTests
     public void MarkAsRead_ShouldSetLastCommentId()
     {
         var state = ResourceReadState.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), DateTimeOffset.UtcNow);
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid()), DateTimeOffset.UtcNow);
         var commentId = Guid.NewGuid();
 
         state.MarkAsRead(DateTimeOffset.UtcNow, commentId);
@@ -34,7 +34,7 @@ public class ReadStateMonotonicityTests
     public void IncrementUnread_ShouldIncreaseCount()
     {
         var state = ResourceReadState.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), DateTimeOffset.UtcNow);
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid()), DateTimeOffset.UtcNow);
 
         state.IncrementUnread(DateTimeOffset.UtcNow);
         state.IncrementUnread(DateTimeOffset.UtcNow);
@@ -46,7 +46,7 @@ public class ReadStateMonotonicityTests
     public void MarkAsRead_ShouldResetUnreadCount()
     {
         var state = ResourceReadState.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), DateTimeOffset.UtcNow);
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid()), DateTimeOffset.UtcNow);
         state.IncrementUnread(DateTimeOffset.UtcNow);
         state.IncrementUnread(DateTimeOffset.UtcNow);
 
@@ -59,7 +59,7 @@ public class ReadStateMonotonicityTests
     public void Create_ShouldSetInitialUnreadToZero()
     {
         var state = ResourceReadState.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), DateTimeOffset.UtcNow);
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid()), DateTimeOffset.UtcNow);
 
         state.UnreadCount.Should().Be(0);
         state.LastReadAt.Should().BeNull();
@@ -69,7 +69,7 @@ public class ReadStateMonotonicityTests
     public void Create_WithEmptyAccountId_ShouldThrow()
     {
         var act = () => ResourceReadState.Create(Guid.Empty, Guid.NewGuid(), Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), DateTimeOffset.UtcNow);
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid()), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>();
     }
@@ -78,7 +78,7 @@ public class ReadStateMonotonicityTests
     public void Create_WithEmptyWorkspaceId_ShouldThrow()
     {
         var act = () => ResourceReadState.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), DateTimeOffset.UtcNow);
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid()), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>();
     }
@@ -87,7 +87,7 @@ public class ReadStateMonotonicityTests
     public void Create_WithEmptyUserId_ShouldThrow()
     {
         var act = () => ResourceReadState.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty,
-            ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), DateTimeOffset.UtcNow);
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid()), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>();
     }

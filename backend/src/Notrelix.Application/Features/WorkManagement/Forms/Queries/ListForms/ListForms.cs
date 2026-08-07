@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Queries.ListForms;
 public record ListFormsQuery(Guid BoardId) : IQuery<Result<List<FormDto>>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class ListFormsQueryHandler : IRequestHandler<ListFormsQuery, Result<List<FormDto>>>

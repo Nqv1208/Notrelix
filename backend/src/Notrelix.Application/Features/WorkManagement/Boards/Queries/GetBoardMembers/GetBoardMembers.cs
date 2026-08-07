@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMe
 public record GetBoardMembersQuery(Guid BoardId) : IQuery<Result<List<BoardMemberDto>>>, IRequirePermission, IResourceScopedRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class GetBoardMembersQueryHandler : IRequestHandler<GetBoardMembersQuery, Result<List<BoardMemberDto>>>

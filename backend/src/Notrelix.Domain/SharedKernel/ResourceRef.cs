@@ -2,27 +2,28 @@ namespace Notrelix.Domain.SharedKernel;
 
 public sealed class ResourceRef : ValueObject
 {
-    public ResourceType ResourceType { get; }
+    public ResourceKind Kind { get; }
     public Guid ResourceId { get; }
     public Guid? WorkspaceId { get; }
 
     private ResourceRef() { }
-    private ResourceRef(ResourceType resourceType, Guid resourceId, Guid? workspaceId)
+
+    private ResourceRef(ResourceKind kind, Guid resourceId, Guid? workspaceId)
     {
-        ResourceType = resourceType;
+        Kind = kind;
         ResourceId = resourceId;
         WorkspaceId = workspaceId;
     }
 
-    public static ResourceRef Create(ResourceType resourceType, Guid resourceId, Guid? workspaceId = null)
+    public static ResourceRef Create(ResourceKind kind, Guid resourceId, Guid? workspaceId = null)
     {
         Guard.NotEmpty(resourceId);
-        return new ResourceRef(resourceType, resourceId, workspaceId);
+        return new ResourceRef(kind, resourceId, workspaceId);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
-        yield return ResourceType;
+        yield return Kind;
         yield return ResourceId;
         yield return WorkspaceId;
     }
@@ -33,5 +34,5 @@ public sealed class ResourceRef : ValueObject
             throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{WorkspaceId.Value}'.");
     }
 
-    public override string ToString() => $"{ResourceType}:{ResourceId}";
+    public override string ToString() => $"{Kind}:{ResourceId}";
 }

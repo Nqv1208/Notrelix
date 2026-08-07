@@ -24,7 +24,6 @@ using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Infrastructure.Data;
 
 public partial class ApplicationDbContext : DbContext,
-    IApplicationDbContext,
     IWorkspaceDbContext,
     IWorkManagementDbContext,
     IIdentityDbContext,

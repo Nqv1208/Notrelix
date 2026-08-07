@@ -6,9 +6,13 @@ namespace Notrelix.Infrastructure.Messaging;
 public sealed class MessageDeduplicationStore : IMessageDeduplicationStore
 {
     private readonly ApplicationDbContext _context;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public MessageDeduplicationStore(ApplicationDbContext context)
-        => _context = context;
+    public MessageDeduplicationStore(ApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<bool> IsProcessedAsync(
         Guid messageId, string consumerName, CancellationToken ct)
@@ -39,7 +43,7 @@ public sealed class MessageDeduplicationStore : IMessageDeduplicationStore
             actorUserId: null,
             correlationId: null,
             causationId: null,
-            claimedAt: DateTimeOffset.UtcNow);
+            claimedAt: _dateTimeProvider.UtcNow);
 
         try
         {

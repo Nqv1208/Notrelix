@@ -10,7 +10,7 @@ public class ReactionDuplicateTests
     public void Create_WithDuplicateCheck_Passes_ShouldSucceed()
     {
         var workspaceId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), workspaceId);
         var userId = Guid.NewGuid();
         var emoji = Emoji.Create("+1");
 
@@ -25,7 +25,7 @@ public class ReactionDuplicateTests
     public void Create_WithDuplicateCheck_Fails_ShouldThrow()
     {
         var workspaceId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), workspaceId);
         var userId = Guid.NewGuid();
         var emoji = Emoji.Create("+1");
 
@@ -40,7 +40,7 @@ public class ReactionDuplicateTests
     public void Create_WithDifferentUser_ShouldNotBeDuplicate()
     {
         var workspaceId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), workspaceId);
         var checkArgs = new List<Guid>();
 
         Reaction.Create(Guid.NewGuid(), workspaceId, target, Guid.NewGuid(), Emoji.Create("+1"), DateTimeOffset.UtcNow,
@@ -57,7 +57,7 @@ public class ReactionDuplicateTests
     public void Create_WithDuplicateCheck_Null_ShouldSucceed()
     {
         var workspaceId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid(), workspaceId);
 
         var reaction = Reaction.Create(Guid.NewGuid(), workspaceId, target, Guid.NewGuid(), Emoji.Create("heart"),
             DateTimeOffset.UtcNow, null);
@@ -70,7 +70,7 @@ public class ReactionDuplicateTests
     public void Remove_ShouldRaiseEvent()
     {
         var reaction = Reaction.Create(Guid.NewGuid(), Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.Comment, Guid.NewGuid()), Guid.NewGuid(),
+            ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid()), Guid.NewGuid(),
             Emoji.Create("rocket"), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)reaction).ClearDomainEvents();
 
@@ -83,7 +83,7 @@ public class ReactionDuplicateTests
     public void Remove_ShouldNotThrowOnMultipleCalls()
     {
         var reaction = Reaction.Create(Guid.NewGuid(), Guid.NewGuid(),
-            ResourceRef.Create(ResourceType.Comment, Guid.NewGuid()), Guid.NewGuid(),
+            ResourceRef.Create(ResourceKind.Create("collaboration.comment"), Guid.NewGuid()), Guid.NewGuid(),
             Emoji.Create("rocket"), DateTimeOffset.UtcNow);
         reaction.Remove(DateTimeOffset.UtcNow);
 

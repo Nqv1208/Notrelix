@@ -23,7 +23,7 @@ public static class CreateShareLinkEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateShareLinkCommand(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.Level, body.ExpiresAt),
+            new CreateShareLinkCommand(resourceType, resourceId, body.Level, body.ExpiresAt),
             cancellationToken);
         return result.ToCreatedResult();
     }

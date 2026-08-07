@@ -8,6 +8,7 @@ public static class UnarchiveBoardViewEndpoint
     public static IEndpointRouteBuilder MapUnarchiveBoardView(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/{viewId:guid}/unarchive", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardViews.Unarchive")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Unarchive a board view");

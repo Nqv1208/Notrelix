@@ -9,7 +9,7 @@ public class AttachmentTests
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), workspaceId);
         var metadata = FileMetadata.Create("doc.pdf", 1024, "application/pdf");
 
         var attachment = Attachment.Create(Guid.NewGuid(), workspaceId, target, AttachmentType.Document, metadata, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -25,7 +25,7 @@ public class AttachmentTests
     public void Create_WithWorkspaceMismatch_ShouldThrow()
     {
         var workspaceId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), Guid.NewGuid());
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => Attachment.Create(Guid.NewGuid(), workspaceId, target, AttachmentType.Image, FileMetadata.Create("img.png", 512, "image/png"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
@@ -82,6 +82,6 @@ public class AttachmentTests
     private static Attachment CreateAttachment()
     {
         var workspaceId = Guid.NewGuid();
-        return Attachment.Create(Guid.NewGuid(), workspaceId, ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), workspaceId), AttachmentType.Document, FileMetadata.Create("doc.pdf", 1024, "application/pdf"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        return Attachment.Create(Guid.NewGuid(), workspaceId, ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), workspaceId), AttachmentType.Document, FileMetadata.Create("doc.pdf", 1024, "application/pdf"), Guid.NewGuid(), DateTimeOffset.UtcNow);
     }
 }

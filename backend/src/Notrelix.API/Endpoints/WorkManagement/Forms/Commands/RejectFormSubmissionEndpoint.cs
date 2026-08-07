@@ -8,6 +8,7 @@ public static class RejectFormSubmissionEndpoint
     public static IEndpointRouteBuilder MapRejectFormSubmission(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/reject", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.RejectSubmission")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Reject a form submission");

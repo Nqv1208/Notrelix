@@ -8,6 +8,7 @@ public static class RestoreBoardEndpoint
     public static IEndpointRouteBuilder MapRestoreBoard(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/restore", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.Restore")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Restore a soft-deleted board");

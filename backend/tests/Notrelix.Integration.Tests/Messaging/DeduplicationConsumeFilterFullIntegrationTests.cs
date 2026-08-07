@@ -37,8 +37,9 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         var context = _db.CreateContext(tenant);
-        var store = new MessageDeduplicationStore(context);
+        var store = new MessageDeduplicationStore(context, new DateTimeProvider());
         var rls = new RlsSessionContext(
+            context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
             tenant);
         return (context, store, rls);
@@ -294,14 +295,16 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         }
 
         var context = _db.CreateContext(tenant);
-        var store = new MessageDeduplicationStore(context);
+        var dateTimeProvider = new DateTimeProvider();
+        var store = new MessageDeduplicationStore(context, dateTimeProvider);
         var rls = new RlsSessionContext(
+            context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
             tenant);
 
         var logger = new Mock<ILogger<DeduplicationConsumeFilter<TestIntegrationEvent>>>();
         var filter = new DeduplicationConsumeFilter<TestIntegrationEvent>(
-            store, context, rls, logger.Object);
+            store, context, rls, dateTimeProvider, logger.Object);
 
         var consumeContext = new Mock<ConsumeContext<TestIntegrationEvent>>();
         consumeContext.Setup(x => x.Message).Returns(integrationEvent);
@@ -360,14 +363,16 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         }
 
         var context = _db.CreateContext(tenant);
-        var store = new MessageDeduplicationStore(context);
+        var dateTimeProvider = new DateTimeProvider();
+        var store = new MessageDeduplicationStore(context, dateTimeProvider);
         var rls = new RlsSessionContext(
+            context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
             tenant);
 
         var logger = new Mock<ILogger<DeduplicationConsumeFilter<TestIntegrationEvent>>>();
         var filter = new DeduplicationConsumeFilter<TestIntegrationEvent>(
-            store, context, rls, logger.Object);
+            store, context, rls, dateTimeProvider, logger.Object);
 
         var consumeContext = new Mock<ConsumeContext<TestIntegrationEvent>>();
         consumeContext.Setup(x => x.Message).Returns(integrationEvent);

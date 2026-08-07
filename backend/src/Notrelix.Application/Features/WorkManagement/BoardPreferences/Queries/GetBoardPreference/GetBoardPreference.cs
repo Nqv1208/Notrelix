@@ -7,7 +7,7 @@ public record GetBoardPreferenceQuery(Guid BoardId, Guid ViewId)
     : IQuery<Result<BoardPreferenceDto>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class GetBoardPreferenceQueryHandler : IRequestHandler<GetBoardPreferenceQuery, Result<BoardPreferenceDto>>

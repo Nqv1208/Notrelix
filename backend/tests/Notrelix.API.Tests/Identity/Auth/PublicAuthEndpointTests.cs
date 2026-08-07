@@ -119,9 +119,8 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
 
         var response = await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotBody);
 
-        // ForgotPasswordCommand does not implement IAnonymousRequest.
-        // AuthorizationBehavior requires auth at MediatR pipeline level.
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        // ForgotPasswordCommand implements IAnonymousRequest — public endpoint.
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -131,9 +130,9 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
 
         var response = await _client.PostAsJsonAsync("/api/v1/auth/forgot-password", body);
 
-        // ForgotPasswordCommand does not implement IAnonymousRequest.
-        // AuthorizationBehavior requires auth at MediatR pipeline level.
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        // ForgotPasswordCommand implements IAnonymousRequest — public endpoint.
+        // Returns OK regardless of whether email exists (prevents enumeration).
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     // ── Reset Password ───────────────────────────────────────

@@ -2689,7 +2689,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
@@ -2716,7 +2716,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_resource_read_states");
 
-                    b.HasIndex("WorkspaceId", "UserId", "ResourceType", "ResourceId")
+                    b.HasIndex("WorkspaceId", "UserId", "ResourceKind", "ResourceId")
                         .IsUnique()
                         .HasDatabaseName("ux_collab_resource_read_states_user_resource");
 
@@ -3309,7 +3309,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<int?>("ResourceType")
+                    b.Property<int?>("ResourceKind")
                         .HasMaxLength(50)
                         .HasColumnType("integer")
                         .HasColumnName("resource_type");
@@ -3436,7 +3436,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
@@ -3477,7 +3477,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("SubjectId")
                         .HasDatabaseName("idx_resource_permissions_subject_id");
 
-                    b.HasIndex("ResourceType", "ResourceId")
+                    b.HasIndex("ResourceKind", "ResourceId")
                         .HasDatabaseName("idx_resource_permissions_resource");
 
                     b.ToTable("resource_permissions", "governance");
@@ -3697,7 +3697,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
@@ -4906,7 +4906,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_synced_at");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -4915,7 +4915,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_integration_sync_cursors");
 
-                    b.HasIndex("ConnectionId", "ResourceType")
+                    b.HasIndex("ConnectionId", "ResourceKind")
                         .HasDatabaseName("idx_integration_sync_cursors_connection_resource");
 
                     b.ToTable("integration_sync_cursors", "integration");
@@ -8066,7 +8066,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -8121,7 +8121,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_audit_logs_workspace_id_occurred_at")
                         .HasFilter("\"workspace_id\" IS NOT NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "OccurredAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "OccurredAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_audit_logs_resource_type_resource_id_occurred_at")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL");
@@ -8182,7 +8182,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -8543,7 +8543,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -8580,10 +8580,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_resource_permission_inheritance_cache");
 
-                    b.HasIndex("WorkspaceId", "SubjectType", "SubjectId", "ResourceType", "ResourceId", "Action")
+                    b.HasIndex("WorkspaceId", "SubjectType", "SubjectId", "ResourceKind", "ResourceId", "Action")
                         .HasDatabaseName("ix_governance_permission_inheritance_cache_lookup");
 
-                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "SubjectType", "SubjectId", "SubjectKey", "Action")
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "SubjectType", "SubjectId", "SubjectKey", "Action")
                         .IsUnique()
                         .HasDatabaseName("ux_governance_permission_inheritance_cache");
 
@@ -8655,6 +8655,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("last_error_code");
+
+                    b.Property<Guid?>("LockId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lock_id");
 
                     b.Property<string>("LockedBy")
                         .HasMaxLength(160)
@@ -9407,7 +9411,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -9504,7 +9508,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_notifications_items_workspace_time")
                         .HasFilter("\"workspace_id\" IS NOT NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "CreatedAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "CreatedAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_notifications_items_resource")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL");
@@ -9802,97 +9806,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("export_jobs", "ops");
                 });
 
-            modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.IdempotencyKeyRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("completed_at");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("text")
-                        .HasColumnName("error_message");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("IdempotencyKey")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("character varying(260)")
-                        .HasColumnName("idempotency_key");
-
-                    b.Property<DateTimeOffset?>("LockedUntil")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("locked_until");
-
-                    b.Property<string>("RequestHash")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("request_hash");
-
-                    b.Property<string>("RequestMethod")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("request_method");
-
-                    b.Property<string>("RequestPath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("request_path");
-
-                    b.Property<string>("ResponseBodyJson")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("response_body_json");
-
-                    b.Property<int?>("ResponseStatusCode")
-                        .HasColumnType("integer")
-                        .HasColumnName("response_status_code");
-
-                    b.Property<string>("Scope")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("scope");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid?>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_idempotency_keys");
-
-                    b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("ix_idempotency_keys_expires_at");
-
-                    b.HasIndex("Scope", "IdempotencyKey")
-                        .IsUnique()
-                        .HasDatabaseName("ix_idempotency_keys_scope_key");
-
-                    b.ToTable("idempotency_keys", "ops");
-                });
-
             modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.ImportJobRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10158,7 +10071,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -10255,7 +10168,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_activity_workspace_logs_workspace_time")
                         .HasFilter("\"deleted_at\" IS NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "OccurredAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "OccurredAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_activity_workspace_logs_resource")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL AND \"deleted_at\" IS NULL");
@@ -10298,7 +10211,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -10334,10 +10247,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "gin");
 
-                    b.HasIndex("AccountId", "WorkspaceId", "ResourceType")
+                    b.HasIndex("AccountId", "WorkspaceId", "ResourceKind")
                         .HasDatabaseName("ix_search_documents_account_workspace_type");
 
-                    b.HasIndex("AccountId", "WorkspaceId", "ResourceType", "ResourceId")
+                    b.HasIndex("AccountId", "WorkspaceId", "ResourceKind", "ResourceId")
                         .IsUnique()
                         .HasDatabaseName("ux_search_documents_resource");
 
@@ -10419,7 +10332,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -10450,11 +10363,86 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("Status", "Priority", "AvailableAt", "CreatedAt")
                         .HasDatabaseName("ix_search_index_jobs_pending");
 
-                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "CreatedAt")
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "CreatedAt")
                         .IsDescending(false, false, false, true)
                         .HasDatabaseName("ix_search_index_jobs_resource");
 
                     b.ToTable("search_index_jobs", "search");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("key_hash");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("operation");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_hash");
+
+                    b.Property<string>("ResultContract")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("result_contract");
+
+                    b.Property<string>("ResultJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("result_json");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("scope");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("state");
+
+                    b.HasKey("Id")
+                        .HasName("pk_idempotency_records");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_idempotency_records_expires_at");
+
+                    b.HasIndex("Scope", "Operation", "KeyHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_idempotency_records_scope_op_key");
+
+                    b.ToTable("idempotency_records", "ops", t =>
+                        {
+                            t.HasCheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
+
+                            t.HasCheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Analytics.Dashboards.DashboardWidget", b =>
@@ -10787,27 +10775,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("AttachmentId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("AttachmentId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("resource_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("resource_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_workspace_id");
 
                             b1.HasKey("AttachmentId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("ResourceKind", "ResourceId")
                                 .HasDatabaseName("idx_attachments_resource");
 
                             b1.ToTable("attachments", "collab");
@@ -10875,27 +10863,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("CommentId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("CommentId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("resource_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("resource_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_workspace_id");
 
                             b1.HasKey("CommentId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("ResourceKind", "ResourceId")
                                 .HasDatabaseName("idx_comments_resource");
 
                             b1.ToTable("comments", "collab");
@@ -10940,27 +10928,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Source", b1 =>
                         {
-                            b1.Property<Guid>("MentionId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("MentionId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("source_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("source_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("source_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("source_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("source_workspace_id");
 
                             b1.HasKey("MentionId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("ResourceKind", "ResourceId")
                                 .HasDatabaseName("idx_mentions_source");
 
                             b1.ToTable("mentions", "collab");
@@ -10999,21 +10987,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("ReactionId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ReactionId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("resource_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("resource_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_workspace_id");
 
@@ -11022,7 +11010,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                             b1.HasIndex("ResourceId")
                                 .HasDatabaseName("idx_reactions_target_resource_id");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("ResourceKind", "ResourceId")
                                 .HasDatabaseName("idx_reactions_resource");
 
                             b1.ToTable("reactions", "collab");
@@ -11043,23 +11031,23 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("ResourceWatcherId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ResourceWatcherId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("target_type");
 
-                            b1.HasKey("ResourceWatcherId");
+                        b1.HasKey("ResourceWatcherId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("ResourceKind", "ResourceId")
                                 .HasDatabaseName("idx_resource_watchers_target");
 
                             b1.ToTable("resource_watchers", "collab");
@@ -11148,23 +11136,23 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Source", b1 =>
                         {
-                            b1.Property<Guid>("ResourceLinkId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ResourceLinkId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("source_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("source_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("source_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("source_type");
 
-                            b1.HasKey("ResourceLinkId");
+                        b1.HasKey("ResourceLinkId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("ResourceKind", "ResourceId")
                                 .HasDatabaseName("idx_resource_links_source");
 
                             b1.ToTable("resource_links", "docs");
@@ -11176,23 +11164,23 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("ResourceLinkId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ResourceLinkId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("target_type");
 
-                            b1.HasKey("ResourceLinkId");
+                        b1.HasKey("ResourceLinkId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("ResourceKind", "ResourceId")
                                 .HasDatabaseName("idx_resource_links_target");
 
                             b1.ToTable("resource_links", "docs");
@@ -11436,27 +11424,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("CalendarEventId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("CalendarEventId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("resource_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("resource_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_workspace_id");
 
                             b1.HasKey("CalendarEventId");
 
-                            b1.HasIndex("ResourceType", "ResourceId")
+                            b1.HasIndex("ResourceKind", "ResourceId")
                                 .HasDatabaseName("idx_calendar_events_resource");
 
                             b1.ToTable("calendar_events", "integration");
@@ -11567,21 +11555,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("ApprovalRequestId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ApprovalRequestId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("target_type");
 
-                            b1.HasKey("ApprovalRequestId");
+                        b1.HasKey("ApprovalRequestId");
 
                             b1.ToTable("approval_requests", "work");
 
@@ -11837,21 +11825,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("BoardItemLinkId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("BoardItemLinkId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
+                        b1.Property<string>("ResourceKind")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("target_type");
 
-                            b1.HasKey("BoardItemLinkId");
+                        b1.HasKey("BoardItemLinkId");
 
                             b1.ToTable("board_item_links", "work");
 

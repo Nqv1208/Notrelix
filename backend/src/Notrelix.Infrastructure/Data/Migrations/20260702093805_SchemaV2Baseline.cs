@@ -374,7 +374,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    target_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     target_id = table.Column<Guid>(type: "uuid", nullable: false),
                     title = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
                     description = table.Column<string>(type: "text", nullable: true),
@@ -402,7 +402,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -644,7 +644,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     parent_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1047,30 +1047,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "idempotency_keys",
+                name: "idempotency_records",
                 schema: "ops",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    user_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    scope = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    idempotency_key = table.Column<string>(type: "character varying(260)", maxLength: 260, nullable: false),
-                    request_method = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    request_path = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    request_hash = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    response_status_code = table.Column<int>(type: "integer", nullable: true),
-                    response_body_json = table.Column<string>(type: "jsonb", nullable: true),
-                    error_message = table.Column<string>(type: "text", nullable: true),
-                    locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    scope = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    operation = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    key_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    request_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    state = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    result_json = table.Column<string>(type: "jsonb", nullable: true),
+                    result_contract = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    completed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    completed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_idempotency_keys", x => x.id);
+                    table.PrimaryKey("pk_idempotency_records", x => x.id);
+                    table.CheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
+                    table.CheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
                 });
 
             migrationBuilder.CreateTable(
@@ -1280,7 +1277,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    source_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    source_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     source_id = table.Column<Guid>(type: "uuid", nullable: false),
                     source_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -1430,6 +1427,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     max_retries = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
                     next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     processing_started_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    lock_id = table.Column<Guid>(type: "uuid", nullable: true),
                     locked_by = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
                     locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -1563,7 +1561,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
                     scope_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    resource_type = table.Column<int>(type: "integer", maxLength: 50, nullable: true),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: true),
                     subject_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     subject_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1599,7 +1597,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     description = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
-                    target_resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    target_resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     permissions_json = table.Column<string>(type: "jsonb", nullable: false),
                     scope = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -1712,7 +1710,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1773,9 +1771,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    source_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    source_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     source_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    target_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     target_id = table.Column<Guid>(type: "uuid", nullable: false),
                     link_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -1831,7 +1829,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     subject_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     subject_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1883,7 +1881,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    target_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     target_id = table.Column<Guid>(type: "uuid", nullable: false),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     watch_level = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -2066,7 +2064,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     token_hash = table.Column<string>(type: "text", nullable: false),
                     access_mode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -2975,7 +2973,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     integration_id = table.Column<Guid>(type: "uuid", nullable: false),
                     external_event_id = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
-                    resource_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     sync_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
@@ -3614,7 +3612,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
                     board_id = table.Column<Guid>(type: "uuid", nullable: false),
                     source_item_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    target_type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     target_id = table.Column<Guid>(type: "uuid", nullable: false),
                     link_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
@@ -4686,16 +4684,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_idempotency_keys_expires_at",
+                name: "ix_idempotency_records_expires_at",
                 schema: "ops",
-                table: "idempotency_keys",
+                table: "idempotency_records",
                 column: "expires_at");
 
             migrationBuilder.CreateIndex(
-                name: "ix_idempotency_keys_scope_key",
+                name: "ix_idempotency_records_scope_op_key",
                 schema: "ops",
-                table: "idempotency_keys",
-                columns: new[] { "scope", "idempotency_key" },
+                table: "idempotency_records",
+                columns: new[] { "scope", "operation", "key_hash" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -5906,7 +5904,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "work");
 
             migrationBuilder.DropTable(
-                name: "idempotency_keys",
+                name: "idempotency_records",
                 schema: "ops");
 
             migrationBuilder.DropTable(

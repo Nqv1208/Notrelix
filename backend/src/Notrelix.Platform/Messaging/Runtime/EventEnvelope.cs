@@ -7,6 +7,13 @@ public sealed record EventEnvelope
     public Guid Id { get; init; }
     public required string EventName { get; init; }
     public int EventVersion { get; init; }
+
+    /// <summary>
+    /// Producer-assigned ordering sequence within the aggregate/partition.
+    /// Required, positive and non-null for ordered consumers; the host never
+    /// synthesizes a sequence.
+    /// </summary>
+    public long? Sequence { get; init; }
     public string? SourceContext { get; init; }
     public string? AggregateType { get; init; }
     public Guid? AggregateId { get; init; }

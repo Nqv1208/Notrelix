@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Application.Common.Events;
 using Notrelix.Platform.Messaging.Runtime;
 using Notrelix.Platform.Messaging.Transport;
 using Xunit;
@@ -46,6 +45,7 @@ public sealed class NullTransportAdapterTests
 
     private static EventEnvelope CreateEnvelope() => new()
     {
+        Id = Guid.NewGuid(),
         EventName = "test.null",
         EventVersion = 1,
         CorrelationId = Guid.NewGuid(),

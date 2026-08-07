@@ -9,7 +9,7 @@ public record GetWorkspaceTeamsQuery(
 ) : IQuery<Result<List<TeamDto>>>, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceTeamsQueryHandler : IRequestHandler<GetWorkspaceTeamsQuery, Result<List<TeamDto>>>

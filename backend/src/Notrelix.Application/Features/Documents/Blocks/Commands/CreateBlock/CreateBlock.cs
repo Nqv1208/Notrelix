@@ -13,7 +13,7 @@ public record CreateBlockCommand(
 ) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Result<Guid>>

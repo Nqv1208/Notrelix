@@ -3,18 +3,17 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.ApproveApprovalRequest;
 
+[IdempotencyOperation("work-management.approvals.approve-approval-request.v1")]
 public record ApproveApprovalRequestCommand(
     Guid RequestId,
     string? Note,
-    long ExpectedVersion,
-    string? IdempotencyKey = null)
+    long ExpectedVersion)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.ApprovalRequest, RequestId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.approval-request"), RequestId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"approve-approval:{RequestId}";
 }
 
 public class ApproveApprovalRequestCommandHandler : IRequestHandler<ApproveApprovalRequestCommand, Result>
@@ -44,7 +43,7 @@ public class ApproveApprovalRequestCommandHandler : IRequestHandler<ApproveAppro
         var step = approvalRequest.Steps
             .FirstOrDefault(s => s.Status == ApprovalStatus.Pending && s.ApproverUserId == userId);
         if (step is null)
-            return Result.Failure("No pending approval step assigned to the current user.");
+            return Result.Failure(new ApplicationError("work.approval.no-pending-step", "No pending approval step assigned to the current user.", ApplicationErrorType.BusinessRule));
 
         approvalRequest.Approve(step.Id, userId, now, request.Note);
         return Result.Success();

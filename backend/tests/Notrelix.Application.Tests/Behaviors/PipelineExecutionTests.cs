@@ -1,7 +1,4 @@
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.Application.Tests.Behaviors;
@@ -10,23 +7,24 @@ public class PipelineExecutionTests
 {
     #region Test infrastructure
 
+    [IdempotencyOperation("test.module.test-command.v1")]
     public sealed record ExecutableCommand : IRequest<string>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
     {
         private static readonly Guid Wsid = Guid.NewGuid();
         public Guid WorkspaceId => Wsid;
         public PermissionAction Action => PermissionAction.ViewWorkspace;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, Wsid, Wsid);
-        public string IdempotencyKey => "test-key";
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), Wsid, Wsid);
     }
 
-    public sealed record NonTransactionalCommand : IRequest<string>;
+    public sealed record NonTransactionalCommand : IRequest<string>, IGlobalRequest;
 
-    public sealed record SideEffectCommand : IRequest<string>, ITransactionalRequest, IRealtimeRequest
+    public sealed record SideEffectCommand : IRequest<string>, ITransactionalRequest, IRealtimeRequest, IWorkspaceRequest
     {
+        public Guid WorkspaceId => Guid.NewGuid();
         public RealtimeTopic Topic => new("test", "test", Guid.NewGuid());
     }
 
-    public sealed record ValidationFailCommand : IRequest<string>, ITransactionalRequest
+    public sealed record ValidationFailCommand : IRequest<string>, ITransactionalRequest, IGlobalRequest
     {
         public string? Value { get; init; }
     }
@@ -41,36 +39,60 @@ public class PipelineExecutionTests
         public Guid WorkspaceId => Guid.Empty;
     }
 
-    private static Mock<IRlsSessionContext> CreateMockRls()
+    /// <summary>
+    /// Creates a mock <see cref="IRequestDataSession"/> that invokes the action callback,
+    /// simulating a successful data session (transaction + save + commit handled internally).
+    /// </summary>
+    private static Mock<IRequestDataSession> CreateMockDataSession(
+        List<string>? executionOrder = null,
+        Exception? throwAfterAction = null)
     {
-        var rls = new Mock<IRlsSessionContext>();
-        rls.Setup(x => x.ApplyAsync(It.IsAny<DatabaseFacade>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        return rls;
-    }
+        var dataSession = new Mock<IRequestDataSession>();
 
-    private static (Mock<IApplicationDbContext> Context, Mock<IDbContextTransaction> Transaction) CreateMockContextPair(bool throwOnSave = false)
-    {
-        var context = new Mock<IApplicationDbContext>();
-        var database = new Mock<DatabaseFacade>(Mock.Of<DbContext>());
-        var transaction = new Mock<IDbContextTransaction>();
-        database.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(transaction.Object);
-        context.Setup(x => x.Database).Returns(database.Object);
-
-        if (throwOnSave)
-            context.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateException("Simulated save failure", new Exception()));
+        if (throwAfterAction is not null)
+        {
+            // Simulate infrastructure save/commit failure after handler succeeds
+            dataSession
+                .Setup(x => x.ExecuteAsync(
+                    It.IsAny<RequestDataSessionOptions>(),
+                    It.IsAny<Func<CancellationToken, Task<string>>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                    async (_, action, ct) =>
+                    {
+                        await action(ct);
+                        throw throwAfterAction;
+                    });
+        }
+        else if (executionOrder is not null)
+        {
+            // Track that the data session completed (wraps handler + save + commit)
+            dataSession
+                .Setup(x => x.ExecuteAsync(
+                    It.IsAny<RequestDataSessionOptions>(),
+                    It.IsAny<Func<CancellationToken, Task<string>>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                    async (_, action, ct) =>
+                    {
+                        var result = await action(ct);
+                        executionOrder.Add("DataSession");
+                        return result;
+                    });
+        }
         else
-            context.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
+        {
+            // Default: pass through to the action
+            dataSession
+                .Setup(x => x.ExecuteAsync(
+                    It.IsAny<RequestDataSessionOptions>(),
+                    It.IsAny<Func<CancellationToken, Task<string>>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                    (_, action, ct) => action(ct));
+        }
 
-        return (context, transaction);
-    }
-
-    private static Mock<IApplicationDbContext> CreateMockContext(bool throwOnSave = false)
-    {
-        return CreateMockContextPair(throwOnSave).Context;
+        return dataSession;
     }
 
     private static Mock<ICurrentUser> CreateMockUser(Guid? userId = null)
@@ -89,12 +111,57 @@ public class PipelineExecutionTests
         return service;
     }
 
-    private static Mock<IIdempotencyStore> CreateMockIdempotencyStore(bool lockAcquired = true)
+    private static Mock<IIdempotencyStore> CreateMockIdempotencyStore(
+        IdempotencyBeginResult? beginResult = null)
     {
         var store = new Mock<IIdempotencyStore>();
-        store.Setup(x => x.TryAcquireLockAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()))
-            .ReturnsAsync(lockAcquired);
+        store.Setup(x => x.BeginAsync(
+                It.IsAny<IdempotencyIdentity>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(beginResult ?? new IdempotencyBeginResult(
+                IdempotencyBeginStatus.Started, null, null));
+        store.Setup(x => x.CompleteAsync(
+                It.IsAny<IdempotencyIdentity>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         return store;
+    }
+
+    private static IdempotencyBehavior<TRequest, string> CreateIdempotencyBehavior<TRequest>(
+        Mock<IIdempotencyStore> mockStore,
+        bool allowSerializedResult = true)
+        where TRequest : notnull
+    {
+        var mockTenant = new Mock<ICurrentTenantContext>();
+        mockTenant.Setup(x => x.AccountId).Returns(Guid.NewGuid());
+        mockTenant.Setup(x => x.WorkspaceId).Returns((Guid?)null);
+
+        var partitionFactory = new IdempotencyPartitionFactory(mockTenant.Object);
+
+        var mockFingerprint = new Mock<IIdempotencyRequestFingerprint>();
+        mockFingerprint.Setup(x => x.Compute(It.IsAny<IIdempotentRequest>(), It.IsAny<Type>()))
+            .Returns("test-fingerprint-hash");
+
+        var mockReplayPolicy = new Mock<IIdempotencyReplayPolicy>();
+        if (!allowSerializedResult)
+        {
+            mockReplayPolicy.Setup(x => x.EnsureSerializedResultAllowed(It.IsAny<string>(), It.IsAny<string>()))
+                .Throws(new InvalidOperationException("test replay policy rejected serialized result"));
+        }
+
+        var executionContext = new IdempotencyExecutionContext();
+        executionContext.Set("test-execution-key", IdempotencyExecutionSource.Internal);
+
+        return new IdempotencyBehavior<TRequest, string>(
+            mockStore.Object,
+            mockFingerprint.Object,
+            mockReplayPolicy.Object,
+            partitionFactory,
+            executionContext,
+            executionContext,
+            Mock.Of<ILogger<IdempotencyBehavior<TRequest, string>>>());
     }
 
     private static Mock<IPostCommitActionQueue> CreateMockPostCommitQueue()
@@ -121,17 +188,13 @@ public class PipelineExecutionTests
     {
         var executionOrder = new List<string>();
 
-        var mockContext = CreateMockContext();
+        var dataSession = CreateMockDataSession();
         var mockUser = CreateMockUser();
         var mockPermissionService = CreateMockPermissionService();
         var mockPostCommit = CreateMockPostCommitQueue();
-        var rls = new Mock<IRlsSessionContext>();
-        var dbRls = new Mock<IApplicationDbContext>();
-        var database = new Mock<DatabaseFacade>(Mock.Of<DbContext>());
-        dbRls.Setup(x => x.Database).Returns(database.Object);
 
         var transactionBehavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         var mockTenant = new Mock<ICurrentTenantContext>();
         mockTenant.Setup(x => x.AccountId).Returns(Guid.NewGuid());
@@ -165,17 +228,20 @@ public class PipelineExecutionTests
 
         result.Should().Be("result");
         executionOrder.Should().ContainSingle("Handler");
-        mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Pipeline_TransactionalCommand_ShouldCommitAfterHandler()
     {
-        var mockContext = CreateMockContext();
         var executionOrder = new List<string>();
+        var dataSession = CreateMockDataSession(executionOrder);
 
         var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = ct =>
         {
@@ -185,8 +251,11 @@ public class PipelineExecutionTests
 
         await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
-        executionOrder.Should().ContainInOrder("Handler");
-        mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        executionOrder.Should().ContainInOrder("Handler", "DataSession");
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -196,59 +265,75 @@ public class PipelineExecutionTests
     [Fact]
     public async Task TransactionalBehavior_HandlerSucceeds_CommitsAndReturnsResponse()
     {
-        var mockContext = CreateMockContext();
+        var dataSession = CreateMockDataSession();
         var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("success");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
         result.Should().Be("success");
-        mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task TransactionalBehavior_HandlerThrows_RollsBackAndDoesNotCommit()
     {
-        var mockContext = CreateMockContext();
+        var dataSession = CreateMockDataSession();
         var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("handler failed");
 
         Func<Task> act = () => behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        // ExecuteAsync is called (it wraps the handler), but the handler exception
+        // propagates through it — rollback is Infrastructure's responsibility.
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task TransactionalBehavior_SaveChangesFails_RollsBackAndDoesNotCommit()
     {
-        var mockContext = CreateMockContext(throwOnSave: true);
+        var dataSession = CreateMockDataSession(
+            throwAfterAction: new InvalidOperationException("Simulated save failure"));
         var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
         Func<Task> act = () => behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
-        await act.Should().ThrowAsync<DbUpdateException>();
-        mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Simulated save failure");
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task TransactionalBehavior_NonTransactionalRequest_SkipsTransaction()
     {
-        var mockContext = CreateMockContext();
+        var dataSession = CreateMockDataSession();
         var behavior = new DbRequestScopeBehavior<NonTransactionalCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<NonTransactionalCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<NonTransactionalCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("passthrough");
         var result = await behavior.Handle(new NonTransactionalCommand(), next, CancellationToken.None);
 
         result.Should().Be("passthrough");
-        mockContext.Verify(x => x.Database, Times.Never);
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion
@@ -336,12 +421,12 @@ public class PipelineExecutionTests
     [Fact]
     public async Task FullPipeline_SideEffectsRunAfterTransaction()
     {
-        var mockContext = CreateMockContext();
+        var dataSession = CreateMockDataSession();
         var mockPostCommit = CreateMockPostCommitQueue();
         var executionOrder = new List<string>();
 
         var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
@@ -364,24 +449,19 @@ public class PipelineExecutionTests
 
         await postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
 
-        mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
         mockPostCommit.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Pipeline_TransactionCommitHappensBeforeSideEffects()
     {
-        var (mockContext, mockTransaction) = CreateMockContextPair();
-        var mockPostCommit = CreateMockPostCommitQueue();
         var callOrder = new List<string>();
-
-        mockContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .Callback(() => callOrder.Add("SaveChanges"))
-            .ReturnsAsync(1);
-
-        mockTransaction.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
-            .Callback(() => callOrder.Add("CommitAsync"))
-            .Returns(Task.CompletedTask);
+        var dataSession = CreateMockDataSession(executionOrder: callOrder);
+        var mockPostCommit = CreateMockPostCommitQueue();
 
         // Track flush order within PostCommitScope
         mockPostCommit.Setup(x => x.FlushAsync(It.IsAny<CancellationToken>()))
@@ -389,10 +469,10 @@ public class PipelineExecutionTests
             .Returns(Task.CompletedTask);
 
         // Nesting: PostCommitScope (outer) → DbRequestScope (transaction) → PostCommitEnqueue → Handler
-        // After handler returns: Transaction(SaveChanges+Commit) → PostCommitScope(FlushAsync)
+        // After handler returns: DataSession(save+commit) → PostCommitScope(FlushAsync)
 
         var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
@@ -414,31 +494,36 @@ public class PipelineExecutionTests
 
         await postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
 
-        callOrder.Should().ContainInOrder("Handler", "SaveChanges", "CommitAsync", "FlushAsync");
+        callOrder.Should().ContainInOrder("Handler", "DataSession", "FlushAsync");
     }
 
     [Fact]
     public async Task Pipeline_SideEffectsCannotRunBeforeCommit()
     {
-        var (mockContext, mockTransaction) = CreateMockContextPair();
+        var dataSessionCompleted = false;
+
+        var dataSession = new Mock<IRequestDataSession>();
+        dataSession
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                async (_, action, ct) =>
+                {
+                    var result = await action(ct);
+                    dataSessionCompleted = true;
+                    return result;
+                });
+
         var mockPostCommit = CreateMockPostCommitQueue();
-        var commitHappened = false;
-
-        mockContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .Callback(() => commitHappened = true)
-            .ReturnsAsync(1);
-
-        mockTransaction.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
-            .Callback(() => commitHappened = true)
-            .Returns(Task.CompletedTask);
-
         mockPostCommit.Setup(x => x.FlushAsync(It.IsAny<CancellationToken>()))
-            .Callback(() => commitHappened.Should().BeTrue("commit must happen before flush"))
+            .Callback(() => dataSessionCompleted.Should().BeTrue("data session must complete before flush"))
             .Returns(Task.CompletedTask);
 
         // Nesting: PostCommitScope (outer) → DbRequestScope → PostCommitEnqueue → Handler
         var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
@@ -460,11 +545,12 @@ public class PipelineExecutionTests
     [Fact]
     public async Task Pipeline_SaveChangesFailure_DoesNotFlushPostCommit()
     {
-        var mockContext = CreateMockContext(throwOnSave: true);
+        var dataSession = CreateMockDataSession(
+            throwAfterAction: new InvalidOperationException("Simulated save failure"));
         var mockPostCommit = CreateMockPostCommitQueue();
 
         var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
@@ -482,8 +568,12 @@ public class PipelineExecutionTests
 
         Func<Task> act = () => postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
 
-        await act.Should().ThrowAsync<DbUpdateException>();
-        mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Simulated save failure");
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
         mockPostCommit.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Never);
         mockPostCommit.Verify(x => x.Clear(), Times.Once);
     }
@@ -491,11 +581,11 @@ public class PipelineExecutionTests
     [Fact]
     public async Task Pipeline_HandlerFailure_DoesNotFlushPostCommit()
     {
-        var mockContext = CreateMockContext();
+        var dataSession = CreateMockDataSession();
         var mockPostCommit = CreateMockPostCommitQueue();
 
         var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
@@ -523,31 +613,29 @@ public class PipelineExecutionTests
     #region 4. Idempotency behavior
 
     [Fact]
-    public async Task IdempotencyBehavior_LockAcquired_ExecutesHandlerAndEnqueuesPostCommitResult()
+    public async Task IdempotencyBehavior_LeaseAcquired_ExecutesHandlerAndCompletesWithResult()
     {
-        var mockStore = CreateMockIdempotencyStore(lockAcquired: true);
-        var mockQueue = new Mock<IPostCommitActionQueue>();
-        var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, mockQueue.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+        var mockStore = CreateMockIdempotencyStore();
+        var behavior = CreateIdempotencyBehavior<ExecutableCommand>(mockStore);
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("result");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
         result.Should().Be("result");
-        mockQueue.Verify(x => x.Enqueue(It.IsAny<IPostCommitAction>()), Times.Once);
+        mockStore.Verify(x => x.CompleteAsync(
+            It.IsAny<IdempotencyIdentity>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task IdempotencyBehavior_LockNotAcquired_CachedResult_ReturnsCachedResult()
+    public async Task IdempotencyBehavior_AlreadyCompleted_ReturnsCachedResult()
     {
-        var mockStore = new Mock<IIdempotencyStore>();
-        mockStore.Setup(x => x.TryAcquireLockAsync("test-key", It.IsAny<TimeSpan>()))
-            .ReturnsAsync(false);
-        mockStore.Setup(x => x.GetResultAsync("test-key"))
-            .ReturnsAsync("cached-result");
+        var mockStore = CreateMockIdempotencyStore(new IdempotencyBeginResult(
+            IdempotencyBeginStatus.Completed, "\"cached-result\"", "test.module.test-command.v1"));
 
-        var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+        var behavior = CreateIdempotencyBehavior<ExecutableCommand>(mockStore);
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("should not be called");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
@@ -556,16 +644,12 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task IdempotencyBehavior_LockNotAcquired_NoCachedResult_ThrowsConflict()
+    public async Task IdempotencyBehavior_PayloadMismatch_ThrowsConflict()
     {
-        var mockStore = new Mock<IIdempotencyStore>();
-        mockStore.Setup(x => x.TryAcquireLockAsync("test-key", It.IsAny<TimeSpan>()))
-            .ReturnsAsync(false);
-        mockStore.Setup(x => x.GetResultAsync("test-key"))
-            .ReturnsAsync((string?)null);
+        var mockStore = CreateMockIdempotencyStore(new IdempotencyBeginResult(
+            IdempotencyBeginStatus.PayloadMismatch, null, null));
 
-        var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+        var behavior = CreateIdempotencyBehavior<ExecutableCommand>(mockStore);
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("should not be called");
 
@@ -575,34 +659,59 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task IdempotencyBehavior_HandlerThrows_ReleasesLockAndDoesNotEnqueueResult()
+    public async Task IdempotencyBehavior_HandlerThrows_DoesNotComplete()
     {
-        var mockStore = CreateMockIdempotencyStore(lockAcquired: true);
-        var mockQueue = new Mock<IPostCommitActionQueue>();
-        var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, mockQueue.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+        var mockStore = CreateMockIdempotencyStore();
+        var behavior = CreateIdempotencyBehavior<ExecutableCommand>(mockStore);
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("handler failed");
 
         Func<Task> act = () => behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        mockStore.Verify(x => x.ReleaseLockAsync("test-key"), Times.Once);
-        mockQueue.Verify(x => x.Enqueue(It.IsAny<IPostCommitAction>()), Times.Never);
+        mockStore.Verify(x => x.CompleteAsync(
+            It.IsAny<IdempotencyIdentity>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IdempotencyBehavior_ReplayPolicyRejectsResult_ThrowsAndDoesNotComplete()
+    {
+        // FZ-IDEM-01 (spec 3.7): never return a successful business response without
+        // Completed replay state. When the replay policy rejects caching the serialized
+        // result, the behavior must throw so the request transaction rolls back — it
+        // must not return the response and silently leave a Started row behind.
+        var mockStore = CreateMockIdempotencyStore();
+        var behavior = CreateIdempotencyBehavior<ExecutableCommand>(mockStore, allowSerializedResult: false);
+
+        RequestHandlerDelegate<string> next = _ => Task.FromResult("result");
+
+        Func<Task> act = () => behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
+
+        await act.Should().ThrowAsync<Exception>(
+            "a rejected non-replayable result must not surface as a successful business response");
+        mockStore.Verify(x => x.CompleteAsync(
+            It.IsAny<IdempotencyIdentity>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task IdempotencyBehavior_NonIdempotentRequest_SkipsIdempotency()
     {
         var mockStore = CreateMockIdempotencyStore();
-        var behavior = new IdempotencyBehavior<NonTransactionalCommand, string>(
-            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<NonTransactionalCommand, string>>>());
+        var behavior = CreateIdempotencyBehavior<NonTransactionalCommand>(mockStore);
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
         var result = await behavior.Handle(new NonTransactionalCommand(), next, CancellationToken.None);
 
         result.Should().Be("ok");
-        mockStore.Verify(x => x.TryAcquireLockAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never);
+        mockStore.Verify(x => x.BeginAsync(
+            It.IsAny<IdempotencyIdentity>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion
@@ -688,12 +797,12 @@ public class PipelineExecutionTests
     [Fact]
     public async Task ValidationOrAuthFailure_NoTransactionOpened()
     {
-        var mockContext = CreateMockContext();
+        var dataSession = CreateMockDataSession();
         var validators = new IValidator<ValidationFailCommand>[] { new ValidationFailCommandValidator() };
 
         var validationBehavior = new ValidationBehavior<ValidationFailCommand, string>(validators);
         var transactionBehavior = new DbRequestScopeBehavior<ValidationFailCommand, string>(
-            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ValidationFailCommand, string>>>());
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ValidationFailCommand, string>>>());
 
         RequestHandlerDelegate<string> txNext = _ => Task.FromResult("ok");
 
@@ -703,7 +812,52 @@ public class PipelineExecutionTests
         Func<Task> act = () => validationBehavior.Handle(new ValidationFailCommand(), wsNext, CancellationToken.None);
 
         await act.Should().ThrowAsync<ValidationException>();
-        mockContext.Verify(x => x.Database.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        dataSession.Verify(x => x.ExecuteAsync(
+            It.IsAny<RequestDataSessionOptions>(),
+            It.IsAny<Func<CancellationToken, Task<string>>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Pipeline_CommitFailure_DoesNotFlushPostCommit()
+    {
+        // PIPE-007: When the transaction commit fails, post-commit actions must not run.
+        var dataSession = new Mock<IRequestDataSession>();
+        dataSession
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Simulated commit failure"));
+
+        var mockPostCommit = CreateMockPostCommitQueue();
+
+        var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+
+        var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+
+        var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
+
+        RequestHandlerDelegate<string> txNext = _ => Task.FromResult("ok");
+
+        RequestHandlerDelegate<string> enqueueNext = ct =>
+            transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
+
+        RequestHandlerDelegate<string> postCommitNext = ct =>
+            enqueueBehavior.Handle(new SideEffectCommand(), enqueueNext, ct);
+
+        Func<Task> act = () => postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Simulated commit failure");
+
+        mockPostCommit.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Never,
+            "post-commit flush must not run when commit fails");
+        mockPostCommit.Verify(x => x.Clear(), Times.Once,
+            "queue must be cleared on failure to prevent stale side effects");
     }
 
     #endregion

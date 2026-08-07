@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./client": "./src/client/index.ts",
     "./endpoints": "./src/endpoints/index.ts",
-    "./types": "./src/types/index.ts"
+    "./types": "./src/types/index.ts",
+    "./generated/rest": "./src/generated/rest/index.ts"
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",

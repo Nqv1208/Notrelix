@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Application.Common.Events;
 using Notrelix.Platform.Messaging.Runtime;
 using Notrelix.Platform.Messaging.Transport;
 using Xunit;
@@ -57,6 +56,7 @@ public sealed class InMemoryTransportAdapterTests
 
     private static EventEnvelope CreateEnvelope(string eventName = "test.transport") => new()
     {
+        Id = Guid.NewGuid(),
         EventName = eventName,
         EventVersion = 1,
         CorrelationId = Guid.NewGuid(),

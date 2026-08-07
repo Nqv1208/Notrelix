@@ -22,10 +22,10 @@ public static class DependencyInjection
         services.AddGovernanceInfrastructure(configuration);
         services.AddStorage(configuration);
         services.AddEmail(configuration);
-        services.AddRealtime(configuration);
+        services.AddRealtime(configuration, environment);
         services.AddIntegrations(configuration);
         services.AddBilling(configuration, environment);
-        services.AddOperations(configuration);
+        services.AddOperations(configuration, environment);
         services.AddObservability(configuration);
 
         services.AddOAuthInfrastructure(configuration);

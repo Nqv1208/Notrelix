@@ -13,7 +13,7 @@ public class CommentReplyInvariantTests
     [Fact]
     public void Create_ShouldNotAcceptParentId()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
 
         var comment = Comment.Create(_accountId, _workspaceId, target, "Top-level", _actorId, _now);
 
@@ -24,7 +24,7 @@ public class CommentReplyInvariantTests
     public void CreateReply_ShouldSetParentId()
     {
         var parentCommentId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
         var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
 
         var reply = Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
@@ -36,8 +36,8 @@ public class CommentReplyInvariantTests
     public void CreateReply_ShouldThrow_WhenTargetMismatch()
     {
         var parentCommentId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
-        var differentTarget = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
+        var differentTarget = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), _workspaceId);
         var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, differentTarget);
 
         var act = () => Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
@@ -49,7 +49,7 @@ public class CommentReplyInvariantTests
     public void CreateReply_ShouldThrow_WhenWorkspaceMismatch()
     {
         var parentCommentId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
         // Parent context has different workspace than the reply
         var otherWorkspaceId = Guid.NewGuid();
         var parentContext = ParentCommentContext.Create(_accountId, otherWorkspaceId, parentCommentId, target);
@@ -63,7 +63,7 @@ public class CommentReplyInvariantTests
     public void CreateReply_ShouldThrow_WhenAccountMismatch()
     {
         var parentCommentId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
         var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
         var otherAccountId = Guid.NewGuid();
 
@@ -76,7 +76,7 @@ public class CommentReplyInvariantTests
     public void CreateReply_ShouldThrow_WhenParentDeleted()
     {
         var parentCommentId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
         var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target, isDeleted: true);
 
         var act = () => Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
@@ -88,7 +88,7 @@ public class CommentReplyInvariantTests
     public void CreateReply_ShouldTrimContent()
     {
         var parentCommentId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
         var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
 
         var reply = Comment.CreateReply(_accountId, _workspaceId, target, "  Reply  ", _actorId, _now, parentContext);
@@ -100,7 +100,7 @@ public class CommentReplyInvariantTests
     public void CreateReply_ShouldSetStatusToActive()
     {
         var parentCommentId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
         var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
 
         var reply = Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
@@ -112,7 +112,7 @@ public class CommentReplyInvariantTests
     public void CreateReply_ShouldRaiseReplyEvent()
     {
         var parentCommentId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
         var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
 
         var reply = Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
@@ -125,7 +125,7 @@ public class CommentReplyInvariantTests
     [Fact]
     public void ParentCommentContext_ShouldRejectEmptyId()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
 
         var act = () => ParentCommentContext.Create(_accountId, _workspaceId, Guid.Empty, target);
 

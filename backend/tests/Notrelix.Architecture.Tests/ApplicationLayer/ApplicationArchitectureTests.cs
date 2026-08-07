@@ -14,6 +14,18 @@ public class ApplicationArchitectureTests
         return Path.Combine(current, "src", "Notrelix.Application");
     }
 
+    private static string GetInfrastructurePath()
+    {
+        var current = AppContext.BaseDirectory;
+        while (current != null && !File.Exists(Path.Combine(current, "backend.slnx")))
+        {
+            current = Path.GetDirectoryName(current);
+        }
+        if (current == null)
+            throw new DirectoryNotFoundException("Could not find backend.slnx root.");
+        return Path.Combine(current, "src", "Notrelix.Infrastructure");
+    }
+
     private static string[] GetApplicationFeatureFiles()
     {
         var appPath = GetApplicationPath();
@@ -326,12 +338,12 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void RlsSessionContextIsRequiredInDbRequestScope()
+    public void RlsSessionContextIsRequiredInDataSession()
     {
-        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "DbRequestScopeBehavior.cs");
-        var content = File.ReadAllText(behaviorPath);
+        var sessionPath = Path.Combine(GetInfrastructurePath(), "Data", "EfRequestDataSession.cs");
+        var content = File.ReadAllText(sessionPath);
 
-        content.Should().Contain("IRlsSessionContext", "DbRequestScopeBehavior must inject IRlsSessionContext for RLS enforcement");
+        content.Should().Contain("IRlsSessionContext", "EfRequestDataSession must inject IRlsSessionContext for RLS enforcement");
     }
 
     [Fact]
@@ -454,11 +466,11 @@ public class ApplicationArchitectureTests
     [Fact]
     public void ReadScope_SetsReadOnlyTransaction()
     {
-        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "DbRequestScopeBehavior.cs");
-        var content = File.ReadAllText(behaviorPath);
+        var sessionPath = Path.Combine(GetInfrastructurePath(), "Data", "EfRequestDataSession.cs");
+        var content = File.ReadAllText(sessionPath);
 
         content.Should().Contain("SET TRANSACTION READ ONLY",
-            "DbRequestScopeBehavior must set READ ONLY for non-write scopes to prevent accidental writes");
+            "EfRequestDataSession must set READ ONLY for non-write scopes to prevent accidental writes");
     }
 
     [Fact]
@@ -493,13 +505,13 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void EntityFrameworkCoreRelational_IsReferencedByApplication()
+    public void EntityFrameworkCoreRelational_IsNotReferencedByApplication()
     {
         var csprojPath = Path.Combine(GetApplicationPath(), "Notrelix.Application.csproj");
         var content = File.ReadAllText(csprojPath);
 
-        content.Should().Contain("Microsoft.EntityFrameworkCore.Relational",
-            "Application must reference EF Core Relational to use ExecuteSqlRawAsync for SET TRANSACTION READ ONLY");
+        content.Should().NotContain("Microsoft.EntityFrameworkCore.Relational",
+            "Application must not reference EF Core Relational — raw SQL belongs in Infrastructure");
     }
 
     [Fact]

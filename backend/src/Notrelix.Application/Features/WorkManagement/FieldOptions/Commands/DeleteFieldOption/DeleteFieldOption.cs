@@ -7,7 +7,7 @@ public record DeleteFieldOptionCommand(
     Guid FieldId,
     Guid OptionId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, FieldId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
     public PermissionAction Action => PermissionAction.UpdateField;
 }
 

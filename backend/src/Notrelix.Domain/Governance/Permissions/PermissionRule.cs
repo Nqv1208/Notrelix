@@ -6,7 +6,7 @@ public class PermissionRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public PermissionScopeType ScopeType { get; private set; }
-    public ResourceType? ResourceType { get; private set; }
+    public ResourceKind? ResourceKind { get; private set; }
     public Guid? ResourceId { get; private set; }
     public PermissionSubjectType SubjectType { get; private set; }
     public Guid? SubjectId { get; private set; }
@@ -25,7 +25,7 @@ public class PermissionRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guid accountId,
         Guid workspaceId,
         PermissionScopeType scopeType,
-        ResourceType? resourceType,
+        ResourceKind? resourceKind,
         Guid? resourceId,
         PermissionSubjectType subjectType,
         Guid? subjectId,
@@ -47,7 +47,7 @@ public class PermissionRule : SoftDeletableAggregateRoot, IWorkspaceScoped
             AccountId = accountId,
             WorkspaceId = workspaceId,
             ScopeType = scopeType,
-            ResourceType = resourceType,
+            ResourceKind = resourceKind,
             ResourceId = resourceId,
             SubjectType = subjectType,
             SubjectId = subjectId,

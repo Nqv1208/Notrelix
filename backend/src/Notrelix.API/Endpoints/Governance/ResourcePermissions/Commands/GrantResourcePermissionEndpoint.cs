@@ -23,7 +23,7 @@ public static class GrantResourcePermissionEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new GrantResourcePermissionCommand(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.SubjectType, body.SubjectId, body.Level, body.ExpiresAt),
+            new GrantResourcePermissionCommand(resourceType, resourceId, body.SubjectType, body.SubjectId, body.Level, body.ExpiresAt),
             cancellationToken);
         return result.ToCreatedResult();
     }

@@ -9,10 +9,27 @@ public sealed class IntegrationEventCollector : IIntegrationEventCollector
         _events.Add(integrationEvent);
     }
 
-    public IReadOnlyCollection<IIntegrationEvent> DequeueAll()
+    public IntegrationEventBatch CapturePending()
     {
-        var events = _events.ToArray();
-        _events.Clear();
-        return events;
+        return new IntegrationEventBatch(Guid.NewGuid(), _events.ToArray());
+    }
+
+    public void Acknowledge(IntegrationEventBatch batch)
+    {
+        foreach (var evt in batch.Events)
+        {
+            _events.Remove(evt);
+        }
+    }
+
+    public void Restore(IntegrationEventBatch batch)
+    {
+        foreach (var evt in batch.Events)
+        {
+            if (!_events.Contains(evt))
+            {
+                _events.Add(evt);
+            }
+        }
     }
 }

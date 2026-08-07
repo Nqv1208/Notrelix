@@ -9,6 +9,7 @@ public static class UpdateSavedFilterSortsEndpoint
     public static IEndpointRouteBuilder MapUpdateSavedFilterSorts(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/sorts", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.SavedFilters.UpdateSorts")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("Update saved filter sort rules");

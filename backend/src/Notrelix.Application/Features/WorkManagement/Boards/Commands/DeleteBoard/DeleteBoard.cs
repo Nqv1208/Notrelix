@@ -4,7 +4,8 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.DeleteBoard;
 
-public record DeleteBoardCommand(Guid BoardId, string? IdempotencyKey = null)
+[IdempotencyOperation("work-management.boards.delete-board.v1")]
+public record DeleteBoardCommand(Guid BoardId)
     : ICommand<Result>,
       ITransactionalRequest,
       IResourceScopedRequest,
@@ -12,8 +13,7 @@ public record DeleteBoardCommand(Guid BoardId, string? IdempotencyKey = null)
       IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-board:{BoardId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class DeleteBoardCommandHandler : IRequestHandler<DeleteBoardCommand, Result>

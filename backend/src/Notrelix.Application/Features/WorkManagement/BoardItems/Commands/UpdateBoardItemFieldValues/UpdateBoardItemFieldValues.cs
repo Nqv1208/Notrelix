@@ -4,11 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
-public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+[IdempotencyOperation("work-management.board-items.update-board-item-field-values.v1")]
+public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"bulk-set-field-values:{BoardItemId}:{string.Join(",", Values.Keys.OrderBy(k => k))}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBoardItemFieldValuesCommand, Result>
@@ -52,7 +52,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             }
 
             if (!columns.TryGetValue(columnId, out var column))
-                return Result.Failure($"Unsupported field '{columnId}'.");
+                return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{columnId}'.", ApplicationErrorType.Validation));
 
             var semanticField = ResolveSemanticField(column);
             switch (semanticField)
@@ -86,7 +86,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                             var link = BoardItemLink.Create(
                                 _requestContext.RequireAccountId(),
                                 card.WorkspaceId, card.BoardId, card.Id,
-                                ResourceRef.Create(ResourceType.Page, pageId.Value, card.WorkspaceId),
+                                ResourceRef.Create(ResourceKind.Create("documents.page"), pageId.Value, card.WorkspaceId),
                                 BoardItemLinkType.Reference,
                                 _requestContext.UserId, now);
                             _context.BoardItemLinks.Add(link);
@@ -117,7 +117,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                         break;
                     }
                 default:
-                    return Result.Failure($"Unsupported field '{column.Name}'.");
+                    return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{column.Name}'.", ApplicationErrorType.Validation));
             }
         }
 

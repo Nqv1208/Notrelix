@@ -12,7 +12,7 @@ public class ResourcePermissionLifecycleTests
     [Fact]
     public void ResourcePermission_Delete_ShouldRaiseEvent()
     {
-        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceKind.Create("work-management.board"), Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
         ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
@@ -29,7 +29,7 @@ public class ResourcePermissionLifecycleTests
     [Fact]
     public void ResourcePermission_Restore_ShouldRaiseEvent()
     {
-        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceKind.Create("work-management.board"), Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
         permission.Delete(Actor, Now);
         ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
@@ -47,7 +47,7 @@ public class ResourcePermissionLifecycleTests
     [Fact]
     public void ResourcePermission_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceKind.Create("work-management.board"), Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
         permission.Delete(Actor, Now);
         ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
@@ -61,7 +61,7 @@ public class ResourcePermissionLifecycleTests
     [Fact]
     public void ResourcePermission_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceKind.Create("work-management.board"), Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
         ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
@@ -74,7 +74,7 @@ public class ResourcePermissionLifecycleTests
     [Fact]
     public void ResourcePermission_Revoke_ShouldEmitOnlyRevokedEvent()
     {
-        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceKind.Create("work-management.board"), Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
         ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 

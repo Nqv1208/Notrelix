@@ -1,26 +1,26 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 
 public record GetBoardItemQuery(Guid BoardItemId) : IQuery<Result<BoardItemDto>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Result<BoardItemDto>>
 {
     private readonly IWorkManagementDbContext _context;
     private readonly IActorLookupService _actorLookup;
-    private readonly ICollaborationDbContext _collabContext;
-    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, ICollaborationDbContext collabContext)
+    private readonly IWorkManagementCollaborationReadPort _collabReadPort;
+    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort)
     {
         _context = context;
         _actorLookup = actorLookup;
-        _collabContext = collabContext;
+        _collabReadPort = collabReadPort;
     }
 
     public async Task<Result<BoardItemDto>> Handle(GetBoardItemQuery request, CancellationToken ct)
@@ -75,15 +75,13 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
 
         if (listContext is null) throw new NotFoundException("List", card.GroupId);
 
-        var commentCount = await _collabContext.Comments.AsNoTracking()
-            .CountAsync(comment => comment.Target.ResourceId == card.Id && !comment.IsDeleted, ct);
-        var attachmentCount = await _collabContext.Attachments.AsNoTracking()
-            .CountAsync(attachment => attachment.Target.ResourceId == card.Id, ct);
+        var collaborationCounts = await _collabReadPort.GetCountsAsync([card.Id], ct);
+        var itemCounts = collaborationCounts.GetValueOrDefault(card.Id);
 
         return Result<BoardItemDto>.Success(new BoardItemDto(
             card.Id, listContext.BoardId, listContext.WorkspaceId, card.GroupId, card.Name,
             members, labels, checklists,
-            commentCount, attachmentCount,
+            itemCounts.CommentCount, itemCounts.AttachmentCount,
             card.Position.Value,
             card.CreatedAt.DateTime, card.UpdatedAt?.DateTime
         ));

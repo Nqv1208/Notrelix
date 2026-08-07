@@ -7,7 +7,7 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
-    public ResourceType ResourceType { get; private set; }
+    public ResourceKind ResourceKind { get; private set; }
     public Guid ResourceId { get; private set; }
     public PermissionSubjectType SubjectType { get; private set; }
     public Guid SubjectId { get; private set; }
@@ -21,7 +21,7 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
     public static ResourcePermission Grant(
         Guid accountId,
         Guid workspaceId,
-        ResourceType resourceType,
+        ResourceKind resourceKind,
         Guid resourceId,
         PermissionSubjectType subjectType,
         Guid subjectId,
@@ -45,7 +45,7 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
-            ResourceType = resourceType,
+            ResourceKind = resourceKind,
             ResourceId = resourceId,
             SubjectType = subjectType,
             SubjectId = subjectId,
@@ -57,7 +57,7 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         permission.SetAuditOnCreate(grantedBy, grantedAt);
         permission.RaiseDomainEvent(new ResourcePermissionGrantedDomainEvent(
-            accountId, workspaceId, permission.Id, resourceType, resourceId, subjectType, subjectId, level, grantedBy, grantedAt));
+            accountId, workspaceId, permission.Id, resourceKind, resourceId, subjectType, subjectId, level, grantedBy, grantedAt));
 
         return permission;
     }
@@ -72,7 +72,7 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         Level = newLevel;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
+        RaiseDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceKind, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -83,7 +83,7 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         IncrementVersion();
         ApplyDeletion(pendingDeletion);
         if (!_suppressDeleteEvent)
-            RaiseDomainEvent(new ResourcePermissionDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+            RaiseDomainEvent(new ResourcePermissionDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceKind, ResourceId, deletedBy, deletedAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
@@ -93,7 +93,7 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         _suppressDeleteEvent = true;
         Delete(revokedBy, revokedAt);
         _suppressDeleteEvent = false;
-        RaiseDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
+        RaiseDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceKind, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -103,6 +103,6 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         IncrementVersion();
         ApplyRestore(pendingRestore);
-        RaiseDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
+        RaiseDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceKind, ResourceId, restoredBy, restoredAt));
     }
 }

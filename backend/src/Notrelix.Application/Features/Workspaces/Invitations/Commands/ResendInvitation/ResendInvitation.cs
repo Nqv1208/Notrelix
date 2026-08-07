@@ -15,7 +15,7 @@ public sealed record ResendInvitationCommand(
       IRequireVerifiedEmail
 {
     public PermissionAction Action => PermissionAction.InviteMember;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public sealed class ResendInvitationCommandHandler
