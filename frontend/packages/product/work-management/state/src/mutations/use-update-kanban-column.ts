@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { listApi } from "../api/list.api"
+import { useWorkManagementServices } from "../services"
 import type { UpdateListInput } from "../api/list.api"
 import type { FullBoardResponse } from "@notrelix/work-management-core"
 
@@ -9,10 +8,11 @@ type MutationContext = { previous?: FullBoardResponse }
 
 export function useUpdateKanbanColumn(boardId: string, workspaceId: string) {
   const queryClient = useQueryClient()
+  const { lists } = useWorkManagementServices()
   const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
 
   return useMutation<void, Error, UpdateListInput, MutationContext>({
-    mutationFn: (input) => listApi.updateList(input),
+    mutationFn: (input) => lists.updateList(input),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey })
       const previous = queryClient.getQueryData<FullBoardResponse>(queryKey)
@@ -36,7 +36,6 @@ export function useUpdateKanbanColumn(boardId: string, workspaceId: string) {
     },
     onError: (_error, _input, context) => {
       queryClient.setQueryData(queryKey, context?.previous)
-      toast.error("Failed to update column. Changes reverted.")
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey })

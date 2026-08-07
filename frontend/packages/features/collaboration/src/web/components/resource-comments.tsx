@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { createUseComments, createUseCreateComment, createUseDeleteComment, type Comment } from '../../core';
-import { api } from '@notrelix/contracts';
+import React, { useState, useMemo } from 'react';
+import type { Comment } from '../../core';
+import { createUseComments, createUseCreateComment, createUseDeleteComment } from '../query/hooks/use-comments';
 import { Button, Input, Avatar } from '@notrelix/ui-web';
 import { MessageSquare, Send, Trash2 } from 'lucide-react';
 
@@ -17,6 +17,7 @@ interface ResourceCommentsProps {
   resourceType: 'page' | 'block' | 'card';
   currentUserId?: string;
   currentUserName?: string;
+  api: any;
 }
 
 export function ResourceComments({
@@ -24,11 +25,22 @@ export function ResourceComments({
   resourceType: _resourceType,
   currentUserId = 'current-user',
   currentUserName = 'You',
+  api,
 }: ResourceCommentsProps) {
   const [newComment, setNewComment] = useState('');
-  const useComments = createUseComments(api, collabEndpoints);
-  const useCreateComment = createUseCreateComment(api, collabEndpoints);
-  const useDeleteComment = createUseDeleteComment(api, collabEndpoints);
+
+  const useComments = useMemo(
+    () => createUseComments(api, collabEndpoints),
+    [api],
+  );
+  const useCreateComment = useMemo(
+    () => createUseCreateComment(api, collabEndpoints),
+    [api],
+  );
+  const useDeleteComment = useMemo(
+    () => createUseDeleteComment(api, collabEndpoints),
+    [api],
+  );
 
   const { data: comments = [], isLoading } = useComments(resourceId);
   const createComment = useCreateComment();

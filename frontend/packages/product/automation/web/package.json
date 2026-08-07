@@ -17,8 +17,7 @@
     "@notrelix/ui-web": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "react": "^19.0.0",
-    "lucide-react": "^0.562.0",
-    "sonner": "^2.0.7"
+    "lucide-react": "^0.562.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

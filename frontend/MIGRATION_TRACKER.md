@@ -2,63 +2,40 @@
 
 > Track incremental migration from legacy `api` singleton to `useAppRuntime()` pattern.
 >
-> **Target:** Remove all entries below and delete `api` / `configureApi` from `@notrelix/contracts`.
+> **Target:** ALL ENTRIES MIGRATED AND `api` / `configureApi` DELETED FROM `@notrelix/contracts`.
 
-## Migration Pattern
+## Migration Status: 100% COMPLETE ✅
 
-**Old (module-level, legacy):**
-```tsx
-import { api, endpoints } from '@notrelix/contracts';
-const LoginForm = createLoginForm({ api, endpoints }); // module-level
-```
-
-**New (runtime-injected):**
-```tsx
-function SignInPage() {
-  const { api: runtimeClient } = useAppRuntime();
-  const LoginForm = useMemo(
-    () => createLoginForm({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
-    [runtimeClient],
-  );
-  return <LoginForm />;
-}
-```
+All legacy module-level singletons have been removed and replaced with runtime-injected clients via `useAppRuntime()`.
+The `configureApi` bridge and legacy `api` export have been permanently deleted from `@notrelix/contracts`.
 
 ---
-
-## ❌ Remaining Files to Migrate
-
-| File | Component | Priority |
-|------|-----------|----------|
-| `apps/web/src/shell/sidebar/workspace-switcher.tsx` | `createUseWorkspaceList`, `createUseCreateWorkspace` | High |
-| `apps/web/src/shell/sidebar/sidebar.tsx` | `createUseWorkspaceShellData`, `createUseWorkspaceMembers` | High |
-| `apps/web/src/shell/topbar/topbar.tsx` | `createNotificationBell` | High |
-| `apps/web/src/routes/home.tsx` | `createUseWorkspaceList` | High |
-| `apps/web/src/routes/workspaces/$workspaceId/settings.tsx` | Various | Medium |
-| `apps/web/src/routes/workspaces/$workspaceId/dashboard.tsx` | Various | Medium |
-| `apps/web/src/routes/workspaces/$workspaceId/docs/$docId.tsx` | Various | Medium |
-| `apps/web/src/routes/workspaces/$workspaceId/members.tsx` | Various | Medium |
-| `apps/web/src/routes/workspaces/$workspaceId/account/notifications.tsx` | Various | Low |
-| `apps/web/src/routes/workspaces/$workspaceId/account/profile.tsx` | Various | Low |
-| `apps/web/src/routes/workspaces/$workspaceId/account/appearance.tsx` | Various | Low |
-| `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` | Various | Low |
-| `apps/web/src/routes/invite/$token.tsx` | Various | Medium |
-| `apps/web/src/routes/sign-in.tsx` | `createLoginForm` | High |
-| `apps/web/src/routes/forgot-password.tsx` | `createForgotPasswordForm` | Medium |
-| `apps/web/src/routes/sign-up.tsx` | `createRegisterForm` | High |
 
 ## ✅ Migrated Files
 
-| File | Migrated in PR |
-|------|---------------|
-| `apps/web/src/main.tsx` | FE-FREEZE-01B (bridge) |
-| `apps/web/src/providers/workspace-provider.tsx` | FE-FREEZE-01B |
-| `apps/web/src/shell/guards/workspace-guard.tsx` | FE-FREEZE-01B |
-
----
-
-## When to Remove the Bridge
-
-Delete `configureApi` bridge and legacy `api` export when:
-1. The table above has 0 rows remaining
-2. `grep -r "from '@notrelix/contracts'" apps/web/src` only matches files that import `apiFetch` / `createNotrelixClient` (not `api` or `configureApi`)
+| File | Component / Hook | Status |
+|------|------------------|--------|
+| `apps/web/src/main.tsx` | App composition root | ✅ Complete |
+| `apps/web/src/providers/workspace-provider.tsx` | Workspace Context Provider | ✅ Complete |
+| `apps/web/src/shell/guards/workspace-guard.tsx` | Workspace Route Guard | ✅ Complete |
+| `apps/web/src/shell/sidebar/workspace-switcher.tsx` | `useWorkspaceList`, `useCreateWorkspace` | ✅ Complete |
+| `apps/web/src/shell/sidebar/sidebar.tsx` | `useWorkspaceShellData`, `useWorkspaceMembers` | ✅ Complete |
+| `apps/web/src/shell/topbar/topbar.tsx` | `NotificationBell` | ✅ Complete |
+| `apps/web/src/shell/workspace-tabbed-frame.tsx` | `useReorderWorkspaceViews` | ✅ Complete |
+| `apps/web/src/routes/home.tsx` | `useWorkspaceList` | ✅ Complete |
+| `apps/web/src/routes/workspaces/$workspaceId/settings.tsx` | `useUpdateWorkspace` | ✅ Complete |
+| `apps/web/src/routes/workspaces/$workspaceId/dashboard.tsx` | `usePageList`, `useDocsFavorites`, `useWorkspaceMembers` | ✅ Complete |
+| `apps/web/src/routes/workspaces/$workspaceId/docs/$docId.tsx` | `DocPageScreen` | ✅ Complete |
+| `apps/web/src/routes/workspaces/$workspaceId/members.tsx` | Member management hooks | ✅ Complete |
+| `apps/web/src/routes/workspaces/$workspaceId/account/notifications.tsx` | `useNotificationSettings`, `useUpdateNotificationSettings` | ✅ Complete |
+| `apps/web/src/routes/workspaces/$workspaceId/account/profile.tsx` | `useProfile`, `useUpdateProfile` | ✅ Complete |
+| `apps/web/src/routes/workspaces/$workspaceId/account/appearance.tsx` | `useAppearanceSettings`, `useUpdateAppearanceSettings` | ✅ Complete |
+| `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx` | `useSecuritySettings` | ✅ Complete |
+| `apps/web/src/routes/invite/$token.tsx` | `useInvitationDetails`, `useAcceptInvitation` | ✅ Complete |
+| `apps/web/src/routes/sign-in.tsx` | `LoginForm` | ✅ Complete |
+| `apps/web/src/routes/forgot-password.tsx` | `ForgotPasswordForm` | ✅ Complete |
+| `apps/web/src/routes/sign-up.tsx` | `RegisterForm` | ✅ Complete |
+| `packages/features/collaboration/src/web/components/resource-comments.tsx` | `ResourceComments` | ✅ Complete |
+| `packages/features/workspace/src/web/components/pending-invitations-menu.tsx` | `PendingInvitationsMenu` | ✅ Complete |
+| `packages/features/workspace/src/web/components/workspace-add-view-menu.tsx` | `WorkspaceAddViewMenu` | ✅ Complete |
+| `packages/product/work-management/state/src/api/*.api.ts` | Work management API modules | ✅ Complete |

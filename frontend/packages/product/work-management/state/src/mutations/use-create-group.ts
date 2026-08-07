@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { groupApi } from "../api/group.api"
+import { useWorkManagementServices } from "../services"
 import type { CreateGroupInput } from "../api/group.api"
 import type { BoardGroup, FullBoardResponse } from "@notrelix/work-management-core"
 
@@ -9,10 +8,11 @@ type MutationContext = { previous?: FullBoardResponse }
 
 export function useCreateGroup(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
+  const { groups } = useWorkManagementServices()
   const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
 
   return useMutation<string, Error, Omit<CreateGroupInput, "boardId">, MutationContext>({
-    mutationFn: (input) => groupApi.createGroup({ ...input, boardId }),
+    mutationFn: (input) => groups.createGroup({ ...input, boardId }),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey })
       const previous = queryClient.getQueryData<FullBoardResponse>(queryKey)
@@ -33,10 +33,6 @@ export function useCreateGroup(boardId: string, workspaceId?: string) {
     },
     onError: (_error, _input, context) => {
       queryClient.setQueryData(queryKey, context?.previous)
-      toast.error("Failed to create group. Changes reverted.")
-    },
-    onSuccess: () => {
-      toast.success("Group created.")
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey })

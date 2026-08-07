@@ -1,25 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useWorkspaceContext } from '../../providers/workspace-provider';
 import { useTheme } from '../../providers/app-providers';
 import { createNotificationBell } from '@notrelix/features-notifications';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { Button } from '@notrelix/ui-web';
 import { Search, Sun, Moon, ChevronRight } from 'lucide-react';
 import { useLocation } from '@tanstack/react-router';
 import { GlobalSearch } from '../global-search';
-import { env } from '@/config/env';
-
-const NotificationBell = createNotificationBell({
-  api,
-  endpoints,
-  options: { mockMode: env.mockApi },
-});
 
 export function WorkspaceTopbar() {
   const { workspace } = useWorkspaceContext();
   const { theme, setTheme } = useTheme();
+  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const NotificationBell = useMemo(
+    () =>
+      createNotificationBell({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === 'development' },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

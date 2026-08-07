@@ -5,7 +5,7 @@ import {
   type DocsApiClient,
   type PageApiEndpoints,
   type PageTreeNode,
-} from '@notrelix/docs-core';
+} from '@notrelix/docs-state';
 import {
   Button,
   Collapsible,

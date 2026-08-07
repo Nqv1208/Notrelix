@@ -37,3 +37,57 @@ export interface AutomationRun {
   completedAt?: string;
   error?: string;
 }
+
+export type AutomationExecutionStatus = AutomationRun['status'];
+
+export interface AutomationExecutionStep {
+  id: string;
+  executionId: string;
+  name: string;
+  status: AutomationExecutionStatus;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+}
+
+export interface AutomationExecution extends AutomationRun {
+  workspaceId: string;
+  boardId?: string;
+  steps: AutomationExecutionStep[];
+  sequence?: number;
+  version?: number;
+}
+
+export interface AutomationTemplate {
+  id: string;
+  name: string;
+  description: string;
+  triggerType: AutomationTriggerType;
+  actionType: AutomationActionType;
+  triggerConfig: Record<string, unknown>;
+  actionConfig: Record<string, unknown>;
+}
+
+export interface AutomationCursorPage<TItem> {
+  items: TItem[];
+  nextCursor?: string;
+}
+
+export interface CreateAutomationRuleInput {
+  workspaceId: string;
+  boardId: string;
+  name: string;
+  description?: string;
+  triggerType: AutomationTriggerType;
+  triggerConfig: Record<string, unknown>;
+  actionType: AutomationActionType;
+  actionConfig: Record<string, unknown>;
+}
+
+export interface UpdateAutomationRuleInput {
+  ruleId: string;
+  name?: string;
+  description?: string;
+  triggerConfig?: Record<string, unknown>;
+  actionConfig?: Record<string, unknown>;
+}

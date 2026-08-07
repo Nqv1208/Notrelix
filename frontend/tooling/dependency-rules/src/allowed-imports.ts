@@ -14,7 +14,7 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
   "@notrelix/observability": ["@notrelix/kernel"],
 
   // ── Runtimes ────────────────────────────────────────────────────────
-  "@notrelix/runtime-web": ["@notrelix/platform", "@notrelix/kernel", "@notrelix/contracts"],
+  "@notrelix/runtime-web": ["@notrelix/platform", "@notrelix/kernel", "@notrelix/contracts", "@notrelix/realtime", "@notrelix/observability"],
   "@notrelix/runtime-mobile": ["@notrelix/platform", "@notrelix/kernel", "@notrelix/contracts"],
 
   // ── UI ──────────────────────────────────────────────────────────────
@@ -54,9 +54,16 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
 
   // ── Product: Docs ──────────────────────────────────────────────────
   "@notrelix/docs-core": ["@notrelix/contracts", "@notrelix/kernel"],
+  "@notrelix/docs-state": [
+    "@notrelix/docs-core",
+    "@notrelix/contracts",
+    "@notrelix/query",
+    "@notrelix/kernel",
+  ],
   "@notrelix/docs-collaboration": ["@notrelix/docs-core", "@notrelix/realtime"],
   "@notrelix/docs-web": [
     "@notrelix/docs-core",
+    "@notrelix/docs-state",
     "@notrelix/docs-collaboration",
     "@notrelix/ui-web",
     "@notrelix/platform",
@@ -130,7 +137,7 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
     "@notrelix/runtime-web", "@notrelix/ui-tokens", "@notrelix/ui-web",
     "@notrelix/icons", "@notrelix/work-management-core", "@notrelix/work-management-state",
     "@notrelix/work-management-plugins", "@notrelix/work-management-web",
-    "@notrelix/docs-core", "@notrelix/docs-collaboration", "@notrelix/docs-web",
+    "@notrelix/docs-core", "@notrelix/docs-state", "@notrelix/docs-collaboration", "@notrelix/docs-web",
     "@notrelix/automation-core", "@notrelix/automation-web",
     "@notrelix/features-auth", "@notrelix/features-workspace",
     "@notrelix/features-account", "@notrelix/features-billing",
@@ -146,4 +153,4 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
     "@notrelix/runtime-mobile", "@notrelix/ui-tokens", "@notrelix/ui-mobile",
     "@notrelix/work-management-mobile",
   ],
-}
+};

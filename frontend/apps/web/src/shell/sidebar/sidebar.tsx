@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { useWorkspaceContext } from '../../providers/workspace-provider';
-import { createUseWorkspaceShellData, createUseWorkspaceMembers } from '@notrelix/features-workspace/core';
-import { api, endpoints } from '@notrelix/contracts';
+import { createUseWorkspaceShellData, createUseWorkspaceMembers } from '@notrelix/features-workspace/web';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { Avatar, AvatarFallback, Collapsible, CollapsibleContent, CollapsibleTrigger } from '@notrelix/ui-web';
 import { ScrollArea } from '@notrelix/ui-web';
 import { GlobalSearch } from '../global-search';
@@ -21,9 +21,6 @@ import {
 } from 'lucide-react';
 import type { WorkspaceMember } from '@notrelix/features-workspace/core';
 import { cn } from '@notrelix/ui-web';
-
-const useShellData = createUseWorkspaceShellData({ api, endpoints });
-const useMembers = createUseWorkspaceMembers({ api });
 
 const avatarColors = [
   'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
@@ -56,8 +53,19 @@ function SidebarSection({ title, children }: { title: string; children: React.Re
 
 export function WorkspaceSidebar() {
   const location = useLocation();
+  const { api: runtimeClient } = useAppRuntime();
   const { workspaceId } = useWorkspaceContext();
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const useShellData = useMemo(
+    () => createUseWorkspaceShellData({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
+  const useMembers = useMemo(
+    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
+    [runtimeClient],
+  );
 
   const { views = [] } = useShellData(workspaceId);
   const { data: members = [] } = useMembers(workspaceId);

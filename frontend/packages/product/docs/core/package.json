@@ -15,14 +15,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.95.2"
   },
   "peerDependencies": {
-    "react": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0"
+    "typescript": "^5.0.0"
   }
 }

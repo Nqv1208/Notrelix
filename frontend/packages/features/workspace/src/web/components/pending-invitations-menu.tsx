@@ -1,19 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { UserPlus, Loader2, Check, X, Calendar, User, Briefcase } from 'lucide-react';
-import { Button, Popover, PopoverContent, PopoverTrigger, Avatar, AvatarFallback } from '@notrelix/ui-web';
-import { createUsePendingInvitations } from '../../core';
+import { Button, Popover, PopoverContent, PopoverTrigger } from '@notrelix/ui-web';
+import { createUsePendingInvitations } from '../query/hooks/use-pending-invitations';
 import { createUseAcceptInvitation } from '../hooks/mutations/use-accept-invitation';
 import type { WorkspaceInvitation } from '../../core';
-import { api, endpoints } from '@notrelix/contracts';
 import { cn } from '@notrelix/ui-web';
 
-const usePendingInvitations = createUsePendingInvitations({ api, endpoints });
-const useAcceptInvitation = createUseAcceptInvitation({ api, endpoints });
+interface PendingInvitationsMenuProps {
+  api: any;
+  endpoints: any;
+}
 
-export function PendingInvitationsMenu() {
+export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMenuProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  const usePendingInvitations = useMemo(
+    () => createUsePendingInvitations({ api, endpoints }),
+    [api, endpoints],
+  );
+
+  const useAcceptInvitation = useMemo(
+    () => createUseAcceptInvitation({ api, endpoints }),
+    [api, endpoints],
+  );
+
   const { data: invitations, isLoading, refetch } = usePendingInvitations();
   const acceptMutation = useAcceptInvitation();
   const [acceptingToken, setAcceptingToken] = useState<string | null>(null);
@@ -55,7 +67,7 @@ export function PendingInvitationsMenu() {
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-80 p-0 border-border/60 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden z-[100]">
+      <PopoverContent align="end" className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden z-[100]">
         <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/30">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <UserPlus className="size-4 text-primary" />

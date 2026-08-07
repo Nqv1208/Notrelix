@@ -6,12 +6,13 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "check": "node src/check.mjs",
-    "check:deps": "node src/check.mjs",
+    "check": "tsx src/run-checks.ts",
+    "check:deps": "tsx src/run-checks.ts",
     "test": "vitest run",
     "clean": "rm -rf node_modules"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "tsx": "^4.19.0"
   }
 }

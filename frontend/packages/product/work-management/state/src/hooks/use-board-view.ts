@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { boardApi, defaultTableViewConfig } from "../api/board.api"
+import { defaultTableViewConfig } from "../api/board.api"
 import type { ViewConfig, ViewMode } from "@notrelix/work-management-core"
+import { useWorkManagementServices } from "../services"
 
 type BoardViewState = {
   viewMode: ViewMode
@@ -12,11 +12,12 @@ type BoardViewState = {
 
 export function useBoardView(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
+  const { boards } = useWorkManagementServices()
   const queryKey = queryKeys.boards.view(workspaceId ?? "workspace", boardId)
 
   const query = useQuery({
     queryKey,
-    queryFn: () => boardApi.getBoardView(boardId),
+    queryFn: () => boards.getBoardView(boardId),
     enabled: Boolean(boardId),
     staleTime: 30_000,
   })
@@ -27,7 +28,7 @@ export function useBoardView(boardId: string, workspaceId?: string) {
   )
 
   const saveMutation = useMutation({
-    mutationFn: (next: BoardViewState) => boardApi.saveBoardView(boardId, next),
+    mutationFn: (next: BoardViewState) => boards.saveBoardView(boardId, next),
     onMutate: async (next) => {
       await queryClient.cancelQueries({ queryKey })
       const previous = queryClient.getQueryData<BoardViewState>(queryKey)
@@ -36,7 +37,6 @@ export function useBoardView(boardId: string, workspaceId?: string) {
     },
     onError: (_error, _next, context) => {
       queryClient.setQueryData(queryKey, context?.previous)
-      toast.error("Failed to save table view. Changes reverted.")
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey })

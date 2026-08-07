@@ -1,7 +1,7 @@
 import * as React from "react"
 import { ShieldAlert } from "lucide-react"
 
-interface AccessDeniedStateProps {
+export interface AccessDeniedStateProps {
   title?: string
   description?: string
   action?: React.ReactNode

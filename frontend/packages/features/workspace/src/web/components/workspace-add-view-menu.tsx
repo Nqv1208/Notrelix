@@ -1,23 +1,29 @@
+import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@notrelix/ui-web';
 import { workspaceViewTemplates } from '../../core/constants/view-templates';
 import type { WorkspaceViewType } from '../../core/types/workspace';
-import { api } from '@notrelix/contracts';
 import { createUseCreateWorkspaceView } from '../hooks/mutations/use-create-workspace-view';
-
-const defaultCreateViewHook = createUseCreateWorkspaceView({ api });
 
 export function WorkspaceAddViewMenu({
   workspaceId,
-  createViewHook = defaultCreateViewHook,
+  createViewHook: customCreateViewHook,
   boards = [],
+  api,
 }: {
   workspaceId: string;
   createViewHook?: ReturnType<typeof createUseCreateWorkspaceView>;
   boards?: Array<{ id: string }>;
+  api?: any;
 }) {
   const navigate = useNavigate();
+
+  const defaultCreateViewHook = useMemo(
+    () => createUseCreateWorkspaceView({ api }),
+    [api],
+  );
+  const createViewHook = customCreateViewHook || defaultCreateViewHook;
   const createView = createViewHook(workspaceId);
 
   async function handleCreate(type: WorkspaceViewType, label: string, disabled?: boolean) {

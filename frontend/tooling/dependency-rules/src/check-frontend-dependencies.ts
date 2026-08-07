@@ -1,0 +1,173 @@
+import ts from 'typescript';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { ALLOWED_IMPORTS } from './allowed-imports';
+import { FORBIDDEN_IMPORTS } from './forbidden-imports';
+import {
+  isForbiddenClientCall,
+  isForbiddenWebSocketInstantiation,
+  isForbiddenQueryClientInstantiation,
+  isDeepSrcImport,
+} from './forbidden-source-patterns';
+import { classifyLayer } from './layer-classifier';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const DEFAULT_ROOT = resolve(__dirname, '../../..');
+
+export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violations: string[] } {
+  const violations: string[] = [];
+
+  function findPackageDirs(base: string, depth = 0): string[] {
+    const results: string[] = [];
+    try {
+      for (const entry of readdirSync(base)) {
+        const full = join(base, entry);
+        if (!statSync(full).isDirectory()) continue;
+        if (entry.startsWith('.') || entry === 'node_modules' || entry === 'dist') continue;
+        try {
+          statSync(join(full, 'package.json'));
+          results.push(full);
+        } catch {
+          if (depth < 4) results.push(...findPackageDirs(full, depth + 1));
+        }
+      }
+    } catch {}
+    return results;
+  }
+
+  const packageDirs = [
+    ...findPackageDirs(join(rootDir, 'packages')),
+    ...findPackageDirs(join(rootDir, 'apps')),
+  ];
+
+  function walkDir(dir: string, exts = ['.ts', '.tsx']): string[] {
+    const results: string[] = [];
+    try {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        const stat = statSync(full);
+        if (stat.isDirectory() && !entry.startsWith('.') && entry !== 'node_modules' && entry !== 'dist') {
+          results.push(...walkDir(full));
+        } else if (stat.isFile() && exts.some((e) => full.endsWith(e))) {
+          results.push(full);
+        }
+      }
+    } catch {}
+    return results;
+  }
+
+  for (const pkgDir of packageDirs) {
+    let pkgJson: any;
+    try {
+      pkgJson = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'));
+    } catch {
+      continue;
+    }
+    const pkgName = pkgJson.name;
+    const allowed = ALLOWED_IMPORTS[pkgName] ?? null;
+    const forbidden = FORBIDDEN_IMPORTS[pkgName] ?? [];
+
+    const files = walkDir(pkgDir);
+
+    for (const file of files) {
+      const relPath = file.replace(rootDir, '');
+      const content = readFileSync(file, 'utf8');
+      const layer = classifyLayer(relPath, pkgName);
+
+      // Create AST SourceFile
+      const sourceFile = ts.createSourceFile(
+        file,
+        content,
+        ts.ScriptTarget.Latest,
+        /*setParentNodes */ true
+      );
+
+      function visitNode(node: ts.Node) {
+        // Check ImportDeclarations
+        if (ts.isImportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+          const imported = node.moduleSpecifier.text;
+
+          if (isDeepSrcImport(imported)) {
+            violations.push(`[DEEP_IMPORT] ${pkgName} → "${imported}" in ${relPath}`);
+          }
+
+          const basePkg = imported.startsWith('next/')
+            ? 'next'
+            : (imported.match(/^(@notrelix\/[^/]+)/)?.[1] ?? imported);
+
+          if (forbidden.includes(imported) || forbidden.includes(basePkg)) {
+            const tag = imported.startsWith('@notrelix/') ? '[FORBIDDEN]' : '[EXTERNAL_FORBIDDEN]';
+            violations.push(`${tag} ${pkgName} → "${imported}" in ${relPath}`);
+          }
+
+          if (allowed !== null && basePkg.startsWith('@notrelix/')) {
+            if (!allowed.some((a) => basePkg === a || basePkg.startsWith(a + '/'))) {
+              violations.push(`[NOT_ALLOWED_IMPORT] ${pkgName} → "${basePkg}" in ${relPath}`);
+            }
+          }
+
+          if (layer === 'data' && (imported === 'sonner' || imported.startsWith('@notrelix/ui-'))) {
+            violations.push(`[DATA_UI_SIDE_EFFECT] ${pkgName} data layer imported UI side-effect package "${imported}" in ${relPath}`);
+          }
+        }
+
+        if (ts.isVariableStatement(node) && node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) {
+          for (const declaration of node.declarationList.declarations) {
+            if (!ts.isIdentifier(declaration.name) || !declaration.initializer) continue;
+            if (!/(Api|Repository)$/.test(declaration.name.text)) continue;
+
+            let initializer = declaration.initializer;
+            if (ts.isAsExpression(initializer)) {
+              initializer = initializer.expression;
+            }
+            if (!ts.isCallExpression(initializer)) continue;
+
+            const expressionText = initializer.expression.getText(sourceFile);
+            if (/^create[A-Z].*(Api|Repository)$/.test(expressionText)) {
+              violations.push(`[EXPORTED_API_INSTANCE] ${pkgName} exported production API/repository instance "${declaration.name.text}" in ${relPath}`);
+            }
+          }
+        }
+
+        // Check CallExpressions (factory calls, env reads, dynamic imports)
+        if (ts.isCallExpression(node)) {
+          const expressionText = node.expression.getText(sourceFile);
+          if (expressionText === 'createNotrelixClient' && isForbiddenClientCall(relPath)) {
+            violations.push(`[FORBIDDEN_CLIENT_CREATION] ${pkgName} called createNotrelixClient in ${relPath}`);
+          }
+        }
+
+        // Check NewExpressions (new WebSocket, new QueryClient)
+        if (ts.isNewExpression(node)) {
+          const expressionText = node.expression.getText(sourceFile);
+          if (expressionText === 'WebSocket' && isForbiddenWebSocketInstantiation(relPath)) {
+            violations.push(`[FORBIDDEN_WEBSOCKET_INSTANTIATION] ${pkgName} instantiated WebSocket in ${relPath}`);
+          }
+          if (expressionText === 'QueryClient' && isForbiddenQueryClientInstantiation(relPath)) {
+            violations.push(`[FORBIDDEN_QUERYCLIENT_INSTANTIATION] ${pkgName} instantiated QueryClient in ${relPath}`);
+          }
+        }
+
+        // Check direct PropertyAccessExpression (process.env / import.meta.env inside packages outside app config adapters)
+        if (ts.isPropertyAccessExpression(node)) {
+          const propText = node.getText(sourceFile);
+          if (
+            (propText.startsWith('process.env.') || propText.startsWith('import.meta.env.')) &&
+            relPath.startsWith('/packages/')
+          ) {
+            violations.push(`[DIRECT_ENV_READ] ${pkgName} accessed ${propText} in ${relPath}`);
+          }
+        }
+
+        ts.forEachChild(node, visitNode);
+      }
+
+      visitNode(sourceFile);
+    }
+  }
+
+  return { ok: violations.length === 0, violations };
+}

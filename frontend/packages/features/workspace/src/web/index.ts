@@ -8,6 +8,14 @@ export { createUseRemoveMember } from './hooks/mutations/use-remove-member';
 export { createUseCreateInvitation } from './hooks/mutations/use-create-invitation';
 export { createUseDeleteInvitation } from './hooks/mutations/use-delete-invitation';
 export { createUseAcceptInvitation } from './hooks/mutations/use-accept-invitation';
+export { createUseWorkspaceList } from './query/hooks/use-workspace-list';
+export { createUseWorkspace } from './query/hooks/use-workspace';
+export { createUseWorkspaceMembers } from './query/hooks/use-workspace-members';
+export { createUseWorkspaceInvitations } from './query/hooks/use-workspace-invitations';
+export { createUseWorkspaceViews } from './query/hooks/use-workspace-views';
+export { createUseInvitationByToken } from './query/hooks/use-invitation-by-token';
+export { createUsePendingInvitations } from './query/hooks/use-pending-invitations';
+export { createUseWorkspaceShellData } from './query/hooks/use-workspace-shell-data';
 
 export { WorkspaceCompactHeader } from './components/workspace-compact-header';
 export { WorkspaceViewTabs } from './components/workspace-view-tabs';

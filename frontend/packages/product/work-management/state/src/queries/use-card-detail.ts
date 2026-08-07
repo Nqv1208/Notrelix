@@ -1,20 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { cardApi } from "../api/item.api"
-import { labelApi } from "../api/label.api"
 import type { CardDetail } from "@notrelix/work-management-core"
 import { useUpdateCard } from "../mutations/use-update-card"
 import { useUpdateFieldValue } from "../mutations/use-update-field-value"
+import { useWorkManagementServices } from "../services"
 
 export function useCardDetail(cardId: string, boardId: string, workspaceId: string) {
   const queryClient = useQueryClient()
+  const { cards, labels } = useWorkManagementServices()
   const detailKey = queryKeys.cards.detail(cardId)
   const fullBoardKey = queryKeys.boards.fullBoard(boardId, workspaceId)
 
   const cardQuery = useQuery<CardDetail>({
     queryKey: detailKey,
-    queryFn: () => cardApi.getCard(cardId),
+    queryFn: () => cards.getCard(cardId),
     enabled: Boolean(cardId),
     staleTime: 10_000,
   })
@@ -23,24 +22,18 @@ export function useCardDetail(cardId: string, boardId: string, workspaceId: stri
   const updateFieldValueMutation = useUpdateFieldValue(boardId, workspaceId)
 
   const addLabelMutation = useMutation({
-    mutationFn: (labelId: string) => labelApi.addLabelToCard(cardId, labelId),
+    mutationFn: (labelId: string) => labels.addLabelToCard(cardId, labelId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: detailKey })
       void queryClient.invalidateQueries({ queryKey: fullBoardKey })
-    },
-    onError: () => {
-      toast.error("Failed to add label.")
     },
   })
 
   const removeLabelMutation = useMutation({
-    mutationFn: (labelId: string) => labelApi.removeLabelFromCard(cardId, labelId),
+    mutationFn: (labelId: string) => labels.removeLabelFromCard(cardId, labelId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: detailKey })
       void queryClient.invalidateQueries({ queryKey: fullBoardKey })
-    },
-    onError: () => {
-      toast.error("Failed to remove label.")
     },
   })
 

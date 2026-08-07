@@ -34,11 +34,29 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Save node_modules cache
-        uses: actions/cache@v4
+  contract-codegen:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
         with:
-          path: frontend/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Check contract codegen drift
+        run: pnpm codegen:check
+        working-directory: frontend
 
   typecheck:
     needs: install
@@ -88,7 +106,7 @@ jobs:
         run: pnpm lint
         working-directory: frontend
 
-  test:
+  test-node:
     needs: install
     runs-on: ubuntu-latest
     steps:
@@ -108,8 +126,32 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Run tests
-        run: pnpm test
+      - name: Run Node unit tests
+        run: pnpm test:node
+        working-directory: frontend
+
+  test-web:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Run Web component/integration tests
+        run: pnpm test:web
         working-directory: frontend
 
   check-deps:
@@ -132,13 +174,19 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Check dependency boundaries
+      - name: Check frontend architecture
         run: pnpm check:deps
         working-directory: frontend
 
   build-web:
-    needs: [typecheck, lint, test, check-deps]
+    needs: [typecheck, lint, test-node, test-web, check-deps]
     runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: https://api.example.invalid/api/v1
+      VITE_WS_URL: wss://api.example.invalid/realtime
+      VITE_APP_URL: http://127.0.0.1:4173
+      VITE_RELEASE_SHA: ${{ github.sha }}
+      VITE_MOCK_API: "false"
     steps:
       - uses: actions/checkout@v4
 
@@ -165,10 +213,11 @@ jobs:
         with:
           name: web-build
           path: frontend/apps/web/dist
+          if-no-files-found: error
           retention-days: 7
 
   build-marketing:
-    needs: [typecheck, lint, test, check-deps]
+    needs: [typecheck, lint, test-node, test-web, check-deps]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -196,11 +245,18 @@ jobs:
         with:
           name: marketing-build
           path: frontend/apps/marketing/.next
+          if-no-files-found: error
           retention-days: 7
 
-  validate:
-    needs: [build-web, build-marketing]
+  production-e2e:
+    needs: [build-web]
     runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: https://api.example.invalid/api/v1
+      VITE_WS_URL: wss://api.example.invalid/realtime
+      VITE_APP_URL: http://127.0.0.1:4173
+      VITE_RELEASE_SHA: ${{ github.sha }}
+      VITE_MOCK_API: "false"
     steps:
       - uses: actions/checkout@v4
 
@@ -218,6 +274,59 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Full validation
-        run: pnpm validate
+      - name: Download web build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: frontend/apps/web/dist
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
         working-directory: frontend
+
+      - name: Run Playwright E2E tests
+        run: pnpm e2e
+        working-directory: frontend
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
+
+  frontend-gate:
+    if: always()
+    needs:
+      - contract-codegen
+      - typecheck
+      - lint
+      - test-node
+      - test-web
+      - check-deps
+      - build-web
+      - build-marketing
+      - production-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate gate results
+        run: |
+          results=(
+            "${{ needs.contract-codegen.result }}"
+            "${{ needs.typecheck.result }}"
+            "${{ needs.lint.result }}"
+            "${{ needs.test-node.result }}"
+            "${{ needs.test-web.result }}"
+            "${{ needs.check-deps.result }}"
+            "${{ needs.build-web.result }}"
+            "${{ needs.build-marketing.result }}"
+            "${{ needs.production-e2e.result }}"
+          )
+          for res in "${results[@]}"; do
+            if [ "$res" != "success" ]; then
+              echo "❌ One or more upstream jobs failed, were skipped, or cancelled: $res"
+              exit 1
+            fi
+          done
+          echo "✅ All frontend CI gates passed successfully!"

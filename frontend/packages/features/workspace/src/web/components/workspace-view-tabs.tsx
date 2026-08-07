@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { MoreHorizontal } from 'lucide-react';
 import { Button, cn } from '@notrelix/ui-web';
@@ -42,10 +42,10 @@ function getViewLink(
       };
     }
     case 'doc': {
-      const pageId = view.target.pageId || '';
+      const docId = view.target.pageId || '';
       return {
-        to: '/workspaces/$workspaceId/docs/$pageId',
-        params: { workspaceId, pageId },
+        to: '/workspaces/$workspaceId/docs/$docId',
+        params: { workspaceId, docId },
       };
     }
     case 'dashboard':
@@ -66,14 +66,22 @@ export function WorkspaceViewTabs({
   views,
   activeViewId,
   currentBoardId,
-  reorderHook,
+  reorderHook: customReorderHook,
+  api,
 }: {
   workspaceId: string;
   views: WorkspaceView[];
   activeViewId?: string;
   currentBoardId?: string;
-  reorderHook: ReturnType<typeof createUseReorderWorkspaceViews>;
+  reorderHook?: ReturnType<typeof createUseReorderWorkspaceViews>;
+  api?: any;
 }) {
+  const defaultReorderHook = useMemo(
+    () => createUseReorderWorkspaceViews({ api }),
+    [api],
+  );
+  const reorderHook = customReorderHook || defaultReorderHook;
+
   const [items, setItems] = useState<WorkspaceView[]>(views);
   const isDraggingRef = useRef(false);
   const cleanupClickRef = useRef<(() => void) | null>(null);
@@ -166,7 +174,7 @@ export function WorkspaceViewTabs({
             </SortableContext>
           </DndContext>
         </div>
-        <WorkspaceAddViewMenu workspaceId={workspaceId} />
+        <WorkspaceAddViewMenu workspaceId={workspaceId} api={api} />
         <Button variant="ghost" size="icon" aria-label="More view actions">
           <MoreHorizontal className="size-4" />
         </Button>

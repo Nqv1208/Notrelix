@@ -13,12 +13,6 @@ export type {
 export { governanceQueryKeys } from './query/keys';
 
 export {
-  createUseRoles,
-  createUseCreateRole,
-  createUseAuditLogs,
-} from './query/hooks/use-governance';
-
-export {
   createGovernanceService,
   type GovernanceApiClient,
   type GovernanceEndpoints,

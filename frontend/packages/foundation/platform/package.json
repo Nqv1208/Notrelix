@@ -7,6 +7,11 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./auth-core": "./src/auth/index.ts",
+    "./permissions-core": "./src/permissions/core.ts",
+    "./react": "./src/react/index.ts",
+    "./react/forms": "./src/react/forms/index.ts",
+    "./web": "./src/index.ts",
     "./permissions": "./src/permissions/index.ts",
     "./config": "./src/config/index.ts",
     "./routes": "./src/routes/index.ts",

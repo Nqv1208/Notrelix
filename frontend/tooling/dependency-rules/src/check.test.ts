@@ -2,7 +2,9 @@ import { afterEach, expect, test } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { checkArchitecture } from "./check-frontend-dependencies";
+import { checkPackageManifests } from "./check-package-manifests";
+import { checkFolderBoundaries } from "./check-folder-boundaries";
 
 let currentRoot: string | null = null;
 
@@ -29,10 +31,16 @@ function writePackage(root: string, packagePath: string, packageName: string, so
 }
 
 function runChecker(root: string) {
-  return spawnSync("node", ["src/check.mjs", "--root", root], {
-    cwd: join(import.meta.dirname, ".."),
-    encoding: "utf8",
-  });
+  const violations = [
+    ...checkPackageManifests(root).violations,
+    ...checkArchitecture(root).violations,
+    ...checkFolderBoundaries(root).violations,
+  ];
+
+  return {
+    status: violations.length > 0 ? 1 : 0,
+    stderr: violations.join("\n"),
+  };
 }
 
 test("rejects Next.js imports inside shared packages", () => {
@@ -81,4 +89,68 @@ test("checks apps package boundaries, not only packages directories", () => {
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("FORBIDDEN");
   expect(result.stderr).toContain("@notrelix/work-management-state");
+});
+
+test("rejects React Query imports in package-core layout", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/product/docs/core",
+    "@notrelix/docs-core",
+    'import { useQuery } from "@tanstack/react-query";\nexport const leaked = useQuery;\n',
+  );
+
+  const result = runChecker(root);
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("CORE_IMPURE_IMPORT");
+  expect(result.stderr).toContain("@tanstack/react-query");
+});
+
+test("rejects browser globals in core source", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/product/docs/core",
+    "@notrelix/docs-core",
+    "export const href = window.location.href;\n",
+  );
+
+  const result = runChecker(root);
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("CORE_BROWSER_GLOBAL");
+  expect(result.stderr).toContain("window");
+});
+
+test("rejects data layer toast imports", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/product/work-management/state",
+    "@notrelix/work-management-state",
+    'import { toast } from "sonner";\nexport const notify = toast;\n',
+  );
+
+  const result = runChecker(root);
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("DATA_UI_SIDE_EFFECT");
+  expect(result.stderr).toContain("sonner");
+});
+
+test("rejects exported API instances from production source", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/product/work-management/state",
+    "@notrelix/work-management-state",
+    "function createBoardApi() { return {}; }\nexport const boardApi = createBoardApi();\n",
+  );
+
+  const result = runChecker(root);
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("EXPORTED_API_INSTANCE");
+  expect(result.stderr).toContain("boardApi");
 });

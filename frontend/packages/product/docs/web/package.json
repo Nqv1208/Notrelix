@@ -18,6 +18,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@notrelix/docs-collaboration": "workspace:*",
     "@notrelix/docs-core": "workspace:*",
+    "@notrelix/docs-state": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "lucide-react": "^0.562.0",

@@ -1,17 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useWorkspaceContext } from '@/providers/workspace-provider';
 import { createUseUpdateWorkspace } from '@notrelix/features-workspace';
 import type { UpdateWorkspaceInput } from '@notrelix/features-workspace/core';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { Button, Input } from '@notrelix/ui-web';
 import { toast } from 'sonner';
 
-const useUpdateWorkspace = createUseUpdateWorkspace({ api, endpoints });
-
 export function SettingsPage() {
   const { workspaceId } = useParams({ from: '/workspaces/$workspaceId' });
+  const { api: runtimeClient } = useAppRuntime();
   const { workspace, refetch } = useWorkspaceContext();
+
+  const useUpdateWorkspace = useMemo(
+    () => createUseUpdateWorkspace({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
   const updateMutation = useUpdateWorkspace(workspaceId);
 
   const [name, setName] = useState(workspace?.name ?? '');

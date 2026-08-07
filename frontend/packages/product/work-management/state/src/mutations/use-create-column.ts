@@ -1,18 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { columnApi, type CreateColumnInput } from "../api/field.api"
+import type { CreateColumnInput } from "../api/field.api"
+import { useWorkManagementServices } from "../services"
 
 export function useCreateColumn(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
+  const { columns } = useWorkManagementServices()
   const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
 
   return useMutation<string, Error, Omit<CreateColumnInput, "boardId">>({
-    mutationFn: (input) => columnApi.createColumn({ ...input, boardId }),
+    mutationFn: (input) => columns.createColumn({ ...input, boardId }),
     onSuccess: () => {
-      toast.success("Column created.")
       queryClient.invalidateQueries({ queryKey })
     },
-    onError: () => toast.error("Failed to create column."),
   })
 }
