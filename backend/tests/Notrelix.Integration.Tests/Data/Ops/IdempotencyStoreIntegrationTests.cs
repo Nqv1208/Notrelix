@@ -1,9 +1,12 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Integration;
 
 namespace Notrelix.Integration.Tests.Data.Ops;
 
@@ -519,41 +522,220 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_SCHEMA_003_CheckConstraints_EnforceStateContract()
     {
-        // Spec 3.8 + FZ-IDEM-03: the database enforces the idempotency state contract.
+        // Spec 3.8 + FZ-IDEM-03 + FZ-INF-IDEM-SCHEMA-01: the database enforces
+        // the idempotency state/payload contract — only the Processing-empty and
+        // Completed-populated row shapes are accepted.
         await using var conn = _db.CreateConnection();
         await conn.OpenAsync();
 
-        // 1. state must be Processing or Completed
+        // 1. Bogus state with null payload must be rejected by the state enum
         await using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = """
                 INSERT INTO ops.idempotency_records
                     (id, scope, operation, key_hash, request_hash, state, created_at, expires_at)
-                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.check.v1', @keyHash, 'r', 'Bogus', now(), now() + interval '1 hour')
+                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.bogus.v1', @keyHash, 'r', 'Bogus', now(), now() + interval '1 hour')
                 """;
             AddParameter(cmd, "id", Guid.NewGuid());
             AddParameter(cmd, "keyHash", Guid.NewGuid().ToString("N"));
 
             var act = () => cmd.ExecuteNonQueryAsync();
-            await act.Should().ThrowAsync<Npgsql.PostgresException>(
-                "state must be restricted to Processing/Completed by a CHECK constraint");
+            await act.Should().ThrowAsync<PostgresException>(
+                    "state must be restricted to Processing/Completed by a CHECK constraint")
+                .Where(e => e.SqlState == "23514", "a state violation must surface as a check-constraint violation");
         }
 
-        // 2. a Completed row must carry result_json, result_contract and completed_at
+        // 2. Processing with all payload columns null is a valid row shape
         await using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = """
                 INSERT INTO ops.idempotency_records
                     (id, scope, operation, key_hash, request_hash, state, created_at, expires_at)
-                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.check.v1', @keyHash, 'r', 'Completed', now(), now() + interval '1 hour')
+                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.processing-empty.v1', @keyHash, 'r', 'Processing', now(), now() + interval '1 hour')
+                """;
+            AddParameter(cmd, "id", Guid.NewGuid());
+            AddParameter(cmd, "keyHash", Guid.NewGuid().ToString("N"));
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        // 3. Processing carrying payload columns must be rejected
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                INSERT INTO ops.idempotency_records
+                    (id, scope, operation, key_hash, request_hash, state, result_json, result_contract, completed_at, created_at, expires_at)
+                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.processing-populated.v1', @keyHash, 'r', 'Processing', '{}', 'op', now(), now(), now() + interval '1 hour')
                 """;
             AddParameter(cmd, "id", Guid.NewGuid());
             AddParameter(cmd, "keyHash", Guid.NewGuid().ToString("N"));
 
             var act = () => cmd.ExecuteNonQueryAsync();
-            await act.Should().ThrowAsync<Npgsql.PostgresException>(
-                "a Completed row without result_json/result_contract/completed_at must violate a CHECK constraint");
+            await act.Should().ThrowAsync<PostgresException>(
+                    "a Processing row with result_json/result_contract/completed_at must violate a CHECK constraint")
+                .Where(e => e.SqlState == "23514", "a state violation must surface as a check-constraint violation");
         }
+
+        // 4. Completed without payload columns must be rejected
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                INSERT INTO ops.idempotency_records
+                    (id, scope, operation, key_hash, request_hash, state, created_at, expires_at)
+                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.completed-empty.v1', @keyHash, 'r', 'Completed', now(), now() + interval '1 hour')
+                """;
+            AddParameter(cmd, "id", Guid.NewGuid());
+            AddParameter(cmd, "keyHash", Guid.NewGuid().ToString("N"));
+
+            var act = () => cmd.ExecuteNonQueryAsync();
+            await act.Should().ThrowAsync<PostgresException>(
+                    "a Completed row without result_json/result_contract/completed_at must violate a CHECK constraint")
+                .Where(e => e.SqlState == "23514", "a state violation must surface as a check-constraint violation");
+        }
+
+        // 5. Completed with all payload columns populated is a valid row shape
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                INSERT INTO ops.idempotency_records
+                    (id, scope, operation, key_hash, request_hash, state, result_json, result_contract, completed_at, created_at, expires_at)
+                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.completed-populated.v1', @keyHash, 'r', 'Completed', '{}', 'op', now(), now(), now() + interval '1 hour')
+                """;
+            AddParameter(cmd, "id", Guid.NewGuid());
+            AddParameter(cmd, "keyHash", Guid.NewGuid().ToString("N"));
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
+    [Fact]
+    public async Task EnforceIdempotencyRecordStatePayloadInvariantMigration_InvalidLegacyRow_FailsBeforeConstraintReplacement()
+    {
+        // FZ-INF-IDEM-SCHEMA-01: the migration guard must refuse to replace the
+        // constraint while invalid legacy rows exist, leaving the row and the
+        // migration history untouched.
+        var guardDatabase = "notrelix_idem_guard_" + Guid.NewGuid().ToString("N")[..8];
+        var serverConnectionString = new NpgsqlConnectionStringBuilder(_db.ConnectionString) { Database = "postgres" }.ConnectionString;
+        var guardConnectionString = new NpgsqlConnectionStringBuilder(_db.ConnectionString)
+        {
+            Database = guardDatabase,
+            Pooling = false,
+        }.ConnectionString;
+
+        await using (var serverConn = new NpgsqlConnection(serverConnectionString))
+        {
+            await serverConn.OpenAsync();
+            await using var createCmd = serverConn.CreateCommand();
+            createCmd.CommandText = $"CREATE DATABASE {guardDatabase}";
+            await createCmd.ExecuteNonQueryAsync();
+        }
+
+        try
+        {
+            await using (var context = CreateMigrationGuardContext(guardConnectionString))
+            {
+                await context.Database.MigrateAsync("20260702093805_SchemaV2Baseline");
+            }
+
+            var invalidRow = new
+            {
+                Id = Guid.NewGuid(),
+                Scope = "account:00000000000000000000000000000097",
+                Operation = "test.guard.legacy.v1",
+                KeyHash = Guid.NewGuid().ToString("N"),
+                ResultJson = "{\"legacy\":true}",
+                ResultContract = "legacy.op.v1",
+                CompletedAt = DateTimeOffset.UtcNow,
+            };
+
+            await using (var insertConn = new NpgsqlConnection(guardConnectionString))
+            {
+                await insertConn.OpenAsync();
+                await using var cmd = insertConn.CreateCommand();
+                cmd.CommandText = """
+                    INSERT INTO ops.idempotency_records
+                        (id, scope, operation, key_hash, request_hash, state, result_json, result_contract, completed_at, created_at, expires_at)
+                    VALUES (@id, @scope, @operation, @keyHash, 'r', 'Processing', @resultJson::jsonb, @resultContract, @completedAt, now(), now() + interval '1 hour')
+                    """;
+                AddParameter(cmd, "id", invalidRow.Id);
+                AddParameter(cmd, "scope", invalidRow.Scope);
+                AddParameter(cmd, "operation", invalidRow.Operation);
+                AddParameter(cmd, "keyHash", invalidRow.KeyHash);
+                AddParameter(cmd, "resultJson", invalidRow.ResultJson);
+                AddParameter(cmd, "resultContract", invalidRow.ResultContract);
+                AddParameter(cmd, "completedAt", invalidRow.CompletedAt);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            await using var guardContext = CreateMigrationGuardContext(guardConnectionString);
+            var apply = () => guardContext.Database.MigrateAsync();
+
+            await apply.Should().ThrowAsync<PostgresException>()
+                .Where(e => e.Message.Contains(
+                    "Cannot enforce idempotency state/payload invariant: invalid rows exist in ops.idempotency_records",
+                    StringComparison.Ordinal),
+                    "the migration guard must raise before replacing the constraint");
+
+            await using (var verifyConn = new NpgsqlConnection(guardConnectionString))
+            {
+                await verifyConn.OpenAsync();
+
+                await using (var rowCmd = verifyConn.CreateCommand())
+                {
+                    rowCmd.CommandText = """
+                        SELECT count(*)
+                        FROM ops.idempotency_records
+                        WHERE id = @id
+                          AND state = 'Processing'
+                          AND result_json IS NOT NULL
+                          AND result_contract IS NOT NULL
+                          AND completed_at IS NOT NULL
+                        """;
+                    AddParameter(rowCmd, "id", invalidRow.Id);
+
+                    var intact = (long)(await rowCmd.ExecuteScalarAsync())!;
+                    intact.Should().Be(1, "the guard must not modify or delete the invalid legacy row");
+                }
+
+                await using (var historyCmd = verifyConn.CreateCommand())
+                {
+                    historyCmd.CommandText = """
+                        SELECT count(*)
+                        FROM ops."__EFMigrationsHistory"
+                        WHERE migration_id LIKE '%EnforceIdempotencyRecordStatePayloadInvariant%'
+                        """;
+
+                    var applied = (long)(await historyCmd.ExecuteScalarAsync())!;
+                    applied.Should().Be(0, "a failed migration must not appear in the migrations history");
+                }
+            }
+        }
+        finally
+        {
+            await using (var serverConn = new NpgsqlConnection(serverConnectionString))
+            {
+                await serverConn.OpenAsync();
+                await using var dropCmd = serverConn.CreateCommand();
+                dropCmd.CommandText = $"DROP DATABASE IF EXISTS {guardDatabase}";
+                await dropCmd.ExecuteNonQueryAsync();
+            }
+        }
+    }
+
+    private static ApplicationDbContext CreateMigrationGuardContext(string connectionString)
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(connectionString, npgOptions =>
+            {
+                npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ops");
+            })
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
+            .UseSnakeCaseNamingConvention()
+            .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>()
+            .Options;
+
+        return new ApplicationDbContext(options);
     }
 
     private static void AddParameter(System.Data.Common.DbCommand cmd, string name, object? value)

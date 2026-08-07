@@ -106,15 +106,35 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
                 $"Event version mismatch for '{envelope.EventName}': expected {expectedVersion}, got {envelope.EventVersion}.");
         }
 
+        if (envelope.Id == Guid.Empty)
+        {
+            // A message without identity cannot be idempotency-keyed, poison-tracked
+            // or redelivered safely; it fails observably as a contract violation
+            // before ordering, semaphore, handler or poison tracking.
+            _logger?.LogWarning("Message contract violation for {EventName}: envelope has no message id",
+                envelope.EventName);
+            _diagnosticEvents.Publish(new DeliveryFailedEvent
+            {
+                EventName = envelope.EventName,
+                Error = "Message contract violation: empty message id",
+            });
+            throw new MessageContractException(
+                $"Message contract violation for '{envelope.EventName}': the envelope must carry a non-empty message id.");
+        }
+
+        var poisonKey = new PoisonMessageKey(envelope.EventName, envelope.Id);
+
+        OrderingLease? orderingLease = null;
+
         if (registration.Options.OrderingRequired)
         {
-            var partitionKey = envelope.AggregateId?.ToString() ?? envelope.CorrelationId.ToString();
+            var partitionKey = GetOrderingPartitionKey(envelope);
             var orderingEnforcer = _orderingEnforcers[envelope.EventName];
 
-            // Spec 8.3: ordering requires a real envelope sequence. A missing
-            // sequence is a contract violation — never synthesized. A fabricated
-            // value would silently reorder or acknowledge messages the transport
-            // cannot order, so the delivery fails observably for transport retry.
+            // Ordering requires a real envelope sequence. A missing sequence is a
+            // contract violation — never synthesized. A fabricated value would
+            // silently reorder or acknowledge messages the transport cannot order,
+            // so the delivery fails observably for transport retry.
             if (envelope.Sequence is null)
             {
                 _logger?.LogWarning("Ordering requires a sequence for {EventName} (partition {Partition}); envelope {Id} has none",
@@ -129,20 +149,30 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
                     $"envelope '{envelope.Id}' has none.");
             }
 
-            var orderingResult = orderingEnforcer.ValidateSequence(partitionKey, envelope.Sequence.Value);
+            // D-003: the partition lease is acquired before the event semaphore so
+            // one partition cannot occupy every global slot while waiting for its
+            // gate, starving other partitions.
+            var acquisition = await orderingEnforcer.AcquireAsync(
+                partitionKey, envelope.Sequence.Value, cancellationToken);
 
-            if (!orderingResult.CanProcess)
+            if (acquisition.Outcome != OrderingAcquisitionOutcome.Allowed)
             {
-                _logger?.LogWarning("Ordering rejected {EventName} ({Partition}): {Reason}",
-                    envelope.EventName, partitionKey, orderingResult.Reason);
+                // Denied acquisition bypasses the handler-failure/poison catch and
+                // does not acquire the global semaphore.
+                _logger?.LogWarning("Ordering rejected {EventName} ({Partition}): {Outcome} (expected {Expected}, received {Received})",
+                    envelope.EventName, partitionKey, acquisition.Outcome,
+                    acquisition.ExpectedSequence, acquisition.ReceivedSequence);
                 _diagnosticEvents.Publish(new DeliveryFailedEvent
                 {
                     EventName = envelope.EventName,
-                    Error = $"Ordering: {orderingResult.Reason}",
+                    Error = $"Ordering: {acquisition.Outcome} (expected {acquisition.ExpectedSequence}, received {acquisition.ReceivedSequence})",
                 });
                 throw new MessageOrderingException(
-                    $"Ordering rejected for '{envelope.EventName}' partition '{partitionKey}': {orderingResult.Reason}");
+                    $"Ordering rejected for '{envelope.EventName}' partition '{partitionKey}': {acquisition.Outcome} " +
+                    $"(expected {acquisition.ExpectedSequence}, received {acquisition.ReceivedSequence}).");
             }
+
+            orderingLease = acquisition.Lease;
         }
 
         var semaphore = _semaphores[envelope.EventName];
@@ -152,6 +182,11 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
         // the wait expires the dispatch fails observably so the transport can retry.
         if (!await semaphore.WaitAsync(registration.Options.QueueWaitTimeout, cancellationToken))
         {
+            if (orderingLease is not null)
+            {
+                await orderingLease.DisposeAsync();
+            }
+
             _logger?.LogWarning("Concurrency backpressure timeout for {EventName} after {Timeout} (message {Id})",
                 envelope.EventName, registration.Options.QueueWaitTimeout, envelope.Id);
             _diagnosticEvents.Publish(new DeliveryFailedEvent
@@ -180,7 +215,11 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
                 await registration.Handler(envelope, linkedCts.Token);
             }
 
-            poisonDetector.Reset(envelope.EventName);
+            // The sequence is committed only after handler success; a failed
+            // handler leaves the sequence uncommitted so a retry of the same
+            // message is accepted.
+            orderingLease?.Commit();
+            poisonDetector.Reset(poisonKey);
             _metrics.EventDelivered();
             _diagnosticEvents.Publish(new DeliverySucceededEvent
             {
@@ -198,7 +237,7 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
             // threshold a typed dead-letter recommendation wraps it. Handler failures
             // are never swallowed into a false delivery success.
             _logger?.LogError(ex, "Consumer {EventName} failed processing {Id}", envelope.EventName, envelope.Id);
-            var detection = poisonDetector.RecordFailure(envelope.EventName);
+            var detection = poisonDetector.RecordFailure(poisonKey);
 
             _metrics.EventDeliveryFailed();
             _diagnosticEvents.Publish(new DeliveryFailedEvent
@@ -226,6 +265,11 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
         }
         finally
         {
+            if (orderingLease is not null)
+            {
+                await orderingLease.DisposeAsync();
+            }
+
             semaphore.Release();
         }
     }
@@ -234,6 +278,11 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
     {
         return _registrations.Values.ToList();
     }
+
+    private static string GetOrderingPartitionKey(EventEnvelope envelope) =>
+        envelope.AggregateId is Guid aggregateId
+            ? $"aggregate:{aggregateId:N}"
+            : $"correlation:{envelope.CorrelationId:N}";
 
     public async ValueTask DisposeAsync()
     {

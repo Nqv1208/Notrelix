@@ -295,6 +295,7 @@ public sealed class DeprecationPolicyTests
 
     private static EventEnvelope CreateEnvelope(string eventName, int version) => new()
     {
+        Id = Guid.NewGuid(),
         EventName = eventName,
         EventVersion = version,
         CorrelationId = Guid.NewGuid(),

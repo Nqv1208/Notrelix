@@ -7,17 +7,19 @@ on:
       - 'backend/**'
       - '.github/workflows/be-ci.yml'
 
+  # Do not path-filter pull requests. If this workflow is a required check,
+  # GitHub can leave it pending when the workflow itself is skipped by paths.
+  # The changes job keeps frontend-only PRs cheap while still producing a gate.
   pull_request:
     branches: [main, develop, foundationfreeze]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/be-ci.yml'
+
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: backend-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -26,9 +28,49 @@ env:
   DOTNET_NOLOGO: true
 
 jobs:
-  quality:
-    name: Restore, format, build, security guards
+  changes:
+    name: Backend change detection
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect backend changes
+        id: detect
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- \
+            backend \
+            .github/workflows/be-ci.yml; then
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  quality:
+    name: Quality and security guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
 
     env:
       ASPNETCORE_ENVIRONMENT: CI
@@ -43,11 +85,13 @@ jobs:
         with:
           global-json-file: backend/global.json
 
-      - name: Show .NET info
-        working-directory: backend
-        run: |
-          dotnet --version
-          dotnet --info
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
       - name: Restore
         working-directory: backend
@@ -55,66 +99,79 @@ jobs:
 
       - name: Format check
         working-directory: backend
-        run: dotnet format --verify-no-changes --no-restore
+        run: dotnet format backend.slnx --verify-no-changes --no-restore
 
-      - name: Build
+      - name: Build solution
         working-directory: backend
-        run: dotnet build backend.slnx --no-restore --configuration $DOTNET_CONFIGURATION
+        run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION"
 
       - name: Vulnerability scan
         working-directory: backend
+        shell: bash
         run: |
           set -euo pipefail
 
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-report.txt
+          dotnet list package --vulnerable --include-transitive 2>&1 \
+            | tee vulnerable-report.txt
 
           if grep -q "has the following vulnerable packages" vulnerable-report.txt; then
-            echo "Vulnerable packages found!"
+            echo "Vulnerable packages found."
             exit 1
           fi
 
-          echo "No vulnerable packages found"
+          echo "No vulnerable packages found."
 
       - name: Guard dependency graph against SQLite
         working-directory: backend
+        shell: bash
         run: |
           set -euo pipefail
 
-          dotnet list package --include-transitive 2>&1 | tee dependency-report.txt
+          dotnet list package --include-transitive 2>&1 \
+            | tee dependency-report.txt
 
-          if grep -iE "SQLite|Sqlite|SQLitePCLRaw|Microsoft\.Data\.Sqlite|Microsoft\.EntityFrameworkCore\.Sqlite" dependency-report.txt; then
-            echo "SQLite dependency detected in Notrelix backend dependency graph."
+          if grep -iE \
+            "SQLite|Sqlite|SQLitePCLRaw|Microsoft\.Data\.Sqlite|Microsoft\.EntityFrameworkCore\.Sqlite" \
+            dependency-report.txt; then
+            echo "SQLite dependency detected in the Notrelix backend dependency graph."
             echo "Use PostgreSQL/Testcontainers instead of SQLite."
             exit 1
           fi
 
-          echo "No SQLite dependencies found"
+          echo "No SQLite dependencies found."
 
       - name: Guard source against SQLite usage
         working-directory: backend
+        shell: bash
         run: |
           set -euo pipefail
 
-          matches=$(grep -RInE "UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:" \
-            src tests Directory.Packages.props \
-            --include="*.cs" \
-            --include="*.csproj" \
-            --include="*.props" \
-            --exclude="DatabaseProviderArchitectureTests.cs" || true)
+          matches="$(
+            grep -RInE \
+              "UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:" \
+              src tests Directory.Packages.props \
+              --include="*.cs" \
+              --include="*.csproj" \
+              --include="*.props" \
+              --exclude="DatabaseProviderArchitectureTests.cs" \
+              || true
+          )"
 
-          if [ -n "$matches" ]; then
+          if [[ -n "$matches" ]]; then
             echo "$matches"
             echo "SQLite usage detected in Notrelix backend source."
             echo "Use PostgreSQL/Testcontainers instead."
             exit 1
           fi
 
-          echo "No SQLite source references found"
+          echo "No SQLite source references found."
 
   architecture-tests:
     name: Architecture tests
     runs-on: ubuntu-latest
-    needs: quality
+    timeout-minutes: 15
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
 
     env:
       ASPNETCORE_ENVIRONMENT: CI
@@ -129,26 +186,47 @@ jobs:
         with:
           global-json-file: backend/global.json
 
-      - name: Restore
-        working-directory: backend
-        run: dotnet restore backend.slnx
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
-      - name: Build
+      - name: Restore architecture tests
         working-directory: backend
-        run: dotnet build backend.slnx --no-restore --configuration $DOTNET_CONFIGURATION
+        run: >
+          dotnet restore
+          tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
 
-      - name: Architecture tests
+      - name: Run architecture tests
         working-directory: backend
         run: >
           dotnet test
           tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
+          --no-restore
+          --configuration "$DOTNET_CONFIGURATION"
+          --logger "trx;LogFileName=architecture.trx"
+          --results-directory TestResults/architecture
+          --blame-hang-timeout 5m
 
-  unit-tests:
-    name: Unit tests
+      - name: Verify foundation architecture gates executed
+        working-directory: backend
+        run: >
+          python3 scripts/ci/verify-required-tests-trx.py
+          TestResults/architecture/architecture.trx
+          Notrelix.Architecture.Tests.DomainPurity.DomainBoundedContextSignatureTests
+          Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests
+          Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests
+          Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests
+
+  core-tests:
+    name: Domain, Application and Infrastructure tests
     runs-on: ubuntu-latest
-    needs: quality
+    timeout-minutes: 25
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
 
     env:
       ASPNETCORE_ENVIRONMENT: CI
@@ -163,23 +241,32 @@ jobs:
         with:
           global-json-file: backend/global.json
 
-      - name: Restore
-        working-directory: backend
-        run: dotnet restore backend.slnx
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
-      - name: Build
+      - name: Restore Domain tests
         working-directory: backend
-        run: dotnet build backend.slnx --no-restore --configuration $DOTNET_CONFIGURATION
+        run: >
+          dotnet restore
+          tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj
 
       - name: Domain tests
         working-directory: backend
         run: >
           dotnet test
           tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
+          --no-restore
+          --configuration "$DOTNET_CONFIGURATION"
+          --logger "trx;LogFileName=domain.trx"
+          --results-directory TestResults/domain
+          --blame-hang-timeout 5m
 
-      - name: Verify contract tests did not rewrite approved snapshots
+      - name: Verify Domain snapshots did not drift
         working-directory: backend
         run: >
           git diff
@@ -187,43 +274,54 @@ jobs:
           --
           tests/Notrelix.Domain.Tests/Snapshots
 
-      - name: Export OpenAPI spec and verify no drift
+      - name: Restore Application tests
         working-directory: backend
-        env:
-          DOTNET_ENVIRONMENT: Development
-        run: |
-          test -f contracts/openapi/notrelix.v1.json
-          git ls-files --error-unmatch contracts/openapi/notrelix.v1.json
-          dotnet run \
-            --project src/Notrelix.API/Notrelix.API.csproj \
-            --configuration $DOTNET_CONFIGURATION \
-            --no-build \
-            -- \
-            --export-openapi \
-            /tmp/notrelix.v1.generated.json
-          cmp contracts/openapi/notrelix.v1.json /tmp/notrelix.v1.generated.json \
-            || (echo "OpenAPI spec drift detected. Regenerate: dotnet run --project src/Notrelix.API -- --export-openapi contracts/openapi/notrelix.v1.json" && exit 1)
+        run: >
+          dotnet restore
+          tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj
 
       - name: Application tests
         working-directory: backend
         run: >
           dotnet test
           tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
+          --no-restore
+          --configuration "$DOTNET_CONFIGURATION"
+          --logger "trx;LogFileName=application.trx"
+          --results-directory TestResults/application
+          --blame-hang-timeout 5m
+
+      - name: Restore Infrastructure tests
+        working-directory: backend
+        run: >
+          dotnet restore
+          tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
 
       - name: Infrastructure tests
         working-directory: backend
         run: >
           dotnet test
           tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
+          --no-restore
+          --configuration "$DOTNET_CONFIGURATION"
+          --logger "trx;LogFileName=infrastructure.trx"
+          --results-directory TestResults/infrastructure
+          --blame-hang-timeout 5m
+
+      - name: Verify critical Infrastructure guards executed
+        working-directory: backend
+        run: >
+          python3 scripts/ci/verify-required-tests-trx.py
+          TestResults/infrastructure/infrastructure.trx
+          Notrelix.Infrastructure.Tests.Data.Rls.RlsPolicyVerificationTests
+          Notrelix.Infrastructure.Tests.Data.DomainEventInterceptorTests
 
   platform-tests:
-    name: Platform tests
+    name: Platform messaging tests
     runs-on: ubuntu-latest
-    needs: quality
+    timeout-minutes: 20
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
 
     env:
       ASPNETCORE_ENVIRONMENT: CI
@@ -238,26 +336,46 @@ jobs:
         with:
           global-json-file: backend/global.json
 
-      - name: Restore
-        working-directory: backend
-        run: dotnet restore backend.slnx
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
-      - name: Build
+      - name: Restore Platform tests
         working-directory: backend
-        run: dotnet build backend.slnx --no-restore --configuration $DOTNET_CONFIGURATION
+        run: >
+          dotnet restore
+          tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
 
       - name: Platform tests
         working-directory: backend
         run: >
           dotnet test
           tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
+          --no-restore
+          --configuration "$DOTNET_CONFIGURATION"
+          --logger "trx;LogFileName=platform.trx"
+          --results-directory TestResults/platform
+          --blame-hang-timeout 5m
+
+      - name: Verify critical Platform reliability tests executed
+        working-directory: backend
+        run: >
+          python3 scripts/ci/verify-required-tests-trx.py
+          TestResults/platform/platform.trx
+          Notrelix.Platform.Tests.Messaging.Reliability.OrderingEnforcerTests
+          Notrelix.Platform.Tests.Messaging.Reliability.PoisonDetectorTests
+          Notrelix.Platform.Tests.Messaging.Consumers.ConsumerHostDeliveryContractTests
 
   api-tests:
-    name: API contract tests
+    name: API tests and OpenAPI contract
     runs-on: ubuntu-latest
-    needs: quality
+    timeout-minutes: 25
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
 
     services:
       redis:
@@ -295,26 +413,71 @@ jobs:
         with:
           global-json-file: backend/global.json
 
-      - name: Restore
-        working-directory: backend
-        run: dotnet restore backend.slnx
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
-      - name: Build
+      - name: Restore API tests
         working-directory: backend
-        run: dotnet build backend.slnx --no-restore --configuration $DOTNET_CONFIGURATION
+        run: >
+          dotnet restore
+          tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
 
       - name: API tests
         working-directory: backend
         run: >
           dotnet test
           tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
+          --no-restore
+          --configuration "$DOTNET_CONFIGURATION"
+          --logger "trx;LogFileName=api.trx"
+          --results-directory TestResults/api
+          --blame-hang-timeout 5m
+
+      - name: Verify API idempotency contract tests executed
+        working-directory: backend
+        run: >
+          python3 scripts/ci/verify-required-tests-trx.py
+          TestResults/api/api.trx
+          Notrelix.API.Tests.Idempotency.IdempotencyEndpointContractTests
+
+      - name: Export OpenAPI spec and verify no drift
+        working-directory: backend
+        env:
+          DOTNET_ENVIRONMENT: Development
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f contracts/openapi/notrelix.v1.json
+          git ls-files --error-unmatch contracts/openapi/notrelix.v1.json
+
+          dotnet run \
+            --project src/Notrelix.API/Notrelix.API.csproj \
+            --configuration "$DOTNET_CONFIGURATION" \
+            --no-build \
+            -- \
+            --export-openapi \
+            /tmp/notrelix.v1.generated.json
+
+          cmp contracts/openapi/notrelix.v1.json /tmp/notrelix.v1.generated.json \
+            || {
+              echo "OpenAPI spec drift detected."
+              echo "Regenerate and review the public contract before committing:"
+              echo "dotnet run --project src/Notrelix.API -- --export-openapi contracts/openapi/notrelix.v1.json"
+              exit 1
+            }
 
   integration-tests:
-    name: Integration tests
+    name: Integration and provider tests
     runs-on: ubuntu-latest
-    needs: quality
+    timeout-minutes: 35
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
 
     services:
       redis:
@@ -352,121 +515,63 @@ jobs:
         with:
           global-json-file: backend/global.json
 
-      - name: Restore
-        working-directory: backend
-        run: dotnet restore backend.slnx
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
-      - name: Build
+      - name: Restore Integration tests
         working-directory: backend
-        run: dotnet build backend.slnx --no-restore --configuration $DOTNET_CONFIGURATION
+        run: >
+          dotnet restore
+          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
 
       - name: Integration tests
         working-directory: backend
         run: >
           dotnet test
           tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
+          --no-restore
+          --configuration "$DOTNET_CONFIGURATION"
+          --logger "trx;LogFileName=integration.trx"
+          --results-directory TestResults/integration
+          --blame-hang-timeout 5m
 
-  foundation-provider-tests:
-    name: Foundation provider tests
-    runs-on: ubuntu-latest
-    needs: quality
-
-    services:
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    env:
-      ASPNETCORE_ENVIRONMENT: CI
-      DOTNET_ENVIRONMENT: CI
-      ConnectionStrings__Redis: localhost:6379,abortConnect=false
-
-      Cors__AllowedOrigins__0: http://localhost:5173
-      Cors__AllowedOrigins__1: http://localhost:3000
-
-      ForwardedHeaders__RequireKnownProxyInProduction: false
-
-      JwtSettings__SecretKey: ci-test-secret-key-must-be-at-least-32-characters
-      JwtSettings__Issuer: Notrelix.CI
-      JwtSettings__Audience: Notrelix.CI
-      JwtSettings__ExpireMinutes: 60
-      JwtSettings__RefreshTokenExpireDays: 7
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: backend/global.json
-
-      - name: Restore
-        working-directory: backend
-        run: dotnet restore backend.slnx
-
-      - name: Build
-        working-directory: backend
-        run: dotnet build backend.slnx --no-restore --configuration $DOTNET_CONFIGURATION
-
-      - name: Foundation — idempotency store, tenancy, inbox/outbox, DI graph
+      - name: Verify critical foundation provider tests executed
         working-directory: backend
         run: >
-          dotnet test
-          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
-          --filter
-          "FullyQualifiedName~IdempotencyStoreIntegrationTests|FullyQualifiedName~TenantIsolationTests|FullyQualifiedName~CrossTenantIsolationTests|FullyQualifiedName~DeduplicationConsumeFilterIntegrationTests|FullyQualifiedName~DeduplicationConsumeFilterFullIntegrationTests|FullyQualifiedName~MigrationSmokeTests|FullyQualifiedName~ProductionCompositionTests|FullyQualifiedName~RlsRuntimeEnforcementTests|FullyQualifiedName~OutboxDispatchContractTests|FullyQualifiedName~OutboxClaimReclaimTests|FullyQualifiedName~OutboxAtomicityTests|FullyQualifiedName~RedisCacheBehaviorTests|FullyQualifiedName~RealtimeDispatchContractTests|FullyQualifiedName~ProductionGraphTests"
-
-      - name: Foundation — RLS policy verification and outbox interceptor
-        working-directory: backend
-        run: >
-          dotnet test
-          tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
-          --filter
-          "FullyQualifiedName~RlsPolicyVerificationTests|FullyQualifiedName~DomainEventInterceptorTests"
-
-      - name: Foundation — API idempotency integration
-        working-directory: backend
-        run: >
-          dotnet test
-          tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
-          --filter
-          "FullyQualifiedName~IdempotencyEndpointContractTests"
-
-      - name: Foundation — platform messaging reliability
-        working-directory: backend
-        run: >
-          dotnet test
-          tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
-          --no-build
-          --configuration $DOTNET_CONFIGURATION
-          --filter
-          "FullyQualifiedName~Messaging.Reliability|FullyQualifiedName~ConsumerHostDeliveryContractTests"
+          python3 scripts/ci/verify-required-tests-trx.py
+          TestResults/integration/integration.trx
+          Notrelix.Integration.Tests.Data.Ops.IdempotencyStoreIntegrationTests
+          Notrelix.Integration.Tests.Integration.TenantIsolationTests
+          Notrelix.Integration.Tests.Integration.CrossTenantIsolationTests
+          Notrelix.Integration.Tests.Integration.RlsRuntimeEnforcementTests
+          Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterIntegrationTests
+          Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests
+          Notrelix.Integration.Tests.Data.OutboxDispatchContractTests
+          Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests
+          Notrelix.Integration.Tests.Data.OutboxAtomicityTests
+          Notrelix.Integration.Tests.Data.MigrationSmokeTests
+          Notrelix.Integration.Tests.Integration.ProductionCompositionTests
+          Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests
+          Notrelix.Integration.Tests.Caching.RedisCacheBehaviorTests
+          Notrelix.Integration.Tests.Integration.Realtime.RealtimeDispatchContractTests
 
   docker-build:
     name: Docker build
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs:
+      - changes
       - architecture-tests
-      - unit-tests
+      - core-tests
       - platform-tests
       - api-tests
       - integration-tests
-      - foundation-provider-tests
+    if: needs.changes.outputs.backend == 'true'
 
     steps:
       - name: Checkout
@@ -480,12 +585,69 @@ jobs:
         with:
           context: backend
           push: false
-          load: true
           tags: notrelix/backend:ci-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Verify image exists
+  backend-ci:
+    name: Backend CI gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs:
+      - changes
+      - quality
+      - architecture-tests
+      - core-tests
+      - platform-tests
+      - api-tests
+      - integration-tests
+      - docker-build
+
+    steps:
+      - name: Evaluate Backend CI
+        shell: bash
+        env:
+          BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
+          QUALITY: ${{ needs.quality.result }}
+          ARCHITECTURE: ${{ needs.architecture-tests.result }}
+          CORE: ${{ needs.core-tests.result }}
+          PLATFORM: ${{ needs.platform-tests.result }}
+          API: ${{ needs.api-tests.result }}
+          INTEGRATION: ${{ needs.integration-tests.result }}
+          DOCKER: ${{ needs.docker-build.result }}
         run: |
-          docker image inspect notrelix/backend:ci-${{ github.sha }} > /dev/null
-          echo "Docker image built successfully"
+          set -euo pipefail
+
+          if [[ "$BACKEND_CHANGED" != "true" ]]; then
+            echo "No backend CI-relevant changes detected."
+            exit 0
+          fi
+
+          failed=0
+
+          check_result() {
+            local name="$1"
+            local result="$2"
+
+            if [[ "$result" != "success" ]]; then
+              echo "::error::$name result is '$result'; expected 'success'."
+              failed=1
+            else
+              echo "$name: success"
+            fi
+          }
+
+          check_result "quality" "$QUALITY"
+          check_result "architecture-tests" "$ARCHITECTURE"
+          check_result "core-tests" "$CORE"
+          check_result "platform-tests" "$PLATFORM"
+          check_result "api-tests" "$API"
+          check_result "integration-tests" "$INTEGRATION"
+          check_result "docker-build" "$DOCKER"
+
+          if [[ "$failed" -ne 0 ]]; then
+            exit 1
+          fi
+
+          echo "Backend CI passed for SHA $GITHUB_SHA."

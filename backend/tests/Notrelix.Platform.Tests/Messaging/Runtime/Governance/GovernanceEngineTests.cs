@@ -11,6 +11,7 @@ public sealed class GovernanceEngineTests
 {
     private readonly EventEnvelope _envelope = new()
     {
+        Id = Guid.NewGuid(),
         EventName = "test.event",
         EventVersion = 1,
         CorrelationId = Guid.NewGuid(),

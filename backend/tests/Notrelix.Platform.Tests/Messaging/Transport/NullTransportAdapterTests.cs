@@ -45,6 +45,7 @@ public sealed class NullTransportAdapterTests
 
     private static EventEnvelope CreateEnvelope() => new()
     {
+        Id = Guid.NewGuid(),
         EventName = "test.null",
         EventVersion = 1,
         CorrelationId = Guid.NewGuid(),

@@ -39,7 +39,21 @@ public sealed class IdempotencyRecordConfiguration : IEntityTypeConfiguration<Id
                 "state IN ('Processing', 'Completed')");
             t.HasCheckConstraint(
                 "ck_idempotency_records_completed_result",
-                "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
+                """
+                (
+                  state = 'Processing'
+                  AND result_json IS NULL
+                  AND result_contract IS NULL
+                  AND completed_at IS NULL
+                )
+                OR
+                (
+                  state = 'Completed'
+                  AND result_json IS NOT NULL
+                  AND result_contract IS NOT NULL
+                  AND completed_at IS NOT NULL
+                )
+                """);
         });
     }
 }

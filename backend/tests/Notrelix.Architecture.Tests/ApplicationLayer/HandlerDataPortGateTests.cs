@@ -63,12 +63,18 @@ public class HandlerDataPortGateTests : ArchitectureTestBase
         "ISecretEncryptor",
         "IN8nSignatureService",
         "IAuthSessionIssuer",
-        "IPermissionService",
-        "IWorkspacePermissionService",
         "ISubscriptionChecker",
         "IFeatureGateChecker",
         "IExecutionContextReader",
         "ICorrelationContext",
+    };
+
+    private static readonly HashSet<string> DirectPermissionPortNames = new(StringComparer.Ordinal)
+    {
+        "Notrelix.Application.Common.Security.IPermissionService",
+        "Notrelix.Application.Common.Security.IWorkspacePermissionService",
+        "Notrelix.Application.Common.Security.IPermissionEvaluator",
+        "Notrelix.Application.Common.Security.IAuthorizationDecisionStore",
     };
 
     private static string? GetContextFromHandlerNamespace(string? ns)
@@ -237,18 +243,13 @@ public class HandlerDataPortGateTests : ArchitectureTestBase
     [Fact]
     public void APP_DATA_007_No_Direct_Permission_Service_In_Handlers()
     {
-        // FZ-APP-05: permission decisions are centralized in the pipeline
-        // authorization behavior — handlers must not call IPermissionService directly.
-        var violations = GetHandlerTypes()
-            .SelectMany(handler => handler.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
-                .SelectMany(c => c.GetParameters())
-                .Where(p => p.ParameterType.Name is "IPermissionService" or "IPermissionEvaluator" or "IAuthorizationDecisionStore")
-                .Select(p => $"{handler.Name}:{p.ParameterType.Name}"))
-            .Distinct(StringComparer.Ordinal)
-            .OrderBy(x => x, StringComparer.Ordinal)
-            .ToArray();
+        // FZ-APP-AUTHZ-GATE-01: permission decisions are centralized in the
+        // pipeline authorization behavior — handlers express required
+        // permission through request markers; authorization behavior owns the
+        // decision. Handlers must not inject any decision port directly.
+        var violations = HandlerConstructorPortGate.FindForbiddenPorts(GetHandlerTypes(), DirectPermissionPortNames);
 
         violations.Should().BeEmpty(
-            "handlers must not inject the permission service directly — use the authorization request marker and pipeline behavior");
+            "handlers express required permission through request markers; authorization behavior owns the decision");
     }
 }
