@@ -28,7 +28,7 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
     }
 
     void runtime.realtime.connect({ sessionGeneration });
-  }, [isAuthenticated, runtime.realtime, sessionGeneration]);
+  }, [isAuthenticated, runtime.realtime, sessionGeneration, workspaceId]);
 
   useEffect(() => {
     if (!isAuthenticated || !workspaceId) return;

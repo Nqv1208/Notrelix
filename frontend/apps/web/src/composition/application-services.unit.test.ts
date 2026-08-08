@@ -4,6 +4,7 @@ import type { NotrelixClient } from '@notrelix/contracts';
 import { createWebApplicationServices } from './application-services';
 
 function createRuntime(client: NotrelixClient): AppRuntime {
+  const listeners: Set<(event: unknown) => void> = new Set();
   return {
     api: client,
     environment: {
@@ -11,10 +12,34 @@ function createRuntime(client: NotrelixClient): AppRuntime {
       realtimeUrl: 'ws://realtime.test',
     },
     sessionEvents: {
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    } as unknown as AppRuntime['sessionEvents'],
+      publish: vi.fn((event: unknown) => {
+        listeners.forEach((listener) => listener(event));
+      }),
+      subscribe: vi.fn((listener: (event: unknown) => void) => {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      }),
+      clear: vi.fn(() => {
+        listeners.clear();
+      }),
+    },
+    realtime: {
+      connect: vi.fn(async () => undefined),
+      disconnect: vi.fn(),
+      subscribe: vi.fn(() => () => undefined),
+      subscribeState: vi.fn(() => () => undefined),
+      subscribeRecovery: vi.fn(() => () => undefined),
+      getState: vi.fn(() => 'idle'),
+      dispose: vi.fn(),
+    },
+    telemetry: {
+      track: vi.fn(),
+      reportError: vi.fn(),
+      withContext: vi.fn(),
+      flush: vi.fn(async () => undefined),
+    },
     dispose: vi.fn(),
   } as unknown as AppRuntime;
 }
@@ -37,8 +62,12 @@ describe('createWebApplicationServices', () => {
     const firstClient = createClient('first');
     const secondClient = createClient('second');
 
-    const first = createWebApplicationServices(createRuntime(firstClient));
-    const second = createWebApplicationServices(createRuntime(secondClient));
+    const first = createWebApplicationServices(createRuntime(firstClient), {
+      navigateToSignedOut: vi.fn(),
+    });
+    const second = createWebApplicationServices(createRuntime(secondClient), {
+      navigateToSignedOut: vi.fn(),
+    });
 
     await first.workManagement.cards.moveCard({
       cardId: 'card-1',

@@ -3,6 +3,7 @@ export { createCookieAdapter, type CookieAdapter } from './cookie/cookie';
 export { createBrowserWebSocketFactory } from './realtime/browser-websocket-factory';
 export {
   createAppRuntime,
+  createSessionEventBus,
   AppRuntimeProvider,
   useAppRuntime,
   useFeatureRuntimeDependencies,
