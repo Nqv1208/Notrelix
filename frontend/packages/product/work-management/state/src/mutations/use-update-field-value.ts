@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "@notrelix/work-management-core"
 import type { UpdateFieldValueInput } from "@notrelix/work-management-core"
 import type { Card, FullBoardResponse } from "@notrelix/work-management-core"
 import { updateCardInFullBoard } from "@notrelix/work-management-core"
@@ -8,7 +8,7 @@ import { useWorkManagementServices } from "../services"
 export function useUpdateFieldValue(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
   const { cards } = useWorkManagementServices()
-  const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
+  const queryKey = wmQueryKeys.fullBoard(boardId, workspaceId)
 
   return useMutation({
     mutationFn: (payload: UpdateFieldValueInput) => cards.updateFieldValue(payload),

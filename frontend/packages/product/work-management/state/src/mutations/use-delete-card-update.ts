@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "@notrelix/work-management-core"
 import { useWorkManagementServices } from "../services"
 
 export function useDeleteCardUpdate(cardId: string) {
@@ -9,8 +9,8 @@ export function useDeleteCardUpdate(cardId: string) {
   return useMutation({
     mutationFn: comments.deleteCardUpdate,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.cards.updates(cardId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.cards.activity(cardId) })
+      queryClient.invalidateQueries({ queryKey: wmQueryKeys.cardUpdates(cardId) })
+      queryClient.invalidateQueries({ queryKey: wmQueryKeys.cardActivity(cardId) })
     },
   })
 }

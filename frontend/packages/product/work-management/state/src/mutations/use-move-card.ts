@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { defineOptimisticUpdate, executeOptimisticCommand } from "@notrelix/query"
-import { queryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "@notrelix/work-management-core"
 import type { MoveCardInput } from "@notrelix/work-management-core"
 import type { FullBoardResponse } from "@notrelix/work-management-core"
 import { useWorkManagementServices } from "../services"
@@ -10,7 +10,7 @@ let moveCardCommandSequence = 0
 export function useMoveCard(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
   const { cards } = useWorkManagementServices()
-  const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
+  const queryKey = wmQueryKeys.fullBoard(boardId, workspaceId)
 
   return useMutation({
     mutationFn: (payload: MoveCardInput) => executeOptimisticCommand({

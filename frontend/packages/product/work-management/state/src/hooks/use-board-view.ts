@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "@notrelix/work-management-core"
 import { defaultTableViewConfig } from "../api/board.api"
 import type { ViewConfig, ViewMode } from "@notrelix/work-management-core"
 import { useWorkManagementServices } from "../services"
@@ -13,7 +13,7 @@ type BoardViewState = {
 export function useBoardView(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
   const { boards } = useWorkManagementServices()
-  const queryKey = queryKeys.boards.view(workspaceId ?? "workspace", boardId)
+  const queryKey = wmQueryKeys.view(workspaceId ?? "workspace", boardId)
 
   const query = useQuery({
     queryKey,
