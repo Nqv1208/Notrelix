@@ -8,12 +8,12 @@
  * Usage: node index.mjs <component-name>
  */
 
-import { writeFileSync, existsSync } from 'fs';
+import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = join(__dirname, '../../../..');
+const rootDir = process.env.GENERATOR_ROOT ?? join(__dirname, '../../../..');
 
 const componentName = process.argv[2];
 
@@ -32,6 +32,8 @@ if (existsSync(componentFile)) {
 }
 
 console.log(`Creating component: ${componentName}`);
+
+mkdirSync(componentDir, { recursive: true });
 
 const componentContent = `import * as React from "react"
 import { cn } from "../../lib/cn"
