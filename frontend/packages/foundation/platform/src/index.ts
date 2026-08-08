@@ -1,45 +1,27 @@
 /**
- * @notrelix/platform — Platform services and utilities
- * 
- * Provides auth, permissions, workspace context, navigation, and configuration.
- * May use React for providers and hooks.
+ * @notrelix/platform — Technical ports and environment-independent abstractions.
+ *
+ * Frozen port categories: clock/time source, storage/key-value capability,
+ * ID/random source (where already required), and environment-independent
+ * technical abstractions. Runtime packages implement platform-specific
+ * behavior. No browser/native globals and no React surface here.
  */
 
-// Permissions
-export { permissions, permissionValues, type Permission } from './permissions'
-export { hasPermission, type UserRole, type PermissionResourceContext } from './permissions'
-export { useCan, PermissionProvider } from './permissions'
-export { PermissionContext } from './permissions'
-export { PermissionGuard } from './permissions'
+// Ports (implemented by runtime packages)
+export type { ClockPort } from './ports';
+export type { KeyValueStorage } from './ports';
 
-// Configuration
+// Environment-independent permission evaluation
+export { permissions, permissionValues, type Permission } from './permissions/permissions';
+export { hasPermission, type UserRole, type PermissionResourceContext } from './permissions/ability';
+
+// Environment-independent configuration
 export {
   createMockModeChecker,
   isMockModeEnabled,
   type MockFeature,
   type MockModeConfig,
-} from './config'
+} from './config';
 
-// Routes
-export { routes } from './routes'
-
-// Navigation
-export {
-  NavigationProvider,
-  useNavigation,
-  useNavigate,
-  useSearchParams,
-  usePathname,
-  useLink,
-  type NavigateOptions,
-  type NavigationAdapter,
-  type LinkComponentProps,
-  type LinkComponent,
-  type NavigationConfig,
-} from './navigation'
-
-// Auth
-export * from './auth'
-
-// Workspace (placeholder)
-export type { } from './workspace'
+// Environment-independent form error mapping
+export { applyServerValidationErrors } from './forms';

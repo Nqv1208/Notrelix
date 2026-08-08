@@ -1,18 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from '@notrelix/platform/navigation';
 import { createAuthService, type AuthApiClient, type AuthEndpoints } from '../../core/api/auth.service';
+import type { NavigationDeps } from './use-login';
 
-interface UseForgotPasswordDeps {
+interface UseForgotPasswordDeps extends NavigationDeps {
   api: AuthApiClient;
   endpoints: AuthEndpoints;
 }
 
-export function createUseForgotPassword({ api, endpoints }: UseForgotPasswordDeps) {
+export function createUseForgotPassword({ api, endpoints, navigate }: UseForgotPasswordDeps) {
   const authService = createAuthService(api, endpoints);
 
   return function useForgotPassword() {
-    const navigate = useNavigate();
-
     return useMutation({
       mutationFn: authService.forgotPassword,
       onSuccess: () => {

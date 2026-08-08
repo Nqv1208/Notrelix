@@ -61,8 +61,14 @@ export function InvitePage() {
   );
 
   const useLogout = useMemo(
-    () => createUseLogout({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
-    [runtimeClient],
+    () =>
+      createUseLogout({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        navigate: (options) => navigate({ to: options.to, replace: options.replace }),
+        getSearchParams: () => new URLSearchParams(window.location.search),
+      }),
+    [runtimeClient, navigate],
   );
 
 

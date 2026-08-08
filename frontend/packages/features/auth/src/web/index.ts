@@ -5,7 +5,7 @@
  * Depends on auth/core for types and schemas.
  */
 
-export { createUseLogin } from './hooks/use-login';
+export { createUseLogin, type NavigationDeps } from './hooks/use-login';
 export { createUseAuthUser } from './hooks/use-auth-user';
 export { createUseLogout } from './hooks/use-logout';
 export { createUseRegister } from './hooks/use-register';

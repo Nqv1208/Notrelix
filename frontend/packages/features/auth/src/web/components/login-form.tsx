@@ -9,10 +9,10 @@ import { Input } from '@notrelix/ui-web';
 import { Label } from '@notrelix/ui-web';
 import { Checkbox } from '@notrelix/ui-web';
 import { loginSchema, type LoginRequest, parseAuthError, resolveErrorDisplay } from '../../core';
-import { createUseLogin } from '../hooks/use-login';
+import { createUseLogin, type NavigationDeps } from '../hooks/use-login';
 import type { AuthApiClient, AuthEndpoints } from '../../core/api/auth.service';
 
-interface LoginFormDeps {
+interface LoginFormDeps extends NavigationDeps {
   api: AuthApiClient;
   endpoints: AuthEndpoints;
   translate?: (key: string) => string;

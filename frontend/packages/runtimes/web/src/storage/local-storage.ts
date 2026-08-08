@@ -1,4 +1,6 @@
-export function createLocalStorageAdapter() {
+import type { KeyValueStorage } from '@notrelix/platform';
+
+export function createLocalStorageAdapter(): KeyValueStorage {
   return {
     getItem(key: string): string | null {
       try {

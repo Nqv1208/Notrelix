@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from '@notrelix/platform/navigation';
+import { useNavigate } from '@tanstack/react-router';
 import {
   createUseWorkspaceList,
   createUseCreateWorkspace,

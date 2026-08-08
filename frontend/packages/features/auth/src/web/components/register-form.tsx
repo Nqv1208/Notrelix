@@ -9,7 +9,7 @@ import { Input } from '@notrelix/ui-web';
 import { Label } from '@notrelix/ui-web';
 import { Checkbox } from '@notrelix/ui-web';
 import { registerSchema, type RegisterRequest, parseAuthError, resolveErrorDisplay } from '../../core';
-import { createUseRegister } from '../hooks/use-register';
+import { createUseRegister, type NavigationDeps } from '../hooks/use-register';
 import type { AuthApiClient, AuthEndpoints } from '../../core/api/auth.service';
 
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
@@ -27,7 +27,7 @@ function getPasswordStrength(password: string): { score: number; label: string; 
   return { score, label: 'Very strong', color: 'bg-emerald-600' };
 }
 
-interface RegisterFormDeps {
+interface RegisterFormDeps extends NavigationDeps {
   api: AuthApiClient;
   endpoints: AuthEndpoints;
   translate?: (key: string) => string;
