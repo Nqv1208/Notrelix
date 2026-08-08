@@ -34,5 +34,4 @@ pnpm test              # Run unit & component tests
 pnpm check:deps        # Run AST architecture checks
 pnpm build             # Build web and marketing apps
 pnpm validate          # Full local validation suite
-pnpm freeze:audit      # Run automated freeze audit
 ```
