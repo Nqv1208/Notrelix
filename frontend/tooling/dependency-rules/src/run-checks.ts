@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { checkArchitecture } from './check-frontend-dependencies';
 import { checkPackageManifests } from './check-package-manifests';
 import { checkFolderBoundaries } from './check-folder-boundaries';
+import { checkArchitectureDocs } from './generate-architecture-docs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,6 +19,7 @@ const results = [
   checkPackageManifests(rootDir),
   checkArchitecture(rootDir),
   checkFolderBoundaries(rootDir),
+  checkArchitectureDocs(),
 ];
 
 const violations = results.flatMap((r) => r.violations);

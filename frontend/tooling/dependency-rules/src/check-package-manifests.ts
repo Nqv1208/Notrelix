@@ -1,44 +1,28 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ALLOWED_IMPORTS } from './allowed-imports';
+import { ARCHITECTURE_POLICY_BY_PACKAGE } from './architecture-manifest';
 import { FORBIDDEN_IMPORTS } from './forbidden-imports';
+import { discoverWorkspacePackages } from './check-frontend-dependencies';
 
 export function checkPackageManifests(rootDir: string): { ok: boolean; violations: string[] } {
   const violations: string[] = [];
 
-  function findPackageDirs(base: string, depth = 0): string[] {
-    const results: string[] = [];
-    try {
-      for (const entry of readdirSync(base)) {
-        const full = join(base, entry);
-        if (!statSync(full).isDirectory()) continue;
-        if (entry.startsWith('.') || entry === 'node_modules' || entry === 'dist') continue;
-        try {
-          statSync(join(full, 'package.json'));
-          results.push(full);
-        } catch {
-          if (depth < 4) results.push(...findPackageDirs(full, depth + 1));
-        }
-      }
-    } catch {}
-    return results;
-  }
+  const discovered = discoverWorkspacePackages(rootDir);
 
-  const packageDirs = [
-    ...findPackageDirs(join(rootDir, 'packages')),
-    ...findPackageDirs(join(rootDir, 'apps')),
-  ];
-
-  for (const pkgDir of packageDirs) {
-    let pkgJson: any;
+  for (const pkg of discovered) {
+    let pkgJson: {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+    };
     try {
-      pkgJson = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'));
+      pkgJson = JSON.parse(readFileSync(join(pkg.dir, 'package.json'), 'utf8'));
     } catch {
       continue;
     }
-    const pkgName = pkgJson.name;
-    const allowed = ALLOWED_IMPORTS[pkgName] ?? null;
-    const forbidden = FORBIDDEN_IMPORTS[pkgName] ?? [];
+
+    const policy = ARCHITECTURE_POLICY_BY_PACKAGE.get(pkg.name);
+    const forbidden = FORBIDDEN_IMPORTS[pkg.name] ?? [];
 
     const declaredDeps = new Set([
       ...Object.keys(pkgJson.dependencies || {}),
@@ -48,7 +32,7 @@ export function checkPackageManifests(rootDir: string): { ok: boolean; violation
 
     for (const dep of declaredDeps) {
       if (forbidden.includes(dep)) {
-        violations.push(`[DECLARED_FORBIDDEN_DEPENDENCY] ${pkgName} declared forbidden dependency "${dep}"`);
+        violations.push(`[DECLARED_FORBIDDEN_DEPENDENCY] ${pkg.name} declared forbidden dependency "${dep}"`);
       }
 
       const internalPkg = dep.match(/^(@notrelix\/[^/]+)/)?.[1] ?? dep;
@@ -59,9 +43,14 @@ export function checkPackageManifests(rootDir: string): { ok: boolean; violation
         '@notrelix/dependency-rules',
       ].includes(internalPkg);
 
-      if (allowed !== null && internalPkg.startsWith('@notrelix/') && !isTooling) {
+      // Closed world: unregistered packages are already reported by the
+      // architecture preflight; do not cascade into declared-dependency noise.
+      if (!policy) continue;
+
+      if (internalPkg.startsWith('@notrelix/') && !isTooling) {
+        const allowed = policy.allowedInternalImports;
         if (!allowed.some((a) => internalPkg === a || internalPkg.startsWith(a + '/'))) {
-          violations.push(`[DECLARED_DISALLOWED_DEPENDENCY] ${pkgName} declared disallowed dependency "${internalPkg}"`);
+          violations.push(`[DECLARED_DISALLOWED_DEPENDENCY] ${pkg.name} declared disallowed dependency "${internalPkg}"`);
         }
       }
     }

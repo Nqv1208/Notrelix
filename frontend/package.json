@@ -14,6 +14,10 @@
     "test": "pnpm test:node && pnpm test:web",
     "test:node": "vitest run --config tooling/testing/vitest.node.config.ts",
     "test:web": "vitest run --config tooling/testing/vitest.web.config.ts",
+    "test:mobile": "vitest run --config tooling/testing/vitest.mobile.config.ts",
+    "test:integration": "vitest run --config tooling/testing/vitest.integration.config.ts",
+    "test:generators": "vitest run --config tooling/testing/vitest.generators.config.ts",
+    "test:fanout": "pnpm test:packages",
     "test:packages": "turbo test",
     "e2e": "playwright test",
     "e2e:report": "playwright show-report",
@@ -22,10 +26,15 @@
     "codegen": "turbo codegen",
     "codegen:check": "pnpm codegen && git diff --exit-code -- packages/foundation/contracts/src/generated",
     "check:architecture": "pnpm --filter @notrelix/dependency-rules check",
+    "check:architecture-docs": "pnpm --filter @notrelix/dependency-rules docs:check",
     "check:deps": "pnpm check:architecture",
+    "freeze:audit": "node ./scripts/freeze-audit.mjs",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:deps && pnpm build",
-    "freeze:audit": "node ./scripts/freeze-audit.mjs"
+    "storybook:web:build": "pnpm --filter @notrelix/storybook-web build",
+    "test:ui:a11y": "playwright test --config playwright.storybook.config.ts --grep a11y",
+    "test:ui:visual": "playwright test --config playwright.storybook.config.ts --grep visual",
+    "test:ui:freeze": "pnpm test:ui:a11y && pnpm test:ui:visual"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",
@@ -34,7 +43,8 @@
     "prettier": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@axe-core/playwright": "4.10.2"
   },
   "packageManager": "pnpm@10.0.0",
   "pnpm": {

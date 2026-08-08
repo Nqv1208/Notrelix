@@ -1,19 +1,26 @@
 # Notrelix Client — Dependency Boundary Matrix
 
-**Version:** 4.0  
-**Status:** Active  
-**Enforcement:** `tooling/dependency-rules/src/check.mjs`
+**Version:** 5.0
+**Status:** Active
+**Enforcement:** `pnpm check:architecture` (closed-world manifest + docs drift check)
 
 ---
 
 ## Overview
 
-This document defines the allowed and forbidden imports between packages in the Notrelix Client v4 architecture. These rules ensure:
+This document describes the dependency boundary **principles** of the Notrelix
+client workspace. The exact per-package allow-list is **generated** from the
+executable architecture manifest and must never be hand-maintained here:
 
-1. **Clean separation of concerns** — Foundation packages have no business logic
-2. **Platform independence** — Core packages work across web and mobile
-3. **Feature isolation** — Features don't cross-contaminate
-4. **Dependency direction** — Higher layers depend on lower layers, never reverse
+- Executable source of truth: `tooling/dependency-rules/src/architecture-manifest.ts`
+- Generated exact table: [`package-boundaries.generated.md`](./package-boundaries.generated.md)
+- Regenerate: `pnpm --filter @notrelix/dependency-rules docs:generate`
+- Drift check (runs inside `pnpm check:architecture`): `pnpm check:architecture-docs`
+
+Every directory under `frontend/apps/**` and `frontend/packages/**` that
+contains a `package.json` is part of the closed-world package universe. A
+package that exists but is not registered in the manifest fails the
+architecture gate; a manifest entry with no matching package also fails.
 
 ---
 
@@ -36,177 +43,85 @@ This document defines the allowed and forbidden imports between packages in the 
 └─────────────────────────────────────────────────────────┘
 ```
 
----
-
-## Allowed Imports Matrix
-
-### Foundation Packages
-
-| Package | Allowed Imports |
-|:---|:---|
-| `@notrelix/contracts` | _(none — pure types)_ |
-| `@notrelix/kernel` | _(none — pure utilities)_ |
-| `@notrelix/platform` | `@notrelix/kernel`, `@notrelix/contracts` |
-| `@notrelix/query` | `@notrelix/kernel` |
-| `@notrelix/realtime` | `@notrelix/kernel`, `@notrelix/contracts` |
-| `@notrelix/observability` | `@notrelix/kernel` |
-
-### Runtime Packages
-
-| Package | Allowed Imports |
-|:---|:---|
-| `@notrelix/runtime-web` | `@notrelix/platform` |
-| `@notrelix/runtime-mobile` | `@notrelix/platform` |
-
-### UI Packages
-
-| Package | Allowed Imports |
-|:---|:---|
-| `@notrelix/ui-tokens` | _(none — pure design tokens)_ |
-| `@notrelix/ui-web` | `@notrelix/ui-tokens` |
-| `@notrelix/ui-mobile` | `@notrelix/ui-tokens` |
-| `@notrelix/ui-icons` | _(none — pure icons)_ |
-
-### Product: Work Management
-
-| Package | Allowed Imports |
-|:---|:---|
-| `@notrelix/wm-core` | `@notrelix/contracts`, `@notrelix/kernel` |
-| `@notrelix/wm-state` | `@notrelix/wm-core`, `@notrelix/contracts`, `@notrelix/query`, `@notrelix/realtime`, `@notrelix/platform` |
-| `@notrelix/wm-plugins` | `@notrelix/wm-core` |
-| `@notrelix/wm-web` | `@notrelix/wm-core`, `@notrelix/wm-state`, `@notrelix/wm-plugins`, `@notrelix/ui-web`, `@notrelix/platform` |
-| `@notrelix/wm-mobile` | `@notrelix/wm-core`, `@notrelix/wm-state`, `@notrelix/wm-plugins`, `@notrelix/ui-mobile`, `@notrelix/platform` |
-| `@notrelix/wm-testing` | `@notrelix/wm-core`, `@notrelix/wm-state` |
-
-### Product: Docs
-
-| Package | Allowed Imports |
-|:---|:---|
-| `@notrelix/docs-core` | `@notrelix/contracts`, `@notrelix/kernel` |
-| `@notrelix/docs-collaboration` | `@notrelix/docs-core`, `@notrelix/realtime` |
-| `@notrelix/docs-web` | `@notrelix/docs-core`, `@notrelix/docs-collaboration`, `@notrelix/ui-web`, `@notrelix/platform` |
-| `@notrelix/docs-mobile` | `@notrelix/docs-core`, `@notrelix/docs-collaboration`, `@notrelix/ui-mobile`, `@notrelix/platform` |
-
-### Product: Automation
-
-| Package | Allowed Imports |
-|:---|:---|
-| `@notrelix/automation-core` | `@notrelix/contracts`, `@notrelix/kernel` |
-| `@notrelix/automation-web` | `@notrelix/automation-core`, `@notrelix/ui-web`, `@notrelix/platform` |
-| `@notrelix/automation-mobile` | `@notrelix/automation-core`, `@notrelix/ui-mobile`, `@notrelix/platform` |
-
-### Features (Standard Set)
-
-All features share the same base allowed set:
-
-```txt
-@notrelix/contracts
-@notrelix/kernel
-@notrelix/platform
-@notrelix/query
-@notrelix/ui-web
-@notrelix/ui-mobile
-```
-
-**Exceptions:**
-- `@notrelix/feature-notifications` also allows `@notrelix/realtime`
-- `@notrelix/feature-collaboration` also allows `@notrelix/realtime`
-
-### Apps
-
-| App | Allowed Imports |
-|:---|:---|
-| `@notrelix/app` | All packages (composition layer) |
-| `@notrelix/marketing` | `@notrelix/ui-tokens`, `@notrelix/ui-web`, `@notrelix/ui-icons` |
+Dependency direction is downward only; the manifest encodes the exact allowed
+edge set per package.
 
 ---
 
-## Forbidden Imports
+## Boundary principles
 
-These imports are **always forbidden** regardless of context:
+1. **Foundation has no React, no product, no UI, no runtime, no app code.**
+   Foundation packages may only depend on other foundation packages and must
+   not read app environment directly.
+2. **Runtimes bridge platform globals to foundation abstractions.**
+   Browser-specific construction (WebSocket factory, storage, environment
+   interpretation) lives in `@notrelix/runtime-web`, never in foundation or
+   feature code.
+3. **UI packages own presentation only.** No product APIs, no QueryClient, no
+   transport clients, no auth/session singletons.
+4. **Product cores stay platform neutral.** Product state packages must not
+   import UI implementation packages or notification side-effect libraries;
+   result/error data flows to the web adapter, which owns presentation.
+5. **Product testing packages are verification-only.** No production app or
+   web-production package may import a `*-testing` package.
+6. **Features consume injected capabilities.** Features must not create global
+   API clients, QueryClient instances, or WebSocket connections.
+7. **Apps compose, not implement.** `apps/web` is the production composition
+   root; explicit composition only, no DI container or service locator.
+8. **Package public entry points are the boundary.** Deep imports
+   (`@notrelix/foo/src/...`) are forbidden.
 
-| Package | Forbidden Imports |
-|:---|:---|
-| `@notrelix/contracts` | `react`, `react-dom`, `react-native` |
-| `@notrelix/kernel` | `react`, `react-dom`, `react-native`, `@notrelix/platform`, `@notrelix/ui-*` |
-| `@notrelix/ui-tokens` | `react`, `react-dom`, `react-native` |
-| `@notrelix/wm-core` | `react`, `react-dom`, `@notrelix/ui-web`, `@notrelix/ui-mobile` |
-| `@notrelix/wm-state` | `react`, `react-dom`, `@notrelix/ui-web`, `@notrelix/ui-mobile` |
-| `@notrelix/wm-plugins` | `react`, `react-dom`, `@notrelix/ui-web`, `@notrelix/ui-mobile` |
-| `@notrelix/docs-core` | `react`, `react-dom`, `@notrelix/ui-web`, `@notrelix/ui-mobile` |
-| `@notrelix/automation-core` | `react`, `react-dom`, `@notrelix/ui-web`, `@notrelix/ui-mobile` |
-| `@notrelix/ui-web` | `@notrelix/ui-mobile`, `react-native` |
-| `@notrelix/ui-mobile` | `@notrelix/ui-web`, `@radix-ui`, `shadcn` |
-| `@notrelix/wm-web` | `@notrelix/ui-mobile`, `@notrelix/runtime-mobile`, `react-native` |
-| `@notrelix/wm-mobile` | `@notrelix/ui-web`, `@notrelix/runtime-web`, `@radix-ui`, `shadcn` |
-| `@notrelix/runtime-web` | `react-native` |
-| `@notrelix/runtime-mobile` | `@radix-ui`, `shadcn` |
-| `@notrelix/marketing` | `@notrelix/wm-state`, `@notrelix/wm-core`, `@notrelix/realtime`, `@notrelix/platform` |
+The generated table documents the exact allowed internal imports for each
+package; the checker additionally enforces the forbidden-import matrix (see
+`tooling/dependency-rules/src/forbidden-imports.ts`) and folder-level purity
+rules (`check-folder-boundaries.ts`).
 
 ---
 
 ## Enforcement
 
-### Automated Check
-
-Run the boundary checker:
+Run the full closed-world architecture gate:
 
 ```bash
-node tooling/dependency-rules/src/check.mjs
+pnpm check:architecture
 ```
 
-### Integration
+This executes, in order:
 
-Add to `package.json`:
+1. declared-dependency validation against the manifest;
+2. closed-world preflight (package set equality, stable violation codes) plus
+   AST import enforcement;
+3. folder boundary purity checks;
+4. architecture-doc drift validation against the generated table.
 
-```json
-{
-  "scripts": {
-    "check:boundaries": "node tooling/dependency-rules/src/check.mjs"
-  }
-}
-```
-
-Run in CI:
-
-```bash
-pnpm check:boundaries
-```
+Stable preflight violation codes: `UNREGISTERED_PACKAGE`,
+`STALE_PACKAGE_POLICY`, `MISSING_PACKAGE_PATH`, `PACKAGE_NAME_MISMATCH`,
+`DUPLICATE_PACKAGE_NAME`, `DUPLICATE_PACKAGE_PATH`, `UNKNOWN_ALLOWED_IMPORT`,
+`SELF_IMPORT_POLICY`, `DUPLICATE_ALLOWED_IMPORT`.
 
 ---
 
 ## Rationale
 
-### Why These Rules?
-
-1. **Foundation has no React** — Ensures platform independence and testability
-2. **Core has no UI** — Separates business logic from presentation
-3. **No cross-runtime imports** — Prevents web code leaking into mobile and vice versa
-4. **Features are isolated** — Each feature is independently deployable
-5. **Apps compose, not implement** — Apps only wire packages together
-
-### What Happens If I Violate?
-
-1. **Local check fails** — `pnpm check:boundaries` exits with error
-2. **CI fails** — PR cannot merge until violation is fixed
-3. **Architectural debt** — Cross-boundary imports create hidden dependencies
+1. **Foundation has no React** — platform independence and testability.
+2. **Core has no UI** — separates business logic from presentation.
+3. **No cross-runtime imports** — web code cannot leak into mobile and vice versa.
+4. **Features are isolated** — each feature is independently developable.
+5. **Apps compose, not implement** — composition stays explicit and auditable.
+6. **Closed-world governance** — a missing manifest entry is a build failure,
+   so no package can silently escape dependency enforcement.
 
 ---
 
-## Migration Notes
+## Change process
 
-During migration from monolith to packages:
-
-1. **Re-export barrels allowed** — Temporary re-exports from old locations are permitted
-2. **Gradual migration** — Features can be moved incrementally
-3. **No new violations** — Do not add new forbidden imports during migration
-4. **Track in migration tracker** — Document all moves in `docs/client/migration/tracker.md`
-
----
-
-## Questions?
+Adding, removing, or renaming a workspace package requires updating
+`architecture-manifest.ts` in the same change, then regenerating the boundary
+table (`docs:generate`). Allow-list broadening is an architecture-change PR,
+not an incidental edit.
 
 See also:
-- `docs/client/audits/current-frontend-audit.md` — Current state analysis
-- `docs/client/migration/tracker.md` — Migration progress
-- `docs/notrelix-client-v4-2-structure-for-coding-agents.md` — Full architecture spec
+
+- [`dependency-model.md`](./dependency-model.md)
+- [`application-composition.md`](./application-composition.md)
+- [`freeze-governance.md`](./freeze-governance.md)

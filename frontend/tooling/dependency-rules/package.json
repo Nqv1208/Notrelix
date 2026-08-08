@@ -8,6 +8,8 @@
   "scripts": {
     "check": "tsx src/run-checks.ts",
     "check:deps": "tsx src/run-checks.ts",
+    "docs:generate": "tsx src/generate-architecture-docs.ts",
+    "docs:check": "tsx src/generate-architecture-docs.ts --check",
     "test": "vitest run",
     "clean": "rm -rf node_modules"
   },
