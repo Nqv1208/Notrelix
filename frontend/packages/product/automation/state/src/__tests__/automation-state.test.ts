@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
-import { buildAutomationExecutionEvent, createFakeAutomationRepositories } from '@notrelix/automation-testing';
+import { buildAutomationExecutionEvent, createFakeAutomationRepositories } from './fixtures';
 import { automationQueryKeys } from '../query/keys';
 import { setAutomationRuleEnabledCommand } from '../commands/rule-commands';
 import { createAutomationExecutionRealtimeAdapter } from '../realtime/execution-adapter';
