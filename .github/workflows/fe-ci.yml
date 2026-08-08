@@ -178,8 +178,48 @@ jobs:
         run: pnpm check:deps
         working-directory: frontend
 
+      - name: Check architecture docs
+        run: pnpm check:architecture-docs
+        working-directory: frontend
+
+  test-freeze-gates:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Run mobile tests
+        run: pnpm test:mobile
+        working-directory: frontend
+
+      - name: Run integration tests
+        run: pnpm test:integration
+        working-directory: frontend
+
+      - name: Run generator tests
+        run: pnpm test:generators
+        working-directory: frontend
+
+      - name: Run package test fan-out
+        run: pnpm test:fanout
+        working-directory: frontend
+
   build-web:
-    needs: [typecheck, lint, test-node, test-web, check-deps]
+    needs: [typecheck, lint, test-node, test-web, test-freeze-gates, check-deps]
     runs-on: ubuntu-latest
     env:
       VITE_API_URL: https://api.example.invalid/api/v1
@@ -217,7 +257,7 @@ jobs:
           retention-days: 7
 
   build-marketing:
-    needs: [typecheck, lint, test-node, test-web, check-deps]
+    needs: [typecheck, lint, test-node, test-web, test-freeze-gates, check-deps]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -304,6 +344,7 @@ jobs:
       - lint
       - test-node
       - test-web
+      - test-freeze-gates
       - check-deps
       - build-web
       - build-marketing
@@ -318,6 +359,7 @@ jobs:
             "${{ needs.lint.result }}"
             "${{ needs.test-node.result }}"
             "${{ needs.test-web.result }}"
+            "${{ needs.test-freeze-gates.result }}"
             "${{ needs.check-deps.result }}"
             "${{ needs.build-web.result }}"
             "${{ needs.build-marketing.result }}"
