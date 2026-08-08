@@ -1,5 +1,5 @@
-import { type ReactNode } from 'react';
-import { Navigate, useLocation } from '@tanstack/react-router';
+import { useEffect, type ReactNode } from 'react';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useAuth } from '@notrelix/features-auth';
 import { LoadingState } from '@notrelix/ui-web';
 
@@ -10,6 +10,17 @@ interface AuthGuardProps {
 export function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoading || isAuthenticated) return;
+    if (location.pathname.startsWith('/sign-in')) return;
+    navigate({
+      to: '/sign-in',
+      search: { redirect: location.pathname + location.searchStr },
+      replace: true,
+    });
+  }, [isAuthenticated, isLoading, location.pathname, location.searchStr, navigate]);
 
   if (isLoading) {
     return (
@@ -20,13 +31,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (!isAuthenticated) {
-    return (
-      <Navigate
-        to="/sign-in"
-        search={{ redirect: location.pathname + location.search }}
-        replace
-      />
-    );
+    return null;
   }
 
   return <>{children}</>;

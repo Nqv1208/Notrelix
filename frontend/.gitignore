@@ -47,3 +47,6 @@ next-env.d.ts
 # Lock files (keep one)
 # pnpm-lock.yaml
 # bun.lock
+# Playwright
+playwright-report/
+test-results/
