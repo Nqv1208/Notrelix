@@ -17,8 +17,11 @@ export function isForbiddenClientCall(filePath: string): boolean {
 
 export function isForbiddenWebSocketInstantiation(filePath: string): boolean {
   const normalized = filePath.replace(/\\/g, '/');
+  // Browser WebSocket construction is allowed only in runtime adapters and
+  // test fixtures. Foundation realtime must receive an injected socket
+  // factory; features/product may never construct sockets.
   return !(
-    normalized.includes('/realtime/') ||
+    normalized.includes('/runtimes/') ||
     normalized.includes('/__tests__/') ||
     normalized.includes('.test.') ||
     normalized.includes('.spec.')

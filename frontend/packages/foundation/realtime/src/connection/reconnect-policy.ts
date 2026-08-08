@@ -18,7 +18,8 @@ export class ReconnectPolicy {
     this.maxDelayMs = config.maxDelayMs ?? 30000;
     this.maxRetries = config.maxRetries ?? 10;
     this.backoffFactor = config.backoffFactor ?? 2;
-    this.jitter = config.jitter ?? true;
+    // Freeze v1 defaults to deterministic backoff (no jitter).
+    this.jitter = config.jitter ?? false;
   }
 
   public shouldRetry(attempt: number): boolean {

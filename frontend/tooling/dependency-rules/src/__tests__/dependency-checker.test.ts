@@ -16,7 +16,8 @@ describe('AST Architecture Checker Rules', () => {
 
   it('guards WebSocket instantiation sites', () => {
     expect(isForbiddenWebSocketInstantiation('/packages/features/workspace/src/index.ts')).toBe(true);
-    expect(isForbiddenWebSocketInstantiation('/packages/foundation/realtime/src/transport/realtime-client.ts')).toBe(false);
+    expect(isForbiddenWebSocketInstantiation('/packages/foundation/realtime/src/transport/realtime-client.ts')).toBe(true);
+    expect(isForbiddenWebSocketInstantiation('/packages/runtimes/web/src/realtime/browser-websocket-factory.ts')).toBe(false);
   });
 
   it('guards QueryClient instantiation sites', () => {

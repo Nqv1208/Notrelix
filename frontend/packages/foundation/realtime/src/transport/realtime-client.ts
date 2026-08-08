@@ -44,10 +44,6 @@ export interface WebSocketLike {
 
 export type WebSocketFactory = (descriptor: RealtimeConnectionDescriptor) => WebSocketLike;
 
-const missingSocketFactory: WebSocketFactory = () => {
-  throw new Error('Realtime socketFactory is required by the runtime composition root.');
-};
-
 export interface RealtimeSubscriptionFilter {
   readonly workspaceId: string;
   readonly eventTypes?: readonly string[];
@@ -72,7 +68,7 @@ export interface RealtimeTelemetry {
 
 export interface RealtimeClientOptions {
   readonly connectionDescriptorProvider?: RealtimeConnectionDescriptorProvider;
-  readonly socketFactory?: WebSocketFactory;
+  readonly socketFactory: WebSocketFactory;
   readonly clock?: { now(): Date };
   readonly scheduler?: {
     setTimeout(fn: () => void, delayMs: number): unknown;
@@ -80,7 +76,6 @@ export interface RealtimeClientOptions {
     setInterval(fn: () => void, intervalMs: number): unknown;
     clearInterval(id: unknown): void;
   };
-  readonly random?: () => number;
   readonly telemetry?: RealtimeTelemetry;
 
   readonly reconnect?: {
@@ -214,7 +209,6 @@ export class RealtimeClient implements RealtimeTransport {
     setInterval(fn: () => void, intervalMs: number): unknown;
     clearInterval(id: unknown): void;
   };
-  private readonly random: () => number;
   private readonly telemetry?: RealtimeTelemetry;
 
   private readonly initialDelayMs: number;
@@ -240,37 +234,41 @@ export class RealtimeClient implements RealtimeTransport {
   private isDisposed = false;
   private isManualClose = false;
 
-  constructor(
-    realtimeUrlOrOptions: string | RealtimeClientOptions,
-    options?: RealtimeClientOptions
-  ) {
-    const opts: RealtimeClientOptions =
-      typeof realtimeUrlOrOptions === 'string'
-        ? { ...options, connectionDescriptorProvider: createCookieConnectionDescriptorProvider({ realtimeUrl: realtimeUrlOrOptions }) }
-        : realtimeUrlOrOptions;
+  constructor(realtimeUrl: string, options: RealtimeClientOptions) {
+    if (typeof realtimeUrl !== 'string' || realtimeUrl.length === 0) {
+      throw new Error(
+        'RealtimeClient requires an explicit realtime URL from the runtime composition root.',
+      );
+    }
+    if (!options?.socketFactory) {
+      throw new Error(
+        'RealtimeClient requires a socketFactory from the runtime composition root.',
+      );
+    }
 
-    this.descriptorProvider = opts.connectionDescriptorProvider ?? createCookieConnectionDescriptorProvider({ realtimeUrl: 'ws://localhost:5000/realtime' });
-    this.socketFactory = opts.socketFactory ?? missingSocketFactory;
-    this.clock = opts.clock ?? { now: () => new Date() };
-    this.scheduler = opts.scheduler ?? {
+    this.descriptorProvider =
+      options.connectionDescriptorProvider ??
+      createCookieConnectionDescriptorProvider({ realtimeUrl });
+    this.socketFactory = options.socketFactory;
+    this.clock = options.clock ?? { now: () => new Date() };
+    this.scheduler = options.scheduler ?? {
       setTimeout: (fn, ms) => setTimeout(fn, ms),
       clearTimeout: (id) => clearTimeout(id as any),
       setInterval: (fn, ms) => setInterval(fn, ms),
       clearInterval: (id) => clearInterval(id as any),
     };
-    this.random = opts.random ?? Math.random;
-    this.telemetry = opts.telemetry;
+    this.telemetry = options.telemetry;
 
-    this.initialDelayMs = opts.reconnect?.initialDelayMs ?? 1000;
-    this.maximumDelayMs = opts.reconnect?.maximumDelayMs ?? 30_000;
-    this.maximumAttempts = opts.reconnect?.maximumAttempts ?? 'unlimited';
+    this.initialDelayMs = options.reconnect?.initialDelayMs ?? 1000;
+    this.maximumDelayMs = options.reconnect?.maximumDelayMs ?? 30_000;
+    this.maximumAttempts = options.reconnect?.maximumAttempts ?? 'unlimited';
 
-    this.heartbeatIntervalMs = opts.heartbeat?.intervalMs ?? 15_000;
-    this.pongTimeoutMs = opts.heartbeat?.pongTimeoutMs ?? 5_000;
-    this.maximumMissedPongs = opts.heartbeat?.maximumMissedPongs ?? 2;
+    this.heartbeatIntervalMs = options.heartbeat?.intervalMs ?? 15_000;
+    this.pongTimeoutMs = options.heartbeat?.pongTimeoutMs ?? 5_000;
+    this.maximumMissedPongs = options.heartbeat?.maximumMissedPongs ?? 2;
 
-    const maxEntries = opts.deduplication?.maximumEntries ?? 1000;
-    const ttlMs = opts.deduplication?.ttlMs ?? 60_000;
+    const maxEntries = options.deduplication?.maximumEntries ?? 1000;
+    const ttlMs = options.deduplication?.ttlMs ?? 60_000;
     this.dedupCache = new DedupLruCache(maxEntries, ttlMs);
   }
 
@@ -346,7 +344,10 @@ export class RealtimeClient implements RealtimeTransport {
     const parseResult = parseRealtimeMessage(data);
 
     if (!parseResult.ok) {
-      this.telemetry?.track('realtime.parse_error', { reason: parseResult.error.reason });
+      this.telemetry?.reportError(
+        new Error(`Unparseable realtime message: ${parseResult.error.reason}`),
+        { context: 'messageParse', reason: parseResult.error.reason },
+      );
       return;
     }
 
@@ -483,11 +484,12 @@ export class RealtimeClient implements RealtimeTransport {
     }
 
     this.reconnectAttempt++;
-    const baseDelay = Math.min(
+    // Deterministic exponential backoff: 1s, 2s, 4s, ... capped at 30s.
+    // Freeze v1 intentionally has no jitter so reconnect behavior is testable.
+    const delay = Math.min(
       this.maximumDelayMs,
       this.initialDelayMs * Math.pow(2, this.reconnectAttempt - 1)
     );
-    const jitteredDelay = baseDelay * (0.5 + this.random());
 
     this.setState(transitionState(this.state, 'RECONNECT_SCHEDULED'));
 
@@ -499,7 +501,7 @@ export class RealtimeClient implements RealtimeTransport {
       if (this.currentContext && !this.isManualClose && !this.isDisposed) {
         void this.connect(this.currentContext);
       }
-    }, Math.max(jitteredDelay, 0));
+    }, Math.max(delay, 0));
   }
 
   public disconnect(reason?: string): void {

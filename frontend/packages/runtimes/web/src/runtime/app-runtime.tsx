@@ -3,16 +3,14 @@ import { createNotrelixClient, type NotrelixClient, type NotrelixClientConfig, t
 import { parseEnv, type ResolvedRuntimeEnvironment, type RuntimeEnvironmentInput } from '@notrelix/kernel';
 import { ConsoleTelemetryAdapter, type TelemetryPort } from '@notrelix/observability';
 import { RealtimeClient, type RealtimeTransport } from '@notrelix/realtime';
+import type { ClockPort } from '@notrelix/platform';
 import { createSessionEventBus, type SessionEventBus } from './session-event-bus';
 import { createBrowserWebSocketFactory } from '../realtime/browser-websocket-factory';
 
-export type { SessionEventBus, SessionExpiredEvent } from './session-event-bus';
+export { createSessionEventBus, type SessionEventBus, type SessionExpiredEvent } from './session-event-bus';
 export { useFeatureRuntimeDependencies, type FeatureRuntimeDependencies } from './use-feature-runtime-dependencies';
 
-export interface ClockPort {
-  now(): Date;
-  isoNow(): string;
-}
+export type { ClockPort } from '@notrelix/platform';
 
 export interface FeatureFlagsPort {
   isEnabled(flag: string): boolean;
@@ -76,6 +74,7 @@ export function createAppRuntime(
     ? factories.createRealtimeClient(resolvedEnv.realtimeUrl)
     : new RealtimeClient(resolvedEnv.realtimeUrl, {
         socketFactory: createBrowserWebSocketFactory(),
+        telemetry,
       });
 
   const featureFlags: FeatureFlagsPort = factories.featureFlags ?? {
