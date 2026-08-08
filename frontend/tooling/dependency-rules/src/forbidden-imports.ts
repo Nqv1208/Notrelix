@@ -35,7 +35,7 @@ export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
     "@notrelix/ui-web", "@notrelix/ui-mobile",
   ],
   "@notrelix/work-management-state": [
-    "next", "next-themes", "@notrelix/ui-web", "@notrelix/ui-mobile",
+    "next", "next-themes", "sonner", "@notrelix/ui-web", "@notrelix/ui-mobile",
   ],
   "@notrelix/work-management-plugins": [
     "react", "react-dom",

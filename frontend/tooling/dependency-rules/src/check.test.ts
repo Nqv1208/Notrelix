@@ -139,6 +139,36 @@ test("rejects data layer toast imports", () => {
   expect(result.stderr).toContain("sonner");
 });
 
+test("rejects data layer manifest declarations of toast libraries", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/product/work-management/state",
+    "@notrelix/work-management-state",
+    "export const empty = true;\n",
+  );
+  const pkgDir = join(root, "packages/product/work-management/state");
+  writeFileSync(
+    join(pkgDir, "package.json"),
+    JSON.stringify(
+      {
+        name: "@notrelix/work-management-state",
+        version: "0.0.0",
+        type: "module",
+        dependencies: { sonner: "^1.0.0" },
+      },
+      null,
+      2,
+    ),
+  );
+
+  const result = runChecker(root);
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("DECLARED_FORBIDDEN_DEPENDENCY");
+  expect(result.stderr).toContain("sonner");
+});
+
 test("rejects exported API instances from production source", () => {
   const root = createFixtureRoot();
   writePackage(
