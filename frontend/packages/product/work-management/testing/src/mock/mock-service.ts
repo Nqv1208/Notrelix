@@ -5,13 +5,11 @@ import type {
   CardActivity,
   CardComment,
   FullBoardResponse,
-} from "../types";
-import type {
   CreateCardInput,
   UpdateCardInput,
   UpdateFieldValueInput,
-} from "../schemas";
-import type { MoveCardInput } from "../schemas/move-card.schema";
+  MoveCardInput,
+} from "@notrelix/work-management-core";
 
 function cloneBoard(board: FullBoardResponse): FullBoardResponse {
   return {

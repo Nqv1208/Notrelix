@@ -22,11 +22,5 @@ export * from "./utils/board-api-mappers";
 export * from "./utils/fractional-index";
 export * from "./utils/board-cache-updaters";
 
-// Mock
-export * from "./mock/mock-data";
-export * from "./mock/mock-service";
-export * from "./mock/mock-card-detail-service";
-export * from "./mock/mock-delay";
-
 // Kanban types
 export * from "./types/kanban-types";

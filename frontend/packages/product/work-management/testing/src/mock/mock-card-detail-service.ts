@@ -1,7 +1,8 @@
 import { mockDelay } from "./mock-delay";
 import { mockBoards, mockCardActivity, mockCardComments } from "./mock-data";
-import type { CreateCardUpdateInput, UploadCardFileInput } from "../schemas";
 import type {
+  CreateCardUpdateInput,
+  UploadCardFileInput,
   BoardMember,
   Card,
   CardActivity,
@@ -9,7 +10,7 @@ import type {
   CardFile,
   CardMember,
   CardUpdate,
-} from "../types";
+} from "@notrelix/work-management-core";
 
 const cardUpdates: CardUpdate[] = mockCardComments.map((comment, index) => {
   const { board } = findBoardAndCard(comment.cardId);

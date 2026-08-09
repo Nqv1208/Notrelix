@@ -6,7 +6,7 @@ import type {
   FieldDefinition,
   FieldOption,
   FullBoardResponse,
-} from "../types";
+} from "@notrelix/work-management-core";
 
 const statusOptions: FieldOption[] = [
   {
