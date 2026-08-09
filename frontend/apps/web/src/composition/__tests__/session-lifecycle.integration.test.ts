@@ -2,10 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createQueryClient } from "@notrelix/query";
 import { createSessionEventBus } from "@notrelix/runtime-web";
 import type { SessionExpiredEvent } from "@notrelix/contracts";
-import {
-  createApplicationLifecycle,
-  createWorkspaceEventSource,
-} from "../application-lifecycle";
+import { createApplicationLifecycle } from "../application-lifecycle";
 
 function createTerminalEvent(eventId: string): SessionExpiredEvent {
   return {
@@ -41,9 +38,6 @@ describe("application lifecycle — session invalidation", () => {
       queryClient,
       realtime,
       sessionEvents,
-      workspaceEvents: createWorkspaceEventSource(),
-      clearSessionState: vi.fn(),
-      clearWorkspaceState: vi.fn(),
       navigateToSignedOut: vi.fn(),
     });
 
@@ -51,44 +45,6 @@ describe("application lifecycle — session invalidation", () => {
 
     sessionEvents.publish(createTerminalEvent("evt-1"));
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-    lifecycle.dispose();
-  });
-
-  it("LIFE-002 terminal event clears auth/session state exactly once", () => {
-    const queryClient = createQueryClient();
-    const sessionEvents = createSessionEventBus();
-    const clearSessionState = vi.fn();
-    const lifecycle = createApplicationLifecycle({
-      queryClient,
-      realtime: createFakeRealtime(),
-      sessionEvents,
-      workspaceEvents: createWorkspaceEventSource(),
-      clearSessionState,
-      clearWorkspaceState: vi.fn(),
-      navigateToSignedOut: vi.fn(),
-    });
-
-    sessionEvents.publish(createTerminalEvent("evt-2"));
-    expect(clearSessionState).toHaveBeenCalledTimes(1);
-    lifecycle.dispose();
-  });
-
-  it("LIFE-003 terminal event clears workspace transient state", () => {
-    const queryClient = createQueryClient();
-    const sessionEvents = createSessionEventBus();
-    const clearWorkspaceState = vi.fn();
-    const lifecycle = createApplicationLifecycle({
-      queryClient,
-      realtime: createFakeRealtime(),
-      sessionEvents,
-      workspaceEvents: createWorkspaceEventSource(),
-      clearSessionState: vi.fn(),
-      clearWorkspaceState,
-      navigateToSignedOut: vi.fn(),
-    });
-
-    sessionEvents.publish(createTerminalEvent("evt-3"));
-    expect(clearWorkspaceState).toHaveBeenCalledTimes(1);
     lifecycle.dispose();
   });
 
@@ -100,9 +56,6 @@ describe("application lifecycle — session invalidation", () => {
       queryClient,
       realtime,
       sessionEvents,
-      workspaceEvents: createWorkspaceEventSource(),
-      clearSessionState: vi.fn(),
-      clearWorkspaceState: vi.fn(),
       navigateToSignedOut: vi.fn(),
     });
 
@@ -120,9 +73,6 @@ describe("application lifecycle — session invalidation", () => {
       queryClient,
       realtime: createFakeRealtime(),
       sessionEvents,
-      workspaceEvents: createWorkspaceEventSource(),
-      clearSessionState: vi.fn(),
-      clearWorkspaceState: vi.fn(),
       navigateToSignedOut,
     });
 
@@ -134,16 +84,12 @@ describe("application lifecycle — session invalidation", () => {
   it("LIFE-006 duplicate terminal event is idempotent", () => {
     const queryClient = createQueryClient();
     const sessionEvents = createSessionEventBus();
-    const clearSessionState = vi.fn();
     const realtime = createFakeRealtime();
     const navigateToSignedOut = vi.fn();
     const lifecycle = createApplicationLifecycle({
       queryClient,
       realtime,
       sessionEvents,
-      workspaceEvents: createWorkspaceEventSource(),
-      clearSessionState,
-      clearWorkspaceState: vi.fn(),
       navigateToSignedOut,
     });
 
@@ -151,7 +97,6 @@ describe("application lifecycle — session invalidation", () => {
     sessionEvents.publish(event);
     sessionEvents.publish(event);
 
-    expect(clearSessionState).toHaveBeenCalledTimes(1);
     expect(realtime.disconnect).toHaveBeenCalledTimes(1);
     expect(navigateToSignedOut).toHaveBeenCalledTimes(1);
     lifecycle.dispose();
@@ -160,15 +105,11 @@ describe("application lifecycle — session invalidation", () => {
   it("LIFE-007 normal non-terminal token/session update does not clear cache", () => {
     const queryClient = createQueryClient();
     const sessionEvents = createSessionEventBus();
-    const clearSessionState = vi.fn();
     const realtime = createFakeRealtime();
     const lifecycle = createApplicationLifecycle({
       queryClient,
       realtime,
       sessionEvents,
-      workspaceEvents: createWorkspaceEventSource(),
-      clearSessionState,
-      clearWorkspaceState: vi.fn(),
       navigateToSignedOut: vi.fn(),
     });
 
@@ -182,7 +123,6 @@ describe("application lifecycle — session invalidation", () => {
     });
 
     expect(queryClient.getQueryCache().getAll().length).toBeGreaterThan(0);
-    expect(clearSessionState).not.toHaveBeenCalled();
     expect(realtime.disconnect).not.toHaveBeenCalled();
     lifecycle.dispose();
   });
@@ -190,19 +130,16 @@ describe("application lifecycle — session invalidation", () => {
   it("LIFE-008 coordinator dispose unsubscribes session listener", () => {
     const queryClient = createQueryClient();
     const sessionEvents = createSessionEventBus();
-    const clearSessionState = vi.fn();
+    const navigateToSignedOut = vi.fn();
     const lifecycle = createApplicationLifecycle({
       queryClient,
       realtime: createFakeRealtime(),
       sessionEvents,
-      workspaceEvents: createWorkspaceEventSource(),
-      clearSessionState,
-      clearWorkspaceState: vi.fn(),
-      navigateToSignedOut: vi.fn(),
+      navigateToSignedOut,
     });
 
     lifecycle.dispose();
     sessionEvents.publish(createTerminalEvent("evt-8"));
-    expect(clearSessionState).not.toHaveBeenCalled();
+    expect(navigateToSignedOut).not.toHaveBeenCalled();
   });
 });

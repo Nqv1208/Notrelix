@@ -6,7 +6,6 @@ import { readWebRuntimeEnvironment } from "./config/read-runtime-environment";
 import { createWebApplicationServices } from "./composition/application-services";
 import { AppProviders } from "./providers/app-providers";
 import { router } from "./router";
-import { getActiveWorkspaceIdFromPathname } from "./realtime/active-workspace";
 import { sanitizeInternalReturnUrl } from "./routing/sanitize-return-url";
 import "./styles/globals.css";
 
@@ -27,28 +26,8 @@ const services = createWebApplicationServices(runtime, {
   },
 });
 
-let activeWorkspaceId = getActiveWorkspaceIdFromPathname(
-  router.state.location.pathname,
-);
-const unsubscribeWorkspaceEvents = router.subscribe(
-  "onResolved",
-  ({ toLocation }) => {
-    const nextWorkspaceId = getActiveWorkspaceIdFromPathname(
-      toLocation.pathname,
-    );
-    if (nextWorkspaceId !== activeWorkspaceId) {
-      services.workspaceEvents.publish({
-        previousWorkspaceId: activeWorkspaceId,
-        nextWorkspaceId,
-      });
-      activeWorkspaceId = nextWorkspaceId;
-    }
-  },
-);
-
 // Register HMR disposal and pagehide cleanup
 const teardown = () => {
-  unsubscribeWorkspaceEvents();
   void services.dispose();
 };
 

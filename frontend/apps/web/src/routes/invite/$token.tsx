@@ -28,9 +28,9 @@ import { createUseAuthUser, createUseLogout } from "@notrelix/features-auth";
 import {
   createInvitationsService,
   type InvitationsEndpoints,
-  workspaceQueryKeys,
   type WorkspaceApiClient,
 } from "@notrelix/features-workspace/core";
+import { workspaceQueryKeys } from "@notrelix/features-workspace";
 import { useAppRuntime } from "@notrelix/runtime-web";
 
 export function InvitePage() {
