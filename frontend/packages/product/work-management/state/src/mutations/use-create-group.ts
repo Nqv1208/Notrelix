@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "../queries/keys"
 import { useWorkManagementServices } from "../services"
 import type { CreateGroupInput } from "../api/group.api"
 import type { BoardGroup, FullBoardResponse } from "@notrelix/work-management-core"
@@ -9,7 +9,7 @@ type MutationContext = { previous?: FullBoardResponse }
 export function useCreateGroup(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
   const { groups } = useWorkManagementServices()
-  const queryKey = wmQueryKeys.fullBoard(boardId, workspaceId)
+  const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId)
 
   return useMutation<string, Error, Omit<CreateGroupInput, "boardId">, MutationContext>({
     mutationFn: (input) => groups.createGroup({ ...input, boardId }),

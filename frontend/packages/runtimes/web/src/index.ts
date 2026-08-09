@@ -4,11 +4,13 @@ export { createBrowserWebSocketFactory } from './realtime/browser-websocket-fact
 export {
   createAppRuntime,
   createSessionEventBus,
+  createBrowserKeyValueStorage,
   AppRuntimeProvider,
   useAppRuntime,
   useFeatureRuntimeDependencies,
   type AppRuntime,
   type ClockPort,
+  type KeyValueStorage,
   type FeatureFlagsPort,
   type SessionEventBus,
   type SessionExpiredEvent,

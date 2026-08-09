@@ -18,7 +18,6 @@
     "@notrelix/runtime-mobile": "workspace:*",
     "@notrelix/ui-mobile": "workspace:*",
     "@notrelix/ui-tokens": "workspace:*",
-    "@notrelix/platform": "workspace:*",
     "@notrelix/query": "workspace:*",
     "@notrelix/work-management-mobile": "workspace:*"
   },

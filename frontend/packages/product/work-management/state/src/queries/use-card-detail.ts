@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "./keys"
 import type { CardDetail } from "@notrelix/work-management-core"
 import { useUpdateCard } from "../mutations/use-update-card"
 import { useUpdateFieldValue } from "../mutations/use-update-field-value"
@@ -8,8 +8,8 @@ import { useWorkManagementServices } from "../services"
 export function useCardDetail(cardId: string, boardId: string, workspaceId: string) {
   const queryClient = useQueryClient()
   const { cards, labels } = useWorkManagementServices()
-  const detailKey = wmQueryKeys.cardDetail(cardId)
-  const fullBoardKey = wmQueryKeys.fullBoard(boardId, workspaceId)
+  const detailKey = wmQueryKeys.cardDetail(workspaceId, cardId)
+  const fullBoardKey = wmQueryKeys.fullBoard(workspaceId!, boardId)
 
   const cardQuery = useQuery<CardDetail>({
     queryKey: detailKey,

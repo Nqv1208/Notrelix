@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "../queries/keys"
 import { defaultTableViewConfig } from "../api/board.api"
 import type { ViewConfig, ViewMode } from "@notrelix/work-management-core"
 import { useWorkManagementServices } from "../services"

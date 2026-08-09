@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "../queries/keys"
 import { useWorkManagementServices } from "../services"
 import type { CreateListInput } from "../api/list.api"
 import type { FullBoardResponse, BoardGroup } from "@notrelix/work-management-core"
@@ -9,7 +9,7 @@ type MutationContext = { previous?: FullBoardResponse }
 export function useCreateKanbanColumn(boardId: string, workspaceId: string) {
   const queryClient = useQueryClient()
   const { lists } = useWorkManagementServices()
-  const queryKey = wmQueryKeys.fullBoard(boardId, workspaceId)
+  const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId)
 
   return useMutation<string, Error, { title: string; color?: string; position?: number }, MutationContext>({
     mutationFn: (input) => lists.createList({ boardId, ...input }),

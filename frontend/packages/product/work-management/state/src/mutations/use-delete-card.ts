@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "../queries/keys"
 import { useWorkManagementServices } from "../services"
 import type { FullBoardResponse } from "@notrelix/work-management-core"
 
@@ -8,7 +8,7 @@ type MutationContext = { previous?: FullBoardResponse }
 export function useDeleteCard(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
   const { cards } = useWorkManagementServices()
-  const queryKey = wmQueryKeys.fullBoard(boardId, workspaceId)
+  const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId)
 
   return useMutation<void, Error, string, MutationContext>({
     mutationFn: cards.deleteCard,

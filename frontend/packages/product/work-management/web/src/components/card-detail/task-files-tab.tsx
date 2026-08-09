@@ -10,7 +10,7 @@ import type { CardDetail, CardFile } from "@notrelix/work-management-core"
 import { TaskDetailEmptyState } from "./task-detail-empty-state"
 
 export function TaskFilesTab({ card }: { card: CardDetail }) {
-  const { data = [], isLoading } = useCardFiles(card.id)
+  const { data = [], isLoading } = useCardFiles(card.id, card.workspaceId)
   const [query, setQuery] = useState("")
   const [mode, setMode] = useState<"grid" | "list">("grid")
   const filteredFiles = useMemo(() => {

@@ -87,7 +87,7 @@ function TaskDetailPanelContent({
   cardId: string
   onClose: () => void
 }) {
-  const { card, isLoading, error } = useCard(cardId)
+  const { card, isLoading, error } = useCard(cardId, board.workspaceId)
 
   if (isLoading) return <TaskDetailPanelSkeleton />
   if (error || !card) return <TaskDetailPanelError onClose={onClose} />

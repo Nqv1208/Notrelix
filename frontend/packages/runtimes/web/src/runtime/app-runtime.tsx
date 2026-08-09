@@ -3,14 +3,16 @@ import { createNotrelixClient, type NotrelixClient, type NotrelixClientConfig, t
 import { parseEnv, type ResolvedRuntimeEnvironment, type RuntimeEnvironmentInput } from '@notrelix/kernel';
 import { ConsoleTelemetryAdapter, type TelemetryPort } from '@notrelix/observability';
 import { RealtimeClient, type RealtimeTransport } from '@notrelix/realtime';
-import type { ClockPort } from '@notrelix/platform';
+import type { ClockPort, KeyValueStorage } from '@notrelix/platform';
 import { createSessionEventBus, type SessionEventBus } from './session-event-bus';
 import { createBrowserWebSocketFactory } from '../realtime/browser-websocket-factory';
+import { createBrowserKeyValueStorage } from '../storage/browser-key-value-storage';
 
 export { createSessionEventBus, type SessionEventBus, type SessionExpiredEvent } from './session-event-bus';
 export { useFeatureRuntimeDependencies, type FeatureRuntimeDependencies } from './use-feature-runtime-dependencies';
+export { createBrowserKeyValueStorage } from '../storage/browser-key-value-storage';
 
-export type { ClockPort } from '@notrelix/platform';
+export type { ClockPort, KeyValueStorage } from '@notrelix/platform';
 
 export interface FeatureFlagsPort {
   isEnabled(flag: string): boolean;
@@ -23,6 +25,7 @@ export interface AppRuntimeFactories {
   readonly clock?: ClockPort;
   readonly telemetry?: TelemetryPort;
   readonly featureFlags?: FeatureFlagsPort;
+  readonly storage?: KeyValueStorage;
 }
 
 export interface AppRuntime {
@@ -32,6 +35,7 @@ export interface AppRuntime {
   readonly clock: ClockPort;
   readonly telemetry: TelemetryPort;
   readonly featureFlags: FeatureFlagsPort;
+  readonly storage: KeyValueStorage;
   readonly env: ResolvedRuntimeEnvironment;
   dispose(): Promise<void>;
 }
@@ -51,6 +55,8 @@ export function createAppRuntime(
     releaseSha: resolvedEnv.releaseSha,
     environment: resolvedEnv.mode,
   });
+
+  const storage: KeyValueStorage = factories.storage ?? createBrowserKeyValueStorage(telemetry);
 
   const sessionEvents = createSessionEventBus((err, ctx) => telemetry.reportError(err, ctx));
 
@@ -91,6 +97,7 @@ export function createAppRuntime(
     clock,
     telemetry,
     featureFlags,
+    storage,
     env: resolvedEnv,
     async dispose(): Promise<void> {
       if (disposed) return;

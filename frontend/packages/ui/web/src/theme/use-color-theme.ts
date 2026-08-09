@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { KeyValueStorage } from './theme-provider';
 
 export type ColorTheme =
   | 'default'
@@ -33,7 +34,7 @@ export const COLOR_THEMES: ColorThemeMeta[] = [
   { id: 'aurora', name: 'Aurora', description: 'Ngọc lam công nghệ', primaryColor: '#0d9488', accentHue: 190 },
 ];
 
-function isValidTheme(value: string | null): value is ColorTheme {
+function isValidTheme(value: string | null | undefined): value is ColorTheme {
   return !!value && COLOR_THEMES.some((t) => t.id === value);
 }
 
@@ -42,37 +43,39 @@ function removeThemeClasses(el: HTMLElement) {
   toRemove.forEach((c) => el.classList.remove(c));
 }
 
-export function useColorTheme() {
+export function useColorTheme(storage?: KeyValueStorage) {
   const [colorTheme, setColorThemeState] = useState<ColorTheme>('default');
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = storage?.getItem(STORAGE_KEY);
       if (isValidTheme(stored)) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setColorThemeState(stored);
       }
     } catch {
-      // localStorage unavailable
+      // storage unavailable
     }
-  }, []);
+  }, [storage]);
 
   const setColorTheme = useCallback((theme: ColorTheme) => {
     setColorThemeState(theme);
 
     try {
-      const root = document.documentElement;
-      removeThemeClasses(root);
+      if (typeof document !== 'undefined') {
+        const root = document.documentElement;
+        removeThemeClasses(root);
 
-      if (theme !== 'default') {
-        root.classList.add(`theme-${theme}`);
+        if (theme !== 'default') {
+          root.classList.add(`theme-${theme}`);
+        }
       }
 
-      localStorage.setItem(STORAGE_KEY, theme);
+      storage?.setItem(STORAGE_KEY, theme);
     } catch {
-      // localStorage / DOM unavailable
+      // storage / DOM unavailable
     }
-  }, []);
+  }, [storage]);
 
   return { colorTheme, setColorTheme, themes: COLOR_THEMES } as const;
 }

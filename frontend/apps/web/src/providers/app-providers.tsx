@@ -32,7 +32,7 @@ export function AppProviders({
         <AppRuntimeProvider runtime={runtime}>
           <QueryClientProvider client={queryClient}>
             <FeatureAuthProvider>
-              <ThemeProvider storageKey="theme">
+              <ThemeProvider storageKey="theme" storage={runtime.storage}>
                 <WorkManagementServicesProvider services={workManagement}>
                   {children}
                   <Toaster />

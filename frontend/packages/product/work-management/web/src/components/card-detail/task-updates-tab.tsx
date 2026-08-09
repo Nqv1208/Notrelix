@@ -16,13 +16,13 @@ import { TaskDetailEmptyState } from "./task-detail-empty-state"
 import { UpdateComposer } from "./update-composer"
 
 export function TaskUpdatesTab({ card }: { card: CardDetail }) {
-  const { data = [], isLoading } = useCardComments(card.id)
-  const updateMutation = useUpdateCardUpdate(card.id)
-  const deleteMutation = useDeleteCardUpdate(card.id)
+  const { data = [], isLoading } = useCardComments(card.id, card.workspaceId)
+  const updateMutation = useUpdateCardUpdate(card.id, card.workspaceId)
+  const deleteMutation = useDeleteCardUpdate(card.id, card.workspaceId)
 
   return (
     <div className="flex flex-col gap-3 p-3.5">
-      <UpdateComposer cardId={card.id} members={card.members.length > 0 ? card.members : card.watchers} />
+      <UpdateComposer cardId={card.id} workspaceId={card.workspaceId} members={card.members.length > 0 ? card.members : card.watchers} />
 
       {isLoading ? (
         <div className="flex flex-col gap-2">

@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "./keys"
 import type { CreateChecklistInput, UpdateChecklistInput, CreateChecklistItemInput, UpdateChecklistItemInput } from "../api/checklist.api"
 import { useWorkManagementServices } from "../services"
 
 export function useCardChecklists(cardId: string, boardId?: string, workspaceId?: string) {
   const queryClient = useQueryClient()
   const { checklists } = useWorkManagementServices()
-  const detailKey = wmQueryKeys.cardDetail(cardId)
-  const fullBoardKey = boardId ? wmQueryKeys.fullBoard(boardId, workspaceId) : null
+  const detailKey = wmQueryKeys.cardDetail(workspaceId!, cardId)
+  const fullBoardKey = boardId ? wmQueryKeys.fullBoard(workspaceId!, boardId) : null
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: detailKey })

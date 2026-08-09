@@ -1,11 +1,19 @@
 import * as React from 'react';
 
+export interface KeyValueStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
+  clear?(): void;
+}
+
 type Theme = 'dark' | 'light' | 'system';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   storageKey?: string;
+  storage?: KeyValueStorage;
 }
 
 interface ThemeProviderState {
@@ -24,10 +32,11 @@ export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = 'notrelix-ui-theme',
+  storage,
   ...props
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(
-    () => (typeof window !== 'undefined' ? (localStorage.getItem(storageKey) as Theme) : undefined) || defaultTheme
+    () => (storage ? (storage.getItem(storageKey) as Theme) : undefined) || defaultTheme
   );
 
   React.useEffect(() => {
@@ -64,14 +73,14 @@ export function ThemeProvider({
       theme,
       setTheme: (newTheme: Theme) => {
         try {
-          localStorage.setItem(storageKey, newTheme);
+          storage?.setItem(storageKey, newTheme);
         } catch {
-          // localStorage unavailable
+          // storage unavailable
         }
         setThemeState(newTheme);
       },
     }),
-    [theme, storageKey]
+    [theme, storageKey, storage]
   );
 
   return (

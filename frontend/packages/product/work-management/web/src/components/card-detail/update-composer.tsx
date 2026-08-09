@@ -16,10 +16,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@notrelix/ui-web"
 import { useCreateCardUpdate } from "@notrelix/work-management-state"
 import type { CardMember } from "@notrelix/work-management-core"
 
-export function UpdateComposer({ cardId, members }: { cardId: string; members: CardMember[] }) {
+export function UpdateComposer({ cardId, workspaceId, members }: { cardId: string; workspaceId: string; members: CardMember[] }) {
   const [body, setBody] = useState("")
   const [mentionUserIds, setMentionUserIds] = useState<string[]>([])
-  const createUpdate = useCreateCardUpdate(cardId)
+  const createUpdate = useCreateCardUpdate(cardId, workspaceId)
   const canSubmit = body.trim().length > 0 && !createUpdate.isPending
 
   function submit() {

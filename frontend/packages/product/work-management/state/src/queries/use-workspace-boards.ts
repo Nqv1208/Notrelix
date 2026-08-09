@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "./keys"
 import { useWorkManagementServices } from "../services"
 
 export function useWorkspaceBoards(workspaceId: string) {

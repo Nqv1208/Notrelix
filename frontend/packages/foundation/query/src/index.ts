@@ -20,3 +20,9 @@ export {
   type OptimisticSnapshot,
   type OptimisticUpdate,
 } from './optimistic-command';
+export {
+  globalQueryKey,
+  accountQueryKey,
+  workspaceQueryKey,
+  assertNotrelixQueryKey,
+} from './query-key-scope';

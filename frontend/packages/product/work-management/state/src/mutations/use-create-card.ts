@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "../queries/keys"
 import type { CreateCardInput } from "@notrelix/work-management-core"
 import type { Card, FullBoardResponse } from "@notrelix/work-management-core"
 import { createOptimisticCard } from "../cache/optimistic-card"
@@ -13,7 +13,7 @@ type CreateCardContext = {
 export function useCreateCard(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
   const { cards } = useWorkManagementServices()
-  const queryKey = wmQueryKeys.fullBoard(boardId, workspaceId)
+  const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId)
 
   return useMutation<Card, Error, CreateCardInput, CreateCardContext>({
     mutationFn: (payload) => cards.createCard(boardId, payload),

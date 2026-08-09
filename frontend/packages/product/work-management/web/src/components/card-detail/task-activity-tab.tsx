@@ -17,7 +17,7 @@ import type { CardDetail, CardActivity } from "@notrelix/work-management-core"
 import { TaskDetailEmptyState } from "./task-detail-empty-state"
 
 export function TaskActivityTab({ card }: { card: CardDetail }) {
-  const { data = [], isLoading, isFetching, refetch } = useCardActivity(card.id)
+  const { data = [], isLoading, isFetching, refetch } = useCardActivity(card.id, card.workspaceId)
   const [query, setQuery] = useState("")
   const [person, setPerson] = useState<string | null>(null)
   const filteredActivity = useMemo(() => {

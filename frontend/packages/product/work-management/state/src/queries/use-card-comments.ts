@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
-import { wmQueryKeys } from "@notrelix/work-management-core"
+import { wmQueryKeys } from "./keys"
 import { useWorkManagementServices } from "../services"
 
-export function useCardComments(cardId: string) {
+export function useCardComments(cardId: string, workspaceId: string) {
   const { comments } = useWorkManagementServices()
   return useQuery({
-    queryKey: wmQueryKeys.cardUpdates(cardId),
+    queryKey: wmQueryKeys.cardUpdates(workspaceId, cardId),
     queryFn: () => comments.getCardUpdates(cardId),
     enabled: Boolean(cardId),
     staleTime: 30_000,
