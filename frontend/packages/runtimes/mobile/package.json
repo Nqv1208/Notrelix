@@ -13,9 +13,17 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@notrelix/platform": "workspace:*"
+    "@notrelix/contracts": "workspace:*",
+    "@notrelix/kernel": "workspace:*",
+    "@notrelix/observability": "workspace:*",
+    "@notrelix/platform": "workspace:*",
+    "@notrelix/query": "workspace:*",
+    "@notrelix/realtime": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "react": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/react": "^19.0.0"
   }
 }

@@ -48,8 +48,12 @@ describe("ui-mobile primitives contract", () => {
     expect(input.onChangeText).toBeUndefined();
   });
 
-  it("ui-mobile barrel has no DOM or radix imports in source", async () => {
+  it("ui-mobile barrel exports mobile primitives", async () => {
     const ui = await import("../index");
-    expect(Object.keys(ui)).toEqual([]);
+    expect(Object.keys(ui)).toEqual([
+      "MobileButton",
+      "MobileCard",
+      "MobileInput",
+    ]);
   });
 });

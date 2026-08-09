@@ -17,4 +17,9 @@ export default defineConfig({
     ],
     exclude: ["**/node_modules/**", "**/dist/**", "**/.next/**"],
   },
+  resolve: {
+    alias: {
+      "react-native": path.resolve(__dirname, "react-native-mock.ts"),
+    },
+  },
 });

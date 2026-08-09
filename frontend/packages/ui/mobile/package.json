@@ -13,9 +13,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@notrelix/ui-tokens": "workspace:*"
+    "@notrelix/ui-tokens": "workspace:*",
+    "react": "catalog:",
+    "react-native": "latest"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-native": "^0.73.0"
   }
 }
