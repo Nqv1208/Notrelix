@@ -13,6 +13,14 @@ export default defineConfig({
         ["html", { open: "never", outputFolder: "playwright-report-ui" }],
       ]
     : "list",
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.02,
+      threshold: 0.2,
+      animations: "disabled",
+    },
+  },
+  snapshotPathTemplate: "{testDir}/{testFileName}-snapshots/{arg}{ext}",
   use: {
     baseURL: "http://127.0.0.1:6006",
     trace: "on-first-retry",
