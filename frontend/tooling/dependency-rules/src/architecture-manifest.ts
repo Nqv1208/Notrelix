@@ -149,8 +149,10 @@ export const ARCHITECTURE_MANIFEST = [
     layer: "runtime",
     freezeScope: "core-production",
     allowedInternalImports: [
+      "@notrelix/contracts",
       "@notrelix/kernel",
       "@notrelix/platform",
+      "@notrelix/query",
       "@notrelix/realtime",
       "@notrelix/observability",
     ],

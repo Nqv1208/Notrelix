@@ -272,21 +272,20 @@ describe("closed-world architecture manifest", () => {
     ]);
   });
 
-  it("ARCH-017 runtime-mobile edges are kernel/platform/realtime/observability only", () => {
+  it("ARCH-017 runtime-mobile edges are contracts/kernel/platform/query/realtime/observability", () => {
     const runtimeMobile = ARCHITECTURE_POLICY_BY_PACKAGE.get(
       "@notrelix/runtime-mobile",
     );
     expect(runtimeMobile).toBeDefined();
     expect([...runtimeMobile!.allowedInternalImports].sort()).toEqual(
       [
+        "@notrelix/contracts",
         "@notrelix/kernel",
-        "@notrelix/platform",
-        "@notrelix/realtime",
         "@notrelix/observability",
+        "@notrelix/platform",
+        "@notrelix/query",
+        "@notrelix/realtime",
       ].sort(),
-    );
-    expect(runtimeMobile!.allowedInternalImports).not.toContain(
-      "@notrelix/contracts",
     );
   });
 

@@ -282,7 +282,7 @@ describe("create-feature generator", () => {
 
     for (const dir of [
       "src/core/api",
-      "src/core/query",
+      "src/query",
       "src/core/mutations",
       "src/core/model",
       "src/core/schemas",
@@ -300,19 +300,16 @@ describe("create-feature generator", () => {
       readFileSync(join(featureDir, "package.json"), "utf8"),
     );
     expect(pkg.name).toBe("@notrelix/features-billing");
-    expect(pkg.exports["./core/query/keys"]).toBe("./src/core/query/keys.ts");
+    expect(pkg.exports["./query/keys"]).toBe("./src/query/keys.ts");
     expect(pkg.exports["./web"]).toBeUndefined();
     expect(pkg.scripts.typecheck).toBe("tsc --noEmit");
     expect(pkg.scripts.test).toBe("vitest run");
     expect(existsSync(join(featureDir, "eslint.config.js"))).toBe(true);
 
-    const keys = readFileSync(
-      join(featureDir, "src/core/query/keys.ts"),
-      "utf8",
-    );
+    const keys = readFileSync(join(featureDir, "src/query/keys.ts"), "utf8");
     expect(keys).toContain("billingQueryKeys");
-    expect(keys).toContain("all: ['billing']");
-    expect(existsSync(join(featureDir, "src/core/query/keys.test.ts"))).toBe(
+    expect(keys).toContain("accountQueryKey('billing')");
+    expect(existsSync(join(featureDir, "src/query/keys.unit.test.ts"))).toBe(
       true,
     );
   });
@@ -480,12 +477,12 @@ describe("create-ui-component generator", () => {
 
     const contractFile = join(
       tempDir,
-      "packages/ui/mobile/src/components/toggle.ts",
+      "packages/ui/mobile/src/components/toggle.tsx",
     );
     expect(existsSync(contractFile)).toBe(true);
     expect(
       existsSync(
-        join(tempDir, "packages/ui/mobile/src/__tests__/toggle.test.ts"),
+        join(tempDir, "packages/ui/mobile/src/__tests__/toggle.mobile.test.ts"),
       ),
     ).toBe(true);
 
@@ -494,7 +491,7 @@ describe("create-ui-component generator", () => {
       "utf8",
     );
     expect(index).toContain(
-      'export type { ToggleProps } from "./components/toggle"',
+      'export { Toggle, type ToggleProps } from "./components/toggle"',
     );
   });
 

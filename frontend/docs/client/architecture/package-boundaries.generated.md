@@ -43,7 +43,7 @@ Package count: 41
 | `packages/product/work-management/state` | `@notrelix/work-management-state` | `product-state` | `core-production` | `@notrelix/work-management-core`, `@notrelix/contracts`, `@notrelix/query`, `@notrelix/realtime`, `@notrelix/platform` |
 | `packages/product/work-management/testing` | `@notrelix/work-management-testing` | `product-testing` | `verification` | `@notrelix/work-management-core`, `@notrelix/work-management-state` |
 | `packages/product/work-management/web` | `@notrelix/work-management-web` | `product-adapter` | `core-production` | `@notrelix/work-management-core`, `@notrelix/work-management-state`, `@notrelix/work-management-plugins`, `@notrelix/ui-web`, `@notrelix/platform` |
-| `packages/runtimes/mobile` | `@notrelix/runtime-mobile` | `runtime` | `core-production` | `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/realtime`, `@notrelix/observability` |
+| `packages/runtimes/mobile` | `@notrelix/runtime-mobile` | `runtime` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/realtime`, `@notrelix/observability` |
 | `packages/runtimes/web` | `@notrelix/runtime-web` | `runtime` | `core-production` | `@notrelix/platform`, `@notrelix/kernel`, `@notrelix/contracts`, `@notrelix/realtime`, `@notrelix/observability` |
 | `packages/ui/icons` | `@notrelix/ui-icons` | `ui` | `core-production` | _(none)_ |
 | `packages/ui/mobile` | `@notrelix/ui-mobile` | `ui` | `core-production` | `@notrelix/ui-tokens` |

@@ -22,7 +22,7 @@
  * Usage: node index.mjs <feature-name> [--ui web|mobile|both] [--realtime]
  */
 
-import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, symlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -82,8 +82,8 @@ console.log(
 );
 
 // Create directories
+mkdirSync(join(featureDir, "src/query"), { recursive: true });
 mkdirSync(join(featureDir, "src/core/api"), { recursive: true });
-mkdirSync(join(featureDir, "src/core/query"), { recursive: true });
 mkdirSync(join(featureDir, "src/core/mutations"), { recursive: true });
 mkdirSync(join(featureDir, "src/core/model"), { recursive: true });
 mkdirSync(join(featureDir, "src/core/schemas"), { recursive: true });
@@ -98,10 +98,24 @@ if (uiMobile) {
   mkdirSync(join(featureDir, "src/mobile/components"), { recursive: true });
 }
 
+const sampleNodeModules = existsSync(
+  join(rootDir, "packages/features/account/node_modules"),
+)
+  ? join(rootDir, "packages/features/account/node_modules")
+  : existsSync(join(rootDir, "node_modules"))
+    ? join(rootDir, "node_modules")
+    : null;
+
+if (sampleNodeModules) {
+  try {
+    symlinkSync(sampleNodeModules, join(featureDir, "node_modules"), "dir");
+  } catch {}
+}
+
 const exportsMap = {
   ".": "./src/index.ts",
   "./core": "./src/core/index.ts",
-  "./core/query/keys": "./src/core/query/keys.ts",
+  "./query/keys": "./src/query/keys.ts",
 };
 if (uiWeb) exportsMap["./web"] = "./src/web/index.ts";
 if (uiMobile) exportsMap["./mobile"] = "./src/mobile/index.ts";
@@ -122,6 +136,10 @@ writeFileSync(
         typecheck: "tsc --noEmit",
         test: "vitest run",
         clean: "rm -rf node_modules dist",
+      },
+      dependencies: {
+        "@notrelix/query": "workspace:*",
+        "@tanstack/react-query": "catalog:",
       },
       devDependencies: {
         typescript: "^5.0.0",
@@ -203,30 +221,28 @@ writeFileSync(
 
 // Create query keys
 writeFileSync(
-  join(featureDir, "src/core/query/keys.ts"),
+  join(featureDir, "src/query/keys.ts"),
   `/**
- * @notrelix/features-${featureName}/core/query — Query keys.
- *
- * Query key contract (05-FOUNDATION-PACKAGES-SPEC):
- * workspace-scoped keys are \`['workspace', workspaceId, <feature>, ...]\`.
+ * @notrelix/features-${featureName}/query — Query keys.
  */
 
+import { accountQueryKey } from '@notrelix/query';
+
 export const ${camelName}QueryKeys = {
-  all: ['${featureName}'] as const,
-  // detail: (id: string) => ['${featureName}', 'detail', id] as const,
+  all: accountQueryKey('${featureName}'),
 } as const;
 `,
 );
 
 // Create query keys test skeleton
 writeFileSync(
-  join(featureDir, "src/core/query/keys.test.ts"),
+  join(featureDir, "src/query/keys.unit.test.ts"),
   `import { describe, expect, it } from 'vitest';
 import { ${camelName}QueryKeys } from './keys';
 
 describe('${camelName}QueryKeys', () => {
   it('exposes a stable all-keys entry', () => {
-    expect(${camelName}QueryKeys.all).toEqual(['${featureName}']);
+    expect(${camelName}QueryKeys.all).toEqual(['account', '${featureName}']);
   });
 });
 `,

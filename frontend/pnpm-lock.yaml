@@ -171,6 +171,12 @@ importers:
 
   apps/mobile:
     dependencies:
+      "@notrelix/automation-mobile":
+        specifier: workspace:*
+        version: link:../../packages/product/automation/mobile
+      "@notrelix/docs-mobile":
+        specifier: workspace:*
+        version: link:../../packages/product/docs/mobile
       "@notrelix/query":
         specifier: workspace:*
         version: link:../../packages/foundation/query
@@ -186,6 +192,9 @@ importers:
       "@notrelix/work-management-mobile":
         specifier: workspace:*
         version: link:../../packages/product/work-management/mobile
+      "@tanstack/react-query":
+        specifier: "catalog:"
+        version: 5.101.2(react@19.2.7)
       expo:
         specifier: latest
         version: 57.0.11(@babel/core@7.29.7)(react-dom@19.2.7(react@19.2.7))(react-native@0.86.2(@types/react@19.2.17)(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
@@ -229,9 +238,15 @@ importers:
       "@notrelix/features-auth":
         specifier: workspace:*
         version: link:../../packages/features/auth
+      "@notrelix/features-billing":
+        specifier: workspace:*
+        version: link:../../packages/features/billing
       "@notrelix/features-notifications":
         specifier: workspace:*
         version: link:../../packages/features/notifications
+      "@notrelix/features-search":
+        specifier: workspace:*
+        version: link:../../packages/features/search
       "@notrelix/features-workspace":
         specifier: workspace:*
         version: link:../../packages/features/workspace
@@ -452,9 +467,15 @@ importers:
       "@notrelix/query":
         specifier: workspace:*
         version: link:../../foundation/query
+      "@notrelix/ui-web":
+        specifier: workspace:*
+        version: link:../../ui/web
       "@tanstack/react-query":
         specifier: "catalog:"
         version: 5.101.2(react@19.2.7)
+      lucide-react:
+        specifier: "catalog:"
+        version: 0.469.0(react@19.2.7)
     devDependencies:
       "@types/react":
         specifier: ^19.0.0
@@ -619,6 +640,12 @@ importers:
       "@notrelix/query":
         specifier: workspace:*
         version: link:../../foundation/query
+      "@notrelix/ui-web":
+        specifier: workspace:*
+        version: link:../../ui/web
+      lucide-react:
+        specifier: "catalog:"
+        version: 0.469.0(react@19.2.7)
     devDependencies:
       "@types/react":
         specifier: ^19.0.0
@@ -788,7 +815,19 @@ importers:
       "@notrelix/ui-mobile":
         specifier: workspace:*
         version: link:../../../ui/mobile
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
+      react-native:
+        specifier: latest
+        version: 0.86.2(@types/react@19.2.17)(react@19.2.7)
     devDependencies:
+      "@types/react":
+        specifier: ^19.0.0
+        version: 19.2.17
+      "@types/react-native":
+        specifier: ^0.73.0
+        version: 0.73.0(@types/react@19.2.17)(react@19.2.7)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -892,7 +931,19 @@ importers:
       "@notrelix/ui-mobile":
         specifier: workspace:*
         version: link:../../../ui/mobile
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
+      react-native:
+        specifier: latest
+        version: 0.86.2(@types/react@19.2.17)(react@19.2.7)
     devDependencies:
+      "@types/react":
+        specifier: ^19.0.0
+        version: 19.2.17
+      "@types/react-native":
+        specifier: ^0.73.0
+        version: 0.73.0(@types/react@19.2.17)(react@19.2.7)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -902,6 +953,9 @@ importers:
       "@notrelix/docs-core":
         specifier: workspace:*
         version: link:../core
+      "@notrelix/query":
+        specifier: workspace:*
+        version: link:../../../foundation/query
       "@tanstack/react-query":
         specifier: ^5.95.2
         version: 5.101.2(react@19.2.7)
@@ -1126,10 +1180,34 @@ importers:
 
   packages/runtimes/mobile:
     dependencies:
+      "@notrelix/contracts":
+        specifier: workspace:*
+        version: link:../../foundation/contracts
+      "@notrelix/kernel":
+        specifier: workspace:*
+        version: link:../../foundation/kernel
+      "@notrelix/observability":
+        specifier: workspace:*
+        version: link:../../foundation/observability
       "@notrelix/platform":
         specifier: workspace:*
         version: link:../../foundation/platform
+      "@notrelix/query":
+        specifier: workspace:*
+        version: link:../../foundation/query
+      "@notrelix/realtime":
+        specifier: workspace:*
+        version: link:../../foundation/realtime
+      "@tanstack/react-query":
+        specifier: "catalog:"
+        version: 5.101.2(react@19.2.7)
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
     devDependencies:
+      "@types/react":
+        specifier: ^19.0.0
+        version: 19.2.17
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -1189,7 +1267,19 @@ importers:
       "@notrelix/ui-tokens":
         specifier: workspace:*
         version: link:../tokens
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
+      react-native:
+        specifier: latest
+        version: 0.86.2(@types/react@19.2.17)(react@19.2.7)
     devDependencies:
+      "@types/react":
+        specifier: ^19.0.0
+        version: 19.2.17
+      "@types/react-native":
+        specifier: ^0.73.0
+        version: 0.73.0(@types/react@19.2.17)(react@19.2.7)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -6256,6 +6346,13 @@ packages:
       }
     peerDependencies:
       "@types/react": ^19.2.0
+
+  "@types/react-native@0.73.0":
+    resolution:
+      {
+        integrity: sha512-6ZRPQrYM72qYKGWidEttRe6M5DZBEV5F+MHMHqd4TTYx0tfkcdrUFGdef6CCxY0jXU7wldvd/zA/b0A/kTeJmA==,
+      }
+    deprecated: This is a stub types definition. react-native provides its own type definitions, so you do not need this installed.
 
   "@types/react@19.2.17":
     resolution:
@@ -16899,6 +16996,19 @@ snapshots:
   "@types/react-dom@19.2.3(@types/react@19.2.17)":
     dependencies:
       "@types/react": 19.2.17
+
+  "@types/react-native@0.73.0(@types/react@19.2.17)(react@19.2.7)":
+    dependencies:
+      react-native: 0.86.2(@types/react@19.2.17)(react@19.2.7)
+    transitivePeerDependencies:
+      - "@react-native-community/cli"
+      - "@react-native/jest-preset"
+      - "@react-native/metro-config"
+      - "@types/react"
+      - bufferutil
+      - react
+      - supports-color
+      - utf-8-validate
 
   "@types/react@19.2.17":
     dependencies:

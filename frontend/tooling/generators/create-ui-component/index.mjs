@@ -142,11 +142,11 @@ export const Default: Story = {
   console.log(`Barrel export updated: ${indexPath}`);
 } else {
   const componentDir = join(rootDir, "packages/ui/mobile/src/components");
-  const componentFile = join(componentDir, `${componentName}.ts`);
+  const componentFile = join(componentDir, `${componentName}.tsx`);
   const testFile = join(
     rootDir,
     "packages/ui/mobile/src/__tests__",
-    `${componentName}.test.ts`,
+    `${componentName}.mobile.test.ts`,
   );
   const indexPath = join(rootDir, "packages/ui/mobile/src/index.ts");
 
@@ -162,29 +162,44 @@ export const Default: Story = {
 
   writeFileSync(
     componentFile,
-    `/**
- * @notrelix/ui-mobile — ${PascalName} mobile primitive contract.
- *
- * Platform-independent contract; the web DOM implementation lives in
- * @notrelix/ui-web.
- */
+    `import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 
 export interface ${PascalName}Props {
-  readonly id: string;
+  readonly id?: string;
   readonly title?: string;
 }
+
+export function ${PascalName}({ title }: ${PascalName}Props): React.ReactNode {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>{title ?? "${PascalName}"}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 12,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 8,
+  },
+  text: {
+    fontSize: 14,
+    color: "#111827",
+  },
+});
 `,
   );
 
   writeFileSync(
     testFile,
     `import { describe, expect, it } from 'vitest';
-import type { ${PascalName}Props } from '../components/${componentName}';
+import { ${PascalName} } from '../components/${componentName}';
 
-describe('${PascalName}Props contract', () => {
-  it('is typed and exportable', () => {
-    const props: ${PascalName}Props = { id: 'x' };
-    expect(props.id).toBe('x');
+describe('${PascalName} component', () => {
+  it('is a renderable React component function', () => {
+    expect(typeof ${PascalName}).toBe('function');
   });
 });
 `,
@@ -192,10 +207,10 @@ describe('${PascalName}Props contract', () => {
 
   appendExport(
     indexPath,
-    `export type { ${PascalName}Props } from "./components/${componentName}"`,
+    `export { ${PascalName}, type ${PascalName}Props } from "./components/${componentName}"`,
   );
 
-  console.log(`\nCreated mobile contract at: ${componentFile}`);
-  console.log(`Unit test: ${testFile}`);
+  console.log(`\nCreated mobile component at: ${componentFile}`);
+  console.log(`Mobile test: ${testFile}`);
   console.log(`Barrel export updated: ${indexPath}`);
 }
