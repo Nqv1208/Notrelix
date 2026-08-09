@@ -6,13 +6,13 @@ export {
   ARCHITECTURE_MANIFEST,
   ARCHITECTURE_POLICY_BY_PACKAGE,
   validateArchitectureManifest,
-} from './architecture-manifest'
+} from "./architecture-manifest";
 export type {
   ArchitectureLayer,
   ArchitecturePackagePolicy,
   FreezeScope,
   ManifestViolation,
   ManifestViolationCode,
-} from './architecture-manifest'
-export { ALLOWED_IMPORTS } from './allowed-imports'
-export { FORBIDDEN_IMPORTS } from './forbidden-imports'
+} from "./architecture-manifest";
+export { ALLOWED_IMPORTS } from "./allowed-imports";
+export { FORBIDDEN_IMPORTS } from "./forbidden-imports";

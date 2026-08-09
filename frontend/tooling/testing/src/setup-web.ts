@@ -1,6 +1,6 @@
-import { cleanup } from '@testing-library/react';
-import { afterEach, vi } from 'vitest';
-import '@testing-library/jest-dom/vitest';
+import { cleanup } from "@testing-library/react";
+import { afterEach, vi } from "vitest";
+import "@testing-library/jest-dom/vitest";
 
 // Automatically cleanup React Testing Library and restore mocks after each test
 afterEach(() => {
@@ -9,8 +9,8 @@ afterEach(() => {
 });
 
 // Stub window.matchMedia for JSDOM
-if (typeof window !== 'undefined') {
-  Object.defineProperty(window, 'matchMedia', {
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: (query: string) => ({
       matches: false,

@@ -641,11 +641,7 @@ export function RouteComponent() {
   const { view } = Route.useSearch();
 
   return (
-    <BoardScreen
-      workspaceId={workspaceId}
-      boardId={boardId}
-      viewId={view}
-    />
+    <BoardScreen workspaceId={workspaceId} boardId={boardId} viewId={view} />
   );
 }
 ```
@@ -705,13 +701,10 @@ import react from "@vitejs/plugin-react";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
 export default defineConfig({
-  plugins: [
-    TanStackRouterVite(),
-    react()
-  ],
+  plugins: [TanStackRouterVite(), react()],
   server: {
-    port: 5173
-  }
+    port: 5173,
+  },
 });
 ```
 
@@ -2013,7 +2006,7 @@ Correct:
 
 ```ts
 createNotrelixClient({
-  baseUrl: appConfig.apiUrl
+  baseUrl: appConfig.apiUrl,
 });
 ```
 

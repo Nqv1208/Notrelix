@@ -1,16 +1,16 @@
-import { defineConfig } from 'vitest/config';
-import path from 'path';
+import { defineConfig } from "vitest/config";
+import path from "path";
 
 export default defineConfig({
-  root: path.resolve(__dirname, '../../'),
+  root: path.resolve(__dirname, "../../"),
   test: {
-    name: 'generators',
+    name: "generators",
     globals: true,
-    environment: 'node',
+    environment: "node",
     include: [
-      'tooling/generators/**/__tests__/**/*.test.{ts,tsx}',
-      'tooling/generators/**/*.test.{ts,tsx}',
+      "tooling/generators/**/__tests__/**/*.test.{ts,tsx}",
+      "tooling/generators/**/*.test.{ts,tsx}",
     ],
-    exclude: ['**/node_modules/**', '**/dist/**'],
+    exclude: ["**/node_modules/**", "**/dist/**"],
   },
 });

@@ -4,5 +4,10 @@
     "jsx": "react-jsx",
     "types": ["node"]
   },
-  "include": [".storybook/**/*.ts", ".storybook/**/*.tsx", "stories/**/*.tsx", "postcss.config.cjs"]
+  "include": [
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
+    "stories/**/*.tsx",
+    "postcss.config.cjs"
+  ]
 }

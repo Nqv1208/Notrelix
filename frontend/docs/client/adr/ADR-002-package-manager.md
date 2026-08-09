@@ -6,6 +6,7 @@
 ## Context
 
 The monorepo needs a package manager that supports:
+
 - Workspace protocol (`workspace:*`)
 - Strict dependency boundaries
 - Frozen lockfile for CI

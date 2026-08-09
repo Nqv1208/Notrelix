@@ -20,12 +20,21 @@ function createFixtureRoot() {
   return currentRoot;
 }
 
-function writePackage(root: string, packagePath: string, packageName: string, source: string) {
+function writePackage(
+  root: string,
+  packagePath: string,
+  packageName: string,
+  source: string,
+) {
   const dir = join(root, packagePath);
   mkdirSync(join(dir, "src"), { recursive: true });
   writeFileSync(
     join(dir, "package.json"),
-    JSON.stringify({ name: packageName, version: "0.0.0", type: "module" }, null, 2),
+    JSON.stringify(
+      { name: packageName, version: "0.0.0", type: "module" },
+      null,
+      2,
+    ),
   );
   writeFileSync(join(dir, "src", "index.ts"), source);
 }

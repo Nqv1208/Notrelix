@@ -37,6 +37,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 ## Wave F0: Governance & Architecture Contracts
 
 ### Phase F0.1: Architectural Decision Records (ADRs) & Standards
+
 - **Objective**: Establish binding architecture contracts for Runtime Composition, State Ownership, Realtime, and Package Structure.
 - **Tasks**:
   1. Author ADR-001: Runtime Composition Root & Dependency Injection.
@@ -46,6 +47,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: All ADRs approved; CODEOWNERS rules assigned to foundation packages.
 
 ### Phase F0.2: Static Boundary Checks & Architecture Tests
+
 - **Objective**: Automated enforcement of package boundary rules via `@notrelix/dependency-rules`.
 - **Tasks**:
   1. Update `check.mjs` in `@notrelix/dependency-rules` with strict rules:
@@ -59,6 +61,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 ## Wave F1: CI, Environment & Production Builds
 
 ### Phase F1.1: CI Pipeline Hardening
+
 - **Objective**: Ensure all CI scripts run deterministically without skipping jobs or failing on path filters.
 - **Tasks**:
   1. Synchronize `.github/workflows/fe-ci.yml` path triggers with repo structure.
@@ -67,6 +70,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: CI pipeline passes 100% on `main` and `develop` branches.
 
 ### Phase F1.2: Single Source of Truth Environment Parsing
+
 - **Objective**: Eliminate duplicate fallback ports and unify env variables under `VITE_WS_URL`.
 - **Tasks**:
   1. Standardize `@notrelix/kernel` `parseEnv()` schema and enforce fail-fast validation in `production` mode.
@@ -78,6 +82,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 ## Wave F2: Legacy API Migration & Singleton Eviction
 
 ### Phase F2.1: Auth & Account Feature Migration
+
 - **Objective**: Migrate Auth forms and Account screens from global `api` singleton to `useAppRuntime()`.
 - **Tasks**:
   1. Refactor `routes/sign-in.tsx`, `routes/sign-up.tsx`, and `routes/forgot-password.tsx` to inject API client from `useAppRuntime()`.
@@ -85,6 +90,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: Zero references to global `api` in Auth & Account routes.
 
 ### Phase F2.2: App Shell & Workspace Shell Migration
+
 - **Objective**: Migrate Workspace Switcher, Sidebar, and Topbar components to injected runtime client.
 - **Tasks**:
   1. Refactor `shell/sidebar/workspace-switcher.tsx` and `shell/sidebar/sidebar.tsx`.
@@ -92,6 +98,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: Workspace Shell operates entirely via `useAppRuntime()`.
 
 ### Phase F2.3: Workspace Routes & Member Settings Migration
+
 - **Objective**: Migrate Dashboard, Member list, Settings, and Invite routes.
 - **Tasks**:
   1. Refactor `routes/workspaces/$workspaceId/dashboard.tsx`, `members.tsx`, `settings.tsx`.
@@ -99,6 +106,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: All workspace-scoped routes use injected `runtime.api`.
 
 ### Phase F2.4: Total Eviction & Singleton Deletion
+
 - **Objective**: Completely purge legacy `api`, `configureApi`, and `activeBaseUrl` from `@notrelix/contracts`.
 - **Tasks**:
   1. Delete `configureApi` and global `api` export from `packages/foundation/contracts/src/client/api-client.ts` and `index.ts`.
@@ -110,6 +118,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 ## Wave F3: Query, Mutation & Realtime Production Hardening
 
 ### Phase F3.1: Domain-Owned Query Key Namespaces
+
 - **Objective**: Move all domain query keys out of `@notrelix/query` into domain feature packages.
 - **Tasks**:
   1. Maintain `wmQueryKeys` & `queryKeys` in `@notrelix/work-management-core`.
@@ -118,6 +127,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: Zero domain query keys inside `@notrelix/query`.
 
 ### Phase F3.2: Multi-Query Optimistic Command Engine
+
 - **Objective**: Enable multi-key snapshot rollback and eviction of non-existent cache entries.
 - **Tasks**:
   1. Update `executeOptimisticCommand` in `@notrelix/query` to snapshot `queryKeys: QueryKey[]`.
@@ -126,6 +136,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: 100% test coverage on optimistic rollback scenarios.
 
 ### Phase F3.3: Realtime Transport & AppRuntime Integration
+
 - **Objective**: Finalize WebSocket transport state machine, manual-close flag, heartbeat, and deduplication.
 - **Tasks**:
   1. Harden `RealtimeClient` in `@notrelix/realtime` with `isManualClose`, 30s ping/pong heartbeat, exponential backoff + jitter.
@@ -138,6 +149,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 ## Wave F4: App Shell, Routing, UI Foundation & E2E Verification
 
 ### Phase F4.1: Routing Hierarchy & Search Schema Protection
+
 - **Objective**: Enforce typed URL search parameters and thin route handlers.
 - **Tasks**:
   1. Export `boardSearchSchema` from `apps/web/src/router.tsx`.
@@ -145,6 +157,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: Board search schema unit tests guard production router schema.
 
 ### Phase F4.2: UI Foundation Primitives Audit
+
 - **Objective**: Finalize core UI primitives in `@notrelix/ui-web`.
 - **Tasks**:
   1. Audit Button, Input, Select, Dialog, Drawer, DropdownMenu, Toast, Skeleton, Avatar, Badge, and Tabs.
@@ -152,9 +165,10 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: UI components exported from `@notrelix/ui-web` with zero ad-hoc duplicates in apps.
 
 ### Phase F4.3: Production Build & E2E Smoke Testing
+
 - **Objective**: Verify end-to-end user workflows against production build.
 - **Tasks**:
-  1. Add Playwright E2E suite in `apps/web/e2e/`:  
+  1. Add Playwright E2E suite in `apps/web/e2e/`:
      - Sign in -> Select Workspace -> Board Navigation -> Workspace Switch -> Sign Out.
   2. Run `pnpm build` for `apps/web` and `apps/marketing`.
 - **Exit Criteria**: E2E smoke tests pass on production build.
@@ -164,6 +178,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 ## Wave F5: Release Candidate & Platform Freeze Gate
 
 ### Phase F5.1: Final Security & Observability Audit
+
 - **Objective**: Verify production telemetry redaction and security headers.
 - **Tasks**:
   1. Verify `GlobalErrorBoundary` redacts error details in `import.meta.env.PROD`.
@@ -171,6 +186,7 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Exit Criteria**: Production build emits zero raw error trace to DOM.
 
 ### Phase F5.2: Platform Freeze Audit & Git Tagging
+
 - **Objective**: Validate all 16 freeze criteria and tag release candidate.
 - **Tasks**:
   1. Execute `pnpm validate` across all 38 workspace packages.
@@ -230,12 +246,14 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 ## Detailed Wave Breakdown for Product Modules
 
 ### Wave 1: Identity, Tenancy & Shell
+
 - **Phase 1.1: Authentication**: Complete session bootstrap, token refresh failure handling, multi-tab logout, and typed route guards.
 - **Phase 1.2: Account**: User profile, avatar upload progress, security settings, theme/appearance persistence.
 - **Phase 1.3: Workspace**: Workspace creation, member management, invitation link processing, workspace-scoped cache eviction on switch.
 - **Phase 1.4: Governance**: Permission matrix integration (`abilities.can('board.create')`), workspace role assignments.
 
 ### Wave 2: Work Management (Core Slice WM1 – WM5)
+
 - **Phase 2.1 (WM1 - Board Foundation)**: Board CRUD, table view layout, group management, item creation.
 - **Phase 2.2 (WM2 - Dynamic Fields)**: Schema field definitions (Text, Number, Date, Status, Person), field editor & renderer registry.
 - **Phase 2.3 (WM3 - Views)**: Table, Kanban, Calendar, and Timeline views reading from unified normalized state (`@notrelix/work-management-state`).
@@ -243,15 +261,18 @@ Wave 5 (Ecosystem: Automation / Integrations / Billing Entitlements)
 - **Phase 2.5 (WM5 - Realtime Collaboration)**: Realtime item position change, field value sync, cell locking/presence.
 
 ### Wave 3: Documents & Collaboration
+
 - **Phase 3.1: Documents**: Page tree, block-based document editor, autosave debounce, version history.
 - **Phase 3.2: Collaboration**: Comment threads on items/docs, `@mentions`, emoji reactions.
 - **Phase 3.3: Notifications**: In-app notification center, unread count badge, realtime event push.
 - **Phase 3.4: Activity**: Workspace audit feed, entity activity log.
 
 ### Wave 4: Search & Discovery
+
 - **Phase 4.1: Global Search**: Command palette (`Cmd+K`), typed result resolver (Board, Item, Doc, Member), permission-aware filtering.
 
 ### Wave 5: Ecosystem & Commercial
+
 - **Phase 5.1: Automation**: Visual rule builder, trigger/condition/action registry, execution log history.
 - **Phase 5.2: Integrations**: Integration catalog, OAuth callback handler, sync status dashboard.
 - **Phase 5.3: Billing**: Plan entitlement enforcement, seat usage limit warnings, billing portal checkout redirect.

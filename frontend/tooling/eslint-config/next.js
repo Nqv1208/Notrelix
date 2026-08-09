@@ -9,6 +9,6 @@ export default [
   {
     rules: {
       // Next.js specific rules will be added here
-    }
-  }
+    },
+  },
 ];

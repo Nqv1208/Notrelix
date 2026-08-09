@@ -1,11 +1,12 @@
 # ADR-005: Auth Session Model
 
 **Date:** 2026-07-09  
-**Status:** Accepted  
+**Status:** Accepted
 
 ## Context
 
-The Notrelix client app must authenticate requests to the ASP.NET Core backend. 
+The Notrelix client app must authenticate requests to the ASP.NET Core backend.
+
 - The backend utilizes a secure **cookie-based session** authentication mechanism (HttpOnly cookies) rather than custom Bearer tokens managed in JavaScript.
 - Requests require Cross-Site Request Forgery (CSRF) protection via `X-XSRF-TOKEN` or `X-CSRF-TOKEN` headers for unsafe HTTP methods (POST, PUT, PATCH, DELETE).
 - When a session expires, a 401 response initiates a token refresh flow via `POST /auth/refresh`.

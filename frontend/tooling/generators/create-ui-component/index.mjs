@@ -15,59 +15,67 @@
  * Usage: node index.mjs <component-name> [--target web|mobile]
  */
 
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = process.env.GENERATOR_ROOT ?? join(__dirname, '../../../..');
+const rootDir = process.env.GENERATOR_ROOT ?? join(__dirname, "../../../..");
 
 const args = process.argv.slice(2);
-const componentName = args.find((a) => !a.startsWith('--'));
-const targetIndex = args.indexOf('--target');
-const target = targetIndex !== -1 ? args[targetIndex + 1] : 'web';
+const componentName = args.find((a) => !a.startsWith("--"));
+const targetIndex = args.indexOf("--target");
+const target = targetIndex !== -1 ? args[targetIndex + 1] : "web";
 
 if (!componentName) {
-  console.error('Usage: node index.mjs <component-name> [--target web|mobile]');
-  console.error('Example: node index.mjs alert --target web');
+  console.error("Usage: node index.mjs <component-name> [--target web|mobile]");
+  console.error("Example: node index.mjs alert --target web");
   process.exit(1);
 }
 
-if (!['web', 'mobile'].includes(target)) {
+if (!["web", "mobile"].includes(target)) {
   console.error(`Invalid --target "${target}"; expected web or mobile`);
   process.exit(1);
 }
 
 const PascalName = componentName
-  .split('-')
+  .split("-")
   .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-  .join('');
+  .join("");
 console.log(`Creating UI component: ${componentName} (target: ${target})`);
 
 function appendExport(indexPath, exportLine) {
-  const source = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : '';
+  const source = existsSync(indexPath) ? readFileSync(indexPath, "utf8") : "";
   if (source.includes(exportLine)) return;
-  const updated = source.replace(/\s*$/, '\n') + exportLine + '\n';
+  const updated = source.replace(/\s*$/, "\n") + exportLine + "\n";
   writeFileSync(indexPath, updated);
 }
 
-if (target === 'web') {
-  const componentDir = join(rootDir, 'packages/ui/web/src/components/ui');
+if (target === "web") {
+  const componentDir = join(rootDir, "packages/ui/web/src/components/ui");
   const componentFile = join(componentDir, `${componentName}.tsx`);
-  const testFile = join(componentDir, '__tests__', `${componentName}.test.tsx`);
-  const storyFile = join(rootDir, 'tooling/storybook/web/stories', `${componentName}.stories.tsx`);
-  const indexPath = join(rootDir, 'packages/ui/web/src/index.ts');
+  const testFile = join(componentDir, "__tests__", `${componentName}.test.tsx`);
+  const storyFile = join(
+    rootDir,
+    "tooling/storybook/web/stories",
+    `${componentName}.stories.tsx`,
+  );
+  const indexPath = join(rootDir, "packages/ui/web/src/index.ts");
 
   if (existsSync(componentFile)) {
-    console.error(`Component "${componentName}" already exists at ${componentFile}`);
+    console.error(
+      `Component "${componentName}" already exists at ${componentFile}`,
+    );
     process.exit(1);
   }
 
   mkdirSync(componentDir, { recursive: true });
-  mkdirSync(join(componentDir, '__tests__'), { recursive: true });
+  mkdirSync(join(componentDir, "__tests__"), { recursive: true });
   mkdirSync(dirname(storyFile), { recursive: true });
 
-  writeFileSync(componentFile, `import * as React from "react"
+  writeFileSync(
+    componentFile,
+    `import * as React from "react"
 import { cn } from "~/lib/cn"
 
 const ${PascalName} = React.forwardRef<
@@ -83,9 +91,12 @@ const ${PascalName} = React.forwardRef<
 ${PascalName}.displayName = "${PascalName}"
 
 export { ${PascalName} }
-`);
+`,
+  );
 
-  writeFileSync(testFile, `import { describe, expect, it } from 'vitest';
+  writeFileSync(
+    testFile,
+    `import { describe, expect, it } from 'vitest';
 import { ${PascalName} } from '../${componentName}';
 
 describe('${PascalName}', () => {
@@ -97,9 +108,12 @@ describe('${PascalName}', () => {
     expect(typeof ${PascalName}).toBe('object');
   });
 });
-`);
+`,
+  );
 
-  writeFileSync(storyFile, `import type { Meta, StoryObj } from '@storybook/react';
+  writeFileSync(
+    storyFile,
+    `import type { Meta, StoryObj } from '@storybook/react';
 import { ${PascalName} } from '@notrelix/ui-web';
 
 const meta = {
@@ -114,29 +128,41 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {},
 };
-`);
+`,
+  );
 
-  appendExport(indexPath, `export { ${PascalName} } from "./components/ui/${componentName}"`);
+  appendExport(
+    indexPath,
+    `export { ${PascalName} } from "./components/ui/${componentName}"`,
+  );
 
   console.log(`\nCreated component at: ${componentFile}`);
   console.log(`Unit test: ${testFile}`);
   console.log(`Storybook story: ${storyFile}`);
   console.log(`Barrel export updated: ${indexPath}`);
 } else {
-  const componentDir = join(rootDir, 'packages/ui/mobile/src/components');
+  const componentDir = join(rootDir, "packages/ui/mobile/src/components");
   const componentFile = join(componentDir, `${componentName}.ts`);
-  const testFile = join(rootDir, 'packages/ui/mobile/src/__tests__', `${componentName}.test.ts`);
-  const indexPath = join(rootDir, 'packages/ui/mobile/src/index.ts');
+  const testFile = join(
+    rootDir,
+    "packages/ui/mobile/src/__tests__",
+    `${componentName}.test.ts`,
+  );
+  const indexPath = join(rootDir, "packages/ui/mobile/src/index.ts");
 
   if (existsSync(componentFile)) {
-    console.error(`Component "${componentName}" already exists at ${componentFile}`);
+    console.error(
+      `Component "${componentName}" already exists at ${componentFile}`,
+    );
     process.exit(1);
   }
 
   mkdirSync(componentDir, { recursive: true });
   mkdirSync(dirname(testFile), { recursive: true });
 
-  writeFileSync(componentFile, `/**
+  writeFileSync(
+    componentFile,
+    `/**
  * @notrelix/ui-mobile — ${PascalName} mobile primitive contract.
  *
  * Platform-independent contract; the web DOM implementation lives in
@@ -147,9 +173,12 @@ export interface ${PascalName}Props {
   readonly id: string;
   readonly title?: string;
 }
-`);
+`,
+  );
 
-  writeFileSync(testFile, `import { describe, expect, it } from 'vitest';
+  writeFileSync(
+    testFile,
+    `import { describe, expect, it } from 'vitest';
 import type { ${PascalName}Props } from '../components/${componentName}';
 
 describe('${PascalName}Props contract', () => {
@@ -158,9 +187,13 @@ describe('${PascalName}Props contract', () => {
     expect(props.id).toBe('x');
   });
 });
-`);
+`,
+  );
 
-  appendExport(indexPath, `export type { ${PascalName}Props } from "./components/${componentName}"`);
+  appendExport(
+    indexPath,
+    `export type { ${PascalName}Props } from "./components/${componentName}"`,
+  );
 
   console.log(`\nCreated mobile contract at: ${componentFile}`);
   console.log(`Unit test: ${testFile}`);

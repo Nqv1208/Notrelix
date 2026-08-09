@@ -22,42 +22,46 @@
  * Usage: node index.mjs <feature-name> [--ui web|mobile|both] [--realtime]
  */
 
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   registerManifestEntries,
   refreshArchitectureDocs,
   FEATURES_SECTION_ANCHOR,
-} from '../lib/workspace.mjs';
+} from "../lib/workspace.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = process.env.GENERATOR_ROOT ?? join(__dirname, '../../../..');
+const rootDir = process.env.GENERATOR_ROOT ?? join(__dirname, "../../../..");
 
 const args = process.argv.slice(2);
-const featureName = args.find((a) => !a.startsWith('--'));
-const uiFlagIndex = args.indexOf('--ui');
+const featureName = args.find((a) => !a.startsWith("--"));
+const uiFlagIndex = args.indexOf("--ui");
 const uiTarget = uiFlagIndex !== -1 ? args[uiFlagIndex + 1] : undefined;
-const realtime = args.includes('--realtime');
+const realtime = args.includes("--realtime");
 
 if (!featureName) {
-  console.error('Usage: node index.mjs <feature-name> [--ui web|mobile|both] [--realtime]');
-  console.error('Example: node index.mjs billing --ui both --realtime');
+  console.error(
+    "Usage: node index.mjs <feature-name> [--ui web|mobile|both] [--realtime]",
+  );
+  console.error("Example: node index.mjs billing --ui both --realtime");
   process.exit(1);
 }
 
-if (uiTarget !== undefined && !['web', 'mobile', 'both'].includes(uiTarget)) {
-  console.error(`Invalid --ui target "${uiTarget}"; expected web, mobile, or both`);
+if (uiTarget !== undefined && !["web", "mobile", "both"].includes(uiTarget)) {
+  console.error(
+    `Invalid --ui target "${uiTarget}"; expected web, mobile, or both`,
+  );
   process.exit(1);
 }
 
-const uiWeb = uiTarget === 'web' || uiTarget === 'both';
-const uiMobile = uiTarget === 'mobile' || uiTarget === 'both';
+const uiWeb = uiTarget === "web" || uiTarget === "both";
+const uiMobile = uiTarget === "mobile" || uiTarget === "both";
 
 const PascalName = featureName
-  .split('-')
+  .split("-")
   .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-  .join('');
+  .join("");
 const camelName = PascalName.charAt(0).toLowerCase() + PascalName.slice(1);
 
 const featureDir = join(rootDir, `packages/features/${featureName}`);
@@ -70,69 +74,89 @@ if (existsSync(featureDir)) {
 
 console.log(`Creating feature: ${featureName}`);
 console.log(`Package: ${pkgName}`);
-console.log(`Capabilities: kernel, contracts, platform, query${realtime ? ', realtime' : ''}`);
-console.log(`UI targets: ${uiWeb ? 'web' : ''}${uiWeb && uiMobile ? ' + ' : ''}${uiMobile ? 'mobile' : 'none'}`);
+console.log(
+  `Capabilities: kernel, contracts, platform, query${realtime ? ", realtime" : ""}`,
+);
+console.log(
+  `UI targets: ${uiWeb ? "web" : ""}${uiWeb && uiMobile ? " + " : ""}${uiMobile ? "mobile" : "none"}`,
+);
 
 // Create directories
-mkdirSync(join(featureDir, 'src/core/api'), { recursive: true });
-mkdirSync(join(featureDir, 'src/core/query'), { recursive: true });
-mkdirSync(join(featureDir, 'src/core/mutations'), { recursive: true });
-mkdirSync(join(featureDir, 'src/core/model'), { recursive: true });
-mkdirSync(join(featureDir, 'src/core/schemas'), { recursive: true });
-mkdirSync(join(featureDir, 'src/core/permissions'), { recursive: true });
-mkdirSync(join(featureDir, 'src/testing'), { recursive: true });
+mkdirSync(join(featureDir, "src/core/api"), { recursive: true });
+mkdirSync(join(featureDir, "src/core/query"), { recursive: true });
+mkdirSync(join(featureDir, "src/core/mutations"), { recursive: true });
+mkdirSync(join(featureDir, "src/core/model"), { recursive: true });
+mkdirSync(join(featureDir, "src/core/schemas"), { recursive: true });
+mkdirSync(join(featureDir, "src/core/permissions"), { recursive: true });
+mkdirSync(join(featureDir, "src/testing"), { recursive: true });
 if (uiWeb) {
-  mkdirSync(join(featureDir, 'src/web/screens'), { recursive: true });
-  mkdirSync(join(featureDir, 'src/web/components'), { recursive: true });
+  mkdirSync(join(featureDir, "src/web/screens"), { recursive: true });
+  mkdirSync(join(featureDir, "src/web/components"), { recursive: true });
 }
 if (uiMobile) {
-  mkdirSync(join(featureDir, 'src/mobile/screens'), { recursive: true });
-  mkdirSync(join(featureDir, 'src/mobile/components'), { recursive: true });
+  mkdirSync(join(featureDir, "src/mobile/screens"), { recursive: true });
+  mkdirSync(join(featureDir, "src/mobile/components"), { recursive: true });
 }
 
 const exportsMap = {
-  '.': './src/index.ts',
-  './core': './src/core/index.ts',
-  './core/query/keys': './src/core/query/keys.ts',
+  ".": "./src/index.ts",
+  "./core": "./src/core/index.ts",
+  "./core/query/keys": "./src/core/query/keys.ts",
 };
-if (uiWeb) exportsMap['./web'] = './src/web/index.ts';
-if (uiMobile) exportsMap['./mobile'] = './src/mobile/index.ts';
+if (uiWeb) exportsMap["./web"] = "./src/web/index.ts";
+if (uiMobile) exportsMap["./mobile"] = "./src/mobile/index.ts";
 
 // Create package.json
-writeFileSync(join(featureDir, 'package.json'), JSON.stringify({
-  name: pkgName,
-  version: '0.0.1',
-  private: true,
-  type: 'module',
-  main: './src/index.ts',
-  types: './src/index.ts',
-  exports: exportsMap,
-  scripts: {
-    typecheck: 'tsc --noEmit',
-    test: 'vitest run',
-    clean: 'rm -rf node_modules dist',
-  },
-  devDependencies: {
-    typescript: '^5.0.0',
-    vitest: 'catalog:',
-  },
-}, null, 2));
+writeFileSync(
+  join(featureDir, "package.json"),
+  JSON.stringify(
+    {
+      name: pkgName,
+      version: "0.0.1",
+      private: true,
+      type: "module",
+      main: "./src/index.ts",
+      types: "./src/index.ts",
+      exports: exportsMap,
+      scripts: {
+        typecheck: "tsc --noEmit",
+        test: "vitest run",
+        clean: "rm -rf node_modules dist",
+      },
+      devDependencies: {
+        typescript: "^5.0.0",
+        vitest: "catalog:",
+      },
+    },
+    null,
+    2,
+  ),
+);
 
 // Create tsconfig.json
-writeFileSync(join(featureDir, 'tsconfig.json'), JSON.stringify({
-  extends: '../../../tooling/tsconfig/react-library.json',
-  compilerOptions: {
-    outDir: './dist',
-    rootDir: './src',
-    baseUrl: '.',
-    paths: { '~/*': ['./src/*'] },
-  },
-  include: ['src/**/*'],
-  exclude: ['node_modules', 'dist'],
-}, null, 2));
+writeFileSync(
+  join(featureDir, "tsconfig.json"),
+  JSON.stringify(
+    {
+      extends: "../../../tooling/tsconfig/react-library.json",
+      compilerOptions: {
+        outDir: "./dist",
+        rootDir: "./src",
+        baseUrl: ".",
+        paths: { "~/*": ["./src/*"] },
+      },
+      include: ["src/**/*"],
+      exclude: ["node_modules", "dist"],
+    },
+    null,
+    2,
+  ),
+);
 
 // Create eslint.config.js (web-scoped feature: web boundary rules)
-writeFileSync(join(featureDir, 'eslint.config.js'), `import { defineConfig } from "eslint/config";
+writeFileSync(
+  join(featureDir, "eslint.config.js"),
+  `import { defineConfig } from "eslint/config";
 import webConfig from "@notrelix/eslint-config/web";
 
 export default defineConfig([
@@ -141,10 +165,13 @@ export default defineConfig([
   },
   ...webConfig,
 ]);
-`);
+`,
+);
 
 // Create index.ts
-writeFileSync(join(featureDir, 'src/index.ts'), `/**
+writeFileSync(
+  join(featureDir, "src/index.ts"),
+  `/**
  * @notrelix/features-${featureName} — ${featureName} feature package.
  */
 
@@ -156,10 +183,13 @@ export type {} from './core';
 
 // Mobile
 // export {} from './mobile';
-`);
+`,
+);
 
 // Create core index.ts
-writeFileSync(join(featureDir, 'src/core/index.ts'), `/**
+writeFileSync(
+  join(featureDir, "src/core/index.ts"),
+  `/**
  * @notrelix/features-${featureName}/core — Core types and API contracts.
  */
 
@@ -168,10 +198,13 @@ writeFileSync(join(featureDir, 'src/core/index.ts'), `/**
 
 // API
 // export { create${featureName.charAt(0).toUpperCase() + featureName.slice(1)}Api } from './api/${featureName}.api';
-`);
+`,
+);
 
 // Create query keys
-writeFileSync(join(featureDir, 'src/core/query/keys.ts'), `/**
+writeFileSync(
+  join(featureDir, "src/core/query/keys.ts"),
+  `/**
  * @notrelix/features-${featureName}/core/query — Query keys.
  *
  * Query key contract (05-FOUNDATION-PACKAGES-SPEC):
@@ -182,10 +215,13 @@ export const ${camelName}QueryKeys = {
   all: ['${featureName}'] as const,
   // detail: (id: string) => ['${featureName}', 'detail', id] as const,
 } as const;
-`);
+`,
+);
 
 // Create query keys test skeleton
-writeFileSync(join(featureDir, 'src/core/query/keys.test.ts'), `import { describe, expect, it } from 'vitest';
+writeFileSync(
+  join(featureDir, "src/core/query/keys.test.ts"),
+  `import { describe, expect, it } from 'vitest';
 import { ${camelName}QueryKeys } from './keys';
 
 describe('${camelName}QueryKeys', () => {
@@ -193,46 +229,59 @@ describe('${camelName}QueryKeys', () => {
     expect(${camelName}QueryKeys.all).toEqual(['${featureName}']);
   });
 });
-`);
+`,
+);
 
 // Create web index.ts
 if (uiWeb) {
-  writeFileSync(join(featureDir, 'src/web/index.ts'), `/**
+  writeFileSync(
+    join(featureDir, "src/web/index.ts"),
+    `/**
  * @notrelix/features-${featureName}/web — Web components and hooks.
  */
-`);
+`,
+  );
 }
 
 // Create mobile index.ts
 if (uiMobile) {
-  writeFileSync(join(featureDir, 'src/mobile/index.ts'), `/**
+  writeFileSync(
+    join(featureDir, "src/mobile/index.ts"),
+    `/**
  * @notrelix/features-${featureName}/mobile — Mobile components and screens.
  */
-`);
+`,
+  );
 }
 
 // Architecture manifest registration + docs refresh
 const entry = {
   packageName: pkgName,
   relativePath: `packages/features/${featureName}`,
-  layer: 'feature',
-  freezeScope: 'core-production',
+  layer: "feature",
+  freezeScope: "core-production",
   allowedInternalImports: realtime
     ? "['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web', '@notrelix/realtime']"
     : "['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']",
 };
 
-const registered = registerManifestEntries(rootDir, [entry], FEATURES_SECTION_ANCHOR);
+const registered = registerManifestEntries(
+  rootDir,
+  [entry],
+  FEATURES_SECTION_ANCHOR,
+);
 if (registered) {
   console.log(`Registered ${pkgName} in the architecture manifest`);
   const docsRefreshed = refreshArchitectureDocs(rootDir);
-  if (docsRefreshed) console.log('Refreshed generated package-boundary docs');
+  if (docsRefreshed) console.log("Refreshed generated package-boundary docs");
 } else {
-  console.log('Skipped manifest registration: no architecture manifest in this workspace');
+  console.log(
+    "Skipped manifest registration: no architecture manifest in this workspace",
+  );
 }
 
 console.log(`\nCreated feature package at: ${featureDir}`);
-console.log('\nNext steps:');
+console.log("\nNext steps:");
 console.log(`1. Add dependencies to ${featureDir}/package.json`);
 console.log(`2. Implement types in src/core/model/`);
 console.log(`3. Implement API in src/core/api/`);

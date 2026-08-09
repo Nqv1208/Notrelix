@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from "@storybook/react";
 import {
   Accordion,
   AccordionContent,
@@ -203,12 +203,12 @@ import {
   UpgradeRequiredState,
   ThemeProvider,
   useTheme,
-} from '@notrelix/ui-web';
+} from "@notrelix/ui-web";
 
 const meta: Meta = {
-  title: 'Foundation/Gallery',
+  title: "Foundation/Gallery",
   parameters: {
-    layout: 'fullscreen',
+    layout: "fullscreen",
   },
 };
 
@@ -219,11 +219,11 @@ function Row({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '12px',
-        alignItems: 'center',
-        marginBottom: '16px',
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "12px",
+        alignItems: "center",
+        marginBottom: "16px",
       }}
     >
       {children}
@@ -231,10 +231,18 @@ function Row({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section style={{ marginBottom: '40px' }}>
-      <h2 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 600 }}>{title}</h2>
+    <section style={{ marginBottom: "40px" }}>
+      <h2 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: 600 }}>
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -242,7 +250,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export const Primitives: Story = {
   render: () => (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: "24px" }}>
       <Section title="Button">
         <Row>
           <Button>Default</Button>
@@ -281,22 +289,30 @@ export const Primitives: Story = {
       <Section title="Alert">
         <Alert>
           <AlertTitle>Heads up</AlertTitle>
-          <AlertDescription>This is a default alert with a description.</AlertDescription>
+          <AlertDescription>
+            This is a default alert with a description.
+          </AlertDescription>
         </Alert>
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>Something went wrong with destructive styling.</AlertDescription>
+          <AlertDescription>
+            Something went wrong with destructive styling.
+          </AlertDescription>
         </Alert>
       </Section>
 
       <Section title="Card">
-        <Card style={{ width: '320px' }}>
+        <Card style={{ width: "320px" }}>
           <CardHeader>
             <CardTitle>Project Alpha</CardTitle>
-            <CardDescription>Track the alpha release milestones.</CardDescription>
+            <CardDescription>
+              Track the alpha release milestones.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p style={{ margin: 0, fontSize: '14px' }}>3 items · 2 in progress · 1 done</p>
+            <p style={{ margin: 0, fontSize: "14px" }}>
+              3 items · 2 in progress · 1 done
+            </p>
           </CardContent>
         </Card>
       </Section>
@@ -304,24 +320,37 @@ export const Primitives: Story = {
       <Section title="Input & Textarea">
         <Row>
           <Label htmlFor="input-basic">Email</Label>
-          <Input id="input-basic" type="email" placeholder="name@example.com" style={{ maxWidth: '280px' }} />
-          <Input disabled placeholder="Disabled input" style={{ maxWidth: '200px' }} />
+          <Input
+            id="input-basic"
+            type="email"
+            placeholder="name@example.com"
+            style={{ maxWidth: "280px" }}
+          />
+          <Input
+            disabled
+            placeholder="Disabled input"
+            style={{ maxWidth: "200px" }}
+          />
         </Row>
         <Row>
           <Label htmlFor="textarea-basic">Notes</Label>
-          <Textarea id="textarea-basic" placeholder="Write a note…" style={{ maxWidth: '360px' }} />
+          <Textarea
+            id="textarea-basic"
+            placeholder="Write a note…"
+            style={{ maxWidth: "360px" }}
+          />
         </Row>
       </Section>
 
       <Section title="Input Group">
         <Row>
-          <InputGroup style={{ maxWidth: '320px' }}>
+          <InputGroup style={{ maxWidth: "320px" }}>
             <InputGroupAddon>@</InputGroupAddon>
             <InputGroupInput placeholder="username" />
           </InputGroup>
         </Row>
         <Row>
-          <InputGroup style={{ maxWidth: '320px' }}>
+          <InputGroup style={{ maxWidth: "320px" }}>
             <InputGroupText>Amount</InputGroupText>
             <InputGroupInput placeholder="0.00" />
           </InputGroup>
@@ -349,12 +378,18 @@ export const Primitives: Story = {
 
       <Section title="Checkbox & Switch">
         <Row>
-          <Label htmlFor="checkbox-basic" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Label
+            htmlFor="checkbox-basic"
+            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+          >
             <Checkbox id="checkbox-basic" defaultChecked /> Accept terms
           </Label>
         </Row>
         <Row>
-          <Label htmlFor="switch-basic" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Label
+            htmlFor="switch-basic"
+            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+          >
             <Switch id="switch-basic" defaultChecked /> Notifications
           </Label>
         </Row>
@@ -362,18 +397,33 @@ export const Primitives: Story = {
 
       <Section title="Radio Group">
         <fieldset
-          style={{ border: 'none', margin: 0, padding: 0, display: 'flex', gap: '12px' }}
+          style={{
+            border: "none",
+            margin: 0,
+            padding: 0,
+            display: "flex",
+            gap: "12px",
+          }}
         >
-          <legend style={{ marginBottom: '8px' }}>Priority</legend>
+          <legend style={{ marginBottom: "8px" }}>Priority</legend>
           <RadioGroup defaultValue="medium">
             <Row>
-              <Label htmlFor="radio-low" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Label
+                htmlFor="radio-low"
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <RadioGroupItem value="low" id="radio-low" /> Low
               </Label>
-              <Label htmlFor="radio-medium" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Label
+                htmlFor="radio-medium"
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <RadioGroupItem value="medium" id="radio-medium" /> Medium
               </Label>
-              <Label htmlFor="radio-high" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Label
+                htmlFor="radio-high"
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <RadioGroupItem value="high" id="radio-high" /> High
               </Label>
             </Row>
@@ -385,7 +435,7 @@ export const Primitives: Story = {
         <Row>
           <Label htmlFor="select-basic">Status</Label>
           <Select defaultValue="todo">
-            <SelectTrigger id="select-basic" style={{ minWidth: '200px' }}>
+            <SelectTrigger id="select-basic" style={{ minWidth: "200px" }}>
               <SelectValue placeholder="Pick a status" />
             </SelectTrigger>
             <SelectContent>
@@ -399,13 +449,21 @@ export const Primitives: Story = {
 
       <Section title="Slider & Progress">
         <Row>
-          <Slider aria-label="Volume" defaultValue={[64]} style={{ width: '240px' }} />
-          <Progress aria-label="Upload progress" value={64} style={{ width: '240px' }} />
+          <Slider
+            aria-label="Volume"
+            defaultValue={[64]}
+            style={{ width: "240px" }}
+          />
+          <Progress
+            aria-label="Upload progress"
+            value={64}
+            style={{ width: "240px" }}
+          />
         </Row>
       </Section>
 
       <Section title="Tabs">
-        <Tabs defaultValue="overview" style={{ width: '420px' }}>
+        <Tabs defaultValue="overview" style={{ width: "420px" }}>
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -447,27 +505,29 @@ export const Primitives: Story = {
       </Section>
 
       <Section title="Accordion">
-        <Accordion type="single" collapsible style={{ width: '420px' }}>
+        <Accordion type="single" collapsible style={{ width: "420px" }}>
           <AccordionItem value="item-1">
             <AccordionTrigger>What is Notrelix?</AccordionTrigger>
             <AccordionContent>A work-management platform.</AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-2">
             <AccordionTrigger>Is it free?</AccordionTrigger>
-            <AccordionContent>Plans are available for every team size.</AccordionContent>
+            <AccordionContent>
+              Plans are available for every team size.
+            </AccordionContent>
           </AccordionItem>
         </Accordion>
       </Section>
 
       <Section title="Collapsible">
-        <Collapsible style={{ width: '420px' }}>
+        <Collapsible style={{ width: "420px" }}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" size="sm">
               Toggle details
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <p style={{ marginTop: '12px', fontSize: '14px' }}>
+            <p style={{ marginTop: "12px", fontSize: "14px" }}>
               Hidden details revealed by the collapsible.
             </p>
           </CollapsibleContent>
@@ -475,7 +535,7 @@ export const Primitives: Story = {
       </Section>
 
       <Section title="Table">
-        <Table style={{ width: '560px' }}>
+        <Table style={{ width: "560px" }}>
           <TableCaption>Board inventory</TableCaption>
           <TableHeader>
             <TableRow>
@@ -534,17 +594,17 @@ export const Primitives: Story = {
       </Section>
 
       <Section title="Aspect Ratio">
-        <div style={{ width: '200px' }}>
+        <div style={{ width: "200px" }}>
           <AspectRatio ratio={16 / 9}>
             <div
               style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'var(--secondary)',
-                borderRadius: '8px',
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "var(--secondary)",
+                borderRadius: "8px",
               }}
             >
               16:9
@@ -555,10 +615,14 @@ export const Primitives: Story = {
 
       <Section title="Skeleton">
         <Row>
-          <div style={{ width: '280px' }}>
-            <Skeleton style={{ height: '16px', width: '60%', marginBottom: '8px' }} />
-            <Skeleton style={{ height: '12px', width: '90%', marginBottom: '8px' }} />
-            <Skeleton style={{ height: '12px', width: '75%' }} />
+          <div style={{ width: "280px" }}>
+            <Skeleton
+              style={{ height: "16px", width: "60%", marginBottom: "8px" }}
+            />
+            <Skeleton
+              style={{ height: "12px", width: "90%", marginBottom: "8px" }}
+            />
+            <Skeleton style={{ height: "12px", width: "75%" }} />
           </div>
         </Row>
       </Section>
@@ -566,8 +630,8 @@ export const Primitives: Story = {
       <Section title="Spinner & Separator">
         <Row>
           <Spinner />
-          <Separator orientation="vertical" style={{ height: '32px' }} />
-          <span style={{ fontSize: '13px' }}>Separated content</span>
+          <Separator orientation="vertical" style={{ height: "32px" }} />
+          <span style={{ fontSize: "13px" }}>Separated content</span>
         </Row>
       </Section>
 
@@ -614,7 +678,7 @@ export const Primitives: Story = {
       </Section>
 
       <Section title="Field">
-        <FieldGroup style={{ maxWidth: '360px' }}>
+        <FieldGroup style={{ maxWidth: "360px" }}>
           <FieldLabel htmlFor="field-email">Email</FieldLabel>
           <FieldDescription>We will never share your email.</FieldDescription>
           <Input id="field-email" type="email" placeholder="name@example.com" />
@@ -623,10 +687,18 @@ export const Primitives: Story = {
       </Section>
 
       <Section title="Scroll Area">
-        <ScrollArea style={{ height: '160px', width: '360px', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px' }}>
-          <div style={{ padding: '4px', fontSize: '14px', lineHeight: '1.6' }}>
+        <ScrollArea
+          style={{
+            height: "160px",
+            width: "360px",
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            padding: "8px",
+          }}
+        >
+          <div style={{ padding: "4px", fontSize: "14px", lineHeight: "1.6" }}>
             {Array.from({ length: 30 }, (_, i) => (
-              <p key={i} style={{ margin: '0 0 8px' }}>
+              <p key={i} style={{ margin: "0 0 8px" }}>
                 Scrollable line {i + 1}
               </p>
             ))}
@@ -635,30 +707,37 @@ export const Primitives: Story = {
       </Section>
 
       <Section title="Resizable">
-        <ResizablePanelGroup direction="horizontal" style={{ width: '480px', border: '1px solid var(--border)', borderRadius: '8px' }}>
+        <ResizablePanelGroup
+          direction="horizontal"
+          style={{
+            width: "480px",
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+          }}
+        >
           <ResizablePanel defaultSize={50}>
-            <div style={{ padding: '12px', fontSize: '14px' }}>Panel A</div>
+            <div style={{ padding: "12px", fontSize: "14px" }}>Panel A</div>
           </ResizablePanel>
           <ResizableHandle />
           <ResizablePanel defaultSize={50}>
-            <div style={{ padding: '12px', fontSize: '14px' }}>Panel B</div>
+            <div style={{ padding: "12px", fontSize: "14px" }}>Panel B</div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </Section>
 
       <Section title="Carousel">
-        <Carousel style={{ width: '420px' }}>
+        <Carousel style={{ width: "420px" }}>
           <CarouselContent>
-            {['First', 'Second', 'Third'].map((label) => (
+            {["First", "Second", "Third"].map((label) => (
               <CarouselItem key={label}>
                 <div
                   style={{
-                    height: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'var(--secondary)',
-                    borderRadius: '8px',
+                    height: "120px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--secondary)",
+                    borderRadius: "8px",
                   }}
                 >
                   {label}
@@ -678,9 +757,9 @@ export const Primitives: Story = {
       <Section title="Chart">
         <ChartContainer
           config={{
-            items: { label: 'Items', color: 'var(--chart-1, #6161ff)' },
+            items: { label: "Items", color: "var(--chart-1, #6161ff)" },
           }}
-          style={{ width: '480px', height: '180px' }}
+          style={{ width: "480px", height: "180px" }}
         >
           <ChartStyle id="gallery-chart" config={{}} />
         </ChartContainer>
@@ -691,7 +770,7 @@ export const Primitives: Story = {
 
 export const Overlays: Story = {
   render: () => (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: "24px" }}>
       <Section title="Dialog, AlertDialog, Sheet, Drawer, Popover">
         <Row>
           <Dialog>
@@ -701,7 +780,9 @@ export const Overlays: Story = {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>New board</DialogTitle>
-                <DialogDescription>Create a board inside this workspace.</DialogDescription>
+                <DialogDescription>
+                  Create a board inside this workspace.
+                </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button type="button" variant="outline">
@@ -749,7 +830,9 @@ export const Overlays: Story = {
             <DrawerContent>
               <DrawerHeader>
                 <DrawerTitle>Quick actions</DrawerTitle>
-                <DrawerDescription>Actions available on this item.</DrawerDescription>
+                <DrawerDescription>
+                  Actions available on this item.
+                </DrawerDescription>
               </DrawerHeader>
             </DrawerContent>
           </Drawer>
@@ -783,14 +866,14 @@ export const Overlays: Story = {
           <ContextMenuTrigger asChild>
             <div
               style={{
-                width: '240px',
-                height: '96px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px dashed var(--border)',
-                borderRadius: '8px',
-                fontSize: '13px',
+                width: "240px",
+                height: "96px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px dashed var(--border)",
+                borderRadius: "8px",
+                fontSize: "13px",
               }}
             >
               Right-click here
@@ -856,9 +939,12 @@ export const Overlays: Story = {
       </Section>
 
       <Section title="Command">
-        <div style={{ width: '360px' }}>
+        <div style={{ width: "360px" }}>
           <Command>
-            <CommandInput placeholder="Search commands…" aria-label="Search commands" />
+            <CommandInput
+              placeholder="Search commands…"
+              aria-label="Search commands"
+            />
             <CommandList>
               <CommandEmpty>No results found.</CommandEmpty>
               <CommandGroup heading="Suggestions">
@@ -875,7 +961,7 @@ export const Overlays: Story = {
       </Section>
 
       <Section title="Sidebar">
-        <div style={{ width: '100%', maxWidth: '720px', height: '320px' }}>
+        <div style={{ width: "100%", maxWidth: "720px", height: "320px" }}>
           <SidebarProvider>
             <Sidebar collapsible="icon">
               <SidebarHeader />
@@ -902,13 +988,15 @@ export const Overlays: Story = {
             <div
               style={{
                 flex: 1,
-                display: 'flex',
-                alignItems: 'flex-start',
-                padding: '12px',
+                display: "flex",
+                alignItems: "flex-start",
+                padding: "12px",
               }}
             >
               <SidebarTrigger />
-              <span style={{ marginLeft: '8px', fontSize: '14px' }}>Main content</span>
+              <span style={{ marginLeft: "8px", fontSize: "14px" }}>
+                Main content
+              </span>
             </div>
           </SidebarProvider>
         </div>
@@ -916,7 +1004,7 @@ export const Overlays: Story = {
 
       <Section title="Sonner Toaster">
         <Toaster />
-        <span style={{ fontSize: '13px', color: 'var(--muted-foreground)' }}>
+        <span style={{ fontSize: "13px", color: "var(--muted-foreground)" }}>
           Toaster mounted; toasts are rendered on demand at runtime.
         </span>
       </Section>
@@ -929,15 +1017,18 @@ export const FeedbackStates: Story = {
     function ThemedContent() {
       const { theme } = useTheme();
       return (
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: "24px" }}>
           <Section title="Access Denied">
             <AccessDeniedState />
           </Section>
           <Section title="Empty State">
-            <EmptyState title="No boards yet" description="Create your first board to get started." />
+            <EmptyState
+              title="No boards yet"
+              description="Create your first board to get started."
+            />
           </Section>
           <Section title="Error State">
-            <ErrorState error={new Error('Something went wrong')} />
+            <ErrorState error={new Error("Something went wrong")} />
           </Section>
           <Section title="Forbidden State">
             <ForbiddenState />
@@ -954,7 +1045,7 @@ export const FeedbackStates: Story = {
           <Section title="Mock Disabled">
             <MockDisabledState featureName="Boards" />
           </Section>
-          <p style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>
+          <p style={{ fontSize: "12px", color: "var(--muted-foreground)" }}>
             Current theme: {theme}
           </p>
         </div>

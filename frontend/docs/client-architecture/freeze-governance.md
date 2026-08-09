@@ -22,5 +22,6 @@
 ## 2. Post-Freeze Modification Policy
 
 After `frontend-web-platform-v1.0.0` freeze tag is issued:
+
 - Feature teams extend within their bounded context without modifying platform singletons.
 - Modifications to `foundation/*`, `runtimes/web`, or `composition` require an Architectural Decision Record (ADR) and Tech Lead sign-off.

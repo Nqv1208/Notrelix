@@ -1,6 +1,6 @@
 /**
  * @notrelix/eslint-config
- * 
+ *
  * Shared ESLint configuration for Notrelix monorepo.
  * Phase 0 will set up base rules, Phase 1 will add architecture boundaries.
  */
@@ -16,8 +16,8 @@ export default tseslint.config(
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }
-      ]
-    }
-  }
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
 );

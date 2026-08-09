@@ -5,6 +5,7 @@ This document tracks endpoints needed by the frontend application that are eithe
 ## Pending Workspace Endpoints
 
 ### 1. Workspace Members CRUD
+
 - **Status**: Pending Verification
 - **Required Operations**:
   - `GET /workspaces/{workspaceId}/members` - Retrieve members of a workspace.
@@ -13,6 +14,7 @@ This document tracks endpoints needed by the frontend application that are eithe
 - **Frontend Reference**: `@notrelix/features-workspace` -> `members.service.ts`
 
 ### 2. Workspace Custom Views (Persisted)
+
 - **Status**: Pending Verification
 - **Required Operations**:
   - `GET /workspaces/{workspaceId}/views` - Get persisted custom workspace views.
@@ -23,6 +25,7 @@ This document tracks endpoints needed by the frontend application that are eithe
 - **Frontend Reference**: `@notrelix/features-workspace` -> `views.service.ts`
 
 ### 3. Workspace Activity Log
+
 - **Status**: Pending Verification
 - **Required Operations**:
   - `GET /workspaces/{workspaceId}/activity` - Retrieve workspace-scoped audit/activity log.
@@ -33,6 +36,7 @@ This document tracks endpoints needed by the frontend application that are eithe
 ## Pending Notifications Endpoints
 
 ### 1. Unread Count, Archive & Preferences
+
 - **Status**: Pending Verification
 - **Required Operations**:
   - `GET /notifications/unread-count` - Get count of unread notifications.
@@ -46,6 +50,7 @@ This document tracks endpoints needed by the frontend application that are eithe
 ## Pending Account / User Endpoints
 
 ### 1. Preferences & Security Settings
+
 - **Status**: Pending Verification
 - **Required Operations**:
   - `GET /users/preferences` - Get user interface preferences (theme, sidebar state).

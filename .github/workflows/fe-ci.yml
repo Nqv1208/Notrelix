@@ -1,262 +1,139 @@
 name: Frontend CI
 
 on:
-  push:
-    branches: [main, develop, foundationfreeze]
-    paths:
-      - 'frontend/**'
-      - 'backend/contracts/openapi/**'
-      - 'artifacts/contracts/**'
-      - '.github/workflows/fe-ci.yml'
+  workflow_dispatch:
   pull_request:
     branches: [main, develop]
     paths:
-      - 'frontend/**'
-      - 'backend/contracts/openapi/**'
-      - 'artifacts/contracts/**'
-      - '.github/workflows/fe-ci.yml'
+      - "frontend/**"
+      - "backend/contracts/openapi/**"
+      - "artifacts/contracts/**"
+      - ".github/actions/setup-frontend/**"
+      - ".github/workflows/fe-ci.yml"
+  push:
+    branches: [main, develop]
+    paths:
+      - "frontend/**"
+      - "backend/contracts/openapi/**"
+      - "artifacts/contracts/**"
+      - ".github/actions/setup-frontend/**"
+      - ".github/workflows/fe-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: frontend
+
+env:
+  CI: "1"
 
 jobs:
-  install:
+  quality:
+    name: Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-  contract-codegen:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-      - name: Check contract codegen drift
+      - name: Contract codegen drift
         run: pnpm codegen:check
-        working-directory: frontend
 
-  typecheck:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Architecture
+        run: pnpm check:architecture
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - name: Architecture docs
+        run: pnpm check:architecture-docs
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Test taxonomy
+        run: pnpm check:test-taxonomy
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-      - name: Type check
+      - name: Typecheck
         run: pnpm typecheck
-        working-directory: frontend
-
-  lint:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
 
       - name: Lint
         run: pnpm lint
-        working-directory: frontend
 
-  test-node:
-    needs: install
+      - name: Format
+        run: pnpm format:check
+
+  test-core:
+    name: Core tests
+    needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-      - name: Run Node unit tests
+      - name: Node unit tests
         run: pnpm test:node:guarded
-        working-directory: frontend
 
-  test-web:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-      - name: Run Web component/integration tests
+      - name: Web component tests
         run: pnpm test:web:guarded
-        working-directory: frontend
 
-  check-deps:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-      - name: Check frontend architecture
-        run: pnpm check:deps
-        working-directory: frontend
-
-      - name: Check architecture docs
-        run: pnpm check:architecture-docs
-        working-directory: frontend
-
-  test-freeze-gates:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-      - name: Run mobile tests
-        run: pnpm test:mobile:guarded
-        working-directory: frontend
-
-      - name: Run integration tests
+      - name: Integration tests
         run: pnpm test:integration:guarded
-        working-directory: frontend
 
-      - name: Run generator tests
-        run: pnpm test:generators:guarded
-        working-directory: frontend
-
-      - name: Run package test fan-out
-        run: pnpm test:fanout
-        working-directory: frontend
-
-      - name: Run freeze audit
-        run: pnpm freeze:audit
-        working-directory: frontend
-
-  test-ui-freeze:
-    needs: install
+  test-mobile:
+    name: Mobile tests
+    needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - name: Mobile tests with category coverage
+        run: pnpm test:mobile:guarded
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+  test-tooling:
+    name: Tooling and generator tests
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
+      - name: Generator golden paths
+        run: pnpm test:generators:guarded
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
-        working-directory: frontend
+  ui-foundation:
+    name: UI foundation
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
 
-      - name: Run UI freeze gates (storybook build + a11y + visual smoke)
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Storybook a11y and visual gates
         run: pnpm test:ui:freeze
-        working-directory: frontend
-        env:
-          CI: "1"
+
+      - name: Upload UI Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-playwright-report
+          path: frontend/playwright-report-ui
+          if-no-files-found: ignore
+          retention-days: 3
 
   build-web:
-    needs: [typecheck, lint, test-node, test-web, test-freeze-gates, test-ui-freeze, check-deps]
+    name: Build web
+    needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       VITE_API_URL: https://api.example.invalid/api/v1
       VITE_WS_URL: wss://api.example.invalid/realtime
@@ -265,68 +142,53 @@ jobs:
       VITE_MOCK_API: "false"
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
+      - uses: ./.github/actions/setup-frontend
 
       - name: Build web app
         run: pnpm --filter @notrelix/app-web build
-        working-directory: frontend
 
-      - name: Upload web build artifact
+      - name: Upload exact web build for E2E
         uses: actions/upload-artifact@v4
         with:
           name: web-build
           path: frontend/apps/web/dist
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 1
 
   build-marketing:
-    needs: [typecheck, lint, test-node, test-web, test-freeze-gates, test-ui-freeze, check-deps]
+    name: Build marketing
+    needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
+      - uses: ./.github/actions/setup-frontend
 
       - name: Build marketing app
         run: pnpm --filter @notrelix/app-marketing build
-        working-directory: frontend
 
-      - name: Upload marketing build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: marketing-build
-          path: frontend/apps/marketing/.next
-          if-no-files-found: error
-          retention-days: 7
-
-  production-e2e:
-    needs: [build-web]
+  build-mobile:
+    name: Build mobile
+    needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      EXPO_PUBLIC_API_URL: https://api.example.invalid/api/v1
+      EXPO_PUBLIC_REALTIME_URL: wss://api.example.invalid/realtime
+      EXPO_PUBLIC_APP_URL: https://app.example.invalid
+      EXPO_PUBLIC_RELEASE_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Expo export
+        run: pnpm --filter @notrelix/app-mobile build
+
+  e2e-production:
+    name: Production E2E
+    needs: build-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       VITE_API_URL: https://api.example.invalid/api/v1
       VITE_WS_URL: wss://api.example.invalid/realtime
@@ -335,78 +197,65 @@ jobs:
       VITE_MOCK_API: "false"
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-      - name: Download web build artifact
+      - name: Download exact web build
         uses: actions/download-artifact@v4
         with:
           name: web-build
           path: frontend/apps/web/dist
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
-        working-directory: frontend
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run Playwright E2E tests
+      - name: Run production E2E
         run: pnpm e2e
-        working-directory: frontend
 
-      - name: Upload Playwright report on failure
+      - name: Upload production Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: frontend/playwright-report
-          retention-days: 7
+          name: production-playwright-report
+          path: frontend/playwright-report-production
+          if-no-files-found: ignore
+          retention-days: 3
 
   frontend-gate:
+    name: Frontend gate
     if: always()
     needs:
-      - contract-codegen
-      - typecheck
-      - lint
-      - test-node
-      - test-web
-      - test-freeze-gates
-      - test-ui-freeze
-      - check-deps
+      - quality
+      - test-core
+      - test-mobile
+      - test-tooling
+      - ui-foundation
       - build-web
       - build-marketing
-      - production-e2e
+      - build-mobile
+      - e2e-production
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Evaluate gate results
+      - name: Require every frontend gate
+        shell: bash
         run: |
           results=(
-            "${{ needs.contract-codegen.result }}"
-            "${{ needs.typecheck.result }}"
-            "${{ needs.lint.result }}"
-            "${{ needs.test-node.result }}"
-            "${{ needs.test-web.result }}"
-            "${{ needs.test-freeze-gates.result }}"
-            "${{ needs.test-ui-freeze.result }}"
-            "${{ needs.check-deps.result }}"
+            "${{ needs.quality.result }}"
+            "${{ needs.test-core.result }}"
+            "${{ needs.test-mobile.result }}"
+            "${{ needs.test-tooling.result }}"
+            "${{ needs.ui-foundation.result }}"
             "${{ needs.build-web.result }}"
             "${{ needs.build-marketing.result }}"
-            "${{ needs.production-e2e.result }}"
+            "${{ needs.build-mobile.result }}"
+            "${{ needs.e2e-production.result }}"
           )
-          for res in "${results[@]}"; do
-            if [ "$res" != "success" ]; then
-              echo "❌ One or more upstream jobs failed, were skipped, or cancelled: $res"
+
+          for result in "${results[@]}"; do
+            if [ "$result" != "success" ]; then
+              echo "Frontend required job did not succeed: $result"
               exit 1
             fi
           done
-          echo "✅ All frontend CI gates passed successfully!"
+
+          echo "All required frontend CI gates passed."

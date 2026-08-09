@@ -9,6 +9,7 @@
 For complete, authoritative frontend architecture documentation, refer to the [Client Architecture Specification](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/README.md).
 
 ### Quick Links
+
 - [Dependency Model](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/dependency-model.md)
 - [Application Composition](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/application-composition.md)
 - [Module Template](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/module-template.md)
@@ -21,6 +22,7 @@ For complete, authoritative frontend architecture documentation, refer to the [C
 ## Development Workflow
 
 ### Requirements
+
 - Node.js >= 22
 - pnpm >= 10
 

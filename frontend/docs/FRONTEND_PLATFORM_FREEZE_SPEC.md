@@ -9,17 +9,18 @@
 ## 1. Overview & Strategy
 
 ### 1.1 Definition of Frontend Platform Freeze
+
 Frontend Platform Freeze is the architectural stabilization milestone where all foundational capabilities (Runtime, API Access, Auth Session, Workspace Isolation, Realtime Transport, State Ownership, Routing, and UI Primitives) are locked down so that **any new feature module can be built using a standardized, predictable template without modifying foundational packages or composition roots.**
 
 Frontend Platform Freeze **does not** imply stopping UI additions, blocking new API endpoints, or freezing product features.
 
 ### 1.2 Three-Tier Freeze Hierarchy
 
-| Freeze Level | Scope & Description | Target Outcome |
-| :--- | :--- | :--- |
-| **Platform Freeze** | Core runtime, API client, auth lifecycle, workspace context, query engine, realtime transport, routing boundaries, UI foundation, CI quality gates. | Foundation locked; zero legacy singletons. |
-| **Module Contract Freeze** | Public API contracts, state ownership, query keys, typed routes, permissions, and initial vertical slice per module. | Individual module boundaries locked. |
-| **Release Freeze** | Production release candidate lock (pre-deployment regression freeze). | Final release staging check. |
+| Freeze Level               | Scope & Description                                                                                                                                 | Target Outcome                             |
+| :------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- |
+| **Platform Freeze**        | Core runtime, API client, auth lifecycle, workspace context, query engine, realtime transport, routing boundaries, UI foundation, CI quality gates. | Foundation locked; zero legacy singletons. |
+| **Module Contract Freeze** | Public API contracts, state ownership, query keys, typed routes, permissions, and initial vertical slice per module.                                | Individual module boundaries locked.       |
+| **Release Freeze**         | Production release candidate lock (pre-deployment regression freeze).                                                                               | Final release staging check.               |
 
 ---
 
@@ -63,7 +64,9 @@ Browser Environment / Vite Host
 ```
 
 ### 2.2 Single Dependency Path Rule
+
 No component or feature package may directly import or execute:
+
 - `import.meta.env` or `process.env` (only `apps/web/src/main.tsx` and runtime factories read host environment).
 - Legacy global API singletons (`import { api, configureApi } from '@notrelix/contracts'`).
 - Un-injected WebSocket instances or ad-hoc `new WebSocket()` connections.
@@ -75,6 +78,7 @@ No component or feature package may directly import or execute:
 ### 3.1 Composition Root & AppRuntime Specification
 
 #### Contract Definition
+
 ```ts
 export interface AppRuntime {
   readonly api: NotrelixClient;
@@ -88,6 +92,7 @@ export interface AppRuntime {
 ```
 
 #### Verification & Exit Gate
+
 - Zero references to `configureApi`, `global api`, or `activeBaseUrl` across the entire codebase.
 - `MIGRATION_TRACKER.md` reaches 0 remaining legacy files.
 - Architecture static checks fail CI if `@notrelix/contracts` `api` object is imported.
@@ -97,9 +102,10 @@ export interface AppRuntime {
 ### 3.2 Single Source of Truth Environment Specification
 
 #### Schema Input
+
 ```ts
 export interface RuntimeEnvironmentInput {
-  readonly mode: 'development' | 'test' | 'production';
+  readonly mode: "development" | "test" | "production";
   readonly apiUrl: string;
   readonly realtimeUrl: string;
   readonly marketingUrl: string;
@@ -109,6 +115,7 @@ export interface RuntimeEnvironmentInput {
 ```
 
 #### Production Rules
+
 1. In `production`, missing `apiUrl` or `realtimeUrl` **must fail at build/startup immediately** (fail-fast).
 2. Fallback to `localhost` is strictly forbidden in `production`.
 3. Standardized variable names across all packages:
@@ -123,15 +130,25 @@ export interface RuntimeEnvironmentInput {
 ### 3.3 API Client & Contract Strategy
 
 #### DTO & Contract Flow
+
 ```
 Backend OpenAPI Spec -> Codegen -> @notrelix/contracts -> Feature Adapters -> View Model
 ```
 
 #### Error Envelope Contract
+
 All API errors returned to application code must normalize into `AppError`:
+
 ```ts
 export interface AppErrorPayload {
-  readonly kind: 'network' | 'auth' | 'validation' | 'server' | 'forbidden' | 'not_found' | 'conflict';
+  readonly kind:
+    | "network"
+    | "auth"
+    | "validation"
+    | "server"
+    | "forbidden"
+    | "not_found"
+    | "conflict";
   readonly status: number;
   readonly message: string;
   readonly correlationId: string;
@@ -141,6 +158,7 @@ export interface AppErrorPayload {
 ```
 
 #### Key Capabilities
+
 - Single-flight 401 token refresh queue.
 - CSRF token header auto-attachment for unsafe HTTP methods (`POST`, `PUT`, `PATCH`, `DELETE`).
 - `X-Correlation-ID` header injected on every request.
@@ -150,12 +168,15 @@ export interface AppErrorPayload {
 ### 3.4 Auth, Session & Workspace Isolation Specification
 
 #### Auth Lifecycle States
+
 ```
 Unauthenticated -> Authenticating -> Authenticated -> Refreshing -> Expired / SigningOut
 ```
 
 #### Workspace Context Isolation Rules
+
 When a user switches workspaces:
+
 1. Active TanStack Query cache entries scoped to the previous `workspaceId` must be invalidated or evicted.
 2. Active Realtime subscriptions for the previous `workspaceId` channels must be cleanly unsubscribed.
 3. Subscriptions for the new `workspaceId` channels must be established with the current active token.
@@ -165,26 +186,28 @@ When a user switches workspaces:
 
 ### 3.5 State Ownership Matrix
 
-| State Type | Owned By | Implementation Tool |
-| :--- | :--- | :--- |
-| **Component UI State** | Local Component | `useState` / `useReducer` |
-| **Form State** | Form Component | React Hook Form / Local Reducer |
-| **Server State (CRUD)** | Domain Feature Package | TanStack Query (`useQuery` / `useMutation`) |
-| **Runtime & Session** | Platform Foundation | `AppRuntimeContext` / `AuthContext` / `WorkspaceContext` |
-| **URL State (Filter/Sort/View)** | Router | TanStack Router search params schema |
-| **Work Management Normalized State** | `@notrelix/work-management-state` | Dedicated State Store / Engine |
-| **Realtime Transport State** | `@notrelix/realtime` | Connection State Machine |
+| State Type                           | Owned By                          | Implementation Tool                                      |
+| :----------------------------------- | :-------------------------------- | :------------------------------------------------------- |
+| **Component UI State**               | Local Component                   | `useState` / `useReducer`                                |
+| **Form State**                       | Form Component                    | React Hook Form / Local Reducer                          |
+| **Server State (CRUD)**              | Domain Feature Package            | TanStack Query (`useQuery` / `useMutation`)              |
+| **Runtime & Session**                | Platform Foundation               | `AppRuntimeContext` / `AuthContext` / `WorkspaceContext` |
+| **URL State (Filter/Sort/View)**     | Router                            | TanStack Router search params schema                     |
+| **Work Management Normalized State** | `@notrelix/work-management-state` | Dedicated State Store / Engine                           |
+| **Realtime Transport State**         | `@notrelix/realtime`              | Connection State Machine                                 |
 
 ---
 
 ### 3.6 Realtime Transport Specification
 
 #### Connection State Machine
+
 ```
 DISCONNECTED -> CONNECTING -> CONNECTED -> RECONNECTING -> DISCONNECTED
 ```
 
 #### Technical Guarantees
+
 - **Manual Close Protection**: Invoking `realtime.disconnect()` sets `isManualClose = true`, permanently preventing reconnection loops upon user sign-out or component unmount.
 - **Backoff & Jitter**: Reconnection backoff uses exponential curve plus randomized jitter:  
   `delay = min(maxDelay, baseDelay * 2^attempt) + randomJitter`.

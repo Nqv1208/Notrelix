@@ -2,7 +2,7 @@
 
 > **Canonical Architecture Documentation for Notrelix Frontend Platform**  
 > **Target Platform:** Web (`apps/web`)  
-> **Technology Stack:** React 19, Vite, TanStack Router, TanStack Query v5, pnpm Workspace  
+> **Technology Stack:** React 19, Vite, TanStack Router, TanStack Query v5, pnpm Workspace
 
 ---
 
@@ -11,6 +11,7 @@
 Notrelix Frontend is organized as a monorepo containing application shells, shared packages, feature modules, and infrastructure tooling.
 
 ### Product Target Scope
+
 - **Web Application (`apps/web`):** Primary production desktop and responsive web work-management OS built with Vite and TanStack Router.
 - **Marketing Site (`apps/marketing`):** Next.js marketing site (has independent freeze lifecycle).
 - **Mobile Client (`apps/mobile`):** React Native mobile client (EXCLUDED from `frontend-web-platform-v1.0.0` freeze certificate).
