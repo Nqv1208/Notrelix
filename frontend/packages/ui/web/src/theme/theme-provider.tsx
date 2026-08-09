@@ -1,11 +1,13 @@
 import * as React from "react";
 
-export interface KeyValueStorage {
+export interface ThemeStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem?(key: string): void;
   clear?(): void;
 }
+
+export type KeyValueStorage = ThemeStorage;
 
 type Theme = "dark" | "light" | "system";
 
@@ -13,7 +15,7 @@ interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   storageKey?: string;
-  storage?: KeyValueStorage;
+  storage?: ThemeStorage;
 }
 
 interface ThemeProviderState {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ClockPort, KeyValueStorage } from "@notrelix/platform";
 import { createAppRuntime } from "../runtime/app-runtime";
-import { createLocalStorageAdapter } from "../storage/local-storage";
+import { createBrowserKeyValueStorage } from "../storage/browser-key-value-storage";
 import { createCookieAdapter } from "../cookie/cookie";
 
 describe("FND-021 runtime satisfies platform ports", () => {
@@ -22,17 +22,19 @@ describe("FND-021 runtime satisfies platform ports", () => {
     }
   });
 
-  it("local storage adapter satisfies the platform KeyValueStorage contract", () => {
+  it("browser key value storage satisfies the platform KeyValueStorage contract", () => {
     const store = new Map<string, string>();
-    vi.stubGlobal("localStorage", {
-      getItem: (key: string) => store.get(key) ?? null,
-      setItem: (key: string, value: string) => void store.set(key, value),
-      removeItem: (key: string) => void store.delete(key),
-      clear: () => store.clear(),
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => void store.set(key, value),
+        removeItem: (key: string) => void store.delete(key),
+        clear: () => store.clear(),
+      },
     });
 
     try {
-      const storage: KeyValueStorage = createLocalStorageAdapter();
+      const storage: KeyValueStorage = createBrowserKeyValueStorage();
 
       expect(storage.getItem("missing")).toBeNull();
 
