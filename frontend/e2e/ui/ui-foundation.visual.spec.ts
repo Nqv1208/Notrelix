@@ -26,11 +26,10 @@ for (const viewport of VIEWPORTS) {
     await page.goto("/iframe.html?id=foundation-gallery--primitives");
     await page.waitForLoadState("networkidle");
 
-    await expect(page).toHaveScreenshot(
+    await expect(page.locator("#storybook-root")).toHaveScreenshot(
       `foundation-gallery-${viewport.name}.png`,
       {
         animations: "disabled",
-        fullPage: true,
       },
     );
   });
