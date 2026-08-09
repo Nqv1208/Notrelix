@@ -1,63 +1,59 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { AppRuntime } from "@notrelix/runtime-web";
 import { createQueryClient } from "@notrelix/query";
-import { workspaceQueryKeys } from "@notrelix/features-workspace";
 import {
   createWorkManagementServices,
   type WorkManagementServices,
 } from "@notrelix/work-management-state";
 import {
+  createUnavailableSearchApi,
+  type SearchApi,
+} from "@notrelix/features-search";
+import {
   createApplicationLifecycle,
-  createWorkspaceEventSource,
   type ApplicationLifecycle,
-  type WorkspaceEventSource,
 } from "./application-lifecycle";
 
 export interface WebApplicationServices {
   readonly runtime: AppRuntime;
   readonly queryClient: QueryClient;
   readonly workManagement: WorkManagementServices;
-  readonly workspaceEvents: WorkspaceEventSource;
   readonly lifecycle: ApplicationLifecycle;
+  readonly searchApi: SearchApi;
   dispose(): Promise<void>;
 }
 
-export interface WebApplicationServicesOptions {
+export interface CreateWebApplicationServicesOptions {
   readonly navigateToSignedOut: () => void;
 }
 
+export type WebApplicationServicesOptions = CreateWebApplicationServicesOptions;
+
 export function createWebApplicationServices(
   runtime: AppRuntime,
-  options: WebApplicationServicesOptions,
+  options: CreateWebApplicationServicesOptions,
 ): WebApplicationServices {
   const queryClient = createQueryClient();
   const workManagement = createWorkManagementServices(runtime.api);
-  const workspaceEvents = createWorkspaceEventSource((error, context) => {
-    runtime.telemetry.reportError(error, context);
-  });
 
   const lifecycle = createApplicationLifecycle({
     queryClient,
     realtime: runtime.realtime,
     sessionEvents: runtime.sessionEvents,
-    workspaceEvents,
-    clearSessionState: () => {
-      queryClient.removeQueries({ queryKey: ["auth"] });
-    },
-    clearWorkspaceState: () => {
-      queryClient.removeQueries({ queryKey: workspaceQueryKeys.all });
-    },
     navigateToSignedOut: options.navigateToSignedOut,
   });
+
+  const searchApi = createUnavailableSearchApi();
 
   return {
     runtime,
     queryClient,
     workManagement,
-    workspaceEvents,
     lifecycle,
+    searchApi,
     async dispose() {
       lifecycle.dispose();
+      queryClient.clear();
       await runtime.dispose();
     },
   };

@@ -20,7 +20,9 @@
     "@notrelix/contracts": "workspace:*",
     "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "@notrelix/query": "workspace:*"
+    "@notrelix/query": "workspace:*",
+    "@notrelix/ui-web": "workspace:*",
+    "lucide-react": "catalog:"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
