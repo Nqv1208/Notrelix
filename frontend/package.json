@@ -49,6 +49,7 @@
     "turbo": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "tsx": "^4.19.0",
     "@axe-core/playwright": "4.10.2"
   },
   "packageManager": "pnpm@10.0.0",
