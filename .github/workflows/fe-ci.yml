@@ -6,12 +6,14 @@ on:
     paths:
       - 'frontend/**'
       - 'backend/contracts/openapi/**'
+      - 'artifacts/contracts/**'
       - '.github/workflows/fe-ci.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'frontend/**'
       - 'backend/contracts/openapi/**'
+      - 'artifacts/contracts/**'
       - '.github/workflows/fe-ci.yml'
 
 jobs:
@@ -127,7 +129,7 @@ jobs:
         working-directory: frontend
 
       - name: Run Node unit tests
-        run: pnpm test:node
+        run: pnpm test:node:guarded
         working-directory: frontend
 
   test-web:
@@ -151,7 +153,7 @@ jobs:
         working-directory: frontend
 
       - name: Run Web component/integration tests
-        run: pnpm test:web
+        run: pnpm test:web:guarded
         working-directory: frontend
 
   check-deps:
@@ -203,19 +205,23 @@ jobs:
         working-directory: frontend
 
       - name: Run mobile tests
-        run: pnpm test:mobile
+        run: pnpm test:mobile:guarded
         working-directory: frontend
 
       - name: Run integration tests
-        run: pnpm test:integration
+        run: pnpm test:integration:guarded
         working-directory: frontend
 
       - name: Run generator tests
-        run: pnpm test:generators
+        run: pnpm test:generators:guarded
         working-directory: frontend
 
       - name: Run package test fan-out
         run: pnpm test:fanout
+        working-directory: frontend
+
+      - name: Run freeze audit
+        run: pnpm freeze:audit
         working-directory: frontend
 
   test-ui-freeze:

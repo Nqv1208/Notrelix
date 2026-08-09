@@ -19,7 +19,7 @@ const results = [
   checkPackageManifests(rootDir),
   checkArchitecture(rootDir),
   checkFolderBoundaries(rootDir),
-  checkArchitectureDocs(),
+  checkArchitectureDocs(rootDir),
 ];
 
 const violations = results.flatMap((r) => r.violations);

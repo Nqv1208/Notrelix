@@ -10,21 +10,27 @@
       "outputs": ["dist/**", ".next/**", "build/**", "expo/**"]
     },
     "typecheck": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^typecheck"],
       "outputs": []
     },
     "lint": {
       "outputs": []
     },
     "test": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^test"],
       "outputs": ["coverage/**"]
     },
     "format": {
       "outputs": []
     },
     "codegen": {
-      "outputs": ["packages/foundation/contracts/src/generated/**"]
+      "inputs": [
+        "../../../backend/contracts/openapi/notrelix.v1.json",
+        "../../../artifacts/contracts/realtime.v1.json",
+        "openapi/**",
+        "asyncapi/**"
+      ],
+      "outputs": ["../../packages/foundation/contracts/src/generated/**"]
     },
     "check:deps": {
       "outputs": []

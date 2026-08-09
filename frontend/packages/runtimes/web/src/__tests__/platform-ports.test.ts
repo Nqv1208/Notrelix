@@ -6,13 +6,20 @@ import { createCookieAdapter } from '../cookie/cookie';
 
 describe('FND-021 runtime satisfies platform ports', () => {
   it('default runtime clock satisfies the platform ClockPort contract', () => {
-    const runtime = createAppRuntime({ apiUrl: 'http://api.test' });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
 
-    const clock: ClockPort = runtime.clock;
-    const now = clock.now();
+    try {
+      const runtime = createAppRuntime({ apiUrl: 'http://api.test' });
 
-    expect(now).toBeInstanceOf(Date);
-    expect(clock.isoNow()).toBe(now.toISOString());
+      const clock: ClockPort = runtime.clock;
+      const now = clock.now();
+
+      expect(now).toBeInstanceOf(Date);
+      expect(clock.isoNow()).toBe(now.toISOString());
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('local storage adapter satisfies the platform KeyValueStorage contract', () => {

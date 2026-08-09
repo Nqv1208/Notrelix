@@ -3,42 +3,74 @@
 /**
  * UI Component Generator
  *
- * Creates a new shadcn-style component in packages/ui/web.
+ * Creates a new UI primitive with public export, unit test, and (for web)
+ * a Storybook story, honoring the UI system spec (07-UI-SYSTEM-SPEC):
+ * public imports only in stories, component + a11y/unit test coverage.
  *
- * Usage: node index.mjs <component-name>
+ *   --target web     (default) packages/ui/web/src/components/ui/<name>.tsx
+ *                    + barrel export + unit test + Storybook story
+ *   --target mobile  packages/ui/mobile/src/components/<name>.ts (contract)
+ *                    + barrel export + unit test
+ *
+ * Usage: node index.mjs <component-name> [--target web|mobile]
  */
 
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = process.env.GENERATOR_ROOT ?? join(__dirname, '../../../..');
 
-const componentName = process.argv[2];
+const args = process.argv.slice(2);
+const componentName = args.find((a) => !a.startsWith('--'));
+const targetIndex = args.indexOf('--target');
+const target = targetIndex !== -1 ? args[targetIndex + 1] : 'web';
 
 if (!componentName) {
-  console.error('Usage: node index.mjs <component-name>');
-  console.error('Example: node index.mjs alert');
+  console.error('Usage: node index.mjs <component-name> [--target web|mobile]');
+  console.error('Example: node index.mjs alert --target web');
   process.exit(1);
 }
 
-const componentDir = join(rootDir, `packages/ui/web/src/components/ui`);
-const componentFile = join(componentDir, `${componentName}.tsx`);
-
-if (existsSync(componentFile)) {
-  console.error(`Component "${componentName}" already exists at ${componentFile}`);
+if (!['web', 'mobile'].includes(target)) {
+  console.error(`Invalid --target "${target}"; expected web or mobile`);
   process.exit(1);
 }
 
-console.log(`Creating component: ${componentName}`);
+const PascalName = componentName
+  .split('-')
+  .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+  .join('');
+console.log(`Creating UI component: ${componentName} (target: ${target})`);
 
-mkdirSync(componentDir, { recursive: true });
+function appendExport(indexPath, exportLine) {
+  const source = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : '';
+  if (source.includes(exportLine)) return;
+  const updated = source.replace(/\s*$/, '\n') + exportLine + '\n';
+  writeFileSync(indexPath, updated);
+}
 
-const componentContent = `import * as React from "react"
-import { cn } from "../../lib/cn"
+if (target === 'web') {
+  const componentDir = join(rootDir, 'packages/ui/web/src/components/ui');
+  const componentFile = join(componentDir, `${componentName}.tsx`);
+  const testFile = join(componentDir, '__tests__', `${componentName}.test.tsx`);
+  const storyFile = join(rootDir, 'tooling/storybook/web/stories', `${componentName}.stories.tsx`);
+  const indexPath = join(rootDir, 'packages/ui/web/src/index.ts');
 
-const ${componentName.charAt(0).toUpperCase() + componentName.slice(1)} = React.forwardRef<
+  if (existsSync(componentFile)) {
+    console.error(`Component "${componentName}" already exists at ${componentFile}`);
+    process.exit(1);
+  }
+
+  mkdirSync(componentDir, { recursive: true });
+  mkdirSync(join(componentDir, '__tests__'), { recursive: true });
+  mkdirSync(dirname(storyFile), { recursive: true });
+
+  writeFileSync(componentFile, `import * as React from "react"
+import { cn } from "~/lib/cn"
+
+const ${PascalName} = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
@@ -48,15 +80,89 @@ const ${componentName.charAt(0).toUpperCase() + componentName.slice(1)} = React.
     {...props}
   />
 ))
-${componentName.charAt(0).toUpperCase() + componentName.slice(1)}.displayName = "${componentName.charAt(0).toUpperCase() + componentName.slice(1)}"
+${PascalName}.displayName = "${PascalName}"
 
-export { ${componentName.charAt(0).toUpperCase() + componentName.slice(1)} }
-`;
+export { ${PascalName} }
+`);
 
-writeFileSync(componentFile, componentContent);
+  writeFileSync(testFile, `import { describe, expect, it } from 'vitest';
+import { ${PascalName} } from '../${componentName}';
 
-console.log(`\nCreated component at: ${componentFile}`);
-console.log('\nNext steps:');
-console.log(`1. Add props and variants as needed`);
-console.log(`2. Export from packages/ui/web/src/index.ts`);
-console.log(`3. Add to packages/ui/web/package.json exports if needed`);
+describe('${PascalName}', () => {
+  it('is exported with a stable displayName', () => {
+    expect(${PascalName}.displayName).toBe('${PascalName}');
+  });
+
+  it('is a renderable component', () => {
+    expect(typeof ${PascalName}).toBe('object');
+  });
+});
+`);
+
+  writeFileSync(storyFile, `import type { Meta, StoryObj } from '@storybook/react';
+import { ${PascalName} } from '@notrelix/ui-web';
+
+const meta = {
+  title: 'Components/${PascalName}',
+  component: ${PascalName},
+  parameters: { layout: 'centered' },
+} satisfies Meta<typeof ${PascalName}>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  args: {},
+};
+`);
+
+  appendExport(indexPath, `export { ${PascalName} } from "./components/ui/${componentName}"`);
+
+  console.log(`\nCreated component at: ${componentFile}`);
+  console.log(`Unit test: ${testFile}`);
+  console.log(`Storybook story: ${storyFile}`);
+  console.log(`Barrel export updated: ${indexPath}`);
+} else {
+  const componentDir = join(rootDir, 'packages/ui/mobile/src/components');
+  const componentFile = join(componentDir, `${componentName}.ts`);
+  const testFile = join(rootDir, 'packages/ui/mobile/src/__tests__', `${componentName}.test.ts`);
+  const indexPath = join(rootDir, 'packages/ui/mobile/src/index.ts');
+
+  if (existsSync(componentFile)) {
+    console.error(`Component "${componentName}" already exists at ${componentFile}`);
+    process.exit(1);
+  }
+
+  mkdirSync(componentDir, { recursive: true });
+  mkdirSync(dirname(testFile), { recursive: true });
+
+  writeFileSync(componentFile, `/**
+ * @notrelix/ui-mobile — ${PascalName} mobile primitive contract.
+ *
+ * Platform-independent contract; the web DOM implementation lives in
+ * @notrelix/ui-web.
+ */
+
+export interface ${PascalName}Props {
+  readonly id: string;
+  readonly title?: string;
+}
+`);
+
+  writeFileSync(testFile, `import { describe, expect, it } from 'vitest';
+import type { ${PascalName}Props } from '../components/${componentName}';
+
+describe('${PascalName}Props contract', () => {
+  it('is typed and exportable', () => {
+    const props: ${PascalName}Props = { id: 'x' };
+    expect(props.id).toBe('x');
+  });
+});
+`);
+
+  appendExport(indexPath, `export type { ${PascalName}Props } from "./components/${componentName}"`);
+
+  console.log(`\nCreated mobile contract at: ${componentFile}`);
+  console.log(`Unit test: ${testFile}`);
+  console.log(`Barrel export updated: ${indexPath}`);
+}

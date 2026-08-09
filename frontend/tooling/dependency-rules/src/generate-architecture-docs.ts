@@ -7,17 +7,29 @@
  * Usage: tsx src/generate-architecture-docs.ts [--check]
  *   --check  exit non-zero if the committed file differs from generation
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARCHITECTURE_MANIFEST } from './architecture-manifest';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FRONTEND_ROOT = resolve(__dirname, '../../..');
-const OUTPUT_PATH = join(
-  FRONTEND_ROOT,
-  'docs/client/architecture/package-boundaries.generated.md',
-);
+
+/**
+ * Workspace root for docs output. Generators run in a temporary workspace
+ * fixture (GENERATOR_ROOT) and must never write into the real worktree.
+ */
+export function getFrontendRoot(): string {
+  return process.env.GENERATOR_ROOT
+    ? resolve(process.env.GENERATOR_ROOT)
+    : FRONTEND_ROOT;
+}
+
+export function getArchitectureDocsPath(
+  rootDir: string = getFrontendRoot(),
+): string {
+  return join(rootDir, 'docs/client/architecture/package-boundaries.generated.md');
+}
 
 export function generateArchitectureDocs(): string {
   const sorted = [...ARCHITECTURE_MANIFEST].sort((a, b) =>
@@ -51,32 +63,38 @@ export function generateArchitectureDocs(): string {
   return lines.join('\n');
 }
 
-export function checkArchitectureDocs(): { ok: boolean; violations: string[] } {
+export function checkArchitectureDocs(
+  rootDir: string = getFrontendRoot(),
+): { ok: boolean; violations: string[] } {
   const expected = generateArchitectureDocs();
-  if (!existsSync(OUTPUT_PATH)) {
+  const outputPath = getArchitectureDocsPath(rootDir);
+  if (!existsSync(outputPath)) {
     return {
       ok: false,
       violations: [
-        `[ARCHITECTURE_DOCS_MISSING] generated boundary table not found at ${OUTPUT_PATH}; run docs:generate`,
+        `[ARCHITECTURE_DOCS_MISSING] generated boundary table not found at ${outputPath}; run docs:generate`,
       ],
     };
   }
-  const actual = readFileSync(OUTPUT_PATH, 'utf8');
+  const actual = readFileSync(outputPath, 'utf8');
   if (actual !== expected) {
     return {
       ok: false,
       violations: [
-        `[ARCHITECTURE_DOCS_DRIFT] ${OUTPUT_PATH} is out of date with architecture-manifest.ts; run docs:generate`,
+        `[ARCHITECTURE_DOCS_DRIFT] ${outputPath} is out of date with architecture-manifest.ts; run docs:generate`,
       ],
     };
   }
   return { ok: true, violations: [] };
 }
 
-const isDirectRun = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const isDirectRun =
+  !!process.argv[1] &&
+  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
 
 if (isDirectRun) {
   const checkMode = process.argv.includes('--check');
+  const outputPath = getArchitectureDocsPath();
   if (checkMode) {
     const result = checkArchitectureDocs();
     if (!result.ok) {
@@ -85,7 +103,7 @@ if (isDirectRun) {
     }
     console.log('✅ Architecture docs are in sync with the manifest.');
   } else {
-    writeFileSync(OUTPUT_PATH, generateArchitectureDocs(), 'utf8');
-    console.log(`✅ Wrote ${OUTPUT_PATH}`);
+    writeFileSync(outputPath, generateArchitectureDocs(), 'utf8');
+    console.log(`✅ Wrote ${outputPath}`);
   }
 }
