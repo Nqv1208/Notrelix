@@ -37,7 +37,6 @@ export {
 export { createViewsService } from "./api/views.service";
 export { createActivityService } from "./api/activity.service";
 
-export * from "./query";
 export * from "./model/selectors";
 export * from "./model/workspace-views";
 export * from "./rules/workspace-rules";

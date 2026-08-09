@@ -6,7 +6,7 @@
 
 // Core exports
 export * from "./core";
-export { accountQueryKeys } from "./core/query/keys";
+export { accountQueryKeys } from "./query/keys";
 
 // Web exports
 export * from "./web";

@@ -4,7 +4,7 @@ import {
   type AccountApiClient,
   type AccountEndpoints,
 } from "../../../core/api/account.service";
-import { accountQueryKeys } from "../../../core/query/keys";
+import { accountQueryKeys } from "../../../query/keys";
 
 interface UseSecuritySettingsDeps {
   api: AccountApiClient;

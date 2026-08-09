@@ -10,7 +10,7 @@ import {
   validateRemoveOwner,
   validateDowngradeOwner,
 } from "../core/rules/workspace-rules";
-import { workspaceQueryKeys } from "../core/query/keys";
+import { workspaceQueryKeys } from "../query/keys";
 
 describe("validateRemoveOwner", () => {
   it("blocks removal when only 1 owner exists", () => {
@@ -49,18 +49,20 @@ describe("validateDowngradeOwner", () => {
 describe("workspaceQueryKeys", () => {
   it("formats workspace detail key correctly", () => {
     expect(workspaceQueryKeys.detail("ws-100")).toEqual([
-      "workspaces",
-      "detail",
+      "workspace",
       "ws-100",
+      "workspace",
+      "detail",
     ]);
   });
 
   it("formats workspace all and members key correctly", () => {
-    expect(workspaceQueryKeys.all).toEqual(["workspaces"]);
+    expect(workspaceQueryKeys.all).toEqual(["account", "workspaces"]);
     expect(workspaceQueryKeys.members("ws-100")).toEqual([
-      "workspaces",
-      "members",
+      "workspace",
       "ws-100",
+      "workspace",
+      "members",
     ]);
   });
 });

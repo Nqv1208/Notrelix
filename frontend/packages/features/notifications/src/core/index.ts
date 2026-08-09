@@ -15,4 +15,3 @@ export {
   type NotificationsApiClient,
   type NotificationsEndpoints,
 } from "./api/notifications.service";
-export * from "./query";

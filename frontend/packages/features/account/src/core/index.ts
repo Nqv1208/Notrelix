@@ -15,4 +15,3 @@ export {
   type AccountApiClient,
   type AccountEndpoints,
 } from "./api/account.service";
-export * from "./query";

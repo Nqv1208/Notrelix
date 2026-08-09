@@ -8,7 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./core": "./src/core/index.ts",
-    "./core/query/keys": "./src/core/query/keys.ts",
+    "./query/keys": "./src/query/keys.ts",
     "./web": "./src/web/index.ts"
   },
   "scripts": {

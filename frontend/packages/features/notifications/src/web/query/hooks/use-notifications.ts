@@ -4,7 +4,7 @@ import {
   type NotificationsApiClient,
   type NotificationsEndpoints,
 } from "../../../core/api/notifications.service";
-import { notificationsQueryKeys } from "../../../core/query/keys";
+import { notificationsQueryKeys } from "../../../query/keys";
 
 interface UseNotificationsDeps {
   api: NotificationsApiClient;

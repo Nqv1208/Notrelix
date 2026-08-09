@@ -6,7 +6,7 @@
 
 // Core exports
 export * from "./core";
-export { notificationsQueryKeys } from "./core/query/keys";
+export { notificationsQueryKeys } from "./query/keys";
 
 // Web exports
 export * from "./web";
