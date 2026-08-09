@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createMembersService } from "../../../core/api/members.service";
 import type { WorkspaceApiClient } from "../../../core/api/workspace.service";
-import { workspaceQueryKeys } from "../../../core/query/keys";
+import { workspaceQueryKeys } from "../../../query/keys";
 
 interface UseRemoveMemberDeps {
   api: WorkspaceApiClient;

@@ -1,4 +1,4 @@
-export { docsQueryKeys } from "@notrelix/docs-core/query/keys";
+export { docsQueryKeys } from "./keys";
 export { createUsePageList } from "./hooks/use-page-list";
 export { createUsePage } from "./hooks/use-page";
 export { createUsePageBreadcrumb } from "./hooks/use-page-breadcrumb";

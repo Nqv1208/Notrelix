@@ -28,7 +28,7 @@ describe("automation state", () => {
       queryKey: automationQueryKeys.rules("workspace-1"),
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: automationQueryKeys.ruleDetail("rule-1"),
+      queryKey: automationQueryKeys.ruleDetail("workspace-1", "rule-1"),
     });
   });
 
@@ -57,7 +57,7 @@ describe("automation state", () => {
 
     expect(
       queryClient.getQueryData(
-        automationQueryKeys.executionDetail("execution-1"),
+        automationQueryKeys.executionDetail("workspace-1", "execution-1"),
       ),
     ).toMatchObject({
       id: "execution-1",

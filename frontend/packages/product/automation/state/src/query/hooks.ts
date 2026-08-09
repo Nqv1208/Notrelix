@@ -15,12 +15,13 @@ export function useAutomationRules(
 
 export function useAutomationRuleDetail(
   repositories: AutomationRepositories,
+  workspaceId: string,
   ruleId: string,
 ) {
   return useQuery({
-    queryKey: automationQueryKeys.ruleDetail(ruleId),
+    queryKey: automationQueryKeys.ruleDetail(workspaceId, ruleId),
     queryFn: () => repositories.rules.getDetail(ruleId),
-    enabled: ruleId.length > 0,
+    enabled: workspaceId.length > 0 && ruleId.length > 0,
   });
 }
 
@@ -48,12 +49,13 @@ export function useAutomationExecutionHistory(
 
 export function useAutomationExecutionDetail(
   repositories: AutomationRepositories,
+  workspaceId: string,
   executionId: string,
 ) {
   return useQuery({
-    queryKey: automationQueryKeys.executionDetail(executionId),
+    queryKey: automationQueryKeys.executionDetail(workspaceId, executionId),
     queryFn: () => repositories.executions.getDetail(executionId),
-    enabled: executionId.length > 0,
+    enabled: workspaceId.length > 0 && executionId.length > 0,
   });
 }
 

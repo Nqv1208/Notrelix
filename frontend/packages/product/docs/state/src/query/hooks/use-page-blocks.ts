@@ -1,18 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { createBlockApi } from "../../api/block.api";
 import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
-import { docsQueryKeys } from "@notrelix/docs-core/query/keys";
+import { docsQueryKeys } from "../keys";
 
 export function createUsePageBlocks(
   api: DocsApiClient,
   endpoints: PageApiEndpoints,
 ) {
   const blockApi = createBlockApi(api, endpoints);
-  return function usePageBlocks(pageId: string) {
+  return function usePageBlocks(workspaceId: string, pageId: string) {
     return useQuery({
-      queryKey: docsQueryKeys.blocks(pageId),
+      queryKey: docsQueryKeys.blocks(workspaceId, pageId),
       queryFn: () => blockApi.getList(pageId),
-      enabled: !!pageId,
+      enabled: !!workspaceId && !!pageId,
     });
   };
 }

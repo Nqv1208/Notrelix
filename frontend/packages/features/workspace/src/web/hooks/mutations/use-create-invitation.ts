@@ -4,7 +4,7 @@ import {
   type InvitationsEndpoints,
 } from "../../../core/api/invitations.service";
 import type { WorkspaceApiClient } from "../../../core/api/workspace.service";
-import { workspaceQueryKeys } from "../../../core/query/keys";
+import { workspaceQueryKeys } from "../../../query/keys";
 import type { CreateWorkspaceInvitationInput } from "../../../core/types/workspace";
 
 interface UseCreateInvitationDeps {

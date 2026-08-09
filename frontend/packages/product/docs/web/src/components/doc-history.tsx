@@ -16,6 +16,7 @@ import {
 interface DocHistoryProps {
   api: DocsApiClient;
   endpoints: PageApiEndpoints;
+  workspaceId: string;
   pageId: string;
 }
 
@@ -37,9 +38,14 @@ const ACTION_LABELS: Record<PageActivity["action"], string> = {
   published: "published this page",
 };
 
-export function DocHistory({ api, endpoints, pageId }: DocHistoryProps) {
+export function DocHistory({
+  api,
+  endpoints,
+  workspaceId,
+  pageId,
+}: DocHistoryProps) {
   const usePageHistory = createUsePageHistory(api, endpoints);
-  const { data: history = [], isLoading } = usePageHistory(pageId);
+  const { data: history = [], isLoading } = usePageHistory(workspaceId, pageId);
 
   return (
     <div className="space-y-4">

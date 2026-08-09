@@ -4,7 +4,7 @@ import {
   type DocsApiClient,
   type PageApiEndpoints,
 } from "../../api/page.api";
-import { docsQueryKeys } from "@notrelix/docs-core/query/keys";
+import { docsQueryKeys } from "../keys";
 
 export function createUsePageList(
   api: DocsApiClient,

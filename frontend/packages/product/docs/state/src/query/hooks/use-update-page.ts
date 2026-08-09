@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createPageApi } from "../../api/page.api";
 import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
-import { docsQueryKeys } from "@notrelix/docs-core/query/keys";
+import { docsQueryKeys } from "../keys";
 import type { UpdatePagePayload } from "@notrelix/docs-core";
 
 export function createUseUpdatePage(
@@ -16,7 +16,7 @@ export function createUseUpdatePage(
         pageApi.update(pageId, payload),
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: docsQueryKeys.detail(pageId),
+          queryKey: docsQueryKeys.detail(workspaceId, pageId),
         });
         queryClient.invalidateQueries({
           queryKey: docsQueryKeys.list(workspaceId),

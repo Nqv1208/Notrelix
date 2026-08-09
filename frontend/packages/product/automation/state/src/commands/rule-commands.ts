@@ -43,7 +43,7 @@ export async function updateAutomationRuleCommand(input: {
     mutationFn: (variables) => input.repositories.rules.update(variables),
     invalidate: [
       automationQueryKeys.rules(input.workspaceId),
-      automationQueryKeys.ruleDetail(input.variables.ruleId),
+      automationQueryKeys.ruleDetail(input.workspaceId, input.variables.ruleId),
     ],
   });
 }
@@ -70,7 +70,7 @@ export async function setAutomationRuleEnabledCommand(input: {
         : input.repositories.rules.disable(ruleId),
     invalidate: [
       automationQueryKeys.rules(input.workspaceId),
-      automationQueryKeys.ruleDetail(input.ruleId),
+      automationQueryKeys.ruleDetail(input.workspaceId, input.ruleId),
     ],
   });
 }
@@ -90,7 +90,7 @@ export async function deleteAutomationRuleCommand(input: {
     mutationFn: (ruleId) => input.repositories.rules.delete(ruleId),
     invalidate: [
       automationQueryKeys.rules(input.workspaceId),
-      automationQueryKeys.ruleDetail(input.ruleId),
+      automationQueryKeys.ruleDetail(input.workspaceId, input.ruleId),
     ],
   });
 }

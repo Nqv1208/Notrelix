@@ -61,12 +61,13 @@ export function createAutomationExecutionRealtimeAdapter(
       const payload = parseAutomationExecutionPayload(envelope.payload);
       if (!payload) {
         await context.invalidateQueries([
-          [...automationQueryKeys.workspace(context.workspaceId)],
+          [...automationQueryKeys.all(context.workspaceId)],
         ]);
         return;
       }
 
       const detailKey = automationQueryKeys.executionDetail(
+        context.workspaceId,
         payload.executionId,
       );
       const existing = queryClient.getQueryData<AutomationExecution>(detailKey);

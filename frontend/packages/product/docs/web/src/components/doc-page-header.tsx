@@ -36,7 +36,7 @@ export function DocPageHeader({
   const useUpdatePage = createUseUpdatePage(api, endpoints);
   const useToggleFavorite = createUseToggleFavorite(api, endpoints);
 
-  const { data: breadcrumbs = [] } = usePageBreadcrumb(pageId);
+  const { data: breadcrumbs = [] } = usePageBreadcrumb(workspaceId, pageId);
   const updatePageMutation = useUpdatePage(workspaceId, pageId);
   const toggleFavoriteMutation = useToggleFavorite(workspaceId, pageId);
 

@@ -13,6 +13,7 @@ import { MessageSquare, Trash2, Send } from "lucide-react";
 interface DocCommentsProps {
   api: DocsApiClient;
   endpoints: PageApiEndpoints;
+  workspaceId: string;
   pageId: string;
 }
 
@@ -58,14 +59,22 @@ function CommentItem({
   );
 }
 
-export function DocComments({ api, endpoints, pageId }: DocCommentsProps) {
+export function DocComments({
+  api,
+  endpoints,
+  workspaceId,
+  pageId,
+}: DocCommentsProps) {
   const usePageComments = createUsePageComments(api, endpoints);
   const useCreateComment = createUseCreateComment(api, endpoints);
   const useDeleteComment = createUseDeleteComment(api, endpoints);
 
-  const { data: comments = [], isLoading } = usePageComments(pageId);
-  const createMutation = useCreateComment(pageId);
-  const deleteMutation = useDeleteComment(pageId);
+  const { data: comments = [], isLoading } = usePageComments(
+    workspaceId,
+    pageId,
+  );
+  const createMutation = useCreateComment(workspaceId, pageId);
+  const deleteMutation = useDeleteComment(workspaceId, pageId);
 
   const [newComment, setNewComment] = useState("");
 

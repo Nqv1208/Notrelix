@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFavoriteApi } from "../../api/favorite.api";
 import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
-import { docsQueryKeys } from "@notrelix/docs-core/query/keys";
+import { docsQueryKeys } from "../keys";
 
 export function createUseToggleFavorite(
   api: DocsApiClient,
@@ -17,7 +17,7 @@ export function createUseToggleFavorite(
           queryKey: docsQueryKeys.favorites(workspaceId),
         });
         queryClient.invalidateQueries({
-          queryKey: docsQueryKeys.detail(pageId),
+          queryKey: docsQueryKeys.detail(workspaceId, pageId),
         });
         queryClient.invalidateQueries({
           queryKey: docsQueryKeys.list(workspaceId),

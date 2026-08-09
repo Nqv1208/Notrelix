@@ -4,7 +4,7 @@ import {
   type WorkspaceApiClient,
   type WorkspaceEndpoints,
 } from "../../../core/api/workspace.service";
-import { workspaceQueryKeys } from "../../../core/query/keys";
+import { workspaceQueryKeys } from "../../../query/keys";
 import type { UpdateWorkspaceInput } from "../../../core/types/workspace";
 
 interface UseUpdateWorkspaceDeps {

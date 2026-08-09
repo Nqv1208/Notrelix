@@ -67,6 +67,7 @@ interface CreateDocPageScreenDeps {
 }
 
 interface BlockEditorProps {
+  workspaceId: string;
   pageId: string;
   block: Block;
   onDelete: (id: string) => void;
@@ -219,6 +220,7 @@ function SlashCommandMenu({
 }
 
 function SortableBlockEditor({
+  workspaceId,
   pageId,
   block,
   onDelete,
@@ -268,6 +270,7 @@ function SortableBlockEditor({
 
       <div className="flex-1 relative">
         <BlockEditorContent
+          workspaceId={workspaceId}
           pageId={pageId}
           block={block}
           useUpdateBlock={useUpdateBlock}
@@ -278,11 +281,12 @@ function SortableBlockEditor({
 }
 
 function BlockEditorContent({
+  workspaceId,
   pageId,
   block,
   useUpdateBlock,
 }: Omit<BlockEditorProps, "onDelete">) {
-  const updateBlockMutation = useUpdateBlock(pageId, block.id);
+  const updateBlockMutation = useUpdateBlock(workspaceId, pageId, block.id);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -568,16 +572,17 @@ export function createDocPageScreen({
     workspaceId: string;
     pageId: string;
   }) {
-    const { data: page, isLoading: pageLoading } = usePage(pageId);
+    const { data: page, isLoading: pageLoading } = usePage(workspaceId, pageId);
     const { data: blocks = [], isLoading: blocksLoading } = usePageBlocks(
+      workspaceId,
       pageId,
     ) as { data: Block[]; isLoading: boolean };
-    const { data: breadcrumbs = [] } = usePageBreadcrumb(pageId);
+    const { data: breadcrumbs = [] } = usePageBreadcrumb(workspaceId, pageId);
 
     const updatePageMutation = useUpdatePage(workspaceId, pageId);
-    const createBlockMutation = useCreateBlock(pageId);
-    const deleteBlockMutation = useDeleteBlock(pageId);
-    const reorderBlocksMutation = useReorderBlocks(pageId);
+    const createBlockMutation = useCreateBlock(workspaceId, pageId);
+    const deleteBlockMutation = useDeleteBlock(workspaceId, pageId);
+    const reorderBlocksMutation = useReorderBlocks(workspaceId, pageId);
 
     const [sidePanel, setSidePanel] = useState<
       "comments" | "history" | "tree" | null
@@ -804,6 +809,7 @@ export function createDocPageScreen({
                     {blocks.map((block) => (
                       <SortableBlockEditor
                         key={block.id}
+                        workspaceId={workspaceId}
                         pageId={pageId}
                         block={block}
                         onDelete={handleDeleteBlock}
@@ -858,10 +864,20 @@ export function createDocPageScreen({
             </div>
             <div className="p-4">
               {sidePanel === "comments" && (
-                <DocComments api={api} endpoints={endpoints} pageId={pageId} />
+                <DocComments
+                  api={api}
+                  endpoints={endpoints}
+                  workspaceId={workspaceId}
+                  pageId={pageId}
+                />
               )}
               {sidePanel === "history" && (
-                <DocHistory api={api} endpoints={endpoints} pageId={pageId} />
+                <DocHistory
+                  api={api}
+                  endpoints={endpoints}
+                  workspaceId={workspaceId}
+                  pageId={pageId}
+                />
               )}
               {sidePanel === "tree" && (
                 <DocPageTree workspaceId={workspaceId} currentPageId={pageId} />

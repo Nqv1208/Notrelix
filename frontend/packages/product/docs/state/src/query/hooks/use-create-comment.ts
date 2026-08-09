@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createCommentApi } from "../../api/comment.api";
 import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
-import { docsQueryKeys } from "@notrelix/docs-core/query/keys";
+import { docsQueryKeys } from "../keys";
 import type { CreateCommentPayload } from "@notrelix/docs-core";
 
 export function createUseCreateComment(
@@ -9,14 +9,14 @@ export function createUseCreateComment(
   endpoints: PageApiEndpoints,
 ) {
   const commentApi = createCommentApi(api, endpoints);
-  return function useCreateComment(pageId: string) {
+  return function useCreateComment(workspaceId: string, pageId: string) {
     const queryClient = useQueryClient();
     return useMutation({
       mutationFn: (payload: CreateCommentPayload) =>
         commentApi.create(pageId, payload),
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: docsQueryKeys.comments(pageId),
+          queryKey: docsQueryKeys.comments(workspaceId, pageId),
         });
       },
     });
