@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "main": "expo-router/entry",
   "scripts": {
     "dev": "expo start",
     "build": "expo export --platform all --output-dir dist",
@@ -14,8 +15,15 @@
   },
   "dependencies": {
     "expo": "latest",
+    "expo-linking": "latest",
+    "expo-router": "latest",
     "react": "latest",
     "react-native": "latest",
+    "react-native-gesture-handler": "latest",
+    "react-native-reanimated": "latest",
+    "react-native-safe-area-context": "latest",
+    "react-native-screens": "latest",
+    "react-native-web": "^0.21.2",
     "@notrelix/runtime-mobile": "workspace:*",
     "@notrelix/ui-mobile": "workspace:*",
     "@notrelix/ui-tokens": "workspace:*",

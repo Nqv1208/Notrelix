@@ -19,7 +19,7 @@ export class AppError extends Error {
   public details: unknown;
   public validationErrors: Record<string, string[]> | undefined;
   public correlationId: string | undefined;
-  declare public cause: unknown;
+  public cause: unknown;
 
   constructor(params: {
     kind: AppErrorKind;
