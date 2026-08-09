@@ -100,7 +100,7 @@ describe('closed-world architecture manifest', () => {
       ),
     );
     for (const entry of ARCHITECTURE_MANIFEST) {
-      if (entry.freezeScope !== 'web-production') continue;
+      if (entry.freezeScope !== 'core-production') continue;
       for (const target of entry.allowedInternalImports) {
         expect(testingPackages.has(target), `${entry.packageName} -> ${target}`).toBe(false);
       }
@@ -126,6 +126,80 @@ describe('closed-world architecture manifest', () => {
     expect(runtimeWeb).toBeDefined();
     expect(runtimeWeb!.allowedInternalImports).toContain('@notrelix/realtime');
     expect(runtimeWeb!.allowedInternalImports).toContain('@notrelix/observability');
+  });
+
+  it('ARCH-013 freeze scope uses only the closed taxonomy', () => {
+    const allowed = new Set(['core-production', 'verification', 'marketing-isolated']);
+    for (const entry of ARCHITECTURE_MANIFEST) {
+      expect(allowed.has(entry.freezeScope), entry.packageName).toBe(true);
+    }
+  });
+
+  it('ARCH-014 mobile structural units are core-production', () => {
+    const mobileUnits = [
+      '@notrelix/runtime-mobile',
+      '@notrelix/ui-mobile',
+      '@notrelix/app-mobile',
+      '@notrelix/work-management-mobile',
+      '@notrelix/docs-mobile',
+      '@notrelix/automation-mobile',
+    ];
+    for (const name of mobileUnits) {
+      const entry = ARCHITECTURE_POLICY_BY_PACKAGE.get(name);
+      expect(entry, name).toBeDefined();
+      expect(entry!.freezeScope, name).toBe('core-production');
+    }
+  });
+
+  it('ARCH-015 feature roots never allow ui-mobile', () => {
+    for (const entry of ARCHITECTURE_MANIFEST) {
+      if (entry.layer !== 'feature') continue;
+      expect(entry.allowedInternalImports, entry.packageName).not.toContain('@notrelix/ui-mobile');
+    }
+  });
+
+  it('ARCH-016 feature allow-lists match the least-privilege contract', () => {
+    const expectExact = (name: string, expected: readonly string[]) => {
+      const entry = ARCHITECTURE_POLICY_BY_PACKAGE.get(name);
+      expect(entry, name).toBeDefined();
+      expect([...entry!.allowedInternalImports].sort(), name).toEqual([...expected].sort());
+    };
+
+    expectExact('@notrelix/features-auth', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']);
+    expectExact('@notrelix/features-workspace', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']);
+    expectExact('@notrelix/features-account', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']);
+    expectExact('@notrelix/features-billing', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']);
+    expectExact('@notrelix/features-integrations', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']);
+    expectExact('@notrelix/features-governance', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']);
+    expectExact('@notrelix/features-search', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']);
+    expectExact('@notrelix/features-activity', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query']);
+    expectExact('@notrelix/features-collaboration', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web', '@notrelix/realtime']);
+    expectExact('@notrelix/features-notifications', ['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web', '@notrelix/realtime']);
+  });
+
+  it('ARCH-017 runtime-mobile edges are kernel/platform/realtime/observability only', () => {
+    const runtimeMobile = ARCHITECTURE_POLICY_BY_PACKAGE.get('@notrelix/runtime-mobile');
+    expect(runtimeMobile).toBeDefined();
+    expect([...runtimeMobile!.allowedInternalImports].sort()).toEqual(
+      ['@notrelix/kernel', '@notrelix/platform', '@notrelix/realtime', '@notrelix/observability'].sort(),
+    );
+    expect(runtimeMobile!.allowedInternalImports).not.toContain('@notrelix/contracts');
+  });
+
+  it('ARCH-018 app-mobile edges match the structural contract', () => {
+    const appMobile = ARCHITECTURE_POLICY_BY_PACKAGE.get('@notrelix/app-mobile');
+    expect(appMobile).toBeDefined();
+    expect([...appMobile!.allowedInternalImports].sort()).toEqual(
+      [
+        '@notrelix/runtime-mobile',
+        '@notrelix/query',
+        '@notrelix/ui-mobile',
+        '@notrelix/ui-tokens',
+        '@notrelix/work-management-mobile',
+        '@notrelix/docs-mobile',
+        '@notrelix/automation-mobile',
+      ].sort(),
+    );
   });
 });
 
@@ -177,7 +251,7 @@ describe('layer policy validation', () => {
     }
   });
 
-  it('product testing is never allowed from web-production or app entries', () => {
+  it('product testing is never allowed from core-production or app entries', () => {
     const testingPackages = new Set(
       ARCHITECTURE_MANIFEST.filter((entry) => entry.layer === 'product-testing').map(
         (entry) => entry.packageName,

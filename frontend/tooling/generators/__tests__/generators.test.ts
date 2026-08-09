@@ -452,7 +452,9 @@ describe('generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)', () => {
       );
       expect(fixtureManifest).toContain("packageName: '@notrelix/features-freeze-smoke-feature'");
       expect(fixtureManifest).toContain("relativePath: 'packages/features/freeze-smoke-feature'");
-      expect(fixtureManifest).toContain("[...FEATURE_BASE_IMPORTS, '@notrelix/realtime']");
+      expect(fixtureManifest).toContain(
+        "['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web', '@notrelix/realtime']",
+      );
 
       const fixtureDocs = readFileSync(
         join(tempDir, 'docs/client/architecture/package-boundaries.generated.md'),

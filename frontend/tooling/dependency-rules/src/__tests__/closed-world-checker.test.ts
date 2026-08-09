@@ -69,7 +69,7 @@ describe('closed-world checker preflight', () => {
         packageName: '@notrelix/kernel',
         relativePath: 'packages/foundation/kernel',
         layer: 'foundation',
-        freezeScope: 'web-shared',
+        freezeScope: 'core-production',
         allowedInternalImports: ['@notrelix/does-not-exist'],
       },
     ];
@@ -89,7 +89,7 @@ describe('closed-world checker preflight', () => {
         packageName: '@notrelix/kernel',
         relativePath: 'packages/foundation/kernel',
         layer: 'foundation',
-        freezeScope: 'web-shared',
+        freezeScope: 'core-production',
         allowedInternalImports: ['@notrelix/kernel'],
       },
     ];
@@ -105,14 +105,14 @@ describe('closed-world checker preflight', () => {
         packageName: '@notrelix/platform',
         relativePath: 'packages/foundation/platform',
         layer: 'foundation',
-        freezeScope: 'web-shared',
+        freezeScope: 'core-production',
         allowedInternalImports: ['@notrelix/kernel', '@notrelix/kernel'],
       },
       {
         packageName: '@notrelix/kernel',
         relativePath: 'packages/foundation/kernel',
         layer: 'foundation',
-        freezeScope: 'web-shared',
+        freezeScope: 'core-production',
         allowedInternalImports: [],
       },
     ];
@@ -128,14 +128,14 @@ describe('closed-world checker preflight', () => {
         packageName: '@notrelix/kernel',
         relativePath: 'packages/foundation/kernel',
         layer: 'foundation',
-        freezeScope: 'web-shared',
+        freezeScope: 'core-production',
         allowedInternalImports: [],
       },
       {
         packageName: '@notrelix/kernel',
         relativePath: 'packages/foundation/kernel-copy',
         layer: 'foundation',
-        freezeScope: 'web-shared',
+        freezeScope: 'core-production',
         allowedInternalImports: [],
       },
     ];
@@ -151,14 +151,14 @@ describe('closed-world checker preflight', () => {
         packageName: '@notrelix/kernel',
         relativePath: 'packages/foundation/kernel',
         layer: 'foundation',
-        freezeScope: 'web-shared',
+        freezeScope: 'core-production',
         allowedInternalImports: [],
       },
       {
         packageName: '@notrelix/kernel-alias',
         relativePath: 'packages/foundation/kernel',
         layer: 'foundation',
-        freezeScope: 'web-shared',
+        freezeScope: 'core-production',
         allowedInternalImports: [],
       },
     ];
@@ -270,5 +270,110 @@ describe('closed-world import enforcement', () => {
     expect(
       violations.some((v) => v.includes('NOT_ALLOWED_IMPORT') && v.includes('@notrelix/docs-state')),
     ).toBe(false);
+  });
+
+  test('ARCH-029 direct localStorage access outside runtimes is forbidden', () => {
+    const root = createFixtureRoot();
+    writePackage(
+      root,
+      'packages/ui/web',
+      '@notrelix/ui-web',
+      "export const read = () => localStorage.getItem('theme');\n",
+    );
+
+    const { violations } = checkArchitecture(root);
+
+    expect(violations.some((v) => v.includes('FORBIDDEN_STORAGE_ACCESS'))).toBe(true);
+  });
+
+  test('ARCH-030 storage access is allowed inside runtime adapters', () => {
+    const root = createFixtureRoot();
+    writePackage(
+      root,
+      'packages/runtimes/web',
+      '@notrelix/runtime-web',
+      "export const read = () => localStorage.getItem('theme');\n",
+    );
+
+    const { violations } = checkArchitecture(root);
+
+    expect(violations.some((v) => v.includes('FORBIDDEN_STORAGE_ACCESS'))).toBe(false);
+  });
+
+  test('ARCH-031 createRoute import from packages is forbidden', () => {
+    const root = createFixtureRoot();
+    writePackage(
+      root,
+      'packages/features/auth',
+      '@notrelix/features-auth',
+      "import { createRoute } from '@tanstack/react-router';\nexport const route = createRoute;\n",
+    );
+
+    const { violations } = checkArchitecture(root);
+
+    expect(violations.some((v) => v.includes('FORBIDDEN_ROUTE_CREATION'))).toBe(true);
+  });
+
+  test('ARCH-032 createRoute call from packages is forbidden', () => {
+    const root = createFixtureRoot();
+    writePackage(
+      root,
+      'packages/features/workspace',
+      '@notrelix/features-workspace',
+      "const route = createRoute({ path: '/' });\nexport const x = route;\n",
+    );
+
+    const { violations } = checkArchitecture(root);
+
+    expect(violations.some((v) => v.includes('FORBIDDEN_ROUTE_CREATION'))).toBe(true);
+  });
+
+  test('ARCH-033 non-router imports from @tanstack/react-router are allowed in features', () => {
+    const root = createFixtureRoot();
+    writePackage(
+      root,
+      'packages/features/auth',
+      '@notrelix/features-auth',
+      "import { Link } from '@tanstack/react-router';\nexport const x = Link;\n",
+    );
+
+    const { violations } = checkArchitecture(root);
+
+    expect(violations.some((v) => v.includes('FORBIDDEN_ROUTE_CREATION'))).toBe(false);
+  });
+
+  test('ARCH-034 mobile WebSocket allowed only in native-websocket-factory.ts', () => {
+    const root = createFixtureRoot();
+    writePackage(
+      root,
+      'packages/runtimes/mobile',
+      '@notrelix/runtime-mobile',
+      "export * from './realtime/native-websocket-factory';\n",
+    );
+    const dir = join(root, 'packages/runtimes/mobile/src/realtime');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, 'native-websocket-factory.ts'),
+      "export const factory = () => new WebSocket('wss://example.test');\n",
+    );
+
+    const { violations } = checkArchitecture(root);
+
+    expect(violations.some((v) => v.includes('FORBIDDEN_WEBSOCKET_INSTANTIATION'))).toBe(false);
+  });
+
+  test('ARCH-035 mobile WebSocket outside native-websocket-factory.ts is forbidden', () => {
+    const root = createFixtureRoot();
+    writePackage(root, 'packages/runtimes/mobile', '@notrelix/runtime-mobile', 'export {};\n');
+    const dir = join(root, 'packages/runtimes/mobile/src/other');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, 'rogue.ts'),
+      "export const socket = new WebSocket('wss://example.test');\n",
+    );
+
+    const { violations } = checkArchitecture(root);
+
+    expect(violations.some((v) => v.includes('FORBIDDEN_WEBSOCKET_INSTANTIATION'))).toBe(true);
   });
 });

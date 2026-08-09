@@ -50,7 +50,7 @@ export function checkPackageManifests(rootDir: string): { ok: boolean; violation
       if (internalPkg.startsWith('@notrelix/') && !isTooling) {
         const allowed = policy.allowedInternalImports;
         if (!allowed.some((a) => internalPkg === a || internalPkg.startsWith(a + '/'))) {
-          violations.push(`[DECLARED_DISALLOWED_DEPENDENCY] ${pkg.name} declared disallowed dependency "${internalPkg}"`);
+          violations.push(`[DECLARED_INTERNAL_DEP_NOT_ALLOWED] ${pkg.name} declared disallowed dependency "${internalPkg}"`);
         }
       }
     }

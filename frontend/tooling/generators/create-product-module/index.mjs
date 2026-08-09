@@ -150,7 +150,7 @@ entries.push({
   packageName: corePkg,
   relativePath: `packages/product/${productName}/core`,
   layer: 'product-core',
-  freezeScope: 'web-production',
+  freezeScope: 'core-production',
   allowedInternalImports: ['@notrelix/contracts', '@notrelix/kernel'],
 });
 
@@ -164,7 +164,7 @@ if (withState) {
     packageName: statePkg,
     relativePath: `packages/product/${productName}/state`,
     layer: 'product-state',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [corePkg, '@notrelix/contracts', '@notrelix/query', '@notrelix/platform'],
   });
 }
@@ -186,7 +186,7 @@ if (adaptWeb) {
     packageName: webPkg,
     relativePath: `packages/product/${productName}/web`,
     layer: 'product-adapter',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: webImports,
   });
 }
@@ -204,7 +204,7 @@ if (adaptMobile) {
     packageName: mobilePkg,
     relativePath: `packages/product/${productName}/mobile`,
     layer: 'product-adapter',
-    freezeScope: 'excluded-mobile',
+    freezeScope: 'core-production',
     allowedInternalImports: mobileImports,
   });
 }
@@ -219,7 +219,7 @@ if (extension === 'plugins') {
     packageName: pluginsPkg,
     relativePath: `packages/product/${productName}/plugins`,
     layer: 'product-plugin',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [corePkg],
   });
 }
@@ -234,7 +234,7 @@ if (extension === 'collaboration') {
     packageName: collaborationPkg,
     relativePath: `packages/product/${productName}/collaboration`,
     layer: 'product-collaboration',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [corePkg, '@notrelix/contracts', '@notrelix/platform'],
   });
 }
@@ -249,7 +249,7 @@ if (withTesting) {
     packageName: testingPkg,
     relativePath: `packages/product/${productName}/testing`,
     layer: 'product-testing',
-    freezeScope: 'web-production',
+    freezeScope: 'verification',
     allowedInternalImports: [corePkg],
   });
 }

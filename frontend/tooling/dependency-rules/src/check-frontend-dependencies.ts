@@ -12,6 +12,8 @@ import {
   isForbiddenClientCall,
   isForbiddenWebSocketInstantiation,
   isForbiddenQueryClientInstantiation,
+  isForbiddenStorageAccess,
+  isForbiddenRouteCreation,
   isDeepSrcImport,
 } from './forbidden-source-patterns';
 import { classifyLayer } from './layer-classifier';
@@ -191,6 +193,20 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
             violations.push(`[DEEP_IMPORT] ${pkgName} → "${imported}" in ${relPath}`);
           }
 
+          if (
+            isForbiddenRouteCreation(relPath) &&
+            imported === '@tanstack/react-router' &&
+            node.importClause?.namedBindings &&
+            ts.isNamedImports(node.importClause.namedBindings) &&
+            node.importClause.namedBindings.elements.some(
+              (element) => element.name.text === 'createRoute',
+            )
+          ) {
+            violations.push(
+              `[FORBIDDEN_ROUTE_CREATION] ${pkgName} imports createRoute from '@tanstack/react-router' in ${relPath}`,
+            );
+          }
+
           const basePkg = imported.startsWith('next/')
             ? 'next'
             : (imported.match(/^(@notrelix\/[^/]+)/)?.[1] ?? imported);
@@ -230,11 +246,14 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
           }
         }
 
-        // Check CallExpressions (factory calls, env reads, dynamic imports)
+        // Check CallExpressions (factory calls, env reads, dynamic imports, createRoute)
         if (ts.isCallExpression(node)) {
           const expressionText = node.expression.getText(sourceFile);
           if (expressionText === 'createNotrelixClient' && isForbiddenClientCall(relPath)) {
             violations.push(`[FORBIDDEN_CLIENT_CREATION] ${pkgName} called createNotrelixClient in ${relPath}`);
+          }
+          if (expressionText === 'createRoute' && isForbiddenRouteCreation(relPath)) {
+            violations.push(`[FORBIDDEN_ROUTE_CREATION] ${pkgName} called createRoute in ${relPath}`);
           }
         }
 
@@ -249,7 +268,8 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
           }
         }
 
-        // Check direct PropertyAccessExpression (process.env / import.meta.env inside packages outside app config adapters)
+        // Check direct PropertyAccessExpression (process.env / import.meta.env
+        // inside packages outside app config adapters; localStorage / sessionStorage)
         if (ts.isPropertyAccessExpression(node)) {
           const propText = node.getText(sourceFile);
           if (
@@ -257,6 +277,9 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
             relPath.startsWith('/packages/')
           ) {
             violations.push(`[DIRECT_ENV_READ] ${pkgName} accessed ${propText} in ${relPath}`);
+          }
+          if (/(^|[.\s])(localStorage|sessionStorage)[.(]/.test(propText) && isForbiddenStorageAccess(relPath)) {
+            violations.push(`[FORBIDDEN_STORAGE_ACCESS] ${pkgName} accessed ${propText} in ${relPath}`);
           }
         }
 

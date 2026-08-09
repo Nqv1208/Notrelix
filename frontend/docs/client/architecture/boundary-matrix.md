@@ -63,7 +63,7 @@ edge set per package.
    import UI implementation packages or notification side-effect libraries;
    result/error data flows to the web adapter, which owns presentation.
 5. **Product testing packages are verification-only.** No production app or
-   web-production package may import a `*-testing` package.
+   core-production package may import a `*-testing` package.
 6. **Features consume injected capabilities.** Features must not create global
    API clients, QueryClient instances, or WebSocket connections.
 7. **Apps compose, not implement.** `apps/web` is the production composition

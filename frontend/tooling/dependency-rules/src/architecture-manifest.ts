@@ -24,12 +24,15 @@ export type ArchitectureLayer =
   | 'feature'
   | 'app';
 
-export type FreezeScope =
-  | 'web-production'
-  | 'web-verification'
-  | 'web-shared'
-  | 'excluded-mobile'
-  | 'excluded-marketing-app';
+/**
+ * Freeze scope describes architecture coverage, not feature completeness:
+ *
+ * - `core-production` — every production package/app unit, including all
+ *   mobile structural packages;
+ * - `verification` — testing-only packages;
+ * - `marketing-isolated` — the marketing app.
+ */
+export type FreezeScope = 'core-production' | 'verification' | 'marketing-isolated';
 
 export interface ArchitecturePackagePolicy {
   readonly packageName: string;
@@ -52,13 +55,32 @@ export interface ManifestViolation {
   readonly message: string;
 }
 
-const FEATURE_BASE_IMPORTS = [
+/**
+ * Feature roots get exact least-privilege allow-lists (A2). No shared base
+ * list, no `ui-mobile` grant to feature roots in this phase.
+ */
+const FEATURE_WEB_BASE = [
   '@notrelix/contracts',
   '@notrelix/kernel',
   '@notrelix/platform',
   '@notrelix/query',
   '@notrelix/ui-web',
-  '@notrelix/ui-mobile',
+] as const;
+
+const FEATURE_WEB_REALTIME = [
+  '@notrelix/contracts',
+  '@notrelix/kernel',
+  '@notrelix/platform',
+  '@notrelix/query',
+  '@notrelix/ui-web',
+  '@notrelix/realtime',
+] as const;
+
+const FEATURE_WEB_NO_UI = [
+  '@notrelix/contracts',
+  '@notrelix/kernel',
+  '@notrelix/platform',
+  '@notrelix/query',
 ] as const;
 
 export const ARCHITECTURE_MANIFEST = [
@@ -67,42 +89,42 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/contracts',
     relativePath: 'packages/foundation/contracts',
     layer: 'foundation',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/kernel'],
   },
   {
     packageName: '@notrelix/kernel',
     relativePath: 'packages/foundation/kernel',
     layer: 'foundation',
-    freezeScope: 'web-shared',
+    freezeScope: 'core-production',
     allowedInternalImports: [],
   },
   {
     packageName: '@notrelix/platform',
     relativePath: 'packages/foundation/platform',
     layer: 'foundation',
-    freezeScope: 'web-shared',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/kernel', '@notrelix/contracts'],
   },
   {
     packageName: '@notrelix/query',
     relativePath: 'packages/foundation/query',
     layer: 'foundation',
-    freezeScope: 'web-shared',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/kernel'],
   },
   {
     packageName: '@notrelix/realtime',
     relativePath: 'packages/foundation/realtime',
     layer: 'foundation',
-    freezeScope: 'web-shared',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/kernel', '@notrelix/contracts'],
   },
   {
     packageName: '@notrelix/observability',
     relativePath: 'packages/foundation/observability',
     layer: 'foundation',
-    freezeScope: 'web-shared',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/kernel'],
   },
 
@@ -111,7 +133,7 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/runtime-web',
     relativePath: 'packages/runtimes/web',
     layer: 'runtime',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/platform',
       '@notrelix/kernel',
@@ -124,8 +146,8 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/runtime-mobile',
     relativePath: 'packages/runtimes/mobile',
     layer: 'runtime',
-    freezeScope: 'excluded-mobile',
-    allowedInternalImports: ['@notrelix/platform', '@notrelix/kernel', '@notrelix/contracts'],
+    freezeScope: 'core-production',
+    allowedInternalImports: ['@notrelix/kernel', '@notrelix/platform', '@notrelix/realtime', '@notrelix/observability'],
   },
 
   // ── UI ──────────────────────────────────────────────────────────────
@@ -133,28 +155,28 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/ui-tokens',
     relativePath: 'packages/ui/tokens',
     layer: 'ui',
-    freezeScope: 'web-shared',
+    freezeScope: 'core-production',
     allowedInternalImports: [],
   },
   {
     packageName: '@notrelix/ui-web',
     relativePath: 'packages/ui/web',
     layer: 'ui',
-    freezeScope: 'web-shared',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/ui-tokens'],
   },
   {
     packageName: '@notrelix/ui-mobile',
     relativePath: 'packages/ui/mobile',
     layer: 'ui',
-    freezeScope: 'excluded-mobile',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/ui-tokens'],
   },
   {
     packageName: '@notrelix/ui-icons',
     relativePath: 'packages/ui/icons',
     layer: 'ui',
-    freezeScope: 'web-shared',
+    freezeScope: 'core-production',
     allowedInternalImports: [],
   },
 
@@ -163,14 +185,14 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/work-management-core',
     relativePath: 'packages/product/work-management/core',
     layer: 'product-core',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/contracts', '@notrelix/kernel'],
   },
   {
     packageName: '@notrelix/work-management-state',
     relativePath: 'packages/product/work-management/state',
     layer: 'product-state',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/work-management-core',
       '@notrelix/contracts',
@@ -183,14 +205,14 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/work-management-plugins',
     relativePath: 'packages/product/work-management/plugins',
     layer: 'product-plugin',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/work-management-core'],
   },
   {
     packageName: '@notrelix/work-management-web',
     relativePath: 'packages/product/work-management/web',
     layer: 'product-adapter',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/work-management-core',
       '@notrelix/work-management-state',
@@ -203,7 +225,7 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/work-management-mobile',
     relativePath: 'packages/product/work-management/mobile',
     layer: 'product-adapter',
-    freezeScope: 'excluded-mobile',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/work-management-core',
       '@notrelix/work-management-state',
@@ -216,7 +238,7 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/work-management-testing',
     relativePath: 'packages/product/work-management/testing',
     layer: 'product-testing',
-    freezeScope: 'web-verification',
+    freezeScope: 'verification',
     allowedInternalImports: [
       '@notrelix/work-management-core',
       '@notrelix/work-management-state',
@@ -228,14 +250,14 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/docs-core',
     relativePath: 'packages/product/docs/core',
     layer: 'product-core',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/contracts', '@notrelix/kernel'],
   },
   {
     packageName: '@notrelix/docs-state',
     relativePath: 'packages/product/docs/state',
     layer: 'product-state',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/docs-core',
       '@notrelix/contracts',
@@ -247,14 +269,14 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/docs-collaboration',
     relativePath: 'packages/product/docs/collaboration',
     layer: 'product-collaboration',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/docs-core', '@notrelix/realtime'],
   },
   {
     packageName: '@notrelix/docs-web',
     relativePath: 'packages/product/docs/web',
     layer: 'product-adapter',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/docs-core',
       '@notrelix/docs-state',
@@ -267,7 +289,7 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/docs-mobile',
     relativePath: 'packages/product/docs/mobile',
     layer: 'product-adapter',
-    freezeScope: 'excluded-mobile',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/docs-core',
       '@notrelix/docs-collaboration',
@@ -281,14 +303,14 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/automation-core',
     relativePath: 'packages/product/automation/core',
     layer: 'product-core',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: ['@notrelix/contracts', '@notrelix/kernel'],
   },
   {
     packageName: '@notrelix/automation-state',
     relativePath: 'packages/product/automation/state',
     layer: 'product-state',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/automation-core',
       '@notrelix/query',
@@ -299,7 +321,7 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/automation-web',
     relativePath: 'packages/product/automation/web',
     layer: 'product-adapter',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/automation-core',
       '@notrelix/ui-web',
@@ -310,7 +332,7 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/automation-mobile',
     relativePath: 'packages/product/automation/mobile',
     layer: 'product-adapter',
-    freezeScope: 'excluded-mobile',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/automation-core',
       '@notrelix/ui-mobile',
@@ -321,7 +343,7 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/automation-testing',
     relativePath: 'packages/product/automation/testing',
     layer: 'product-testing',
-    freezeScope: 'web-verification',
+    freezeScope: 'verification',
     allowedInternalImports: [
       '@notrelix/automation-core',
       '@notrelix/automation-state',
@@ -334,71 +356,71 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/features-auth',
     relativePath: 'packages/features/auth',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_BASE],
   },
   {
     packageName: '@notrelix/features-workspace',
     relativePath: 'packages/features/workspace',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_BASE],
   },
   {
     packageName: '@notrelix/features-account',
     relativePath: 'packages/features/account',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_BASE],
   },
   {
     packageName: '@notrelix/features-billing',
     relativePath: 'packages/features/billing',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_BASE],
   },
   {
     packageName: '@notrelix/features-integrations',
     relativePath: 'packages/features/integrations',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_BASE],
   },
   {
     packageName: '@notrelix/features-notifications',
     relativePath: 'packages/features/notifications',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS, '@notrelix/realtime'],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_REALTIME],
   },
   {
     packageName: '@notrelix/features-activity',
     relativePath: 'packages/features/activity',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_NO_UI],
   },
   {
     packageName: '@notrelix/features-governance',
     relativePath: 'packages/features/governance',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_BASE],
   },
   {
     packageName: '@notrelix/features-search',
     relativePath: 'packages/features/search',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_BASE],
   },
   {
     packageName: '@notrelix/features-collaboration',
     relativePath: 'packages/features/collaboration',
     layer: 'feature',
-    freezeScope: 'web-production',
-    allowedInternalImports: [...FEATURE_BASE_IMPORTS, '@notrelix/realtime'],
+    freezeScope: 'core-production',
+    allowedInternalImports: [...FEATURE_WEB_REALTIME],
   },
 
   // ── Apps ───────────────────────────────────────────────────────────
@@ -406,7 +428,7 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/app-web',
     relativePath: 'apps/web',
     layer: 'app',
-    freezeScope: 'web-production',
+    freezeScope: 'core-production',
     allowedInternalImports: [
       '@notrelix/kernel',
       '@notrelix/contracts',
@@ -444,22 +466,22 @@ export const ARCHITECTURE_MANIFEST = [
     packageName: '@notrelix/app-marketing',
     relativePath: 'apps/marketing',
     layer: 'app',
-    freezeScope: 'excluded-marketing-app',
+    freezeScope: 'marketing-isolated',
     allowedInternalImports: ['@notrelix/ui-tokens', '@notrelix/ui-web', '@notrelix/ui-icons'],
   },
   {
     packageName: '@notrelix/app-mobile',
     relativePath: 'apps/mobile',
     layer: 'app',
-    freezeScope: 'excluded-mobile',
+    freezeScope: 'core-production',
     allowedInternalImports: [
-      '@notrelix/kernel',
-      '@notrelix/platform',
-      '@notrelix/query',
       '@notrelix/runtime-mobile',
-      '@notrelix/ui-tokens',
+      '@notrelix/query',
       '@notrelix/ui-mobile',
+      '@notrelix/ui-tokens',
       '@notrelix/work-management-mobile',
+      '@notrelix/docs-mobile',
+      '@notrelix/automation-mobile',
     ],
   },
 ] as const satisfies readonly ArchitecturePackagePolicy[];

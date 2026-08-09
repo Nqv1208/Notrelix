@@ -216,10 +216,10 @@ const entry = {
   packageName: pkgName,
   relativePath: `packages/features/${featureName}`,
   layer: 'feature',
-  freezeScope: 'web-production',
+  freezeScope: 'core-production',
   allowedInternalImports: realtime
-    ? "[...FEATURE_BASE_IMPORTS, '@notrelix/realtime']"
-    : '[...FEATURE_BASE_IMPORTS]',
+    ? "['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web', '@notrelix/realtime']"
+    : "['@notrelix/contracts', '@notrelix/kernel', '@notrelix/platform', '@notrelix/query', '@notrelix/ui-web']",
 };
 
 const registered = registerManifestEntries(rootDir, [entry], FEATURES_SECTION_ANCHOR);
