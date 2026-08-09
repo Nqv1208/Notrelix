@@ -218,8 +218,38 @@ jobs:
         run: pnpm test:fanout
         working-directory: frontend
 
+  test-ui-freeze:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Run UI freeze gates (storybook build + a11y + visual smoke)
+        run: pnpm test:ui:freeze
+        working-directory: frontend
+        env:
+          CI: "1"
+
   build-web:
-    needs: [typecheck, lint, test-node, test-web, test-freeze-gates, check-deps]
+    needs: [typecheck, lint, test-node, test-web, test-freeze-gates, test-ui-freeze, check-deps]
     runs-on: ubuntu-latest
     env:
       VITE_API_URL: https://api.example.invalid/api/v1
@@ -257,7 +287,7 @@ jobs:
           retention-days: 7
 
   build-marketing:
-    needs: [typecheck, lint, test-node, test-web, test-freeze-gates, check-deps]
+    needs: [typecheck, lint, test-node, test-web, test-freeze-gates, test-ui-freeze, check-deps]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -345,6 +375,7 @@ jobs:
       - test-node
       - test-web
       - test-freeze-gates
+      - test-ui-freeze
       - check-deps
       - build-web
       - build-marketing
@@ -360,6 +391,7 @@ jobs:
             "${{ needs.test-node.result }}"
             "${{ needs.test-web.result }}"
             "${{ needs.test-freeze-gates.result }}"
+            "${{ needs.test-ui-freeze.result }}"
             "${{ needs.check-deps.result }}"
             "${{ needs.build-web.result }}"
             "${{ needs.build-marketing.result }}"

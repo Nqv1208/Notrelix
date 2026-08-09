@@ -6,6 +6,7 @@ packages:
   - "packages/product/*/*"
   - "packages/features/*"
   - "tooling/*"
+  - "tooling/storybook/web"
 
 catalog:
   "react": "^19.0.0"
