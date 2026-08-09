@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 
 export interface KeyValueStorage {
   getItem(key: string): string | null;
@@ -7,7 +7,7 @@ export interface KeyValueStorage {
   clear?(): void;
 }
 
-type Theme = 'dark' | 'light' | 'system';
+type Theme = "dark" | "light" | "system";
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -22,32 +22,38 @@ interface ThemeProviderState {
 }
 
 const initialState: ThemeProviderState = {
-  theme: 'system',
+  theme: "system",
   setTheme: () => null,
 };
 
-const ThemeProviderContext = React.createContext<ThemeProviderState>(initialState);
+const ThemeProviderContext =
+  React.createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
-  storageKey = 'notrelix-ui-theme',
+  defaultTheme = "system",
+  storageKey = "notrelix-ui-theme",
   storage,
   ...props
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(
-    () => (storage ? (storage.getItem(storageKey) as Theme) : undefined) || defaultTheme
+    () =>
+      (storage ? (storage.getItem(storageKey) as Theme) : undefined) ||
+      defaultTheme,
   );
 
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const root = window.document.documentElement;
     const applyTheme = (nextTheme: Theme) => {
-      root.classList.remove('light', 'dark');
+      root.classList.remove("light", "dark");
 
-      if (nextTheme === 'system') {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      if (nextTheme === "system") {
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+          .matches
+          ? "dark"
+          : "light";
         root.classList.add(systemTheme);
         return;
       }
@@ -57,14 +63,14 @@ export function ThemeProvider({
 
     applyTheme(theme);
 
-    if (theme !== 'system') return;
+    if (theme !== "system") return;
 
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const onSystemThemeChange = () => applyTheme('system');
-    media.addEventListener('change', onSystemThemeChange);
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemThemeChange = () => applyTheme("system");
+    media.addEventListener("change", onSystemThemeChange);
 
     return () => {
-      media.removeEventListener('change', onSystemThemeChange);
+      media.removeEventListener("change", onSystemThemeChange);
     };
   }, [theme, storageKey]);
 
@@ -80,7 +86,7 @@ export function ThemeProvider({
         setThemeState(newTheme);
       },
     }),
-    [theme, storageKey, storage]
+    [theme, storageKey, storage],
   );
 
   return (
@@ -93,7 +99,7 @@ export function ThemeProvider({
 export const useTheme = () => {
   const context = React.useContext(ThemeProviderContext);
   if (context === undefined) {
-    return { theme: 'system' as Theme, setTheme: () => null };
+    return { theme: "system" as Theme, setTheme: () => null };
   }
   return context;
 };

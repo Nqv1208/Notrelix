@@ -54,7 +54,7 @@ import {
   X,
   Zap,
   type LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 export type { LucideIcon };
 

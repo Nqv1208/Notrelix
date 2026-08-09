@@ -1,7 +1,12 @@
-import type { Block, CreateBlockPayload, UpdateBlockPayload, ReorderBlocksInput } from '@notrelix/docs-core';
-import type { BlockDtoApi } from '../dto';
-import { mapBlock } from '../model/block.mapper';
-import type { DocsApiClient, PageApiEndpoints } from './page.api';
+import type {
+  Block,
+  CreateBlockPayload,
+  UpdateBlockPayload,
+  ReorderBlocksInput,
+} from "@notrelix/docs-core";
+import type { BlockDtoApi } from "../dto";
+import { mapBlock } from "../model/block.mapper";
+import type { DocsApiClient, PageApiEndpoints } from "./page.api";
 
 export function createBlockApi(
   api: DocsApiClient,
@@ -39,7 +44,10 @@ export function createBlockApi(
       await api.post<void>(endpoints.blocks.reorder, payload);
     },
 
-    async batchUpdate(pageId: string, payloads: UpdateBlockPayload[]): Promise<Block[]> {
+    async batchUpdate(
+      pageId: string,
+      payloads: UpdateBlockPayload[],
+    ): Promise<Block[]> {
       const blocks = await api.post<BlockDtoApi[]>(
         endpoints.blocks.batch(pageId),
         { blocks: payloads },

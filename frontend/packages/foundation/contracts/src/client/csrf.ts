@@ -10,21 +10,21 @@
 
 export function getCsrfToken(): string | null {
   if (typeof document === "undefined") {
-    return null
+    return null;
   }
 
   // 1. Try reading from meta tag first
-  const meta = document.querySelector('meta[name="csrf-token"]')
+  const meta = document.querySelector('meta[name="csrf-token"]');
   if (meta) {
-    const token = meta.getAttribute("content")
-    if (token) return token
+    const token = meta.getAttribute("content");
+    if (token) return token;
   }
 
   // 2. Try reading from XSRF-TOKEN cookie
-  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/)
+  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
   if (match && match[1] !== undefined) {
-    return decodeURIComponent(match[1])
+    return decodeURIComponent(match[1]);
   }
 
-  return null
+  return null;
 }

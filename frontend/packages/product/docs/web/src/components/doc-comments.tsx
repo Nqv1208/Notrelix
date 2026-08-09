@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   createUsePageComments,
   createUseCreateComment,
@@ -6,9 +6,9 @@ import {
   type DocsApiClient,
   type PageApiEndpoints,
   type PageComment,
-} from '@notrelix/docs-state';
-import { Button, Avatar, AvatarFallback } from '@notrelix/ui-web';
-import { MessageSquare, Trash2, Send } from 'lucide-react';
+} from "@notrelix/docs-state";
+import { Button, Avatar, AvatarFallback } from "@notrelix/ui-web";
+import { MessageSquare, Trash2, Send } from "lucide-react";
 
 interface DocCommentsProps {
   api: DocsApiClient;
@@ -42,7 +42,9 @@ function CommentItem({
             </span>
           )}
         </div>
-        <p className="text-sm text-foreground whitespace-pre-wrap">{comment.body}</p>
+        <p className="text-sm text-foreground whitespace-pre-wrap">
+          {comment.body}
+        </p>
       </div>
       <Button
         variant="ghost"
@@ -65,13 +67,13 @@ export function DocComments({ api, endpoints, pageId }: DocCommentsProps) {
   const createMutation = useCreateComment(pageId);
   const deleteMutation = useDeleteComment(pageId);
 
-  const [newComment, setNewComment] = useState('');
+  const [newComment, setNewComment] = useState("");
 
   const handleSubmit = () => {
     if (!newComment.trim()) return;
     createMutation.mutate(
       { pageId, body: newComment.trim() },
-      { onSuccess: () => setNewComment('') }
+      { onSuccess: () => setNewComment("") },
     );
   };
 
@@ -91,7 +93,9 @@ export function DocComments({ api, endpoints, pageId }: DocCommentsProps) {
             ))}
           </div>
         ) : comments.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-3 italic">No comments yet</p>
+          <p className="text-sm text-muted-foreground py-3 italic">
+            No comments yet
+          </p>
         ) : (
           comments.map((comment: PageComment) => (
             <CommentItem
@@ -109,7 +113,7 @@ export function DocComments({ api, endpoints, pageId }: DocCommentsProps) {
           type="text"
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmit()}
           placeholder="Add a comment..."
           className="flex-1 h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />

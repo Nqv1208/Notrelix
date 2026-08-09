@@ -1,5 +1,5 @@
-import { Outlet } from '@tanstack/react-router';
-import { RealtimeLifecycle } from '../providers/realtime-lifecycle';
+import { Outlet } from "@tanstack/react-router";
+import { RealtimeLifecycle } from "../providers/realtime-lifecycle";
 
 export function RootLayout() {
   return (

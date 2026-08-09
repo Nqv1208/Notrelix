@@ -1,9 +1,9 @@
-import type { Permission } from "./permissions"
+import type { Permission } from "./permissions";
 
-export type UserRole = "owner" | "admin" | "member" | "viewer"
+export type UserRole = "owner" | "admin" | "member" | "viewer";
 
 export type PermissionResourceContext = {
-  workspaceId?: string
+  workspaceId?: string;
   resourceType?:
     | "workspace"
     | "board"
@@ -13,10 +13,10 @@ export type PermissionResourceContext = {
     | "comment"
     | "billing"
     | "automation"
-    | "integration"
-  resourceId?: string
-  targetUserId?: string
-}
+    | "integration";
+  resourceId?: string;
+  targetUserId?: string;
+};
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   owner: [
@@ -41,7 +41,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "billing.manage",
     "governance.role.manage",
     "automation.manage",
-    "integration.manage"
+    "integration.manage",
   ],
   admin: [
     "workspace.member.invite",
@@ -62,7 +62,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "comment.resolve",
     "attachment.upload",
     "automation.manage",
-    "integration.manage"
+    "integration.manage",
   ],
   member: [
     "board.item.create",
@@ -73,39 +73,40 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "doc.share",
     "comment.create",
     "comment.resolve",
-    "attachment.upload"
+    "attachment.upload",
   ],
-  viewer: [
-    "comment.create"
-  ]
-}
+  viewer: ["comment.create"],
+};
 
 export function hasPermission(
   role: string | undefined,
   permission: Permission,
-  context?: PermissionResourceContext
+  context?: PermissionResourceContext,
 ): boolean {
-  if (!role) return false
-  
+  if (!role) return false;
+
   // Normalize roles: guest role maps to viewer permissions
-  let normalizedRole = role.toLowerCase().trim()
+  let normalizedRole = role.toLowerCase().trim();
   if (normalizedRole === "guest") {
-    normalizedRole = "viewer"
+    normalizedRole = "viewer";
   }
-  
-  const permissionsList = ROLE_PERMISSIONS[normalizedRole as UserRole]
-  if (!permissionsList) return false
-  
-  const baseAllowed = permissionsList.includes(permission)
-  if (!baseAllowed) return false
+
+  const permissionsList = ROLE_PERMISSIONS[normalizedRole as UserRole];
+  if (!permissionsList) return false;
+
+  const baseAllowed = permissionsList.includes(permission);
+  if (!baseAllowed) return false;
 
   // Resource context rules (hardening)
   if (context) {
     // Last-owner rules: cannot remove owner
-    if (permission === "workspace.member.remove" && context.targetUserId === "owner") {
-      return false
+    if (
+      permission === "workspace.member.remove" &&
+      context.targetUserId === "owner"
+    ) {
+      return false;
     }
   }
 
-  return true
+  return true;
 }

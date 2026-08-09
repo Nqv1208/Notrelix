@@ -1,7 +1,7 @@
 export interface Comment {
   id: string;
   resourceId: string;
-  resourceType: 'page' | 'block' | 'card';
+  resourceType: "page" | "block" | "card";
   authorId: string;
   authorName: string;
   body: string;
@@ -24,7 +24,7 @@ export interface Presence {
   userId: string;
   name: string;
   avatarUrl?: string;
-  status: 'active' | 'idle' | 'offline';
+  status: "active" | "idle" | "offline";
   lastSeenAt: string;
 }
 

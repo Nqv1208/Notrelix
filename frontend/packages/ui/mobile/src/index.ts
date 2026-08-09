@@ -9,7 +9,7 @@ export interface MobileButtonProps {
   readonly title: string;
   readonly onPress?: () => void;
   readonly disabled?: boolean;
-  readonly variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  readonly variant?: "primary" | "secondary" | "outline" | "ghost";
 }
 
 export interface MobileCardProps {

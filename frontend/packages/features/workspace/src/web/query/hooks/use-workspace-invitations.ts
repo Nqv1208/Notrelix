@@ -1,7 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { createInvitationsService, type InvitationsEndpoints } from '../../../core/api/invitations.service';
-import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
-import { workspaceQueryKeys } from '../../../core/query/keys';
+import { useQuery } from "@tanstack/react-query";
+import {
+  createInvitationsService,
+  type InvitationsEndpoints,
+} from "../../../core/api/invitations.service";
+import type { WorkspaceApiClient } from "../../../core/api/workspace.service";
+import { workspaceQueryKeys } from "../../../core/query/keys";
 
 interface UseWorkspaceInvitationsDeps {
   api: WorkspaceApiClient;
@@ -9,10 +12,13 @@ interface UseWorkspaceInvitationsDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUseWorkspaceInvitations({ api, endpoints, options }: UseWorkspaceInvitationsDeps) {
+export function createUseWorkspaceInvitations({
+  api,
+  endpoints,
+  options,
+}: UseWorkspaceInvitationsDeps) {
   const service = createInvitationsService(api, endpoints, options);
 
   return function useWorkspaceInvitations(workspaceId: string) {

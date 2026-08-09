@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
-import { useParams } from '@tanstack/react-router';
-import { createDocPageScreen } from '@notrelix/docs-web';
-import { useFeatureRuntimeDependencies } from '@notrelix/runtime-web';
+import { useMemo } from "react";
+import { useParams } from "@tanstack/react-router";
+import { createDocPageScreen } from "@notrelix/docs-web";
+import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
 
 export function DocPage() {
   const { workspaceId, docId } = useParams({
-    from: '/workspaces/$workspaceId/docs/$docId',
+    from: "/workspaces/$workspaceId/docs/$docId",
   });
   const { api, endpoints } = useFeatureRuntimeDependencies();
 
@@ -14,10 +14,5 @@ export function DocPage() {
     [api, endpoints],
   );
 
-  return (
-    <DocPageScreen
-      workspaceId={workspaceId}
-      pageId={docId}
-    />
-  );
+  return <DocPageScreen workspaceId={workspaceId} pageId={docId} />;
 }

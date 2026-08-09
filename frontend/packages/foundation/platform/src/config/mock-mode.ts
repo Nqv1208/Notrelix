@@ -5,30 +5,30 @@ export type MockFeature =
   | "governance"
   | "automation"
   | "integrations"
-  | "work-management"
+  | "work-management";
 
 export type MockModeConfig = {
-  nodeEnv?: string
-  all?: string | boolean
-  flags?: Partial<Record<MockFeature, string | boolean | undefined>>
-}
+  nodeEnv?: string;
+  all?: string | boolean;
+  flags?: Partial<Record<MockFeature, string | boolean | undefined>>;
+};
 
 function isEnabled(value: string | boolean | undefined): boolean {
-  return value === true || value === "true"
+  return value === true || value === "true";
 }
 
 export function createMockModeChecker(config: MockModeConfig = {}) {
   return function isMockModeEnabled(feature: MockFeature): boolean {
     if (config.nodeEnv === "production") {
-      return false
+      return false;
     }
 
     if (isEnabled(config.all)) {
-      return true
+      return true;
     }
 
-    return isEnabled(config.flags?.[feature])
-  }
+    return isEnabled(config.flags?.[feature]);
+  };
 }
 
-export const isMockModeEnabled = createMockModeChecker()
+export const isMockModeEnabled = createMockModeChecker();

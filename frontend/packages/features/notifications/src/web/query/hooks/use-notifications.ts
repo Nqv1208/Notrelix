@@ -1,6 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from '../../../core/api/notifications.service';
-import { notificationsQueryKeys } from '../../../core/query/keys';
+import { useQuery } from "@tanstack/react-query";
+import {
+  createNotificationsService,
+  type NotificationsApiClient,
+  type NotificationsEndpoints,
+} from "../../../core/api/notifications.service";
+import { notificationsQueryKeys } from "../../../core/query/keys";
 
 interface UseNotificationsDeps {
   api: NotificationsApiClient;
@@ -8,10 +12,13 @@ interface UseNotificationsDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUseNotifications({ api, endpoints, options }: UseNotificationsDeps) {
+export function createUseNotifications({
+  api,
+  endpoints,
+  options,
+}: UseNotificationsDeps) {
   const service = createNotificationsService(api, endpoints, options);
   return function useNotifications() {
     return useQuery({

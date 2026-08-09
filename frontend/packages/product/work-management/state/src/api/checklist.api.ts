@@ -1,59 +1,61 @@
-import type { NotrelixClient } from "@notrelix/contracts"
-import { endpoints } from "@notrelix/contracts"
-import type { ChecklistDtoApi } from "@notrelix/work-management-core"
+import type { NotrelixClient } from "@notrelix/contracts";
+import { endpoints } from "@notrelix/contracts";
+import type { ChecklistDtoApi } from "@notrelix/work-management-core";
 
 export interface CreateChecklistInput {
-  cardId: string
-  title: string
+  cardId: string;
+  title: string;
 }
 
 export interface UpdateChecklistInput {
-  checklistId: string
-  title?: string
-  position?: number
+  checklistId: string;
+  title?: string;
+  position?: number;
 }
 
 export interface CreateChecklistItemInput {
-  checklistId: string
-  title: string
+  checklistId: string;
+  title: string;
 }
 
 export interface UpdateChecklistItemInput {
-  itemId: string
-  title?: string
-  isChecked?: boolean
-  dueDate?: string | null
-  assigneeId?: string | null
+  itemId: string;
+  title?: string;
+  isChecked?: boolean;
+  dueDate?: string | null;
+  assigneeId?: string | null;
 }
 
 export function createChecklistApi(client: NotrelixClient) {
   const api = client.api;
   return {
     async getChecklists(cardId: string): Promise<ChecklistDtoApi[]> {
-      return api.get<ChecklistDtoApi[]>(endpoints.cards.checklists(cardId))
+      return api.get<ChecklistDtoApi[]>(endpoints.cards.checklists(cardId));
     },
 
     async createChecklist(input: CreateChecklistInput): Promise<string> {
       return api.post<string>(endpoints.cards.checklists(input.cardId), {
         title: input.title,
-      })
+      });
     },
 
     async updateChecklist(input: UpdateChecklistInput): Promise<void> {
       await api.patch<void>(endpoints.checklists.detail(input.checklistId), {
         title: input.title,
         position: input.position,
-      })
+      });
     },
 
     async deleteChecklist(checklistId: string): Promise<void> {
-      await api.delete<void>(endpoints.checklists.detail(checklistId))
+      await api.delete<void>(endpoints.checklists.detail(checklistId));
     },
 
-    async createChecklistItem(input: CreateChecklistItemInput): Promise<string> {
+    async createChecklistItem(
+      input: CreateChecklistItemInput,
+    ): Promise<string> {
       return api.post<string>(endpoints.checklists.items(input.checklistId), {
         title: input.title,
-      })
+      });
     },
 
     async updateChecklistItem(input: UpdateChecklistItemInput): Promise<void> {
@@ -62,11 +64,11 @@ export function createChecklistApi(client: NotrelixClient) {
         isChecked: input.isChecked,
         dueDate: input.dueDate,
         assigneeId: input.assigneeId,
-      })
+      });
     },
 
     async deleteChecklistItem(itemId: string): Promise<void> {
-      await api.delete<void>(endpoints.checklistItems.detail(itemId))
+      await api.delete<void>(endpoints.checklistItems.detail(itemId));
     },
   };
 }

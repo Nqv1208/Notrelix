@@ -1,12 +1,12 @@
-import type { QueryClient } from '@tanstack/react-query';
-import { executeOptimisticCommand } from '@notrelix/query';
+import type { QueryClient } from "@tanstack/react-query";
+import { executeOptimisticCommand } from "@notrelix/query";
 import type {
   AutomationRule,
   CreateAutomationRuleInput,
   UpdateAutomationRuleInput,
-} from '@notrelix/automation-core';
-import type { AutomationRepositories } from '../data/repositories';
-import { automationQueryKeys } from '../query/keys';
+} from "@notrelix/automation-core";
+import type { AutomationRepositories } from "../data/repositories";
+import { automationQueryKeys } from "../query/keys";
 
 export async function createAutomationRuleCommand(input: {
   queryClient: QueryClient;
@@ -20,7 +20,10 @@ export async function createAutomationRuleCommand(input: {
     updates: [],
     variables: input.variables,
     mutationFn: (variables, context) =>
-      input.repositories.rules.create({ ...variables, name: variables.name.trim() }),
+      input.repositories.rules.create({
+        ...variables,
+        name: variables.name.trim(),
+      }),
     invalidate: [automationQueryKeys.rules(input.variables.workspaceId)],
   });
 }
@@ -62,7 +65,9 @@ export async function setAutomationRuleEnabledCommand(input: {
       enabled: input.enabled,
     },
     mutationFn: ({ ruleId, enabled }) =>
-      enabled ? input.repositories.rules.enable(ruleId) : input.repositories.rules.disable(ruleId),
+      enabled
+        ? input.repositories.rules.enable(ruleId)
+        : input.repositories.rules.disable(ruleId),
     invalidate: [
       automationQueryKeys.rules(input.workspaceId),
       automationQueryKeys.ruleDetail(input.ruleId),

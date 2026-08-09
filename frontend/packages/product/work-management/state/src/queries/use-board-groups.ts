@@ -1,10 +1,10 @@
-import { useCallback, useMemo } from "react"
-import type { BoardGroup, ViewConfig } from "@notrelix/work-management-core"
+import { useCallback, useMemo } from "react";
+import type { BoardGroup, ViewConfig } from "@notrelix/work-management-core";
 
 export function useBoardGroups(
   groups: BoardGroup[],
   viewConfig: ViewConfig,
-  updateViewConfig: (patch: Partial<ViewConfig>) => void
+  updateViewConfig: (patch: Partial<ViewConfig>) => void,
 ) {
   const tableGroups = useMemo(
     () =>
@@ -12,21 +12,26 @@ export function useBoardGroups(
         ...group,
         isCollapsed: viewConfig.collapsedGroups[group.id] ?? group.isCollapsed,
       })),
-    [groups, viewConfig.collapsedGroups]
-  )
+    [groups, viewConfig.collapsedGroups],
+  );
 
   const toggleGroup = useCallback(
     (groupId: string) => {
-      const baseValue = groups.find((group) => group.id === groupId)?.isCollapsed ?? false
+      const baseValue =
+        groups.find((group) => group.id === groupId)?.isCollapsed ?? false;
       updateViewConfig({
         collapsedGroups: {
           ...viewConfig.collapsedGroups,
           [groupId]: !(viewConfig.collapsedGroups[groupId] ?? baseValue),
         },
-      })
+      });
     },
-    [groups, updateViewConfig, viewConfig.collapsedGroups]
-  )
+    [groups, updateViewConfig, viewConfig.collapsedGroups],
+  );
 
-  return { groups: tableGroups, collapsedGroups: viewConfig.collapsedGroups, toggleGroup }
+  return {
+    groups: tableGroups,
+    collapsedGroups: viewConfig.collapsedGroups,
+    toggleGroup,
+  };
 }

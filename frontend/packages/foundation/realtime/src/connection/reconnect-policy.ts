@@ -27,7 +27,8 @@ export class ReconnectPolicy {
   }
 
   public getNextDelay(attempt: number): number {
-    const rawDelay = this.minDelayMs * Math.pow(this.backoffFactor, Math.max(0, attempt));
+    const rawDelay =
+      this.minDelayMs * Math.pow(this.backoffFactor, Math.max(0, attempt));
     const cappedDelay = Math.min(this.maxDelayMs, rawDelay);
 
     if (!this.jitter) {

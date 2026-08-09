@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { AUTH_ERROR_KEYS } from './auth-errors';
+import { z } from "zod";
+import { AUTH_ERROR_KEYS } from "./auth-errors";
 
 export const loginSchema = z.object({
   email: z

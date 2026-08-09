@@ -1,13 +1,20 @@
-import type { Card, FullBoardResponse, CreateCardInput } from "@notrelix/work-management-core";
+import type {
+  Card,
+  FullBoardResponse,
+  CreateCardInput,
+} from "@notrelix/work-management-core";
 
 export function createOptimisticCard(
   fullBoard: FullBoardResponse,
   payload: CreateCardInput,
   id: string,
 ): Card {
-  const targetGroup = fullBoard.groups.find((group) => group.id === payload.listId);
+  const targetGroup = fullBoard.groups.find(
+    (group) => group.id === payload.listId,
+  );
   const title = payload.title.trim();
-  const position = payload.position ?? ((targetGroup?.cards.at(-1)?.position ?? 0) + 1);
+  const position =
+    payload.position ?? (targetGroup?.cards.at(-1)?.position ?? 0) + 1;
   const status = statusForGroup(targetGroup?.title ?? "");
   const now = new Date().toISOString();
 
@@ -23,7 +30,10 @@ export function createOptimisticCard(
     status,
     dueDate: undefined,
     startDate: undefined,
-    completedAt: status === "status-done" || status === "status-completed" ? now : undefined,
+    completedAt:
+      status === "status-done" || status === "status-completed"
+        ? now
+        : undefined,
     isArchived: false,
     isDeleted: false,
     members: [],

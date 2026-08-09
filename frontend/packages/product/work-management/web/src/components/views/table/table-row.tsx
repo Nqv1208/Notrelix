@@ -1,18 +1,26 @@
-import React from "react"
-import { MoreHorizontal, GripVertical } from "lucide-react"
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { Checkbox } from "@notrelix/ui-web"
+import React from "react";
+import { MoreHorizontal, GripVertical } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Checkbox } from "@notrelix/ui-web";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@notrelix/ui-web"
-import { useDeleteCard, useDuplicateCard } from "@notrelix/work-management-state"
-import type { Board, BoardGroup, BoardTableColumn, Card } from "@notrelix/work-management-core"
-import { cn } from "@notrelix/ui-web"
-import { TableCell } from "./table-cell"
+} from "@notrelix/ui-web";
+import {
+  useDeleteCard,
+  useDuplicateCard,
+} from "@notrelix/work-management-state";
+import type {
+  Board,
+  BoardGroup,
+  BoardTableColumn,
+  Card,
+} from "@notrelix/work-management-core";
+import { cn } from "@notrelix/ui-web";
+import { TableCell } from "./table-cell";
 
 export function TableRow({
   board,
@@ -26,25 +34,39 @@ export function TableRow({
   onSelect,
   onOpenDetail,
 }: {
-  board: Board
-  group: BoardGroup
-  card: Card
-  columns: BoardTableColumn[]
-  gridTemplate: string
-  groupColor?: string
-  isChecked: boolean
-  isDetailSelected: boolean
-  onSelect: (selected: boolean) => void
-  onOpenDetail: () => void
+  board: Board;
+  group: BoardGroup;
+  card: Card;
+  columns: BoardTableColumn[];
+  gridTemplate: string;
+  groupColor?: string;
+  isChecked: boolean;
+  isDetailSelected: boolean;
+  onSelect: (selected: boolean) => void;
+  onOpenDetail: () => void;
 }) {
-  const deleteCard = useDeleteCard(board.id, board.workspaceId)
-  const duplicateCard = useDuplicateCard(board.id, board.workspaceId)
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const deleteCard = useDeleteCard(board.id, board.workspaceId);
+  const duplicateCard = useDuplicateCard(board.id, board.workspaceId);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: card.id,
     data: { type: "card", card, group },
-  })
-  const accent = groupColor ?? "transparent"
-  const rowTransition = [transition, "background-color 200ms ease", "box-shadow 200ms ease", "border-left-color 200ms ease"].filter(Boolean).join(", ")
+  });
+  const accent = groupColor ?? "transparent";
+  const rowTransition = [
+    transition,
+    "background-color 200ms ease",
+    "box-shadow 200ms ease",
+    "border-left-color 200ms ease",
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <div
@@ -53,8 +75,8 @@ export function TableRow({
       tabIndex={0}
       onKeyDown={(e: any) => {
         if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          onOpenDetail()
+          e.preventDefault();
+          onOpenDetail();
         }
       }}
       aria-label={`${card.title} in ${group.title}`}
@@ -63,22 +85,32 @@ export function TableRow({
       className={cn(
         "group/row grid min-h-12 cursor-pointer items-center border-b border-l-[6px] border-border/70 bg-table-row text-sm duration-150 ease-out hover:bg-table-row-hover",
         isChecked && "bg-table-selected/40 hover:bg-table-selected/50",
-        isDetailSelected && "bg-table-selected ring-1 ring-inset ring-primary/40",
-        isDragging && "relative z-10 shadow-xl shadow-black/30"
+        isDetailSelected &&
+          "bg-table-selected ring-1 ring-inset ring-primary/40",
+        isDragging && "relative z-10 shadow-xl shadow-black/30",
       )}
-      style={{
-        gridTemplateColumns: gridTemplate,
-        transform: CSS.Transform.toString(transform),
-        transition: rowTransition,
-        opacity: isDragging ? 0.72 : 1,
-        "--group-color": accent,
-        borderLeftColor: `color-mix(in oklch, ${accent} 22%, transparent)`,
-      } as React.CSSProperties & { "--group-color": string }}
-      onMouseEnter={(e: any) => { e.currentTarget.style.borderLeftColor = accent }}
-      onMouseLeave={(e: any) => { e.currentTarget.style.borderLeftColor = `color-mix(in oklch, ${accent} 22%, transparent)` }}
+      style={
+        {
+          gridTemplateColumns: gridTemplate,
+          transform: CSS.Transform.toString(transform),
+          transition: rowTransition,
+          opacity: isDragging ? 0.72 : 1,
+          "--group-color": accent,
+          borderLeftColor: `color-mix(in oklch, ${accent} 22%, transparent)`,
+        } as React.CSSProperties & { "--group-color": string }
+      }
+      onMouseEnter={(e: any) => {
+        e.currentTarget.style.borderLeftColor = accent;
+      }}
+      onMouseLeave={(e: any) => {
+        e.currentTarget.style.borderLeftColor = `color-mix(in oklch, ${accent} 22%, transparent)`;
+      }}
       onClick={onOpenDetail}
     >
-      <div role="gridcell" className="sticky left-0 z-10 flex h-full items-center gap-2 border-r border-border/70 bg-inherit px-3">
+      <div
+        role="gridcell"
+        className="sticky left-0 z-10 flex h-full items-center gap-2 border-r border-border/70 bg-inherit px-3"
+      >
         <Checkbox
           checked={isChecked}
           onCheckedChange={(checked: any) => onSelect(Boolean(checked))}
@@ -98,11 +130,23 @@ export function TableRow({
         </button>
       </div>
       {columns.map((column) => (
-        <div key={column.id} role="gridcell" className="flex min-w-0 items-center border-r border-border/70 px-3 py-2">
-          <TableCell board={board} card={card} field={column.field} onOpenDetail={onOpenDetail} />
+        <div
+          key={column.id}
+          role="gridcell"
+          className="flex min-w-0 items-center border-r border-border/70 px-3 py-2"
+        >
+          <TableCell
+            board={board}
+            card={card}
+            field={column.field}
+            onOpenDetail={onOpenDetail}
+          />
         </div>
       ))}
-      <div role="gridcell" className="flex h-full items-center justify-center border-r border-border/70 px-2">
+      <div
+        role="gridcell"
+        className="flex h-full items-center justify-center border-r border-border/70 px-2"
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -114,13 +158,25 @@ export function TableRow({
               <MoreHorizontal className="size-4" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(event: any) => event.stopPropagation()}>
-            <DropdownMenuItem onClick={onOpenDetail}>Open details</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => duplicateCard.mutate(card.id)}>Duplicate task</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive" onClick={() => deleteCard.mutate(card.id)}>Delete task</DropdownMenuItem>
+          <DropdownMenuContent
+            align="end"
+            onClick={(event: any) => event.stopPropagation()}
+          >
+            <DropdownMenuItem onClick={onOpenDetail}>
+              Open details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => duplicateCard.mutate(card.id)}>
+              Duplicate task
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => deleteCard.mutate(card.id)}
+            >
+              Delete task
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </div>
-  )
+  );
 }

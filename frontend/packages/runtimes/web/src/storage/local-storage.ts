@@ -1,4 +1,4 @@
-import type { KeyValueStorage } from '@notrelix/platform';
+import type { KeyValueStorage } from "@notrelix/platform";
 
 export function createLocalStorageAdapter(): KeyValueStorage {
   return {

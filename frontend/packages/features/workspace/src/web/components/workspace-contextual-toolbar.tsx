@@ -11,9 +11,12 @@ import {
   Search,
   Settings2,
   UserRound,
-} from 'lucide-react';
-import { Button, Input, ToggleGroup, ToggleGroupItem } from '@notrelix/ui-web';
-import type { WorkspaceView, WorkspaceViewType } from '../../core/types/workspace';
+} from "lucide-react";
+import { Button, Input, ToggleGroup, ToggleGroupItem } from "@notrelix/ui-web";
+import type {
+  WorkspaceView,
+  WorkspaceViewType,
+} from "../../core/types/workspace";
 
 export function WorkspaceContextualToolbar({
   activeType,
@@ -22,20 +25,24 @@ export function WorkspaceContextualToolbar({
   activeType: WorkspaceViewType;
   activeView?: WorkspaceView;
 }) {
-  if (activeType === 'table') return null;
-  if (activeType === 'doc') return <DocToolbar pageId={activeView?.target.pageId ?? ''} />;
-  if (activeType === 'kanban') return <KanbanToolbar />;
-  if (activeType === 'calendar') return <CalendarToolbar />;
-  if (activeType === 'timeline') return <TimelineToolbar />;
-  if (activeType === 'dashboard') return <DashboardToolbar />;
+  if (activeType === "table") return null;
+  if (activeType === "doc")
+    return <DocToolbar pageId={activeView?.target.pageId ?? ""} />;
+  if (activeType === "kanban") return <KanbanToolbar />;
+  if (activeType === "calendar") return <CalendarToolbar />;
+  if (activeType === "timeline") return <TimelineToolbar />;
+  if (activeType === "dashboard") return <DashboardToolbar />;
   return <TableToolbar />;
 }
 
-function SearchBox({ placeholder = 'Search' }: { placeholder?: string }) {
+function SearchBox({ placeholder = "Search" }: { placeholder?: string }) {
   return (
     <div className="relative hidden min-w-[180px] sm:block">
       <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Input className="h-9 rounded-full bg-card pl-8" placeholder={placeholder} />
+      <Input
+        className="h-9 rounded-full bg-card pl-8"
+        placeholder={placeholder}
+      />
     </div>
   );
 }
@@ -90,7 +97,11 @@ function CalendarToolbar() {
         <CalendarDays className="size-4" />
         Today
       </Button>
-      <ToggleGroup type="single" defaultValue="month" className="hidden sm:flex">
+      <ToggleGroup
+        type="single"
+        defaultValue="month"
+        className="hidden sm:flex"
+      >
         <ToggleGroupItem value="month" size="sm">
           Month
         </ToggleGroupItem>
@@ -139,7 +150,9 @@ function DashboardToolbar() {
 
 function ToolbarShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-14 flex-wrap items-center gap-2 bg-card px-4 py-2 sm:px-6">{children}</div>
+    <div className="flex min-h-14 flex-wrap items-center gap-2 bg-card px-4 py-2 sm:px-6">
+      {children}
+    </div>
   );
 }
 
@@ -156,7 +169,9 @@ function ToolbarButton({
     <Button variant="ghost" size="sm" className="rounded-full">
       <Icon className="size-4" />
       {!compact ? <span className="hidden sm:inline">{label}</span> : null}
-      {!compact ? <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" /> : null}
+      {!compact ? (
+        <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" />
+      ) : null}
       {compact ? <span className="sr-only">{label}</span> : null}
     </Button>
   );

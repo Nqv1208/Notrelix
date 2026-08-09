@@ -1,10 +1,10 @@
-import * as React from "react"
-import { ShieldAlert } from "lucide-react"
+import * as React from "react";
+import { ShieldAlert } from "lucide-react";
 
 export interface AccessDeniedStateProps {
-  title?: string
-  description?: string
-  action?: React.ReactNode
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
 }
 
 export function AccessDeniedState({
@@ -18,10 +18,14 @@ export function AccessDeniedState({
         <ShieldAlert className="h-6 w-6" />
       </div>
       <div className="space-y-1 max-w-sm">
-        <h3 className="text-lg font-semibold tracking-tight text-amber-900 dark:text-amber-200">{title}</h3>
-        <p className="text-sm text-amber-700/85 dark:text-amber-400/80">{description}</p>
+        <h3 className="text-lg font-semibold tracking-tight text-amber-900 dark:text-amber-200">
+          {title}
+        </h3>
+        <p className="text-sm text-amber-700/85 dark:text-amber-400/80">
+          {description}
+        </p>
       </div>
       {action && <div className="mt-2">{action}</div>}
     </div>
-  )
+  );
 }

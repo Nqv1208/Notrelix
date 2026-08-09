@@ -1,18 +1,40 @@
-import React, { createContext, useContext, type ReactNode } from 'react';
-import { createNotrelixClient, type NotrelixClient, type NotrelixClientConfig, type SessionExpiredEvent } from '@notrelix/contracts';
-import { parseEnv, type ResolvedRuntimeEnvironment, type RuntimeEnvironmentInput } from '@notrelix/kernel';
-import { ConsoleTelemetryAdapter, type TelemetryPort } from '@notrelix/observability';
-import { RealtimeClient, type RealtimeTransport } from '@notrelix/realtime';
-import type { ClockPort, KeyValueStorage } from '@notrelix/platform';
-import { createSessionEventBus, type SessionEventBus } from './session-event-bus';
-import { createBrowserWebSocketFactory } from '../realtime/browser-websocket-factory';
-import { createBrowserKeyValueStorage } from '../storage/browser-key-value-storage';
+import React, { createContext, useContext, type ReactNode } from "react";
+import {
+  createNotrelixClient,
+  type NotrelixClient,
+  type NotrelixClientConfig,
+  type SessionExpiredEvent,
+} from "@notrelix/contracts";
+import {
+  parseEnv,
+  type ResolvedRuntimeEnvironment,
+  type RuntimeEnvironmentInput,
+} from "@notrelix/kernel";
+import {
+  ConsoleTelemetryAdapter,
+  type TelemetryPort,
+} from "@notrelix/observability";
+import { RealtimeClient, type RealtimeTransport } from "@notrelix/realtime";
+import type { ClockPort, KeyValueStorage } from "@notrelix/platform";
+import {
+  createSessionEventBus,
+  type SessionEventBus,
+} from "./session-event-bus";
+import { createBrowserWebSocketFactory } from "../realtime/browser-websocket-factory";
+import { createBrowserKeyValueStorage } from "../storage/browser-key-value-storage";
 
-export { createSessionEventBus, type SessionEventBus, type SessionExpiredEvent } from './session-event-bus';
-export { useFeatureRuntimeDependencies, type FeatureRuntimeDependencies } from './use-feature-runtime-dependencies';
-export { createBrowserKeyValueStorage } from '../storage/browser-key-value-storage';
+export {
+  createSessionEventBus,
+  type SessionEventBus,
+  type SessionExpiredEvent,
+} from "./session-event-bus";
+export {
+  useFeatureRuntimeDependencies,
+  type FeatureRuntimeDependencies,
+} from "./use-feature-runtime-dependencies";
+export { createBrowserKeyValueStorage } from "../storage/browser-key-value-storage";
 
-export type { ClockPort, KeyValueStorage } from '@notrelix/platform';
+export type { ClockPort, KeyValueStorage } from "@notrelix/platform";
 
 export interface FeatureFlagsPort {
   isEnabled(flag: string): boolean;
@@ -42,7 +64,7 @@ export interface AppRuntime {
 
 export function createAppRuntime(
   input: RuntimeEnvironmentInput,
-  factories: AppRuntimeFactories = {}
+  factories: AppRuntimeFactories = {},
 ): AppRuntime {
   const resolvedEnv = parseEnv(input);
 
@@ -51,14 +73,19 @@ export function createAppRuntime(
     isoNow: () => new Date().toISOString(),
   };
 
-  const telemetry: TelemetryPort = factories.telemetry ?? new ConsoleTelemetryAdapter({
-    releaseSha: resolvedEnv.releaseSha,
-    environment: resolvedEnv.mode,
-  });
+  const telemetry: TelemetryPort =
+    factories.telemetry ??
+    new ConsoleTelemetryAdapter({
+      releaseSha: resolvedEnv.releaseSha,
+      environment: resolvedEnv.mode,
+    });
 
-  const storage: KeyValueStorage = factories.storage ?? createBrowserKeyValueStorage(telemetry);
+  const storage: KeyValueStorage =
+    factories.storage ?? createBrowserKeyValueStorage(telemetry);
 
-  const sessionEvents = createSessionEventBus((err, ctx) => telemetry.reportError(err, ctx));
+  const sessionEvents = createSessionEventBus((err, ctx) =>
+    telemetry.reportError(err, ctx),
+  );
 
   const client = factories.createApiClient
     ? factories.createApiClient({
@@ -131,7 +158,7 @@ export function AppRuntimeProvider({
 export function useAppRuntime(): AppRuntime {
   const context = useContext(AppRuntimeContext);
   if (!context) {
-    throw new Error('useAppRuntime must be used within an AppRuntimeProvider');
+    throw new Error("useAppRuntime must be used within an AppRuntimeProvider");
   }
   return context;
 }

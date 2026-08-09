@@ -1,9 +1,9 @@
-import type { ID } from './ids';
-import type { DocsUser } from './user';
-import type { LinkedTask, LinkedBoard } from './integration';
-import type { Block } from './block';
+import type { ID } from "./ids";
+import type { DocsUser } from "./user";
+import type { LinkedTask, LinkedBoard } from "./integration";
+import type { Block } from "./block";
 
-export type PageStatus = 'draft' | 'review' | 'published' | 'archived';
+export type PageStatus = "draft" | "review" | "published" | "archived";
 
 export interface CollaborativeMetadata {
   version: number;
@@ -11,7 +11,7 @@ export interface CollaborativeMetadata {
   activeUserIds: ID[];
   lastSyncedAt: string;
   realtimeChannel: string;
-  aiSummaryStatus: 'idle' | 'queued' | 'ready';
+  aiSummaryStatus: "idle" | "queued" | "ready";
 }
 
 export interface Page {
@@ -58,7 +58,7 @@ export interface PageActivity {
   id: ID;
   pageId: ID;
   actorId: ID;
-  action: 'created' | 'edited' | 'commented' | 'shared' | 'moved' | 'published';
+  action: "created" | "edited" | "commented" | "shared" | "moved" | "published";
   targetLabel: string;
   createdAt: string;
 }

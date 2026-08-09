@@ -1,1 +1,1 @@
-export { notificationsQueryKeys } from './keys';
+export { notificationsQueryKeys } from "./keys";

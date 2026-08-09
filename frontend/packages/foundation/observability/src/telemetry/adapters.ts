@@ -1,11 +1,15 @@
-import type { TelemetryErrorPayload, TelemetryPayload, TelemetryPort } from './ports';
-import { redactTelemetryProperties } from './redaction';
+import type {
+  TelemetryErrorPayload,
+  TelemetryPayload,
+  TelemetryPort,
+} from "./ports";
+import { redactTelemetryProperties } from "./redaction";
 
 export class ConsoleTelemetryAdapter implements TelemetryPort {
   public constructor(private readonly context: Record<string, unknown> = {}) {}
 
   public track(name: string, properties?: Record<string, unknown>): void {
-    console.debug('[Telemetry]', {
+    console.debug("[Telemetry]", {
       name,
       properties: redactTelemetryProperties(properties),
       context: redactTelemetryProperties(this.context) ?? {},
@@ -14,7 +18,7 @@ export class ConsoleTelemetryAdapter implements TelemetryPort {
   }
 
   public reportError(error: unknown, context?: Record<string, unknown>): void {
-    console.error('[Telemetry Error]', {
+    console.error("[Telemetry Error]", {
       error,
       context: redactTelemetryProperties({ ...this.context, ...context }) ?? {},
       timestamp: new Date().toISOString(),
@@ -60,8 +64,10 @@ export class RecordingTelemetryAdapter implements TelemetryPort {
 
 export class ProductionTelemetryAdapter implements TelemetryPort {
   public constructor(
-    private readonly send: (payload: TelemetryPayload | TelemetryErrorPayload) => Promise<void> | void,
-    private readonly context: Record<string, unknown> = {}
+    private readonly send: (
+      payload: TelemetryPayload | TelemetryErrorPayload,
+    ) => Promise<void> | void,
+    private readonly context: Record<string, unknown> = {},
   ) {}
 
   public track(name: string, properties?: Record<string, unknown>): void {
@@ -82,7 +88,10 @@ export class ProductionTelemetryAdapter implements TelemetryPort {
   }
 
   public withContext(context: Record<string, unknown>): TelemetryPort {
-    return new ProductionTelemetryAdapter(this.send, { ...this.context, ...context });
+    return new ProductionTelemetryAdapter(this.send, {
+      ...this.context,
+      ...context,
+    });
   }
 
   public async flush(): Promise<void> {}

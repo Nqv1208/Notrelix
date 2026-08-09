@@ -1,29 +1,40 @@
-import { useState, useEffect, useMemo } from 'react';
-import { createUseProfile, createUseUpdateProfile } from '@notrelix/features-account';
-import { useAppRuntime } from '@notrelix/runtime-web';
-import { Button, Input } from '@notrelix/ui-web';
-import { toast } from 'sonner';
+import { useState, useEffect, useMemo } from "react";
+import {
+  createUseProfile,
+  createUseUpdateProfile,
+} from "@notrelix/features-account";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { Button, Input } from "@notrelix/ui-web";
+import { toast } from "sonner";
 
 export function AccountProfilePage() {
   const { api: runtimeClient } = useAppRuntime();
 
   const useProfile = useMemo(
-    () => createUseProfile({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    () =>
+      createUseProfile({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
     [runtimeClient],
   );
 
   const useUpdateProfile = useMemo(
-    () => createUseUpdateProfile({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    () =>
+      createUseUpdateProfile({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
     [runtimeClient],
   );
 
   const { profile, isLoading } = useProfile();
   const updateMutation = useUpdateProfile();
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [timezone, setTimezone] = useState('');
-  const [locale, setLocale] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [locale, setLocale] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -36,7 +47,7 @@ export function AccountProfilePage() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error('Name is required');
+      toast.error("Name is required");
       return;
     }
 
@@ -46,9 +57,11 @@ export function AccountProfilePage() {
         timezone,
         locale,
       });
-      toast.success('Profile updated');
+      toast.success("Profile updated");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update profile');
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update profile",
+      );
     }
   };
 
@@ -66,7 +79,9 @@ export function AccountProfilePage() {
     <div className="space-y-6">
       <div>
         <h2 className="font-semibold text-sm mb-1">Profile</h2>
-        <p className="text-xs text-muted-foreground">Update your personal information.</p>
+        <p className="text-xs text-muted-foreground">
+          Update your personal information.
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -81,17 +96,17 @@ export function AccountProfilePage() {
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-foreground">Email</label>
-          <Input
-            value={email}
-            disabled
-            className="opacity-60"
-          />
-          <p className="text-xs text-muted-foreground">Contact support to change your email.</p>
+          <Input value={email} disabled className="opacity-60" />
+          <p className="text-xs text-muted-foreground">
+            Contact support to change your email.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Timezone</label>
+            <label className="text-sm font-medium text-foreground">
+              Timezone
+            </label>
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
@@ -110,7 +125,9 @@ export function AccountProfilePage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Language</label>
+            <label className="text-sm font-medium text-foreground">
+              Language
+            </label>
             <select
               value={locale}
               onChange={(e) => setLocale(e.target.value)}
@@ -122,8 +139,11 @@ export function AccountProfilePage() {
           </div>
         </div>
 
-        <Button onClick={handleSave} disabled={updateMutation.isPending || !name.trim()}>
-          {updateMutation.isPending ? 'Saving...' : 'Save changes'}
+        <Button
+          onClick={handleSave}
+          disabled={updateMutation.isPending || !name.trim()}
+        >
+          {updateMutation.isPending ? "Saving..." : "Save changes"}
         </Button>
       </div>
     </div>

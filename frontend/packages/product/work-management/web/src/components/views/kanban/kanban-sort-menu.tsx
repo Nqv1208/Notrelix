@@ -1,6 +1,6 @@
-import type { KanbanSortOption } from "@notrelix/work-management-core"
-import { ArrowUpDown } from "lucide-react"
-import { Button } from "@notrelix/ui-web"
+import type { KanbanSortOption } from "@notrelix/work-management-core";
+import { ArrowUpDown } from "lucide-react";
+import { Button } from "@notrelix/ui-web";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,21 +8,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@notrelix/ui-web"
+} from "@notrelix/ui-web";
 
 export function KanbanSortMenu({
   activeSort,
   onSortChange,
 }: {
-  activeSort: KanbanSortOption
-  onSortChange: (option: KanbanSortOption) => void
+  activeSort: KanbanSortOption;
+  onSortChange: (option: KanbanSortOption) => void;
 }) {
   const labels: Record<KanbanSortOption, string> = {
     position: "Default",
     title: "Title (A-Z)",
     priority: "Priority",
     dueDate: "Due Date",
-  }
+  };
 
   return (
     <DropdownMenu>
@@ -42,5 +42,5 @@ export function KanbanSortMenu({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

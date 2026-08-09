@@ -8,7 +8,11 @@ export type {
   NotificationType,
   Notification,
   NotificationPreferences,
-} from './types/notifications';
+} from "./types/notifications";
 
-export { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from './api/notifications.service';
-export * from './query';
+export {
+  createNotificationsService,
+  type NotificationsApiClient,
+  type NotificationsEndpoints,
+} from "./api/notifications.service";
+export * from "./query";

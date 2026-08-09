@@ -9,82 +9,82 @@ import {
   Search,
   Globe,
   type LucideIcon,
-} from 'lucide-react'
+} from "lucide-react";
 
-import { Badge } from '@notrelix/ui-web/components/ui/badge'
+import { Badge } from "@notrelix/ui-web/components/ui/badge";
 
 type Feature = {
-  icon: LucideIcon
-  title: string
-  description: string
-  color: string
-}
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  color: string;
+};
 
 const features: Feature[] = [
   {
     icon: FileText,
-    title: 'Block-based Editor',
+    title: "Block-based Editor",
     description:
-      'Rich document editor with headings, lists, code blocks, callouts, toggles, and 13+ block types. Slash commands for rapid content creation.',
-    color: 'from-violet-500 to-indigo-500',
+      "Rich document editor with headings, lists, code blocks, callouts, toggles, and 13+ block types. Slash commands for rapid content creation.",
+    color: "from-violet-500 to-indigo-500",
   },
   {
     icon: LayoutGrid,
-    title: 'Kanban Boards',
+    title: "Kanban Boards",
     description:
-      'Visual project boards with drag-and-drop cards, labels, checklists, and due dates. Track work across lists with ease.',
-    color: 'from-emerald-500 to-teal-500',
+      "Visual project boards with drag-and-drop cards, labels, checklists, and due dates. Track work across lists with ease.",
+    color: "from-emerald-500 to-teal-500",
   },
   {
     icon: Users,
-    title: 'Team Workspaces',
+    title: "Team Workspaces",
     description:
-      'Invite members, assign roles, and collaborate in shared workspaces. Granular permission controls keep content secure.',
-    color: 'from-amber-500 to-orange-500',
+      "Invite members, assign roles, and collaborate in shared workspaces. Granular permission controls keep content secure.",
+    color: "from-amber-500 to-orange-500",
   },
   {
     icon: Blocks,
-    title: 'Nested Pages',
+    title: "Nested Pages",
     description:
-      'Organize knowledge with unlimited page nesting. Build wikis, runbooks, and documentation hierarchies effortlessly.',
-    color: 'from-pink-500 to-rose-500',
+      "Organize knowledge with unlimited page nesting. Build wikis, runbooks, and documentation hierarchies effortlessly.",
+    color: "from-pink-500 to-rose-500",
   },
   {
     icon: Zap,
-    title: 'Automations',
+    title: "Automations",
     description:
-      'Set up rules that trigger actions automatically — move cards, send notifications, update statuses, and more.',
-    color: 'from-cyan-500 to-blue-500',
+      "Set up rules that trigger actions automatically — move cards, send notifications, update statuses, and more.",
+    color: "from-cyan-500 to-blue-500",
   },
   {
     icon: Bell,
-    title: 'Smart Notifications',
+    title: "Smart Notifications",
     description:
-      'Stay in the loop with real-time notifications for comments, mentions, due dates, and workspace activity.',
-    color: 'from-purple-500 to-fuchsia-500',
+      "Stay in the loop with real-time notifications for comments, mentions, due dates, and workspace activity.",
+    color: "from-purple-500 to-fuchsia-500",
   },
   {
     icon: Shield,
-    title: 'Roles & Permissions',
+    title: "Roles & Permissions",
     description:
-      'Fine-grained RBAC with workspace-level and resource-level access control. Share pages and boards selectively.',
-    color: 'from-slate-500 to-zinc-600',
+      "Fine-grained RBAC with workspace-level and resource-level access control. Share pages and boards selectively.",
+    color: "from-slate-500 to-zinc-600",
   },
   {
     icon: Search,
-    title: 'Universal Search',
+    title: "Universal Search",
     description:
-      'Find anything instantly across pages, blocks, cards, and comments. Full-text search across your entire workspace.',
-    color: 'from-indigo-500 to-violet-500',
+      "Find anything instantly across pages, blocks, cards, and comments. Full-text search across your entire workspace.",
+    color: "from-indigo-500 to-violet-500",
   },
   {
     icon: Globe,
-    title: 'Integrations',
+    title: "Integrations",
     description:
-      'Connect with Slack, Google Drive, GitHub, and more. Webhooks let you build custom workflows with any service.',
-    color: 'from-teal-500 to-emerald-500',
+      "Connect with Slack, Google Drive, GitHub, and more. Webhooks let you build custom workflows with any service.",
+    color: "from-teal-500 to-emerald-500",
   },
-]
+];
 
 export function FeaturesSection() {
   return (
@@ -108,7 +108,7 @@ export function FeaturesSection() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((feature) => {
-            const Icon = feature.icon
+            const Icon = feature.icon;
             return (
               <div
                 key={feature.title}
@@ -124,10 +124,10 @@ export function FeaturesSection() {
                   {feature.description}
                 </p>
               </div>
-            )
+            );
           })}
         </div>
       </div>
     </section>
-  )
+  );
 }

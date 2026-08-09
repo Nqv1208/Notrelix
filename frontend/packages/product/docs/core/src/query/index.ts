@@ -1,1 +1,1 @@
-export { docsQueryKeys } from './keys';
+export { docsQueryKeys } from "./keys";

@@ -1,3 +1,3 @@
 // @notrelix/feature-integrations — barrel export
-export * from './core';
-export * from './web';
+export * from "./core";
+export * from "./web";

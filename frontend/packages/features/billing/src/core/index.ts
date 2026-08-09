@@ -10,4 +10,4 @@ export type {
   Subscription,
   Invoice,
   Entitlement,
-} from './types/billing';
+} from "./types/billing";

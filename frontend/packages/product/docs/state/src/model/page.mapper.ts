@@ -1,9 +1,5 @@
-import type {
-  Page,
-  BreadcrumbItem,
-  PageActivity,
-} from '@notrelix/docs-core';
-import type { PageDtoApi, BreadcrumbDtoApi, HistoryDtoApi } from '../dto';
+import type { Page, BreadcrumbItem, PageActivity } from "@notrelix/docs-core";
+import type { PageDtoApi, BreadcrumbDtoApi, HistoryDtoApi } from "../dto";
 
 export function mapPage(dto: PageDtoApi): Page {
   return {
@@ -13,20 +9,20 @@ export function mapPage(dto: PageDtoApi): Page {
     title: dto.title,
     icon: dto.iconValue ?? null,
     coverUrl: dto.coverUrl ?? null,
-    coverColor: 'var(--muted)',
+    coverColor: "var(--muted)",
     parentId: dto.parentId ?? null,
     position: dto.position,
     status: dto.isArchived
-      ? 'archived'
+      ? "archived"
       : dto.publishedAt
-        ? 'published'
-        : 'draft',
+        ? "published"
+        : "draft",
     isPublished: Boolean(dto.publishedAt),
     isFavorited: false,
     isShared: false,
     tags: [],
-    authorId: '',
-    lastEditedById: '',
+    authorId: "",
+    lastEditedById: "",
     lastEditedAt: dto.updatedAt ?? dto.createdAt,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt ?? dto.createdAt,
@@ -37,7 +33,7 @@ export function mapPage(dto: PageDtoApi): Page {
       activeUserIds: [],
       lastSyncedAt: dto.updatedAt ?? dto.createdAt,
       realtimeChannel: `page:${dto.id}`,
-      aiSummaryStatus: 'idle',
+      aiSummaryStatus: "idle",
     },
     linkedTaskIds: [],
     linkedBoardIds: [],
@@ -52,15 +48,12 @@ export function mapBreadcrumb(dto: BreadcrumbDtoApi): BreadcrumbItem {
   };
 }
 
-export function mapHistory(
-  dto: HistoryDtoApi,
-  pageId: string,
-): PageActivity {
+export function mapHistory(dto: HistoryDtoApi, pageId: string): PageActivity {
   return {
     id: dto.id,
     pageId,
     actorId: dto.actorId,
-    action: 'edited',
+    action: "edited",
     targetLabel: dto.resourceTitle ?? dto.action,
     createdAt: dto.createdAt,
   };

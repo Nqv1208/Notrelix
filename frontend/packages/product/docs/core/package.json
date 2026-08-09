@@ -14,10 +14,8 @@
     "clean": "rm -rf node_modules dist",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-  },
-  "peerDependencies": {
-  },
+  "dependencies": {},
+  "peerDependencies": {},
   "devDependencies": {
     "typescript": "^5.0.0"
   }

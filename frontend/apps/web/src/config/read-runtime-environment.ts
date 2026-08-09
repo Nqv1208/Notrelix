@@ -1,10 +1,10 @@
-import type { RuntimeEnvironmentInput, RuntimeMode } from '@notrelix/kernel';
+import type { RuntimeEnvironmentInput, RuntimeMode } from "@notrelix/kernel";
 
 function normalizeMode(rawMode: string | undefined): RuntimeMode {
-  if (rawMode === 'production' || rawMode === 'test') {
+  if (rawMode === "production" || rawMode === "test") {
     return rawMode;
   }
-  return 'development';
+  return "development";
 }
 
 export function readWebRuntimeEnvironment(
@@ -16,6 +16,6 @@ export function readWebRuntimeEnvironment(
     realtimeUrl: env.VITE_WS_URL,
     appUrl: env.VITE_APP_URL,
     releaseSha: env.VITE_RELEASE_SHA,
-    mockApi: env.VITE_MOCK_API === 'true',
+    mockApi: env.VITE_MOCK_API === "true",
   };
 }

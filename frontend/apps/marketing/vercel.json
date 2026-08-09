@@ -15,6 +15,10 @@
     }
   ],
   "redirects": [
-    { "source": "/app", "destination": "https://app.notrelix.com", "permanent": false }
+    {
+      "source": "/app",
+      "destination": "https://app.notrelix.com",
+      "permanent": false
+    }
   ]
 }

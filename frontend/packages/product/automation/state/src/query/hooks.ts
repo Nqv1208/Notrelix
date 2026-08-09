@@ -1,10 +1,10 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import type { AutomationRepositories } from '../data/repositories';
-import { automationQueryKeys } from './keys';
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import type { AutomationRepositories } from "../data/repositories";
+import { automationQueryKeys } from "./keys";
 
 export function useAutomationRules(
   repositories: AutomationRepositories,
-  workspaceId: string
+  workspaceId: string,
 ) {
   return useQuery({
     queryKey: automationQueryKeys.rules(workspaceId),
@@ -15,7 +15,7 @@ export function useAutomationRules(
 
 export function useAutomationRuleDetail(
   repositories: AutomationRepositories,
-  ruleId: string
+  ruleId: string,
 ) {
   return useQuery({
     queryKey: automationQueryKeys.ruleDetail(ruleId),
@@ -26,10 +26,13 @@ export function useAutomationRuleDetail(
 
 export function useAutomationExecutionHistory(
   repositories: AutomationRepositories,
-  input: { workspaceId: string; ruleId?: string; limit?: number }
+  input: { workspaceId: string; ruleId?: string; limit?: number },
 ) {
   return useInfiniteQuery({
-    queryKey: automationQueryKeys.executionHistory(input.workspaceId, input.ruleId),
+    queryKey: automationQueryKeys.executionHistory(
+      input.workspaceId,
+      input.ruleId,
+    ),
     queryFn: ({ pageParam }) =>
       repositories.executions.listHistory({
         workspaceId: input.workspaceId,
@@ -45,7 +48,7 @@ export function useAutomationExecutionHistory(
 
 export function useAutomationExecutionDetail(
   repositories: AutomationRepositories,
-  executionId: string
+  executionId: string,
 ) {
   return useQuery({
     queryKey: automationQueryKeys.executionDetail(executionId),
@@ -56,7 +59,7 @@ export function useAutomationExecutionDetail(
 
 export function useAutomationTemplates(
   repositories: AutomationRepositories,
-  workspaceId: string
+  workspaceId: string,
 ) {
   return useQuery({
     queryKey: automationQueryKeys.templates(workspaceId),

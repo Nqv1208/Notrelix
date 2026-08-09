@@ -1,4 +1,4 @@
-export type SearchResultType = 'page' | 'block' | 'task' | 'board';
+export type SearchResultType = "page" | "block" | "task" | "board";
 
 export interface SearchResult {
   id: string;
@@ -8,7 +8,7 @@ export interface SearchResult {
   icon: string | null;
   pageId?: string;
   score: number;
-  group: 'Pages' | 'Blocks' | 'Tasks' | 'Boards';
+  group: "Pages" | "Blocks" | "Tasks" | "Boards";
 }
 
 export interface SearchFilters {

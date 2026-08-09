@@ -1,8 +1,12 @@
-import type { Comment } from '../types/collaboration';
+import type { Comment } from "../types/collaboration";
 
 export interface CollaborationApiClient {
   get<TResponse>(url: string, options?: unknown): Promise<TResponse>;
-  post<TResponse, TBody = unknown>(url: string, body?: TBody, options?: unknown): Promise<TResponse>;
+  post<TResponse, TBody = unknown>(
+    url: string,
+    body?: TBody,
+    options?: unknown,
+  ): Promise<TResponse>;
   delete<TResponse>(url: string, options?: unknown): Promise<TResponse>;
 }
 
@@ -31,7 +35,7 @@ function mapCommentDto(dto: CommentDtoApi): Comment {
   const comment: Comment = {
     id: dto.id,
     resourceId: dto.resourceId,
-    resourceType: 'page',
+    resourceType: "page",
     authorId: dto.authorId,
     authorName: dto.authorName,
     body: dto.body,
@@ -46,19 +50,32 @@ function mapCommentDto(dto: CommentDtoApi): Comment {
   return comment;
 }
 
-export function createCommentService(api: CollaborationApiClient, endpoints: CollaborationEndpoints) {
+export function createCommentService(
+  api: CollaborationApiClient,
+  endpoints: CollaborationEndpoints,
+) {
   return {
     async list(resourceId: string): Promise<Comment[]> {
-      const dtos = await api.get<CommentDtoApi[]>(endpoints.comments.list(resourceId));
+      const dtos = await api.get<CommentDtoApi[]>(
+        endpoints.comments.list(resourceId),
+      );
       return dtos.map(mapCommentDto);
     },
 
-    async create(resourceId: string, body: string, authorId: string, authorName: string): Promise<Comment> {
-      const dto = await api.post<CommentDtoApi>(endpoints.comments.create(resourceId), {
-        body,
-        authorId,
-        authorName,
-      });
+    async create(
+      resourceId: string,
+      body: string,
+      authorId: string,
+      authorName: string,
+    ): Promise<Comment> {
+      const dto = await api.post<CommentDtoApi>(
+        endpoints.comments.create(resourceId),
+        {
+          body,
+          authorId,
+          authorName,
+        },
+      );
       return mapCommentDto(dto);
     },
 

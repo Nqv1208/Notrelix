@@ -1,4 +1,4 @@
-import type { ID } from './ids';
+import type { ID } from "./ids";
 
 export interface PageComment {
   id: ID;

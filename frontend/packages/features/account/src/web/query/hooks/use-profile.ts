@@ -1,7 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createAccountService, type AccountApiClient, type AccountEndpoints } from '../../../core/api/account.service';
-import { accountQueryKeys } from '../../../core/query/keys';
-import type { UserProfile } from '../../../core/types/account';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createAccountService,
+  type AccountApiClient,
+  type AccountEndpoints,
+} from "../../../core/api/account.service";
+import { accountQueryKeys } from "../../../core/query/keys";
+import type { UserProfile } from "../../../core/types/account";
 
 interface UseProfileDeps {
   api: AccountApiClient;
@@ -9,7 +13,6 @@ interface UseProfileDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
 export function createUseProfile({ api, endpoints, options }: UseProfileDeps) {
@@ -24,7 +27,8 @@ export function createUseProfile({ api, endpoints, options }: UseProfileDeps) {
     });
 
     const mutation = useMutation({
-      mutationFn: (profile: Partial<UserProfile>) => service.updateProfile(profile),
+      mutationFn: (profile: Partial<UserProfile>) =>
+        service.updateProfile(profile),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: accountQueryKeys.profile });
       },

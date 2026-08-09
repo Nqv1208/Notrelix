@@ -1,11 +1,11 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo } from "react";
 import {
   createUsePageList,
   createUseCreatePage,
   type DocsApiClient,
   type PageApiEndpoints,
   type PageTreeNode,
-} from '@notrelix/docs-state';
+} from "@notrelix/docs-state";
 import {
   Button,
   Collapsible,
@@ -15,7 +15,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from '@notrelix/ui-web';
+} from "@notrelix/ui-web";
 import {
   ChevronRight,
   FileText,
@@ -24,7 +24,7 @@ import {
   Plus,
   Search,
   Star,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface CreateDocPageTreeDeps {
   api: DocsApiClient;
@@ -34,7 +34,7 @@ interface CreateDocPageTreeDeps {
 interface PageTreeItemProps {
   node: PageTreeNode;
   workspaceId: string;
-  density: 'default' | 'compact';
+  density: "default" | "compact";
   currentPageId?: string;
   onCreatePage: (parentId: string | null) => void;
 }
@@ -56,18 +56,25 @@ const PageTreeItem = memo(function PageTreeItem({
         <ContextMenuTrigger asChild>
           <div
             className={`group flex items-center gap-1 rounded-lg text-sm transition hover:bg-muted hover:text-foreground ${
-              density === 'compact' ? 'h-8 px-1.5' : 'h-10 px-2'
-            } ${isActive ? 'bg-muted text-foreground font-medium' : 'text-muted-foreground'}`}
-            style={{ paddingLeft: density === 'compact' ? 6 + (node as any).depth * 14 : 8 + (node as any).depth * 18 }}
+              density === "compact" ? "h-8 px-1.5" : "h-10 px-2"
+            } ${isActive ? "bg-muted text-foreground font-medium" : "text-muted-foreground"}`}
+            style={{
+              paddingLeft:
+                density === "compact"
+                  ? 6 + (node as any).depth * 14
+                  : 8 + (node as any).depth * 18,
+            }}
           >
             <CollapsibleTrigger asChild disabled={!hasChildren}>
               <Button
                 variant="ghost"
                 size="icon"
-                className={`size-5 shrink-0 ${!hasChildren ? 'opacity-0' : ''}`}
-                aria-label={open ? 'Collapse page' : 'Expand page'}
+                className={`size-5 shrink-0 ${!hasChildren ? "opacity-0" : ""}`}
+                aria-label={open ? "Collapse page" : "Expand page"}
               >
-                <ChevronRight className={`size-3 transition-transform ${open ? 'rotate-90' : ''}`} />
+                <ChevronRight
+                  className={`size-3 transition-transform ${open ? "rotate-90" : ""}`}
+                />
               </Button>
             </CollapsibleTrigger>
             <GripVertical className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
@@ -93,7 +100,12 @@ const PageTreeItem = memo(function PageTreeItem({
               >
                 <Plus className="size-3" />
               </Button>
-              <Button variant="ghost" size="icon" className="size-5" aria-label="Page actions">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-5"
+                aria-label="Page actions"
+              >
                 <MoreHorizontal className="size-3" />
               </Button>
             </div>
@@ -101,7 +113,9 @@ const PageTreeItem = memo(function PageTreeItem({
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem>Open</ContextMenuItem>
-          <ContextMenuItem onClick={() => onCreatePage(node.id)}>Add subpage</ContextMenuItem>
+          <ContextMenuItem onClick={() => onCreatePage(node.id)}>
+            Add subpage
+          </ContextMenuItem>
           <ContextMenuItem>Copy link</ContextMenuItem>
           <ContextMenuItem>Move</ContextMenuItem>
         </ContextMenuContent>
@@ -124,7 +138,7 @@ const PageTreeItem = memo(function PageTreeItem({
 interface PageTreeProps {
   tree: PageTreeNode[];
   workspaceId: string;
-  density?: 'default' | 'compact';
+  density?: "default" | "compact";
   currentPageId?: string;
   onCreatePage: (parentId: string | null) => void;
 }
@@ -132,7 +146,7 @@ interface PageTreeProps {
 const PageTree = memo(function PageTree({
   tree,
   workspaceId,
-  density = 'default',
+  density = "default",
   currentPageId,
   onCreatePage,
 }: PageTreeProps) {
@@ -163,12 +177,14 @@ export function createDocPageTree({ api, endpoints }: CreateDocPageTreeDeps) {
     workspaceId: string;
     currentPageId?: string;
   }) {
-    const { data: pages = [], isLoading } = usePageList(workspaceId) as unknown as { data: PageTreeNode[]; isLoading: boolean };
+    const { data: pages = [], isLoading } = usePageList(
+      workspaceId,
+    ) as unknown as { data: PageTreeNode[]; isLoading: boolean };
     const createPageMutation = useCreatePage(workspaceId);
 
     const handleCreatePage = (parentId: string | null) => {
       createPageMutation.mutate({
-        title: 'Untitled',
+        title: "Untitled",
         workspaceId,
         parentId: parentId ?? undefined,
       } as never);

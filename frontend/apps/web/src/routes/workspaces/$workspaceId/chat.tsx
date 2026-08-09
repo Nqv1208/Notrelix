@@ -1,8 +1,8 @@
-import { useParams } from '@tanstack/react-router';
-import { MessageSquare } from 'lucide-react';
+import { useParams } from "@tanstack/react-router";
+import { MessageSquare } from "lucide-react";
 
 export function ChatPage() {
-  const { _workspaceId } = useParams({ from: '/workspaces/$workspaceId/chat' });
+  const { _workspaceId } = useParams({ from: "/workspaces/$workspaceId/chat" });
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">
@@ -12,7 +12,8 @@ export function ChatPage() {
         </div>
         <h1 className="text-xl font-semibold">Chat</h1>
         <p className="text-sm text-muted-foreground">
-          Real-time team chat is coming soon. You'll be able to communicate with your workspace members directly.
+          Real-time team chat is coming soon. You'll be able to communicate with
+          your workspace members directly.
         </p>
       </div>
     </div>

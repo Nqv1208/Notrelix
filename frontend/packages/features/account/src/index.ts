@@ -5,8 +5,8 @@
  */
 
 // Core exports
-export * from './core';
-export { accountQueryKeys } from './core/query/keys';
+export * from "./core";
+export { accountQueryKeys } from "./core/query/keys";
 
 // Web exports
-export * from './web';
+export * from "./web";

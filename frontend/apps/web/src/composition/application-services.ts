@@ -1,17 +1,17 @@
-import type { QueryClient } from '@tanstack/react-query';
-import type { AppRuntime } from '@notrelix/runtime-web';
-import { createQueryClient } from '@notrelix/query';
-import { workspaceQueryKeys } from '@notrelix/features-workspace';
+import type { QueryClient } from "@tanstack/react-query";
+import type { AppRuntime } from "@notrelix/runtime-web";
+import { createQueryClient } from "@notrelix/query";
+import { workspaceQueryKeys } from "@notrelix/features-workspace";
 import {
   createWorkManagementServices,
   type WorkManagementServices,
-} from '@notrelix/work-management-state';
+} from "@notrelix/work-management-state";
 import {
   createApplicationLifecycle,
   createWorkspaceEventSource,
   type ApplicationLifecycle,
   type WorkspaceEventSource,
-} from './application-lifecycle';
+} from "./application-lifecycle";
 
 export interface WebApplicationServices {
   readonly runtime: AppRuntime;
@@ -28,7 +28,7 @@ export interface WebApplicationServicesOptions {
 
 export function createWebApplicationServices(
   runtime: AppRuntime,
-  options: WebApplicationServicesOptions
+  options: WebApplicationServicesOptions,
 ): WebApplicationServices {
   const queryClient = createQueryClient();
   const workManagement = createWorkManagementServices(runtime.api);
@@ -42,7 +42,7 @@ export function createWebApplicationServices(
     sessionEvents: runtime.sessionEvents,
     workspaceEvents,
     clearSessionState: () => {
-      queryClient.removeQueries({ queryKey: ['auth'] });
+      queryClient.removeQueries({ queryKey: ["auth"] });
     },
     clearWorkspaceState: () => {
       queryClient.removeQueries({ queryKey: workspaceQueryKeys.all });

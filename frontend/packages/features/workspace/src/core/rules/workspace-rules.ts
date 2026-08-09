@@ -24,7 +24,7 @@ export function validateRemoveOwner(ownerCount: number): RemoveOwnerResult {
   if (ownerCount <= 1) {
     return {
       canRemove: false,
-      error: 'Cannot remove the last owner of a workspace',
+      error: "Cannot remove the last owner of a workspace",
     };
   }
   return { canRemove: true };
@@ -41,7 +41,7 @@ export function validateDowngradeOwner(ownerCount: number): RemoveOwnerResult {
   if (ownerCount <= 1) {
     return {
       canRemove: false,
-      error: 'Cannot downgrade the last owner of a workspace',
+      error: "Cannot downgrade the last owner of a workspace",
     };
   }
   return { canRemove: true };

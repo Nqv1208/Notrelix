@@ -1,9 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
-import { createBlockApi } from '../../api/block.api';
-import type { DocsApiClient, PageApiEndpoints } from '../../api/page.api';
-import { docsQueryKeys } from '@notrelix/docs-core/query/keys';
+import { useQuery } from "@tanstack/react-query";
+import { createBlockApi } from "../../api/block.api";
+import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
+import { docsQueryKeys } from "@notrelix/docs-core/query/keys";
 
-export function createUsePageBlocks(api: DocsApiClient, endpoints: PageApiEndpoints) {
+export function createUsePageBlocks(
+  api: DocsApiClient,
+  endpoints: PageApiEndpoints,
+) {
   const blockApi = createBlockApi(api, endpoints);
   return function usePageBlocks(pageId: string) {
     return useQuery({

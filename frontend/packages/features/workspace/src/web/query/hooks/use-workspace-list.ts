@@ -1,6 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { createWorkspaceService, type WorkspaceApiClient, type WorkspaceEndpoints } from '../../../core/api/workspace.service';
-import { workspaceQueryKeys } from '../../../core/query/keys';
+import { useQuery } from "@tanstack/react-query";
+import {
+  createWorkspaceService,
+  type WorkspaceApiClient,
+  type WorkspaceEndpoints,
+} from "../../../core/api/workspace.service";
+import { workspaceQueryKeys } from "../../../core/query/keys";
 
 interface UseWorkspaceListDeps {
   api: WorkspaceApiClient;
@@ -8,10 +12,13 @@ interface UseWorkspaceListDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUseWorkspaceList({ api, endpoints, options }: UseWorkspaceListDeps) {
+export function createUseWorkspaceList({
+  api,
+  endpoints,
+  options,
+}: UseWorkspaceListDeps) {
   const service = createWorkspaceService(api, endpoints);
 
   return function useWorkspaceList() {

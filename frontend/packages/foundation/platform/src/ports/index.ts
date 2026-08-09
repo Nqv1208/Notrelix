@@ -1,2 +1,2 @@
-export type { ClockPort } from './clock';
-export type { KeyValueStorage } from './storage';
+export type { ClockPort } from "./clock";
+export type { KeyValueStorage } from "./storage";

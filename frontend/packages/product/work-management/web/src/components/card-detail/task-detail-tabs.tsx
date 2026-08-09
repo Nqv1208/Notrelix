@@ -1,11 +1,17 @@
-import { Activity, Files, FileText, ListChecks, MessageSquareText } from "lucide-react"
-import { ScrollArea } from "@notrelix/ui-web"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@notrelix/ui-web"
-import type { CardDetail } from "@notrelix/work-management-core"
-import { TaskActivityTab } from "./task-activity-tab"
-import { TaskDetailEmptyState } from "./task-detail-empty-state"
-import { TaskFilesTab } from "./task-files-tab"
-import { TaskUpdatesTab } from "./task-updates-tab"
+import {
+  Activity,
+  Files,
+  FileText,
+  ListChecks,
+  MessageSquareText,
+} from "lucide-react";
+import { ScrollArea } from "@notrelix/ui-web";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@notrelix/ui-web";
+import type { CardDetail } from "@notrelix/work-management-core";
+import { TaskActivityTab } from "./task-activity-tab";
+import { TaskDetailEmptyState } from "./task-detail-empty-state";
+import { TaskFilesTab } from "./task-files-tab";
+import { TaskUpdatesTab } from "./task-updates-tab";
 
 export function TaskDetailTabs({ card }: { card: CardDetail }) {
   return (
@@ -55,8 +61,14 @@ export function TaskDetailTabs({ card }: { card: CardDetail }) {
           <div className="p-4">
             <TaskDetailEmptyState
               icon={FileText}
-              title={card.linkedPageId ? "Linked doc connected" : "No linked docs"}
-              description={card.linkedPageId ? card.linkedPageId : "Link a workspace doc from the table to keep specs and task execution together."}
+              title={
+                card.linkedPageId ? "Linked doc connected" : "No linked docs"
+              }
+              description={
+                card.linkedPageId
+                  ? card.linkedPageId
+                  : "Link a workspace doc from the table to keep specs and task execution together."
+              }
             />
           </div>
         </ScrollArea>
@@ -73,5 +85,5 @@ export function TaskDetailTabs({ card }: { card: CardDetail }) {
         </ScrollArea>
       </TabsContent>
     </Tabs>
-  )
+  );
 }

@@ -1,83 +1,80 @@
-import { Star } from 'lucide-react'
+import { Star } from "lucide-react";
 
-import { Badge } from '@notrelix/ui-web/components/ui/badge'
-import {
-  Avatar,
-  AvatarFallback,
-} from '@notrelix/ui-web/components/ui/avatar'
+import { Badge } from "@notrelix/ui-web/components/ui/badge";
+import { Avatar, AvatarFallback } from "@notrelix/ui-web/components/ui/avatar";
 
 type Testimonial = {
-  name: string
-  role: string
-  company: string
-  avatar: string
-  content: string
-  gradient: string
-}
+  name: string;
+  role: string;
+  company: string;
+  avatar: string;
+  content: string;
+  gradient: string;
+};
 
 const testimonials: Testimonial[] = [
   {
-    name: 'Sarah Chen',
-    role: 'Engineering Manager',
-    company: 'Stripe',
-    avatar: 'SC',
+    name: "Sarah Chen",
+    role: "Engineering Manager",
+    company: "Stripe",
+    avatar: "SC",
     content:
-      'We replaced Notion AND Trello with Notrelix. Having docs and boards in the same workspace is a game changer for sprint planning.',
-    gradient: 'from-violet-500 to-indigo-500',
+      "We replaced Notion AND Trello with Notrelix. Having docs and boards in the same workspace is a game changer for sprint planning.",
+    gradient: "from-violet-500 to-indigo-500",
   },
   {
-    name: 'Marcus Rivera',
-    role: 'Product Lead',
-    company: 'Vercel',
-    avatar: 'MR',
+    name: "Marcus Rivera",
+    role: "Product Lead",
+    company: "Vercel",
+    avatar: "MR",
     content:
-      'The block editor is incredibly smooth. Slash commands, drag-and-drop, nested pages — it feels like the future of team wikis.',
-    gradient: 'from-emerald-500 to-teal-500',
+      "The block editor is incredibly smooth. Slash commands, drag-and-drop, nested pages — it feels like the future of team wikis.",
+    gradient: "from-emerald-500 to-teal-500",
   },
   {
-    name: 'Yuki Tanaka',
-    role: 'Head of Design',
-    company: 'Linear',
-    avatar: 'YT',
+    name: "Yuki Tanaka",
+    role: "Head of Design",
+    company: "Linear",
+    avatar: "YT",
     content:
       "Cleanest UI I've seen in a productivity tool. Our design team adopted it overnight. The kanban boards are chef's kiss.",
-    gradient: 'from-pink-500 to-rose-500',
+    gradient: "from-pink-500 to-rose-500",
   },
   {
-    name: 'Alex Kim',
-    role: 'CTO',
-    company: 'Railway',
-    avatar: 'AK',
+    name: "Alex Kim",
+    role: "CTO",
+    company: "Railway",
+    avatar: "AK",
     content:
-      'Permissions and workspaces are done right. We can share specific boards with clients while keeping internal docs private.',
-    gradient: 'from-amber-500 to-orange-500',
+      "Permissions and workspaces are done right. We can share specific boards with clients while keeping internal docs private.",
+    gradient: "from-amber-500 to-orange-500",
   },
   {
-    name: 'Priya Patel',
-    role: 'Founder',
-    company: 'Dub.co',
-    avatar: 'PP',
+    name: "Priya Patel",
+    role: "Founder",
+    company: "Dub.co",
+    avatar: "PP",
     content:
-      'Switched from 4 different tools to just Notrelix. The automations alone save us hours every week. Best decision this year.',
-    gradient: 'from-cyan-500 to-blue-500',
+      "Switched from 4 different tools to just Notrelix. The automations alone save us hours every week. Best decision this year.",
+    gradient: "from-cyan-500 to-blue-500",
   },
   {
-    name: 'Tom Wright',
-    role: 'DevRel',
-    company: 'Supabase',
-    avatar: 'TW',
+    name: "Tom Wright",
+    role: "DevRel",
+    company: "Supabase",
+    avatar: "TW",
     content:
-      'Writing our public docs in Notrelix was effortless. Nested pages, code blocks with syntax highlighting, and easy exports.',
-    gradient: 'from-purple-500 to-fuchsia-500',
+      "Writing our public docs in Notrelix was effortless. Nested pages, code blocks with syntax highlighting, and easy exports.",
+    gradient: "from-purple-500 to-fuchsia-500",
   },
-]
+];
 
 const stats = [
-  { value: '10,000+', label: 'Active teams' },
-  { value: '2M+', label: 'Pages created' },
-  { value: '99.9%', label: 'Uptime SLA' },
-  { value: '4.9/5', label: 'Avg. rating' },
-]
+  { value: "10,000+", label: "Active teams" },
+  { value: "2M+", label: "Pages created" },
+  { value: "99.9%", label: "Uptime SLA" },
+  { value: "4.9/5", label: "Avg. rating" },
+];
 
 export function TestimonialsSection() {
   return (
@@ -94,8 +91,8 @@ export function TestimonialsSection() {
             Loved by teams everywhere
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            From startups to enterprises, teams trust Notrelix to organize
-            their work and ship faster.
+            From startups to enterprises, teams trust Notrelix to organize their
+            work and ship faster.
           </p>
         </div>
 
@@ -149,5 +146,5 @@ export function TestimonialsSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

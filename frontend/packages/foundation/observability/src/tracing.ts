@@ -1,10 +1,13 @@
-import { getObservabilityConfig } from './init';
+import { getObservabilityConfig } from "./init";
 
 export interface EventProperties {
   [key: string]: string | number | boolean | null | undefined;
 }
 
-export function trackEvent(eventName: string, properties?: EventProperties): void {
+export function trackEvent(
+  eventName: string,
+  properties?: EventProperties,
+): void {
   const config = getObservabilityConfig();
   if (!config.enabled) return;
 
@@ -13,7 +16,10 @@ export function trackEvent(eventName: string, properties?: EventProperties): voi
   }
 }
 
-export function reportError(error: unknown, context?: Record<string, unknown>): void {
+export function reportError(
+  error: unknown,
+  context?: Record<string, unknown>,
+): void {
   const config = getObservabilityConfig();
   if (!config.enabled) return;
 

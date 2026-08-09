@@ -1,32 +1,36 @@
-import { createRouter as createTanStackRouter, createRoute, createRootRouteWithContext } from '@tanstack/react-router';
-import { ErrorState, LoadingState, NotFoundState } from '@notrelix/ui-web';
-import type { AppRouterContext } from './context';
-import { requireWorkspaceId } from './guards/require-workspace-membership';
-import { boardSearchSchema } from './board-search-schema';
+import {
+  createRouter as createTanStackRouter,
+  createRoute,
+  createRootRouteWithContext,
+} from "@tanstack/react-router";
+import { ErrorState, LoadingState, NotFoundState } from "@notrelix/ui-web";
+import type { AppRouterContext } from "./context";
+import { requireWorkspaceId } from "./guards/require-workspace-membership";
+import { boardSearchSchema } from "./board-search-schema";
 
 // Import route components
-import { SignInPage } from '../routes/sign-in';
-import { SignUpPage } from '../routes/sign-up';
-import { ForgotPasswordPage } from '../routes/forgot-password';
-import { HomePage } from '../routes/home';
-import { IndexPage } from '../routes/index';
-import { InvitePage } from '../routes/invite/$token';
-import { WorkspaceLayout } from '../routes/workspaces/$workspaceId/route';
-import { WorkspaceHomePage } from '../routes/workspaces/$workspaceId/index';
-import { BoardPage } from '../routes/workspaces/$workspaceId/boards/$boardId';
-import { DocPage } from '../routes/workspaces/$workspaceId/docs/$docId';
-import { DashboardPage } from '../routes/workspaces/$workspaceId/dashboard';
-import { SettingsPage } from '../routes/workspaces/$workspaceId/settings';
-import { MembersPage } from '../routes/workspaces/$workspaceId/members';
-import { BillingPage } from '../routes/workspaces/$workspaceId/billing';
-import { AccountLayout } from '../routes/workspaces/$workspaceId/account';
-import { AccountProfilePage } from '../routes/workspaces/$workspaceId/account/profile';
-import { AccountSecurityPage } from '../routes/workspaces/$workspaceId/account/security';
-import { AccountAppearancePage } from '../routes/workspaces/$workspaceId/account/appearance';
-import { AccountNotificationsPage } from '../routes/workspaces/$workspaceId/account/notifications';
-import { SearchResultsPage } from '../routes/workspaces/$workspaceId/search';
-import { ChatPage } from '../routes/workspaces/$workspaceId/chat';
-import { RootLayout } from '../routes/__root';
+import { SignInPage } from "../routes/sign-in";
+import { SignUpPage } from "../routes/sign-up";
+import { ForgotPasswordPage } from "../routes/forgot-password";
+import { HomePage } from "../routes/home";
+import { IndexPage } from "../routes/index";
+import { InvitePage } from "../routes/invite/$token";
+import { WorkspaceLayout } from "../routes/workspaces/$workspaceId/route";
+import { WorkspaceHomePage } from "../routes/workspaces/$workspaceId/index";
+import { BoardPage } from "../routes/workspaces/$workspaceId/boards/$boardId";
+import { DocPage } from "../routes/workspaces/$workspaceId/docs/$docId";
+import { DashboardPage } from "../routes/workspaces/$workspaceId/dashboard";
+import { SettingsPage } from "../routes/workspaces/$workspaceId/settings";
+import { MembersPage } from "../routes/workspaces/$workspaceId/members";
+import { BillingPage } from "../routes/workspaces/$workspaceId/billing";
+import { AccountLayout } from "../routes/workspaces/$workspaceId/account";
+import { AccountProfilePage } from "../routes/workspaces/$workspaceId/account/profile";
+import { AccountSecurityPage } from "../routes/workspaces/$workspaceId/account/security";
+import { AccountAppearancePage } from "../routes/workspaces/$workspaceId/account/appearance";
+import { AccountNotificationsPage } from "../routes/workspaces/$workspaceId/account/notifications";
+import { SearchResultsPage } from "../routes/workspaces/$workspaceId/search";
+import { ChatPage } from "../routes/workspaces/$workspaceId/chat";
+import { RootLayout } from "../routes/__root";
 
 // Create routes
 const rootRoute = createRootRouteWithContext<AppRouterContext>()({
@@ -35,43 +39,43 @@ const rootRoute = createRootRouteWithContext<AppRouterContext>()({
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  path: "/",
   component: IndexPage,
 });
 
 const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/sign-in',
+  path: "/sign-in",
   component: SignInPage,
 });
 
 const signUpRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/sign-up',
+  path: "/sign-up",
   component: SignUpPage,
 });
 
 const forgotPasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/forgot-password',
+  path: "/forgot-password",
   component: ForgotPasswordPage,
 });
 
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/home',
+  path: "/home",
   component: HomePage,
 });
 
 const inviteRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/invite/$token',
+  path: "/invite/$token",
   component: InvitePage,
 });
 
 const workspaceRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/workspaces/$workspaceId',
+  path: "/workspaces/$workspaceId",
   component: WorkspaceLayout,
   beforeLoad: ({ params }) => {
     requireWorkspaceId(params);
@@ -80,86 +84,86 @@ const workspaceRoute = createRoute({
 
 const workspaceIndexRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/',
+  path: "/",
   component: WorkspaceHomePage,
 });
 
 const boardRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/boards/$boardId',
+  path: "/boards/$boardId",
   validateSearch: (search) => boardSearchSchema.parse(search),
   component: BoardPage,
 });
 
 const docRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/docs/$docId',
+  path: "/docs/$docId",
   component: DocPage,
 });
 
 const dashboardRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/dashboard',
+  path: "/dashboard",
   component: DashboardPage,
 });
 
 const settingsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/settings',
+  path: "/settings",
   component: SettingsPage,
 });
 
 const membersRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/members',
+  path: "/members",
   component: MembersPage,
 });
 
 const billingRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/billing',
+  path: "/billing",
   component: BillingPage,
 });
 
 const accountRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/account',
+  path: "/account",
   component: AccountLayout,
 });
 
 const accountProfileRoute = createRoute({
   getParentRoute: () => accountRoute,
-  path: '/profile',
+  path: "/profile",
   component: AccountProfilePage,
 });
 
 const accountSecurityRoute = createRoute({
   getParentRoute: () => accountRoute,
-  path: '/security',
+  path: "/security",
   component: AccountSecurityPage,
 });
 
 const accountAppearanceRoute = createRoute({
   getParentRoute: () => accountRoute,
-  path: '/appearance',
+  path: "/appearance",
   component: AccountAppearancePage,
 });
 
 const accountNotificationsRoute = createRoute({
   getParentRoute: () => accountRoute,
-  path: '/notifications',
+  path: "/notifications",
   component: AccountNotificationsPage,
 });
 
 const searchRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/search',
+  path: "/search",
   component: SearchResultsPage,
 });
 
 const chatRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: '/chat',
+  path: "/chat",
   component: ChatPage,
 });
 
@@ -194,7 +198,7 @@ export function createRouter() {
   const router = createTanStackRouter({
     routeTree,
     context: undefined as unknown as AppRouterContext,
-    defaultPreload: 'intent',
+    defaultPreload: "intent",
     defaultPendingComponent: () => (
       <LoadingState title="Loading" description="Preparing workspace..." />
     ),
@@ -202,7 +206,10 @@ export function createRouter() {
       <ErrorState error={error} title="Route error" />
     ),
     defaultNotFoundComponent: () => (
-      <NotFoundState title="Page not found" description="The requested route does not exist." />
+      <NotFoundState
+        title="Page not found"
+        description="The requested route does not exist."
+      />
     ),
     scrollRestoration: true,
   });

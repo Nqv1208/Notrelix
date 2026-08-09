@@ -1,36 +1,48 @@
-import { useParams } from '@tanstack/react-router';
-import { useWorkspaceContext } from '@/providers/workspace-provider';
-import { Button } from '@notrelix/ui-web';
-import { Check, Zap, Building2, Crown } from 'lucide-react';
+import { useParams } from "@tanstack/react-router";
+import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { Button } from "@notrelix/ui-web";
+import { Check, Zap, Building2, Crown } from "lucide-react";
 
 const PLANS = [
   {
-    tier: 'free' as const,
-    name: 'Free',
+    tier: "free" as const,
+    name: "Free",
     price: 0,
     icon: Zap,
-    features: ['Up to 5 members', '3 boards', '1 GB storage', 'Basic views'],
+    features: ["Up to 5 members", "3 boards", "1 GB storage", "Basic views"],
   },
   {
-    tier: 'pro' as const,
-    name: 'Pro',
+    tier: "pro" as const,
+    name: "Pro",
     price: 12,
     icon: Crown,
-    features: ['Unlimited members', 'Unlimited boards', '10 GB storage', 'All views', 'Priority support'],
+    features: [
+      "Unlimited members",
+      "Unlimited boards",
+      "10 GB storage",
+      "All views",
+      "Priority support",
+    ],
   },
   {
-    tier: 'business' as const,
-    name: 'Business',
+    tier: "business" as const,
+    name: "Business",
     price: 29,
     icon: Building2,
-    features: ['Everything in Pro', '100 GB storage', 'Advanced permissions', 'Audit log', 'SAML SSO'],
+    features: [
+      "Everything in Pro",
+      "100 GB storage",
+      "Advanced permissions",
+      "Audit log",
+      "SAML SSO",
+    ],
   },
 ];
 
 export function BillingPage() {
-  const { _workspaceId } = useParams({ from: '/workspaces/$workspaceId' });
+  const { _workspaceId } = useParams({ from: "/workspaces/$workspaceId" });
   const { workspace } = useWorkspaceContext();
-  const currentPlan = workspace?.plan ?? 'free';
+  const currentPlan = workspace?.plan ?? "free";
 
   return (
     <div className="p-8 max-w-4xl">
@@ -51,7 +63,9 @@ export function BillingPage() {
             <div>
               <p className="font-semibold capitalize">{currentPlan}</p>
               <p className="text-sm text-muted-foreground">
-                {currentPlan === 'free' ? 'Free forever' : `$${currentPlan === 'pro' ? '12' : '29'}/month per member`}
+                {currentPlan === "free"
+                  ? "Free forever"
+                  : `$${currentPlan === "pro" ? "12" : "29"}/month per member`}
               </p>
             </div>
           </div>
@@ -68,7 +82,7 @@ export function BillingPage() {
               <div
                 key={plan.tier}
                 className={`rounded-xl border p-5 flex flex-col ${
-                  isCurrent ? 'border-primary bg-primary/5' : 'border-border'
+                  isCurrent ? "border-primary bg-primary/5" : "border-border"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-3">
@@ -77,11 +91,16 @@ export function BillingPage() {
                 </div>
                 <p className="text-2xl font-bold mb-1">
                   ${plan.price}
-                  <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    /mo
+                  </span>
                 </p>
                 <ul className="space-y-2 mt-4 mb-6 flex-1">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <li
+                      key={feature}
+                      className="flex items-start gap-2 text-sm text-muted-foreground"
+                    >
                       <Check className="size-4 text-primary shrink-0 mt-0.5" />
                       <span>{feature}</span>
                     </li>
@@ -93,9 +112,10 @@ export function BillingPage() {
                   </Button>
                 ) : (
                   <Button variant="outline" className="w-full" disabled>
-                    {plan.price > (PLANS.find((p) => p.tier === currentPlan)?.price ?? 0)
-                      ? 'Upgrade'
-                      : 'Downgrade'}
+                    {plan.price >
+                    (PLANS.find((p) => p.tier === currentPlan)?.price ?? 0)
+                      ? "Upgrade"
+                      : "Downgrade"}
                   </Button>
                 )}
               </div>

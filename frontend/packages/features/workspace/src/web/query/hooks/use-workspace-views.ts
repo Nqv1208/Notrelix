@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { createViewsService } from '../../../core/api/views.service';
-import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
-import { workspaceQueryKeys } from '../../../core/query/keys';
+import { useQuery } from "@tanstack/react-query";
+import { createViewsService } from "../../../core/api/views.service";
+import type { WorkspaceApiClient } from "../../../core/api/workspace.service";
+import { workspaceQueryKeys } from "../../../core/query/keys";
 
 interface UseWorkspaceViewsDeps {
   api: WorkspaceApiClient;
@@ -10,7 +10,10 @@ interface UseWorkspaceViewsDeps {
   };
 }
 
-export function createUseWorkspaceViews({ api, options }: UseWorkspaceViewsDeps) {
+export function createUseWorkspaceViews({
+  api,
+  options,
+}: UseWorkspaceViewsDeps) {
   const service = createViewsService(api, options);
 
   return function useWorkspaceViews(workspaceId: string) {

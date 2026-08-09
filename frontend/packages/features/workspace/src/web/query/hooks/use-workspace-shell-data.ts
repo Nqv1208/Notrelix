@@ -1,6 +1,9 @@
-import { createUseWorkspace } from './use-workspace';
-import { createUseWorkspaceViews } from './use-workspace-views';
-import type { WorkspaceApiClient, WorkspaceEndpoints } from '../../../core/api/workspace.service';
+import { createUseWorkspace } from "./use-workspace";
+import { createUseWorkspaceViews } from "./use-workspace-views";
+import type {
+  WorkspaceApiClient,
+  WorkspaceEndpoints,
+} from "../../../core/api/workspace.service";
 
 interface UseWorkspaceShellDataDeps {
   api: WorkspaceApiClient;
@@ -8,12 +11,22 @@ interface UseWorkspaceShellDataDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUseWorkspaceShellData({ api, endpoints, options }: UseWorkspaceShellDataDeps) {
-  const useWorkspace = createUseWorkspace({ api, endpoints, ...(options ? { options } : {}) });
-  const useWorkspaceViews = createUseWorkspaceViews({ api, ...(options ? { options } : {}) });
+export function createUseWorkspaceShellData({
+  api,
+  endpoints,
+  options,
+}: UseWorkspaceShellDataDeps) {
+  const useWorkspace = createUseWorkspace({
+    api,
+    endpoints,
+    ...(options ? { options } : {}),
+  });
+  const useWorkspaceViews = createUseWorkspaceViews({
+    api,
+    ...(options ? { options } : {}),
+  });
 
   return function useWorkspaceShellData(workspaceId: string) {
     const workspace = useWorkspace(workspaceId);

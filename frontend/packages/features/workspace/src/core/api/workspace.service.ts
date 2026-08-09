@@ -1,4 +1,8 @@
-import type { WorkspaceSummary, CreateWorkspaceInput, UpdateWorkspaceInput } from '../types/workspace';
+import type {
+  WorkspaceSummary,
+  CreateWorkspaceInput,
+  UpdateWorkspaceInput,
+} from "../types/workspace";
 
 export interface WorkspaceApiClient {
   get<T>(url: string): Promise<T>;
@@ -32,8 +36,14 @@ export function createWorkspaceService(
       return api.post<WorkspaceSummary>(endpoints.workspaces.list, input);
     },
 
-    async update(id: string, input: UpdateWorkspaceInput): Promise<WorkspaceSummary> {
-      return api.patch<WorkspaceSummary>(endpoints.workspaces.detail(id), input);
+    async update(
+      id: string,
+      input: UpdateWorkspaceInput,
+    ): Promise<WorkspaceSummary> {
+      return api.patch<WorkspaceSummary>(
+        endpoints.workspaces.detail(id),
+        input,
+      );
     },
   };
 }

@@ -1,9 +1,9 @@
-import { Filter, X } from "lucide-react"
-import { Button } from "@notrelix/ui-web"
-import { Checkbox } from "@notrelix/ui-web"
-import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web"
-import { Separator } from "@notrelix/ui-web"
-import type { KanbanFiltersState } from "@notrelix/work-management-core"
+import { Filter, X } from "lucide-react";
+import { Button } from "@notrelix/ui-web";
+import { Checkbox } from "@notrelix/ui-web";
+import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
+import { Separator } from "@notrelix/ui-web";
+import type { KanbanFiltersState } from "@notrelix/work-management-core";
 
 const STATUS_OPTIONS = [
   { id: "status-not-started", label: "Not Started" },
@@ -11,34 +11,35 @@ const STATUS_OPTIONS = [
   { id: "status-stuck", label: "Stuck" },
   { id: "status-done", label: "Done" },
   { id: "status-completed", label: "Completed" },
-]
+];
 
 const PRIORITY_OPTIONS = [
   { id: "urgent", label: "Urgent" },
   { id: "high", label: "High" },
   { id: "medium", label: "Medium" },
   { id: "low", label: "Low" },
-]
+];
 
 export function KanbanFilterMenu({
   filters,
   onFilterChange,
   onClear,
 }: {
-  filters: KanbanFiltersState
-  onFilterChange: (key: keyof KanbanFiltersState, values: string[]) => void
-  onClear: () => void
+  filters: KanbanFiltersState;
+  onFilterChange: (key: keyof KanbanFiltersState, values: string[]) => void;
+  onClear: () => void;
 }) {
-  const hasActiveFilters = filters.status.length > 0 || filters.priority.length > 0
-  const activeCount = filters.status.length + filters.priority.length
+  const hasActiveFilters =
+    filters.status.length > 0 || filters.priority.length > 0;
+  const activeCount = filters.status.length + filters.priority.length;
 
   const handleToggle = (key: "status" | "priority", optionId: string) => {
-    const current = filters[key]
+    const current = filters[key];
     const next = current.includes(optionId)
       ? current.filter((id: any) => id !== optionId)
-      : [...current, optionId]
-    onFilterChange(key, next)
-  }
+      : [...current, optionId];
+    onFilterChange(key, next);
+  };
 
   return (
     <Popover>
@@ -55,9 +56,16 @@ export function KanbanFilterMenu({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Filters</span>
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+            Filters
+          </span>
           {hasActiveFilters ? (
-            <Button variant="ghost" size="icon-xs" onClick={onClear} aria-label="Clear filters">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={onClear}
+              aria-label="Clear filters"
+            >
               <X className="size-3.5" />
             </Button>
           ) : null}
@@ -66,10 +74,15 @@ export function KanbanFilterMenu({
         <Separator />
 
         <div className="space-y-2">
-          <span className="text-xs font-medium text-muted-foreground">Status</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            Status
+          </span>
           <div className="space-y-1.5">
             {STATUS_OPTIONS.map((status) => (
-              <label key={status.id} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <label
+                key={status.id}
+                className="flex items-center gap-2 text-sm text-foreground cursor-pointer"
+              >
                 <Checkbox
                   checked={filters.status.includes(status.id)}
                   onCheckedChange={() => handleToggle("status", status.id)}
@@ -83,10 +96,15 @@ export function KanbanFilterMenu({
         <Separator />
 
         <div className="space-y-2">
-          <span className="text-xs font-medium text-muted-foreground">Priority</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            Priority
+          </span>
           <div className="space-y-1.5">
             {PRIORITY_OPTIONS.map((priority) => (
-              <label key={priority.id} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <label
+                key={priority.id}
+                className="flex items-center gap-2 text-sm text-foreground cursor-pointer"
+              >
                 <Checkbox
                   checked={filters.priority.includes(priority.id)}
                   onCheckedChange={() => handleToggle("priority", priority.id)}
@@ -98,5 +116,5 @@ export function KanbanFilterMenu({
         </div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { createMembersService } from '../../../core/api/members.service';
-import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
-import { workspaceQueryKeys } from '../../../core/query/keys';
+import { useQuery } from "@tanstack/react-query";
+import { createMembersService } from "../../../core/api/members.service";
+import type { WorkspaceApiClient } from "../../../core/api/workspace.service";
+import { workspaceQueryKeys } from "../../../core/query/keys";
 
 interface UseWorkspaceMembersDeps {
   api: WorkspaceApiClient;
@@ -10,7 +10,10 @@ interface UseWorkspaceMembersDeps {
   };
 }
 
-export function createUseWorkspaceMembers({ api, options }: UseWorkspaceMembersDeps) {
+export function createUseWorkspaceMembers({
+  api,
+  options,
+}: UseWorkspaceMembersDeps) {
   const service = createMembersService(api, options);
 
   return function useWorkspaceMembers(workspaceId: string) {

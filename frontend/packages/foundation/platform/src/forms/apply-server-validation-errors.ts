@@ -1,6 +1,7 @@
-import { AppError } from '@notrelix/kernel';
+import { AppError } from "@notrelix/kernel";
 
-type FormFieldPath<T extends Record<string, unknown>> = Extract<keyof T, string> | 'root';
+type FormFieldPath<T extends Record<string, unknown>> =
+  Extract<keyof T, string> | "root";
 
 type FormSetError<T extends Record<string, unknown>> = (
   field: FormFieldPath<T>,
@@ -11,15 +12,15 @@ export function applyServerValidationErrors<T extends Record<string, unknown>>(
   form: { setError: FormSetError<T> },
   error: unknown,
 ) {
-  if (!(error instanceof AppError) || error.kind !== 'validation') {
+  if (!(error instanceof AppError) || error.kind !== "validation") {
     return;
   }
 
   const validationErrors = error.validationErrors;
-  if (!validationErrors || typeof validationErrors !== 'object') {
-    form.setError('root', {
-      type: 'server',
-      message: error.message || 'Validation failed.',
+  if (!validationErrors || typeof validationErrors !== "object") {
+    form.setError("root", {
+      type: "server",
+      message: error.message || "Validation failed.",
     });
     return;
   }
@@ -28,14 +29,14 @@ export function applyServerValidationErrors<T extends Record<string, unknown>>(
     Object.entries(validationErrors).forEach(([field, messages]) => {
       const message = Array.isArray(messages) ? messages[0] : String(messages);
       form.setError(field as FormFieldPath<T>, {
-        type: 'server',
-        message: message || 'Invalid value',
+        type: "server",
+        message: message || "Invalid value",
       });
     });
   } catch {
-    form.setError('root', {
-      type: 'server',
-      message: error.message || 'Validation failed.',
+    form.setError("root", {
+      type: "server",
+      message: error.message || "Validation failed.",
     });
   }
 }

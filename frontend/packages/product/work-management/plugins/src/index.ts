@@ -1,1 +1,1 @@
-export { PluginRegistry, type BoardPlugin } from './registry/plugin-registry';
+export { PluginRegistry, type BoardPlugin } from "./registry/plugin-registry";

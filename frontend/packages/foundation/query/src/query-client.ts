@@ -1,5 +1,5 @@
-import { QueryClient } from "@tanstack/react-query"
-import { AppError } from "@notrelix/kernel"
+import { QueryClient } from "@tanstack/react-query";
+import { AppError } from "@notrelix/kernel";
 
 export function createQueryClient() {
   return new QueryClient({
@@ -11,17 +11,23 @@ export function createQueryClient() {
         retry: (failureCount, error) => {
           // Do not retry on non-retryable API errors
           if (error instanceof AppError) {
-            const nonRetryableKinds = ["auth", "forbidden", "not_found", "conflict", "validation"]
+            const nonRetryableKinds = [
+              "auth",
+              "forbidden",
+              "not_found",
+              "conflict",
+              "validation",
+            ];
             if (nonRetryableKinds.includes(error.kind)) {
-              return false
+              return false;
             }
           }
-          return failureCount < 2
+          return failureCount < 2;
         },
       },
       mutations: {
         retry: false,
       },
     },
-  })
+  });
 }

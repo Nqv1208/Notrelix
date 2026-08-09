@@ -1,8 +1,10 @@
-import { Outlet, useParams } from '@tanstack/react-router';
-import { AccountSidebar } from '@/shell/account-sidebar';
+import { Outlet, useParams } from "@tanstack/react-router";
+import { AccountSidebar } from "@/shell/account-sidebar";
 
 export function AccountLayout() {
-  const { workspaceId } = useParams({ from: '/workspaces/$workspaceId/account' });
+  const { workspaceId } = useParams({
+    from: "/workspaces/$workspaceId/account",
+  });
 
   return (
     <div className="flex h-full">

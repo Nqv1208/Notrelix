@@ -1,23 +1,23 @@
-import type { ID } from './ids';
+import type { ID } from "./ids";
 
 export type BlockType =
-  | 'paragraph'
-  | 'heading_1'
-  | 'heading_2'
-  | 'heading_3'
-  | 'bulleted_list'
-  | 'numbered_list'
-  | 'todo'
-  | 'quote'
-  | 'divider'
-  | 'code'
-  | 'callout'
-  | 'toggle'
-  | 'image'
-  | 'embed'
-  | 'table'
-  | 'board_reference'
-  | 'page_reference';
+  | "paragraph"
+  | "heading_1"
+  | "heading_2"
+  | "heading_3"
+  | "bulleted_list"
+  | "numbered_list"
+  | "todo"
+  | "quote"
+  | "divider"
+  | "code"
+  | "callout"
+  | "toggle"
+  | "image"
+  | "embed"
+  | "table"
+  | "board_reference"
+  | "page_reference";
 
 export interface BlockProperties {
   text?: string;
@@ -34,15 +34,15 @@ export interface BlockProperties {
   linkedBoardId?: ID;
   linkedTaskId?: ID;
   mentionIds?: ID[];
-  align?: 'left' | 'center' | 'right';
-  fontFamily?: 'inter' | 'poppins' | 'serif' | 'mono';
-  fontSize?: 'sm' | 'base' | 'lg' | 'xl';
+  align?: "left" | "center" | "right";
+  fontFamily?: "inter" | "poppins" | "serif" | "mono";
+  fontSize?: "sm" | "base" | "lg" | "xl";
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
   strike?: boolean;
-  textColor?: 'default' | 'muted' | 'primary' | 'accent' | 'destructive';
-  highlight?: 'none' | 'muted' | 'accent' | 'primary';
+  textColor?: "default" | "muted" | "primary" | "accent" | "destructive";
+  highlight?: "none" | "muted" | "accent" | "primary";
   commentsCount?: number;
 }
 

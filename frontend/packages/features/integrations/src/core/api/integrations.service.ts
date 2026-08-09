@@ -1,8 +1,12 @@
-import type { IntegrationConnection, Webhook } from '../types/integrations';
+import type { IntegrationConnection, Webhook } from "../types/integrations";
 
 export interface IntegrationsApiClient {
   get<TResponse>(url: string, options?: unknown): Promise<TResponse>;
-  post<TResponse, TBody = unknown>(url: string, body?: TBody, options?: unknown): Promise<TResponse>;
+  post<TResponse, TBody = unknown>(
+    url: string,
+    body?: TBody,
+    options?: unknown,
+  ): Promise<TResponse>;
   delete<TResponse>(url: string, options?: unknown): Promise<TResponse>;
 }
 
@@ -18,10 +22,17 @@ export interface IntegrationsEndpoints {
   };
 }
 
-export function createIntegrationsService(api: IntegrationsApiClient, endpoints: IntegrationsEndpoints) {
+export function createIntegrationsService(
+  api: IntegrationsApiClient,
+  endpoints: IntegrationsEndpoints,
+) {
   return {
-    async listConnections(workspaceId: string): Promise<IntegrationConnection[]> {
-      return api.get<IntegrationConnection[]>(endpoints.connections.list(workspaceId));
+    async listConnections(
+      workspaceId: string,
+    ): Promise<IntegrationConnection[]> {
+      return api.get<IntegrationConnection[]>(
+        endpoints.connections.list(workspaceId),
+      );
     },
 
     async disconnect(connectionId: string): Promise<void> {
@@ -32,8 +43,15 @@ export function createIntegrationsService(api: IntegrationsApiClient, endpoints:
       return api.get<Webhook[]>(endpoints.webhooks.list(workspaceId));
     },
 
-    async createWebhook(workspaceId: string, url: string, events: string[]): Promise<Webhook> {
-      return api.post<Webhook>(endpoints.webhooks.create(workspaceId), { url, events });
+    async createWebhook(
+      workspaceId: string,
+      url: string,
+      events: string[],
+    ): Promise<Webhook> {
+      return api.post<Webhook>(endpoints.webhooks.create(workspaceId), {
+        url,
+        events,
+      });
     },
 
     async deleteWebhook(webhookId: string): Promise<void> {

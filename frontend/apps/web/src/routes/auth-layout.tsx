@@ -1,10 +1,10 @@
-import { Layers, FileText, LayoutGrid, Users, Zap } from 'lucide-react';
+import { Layers, FileText, LayoutGrid, Users, Zap } from "lucide-react";
 
 const features = [
-  { icon: FileText, text: 'Block-based docs with slash commands' },
-  { icon: LayoutGrid, text: 'Kanban boards with drag & drop' },
-  { icon: Users, text: 'Real-time team collaboration' },
-  { icon: Zap, text: 'Automations & integrations' },
+  { icon: FileText, text: "Block-based docs with slash commands" },
+  { icon: LayoutGrid, text: "Kanban boards with drag & drop" },
+  { icon: Users, text: "Real-time team collaboration" },
+  { icon: Zap, text: "Automations & integrations" },
 ];
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -35,8 +35,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             Docs, boards & wikis — unified.
           </h2>
           <p className="text-white/70 leading-relaxed mb-8">
-            Join 10,000+ teams writing, planning, and shipping together
-            in one beautiful workspace.
+            Join 10,000+ teams writing, planning, and shipping together in one
+            beautiful workspace.
           </p>
 
           <div className="space-y-4">
@@ -64,7 +64,9 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               </div>
               <div>
                 <div className="font-medium text-sm">Sarah Chen</div>
-                <div className="text-white/50 text-xs">Engineering Manager @ Stripe</div>
+                <div className="text-white/50 text-xs">
+                  Engineering Manager @ Stripe
+                </div>
               </div>
             </footer>
           </blockquote>
@@ -80,16 +82,17 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               <Layers className="size-4 text-white" />
             </div>
             <span className="text-lg font-bold tracking-tight">
-              Notre<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">lix</span>
+              Notre
+              <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                lix
+              </span>
             </span>
           </a>
         </div>
 
         {/* Form centered */}
         <div className="flex-1 flex items-center justify-center px-5 py-10 sm:px-8 lg:px-16">
-          <div className="w-full max-w-[420px]">
-            {children}
-          </div>
+          <div className="w-full max-w-[420px]">{children}</div>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const boardSearchSchema = z.object({
-  view: z.enum(['table', 'kanban', 'calendar', 'timeline']).default('kanban'),
+  view: z.enum(["table", "kanban", "calendar", "timeline"]).default("kanban"),
   filter: z.string().optional(),
   sort: z.string().optional(),
   groupBy: z.string().optional(),

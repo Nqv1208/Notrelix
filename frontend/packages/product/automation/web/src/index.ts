@@ -4,4 +4,4 @@
  * Uses @notrelix/ui-web for UI primitives.
  */
 
-export { AutomationsTab } from './components/automations-tab';
+export { AutomationsTab } from "./components/automations-tab";

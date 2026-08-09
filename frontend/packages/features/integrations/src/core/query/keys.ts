@@ -5,9 +5,9 @@
  */
 
 export const integrationsQueryKeys = {
-  all: ['integrations'] as const,
+  all: ["integrations"] as const,
   connections: (workspaceId: string) =>
-    ['integrations', 'connections', workspaceId] as const,
+    ["integrations", "connections", workspaceId] as const,
   webhooks: (workspaceId: string) =>
-    ['integrations', 'webhooks', workspaceId] as const,
+    ["integrations", "webhooks", workspaceId] as const,
 } as const;

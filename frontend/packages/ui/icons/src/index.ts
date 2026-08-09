@@ -5,5 +5,5 @@
  * No platform/query/product dependencies (enforced by the architecture gate).
  */
 
-export * from './icons';
-export * from './icon-conventions';
+export * from "./icons";
+export * from "./icon-conventions";

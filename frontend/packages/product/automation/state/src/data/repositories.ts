@@ -5,7 +5,7 @@ import type {
   AutomationTemplate,
   CreateAutomationRuleInput,
   UpdateAutomationRuleInput,
-} from '@notrelix/automation-core';
+} from "@notrelix/automation-core";
 
 export interface AutomationRuleRepository {
   listByWorkspace(workspaceId: string): Promise<AutomationRule[]>;

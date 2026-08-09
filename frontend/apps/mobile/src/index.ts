@@ -5,4 +5,4 @@
  * Uses @notrelix/ui-mobile for UI primitives.
  */
 
-export { MobileApp } from './screens/mobile-app';
+export { MobileApp } from "./screens/mobile-app";

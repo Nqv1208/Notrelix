@@ -7,18 +7,18 @@
  * exists for test/tooling validation.
  */
 
-export function globalQueryKey<const R extends string, const S extends readonly unknown[]>(
-  resource: R,
-  ...segments: S
-): readonly ['global', R, ...S] {
-  return ['global', resource, ...segments] as readonly ['global', R, ...S];
+export function globalQueryKey<
+  const R extends string,
+  const S extends readonly unknown[],
+>(resource: R, ...segments: S): readonly ["global", R, ...S] {
+  return ["global", resource, ...segments] as readonly ["global", R, ...S];
 }
 
-export function accountQueryKey<const R extends string, const S extends readonly unknown[]>(
-  resource: R,
-  ...segments: S
-): readonly ['account', R, ...S] {
-  return ['account', resource, ...segments] as readonly ['account', R, ...S];
+export function accountQueryKey<
+  const R extends string,
+  const S extends readonly unknown[],
+>(resource: R, ...segments: S): readonly ["account", R, ...S] {
+  return ["account", resource, ...segments] as readonly ["account", R, ...S];
 }
 
 export function workspaceQueryKey<
@@ -29,9 +29,9 @@ export function workspaceQueryKey<
   workspaceId: W,
   resource: R,
   ...segments: S
-): readonly ['workspace', W, R, ...S] {
-  return ['workspace', workspaceId, resource, ...segments] as readonly [
-    'workspace',
+): readonly ["workspace", W, R, ...S] {
+  return ["workspace", workspaceId, resource, ...segments] as readonly [
+    "workspace",
     W,
     R,
     ...S,
@@ -50,21 +50,23 @@ export function workspaceQueryKey<
  */
 export function assertNotrelixQueryKey(key: readonly unknown[]): void {
   if (key.length === 0) {
-    throw new Error('Notrelix query key must not be empty');
+    throw new Error("Notrelix query key must not be empty");
   }
 
   const root = key[0];
-  if (root !== 'global' && root !== 'account' && root !== 'workspace') {
+  if (root !== "global" && root !== "account" && root !== "workspace") {
     throw new Error(`invalid Notrelix query key root: ${String(root)}`);
   }
 
-  if (root === 'workspace') {
+  if (root === "workspace") {
     if (key.length < 3) {
-      throw new Error('workspace-scoped query key requires a resource segment');
+      throw new Error("workspace-scoped query key requires a resource segment");
     }
     const workspaceId = key[1];
-    if (typeof workspaceId !== 'string' || workspaceId.length === 0) {
-      throw new Error('workspace-scoped query key requires a non-empty workspace ID');
+    if (typeof workspaceId !== "string" || workspaceId.length === 0) {
+      throw new Error(
+        "workspace-scoped query key requires a non-empty workspace ID",
+      );
     }
     return;
   }

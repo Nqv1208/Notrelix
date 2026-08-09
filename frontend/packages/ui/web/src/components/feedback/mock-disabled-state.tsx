@@ -1,11 +1,11 @@
-import * as React from "react"
-import { Lock } from "lucide-react"
+import * as React from "react";
+import { Lock } from "lucide-react";
 
 interface MockDisabledStateProps {
-  featureName: string
-  title?: string
-  description?: string
-  action?: React.ReactNode
+  featureName: string;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
 }
 
 export function MockDisabledState({
@@ -22,10 +22,11 @@ export function MockDisabledState({
       <div className="space-y-1 max-w-sm">
         <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground">
-          {description || `Chế độ dữ liệu giả lập (Mock Mode) đang tắt. Tính năng "${featureName}" đang được kết nối với hệ thống backend.`}
+          {description ||
+            `Chế độ dữ liệu giả lập (Mock Mode) đang tắt. Tính năng "${featureName}" đang được kết nối với hệ thống backend.`}
         </p>
       </div>
       {action && <div className="mt-2">{action}</div>}
     </div>
-  )
+  );
 }

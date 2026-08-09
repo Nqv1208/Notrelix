@@ -1,6 +1,9 @@
-import type { QueryClient } from '@tanstack/react-query';
-import type { RealtimeTransport } from '@notrelix/realtime';
-import type { SessionEventBus, SessionExpiredEvent } from '@notrelix/runtime-web';
+import type { QueryClient } from "@tanstack/react-query";
+import type { RealtimeTransport } from "@notrelix/realtime";
+import type {
+  SessionEventBus,
+  SessionExpiredEvent,
+} from "@notrelix/runtime-web";
 
 const MAX_HANDLED_SESSION_EVENTS = 32;
 
@@ -16,7 +19,7 @@ export interface WorkspaceEventSource {
 }
 
 export function createWorkspaceEventSource(
-  reportError?: (error: unknown, context?: Record<string, unknown>) => void
+  reportError?: (error: unknown, context?: Record<string, unknown>) => void,
 ): WorkspaceEventSource {
   const listeners: Set<(event: WorkspaceChangeEvent) => void> = new Set();
 
@@ -64,7 +67,7 @@ export interface ApplicationLifecycle {
 }
 
 export function createApplicationLifecycle(
-  deps: ApplicationLifecycleDependencies
+  deps: ApplicationLifecycleDependencies,
 ): ApplicationLifecycle {
   const handledSessionEventIds: Set<string> = new Set();
   let activeWorkspaceId: string | null = null;
@@ -86,7 +89,7 @@ export function createApplicationLifecycle(
     deps.clearSessionState();
     deps.clearWorkspaceState();
     deps.queryClient.clear();
-    deps.realtime.disconnect('session-expired');
+    deps.realtime.disconnect("session-expired");
     deps.navigateToSignedOut();
   };
 
@@ -101,11 +104,13 @@ export function createApplicationLifecycle(
     activeWorkspaceId = event.nextWorkspaceId;
     deps.queryClient.clear();
     deps.clearWorkspaceState();
-    deps.realtime.disconnect('workspace-switch');
+    deps.realtime.disconnect("workspace-switch");
   };
 
   const unsubscribeSession = deps.sessionEvents.subscribe(handleSessionExpired);
-  const unsubscribeWorkspace = deps.workspaceEvents.subscribe(handleWorkspaceChange);
+  const unsubscribeWorkspace = deps.workspaceEvents.subscribe(
+    handleWorkspaceChange,
+  );
 
   return {
     dispose(): void {

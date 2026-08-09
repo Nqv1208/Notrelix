@@ -32,6 +32,6 @@ export type {
   CreateCommentPayload,
   PageTreeNode,
   SearchResult,
-} from './types';
+} from "./types";
 
-export { docsQueryKeys } from './query/keys';
+export { docsQueryKeys } from "./query/keys";

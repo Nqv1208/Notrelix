@@ -4,9 +4,9 @@ export function resolveErrorDisplay(
   message: string | undefined,
   t: TranslationFunction,
 ): string {
-  if (!message) return '';
+  if (!message) return "";
   // If the message is an i18n key, translate it
-  if (message.startsWith('auth.')) {
+  if (message.startsWith("auth.")) {
     return t(message);
   }
   return message;

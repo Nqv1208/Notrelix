@@ -6,7 +6,7 @@
  */
 
 export const notificationsQueryKeys = {
-  all: ['notifications'] as const,
-  unreadCount: ['notifications', 'unread-count'] as const,
-  preferences: ['notifications', 'preferences'] as const,
+  all: ["notifications"] as const,
+  unreadCount: ["notifications", "unread-count"] as const,
+  preferences: ["notifications", "preferences"] as const,
 } as const;

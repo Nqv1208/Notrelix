@@ -1,19 +1,25 @@
-import { useCallback } from "react"
-import { useBoardKanban, useSelectedCardPanel } from "@notrelix/work-management-state"
-import { useDuplicateCard, useDeleteCard } from "@notrelix/work-management-state"
-import { generatePosition } from "@notrelix/work-management-core"
-import { KanbanToolbar } from "./kanban-toolbar"
-import { KanbanBoard } from "./kanban-board"
-import { KanbanCardDetailPanel } from "./kanban-card-detail-panel"
-import { KanbanSkeleton } from "./kanban-skeleton"
-import { AlertCircle } from "lucide-react"
+import { useCallback } from "react";
+import {
+  useBoardKanban,
+  useSelectedCardPanel,
+} from "@notrelix/work-management-state";
+import {
+  useDuplicateCard,
+  useDeleteCard,
+} from "@notrelix/work-management-state";
+import { generatePosition } from "@notrelix/work-management-core";
+import { KanbanToolbar } from "./kanban-toolbar";
+import { KanbanBoard } from "./kanban-board";
+import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
+import { KanbanSkeleton } from "./kanban-skeleton";
+import { AlertCircle } from "lucide-react";
 
 export function KanbanView({
   boardId,
   workspaceId,
 }: {
-  boardId: string
-  workspaceId: string
+  boardId: string;
+  workspaceId: string;
 }) {
   const {
     board,
@@ -27,51 +33,55 @@ export function KanbanView({
     createColumn,
     updateColumn,
     deleteColumn,
-  } = useBoardKanban(boardId, workspaceId)
+  } = useBoardKanban(boardId, workspaceId);
 
-  const { selectedCardId, openCard, closePanel } = useSelectedCardPanel()
-  const duplicateCard = useDuplicateCard(boardId, workspaceId)
-  const deleteCard = useDeleteCard(boardId, workspaceId)
+  const { selectedCardId, openCard, closePanel } = useSelectedCardPanel();
+  const duplicateCard = useDuplicateCard(boardId, workspaceId);
+  const deleteCard = useDeleteCard(boardId, workspaceId);
 
   const handleOpenDetail = useCallback(
     (cardId: string) => {
-      openCard(cardId)
+      openCard(cardId);
     },
-    [openCard]
-  )
+    [openCard],
+  );
 
   const handleClosePanel = useCallback(() => {
-    closePanel()
-  }, [closePanel])
+    closePanel();
+  }, [closePanel]);
 
-  if (isLoading) return <KanbanSkeleton />
+  if (isLoading) return <KanbanSkeleton />;
   if (error || !board) {
     return (
       <div className="p-4 sm:p-6">
         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-xs">
           <AlertCircle className="mx-auto mb-3 size-8 text-destructive" />
-          <h2 className="text-lg font-semibold text-foreground font-display">Board unavailable</h2>
-          <p className="mt-2 text-sm text-muted-foreground">The Kanban board could not be loaded.</p>
+          <h2 className="text-lg font-semibold text-foreground font-display">
+            Board unavailable
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The Kanban board could not be loaded.
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   const handleCreateCard = () => {
-    const firstCol = columns[0]
+    const firstCol = columns[0];
     if (firstCol) {
-      document.getElementById(`add-card-${firstCol.id}`)?.focus()
+      document.getElementById(`add-card-${firstCol.id}`)?.focus();
     }
-  }
+  };
 
   const handleCreateColumn = () => {
-    const lastPos = columns.at(-1)?.position
+    const lastPos = columns.at(-1)?.position;
     createColumn.mutate({
       title: "New Column",
       color: "#6161ff",
       position: generatePosition(lastPos, undefined),
-    })
-  }
+    });
+  };
 
   return (
     <div className="h-full min-h-0 overflow-hidden bg-card font-body select-none flex flex-col">
@@ -93,29 +103,32 @@ export function KanbanView({
             workspaceId={workspaceId}
             onOpenDetails={handleOpenDetail}
             onMoveCard={(cardId: any, listId: any, position: any) => {
-              moveCard.mutate({ cardId, listId, position })
+              moveCard.mutate({ cardId, listId, position });
             }}
             onReorderColumns={(updated: any) => {
-              reorderColumns.mutate(updated)
+              reorderColumns.mutate(updated);
             }}
             onAdd={(title: any) => {
-              const lastPos = columns.at(-1)?.position
-              createColumn.mutate({ title, position: generatePosition(lastPos, undefined) })
+              const lastPos = columns.at(-1)?.position;
+              createColumn.mutate({
+                title,
+                position: generatePosition(lastPos, undefined),
+              });
             }}
             onRenameColumn={(listId: any, title: any) => {
-              updateColumn.mutate({ listId, title })
+              updateColumn.mutate({ listId, title });
             }}
             onColorChangeColumn={(listId: any, color: any) => {
-              updateColumn.mutate({ listId, color })
+              updateColumn.mutate({ listId, color });
             }}
             onDeleteColumn={(listId: any) => {
-              deleteColumn.mutate(listId)
+              deleteColumn.mutate(listId);
             }}
             onDuplicateCard={(cardId: any) => {
-              duplicateCard.mutate(cardId)
+              duplicateCard.mutate(cardId);
             }}
             onDeleteCard={(cardId: any) => {
-              deleteCard.mutate(cardId)
+              deleteCard.mutate(cardId);
             }}
           />
         </div>
@@ -128,5 +141,5 @@ export function KanbanView({
         onClose={handleClosePanel}
       />
     </div>
-  )
+  );
 }

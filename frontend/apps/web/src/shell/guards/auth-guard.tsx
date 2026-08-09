@@ -1,7 +1,7 @@
-import { useEffect, type ReactNode } from 'react';
-import { useLocation, useNavigate } from '@tanstack/react-router';
-import { useAuth } from '@notrelix/features-auth';
-import { LoadingState } from '@notrelix/ui-web';
+import { useEffect, type ReactNode } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@notrelix/features-auth";
+import { LoadingState } from "@notrelix/ui-web";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -14,13 +14,19 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     if (isLoading || isAuthenticated) return;
-    if (location.pathname.startsWith('/sign-in')) return;
+    if (location.pathname.startsWith("/sign-in")) return;
     navigate({
-      to: '/sign-in',
+      to: "/sign-in",
       search: { redirect: location.pathname + location.searchStr },
       replace: true,
     });
-  }, [isAuthenticated, isLoading, location.pathname, location.searchStr, navigate]);
+  }, [
+    isAuthenticated,
+    isLoading,
+    location.pathname,
+    location.searchStr,
+    navigate,
+  ]);
 
   if (isLoading) {
     return (

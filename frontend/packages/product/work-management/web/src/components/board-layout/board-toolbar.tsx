@@ -1,6 +1,6 @@
-import { Search, Filter, Settings } from 'lucide-react';
-import { Button, Input } from '@notrelix/ui-web';
-import { ViewTabs, AddViewMenu } from './view-tabs';
+import { Search, Filter, Settings } from "lucide-react";
+import { Button, Input } from "@notrelix/ui-web";
+import { ViewTabs, AddViewMenu } from "./view-tabs";
 
 interface BoardToolbarProps {
   boardTitle: string;
@@ -14,12 +14,14 @@ export function BoardToolbar({
   boardTitle,
   activeView,
   onViewChange,
-  searchQuery = '',
+  searchQuery = "",
   onSearchChange,
 }: BoardToolbarProps) {
   return (
     <div className="flex items-center gap-3 border-b px-4 py-2">
-      <h2 className="text-sm font-semibold text-foreground truncate">{boardTitle}</h2>
+      <h2 className="text-sm font-semibold text-foreground truncate">
+        {boardTitle}
+      </h2>
 
       <div className="h-4 w-px bg-border" />
 
@@ -39,7 +41,11 @@ export function BoardToolbar({
         </div>
       )}
 
-      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+      >
         <Filter className="h-3.5 w-3.5" />
       </Button>
 

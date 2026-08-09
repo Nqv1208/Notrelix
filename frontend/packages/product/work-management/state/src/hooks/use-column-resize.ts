@@ -1,9 +1,9 @@
-import { useResizeColumn } from "./use-resize-column"
-import type { ViewConfig } from "@notrelix/work-management-core"
+import { useResizeColumn } from "./use-resize-column";
+import type { ViewConfig } from "@notrelix/work-management-core";
 
 export function useColumnResize(
   viewConfig: ViewConfig,
-  updateViewConfig: (patch: Partial<ViewConfig>) => void
+  updateViewConfig: (patch: Partial<ViewConfig>) => void,
 ) {
-  return useResizeColumn(viewConfig, updateViewConfig)
+  return useResizeColumn(viewConfig, updateViewConfig);
 }

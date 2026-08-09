@@ -4,20 +4,17 @@ export interface ServerValidationIssue {
 }
 
 export interface ServerValidationTarget {
-  setError(
-    field: string,
-    error: { type: string; message: string }
-  ): void;
+  setError(field: string, error: { type: string; message: string }): void;
 }
 
 export function mapServerValidationErrors(
   target: ServerValidationTarget,
   errors: readonly ServerValidationIssue[],
-  fallbackField = 'root'
+  fallbackField = "root",
 ): void {
   for (const error of errors) {
     target.setError(error.field ?? fallbackField, {
-      type: 'server',
+      type: "server",
       message: error.message,
     });
   }

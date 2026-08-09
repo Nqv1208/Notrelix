@@ -1,12 +1,10 @@
-import React from 'react';
+import React from "react";
 
 export interface MobileWorkspaceHomeProps {
   workspaceId: string;
 }
 
-export function MobileWorkspaceHome({
-  workspaceId,
-}: MobileWorkspaceHomeProps) {
+export function MobileWorkspaceHome({ workspaceId }: MobileWorkspaceHomeProps) {
   return (
     <div>
       <h1>Workspace Home</h1>

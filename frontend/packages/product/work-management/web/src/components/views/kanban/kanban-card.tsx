@@ -1,22 +1,49 @@
-import { useMemo } from "react"
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { CalendarDays, CheckCircle2, FileText, GripVertical, MessageSquareText, MoreHorizontal, Paperclip } from "lucide-react"
-import { format } from "date-fns"
-import { Avatar, AvatarFallback } from "@notrelix/ui-web"
-import { Badge } from "@notrelix/ui-web"
-import { Progress } from "@notrelix/ui-web"
-import { Button } from "@notrelix/ui-web"
-import { cn } from "@notrelix/ui-web"
-import type { Board, Card } from "@notrelix/work-management-core"
-import { KanbanCardMenu } from "./kanban-card-menu"
+import { useMemo } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  CalendarDays,
+  CheckCircle2,
+  FileText,
+  GripVertical,
+  MessageSquareText,
+  MoreHorizontal,
+  Paperclip,
+} from "lucide-react";
+import { format } from "date-fns";
+import { Avatar, AvatarFallback } from "@notrelix/ui-web";
+import { Badge } from "@notrelix/ui-web";
+import { Progress } from "@notrelix/ui-web";
+import { Button } from "@notrelix/ui-web";
+import { cn } from "@notrelix/ui-web";
+import type { Board, Card } from "@notrelix/work-management-core";
+import { KanbanCardMenu } from "./kanban-card-menu";
 
-const priorityColors: Record<string, { bg: string; text: string; border: string }> = {
-  urgent: { bg: "rgba(246, 73, 50, 0.1)", text: "#f64932", border: "rgba(246, 73, 50, 0.3)" },
-  high: { bg: "rgba(97, 97, 255, 0.1)", text: "#6161ff", border: "rgba(97, 97, 255, 0.3)" },
-  medium: { bg: "rgba(255, 201, 94, 0.15)", text: "#ffb110", border: "rgba(255, 201, 94, 0.4)" },
-  low: { bg: "rgba(103, 104, 121, 0.1)", text: "#676879", border: "rgba(103, 104, 121, 0.3)" },
-}
+const priorityColors: Record<
+  string,
+  { bg: string; text: string; border: string }
+> = {
+  urgent: {
+    bg: "rgba(246, 73, 50, 0.1)",
+    text: "#f64932",
+    border: "rgba(246, 73, 50, 0.3)",
+  },
+  high: {
+    bg: "rgba(97, 97, 255, 0.1)",
+    text: "#6161ff",
+    border: "rgba(97, 97, 255, 0.3)",
+  },
+  medium: {
+    bg: "rgba(255, 201, 94, 0.15)",
+    text: "#ffb110",
+    border: "rgba(255, 201, 94, 0.4)",
+  },
+  low: {
+    bg: "rgba(103, 104, 121, 0.1)",
+    text: "#676879",
+    border: "rgba(103, 104, 121, 0.3)",
+  },
+};
 
 export function KanbanCard({
   board,
@@ -25,29 +52,46 @@ export function KanbanCard({
   onDuplicate,
   onDelete,
 }: {
-  board: Board
-  card: Card
-  onOpenDetails: (cardId: string) => void
-  onDuplicate: () => void
-  onDelete: () => void
+  board: Board;
+  card: Card;
+  onOpenDetails: (cardId: string) => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: card.id,
     data: { type: "kanban-card", card },
-  })
+  });
 
-  const priorityStyle = card.priority ? priorityColors[card.priority] : null
+  const priorityStyle = card.priority ? priorityColors[card.priority] : null;
 
   const checklistProgress = useMemo(() => {
-    const checklists = card.checklists || []
-    const total = checklists.reduce((count, checklist) => count + (checklist.items?.length || 0), 0)
-    const done = checklists.reduce((count, checklist) => count + (checklist.items?.filter((item) => item.isDone)?.length || 0), 0)
-    return total === 0 ? 0 : Math.round((done / total) * 100)
-  }, [card.checklists])
+    const checklists = card.checklists || [];
+    const total = checklists.reduce(
+      (count, checklist) => count + (checklist.items?.length || 0),
+      0,
+    );
+    const done = checklists.reduce(
+      (count, checklist) =>
+        count + (checklist.items?.filter((item) => item.isDone)?.length || 0),
+      0,
+    );
+    return total === 0 ? 0 : Math.round((done / total) * 100);
+  }, [card.checklists]);
 
   const checklistTotalItems = useMemo(() => {
-    return (card.checklists || []).reduce((count, cl) => count + (cl.items?.length || 0), 0)
-  }, [card.checklists])
+    return (card.checklists || []).reduce(
+      (count, cl) => count + (cl.items?.length || 0),
+      0,
+    );
+  }, [card.checklists]);
 
   return (
     <article
@@ -59,7 +103,7 @@ export function KanbanCard({
       }}
       className={cn(
         "group relative flex flex-col rounded-xl border border-border bg-card p-3 shadow-xs transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
-        isDragging && "opacity-60 border-primary"
+        isDragging && "opacity-60 border-primary",
       )}
       onClick={() => onOpenDetails(card.id)}
       aria-label={card.title}
@@ -92,8 +136,15 @@ export function KanbanCard({
         </div>
 
         {/* Actions Button */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-          <KanbanCardMenu cardId={card.id} onDuplicate={onDuplicate} onDelete={onDelete}>
+        <div
+          className="opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <KanbanCardMenu
+            cardId={card.id}
+            onDuplicate={onDuplicate}
+            onDelete={onDelete}
+          >
             <Button variant="ghost" size="icon-xs" className="size-6">
               <MoreHorizontal className="size-3.5" />
             </Button>
@@ -158,8 +209,14 @@ export function KanbanCard({
         {/* Assignee Avatar */}
         <div className="-space-x-1.5 flex shrink-0">
           {card.members?.slice(0, 3).map((member) => (
-            <Avatar key={member.id} className="inline-flex size-6 border-2 border-card ring-1 ring-border/20">
-              <AvatarFallback className="text-[9px] font-bold text-primary-foreground" style={{ backgroundColor: member.color }}>
+            <Avatar
+              key={member.id}
+              className="inline-flex size-6 border-2 border-card ring-1 ring-border/20"
+            >
+              <AvatarFallback
+                className="text-[9px] font-bold text-primary-foreground"
+                style={{ backgroundColor: member.color }}
+              >
                 {member.initials}
               </AvatarFallback>
             </Avatar>
@@ -167,5 +224,5 @@ export function KanbanCard({
         </div>
       </div>
     </article>
-  )
+  );
 }

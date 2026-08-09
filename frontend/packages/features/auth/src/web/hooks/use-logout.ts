@@ -1,6 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createAuthService, type AuthApiClient, type AuthEndpoints } from '../../core/api/auth.service';
-import type { NavigationDeps } from './use-login';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createAuthService,
+  type AuthApiClient,
+  type AuthEndpoints,
+} from "../../core/api/auth.service";
+import type { NavigationDeps } from "./use-login";
 
 interface UseLogoutDeps extends NavigationDeps {
   api: AuthApiClient;
@@ -23,7 +27,7 @@ export function createUseLogout({ api, endpoints, navigate }: UseLogoutDeps) {
       },
       onSettled: () => {
         queryClient.clear();
-        navigate({ to: '/', replace: true });
+        navigate({ to: "/", replace: true });
       },
     });
   };

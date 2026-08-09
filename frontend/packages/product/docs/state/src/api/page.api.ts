@@ -1,6 +1,11 @@
-import type { Page, CreatePagePayload, UpdatePagePayload, PageDetail } from '@notrelix/docs-core';
-import type { PageDtoApi, BreadcrumbDtoApi } from '../dto';
-import { mapPage, mapBreadcrumb } from '../model/page.mapper';
+import type {
+  Page,
+  CreatePagePayload,
+  UpdatePagePayload,
+  PageDetail,
+} from "@notrelix/docs-core";
+import type { PageDtoApi, BreadcrumbDtoApi } from "../dto";
+import { mapPage, mapBreadcrumb } from "../model/page.mapper";
 
 export interface DocsApiClient {
   get<T>(url: string): Promise<T>;
@@ -29,10 +34,7 @@ export interface PageApiEndpoints {
   };
 }
 
-export function createPageApi(
-  api: DocsApiClient,
-  endpoints: PageApiEndpoints,
-) {
+export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
   return {
     async getList(workspaceId: string): Promise<Page[]> {
       const pages = await api.get<PageDtoApi[]>(
@@ -44,9 +46,7 @@ export function createPageApi(
     async getDetail(pageId: string): Promise<PageDetail> {
       const [page, breadcrumb] = await Promise.all([
         api.get<PageDtoApi>(endpoints.pages.detail(pageId)),
-        api.get<BreadcrumbDtoApi[]>(
-          endpoints.pages.breadcrumb(pageId),
-        ),
+        api.get<BreadcrumbDtoApi[]>(endpoints.pages.breadcrumb(pageId)),
       ]);
       return {
         ...mapPage(page),
