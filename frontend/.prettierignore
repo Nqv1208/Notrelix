@@ -1,0 +1,3 @@
+# Ignore auto-generated artifacts from prettier checking
+packages/foundation/contracts/src/generated/
+docs/client/architecture/*.generated.md
