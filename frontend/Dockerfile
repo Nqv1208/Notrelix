@@ -7,9 +7,8 @@ WORKDIR /app
 
 # Stage 2: Build web app
 FROM base AS builder
-RUN corepack enable pnpm@10.0.0
 
-COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml frontend/.npmrc ./
 COPY frontend/turbo.json ./
 COPY frontend/tooling ./tooling
 COPY frontend/packages ./packages
