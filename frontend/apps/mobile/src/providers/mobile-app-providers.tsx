@@ -1,4 +1,4 @@
-import React, { useMemo, type ReactNode } from "react";
+import React, { useEffect, useMemo, type ReactNode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
   createMobileRuntime,
@@ -6,17 +6,19 @@ import {
   MobileApplicationServicesProvider,
   createMobileApplicationServices,
 } from "@notrelix/runtime-mobile";
+import { env } from "../config/env";
 
 export function MobileAppProviders({ children }: { children: ReactNode }) {
   const services = useMemo(() => {
-    const runtime = createMobileRuntime({
-      apiUrl: process.env.EXPO_PUBLIC_API_URL || "https://api.notrelix.com",
-      realtimeUrl:
-        process.env.EXPO_PUBLIC_REALTIME_URL || "wss://realtime.notrelix.com",
-      releaseSha: process.env.EXPO_PUBLIC_RELEASE_SHA || "dev",
-    });
+    const runtime = createMobileRuntime(env);
     return createMobileApplicationServices(runtime);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      void services.dispose();
+    };
+  }, [services]);
 
   return (
     <MobileApplicationServicesProvider services={services}>
