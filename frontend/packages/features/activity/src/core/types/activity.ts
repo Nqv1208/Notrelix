@@ -1,12 +1,12 @@
 export type ActivityAction =
-  | 'created'
-  | 'updated'
-  | 'deleted'
-  | 'commented'
-  | 'assigned'
-  | 'moved'
-  | 'archived'
-  | 'restored';
+  | "created"
+  | "updated"
+  | "deleted"
+  | "commented"
+  | "assigned"
+  | "moved"
+  | "archived"
+  | "restored";
 
 export interface ActivityEntry {
   id: string;

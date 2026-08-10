@@ -1,11 +1,11 @@
-import { useParams, useSearch, useNavigate } from '@tanstack/react-router';
-import { BoardWorkspaceViewContent } from '@notrelix/work-management-web';
-import { BoardLayoutShell } from '@notrelix/work-management-web';
-import { useFullBoard } from '@notrelix/work-management-state';
+import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
+import { BoardWorkspaceViewContent } from "@notrelix/work-management-web";
+import { BoardLayoutShell } from "@notrelix/work-management-web";
+import { useFullBoard } from "@notrelix/work-management-state";
 
 export function BoardPage() {
   const { workspaceId, boardId } = useParams({
-    from: '/workspaces/$workspaceId/boards/$boardId',
+    from: "/workspaces/$workspaceId/boards/$boardId",
   });
   const navigate = useNavigate();
 
@@ -13,7 +13,7 @@ export function BoardPage() {
     strict: false,
   }) as { view?: string };
 
-  const viewType = search.view || 'kanban';
+  const viewType = search.view || "kanban";
   const view = { type: viewType, name: viewType.toUpperCase() };
 
   const { board } = useFullBoard(boardId, workspaceId);
@@ -27,7 +27,7 @@ export function BoardPage() {
     <BoardLayoutShell
       workspaceId={workspaceId}
       boardId={boardId}
-      boardTitle={board?.title ?? 'Board'}
+      boardTitle={board?.title ?? "Board"}
       activeView={viewType}
       onViewChange={handleViewChange}
     >

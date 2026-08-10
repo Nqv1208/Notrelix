@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
-    "build": "vite build",
+    "build": "node ./scripts/build.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -20,7 +20,9 @@
     "@notrelix/docs-web": "workspace:*",
     "@notrelix/features-account": "workspace:*",
     "@notrelix/features-auth": "workspace:*",
+    "@notrelix/features-billing": "workspace:*",
     "@notrelix/features-notifications": "workspace:*",
+    "@notrelix/features-search": "workspace:*",
     "@notrelix/features-workspace": "workspace:*",
     "@notrelix/kernel": "workspace:*",
     "@notrelix/observability": "workspace:*",

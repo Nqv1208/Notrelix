@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 export const kanbanFilterSchema = z.object({
   searchQuery: z.string().optional(),
@@ -6,6 +6,6 @@ export const kanbanFilterSchema = z.object({
   status: z.array(z.string()).optional(),
   assigneeId: z.array(z.string()).optional(),
   labelId: z.array(z.string()).optional(),
-})
+});
 
-export type KanbanFilterInput = z.infer<typeof kanbanFilterSchema>
+export type KanbanFilterInput = z.infer<typeof kanbanFilterSchema>;

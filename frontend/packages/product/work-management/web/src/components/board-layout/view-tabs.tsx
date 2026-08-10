@@ -1,12 +1,12 @@
-import { LayoutGrid, Table, Calendar, GanttChart, Plus } from 'lucide-react';
-import { Button } from '@notrelix/ui-web';
-import { useState } from 'react';
+import { LayoutGrid, Table, Calendar, GanttChart, Plus } from "lucide-react";
+import { Button } from "@notrelix/ui-web";
+import { useState } from "react";
 
 const VIEW_TYPES = [
-  { type: 'kanban', label: 'Board', icon: LayoutGrid },
-  { type: 'table', label: 'Table', icon: Table },
-  { type: 'calendar', label: 'Calendar', icon: Calendar },
-  { type: 'timeline', label: 'Timeline', icon: GanttChart },
+  { type: "kanban", label: "Board", icon: LayoutGrid },
+  { type: "table", label: "Table", icon: Table },
+  { type: "calendar", label: "Calendar", icon: Calendar },
+  { type: "timeline", label: "Timeline", icon: GanttChart },
 ] as const;
 
 interface ViewTabsProps {
@@ -26,8 +26,8 @@ export function ViewTabs({ activeView, onViewChange }: ViewTabsProps) {
             onClick={() => onViewChange(view.type)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
               isActive
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             }`}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -39,7 +39,11 @@ export function ViewTabs({ activeView, onViewChange }: ViewTabsProps) {
   );
 }
 
-export function AddViewMenu({ onAddView }: { onAddView: (type: string) => void }) {
+export function AddViewMenu({
+  onAddView,
+}: {
+  onAddView: (type: string) => void;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -55,7 +59,10 @@ export function AddViewMenu({ onAddView }: { onAddView: (type: string) => void }
       </Button>
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
           <div className="absolute right-0 top-8 z-50 w-40 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
             <div className="p-1">
               {VIEW_TYPES.map((view) => {

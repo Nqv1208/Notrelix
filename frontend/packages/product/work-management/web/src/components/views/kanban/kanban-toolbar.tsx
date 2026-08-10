@@ -1,24 +1,23 @@
-import { Plus } from "lucide-react"
-import { Button } from "@notrelix/ui-web"
-import { Input } from "@notrelix/ui-web"
-import { KanbanFilterMenu } from "./kanban-filter-menu"
-import { KanbanSortMenu } from "./kanban-sort-menu"
-import type { KanbanSortOption } from "@notrelix/work-management-core"
+import { Plus } from "lucide-react";
+import { Button } from "@notrelix/ui-web";
+import { Input } from "@notrelix/ui-web";
+import { KanbanSortMenu } from "./kanban-sort-menu";
+import type { KanbanSortOption } from "@notrelix/work-management-core";
 
 interface KanbanToolbarProps {
-  searchQuery: string
-  onSearchChange: (value: string) => void
-  onClearFilters: () => void
-  activeSort: KanbanSortOption
-  onSortChange: (option: KanbanSortOption) => void
-  onCreateCard: () => void
-  onAddColumn: () => void
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  onClearFilters: () => void;
+  activeSort: KanbanSortOption;
+  onSortChange: (option: KanbanSortOption) => void;
+  onCreateCard: () => void;
+  onAddColumn: () => void;
 }
 
 export function KanbanToolbar({
   searchQuery,
   onSearchChange,
-  onClearFilters,
+  onClearFilters: _onClearFilters,
   activeSort,
   onSortChange,
   onCreateCard,
@@ -43,5 +42,5 @@ export function KanbanToolbar({
         Card
       </Button>
     </div>
-  )
+  );
 }

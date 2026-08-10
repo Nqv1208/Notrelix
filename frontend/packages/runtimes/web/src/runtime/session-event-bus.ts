@@ -1,4 +1,4 @@
-import type { SessionExpiredEvent } from '@notrelix/contracts';
+import type { SessionExpiredEvent } from "@notrelix/contracts";
 
 export type { SessionExpiredEvent };
 
@@ -9,7 +9,7 @@ export interface SessionEventBus {
 }
 
 export function createSessionEventBus(
-  reportError?: (error: unknown, context?: Record<string, unknown>) => void
+  reportError?: (error: unknown, context?: Record<string, unknown>) => void,
 ): SessionEventBus {
   const listeners: Set<(event: SessionExpiredEvent) => void> = new Set();
 
@@ -22,7 +22,10 @@ export function createSessionEventBus(
           if (reportError) {
             reportError(err, { eventId: event.eventId, reason: event.reason });
           } else {
-            console.error('[SessionEventBus] Error in session event listener:', err);
+            console.error(
+              "[SessionEventBus] Error in session event listener:",
+              err,
+            );
           }
         }
       });

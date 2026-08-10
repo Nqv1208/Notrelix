@@ -8,13 +8,15 @@ export interface ObservabilityConfig {
 
 let activeConfig: ObservabilityConfig = {
   enabled: true,
-  environment: 'development',
-  appVersion: '0.1.0',
+  environment: "development",
+  appVersion: "0.1.0",
   sampleRate: 1.0,
   isDevelopment: true,
 };
 
-export function initObservability(config: ObservabilityConfig = {}): ObservabilityConfig {
+export function initObservability(
+  config: ObservabilityConfig = {},
+): ObservabilityConfig {
   activeConfig = {
     ...activeConfig,
     ...config,

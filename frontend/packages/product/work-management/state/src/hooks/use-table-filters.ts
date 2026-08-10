@@ -1,16 +1,19 @@
-import { useCallback } from "react"
-import type { FilterConfig, ViewConfig } from "@notrelix/work-management-core"
+import { useCallback } from "react";
+import type { FilterConfig, ViewConfig } from "@notrelix/work-management-core";
 
 export function useTableFilters(
   viewConfig: ViewConfig,
-  updateViewConfig: (patch: Partial<ViewConfig>) => void
+  updateViewConfig: (patch: Partial<ViewConfig>) => void,
 ) {
   const setFilters = useCallback(
     (filters: FilterConfig[]) => updateViewConfig({ filters }),
-    [updateViewConfig]
-  )
+    [updateViewConfig],
+  );
 
-  const clearFilters = useCallback(() => updateViewConfig({ filters: [] }), [updateViewConfig])
+  const clearFilters = useCallback(
+    () => updateViewConfig({ filters: [] }),
+    [updateViewConfig],
+  );
 
-  return { filters: viewConfig.filters, setFilters, clearFilters }
+  return { filters: viewConfig.filters, setFilters, clearFilters };
 }

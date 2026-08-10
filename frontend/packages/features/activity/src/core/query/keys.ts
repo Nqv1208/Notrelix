@@ -6,7 +6,7 @@
  */
 
 export const activityQueryKeys = {
-  all: ['activity'] as const,
+  all: ["activity"] as const,
   workspace: (workspaceId: string) =>
-    ['activity', 'workspace', workspaceId] as const,
+    ["activity", "workspace", workspaceId] as const,
 } as const;

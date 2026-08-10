@@ -1,17 +1,22 @@
-import React from 'react';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 
 export interface MobileWorkspaceHomeProps {
   workspaceId: string;
 }
 
-export function MobileWorkspaceHome({
-  workspaceId,
-}: MobileWorkspaceHomeProps) {
+export function MobileWorkspaceHome({ workspaceId }: MobileWorkspaceHomeProps) {
   return (
-    <div>
-      <h1>Workspace Home</h1>
-      <p>Workspace: {workspaceId}</p>
+    <View style={styles.container}>
+      <Text style={styles.title}>Workspace Home</Text>
+      <Text style={styles.subtitle}>Workspace: {workspaceId}</Text>
       {/* TODO: Implement mobile workspace home with board list */}
-    </div>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  title: { fontSize: 22, fontWeight: "bold" },
+  subtitle: { fontSize: 14, color: "#6b7280", marginTop: 4 },
+});

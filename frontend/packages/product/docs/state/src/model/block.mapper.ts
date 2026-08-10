@@ -1,13 +1,13 @@
-import type { Block, BlockProperties } from '@notrelix/docs-core';
-import type { BlockDtoApi } from '../dto';
+import type { Block, BlockProperties } from "@notrelix/docs-core";
+import type { BlockDtoApi } from "../dto";
 
 export function parseProperties(
-  value: BlockDtoApi['properties'],
+  value: BlockDtoApi["properties"],
 ): BlockProperties {
-  if (typeof value === 'object') return value;
+  if (typeof value === "object") return value;
   try {
     const parsed = JSON.parse(value);
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
   }

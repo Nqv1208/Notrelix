@@ -16,4 +16,4 @@ export type {
   AutomationCursorPage,
   CreateAutomationRuleInput,
   UpdateAutomationRuleInput,
-} from './types';
+} from "./types";

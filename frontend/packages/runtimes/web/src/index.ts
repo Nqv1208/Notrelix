@@ -1,8 +1,9 @@
-export { createLocalStorageAdapter, type LocalStorageAdapter } from './storage/local-storage';
-export { createCookieAdapter, type CookieAdapter } from './cookie/cookie';
-export { createBrowserWebSocketFactory } from './realtime/browser-websocket-factory';
+export { createBrowserKeyValueStorage } from "./storage/browser-key-value-storage";
+export { createCookieAdapter, type CookieAdapter } from "./cookie/cookie";
+export { createBrowserWebSocketFactory } from "./realtime/browser-websocket-factory";
 export {
   createAppRuntime,
+  createSessionEventBus,
   AppRuntimeProvider,
   useAppRuntime,
   useFeatureRuntimeDependencies,
@@ -12,5 +13,6 @@ export {
   type SessionEventBus,
   type SessionExpiredEvent,
   type FeatureRuntimeDependencies,
-} from './runtime/app-runtime';
-export type { TelemetryPort } from '@notrelix/observability';
+} from "./runtime/app-runtime";
+export type { KeyValueStorage } from "@notrelix/platform";
+export type { TelemetryPort } from "@notrelix/observability";

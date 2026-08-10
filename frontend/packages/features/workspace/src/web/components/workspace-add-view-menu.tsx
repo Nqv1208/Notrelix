@@ -1,10 +1,21 @@
-import { useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
-import { Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@notrelix/ui-web';
-import { workspaceViewTemplates } from '../../core/constants/view-templates';
-import type { WorkspaceViewType } from '../../core/types/workspace';
-import { createUseCreateWorkspaceView } from '../hooks/mutations/use-create-workspace-view';
+import { useMemo } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
+import {
+  Badge,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@notrelix/ui-web";
+import { workspaceViewTemplates } from "../../core/constants/view-templates";
+import type { WorkspaceViewType } from "../../core/types/workspace";
+import { createUseCreateWorkspaceView } from "../hooks/mutations/use-create-workspace-view";
+
+import type { WorkspaceApiClient } from "../../core";
 
 export function WorkspaceAddViewMenu({
   workspaceId,
@@ -15,31 +26,40 @@ export function WorkspaceAddViewMenu({
   workspaceId: string;
   createViewHook?: ReturnType<typeof createUseCreateWorkspaceView>;
   boards?: Array<{ id: string }>;
-  api?: any;
+  api?: WorkspaceApiClient;
 }) {
   const navigate = useNavigate();
 
   const defaultCreateViewHook = useMemo(
-    () => createUseCreateWorkspaceView({ api }),
+    () => createUseCreateWorkspaceView({ api: api! }),
     [api],
   );
   const createViewHook = customCreateViewHook || defaultCreateViewHook;
   const createView = createViewHook(workspaceId);
 
-  async function handleCreate(type: WorkspaceViewType, label: string, disabled?: boolean) {
+  async function handleCreate(
+    type: WorkspaceViewType,
+    label: string,
+    disabled?: boolean,
+  ) {
     if (disabled || createView.isPending) return;
 
     const firstBoardId = boards[0]?.id;
 
-    let target: { boardId?: string; pageId?: string; calendarId?: string; dashboardId?: string } = {};
-    if (type === 'table' || type === 'kanban' || type === 'timeline') {
-      target = { boardId: firstBoardId || 'board-product' };
-    } else if (type === 'doc') {
-      target = { pageId: 'docs-mvp-spec' };
-    } else if (type === 'calendar') {
-      target = { calendarId: 'workspace-calendar', boardId: firstBoardId };
-    } else if (type === 'dashboard') {
-      target = { dashboardId: 'workspace-health' };
+    let target: {
+      boardId?: string;
+      pageId?: string;
+      calendarId?: string;
+      dashboardId?: string;
+    } = {};
+    if (type === "table" || type === "kanban" || type === "timeline") {
+      target = { boardId: firstBoardId || "board-product" };
+    } else if (type === "doc") {
+      target = { pageId: "docs-mvp-spec" };
+    } else if (type === "calendar") {
+      target = { calendarId: "workspace-calendar", boardId: firstBoardId };
+    } else if (type === "dashboard") {
+      target = { dashboardId: "workspace-health" };
     }
 
     const view = await createView.mutateAsync({
@@ -49,7 +69,7 @@ export function WorkspaceAddViewMenu({
       target,
     });
     navigate({
-      to: '/workspaces/$workspaceId',
+      to: "/workspaces/$workspaceId",
       params: { workspaceId },
       search: { view: view.id },
     });
@@ -70,7 +90,13 @@ export function WorkspaceAddViewMenu({
           <DropdownMenuItem
             key={template.type}
             disabled={Boolean(template.badge)}
-            onClick={() => handleCreate(template.type, template.label, Boolean(template.badge))}
+            onClick={() =>
+              handleCreate(
+                template.type,
+                template.label,
+                Boolean(template.badge),
+              )
+            }
             className="items-start gap-3 py-3"
           >
             <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-sm text-foreground">

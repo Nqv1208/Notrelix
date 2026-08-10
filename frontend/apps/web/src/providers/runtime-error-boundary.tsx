@@ -1,5 +1,5 @@
-import React, { Component, type ReactNode, type ErrorInfo } from 'react';
-import { useAppRuntime, type AppRuntime } from '@notrelix/runtime-web';
+import React, { Component, type ReactNode, type ErrorInfo } from "react";
+import { useAppRuntime, type AppRuntime } from "@notrelix/runtime-web";
 
 interface Props {
   readonly children: ReactNode;
@@ -32,13 +32,27 @@ class InnerRuntimeErrorBoundary extends Component<Props, State> {
       const isProduction = this.props.runtime.env.isProduction;
 
       return (
-        <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
+        <div
+          style={{
+            padding: "2rem",
+            textAlign: "center",
+            fontFamily: "sans-serif",
+          }}
+        >
           <h2>Something went wrong</h2>
           <p>
-            An unexpected error occurred. Please refresh the page or try again later.
+            An unexpected error occurred. Please refresh the page or try again
+            later.
           </p>
           {!isProduction && this.state.error instanceof Error && (
-            <pre style={{ textAlign: 'left', background: '#f5f5f5', padding: '1rem', overflow: 'auto' }}>
+            <pre
+              style={{
+                textAlign: "left",
+                background: "#f5f5f5",
+                padding: "1rem",
+                overflow: "auto",
+              }}
+            >
               {this.state.error.stack}
             </pre>
           )}
@@ -52,5 +66,9 @@ class InnerRuntimeErrorBoundary extends Component<Props, State> {
 
 export function RuntimeErrorBoundary({ children }: { children: ReactNode }) {
   const runtime = useAppRuntime();
-  return <InnerRuntimeErrorBoundary runtime={runtime}>{children}</InnerRuntimeErrorBoundary>;
+  return (
+    <InnerRuntimeErrorBoundary runtime={runtime}>
+      {children}
+    </InnerRuntimeErrorBoundary>
+  );
 }

@@ -1,7 +1,7 @@
-import type { PageActivity } from '@notrelix/docs-core';
-import type { HistoryDtoApi } from '../dto';
-import { mapHistory } from '../model/page.mapper';
-import type { DocsApiClient, PageApiEndpoints } from './page.api';
+import type { PageActivity } from "@notrelix/docs-core";
+import type { HistoryDtoApi } from "../dto";
+import { mapHistory } from "../model/page.mapper";
+import type { DocsApiClient, PageApiEndpoints } from "./page.api";
 
 export function createHistoryApi(
   api: DocsApiClient,

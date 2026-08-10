@@ -26,11 +26,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router"],
-    "extra": {
-      "apiUrl": "https://api.notrelix.com",
-      "realtimeUrl": "https://api.notrelix.com/realtime",
-      "webUrl": "https://app.notrelix.com"
-    }
+    "plugins": ["expo-router"]
   }
 }

@@ -1,10 +1,7 @@
-import type { PageComment } from '@notrelix/docs-core';
-import type { CommentDtoApi } from '../dto';
+import type { PageComment } from "@notrelix/docs-core";
+import type { CommentDtoApi } from "../dto";
 
-export function mapComment(
-  dto: CommentDtoApi,
-  pageId: string,
-): PageComment {
+export function mapComment(dto: CommentDtoApi, pageId: string): PageComment {
   return {
     id: dto.id,
     pageId,

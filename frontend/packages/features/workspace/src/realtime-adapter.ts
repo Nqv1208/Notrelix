@@ -5,20 +5,22 @@ export interface RealtimeEnvelopeLike {
 
 export interface ModuleRealtimeContextLike {
   readonly workspaceId: string;
-  readonly invalidateQueries: (keys: readonly unknown[][]) => Promise<void> | void;
+  readonly invalidateQueries: (
+    keys: readonly unknown[][],
+  ) => Promise<void> | void;
 }
 
 export const workspaceRealtimeAdapter = {
-  id: 'workspace-adapter',
+  id: "workspace-adapter",
   supports(envelope: RealtimeEnvelopeLike): boolean {
-    return envelope.eventType.startsWith('workspace.');
+    return envelope.eventType.startsWith("workspace.");
   },
   async validateAndHandle(
     envelope: RealtimeEnvelopeLike,
-    context: ModuleRealtimeContextLike
+    context: ModuleRealtimeContextLike,
   ): Promise<void> {
     if (envelope.workspaceId === context.workspaceId) {
-      await context.invalidateQueries([['workspaces', context.workspaceId]]);
+      await context.invalidateQueries([["workspaces", context.workspaceId]]);
     }
   },
 };

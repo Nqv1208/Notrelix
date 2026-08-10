@@ -1,18 +1,38 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { UserPlus, Loader2, Check, X, Calendar, User, Briefcase } from 'lucide-react';
-import { Button, Popover, PopoverContent, PopoverTrigger } from '@notrelix/ui-web';
-import { createUsePendingInvitations } from '../query/hooks/use-pending-invitations';
-import { createUseAcceptInvitation } from '../hooks/mutations/use-accept-invitation';
-import type { WorkspaceInvitation } from '../../core';
-import { cn } from '@notrelix/ui-web';
+import { useState, useMemo } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  UserPlus,
+  Loader2,
+  Check,
+  X,
+  Calendar,
+  User,
+  Briefcase,
+} from "lucide-react";
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@notrelix/ui-web";
+import { createUsePendingInvitations } from "../query/hooks/use-pending-invitations";
+import { createUseAcceptInvitation } from "../hooks/mutations/use-accept-invitation";
+import type {
+  WorkspaceInvitation,
+  WorkspaceApiClient,
+  InvitationsEndpoints,
+} from "../../core";
+import { cn } from "@notrelix/ui-web";
 
 interface PendingInvitationsMenuProps {
-  api: any;
-  endpoints: any;
+  api: WorkspaceApiClient;
+  endpoints: InvitationsEndpoints;
 }
 
-export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMenuProps) {
+export function PendingInvitationsMenu({
+  api,
+  endpoints,
+}: PendingInvitationsMenuProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -39,7 +59,7 @@ export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMen
         setOpen(false);
         setAcceptingToken(null);
         refetch();
-        navigate({ to: '/home' });
+        navigate({ to: "/home" });
       },
       onError: () => {
         setAcceptingToken(null);
@@ -53,8 +73,8 @@ export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMen
         <button
           type="button"
           className={cn(
-            'relative rounded-lg p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            hasInvitations && 'text-primary animate-pulse'
+            "relative rounded-lg p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            hasInvitations && "text-primary animate-pulse",
           )}
           aria-label="Pending workspace invitations"
         >
@@ -67,13 +87,18 @@ export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMen
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden z-[100]">
+      <PopoverContent
+        align="end"
+        className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden z-[100]"
+      >
         <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/30">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <UserPlus className="size-4 text-primary" />
             Invitations ({invitations?.length || 0})
           </h4>
-          {isLoading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
+          {isLoading && (
+            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+          )}
         </div>
 
         <div className="max-h-80 overflow-y-auto divide-y divide-border/40">
@@ -87,16 +112,22 @@ export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMen
               <div className="rounded-full bg-muted p-2 text-muted-foreground/60">
                 <UserPlus className="size-5" />
               </div>
-              <p className="font-medium text-foreground/80">No pending invitations</p>
+              <p className="font-medium text-foreground/80">
+                No pending invitations
+              </p>
               <p className="text-[11px] leading-normal text-muted-foreground/80 max-w-[200px]">
-                When someone invites you to their workspace, it will appear here.
+                When someone invites you to their workspace, it will appear
+                here.
               </p>
             </div>
           ) : (
             invitations.map((invite: WorkspaceInvitation) => {
               const isAccepting = acceptingToken === invite.token;
               return (
-                <div key={invite.id} className="p-4 hover:bg-muted/10 transition-colors space-y-3">
+                <div
+                  key={invite.id}
+                  className="p-4 hover:bg-muted/10 transition-colors space-y-3"
+                >
                   <div className="space-y-1.5">
                     <h5 className="text-sm font-bold text-foreground leading-snug">
                       Workspace: {invite.workspaceName}
@@ -104,15 +135,28 @@ export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMen
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <User className="size-3.5 text-primary/75" />
-                        <span>Invited by: <strong className="text-foreground/90 font-medium">{invite.inviterName}</strong></span>
+                        <span>
+                          Invited by:{" "}
+                          <strong className="text-foreground/90 font-medium">
+                            {invite.inviterName}
+                          </strong>
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Briefcase className="size-3.5 text-primary/75" />
-                        <span>Role: <strong className="text-foreground/90 font-medium capitalize">{invite.role}</strong></span>
+                        <span>
+                          Role:{" "}
+                          <strong className="text-foreground/90 font-medium capitalize">
+                            {invite.role}
+                          </strong>
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Calendar className="size-3.5 text-primary/75" />
-                        <span>Expires: {new Date(invite.expiresAt).toLocaleDateString()}</span>
+                        <span>
+                          Expires:{" "}
+                          {new Date(invite.expiresAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -121,7 +165,9 @@ export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMen
                     <Button
                       size="sm"
                       onClick={() => invite.token && handleAccept(invite.token)}
-                      disabled={isAccepting || acceptMutation.isPending || !invite.token}
+                      disabled={
+                        isAccepting || acceptMutation.isPending || !invite.token
+                      }
                       className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
                     >
                       {isAccepting ? (

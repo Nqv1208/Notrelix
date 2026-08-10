@@ -5,27 +5,31 @@ import type {
   AutomationTemplate,
   CreateAutomationRuleInput,
   UpdateAutomationRuleInput,
-} from '@notrelix/automation-core';
-import type { AutomationRepositories } from '@notrelix/automation-state';
-import { buildAutomationRule } from '../builders/rule-builder';
+} from "@notrelix/automation-core";
+import type { AutomationRepositories } from "@notrelix/automation-state";
+import { buildAutomationRule } from "../builders/rule-builder";
 
-export function createFakeAutomationRepositories(input: {
-  rules?: AutomationRule[];
-  executions?: AutomationExecution[];
-  templates?: AutomationTemplate[];
-} = {}): AutomationRepositories {
+export function createFakeAutomationRepositories(
+  input: {
+    rules?: AutomationRule[];
+    executions?: AutomationExecution[];
+    templates?: AutomationTemplate[];
+  } = {},
+): AutomationRepositories {
   const rules = new Map<string, AutomationRule>(
-    (input.rules ?? [buildAutomationRule()]).map((rule) => [rule.id, rule])
+    (input.rules ?? [buildAutomationRule()]).map((rule) => [rule.id, rule]),
   );
   const executions = new Map<string, AutomationExecution>(
-    (input.executions ?? []).map((execution) => [execution.id, execution])
+    (input.executions ?? []).map((execution) => [execution.id, execution]),
   );
   const templates = input.templates ?? [];
 
   return {
     rules: {
       async listByWorkspace(workspaceId: string) {
-        return [...rules.values()].filter((rule) => rule.workspaceId === workspaceId);
+        return [...rules.values()].filter(
+          (rule) => rule.workspaceId === workspaceId,
+        );
       },
       async getDetail(ruleId: string) {
         return requireRule(rules, ruleId);
@@ -36,7 +40,7 @@ export function createFakeAutomationRepositories(input: {
           workspaceId: input.workspaceId,
           boardId: input.boardId,
           name: input.name,
-          description: input.description ?? '',
+          description: input.description ?? "",
           triggerType: input.triggerType,
           triggerConfig: input.triggerConfig,
           actionType: input.actionType,
@@ -73,9 +77,9 @@ export function createFakeAutomationRepositories(input: {
           ruleId,
           workspaceId: rule.workspaceId,
           boardId: rule.boardId,
-          status: 'queued',
-          triggeredBy: 'test',
-          startedAt: '2026-01-01T00:00:00.000Z',
+          status: "queued",
+          triggeredBy: "test",
+          startedAt: "2026-01-01T00:00:00.000Z",
           steps: [],
         };
         executions.set(execution.id, execution);
@@ -83,12 +87,15 @@ export function createFakeAutomationRepositories(input: {
       },
     },
     executions: {
-      async listHistory({ workspaceId, ruleId }): Promise<AutomationCursorPage<AutomationExecution>> {
+      async listHistory({
+        workspaceId,
+        ruleId,
+      }): Promise<AutomationCursorPage<AutomationExecution>> {
         return {
           items: [...executions.values()].filter(
             (execution) =>
               execution.workspaceId === workspaceId &&
-              (ruleId === undefined || execution.ruleId === ruleId)
+              (ruleId === undefined || execution.ruleId === ruleId),
           ),
         };
       },
@@ -110,7 +117,7 @@ export function createFakeAutomationRepositories(input: {
 
 function requireRule(
   rules: Map<string, AutomationRule>,
-  ruleId: string
+  ruleId: string,
 ): AutomationRule {
   const rule = rules.get(ruleId);
   if (!rule) {
@@ -122,7 +129,7 @@ function requireRule(
 async function setEnabled(
   rules: Map<string, AutomationRule>,
   ruleId: string,
-  enabled: boolean
+  enabled: boolean,
 ): Promise<AutomationRule> {
   const current = requireRule(rules, ruleId);
   const next = { ...current, isEnabled: enabled };

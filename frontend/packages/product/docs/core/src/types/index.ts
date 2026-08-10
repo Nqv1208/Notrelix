@@ -1,6 +1,6 @@
-export type { ID } from './ids';
-export type { DocsUser, DocsRole, PresenceStatus } from './user';
-export type { Mention, LinkedTask, LinkedBoard } from './integration';
+export type { ID } from "./ids";
+export type { DocsUser, DocsRole, PresenceStatus } from "./user";
+export type { Mention, LinkedTask, LinkedBoard } from "./integration";
 export type {
   BlockType,
   BlockProperties,
@@ -8,7 +8,7 @@ export type {
   CreateBlockPayload,
   UpdateBlockPayload,
   ReorderBlocksInput,
-} from './block';
+} from "./block";
 export type {
   PageStatus,
   CollaborativeMetadata,
@@ -18,6 +18,6 @@ export type {
   PageActivity,
   CreatePagePayload,
   UpdatePagePayload,
-} from './page';
-export type { PageComment, CreateCommentPayload } from './comment';
-export type { PageTreeNode, SearchResult } from './tree';
+} from "./page";
+export type { PageComment, CreateCommentPayload } from "./comment";
+export type { PageTreeNode, SearchResult } from "./tree";

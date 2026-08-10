@@ -19,6 +19,7 @@ export interface ResolvedRuntimeEnvironment {
   readonly realtimeUrl: string;
   readonly wsUrl: string; // Alias for realtimeUrl backward compatibility
   readonly appUrl: string;
+  readonly webUrl: string; // Alias for appUrl backward compatibility
   readonly releaseSha: string;
   readonly mockApi: boolean;
   readonly nodeEnv: RuntimeMode; // Alias for mode backward compatibility
@@ -51,33 +52,43 @@ function isValidUrl(val: string | undefined): boolean {
   }
 }
 
-export function parseEnv(rawInput: RuntimeEnvironmentInput | Record<string, unknown> = {}): ResolvedRuntimeEnvironment {
+export function parseEnv(
+  rawInput: RuntimeEnvironmentInput | Record<string, unknown> = {},
+): ResolvedRuntimeEnvironment {
   const input = rawInput as Record<string, unknown>;
 
   const mode: RuntimeMode =
-    input.mode === "production" || input.mode === "test" || input.mode === "development"
+    input.mode === "production" ||
+    input.mode === "test" ||
+    input.mode === "development"
       ? (input.mode as RuntimeMode)
-      : input.NODE_ENV === "production" || input.NODE_ENV === "test" || input.NODE_ENV === "development"
+      : input.NODE_ENV === "production" ||
+          input.NODE_ENV === "test" ||
+          input.NODE_ENV === "development"
         ? (input.NODE_ENV as RuntimeMode)
         : "development";
 
   const rawApiUrl =
     (input.apiUrl as string) ||
     (input.VITE_API_URL as string) ||
-    (input.NEXT_PUBLIC_API_URL as string);
+    (input.NEXT_PUBLIC_API_URL as string) ||
+    (input.EXPO_PUBLIC_API_URL as string);
 
   const rawRealtimeUrl =
     (input.realtimeUrl as string) ||
     (input.VITE_WS_URL as string) ||
-    (input.NEXT_PUBLIC_WS_URL as string);
+    (input.NEXT_PUBLIC_WS_URL as string) ||
+    (input.EXPO_PUBLIC_REALTIME_URL as string);
 
   const rawAppUrl =
     (input.appUrl as string) ||
-    (input.VITE_APP_URL as string);
+    (input.VITE_APP_URL as string) ||
+    (input.EXPO_PUBLIC_APP_URL as string);
 
   const releaseSha =
     (input.releaseSha as string) ||
     (input.VITE_RELEASE_SHA as string) ||
+    (input.EXPO_PUBLIC_RELEASE_SHA as string) ||
     "dev-local";
 
   const mockApi =
@@ -95,7 +106,7 @@ export function parseEnv(rawInput: RuntimeEnvironmentInput | Record<string, unkn
     if (!isValidUrl(rawAppUrl)) missing.push("appUrl");
     if (missing.length > 0) {
       throw new Error(
-        `[Kernel Env] Missing or invalid required environment variables in production: ${missing.join(", ")}`
+        `[Kernel Env] Missing or invalid required environment variables in production: ${missing.join(", ")}`,
       );
     }
     if (mockApi) {
@@ -103,9 +114,15 @@ export function parseEnv(rawInput: RuntimeEnvironmentInput | Record<string, unkn
     }
   }
 
-  const resolvedApiUrl = isValidUrl(rawApiUrl) ? rawApiUrl! : "http://localhost:5000";
-  const resolvedRealtimeUrl = isValidUrl(rawRealtimeUrl) ? rawRealtimeUrl! : "ws://localhost:5000/realtime";
-  const resolvedAppUrl = isValidUrl(rawAppUrl) ? rawAppUrl! : "http://localhost:3000";
+  const resolvedApiUrl = isValidUrl(rawApiUrl)
+    ? rawApiUrl!
+    : "http://localhost:5000";
+  const resolvedRealtimeUrl = isValidUrl(rawRealtimeUrl)
+    ? rawRealtimeUrl!
+    : "ws://localhost:5000/realtime";
+  const resolvedAppUrl = isValidUrl(rawAppUrl)
+    ? rawAppUrl!
+    : "http://localhost:3000";
 
   return {
     mode,
@@ -115,6 +132,7 @@ export function parseEnv(rawInput: RuntimeEnvironmentInput | Record<string, unkn
     realtimeUrl: resolvedRealtimeUrl,
     wsUrl: resolvedRealtimeUrl,
     appUrl: resolvedAppUrl,
+    webUrl: resolvedAppUrl,
     releaseSha,
     mockApi,
     nodeEnv: mode,

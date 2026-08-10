@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import * as React from 'react'
+import * as React from "react";
 import {
   Check,
   GripVertical,
@@ -8,72 +8,72 @@ import {
   MoreHorizontal,
   Tag,
   Clock,
-} from 'lucide-react'
-import { Badge } from '@notrelix/ui-web/components/ui/badge'
-import { cn } from '@notrelix/ui-web/lib/cn'
+} from "lucide-react";
+import { Badge } from "@notrelix/ui-web/components/ui/badge";
+import { cn } from "@notrelix/ui-web/lib/cn";
 
-type Tab = 'docs' | 'boards'
+type Tab = "docs" | "boards";
 
 const kanbanColumns = [
   {
-    title: 'To Do',
-    color: 'bg-slate-500',
+    title: "To Do",
+    color: "bg-slate-500",
     cards: [
       {
-        title: 'Design new dashboard layout',
-        labels: [{ text: 'Design', color: 'bg-pink-500' }],
-        avatar: 'TH',
+        title: "Design new dashboard layout",
+        labels: [{ text: "Design", color: "bg-pink-500" }],
+        avatar: "TH",
       },
       {
-        title: 'Write API documentation',
-        labels: [{ text: 'Docs', color: 'bg-blue-500' }],
-        avatar: 'HL',
+        title: "Write API documentation",
+        labels: [{ text: "Docs", color: "bg-blue-500" }],
+        avatar: "HL",
       },
     ],
   },
   {
-    title: 'In Progress',
-    color: 'bg-amber-500',
+    title: "In Progress",
+    color: "bg-amber-500",
     cards: [
       {
-        title: 'Implement drag & drop for blocks',
+        title: "Implement drag & drop for blocks",
         labels: [
-          { text: 'Feature', color: 'bg-violet-500' },
-          { text: 'P1', color: 'bg-red-500' },
+          { text: "Feature", color: "bg-violet-500" },
+          { text: "P1", color: "bg-red-500" },
         ],
-        avatar: 'MA',
+        avatar: "MA",
       },
       {
-        title: 'User authentication flow',
-        labels: [{ text: 'Backend', color: 'bg-emerald-500' }],
-        avatar: 'HL',
-      },
-    ],
-  },
-  {
-    title: 'Review',
-    color: 'bg-blue-500',
-    cards: [
-      {
-        title: 'Fix mobile responsiveness',
-        labels: [{ text: 'Bug', color: 'bg-red-500' }],
-        avatar: 'TH',
+        title: "User authentication flow",
+        labels: [{ text: "Backend", color: "bg-emerald-500" }],
+        avatar: "HL",
       },
     ],
   },
   {
-    title: 'Done',
-    color: 'bg-emerald-500',
+    title: "Review",
+    color: "bg-blue-500",
     cards: [
       {
-        title: 'Setup project structure',
-        labels: [{ text: 'Infra', color: 'bg-slate-500' }],
-        avatar: 'MA',
+        title: "Fix mobile responsiveness",
+        labels: [{ text: "Bug", color: "bg-red-500" }],
+        avatar: "TH",
+      },
+    ],
+  },
+  {
+    title: "Done",
+    color: "bg-emerald-500",
+    cards: [
+      {
+        title: "Setup project structure",
+        labels: [{ text: "Infra", color: "bg-slate-500" }],
+        avatar: "MA",
         done: true,
       },
     ],
   },
-]
+];
 
 function DocumentMockup() {
   return (
@@ -95,24 +95,24 @@ function DocumentMockup() {
       <h3 className="text-lg font-semibold mt-6">Q2 — Foundation</h3>
       <div className="space-y-2 ml-1">
         {[
-          { text: 'Auth & workspace management', checked: true },
-          { text: 'Block-based document editor', checked: true },
-          { text: 'Kanban board module', checked: false },
+          { text: "Auth & workspace management", checked: true },
+          { text: "Block-based document editor", checked: true },
+          { text: "Kanban board module", checked: false },
         ].map((item) => (
           <div key={item.text} className="flex items-center gap-2.5">
             <div
               className={cn(
-                'size-4 rounded border-2 flex items-center justify-center shrink-0',
+                "size-4 rounded border-2 flex items-center justify-center shrink-0",
                 item.checked
-                  ? 'border-emerald-500 bg-emerald-500'
-                  : 'border-muted-foreground/30'
+                  ? "border-emerald-500 bg-emerald-500"
+                  : "border-muted-foreground/30",
               )}
             >
               {item.checked && <Check className="size-2.5 text-white" />}
             </div>
             <span
               className={cn(
-                item.checked && 'line-through text-muted-foreground'
+                item.checked && "line-through text-muted-foreground",
               )}
             >
               {item.text}
@@ -124,9 +124,9 @@ function DocumentMockup() {
       <h3 className="text-lg font-semibold mt-6">Q3 — Collaboration</h3>
       <ul className="space-y-1.5 ml-1">
         {[
-          'Real-time comments & mentions',
-          'File attachments & media',
-          'Smart notifications',
+          "Real-time comments & mentions",
+          "File attachments & media",
+          "Smart notifications",
         ].map((text) => (
           <li key={text} className="flex items-start gap-2">
             <span className="text-muted-foreground mt-[0.35em]">•</span>
@@ -149,7 +149,7 @@ function DocumentMockup() {
         </pre>
       </div>
     </div>
-  )
+  );
 }
 
 function KanbanMockup() {
@@ -183,10 +183,10 @@ function KanbanMockup() {
                   </div>
                   <p
                     className={cn(
-                      'text-sm font-medium mb-2.5',
-                      'done' in card &&
+                      "text-sm font-medium mb-2.5",
+                      "done" in card &&
                         card.done &&
-                        'line-through text-muted-foreground'
+                        "line-through text-muted-foreground",
                     )}
                   >
                     {card.title}
@@ -211,11 +211,11 @@ function KanbanMockup() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export function DemoSection() {
-  const [activeTab, setActiveTab] = React.useState<Tab>('docs')
+  const [activeTab, setActiveTab] = React.useState<Tab>("docs");
 
   return (
     <section id="showcase" className="py-28">
@@ -239,24 +239,24 @@ export function DemoSection() {
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center gap-2 mb-8">
             <button
-              onClick={() => setActiveTab('docs')}
+              onClick={() => setActiveTab("docs")}
               className={cn(
-                'flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all',
-                activeTab === 'docs'
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
+                "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all",
+                activeTab === "docs"
+                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
               )}
             >
               <GripVertical className="size-4" />
               Document Editor
             </button>
             <button
-              onClick={() => setActiveTab('boards')}
+              onClick={() => setActiveTab("boards")}
               className={cn(
-                'flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all',
-                activeTab === 'boards'
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
+                "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all",
+                activeTab === "boards"
+                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
               )}
             >
               <Tag className="size-4" />
@@ -274,17 +274,17 @@ export function DemoSection() {
                   <div className="size-2.5 rounded-full bg-green-400/80" />
                 </div>
                 <div className="flex-1 text-center text-xs text-muted-foreground">
-                  {activeTab === 'docs'
-                    ? 'Product Roadmap — Notrelix'
-                    : 'Sprint Board — Notrelix'}
+                  {activeTab === "docs"
+                    ? "Product Roadmap — Notrelix"
+                    : "Sprint Board — Notrelix"}
                 </div>
               </div>
 
-              {activeTab === 'docs' ? <DocumentMockup /> : <KanbanMockup />}
+              {activeTab === "docs" ? <DocumentMockup /> : <KanbanMockup />}
             </div>
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 }

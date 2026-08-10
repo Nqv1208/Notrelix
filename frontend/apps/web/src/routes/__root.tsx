@@ -1,12 +1,12 @@
-import { Outlet } from '@tanstack/react-router';
-import { AppNavigationProvider } from '../providers/navigation-provider';
+import { Outlet } from "@tanstack/react-router";
+import { RealtimeLifecycle } from "../providers/realtime-lifecycle";
 
 export function RootLayout() {
   return (
     <div className="min-h-screen bg-background">
-      <AppNavigationProvider>
+      <RealtimeLifecycle>
         <Outlet />
-      </AppNavigationProvider>
+      </RealtimeLifecycle>
     </div>
   );
 }

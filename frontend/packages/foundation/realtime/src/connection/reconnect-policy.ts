@@ -18,7 +18,8 @@ export class ReconnectPolicy {
     this.maxDelayMs = config.maxDelayMs ?? 30000;
     this.maxRetries = config.maxRetries ?? 10;
     this.backoffFactor = config.backoffFactor ?? 2;
-    this.jitter = config.jitter ?? true;
+    // Freeze v1 defaults to deterministic backoff (no jitter).
+    this.jitter = config.jitter ?? false;
   }
 
   public shouldRetry(attempt: number): boolean {
@@ -26,7 +27,8 @@ export class ReconnectPolicy {
   }
 
   public getNextDelay(attempt: number): number {
-    const rawDelay = this.minDelayMs * Math.pow(this.backoffFactor, Math.max(0, attempt));
+    const rawDelay =
+      this.minDelayMs * Math.pow(this.backoffFactor, Math.max(0, attempt));
     const cappedDelay = Math.min(this.maxDelayMs, rawDelay);
 
     if (!this.jitter) {

@@ -1,15 +1,15 @@
-import { Skeleton } from "@notrelix/ui-web"
-import { useFullBoard } from "@notrelix/work-management-state"
-import { MainTableView } from "./views/table/main-table-view"
-import { BoardCalendarView } from "./views/calendar/board-calendar-view"
-import { KanbanView } from "./views/kanban/kanban-view"
-import { BoardTimelineView } from "./views/timeline/board-timeline-view"
-import { ErrorState, NotFoundState } from "@notrelix/ui-web"
+import { Skeleton } from "@notrelix/ui-web";
+import { useFullBoard } from "@notrelix/work-management-state";
+import { MainTableView } from "./views/table/main-table-view";
+import { BoardCalendarView } from "./views/calendar/board-calendar-view";
+import { KanbanView } from "./views/kanban/kanban-view";
+import { BoardTimelineView } from "./views/timeline/board-timeline-view";
+import { ErrorState, NotFoundState } from "@notrelix/ui-web";
 
-type WorkspaceView = { type: string; name?: string }
+type WorkspaceView = { type: string; name?: string };
 
 export function BoardScreen(props: any) {
-  return <BoardWorkspaceViewContent {...props} />
+  return <BoardWorkspaceViewContent {...props} />;
 }
 
 export function BoardWorkspaceViewContent({
@@ -17,15 +17,37 @@ export function BoardWorkspaceViewContent({
   boardId,
   view,
 }: {
-  workspaceId: string
-  boardId: string
-  view: WorkspaceView
+  workspaceId: string;
+  boardId: string;
+  view: WorkspaceView;
 }) {
-  if (view.type === "table") return <MainTableView boardId={boardId} workspaceId={workspaceId} />
-  if (view.type === "kanban") return <BoardFullDataView workspaceId={workspaceId} boardId={boardId} mode="kanban" />
-  if (view.type === "calendar") return <BoardFullDataView workspaceId={workspaceId} boardId={boardId} mode="calendar" />
-  if (view.type === "timeline") return <BoardFullDataView workspaceId={workspaceId} boardId={boardId} mode="timeline" />
-  return <UnsupportedBoardView view={view} />
+  if (view.type === "table")
+    return <MainTableView boardId={boardId} workspaceId={workspaceId} />;
+  if (view.type === "kanban")
+    return (
+      <BoardFullDataView
+        workspaceId={workspaceId}
+        boardId={boardId}
+        mode="kanban"
+      />
+    );
+  if (view.type === "calendar")
+    return (
+      <BoardFullDataView
+        workspaceId={workspaceId}
+        boardId={boardId}
+        mode="calendar"
+      />
+    );
+  if (view.type === "timeline")
+    return (
+      <BoardFullDataView
+        workspaceId={workspaceId}
+        boardId={boardId}
+        mode="timeline"
+      />
+    );
+  return <UnsupportedBoardView view={view} />;
 }
 
 function BoardFullDataView({
@@ -33,13 +55,16 @@ function BoardFullDataView({
   boardId,
   mode,
 }: {
-  workspaceId: string
-  boardId: string
-  mode: "kanban" | "calendar" | "timeline"
+  workspaceId: string;
+  boardId: string;
+  mode: "kanban" | "calendar" | "timeline";
 }) {
-  const { board, groups, isLoading, error } = useFullBoard(boardId, workspaceId)
+  const { board, groups, isLoading, error } = useFullBoard(
+    boardId,
+    workspaceId,
+  );
 
-  if (isLoading) return <ViewSkeleton rows={mode === "kanban" ? 4 : 6} />
+  if (isLoading) return <ViewSkeleton rows={mode === "kanban" ? 4 : 6} />;
   if (error || !board) {
     return (
       <div className="p-4 sm:p-6">
@@ -49,16 +74,18 @@ function BoardFullDataView({
           description="Bảng công việc có thể đã bị di chuyển, lưu trữ hoặc bạn không có quyền truy cập."
         />
       </div>
-    )
+    );
   }
 
   return (
     <div className="h-full overflow-auto p-4 sm:p-6">
-      {mode === "kanban" ? <KanbanView boardId={board.id} workspaceId={workspaceId} /> : null}
+      {mode === "kanban" ? (
+        <KanbanView boardId={board.id} workspaceId={workspaceId} />
+      ) : null}
       {mode === "calendar" ? <BoardCalendarView groups={groups} /> : null}
       {mode === "timeline" ? <BoardTimelineView groups={groups} /> : null}
     </div>
-  )
+  );
 }
 
 function ViewSkeleton({ rows }: { rows: number }) {
@@ -71,7 +98,7 @@ function ViewSkeleton({ rows }: { rows: number }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 function UnsupportedBoardView({ view }: { view: WorkspaceView }) {
@@ -82,5 +109,5 @@ function UnsupportedBoardView({ view }: { view: WorkspaceView }) {
         description="Vui lòng sử dụng các tab workspace để mở chế độ xem bảng hoặc chuyển sang phần Tài liệu."
       />
     </div>
-  )
+  );
 }

@@ -9,6 +9,6 @@ export default [
   {
     rules: {
       // Library-specific rules will be added here
-    }
-  }
+    },
+  },
 ];

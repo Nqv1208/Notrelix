@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from '@notrelix/platform/navigation';
+import { useState, useMemo } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   createUseWorkspaceList,
   createUseCreateWorkspace,
-} from '@notrelix/features-workspace';
-import { useAppRuntime } from '@notrelix/runtime-web';
-import { useWorkspaceContext } from '../../providers/workspace-provider';
+} from "@notrelix/features-workspace";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { useWorkspaceContext } from "../../providers/workspace-provider";
 import {
   Avatar,
   AvatarImage,
@@ -23,8 +23,8 @@ import {
   DialogTitle,
   DialogFooter,
   Input,
-} from '@notrelix/ui-web';
-import { ChevronsUpDown, Plus } from 'lucide-react';
+} from "@notrelix/ui-web";
+import { ChevronsUpDown, Plus } from "lucide-react";
 
 export function WorkspaceSwitcher() {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ export function WorkspaceSwitcher() {
       createUseWorkspaceList({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.nodeEnv === 'development' },
+        options: { mockMode: runtimeEnv.nodeEnv === "development" },
       }),
     [runtimeClient, runtimeEnv.nodeEnv],
   );
@@ -49,19 +49,22 @@ export function WorkspaceSwitcher() {
       }),
     [runtimeClient],
   );
-  
+
   const { data: workspaces = [] } = useWorkspaceList();
   const createWorkspaceMutation = useCreateWorkspace();
-  
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newWorkspaceName, setNewWorkspaceName] = useState('');
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
 
   const handleCreateWorkspace = () => {
     if (!newWorkspaceName.trim()) return;
-    
+
     // Generate simple slug
-    const slug = newWorkspaceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    
+    const slug = newWorkspaceName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
     createWorkspaceMutation.mutate(
       {
         name: newWorkspaceName,
@@ -71,10 +74,10 @@ export function WorkspaceSwitcher() {
       {
         onSuccess: (newWorkspace) => {
           setIsDialogOpen(false);
-          setNewWorkspaceName('');
+          setNewWorkspaceName("");
           navigate({ to: `/workspaces/${newWorkspace.id}` });
         },
-      }
+      },
     );
   };
 
@@ -82,20 +85,28 @@ export function WorkspaceSwitcher() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="w-full flex items-center justify-between px-2 py-1.5 h-12 hover:bg-muted/50 border border-transparent hover:border-muted-foreground/10 rounded-lg">
+          <Button
+            variant="ghost"
+            className="w-full flex items-center justify-between px-2 py-1.5 h-12 hover:bg-muted/50 border border-transparent hover:border-muted-foreground/10 rounded-lg"
+          >
             <div className="flex items-center gap-2.5 overflow-hidden">
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={activeWorkspace?.icon || undefined} alt={activeWorkspace?.name} />
+                <AvatarImage
+                  src={activeWorkspace?.icon || undefined}
+                  alt={activeWorkspace?.name}
+                />
                 <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-bold">
-                  {activeWorkspace?.name?.substring(0, 2).toUpperCase() || 'WX'}
+                  {activeWorkspace?.name?.substring(0, 2).toUpperCase() || "WX"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start overflow-hidden text-left">
                 <span className="font-semibold text-sm truncate leading-tight w-36">
-                  {activeWorkspace?.name || 'Loading...'}
+                  {activeWorkspace?.name || "Loading..."}
                 </span>
                 <span className="text-xs text-muted-foreground truncate w-36">
-                  {activeWorkspace?.plan ? `${activeWorkspace.plan.toUpperCase()} Plan` : ''}
+                  {activeWorkspace?.plan
+                    ? `${activeWorkspace.plan.toUpperCase()} Plan`
+                    : ""}
                 </span>
               </div>
             </div>
@@ -103,12 +114,14 @@ export function WorkspaceSwitcher() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64" align="start">
-          <DropdownMenuLabel className="text-xs text-muted-foreground">Workspaces</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs text-muted-foreground">
+            Workspaces
+          </DropdownMenuLabel>
           {workspaces.map((ws) => (
             <DropdownMenuItem
               key={ws.id}
               onClick={() => navigate({ to: `/workspaces/${ws.id}` })}
-              className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer ${ws.id === workspaceId ? 'bg-muted font-medium' : ''}`}
+              className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer ${ws.id === workspaceId ? "bg-muted font-medium" : ""}`}
             >
               <Avatar className="h-6 w-6 rounded-md">
                 <AvatarFallback className="rounded-md bg-muted text-xs">
@@ -136,7 +149,9 @@ export function WorkspaceSwitcher() {
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div className="space-y-2">
-              <label htmlFor="ws-name" className="text-sm font-medium">Workspace Name</label>
+              <label htmlFor="ws-name" className="text-sm font-medium">
+                Workspace Name
+              </label>
               <Input
                 id="ws-name"
                 placeholder="e.g. My Awesome Team"
@@ -151,9 +166,11 @@ export function WorkspaceSwitcher() {
             </Button>
             <Button
               onClick={handleCreateWorkspace}
-              disabled={createWorkspaceMutation.isPending || !newWorkspaceName.trim()}
+              disabled={
+                createWorkspaceMutation.isPending || !newWorkspaceName.trim()
+              }
             >
-              {createWorkspaceMutation.isPending ? 'Creating...' : 'Create'}
+              {createWorkspaceMutation.isPending ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>

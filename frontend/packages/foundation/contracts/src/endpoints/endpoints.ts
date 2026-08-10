@@ -14,8 +14,10 @@ export const endpoints = {
   workspaces: {
     list: "/workspaces",
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
-    invitationByToken: (token: string) => `/workspaces/invitations/by-token/${token}`,
-    acceptInvitation: (token: string) => `/workspaces/invitations/accept/${token}`,
+    invitationByToken: (token: string) =>
+      `/workspaces/invitations/by-token/${token}`,
+    acceptInvitation: (token: string) =>
+      `/workspaces/invitations/accept/${token}`,
     pendingInvitations: "/workspaces/invitations/pending",
   },
   pages: {
@@ -35,15 +37,18 @@ export const endpoints = {
     batch: (pageId: string) => `/pages/${pageId}/blocks/batch`,
   },
   boards: {
-    listByWorkspaceId: (workspaceId: string) => `/workspaces/${workspaceId}/boards`,
+    listByWorkspaceId: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/boards`,
     detail: (boardId: string) => `/boards/${boardId}`,
     full: (boardId: string) => `/boards/${boardId}/full`,
     view: (boardId: string) => `/boards/${boardId}/view`,
     columns: (boardId: string) => `/boards/${boardId}/columns`,
-    column: (boardId: string, columnId: string) => `/boards/${boardId}/columns/${columnId}`,
+    column: (boardId: string, columnId: string) =>
+      `/boards/${boardId}/columns/${columnId}`,
     reorderColumns: (boardId: string) => `/boards/${boardId}/columns/reorder`,
     labels: (boardId: string) => `/boards/${boardId}/labels`,
-    label: (boardId: string, labelId: string) => `/boards/${boardId}/labels/${labelId}`,
+    label: (boardId: string, labelId: string) =>
+      `/boards/${boardId}/labels/${labelId}`,
   },
   lists: {
     byBoard: (boardId: string) => `/boards/${boardId}/lists`,
@@ -64,7 +69,8 @@ export const endpoints = {
     activity: (cardId: string) => `/cards/${cardId}/activity`,
     checklists: (cardId: string) => `/cards/${cardId}/checklists`,
     labels: (cardId: string) => `/cards/${cardId}/labels`,
-    label: (cardId: string, labelId: string) => `/cards/${cardId}/labels/${labelId}`,
+    label: (cardId: string, labelId: string) =>
+      `/cards/${cardId}/labels/${labelId}`,
   },
   checklists: {
     detail: (checklistId: string) => `/checklists/${checklistId}`,

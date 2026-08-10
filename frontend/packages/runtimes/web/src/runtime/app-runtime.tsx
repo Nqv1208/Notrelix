@@ -1,18 +1,40 @@
-import React, { createContext, useContext, type ReactNode } from 'react';
-import { createNotrelixClient, type NotrelixClient, type NotrelixClientConfig, type SessionExpiredEvent } from '@notrelix/contracts';
-import { parseEnv, type ResolvedRuntimeEnvironment, type RuntimeEnvironmentInput } from '@notrelix/kernel';
-import { ConsoleTelemetryAdapter, type TelemetryPort } from '@notrelix/observability';
-import { RealtimeClient, type RealtimeTransport } from '@notrelix/realtime';
-import { createSessionEventBus, type SessionEventBus } from './session-event-bus';
-import { createBrowserWebSocketFactory } from '../realtime/browser-websocket-factory';
+import React, { createContext, useContext, type ReactNode } from "react";
+import {
+  createNotrelixClient,
+  type NotrelixClient,
+  type NotrelixClientConfig,
+  type SessionExpiredEvent,
+} from "@notrelix/contracts";
+import {
+  parseEnv,
+  type ResolvedRuntimeEnvironment,
+  type RuntimeEnvironmentInput,
+} from "@notrelix/kernel";
+import {
+  ConsoleTelemetryAdapter,
+  type TelemetryPort,
+} from "@notrelix/observability";
+import { RealtimeClient, type RealtimeTransport } from "@notrelix/realtime";
+import type { ClockPort, KeyValueStorage } from "@notrelix/platform";
+import {
+  createSessionEventBus,
+  type SessionEventBus,
+} from "./session-event-bus";
+import { createBrowserWebSocketFactory } from "../realtime/browser-websocket-factory";
+import { createBrowserKeyValueStorage } from "../storage/browser-key-value-storage";
 
-export type { SessionEventBus, SessionExpiredEvent } from './session-event-bus';
-export { useFeatureRuntimeDependencies, type FeatureRuntimeDependencies } from './use-feature-runtime-dependencies';
+export {
+  createSessionEventBus,
+  type SessionEventBus,
+  type SessionExpiredEvent,
+} from "./session-event-bus";
+export {
+  useFeatureRuntimeDependencies,
+  type FeatureRuntimeDependencies,
+} from "./use-feature-runtime-dependencies";
+export { createBrowserKeyValueStorage } from "../storage/browser-key-value-storage";
 
-export interface ClockPort {
-  now(): Date;
-  isoNow(): string;
-}
+export type { ClockPort, KeyValueStorage } from "@notrelix/platform";
 
 export interface FeatureFlagsPort {
   isEnabled(flag: string): boolean;
@@ -25,6 +47,7 @@ export interface AppRuntimeFactories {
   readonly clock?: ClockPort;
   readonly telemetry?: TelemetryPort;
   readonly featureFlags?: FeatureFlagsPort;
+  readonly storage?: KeyValueStorage;
 }
 
 export interface AppRuntime {
@@ -34,13 +57,14 @@ export interface AppRuntime {
   readonly clock: ClockPort;
   readonly telemetry: TelemetryPort;
   readonly featureFlags: FeatureFlagsPort;
+  readonly storage: KeyValueStorage;
   readonly env: ResolvedRuntimeEnvironment;
   dispose(): Promise<void>;
 }
 
 export function createAppRuntime(
   input: RuntimeEnvironmentInput,
-  factories: AppRuntimeFactories = {}
+  factories: AppRuntimeFactories = {},
 ): AppRuntime {
   const resolvedEnv = parseEnv(input);
 
@@ -49,12 +73,19 @@ export function createAppRuntime(
     isoNow: () => new Date().toISOString(),
   };
 
-  const telemetry: TelemetryPort = factories.telemetry ?? new ConsoleTelemetryAdapter({
-    releaseSha: resolvedEnv.releaseSha,
-    environment: resolvedEnv.mode,
-  });
+  const telemetry: TelemetryPort =
+    factories.telemetry ??
+    new ConsoleTelemetryAdapter({
+      releaseSha: resolvedEnv.releaseSha,
+      environment: resolvedEnv.mode,
+    });
 
-  const sessionEvents = createSessionEventBus((err, ctx) => telemetry.reportError(err, ctx));
+  const storage: KeyValueStorage =
+    factories.storage ?? createBrowserKeyValueStorage(telemetry);
+
+  const sessionEvents = createSessionEventBus((err, ctx) =>
+    telemetry.reportError(err, ctx),
+  );
 
   const client = factories.createApiClient
     ? factories.createApiClient({
@@ -76,6 +107,7 @@ export function createAppRuntime(
     ? factories.createRealtimeClient(resolvedEnv.realtimeUrl)
     : new RealtimeClient(resolvedEnv.realtimeUrl, {
         socketFactory: createBrowserWebSocketFactory(),
+        telemetry,
       });
 
   const featureFlags: FeatureFlagsPort = factories.featureFlags ?? {
@@ -92,6 +124,7 @@ export function createAppRuntime(
     clock,
     telemetry,
     featureFlags,
+    storage,
     env: resolvedEnv,
     async dispose(): Promise<void> {
       if (disposed) return;
@@ -125,7 +158,7 @@ export function AppRuntimeProvider({
 export function useAppRuntime(): AppRuntime {
   const context = useContext(AppRuntimeContext);
   if (!context) {
-    throw new Error('useAppRuntime must be used within an AppRuntimeProvider');
+    throw new Error("useAppRuntime must be used within an AppRuntimeProvider");
   }
   return context;
 }

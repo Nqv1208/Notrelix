@@ -1,6 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { createAccountService, type AccountApiClient, type AccountEndpoints } from '../../../core/api/account.service';
-import { accountQueryKeys } from '../../../core/query/keys';
+import { useQuery } from "@tanstack/react-query";
+import {
+  createAccountService,
+  type AccountApiClient,
+  type AccountEndpoints,
+} from "../../../core/api/account.service";
+import { accountQueryKeys } from "../../../query/keys";
 
 interface UseSecuritySettingsDeps {
   api: AccountApiClient;
@@ -8,10 +12,13 @@ interface UseSecuritySettingsDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUseSecuritySettings({ api, endpoints, options }: UseSecuritySettingsDeps) {
+export function createUseSecuritySettings({
+  api,
+  endpoints,
+  options,
+}: UseSecuritySettingsDeps) {
   const service = createAccountService(api, endpoints, options);
 
   return function useSecuritySettings() {

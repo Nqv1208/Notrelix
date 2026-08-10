@@ -1,17 +1,23 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createBlockApi } from '../../api/block.api';
-import type { DocsApiClient, PageApiEndpoints } from '../../api/page.api';
-import { docsQueryKeys } from '@notrelix/docs-core/query/keys';
-import type { CreateBlockPayload } from '@notrelix/docs-core';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createBlockApi } from "../../api/block.api";
+import type { DocsApiClient, PageApiEndpoints } from "../../api/page.api";
+import { docsQueryKeys } from "../keys";
+import type { CreateBlockPayload } from "@notrelix/docs-core";
 
-export function createUseCreateBlock(api: DocsApiClient, endpoints: PageApiEndpoints) {
+export function createUseCreateBlock(
+  api: DocsApiClient,
+  endpoints: PageApiEndpoints,
+) {
   const blockApi = createBlockApi(api, endpoints);
-  return function useCreateBlock(pageId: string) {
+  return function useCreateBlock(workspaceId: string, pageId: string) {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: (payload: CreateBlockPayload) => blockApi.create(pageId, payload),
+      mutationFn: (payload: CreateBlockPayload) =>
+        blockApi.create(pageId, payload),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: docsQueryKeys.blocks(pageId) });
+        queryClient.invalidateQueries({
+          queryKey: docsQueryKeys.blocks(workspaceId, pageId),
+        });
       },
     });
   };

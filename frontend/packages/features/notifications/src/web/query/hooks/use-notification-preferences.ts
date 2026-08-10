@@ -1,7 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from '../../../core/api/notifications.service';
-import { notificationsQueryKeys } from '../../../core/query/keys';
-import type { NotificationPreferences } from '../../../core/types/notifications';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createNotificationsService,
+  type NotificationsApiClient,
+  type NotificationsEndpoints,
+} from "../../../core/api/notifications.service";
+import { notificationsQueryKeys } from "../../../query/keys";
+import type { NotificationPreferences } from "../../../core/types/notifications";
 
 interface UseNotificationPreferencesDeps {
   api: NotificationsApiClient;
@@ -9,10 +13,13 @@ interface UseNotificationPreferencesDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUseNotificationPreferences({ api, endpoints, options }: UseNotificationPreferencesDeps) {
+export function createUseNotificationPreferences({
+  api,
+  endpoints,
+  options,
+}: UseNotificationPreferencesDeps) {
   const service = createNotificationsService(api, endpoints, options);
 
   return function useNotificationPreferences() {
@@ -24,9 +31,12 @@ export function createUseNotificationPreferences({ api, endpoints, options }: Us
     });
 
     const mutation = useMutation({
-      mutationFn: (prefs: Partial<NotificationPreferences>) => service.updatePreferences(prefs),
+      mutationFn: (prefs: Partial<NotificationPreferences>) =>
+        service.updatePreferences(prefs),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: notificationsQueryKeys.preferences });
+        queryClient.invalidateQueries({
+          queryKey: notificationsQueryKeys.preferences,
+        });
       },
     });
 

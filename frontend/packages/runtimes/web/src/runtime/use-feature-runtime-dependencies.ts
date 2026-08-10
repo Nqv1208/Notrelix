@@ -1,10 +1,10 @@
-import { useMemo } from 'react';
-import type { NotrelixClient } from '@notrelix/contracts';
-import { useAppRuntime } from './app-runtime';
+import { useMemo } from "react";
+import type { NotrelixClient } from "@notrelix/contracts";
+import { useAppRuntime } from "./app-runtime";
 
 export interface FeatureRuntimeDependencies {
-  readonly api: NotrelixClient['api'];
-  readonly endpoints: NotrelixClient['endpoints'];
+  readonly api: NotrelixClient["api"];
+  readonly endpoints: NotrelixClient["endpoints"];
   readonly mockMode: boolean;
 }
 

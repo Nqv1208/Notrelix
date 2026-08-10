@@ -7,6 +7,7 @@
 ## 1. Test Topology
 
 Kiểm thử frontend được chia làm 3 tầng:
+
 1. **Node Unit Tests (`pnpm test:node`):**
    - Environment: Node.js.
    - Target: `packages/foundation/kernel`, `packages/foundation/realtime`, pure core models, DTO mappers.
@@ -22,6 +23,7 @@ Kiểm thử frontend được chia làm 3 tầng:
 ## 2. Architecture Checker
 
 `pnpm check:architecture` executes AST-based verification via TypeScript Compiler API to enforce:
+
 - Zero deep imports (`@notrelix/*/src/*`).
 - Zero direct environment reads outside approved host adapters.
 - Zero unauthorized client creation calls (`createNotrelixClient`, `new WebSocket`, `new QueryClient`).

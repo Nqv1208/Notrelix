@@ -1,15 +1,17 @@
-import { useParams, Link } from '@tanstack/react-router';
-import { useWorkspaceContext } from '@/providers/workspace-provider';
-import { FileText, LayoutGrid, ArrowRight } from 'lucide-react';
+import { useParams, Link } from "@tanstack/react-router";
+import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { FileText, LayoutGrid, ArrowRight } from "lucide-react";
 
 export function WorkspaceHomePage() {
-  const { workspaceId } = useParams({ from: '/workspaces/$workspaceId' });
+  const { workspaceId } = useParams({ from: "/workspaces/$workspaceId" });
   const { workspace } = useWorkspaceContext();
 
   return (
     <div className="p-8 max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight mb-1">{workspace?.name ?? 'Workspace'}</h1>
+        <h1 className="text-2xl font-bold tracking-tight mb-1">
+          {workspace?.name ?? "Workspace"}
+        </h1>
         {workspace?.description && (
           <p className="text-muted-foreground">{workspace.description}</p>
         )}
@@ -35,7 +37,7 @@ export function WorkspaceHomePage() {
 
         <Link
           to="/workspaces/$workspaceId/docs/$pageId"
-          params={{ workspaceId, pageId: '' }}
+          params={{ workspaceId, pageId: "" }}
           className="group rounded-xl border border-border p-5 hover:bg-muted/30 transition-colors"
         >
           <div className="flex items-center justify-between mb-3">

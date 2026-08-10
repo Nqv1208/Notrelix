@@ -1,14 +1,18 @@
-import { useMemo } from 'react';
-import { createUseSecuritySettings } from '@notrelix/features-account';
-import { useAppRuntime } from '@notrelix/runtime-web';
-import { Button } from '@notrelix/ui-web';
-import { Shield, Key, Smartphone } from 'lucide-react';
+import { useMemo } from "react";
+import { createUseSecuritySettings } from "@notrelix/features-account";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { Button } from "@notrelix/ui-web";
+import { Shield, Key, Smartphone } from "lucide-react";
 
 export function AccountSecurityPage() {
   const { api: runtimeClient } = useAppRuntime();
 
   const useSecuritySettings = useMemo(
-    () => createUseSecuritySettings({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    () =>
+      createUseSecuritySettings({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
     [runtimeClient],
   );
 
@@ -28,7 +32,9 @@ export function AccountSecurityPage() {
     <div className="space-y-6">
       <div>
         <h2 className="font-semibold text-sm mb-1">Security</h2>
-        <p className="text-xs text-muted-foreground">Manage your password and security settings.</p>
+        <p className="text-xs text-muted-foreground">
+          Manage your password and security settings.
+        </p>
       </div>
 
       {/* Password */}
@@ -40,7 +46,10 @@ export function AccountSecurityPage() {
           <div>
             <p className="font-medium text-sm">Password</p>
             <p className="text-xs text-muted-foreground">
-              Last changed {security?.lastPasswordChange ? new Date(security.lastPasswordChange).toLocaleDateString() : 'unknown'}
+              Last changed{" "}
+              {security?.lastPasswordChange
+                ? new Date(security.lastPasswordChange).toLocaleDateString()
+                : "unknown"}
             </p>
           </div>
         </div>
@@ -58,12 +67,12 @@ export function AccountSecurityPage() {
           <div>
             <p className="font-medium text-sm">Two-Factor Authentication</p>
             <p className="text-xs text-muted-foreground">
-              {security?.twoFactorEnabled ? 'Enabled' : 'Not enabled'}
+              {security?.twoFactorEnabled ? "Enabled" : "Not enabled"}
             </p>
           </div>
         </div>
         <Button variant="outline" size="sm" disabled>
-          {security?.twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+          {security?.twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
         </Button>
       </div>
 

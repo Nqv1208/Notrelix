@@ -7,8 +7,11 @@
  * not as a module-level singleton.
  */
 
-export * from './protocol';
-export { ReconnectPolicy, type ReconnectPolicyConfig } from './connection/reconnect-policy';
+export * from "./protocol";
+export {
+  ReconnectPolicy,
+  type ReconnectPolicyConfig,
+} from "./connection/reconnect-policy";
 export {
   RealtimeClient,
   type RealtimeConnectionState,
@@ -24,5 +27,5 @@ export {
   type RealtimeClientOptions,
   type WebSocketFactory,
   type WebSocketLike,
-} from './transport/realtime-client';
-export type { BoardEvent, BoardPatchEvent, BoardPresenceEvent } from './events';
+} from "./transport/realtime-client";
+export type { BoardEvent, BoardPatchEvent, BoardPresenceEvent } from "./events";

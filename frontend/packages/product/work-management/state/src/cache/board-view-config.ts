@@ -2,9 +2,9 @@ export interface BoardViewConfig {
   groupBy?: string;
   hiddenFields?: string[];
   columnOrder?: string[];
-  density?: 'compact' | 'default' | 'comfortable';
+  density?: "compact" | "default" | "comfortable";
   filters?: Array<{ fieldId: string; operator: string; value: unknown }>;
-  sortBy?: Array<{ fieldId: string; direction: 'asc' | 'desc' }>;
+  sortBy?: Array<{ fieldId: string; direction: "asc" | "desc" }>;
 }
 
 export function parseBoardViewConfig(configStr?: string): BoardViewConfig {

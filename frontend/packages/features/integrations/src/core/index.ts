@@ -9,12 +9,12 @@ export type {
   ConnectionStatus,
   IntegrationConnection,
   Webhook,
-} from './types/integrations';
+} from "./types/integrations";
 
-export { integrationsQueryKeys } from './query/keys';
+export { integrationsQueryKeys } from "./query/keys";
 
 export {
   createIntegrationsService,
   type IntegrationsApiClient,
   type IntegrationsEndpoints,
-} from './api/integrations.service';
+} from "./api/integrations.service";

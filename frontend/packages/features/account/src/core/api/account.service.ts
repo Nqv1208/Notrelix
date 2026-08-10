@@ -1,4 +1,8 @@
-import type { UserProfile, UserPreferences, SecuritySettings } from '../types/account';
+import type {
+  UserProfile,
+  UserPreferences,
+  SecuritySettings,
+} from "../types/account";
 
 export interface AccountApiClient {
   get<T>(url: string): Promise<T>;
@@ -40,31 +44,33 @@ export function createAccountService(
       if (!endpoints.users.preferences) {
         if (mockMode) {
           return {
-            userId: 'me',
-            theme: 'system',
-            colorTheme: 'zinc',
+            userId: "me",
+            theme: "system",
+            colorTheme: "zinc",
             sidebarCollapsed: false,
-            defaultView: 'board',
+            defaultView: "board",
           };
         }
-        throw new Error('Backend contract missing for users.preferences');
+        throw new Error("Backend contract missing for users.preferences");
       }
       return api.get<UserPreferences>(endpoints.users.preferences);
     },
 
-    async updatePreferences(prefs: Partial<UserPreferences>): Promise<UserPreferences> {
+    async updatePreferences(
+      prefs: Partial<UserPreferences>,
+    ): Promise<UserPreferences> {
       if (!endpoints.users.preferences) {
         if (mockMode) {
           return {
-            userId: 'me',
-            theme: 'system',
-            colorTheme: 'zinc',
+            userId: "me",
+            theme: "system",
+            colorTheme: "zinc",
             sidebarCollapsed: false,
-            defaultView: 'board',
+            defaultView: "board",
             ...prefs,
           };
         }
-        throw new Error('Backend contract missing for users.preferences');
+        throw new Error("Backend contract missing for users.preferences");
       }
       return api.patch<UserPreferences>(endpoints.users.preferences, prefs);
     },
@@ -73,13 +79,13 @@ export function createAccountService(
       if (!endpoints.users.security) {
         if (mockMode) {
           return {
-            userId: 'me',
+            userId: "me",
             twoFactorEnabled: false,
             lastPasswordChange: new Date().toISOString(),
             activeSessions: 1,
           };
         }
-        throw new Error('Backend contract missing for users.security');
+        throw new Error("Backend contract missing for users.security");
       }
       return api.get<SecuritySettings>(endpoints.users.security);
     },

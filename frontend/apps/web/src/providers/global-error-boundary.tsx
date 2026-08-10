@@ -1,1 +1,1 @@
-export { RuntimeErrorBoundary as GlobalErrorBoundary } from './runtime-error-boundary';
+export { RuntimeErrorBoundary as GlobalErrorBoundary } from "./runtime-error-boundary";

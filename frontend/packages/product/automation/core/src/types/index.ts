@@ -1,17 +1,17 @@
 export type AutomationTriggerType =
-  | 'card_status_changed'
-  | 'card_priority_changed'
-  | 'card_created'
-  | 'card_deleted'
-  | 'field_updated';
+  | "card_status_changed"
+  | "card_priority_changed"
+  | "card_created"
+  | "card_deleted"
+  | "field_updated";
 
 export type AutomationActionType =
-  | 'archive_card'
-  | 'remove_members'
-  | 'notify_owner'
-  | 'send_email'
-  | 'move_to_group'
-  | 'set_field_value';
+  | "archive_card"
+  | "remove_members"
+  | "notify_owner"
+  | "send_email"
+  | "move_to_group"
+  | "set_field_value";
 
 export interface AutomationRule {
   id: string;
@@ -31,14 +31,14 @@ export interface AutomationRule {
 export interface AutomationRun {
   id: string;
   ruleId: string;
-  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+  status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
   triggeredBy: string;
   startedAt: string;
   completedAt?: string;
   error?: string;
 }
 
-export type AutomationExecutionStatus = AutomationRun['status'];
+export type AutomationExecutionStatus = AutomationRun["status"];
 
 export interface AutomationExecutionStep {
   id: string;

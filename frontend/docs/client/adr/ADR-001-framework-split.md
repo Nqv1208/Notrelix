@@ -6,6 +6,7 @@
 ## Context
 
 The Notrelix frontend needs to serve multiple clients:
+
 - Public marketing website (SEO-critical)
 - Authenticated product web app
 - Future mobile app
@@ -14,11 +15,11 @@ The Notrelix frontend needs to serve multiple clients:
 
 Split into three separate apps:
 
-| App | Framework | Purpose |
-|-----|-----------|---------|
-| `apps/marketing` | Next.js App Router | SEO, SSG, public pages |
-| `apps/web` | Vite + React + TanStack Router | Product SPA |
-| `apps/mobile` | Expo / React Native | Future mobile |
+| App              | Framework                      | Purpose                |
+| ---------------- | ------------------------------ | ---------------------- |
+| `apps/marketing` | Next.js App Router             | SEO, SSG, public pages |
+| `apps/web`       | Vite + React + TanStack Router | Product SPA            |
+| `apps/mobile`    | Expo / React Native            | Future mobile          |
 
 ## Consequences
 

@@ -1,7 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createAccountService, type AccountApiClient, type AccountEndpoints } from '../../../core/api/account.service';
-import { accountQueryKeys } from '../../../core/query/keys';
-import type { UserPreferences } from '../../../core/types/account';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createAccountService,
+  type AccountApiClient,
+  type AccountEndpoints,
+} from "../../../core/api/account.service";
+import { accountQueryKeys } from "../../../query/keys";
+import type { UserPreferences } from "../../../core/types/account";
 
 interface UsePreferencesDeps {
   api: AccountApiClient;
@@ -9,10 +13,13 @@ interface UsePreferencesDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUsePreferences({ api, endpoints, options }: UsePreferencesDeps) {
+export function createUsePreferences({
+  api,
+  endpoints,
+  options,
+}: UsePreferencesDeps) {
   const service = createAccountService(api, endpoints, options);
 
   return function usePreferences() {
@@ -24,9 +31,12 @@ export function createUsePreferences({ api, endpoints, options }: UsePreferences
     });
 
     const mutation = useMutation({
-      mutationFn: (prefs: Partial<UserPreferences>) => service.updatePreferences(prefs),
+      mutationFn: (prefs: Partial<UserPreferences>) =>
+        service.updatePreferences(prefs),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: accountQueryKeys.preferences });
+        queryClient.invalidateQueries({
+          queryKey: accountQueryKeys.preferences,
+        });
       },
     });
 

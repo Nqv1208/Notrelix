@@ -1,8 +1,12 @@
-import React, { useState, useMemo } from 'react';
-import type { Comment } from '../../core';
-import { createUseComments, createUseCreateComment, createUseDeleteComment } from '../query/hooks/use-comments';
-import { Button, Input, Avatar } from '@notrelix/ui-web';
-import { MessageSquare, Send, Trash2 } from 'lucide-react';
+import React, { useState, useMemo } from "react";
+import type { Comment, CollaborationApiClient } from "../../core";
+import {
+  createUseComments,
+  createUseCreateComment,
+  createUseDeleteComment,
+} from "../query/hooks/use-comments";
+import { Button, Input, Avatar } from "@notrelix/ui-web";
+import { MessageSquare, Send, Trash2 } from "lucide-react";
 
 const collabEndpoints = {
   comments: {
@@ -14,20 +18,20 @@ const collabEndpoints = {
 
 interface ResourceCommentsProps {
   resourceId: string;
-  resourceType: 'page' | 'block' | 'card';
+  resourceType: "page" | "block" | "card";
   currentUserId?: string;
   currentUserName?: string;
-  api: any;
+  api: CollaborationApiClient;
 }
 
 export function ResourceComments({
   resourceId,
   resourceType: _resourceType,
-  currentUserId = 'current-user',
-  currentUserName = 'You',
+  currentUserId = "current-user",
+  currentUserName = "You",
   api,
 }: ResourceCommentsProps) {
-  const [newComment, setNewComment] = useState('');
+  const [newComment, setNewComment] = useState("");
 
   const useComments = useMemo(
     () => createUseComments(api, collabEndpoints),
@@ -55,7 +59,7 @@ export function ResourceComments({
       authorId: currentUserId,
       authorName: currentUserName,
     });
-    setNewComment('');
+    setNewComment("");
   };
 
   return (
@@ -74,7 +78,10 @@ export function ResourceComments({
       ) : (
         <div className="space-y-3">
           {comments.map((comment: Comment) => (
-            <div key={comment.id} className="flex gap-3 p-3 rounded-lg bg-muted/30">
+            <div
+              key={comment.id}
+              className="flex gap-3 p-3 rounded-lg bg-muted/30"
+            >
               <Avatar className="size-8 shrink-0">
                 <div className="flex items-center justify-center size-full text-xs font-medium bg-primary/10 text-primary rounded-full">
                   {comment.authorName.charAt(0).toUpperCase()}
@@ -82,12 +89,16 @@ export function ResourceComments({
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium">{comment.authorName}</span>
+                  <span className="text-sm font-medium">
+                    {comment.authorName}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {new Date(comment.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap">{comment.body}</p>
+                <p className="text-sm text-foreground whitespace-pre-wrap">
+                  {comment.body}
+                </p>
               </div>
               {comment.authorId === currentUserId && (
                 <button
@@ -100,7 +111,9 @@ export function ResourceComments({
             </div>
           ))}
           {comments.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4 text-center">No comments yet.</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No comments yet.
+            </p>
           )}
         </div>
       )}
@@ -108,7 +121,9 @@ export function ResourceComments({
       <form onSubmit={handleSubmit} className="flex gap-2">
         <Input
           value={newComment}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewComment(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setNewComment(e.target.value)
+          }
           placeholder="Add a comment..."
           className="flex-1"
         />

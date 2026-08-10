@@ -1,11 +1,11 @@
-import { createContext, useContext } from 'react';
-import type { ReactNode } from 'react';
-import type { PlatformUser } from '@notrelix/platform/auth-core';
-import { createUseAuthUser } from '../hooks/use-auth-user';
-import type { AuthApiClient, AuthEndpoints } from '../../core/api/auth.service';
+import { createContext, useContext } from "react";
+import type { ReactNode } from "react";
+import type { User } from "../../core/types/auth";
+import { createUseAuthUser } from "../hooks/use-auth-user";
+import type { AuthApiClient, AuthEndpoints } from "../../core/api/auth.service";
 
 export interface AuthContextType {
-  user: PlatformUser | null;
+  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isReady: boolean;
@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

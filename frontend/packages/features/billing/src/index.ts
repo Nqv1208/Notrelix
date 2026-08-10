@@ -1,3 +1,1 @@
-// @notrelix/feature-billing — barrel export
-// TODO: Populate during Milestone 5 (Feature Extraction)
-export {}
+export * from "./web";

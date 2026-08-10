@@ -1,6 +1,10 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { useAppRuntime } from '@notrelix/runtime-web';
-import { createUseWorkspaceShellData, type WorkspaceSummary, type WorkspaceView } from '@notrelix/features-workspace';
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import {
+  createUseWorkspaceShellData,
+  type WorkspaceSummary,
+  type WorkspaceView,
+} from "@notrelix/features-workspace";
 
 type WorkspaceContextValue = {
   workspaceId: string;
@@ -16,7 +20,9 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 export function useWorkspaceContext() {
   const context = useContext(WorkspaceContext);
   if (!context) {
-    throw new Error('useWorkspaceContext must be used within a WorkspaceProvider');
+    throw new Error(
+      "useWorkspaceContext must be used within a WorkspaceProvider",
+    );
   }
   return context;
 }
@@ -26,7 +32,10 @@ type WorkspaceProviderProps = {
   children: ReactNode;
 };
 
-export function WorkspaceProvider({ workspaceId, children }: WorkspaceProviderProps) {
+export function WorkspaceProvider({
+  workspaceId,
+  children,
+}: WorkspaceProviderProps) {
   const { api: runtimeClient } = useAppRuntime();
 
   /**
@@ -45,7 +54,8 @@ export function WorkspaceProvider({ workspaceId, children }: WorkspaceProviderPr
     [runtimeClient],
   );
 
-  const { workspace, views, isLoading, isError, refetch } = useWorkspaceShellData(workspaceId);
+  const { workspace, views, isLoading, isError, refetch } =
+    useWorkspaceShellData(workspaceId);
 
   const value = useMemo<WorkspaceContextValue>(
     () => ({
@@ -59,5 +69,9 @@ export function WorkspaceProvider({ workspaceId, children }: WorkspaceProviderPr
     [workspaceId, workspace, views, isLoading, isError, refetch],
   );
 
-  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
+  return (
+    <WorkspaceContext.Provider value={value}>
+      {children}
+    </WorkspaceContext.Provider>
+  );
 }

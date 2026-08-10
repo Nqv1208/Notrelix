@@ -1,7 +1,7 @@
-import type { PageComment, CreateCommentPayload } from '@notrelix/docs-core';
-import type { CommentDtoApi } from '../dto';
-import { mapComment } from '../model/comment.mapper';
-import type { DocsApiClient, PageApiEndpoints } from './page.api';
+import type { PageComment, CreateCommentPayload } from "@notrelix/docs-core";
+import type { CommentDtoApi } from "../dto";
+import { mapComment } from "../model/comment.mapper";
+import type { DocsApiClient, PageApiEndpoints } from "./page.api";
 
 export function createCommentApi(
   api: DocsApiClient,
@@ -15,7 +15,10 @@ export function createCommentApi(
       return comments.map((dto) => mapComment(dto, pageId));
     },
 
-    async create(pageId: string, payload: CreateCommentPayload): Promise<PageComment> {
+    async create(
+      pageId: string,
+      payload: CreateCommentPayload,
+    ): Promise<PageComment> {
       const comment = await api.post<CommentDtoApi>(
         endpoints.pages.comments(pageId),
         payload,

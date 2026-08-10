@@ -1,4 +1,7 @@
-import type { Notification, NotificationPreferences } from '../types/notifications';
+import type {
+  Notification,
+  NotificationPreferences,
+} from "../types/notifications";
 
 export interface NotificationsApiClient {
   get<T>(url: string): Promise<T>;
@@ -31,23 +34,23 @@ export function createNotificationsService(
 
   const mockNotifications: Notification[] = [
     {
-      id: 'mock-1',
-      workspaceId: 'w-1',
-      userId: 'u-1',
-      type: 'mention',
-      title: 'John Doe mentioned you',
-      body: 'Hey @user, check out the board for phase 2 planning.',
+      id: "mock-1",
+      workspaceId: "w-1",
+      userId: "u-1",
+      type: "mention",
+      title: "John Doe mentioned you",
+      body: "Hey @user, check out the board for phase 2 planning.",
       isRead: false,
       isArchived: false,
       createdAt: new Date().toISOString(),
     },
     {
-      id: 'mock-2',
-      workspaceId: 'w-1',
-      userId: 'u-1',
-      type: 'comment',
-      title: 'New comment on Page spec',
-      body: 'Let\'s split the API into separate endpoints to avoid god-files.',
+      id: "mock-2",
+      workspaceId: "w-1",
+      userId: "u-1",
+      type: "comment",
+      title: "New comment on Page spec",
+      body: "Let's split the API into separate endpoints to avoid god-files.",
       isRead: false,
       isArchived: false,
       createdAt: new Date(Date.now() - 3600000).toISOString(),
@@ -72,7 +75,9 @@ export function createNotificationsService(
           const list = await this.getList();
           return { count: list.filter((n) => !n.isRead).length };
         }
-        throw new Error('Backend contract missing for notifications.unreadCount');
+        throw new Error(
+          "Backend contract missing for notifications.unreadCount",
+        );
       }
       return api.get<{ count: number }>(endpoints.notifications.unreadCount);
     },
@@ -90,7 +95,7 @@ export function createNotificationsService(
         if (mockMode) {
           return;
         }
-        throw new Error('Backend contract missing for notifications.archive');
+        throw new Error("Backend contract missing for notifications.archive");
       }
       await api.post<void>(endpoints.notifications.archive(id), {});
     },
@@ -99,32 +104,45 @@ export function createNotificationsService(
       if (!endpoints.notifications.preferences) {
         if (mockMode) {
           return {
-            userId: 'current-user',
+            userId: "current-user",
             emailEnabled: true,
             pushEnabled: true,
             mutedTypes: [],
           };
         }
-        throw new Error('Backend contract missing for notifications.preferences');
+        throw new Error(
+          "Backend contract missing for notifications.preferences",
+        );
       }
-      return api.get<NotificationPreferences>(endpoints.notifications.preferences);
+      return api.get<NotificationPreferences>(
+        endpoints.notifications.preferences,
+      );
     },
 
-    async updatePreferences(preferences: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
+    async updatePreferences(
+      preferences: Partial<NotificationPreferences>,
+    ): Promise<NotificationPreferences> {
       if (!endpoints.notifications.preferences) {
         if (mockMode) {
           return {
-            userId: 'current-user',
+            userId: "current-user",
             emailEnabled: true,
             pushEnabled: true,
             mutedTypes: [],
             ...preferences,
           };
         }
-        throw new Error('Backend contract missing for notifications.preferences');
+        throw new Error(
+          "Backend contract missing for notifications.preferences",
+        );
       }
-      return api.patch<NotificationPreferences>(endpoints.notifications.preferences, preferences);
+      return api.patch<NotificationPreferences>(
+        endpoints.notifications.preferences,
+        preferences,
+      );
     },
   };
 }
-export type NotificationsService = ReturnType<typeof createNotificationsService>;
+export type NotificationsService = ReturnType<
+  typeof createNotificationsService
+>;

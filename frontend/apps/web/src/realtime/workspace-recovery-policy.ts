@@ -1,6 +1,8 @@
 export interface WorkspaceRecoveryPolicyOptions {
   readonly workspaceId: string;
-  readonly invalidateQueries: (keys: readonly unknown[][]) => Promise<void> | void;
+  readonly invalidateQueries: (
+    keys: readonly unknown[][],
+  ) => Promise<void> | void;
 }
 
 export async function handleWorkspaceRecovery({
@@ -8,9 +10,9 @@ export async function handleWorkspaceRecovery({
   invalidateQueries,
 }: WorkspaceRecoveryPolicyOptions): Promise<void> {
   await invalidateQueries([
-    ['workspaces', workspaceId],
-    ['workspaces', workspaceId, 'members'],
-    ['workspaces', workspaceId, 'abilities'],
-    ['notifications', 'unread-count'],
+    ["workspaces", workspaceId],
+    ["workspaces", workspaceId, "members"],
+    ["workspaces", workspaceId, "abilities"],
+    ["notifications", "unread-count"],
   ]);
 }

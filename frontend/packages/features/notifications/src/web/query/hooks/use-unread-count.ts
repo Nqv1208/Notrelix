@@ -1,6 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from '../../../core/api/notifications.service';
-import { notificationsQueryKeys } from '../../../core/query/keys';
+import { useQuery } from "@tanstack/react-query";
+import {
+  createNotificationsService,
+  type NotificationsApiClient,
+  type NotificationsEndpoints,
+} from "../../../core/api/notifications.service";
+import { notificationsQueryKeys } from "../../../query/keys";
 
 interface UseUnreadCountDeps {
   api: NotificationsApiClient;
@@ -8,10 +12,13 @@ interface UseUnreadCountDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUseUnreadCount({ api, endpoints, options }: UseUnreadCountDeps) {
+export function createUseUnreadCount({
+  api,
+  endpoints,
+  options,
+}: UseUnreadCountDeps) {
   const service = createNotificationsService(api, endpoints, options);
   return function useUnreadCount() {
     return useQuery({

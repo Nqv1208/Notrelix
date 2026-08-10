@@ -1,6 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from '../../../core/api/notifications.service';
-import { notificationsQueryKeys } from '../../../core/query/keys';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createNotificationsService,
+  type NotificationsApiClient,
+  type NotificationsEndpoints,
+} from "../../../core/api/notifications.service";
+import { notificationsQueryKeys } from "../../../query/keys";
 
 interface UseMarkReadDeps {
   api: NotificationsApiClient;
@@ -8,10 +12,13 @@ interface UseMarkReadDeps {
   options?: {
     mockMode?: boolean;
   };
-
 }
 
-export function createUseMarkRead({ api, endpoints, options }: UseMarkReadDeps) {
+export function createUseMarkRead({
+  api,
+  endpoints,
+  options,
+}: UseMarkReadDeps) {
   const service = createNotificationsService(api, endpoints, options);
 
   return function useMarkRead() {
@@ -21,7 +28,9 @@ export function createUseMarkRead({ api, endpoints, options }: UseMarkReadDeps) 
       mutationFn: (id: string) => service.markAsRead(id),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: notificationsQueryKeys.all });
-        queryClient.invalidateQueries({ queryKey: notificationsQueryKeys.unreadCount });
+        queryClient.invalidateQueries({
+          queryKey: notificationsQueryKeys.unreadCount,
+        });
       },
     });
 
@@ -29,7 +38,9 @@ export function createUseMarkRead({ api, endpoints, options }: UseMarkReadDeps) 
       mutationFn: () => service.markAllAsRead(),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: notificationsQueryKeys.all });
-        queryClient.invalidateQueries({ queryKey: notificationsQueryKeys.unreadCount });
+        queryClient.invalidateQueries({
+          queryKey: notificationsQueryKeys.unreadCount,
+        });
       },
     });
 

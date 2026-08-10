@@ -1,4 +1,4 @@
-import type { Block, BlockProperties } from '@notrelix/docs-core';
+import type { Block, BlockProperties } from "@notrelix/docs-core";
 
 export type PageDtoApi = {
   id: string;
@@ -45,7 +45,7 @@ export type BlockDtoApi = {
   id: string;
   pageId: string;
   parentBlockId?: string | null;
-  type: Block['type'];
+  type: Block["type"];
   properties: string | BlockProperties;
   position: number;
   version: number;

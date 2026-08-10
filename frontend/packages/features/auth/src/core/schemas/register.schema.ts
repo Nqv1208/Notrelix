@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { AUTH_ERROR_KEYS } from './auth-errors';
+import { z } from "zod";
+import { AUTH_ERROR_KEYS } from "./auth-errors";
 
 export const registerSchema = z
   .object({
@@ -14,11 +14,11 @@ export const registerSchema = z
       .string()
       .min(1, AUTH_ERROR_KEYS.PASSWORD_REQUIRED)
       .min(8, AUTH_ERROR_KEYS.PASSWORD_TOO_SHORT),
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ['confirmPassword'],
+    path: ["confirmPassword"],
   });
 
 export type RegisterRequest = z.infer<typeof registerSchema>;

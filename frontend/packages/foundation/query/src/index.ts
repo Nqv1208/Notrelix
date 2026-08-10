@@ -10,7 +10,7 @@
  *   auth: @notrelix/features-auth
  */
 
-export { createQueryClient } from './query-client';
+export { createQueryClient } from "./query-client";
 export {
   executeOptimisticCommand,
   defineOptimisticUpdate,
@@ -19,4 +19,10 @@ export {
   type CommandContext,
   type OptimisticSnapshot,
   type OptimisticUpdate,
-} from './optimistic-command';
+} from "./optimistic-command";
+export {
+  globalQueryKey,
+  accountQueryKey,
+  workspaceQueryKey,
+  assertNotrelixQueryKey,
+} from "./query-key-scope";

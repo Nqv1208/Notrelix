@@ -1,16 +1,16 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { useLocation } from '@tanstack/react-router';
-import { AlertCircle } from 'lucide-react';
-import { Skeleton } from '@notrelix/ui-web';
-import { useWorkspaceContext } from '@/providers/workspace-provider';
-import type { WorkspaceView } from '@notrelix/features-workspace/core';
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { useLocation } from "@tanstack/react-router";
+import { AlertCircle } from "lucide-react";
+import { Skeleton } from "@notrelix/ui-web";
+import { useWorkspaceContext } from "@/providers/workspace-provider";
+import type { WorkspaceView } from "@notrelix/features-workspace/core";
 import {
   WorkspaceCompactHeader,
   WorkspaceViewTabs,
   WorkspaceContextualToolbar,
   createUseReorderWorkspaceViews,
-} from '@notrelix/features-workspace/web';
-import { useAppRuntime } from '@notrelix/runtime-web';
+} from "@notrelix/features-workspace/web";
+import { useAppRuntime } from "@notrelix/runtime-web";
 
 type WorkspaceTabbedRouteContextValue = {
   workspaceId: string;
@@ -19,12 +19,15 @@ type WorkspaceTabbedRouteContextValue = {
   kind: string;
 };
 
-const WorkspaceTabbedRouteContext = createContext<WorkspaceTabbedRouteContextValue | null>(null);
+const WorkspaceTabbedRouteContext =
+  createContext<WorkspaceTabbedRouteContextValue | null>(null);
 
 export function useWorkspaceTabbedRouteContext(): WorkspaceTabbedRouteContextValue {
   const context = useContext(WorkspaceTabbedRouteContext);
   if (!context) {
-    throw new Error('useWorkspaceTabbedRouteContext must be used within WorkspaceTabbedFrame');
+    throw new Error(
+      "useWorkspaceTabbedRouteContext must be used within WorkspaceTabbedFrame",
+    );
   }
   return context;
 }
@@ -32,7 +35,8 @@ export function useWorkspaceTabbedRouteContext(): WorkspaceTabbedRouteContextVal
 export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { api: runtimeClient } = useAppRuntime();
-  const { workspaceId, workspace, views, isLoading, isError } = useWorkspaceContext();
+  const { workspaceId, workspace, views, isLoading, isError } =
+    useWorkspaceContext();
 
   const useReorderWorkspaceViews = useMemo(
     () => createUseReorderWorkspaceViews({ api: runtimeClient.api }),
@@ -41,16 +45,16 @@ export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
 
   const activeView = useMemo(() => {
     if (!views || views.length === 0) return null;
-    const pathParts = location.pathname.split('/').filter(Boolean);
+    const pathParts = location.pathname.split("/").filter(Boolean);
 
-    if (pathParts.includes('boards')) {
-      const boardId = pathParts[pathParts.indexOf('boards') + 1];
+    if (pathParts.includes("boards")) {
+      const boardId = pathParts[pathParts.indexOf("boards") + 1];
       const found = views.find((v) => v.target.boardId === boardId);
       if (found) return found;
     }
 
-    if (pathParts.includes('docs')) {
-      const docId = pathParts[pathParts.indexOf('docs') + 1];
+    if (pathParts.includes("docs")) {
+      const docId = pathParts[pathParts.indexOf("docs") + 1];
       const found = views.find((v) => v.target.pageId === docId);
       if (found) return found;
     }
@@ -111,7 +115,7 @@ export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
       />
 
       <WorkspaceContextualToolbar
-        activeType={activeView?.type || 'table'}
+        activeType={activeView?.type || "table"}
         activeView={activeView || undefined}
       />
 

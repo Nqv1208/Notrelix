@@ -1,4 +1,4 @@
-import type { WebApplicationServices } from '../composition/application-services';
+import type { WebApplicationServices } from "../composition/application-services";
 
 export interface AuthSnapshot {
   readonly isAuthenticated: boolean;

@@ -1,4 +1,4 @@
-import { Inbox } from "lucide-react"
+import { Inbox } from "lucide-react";
 
 export function KanbanEmptyState() {
   return (
@@ -6,5 +6,5 @@ export function KanbanEmptyState() {
       <Inbox className="h-12 w-12 text-muted-foreground/50" />
       <p className="mt-2 text-sm text-muted-foreground">No cards yet</p>
     </div>
-  )
+  );
 }

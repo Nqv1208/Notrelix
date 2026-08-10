@@ -1,12 +1,28 @@
-import { Link, useLocation } from '@tanstack/react-router';
-import { ArrowLeft, Eye, Bell, Shield, User } from 'lucide-react';
-import { cn } from '@notrelix/ui-web';
+import { Link, useLocation } from "@tanstack/react-router";
+import { ArrowLeft, Eye, Bell, Shield, User } from "lucide-react";
+import { cn } from "@notrelix/ui-web";
 
 const navItems = [
-  { label: 'Profile', icon: User, to: '/workspaces/$workspaceId/account/profile' as const },
-  { label: 'Appearance', icon: Eye, to: '/workspaces/$workspaceId/account/appearance' as const },
-  { label: 'Security', icon: Shield, to: '/workspaces/$workspaceId/account/security' as const },
-  { label: 'Notifications', icon: Bell, to: '/workspaces/$workspaceId/account/notifications' as const },
+  {
+    label: "Profile",
+    icon: User,
+    to: "/workspaces/$workspaceId/account/profile" as const,
+  },
+  {
+    label: "Appearance",
+    icon: Eye,
+    to: "/workspaces/$workspaceId/account/appearance" as const,
+  },
+  {
+    label: "Security",
+    icon: Shield,
+    to: "/workspaces/$workspaceId/account/security" as const,
+  },
+  {
+    label: "Notifications",
+    icon: Bell,
+    to: "/workspaces/$workspaceId/account/notifications" as const,
+  },
 ];
 
 export function AccountSidebar({ workspaceId }: { workspaceId: string }) {
@@ -25,17 +41,19 @@ export function AccountSidebar({ workspaceId }: { workspaceId: string }) {
         </Link>
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => {
-            const isActive = location.pathname.includes(item.to.split('/').pop() ?? '');
+            const isActive = location.pathname.includes(
+              item.to.split("/").pop() ?? "",
+            );
             return (
               <Link
                 key={item.to}
                 to={item.to}
                 params={{ workspaceId }}
                 className={cn(
-                  'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <item.icon className="size-4" />

@@ -11,10 +11,12 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@notrelix/docs-core": "workspace:*",
+    "@notrelix/query": "workspace:*",
     "@tanstack/react-query": "^5.95.2"
   },
   "peerDependencies": {
@@ -23,6 +25,7 @@
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

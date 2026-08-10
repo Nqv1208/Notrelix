@@ -1,1 +1,0 @@
-export { notificationsQueryKeys } from './keys';

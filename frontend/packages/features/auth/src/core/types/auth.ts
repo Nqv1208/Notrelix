@@ -30,7 +30,7 @@ export type LogoutRequest = {
   accessToken?: string;
 };
 
-export type RefreshRequest = Pick<LoginResponseApi, 'refreshToken'>;
+export type RefreshRequest = Pick<LoginResponseApi, "refreshToken">;
 
 export type ForgotPasswordRequest = {
   email: string;

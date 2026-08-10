@@ -1,0 +1,23 @@
+name: Setup frontend
+description: Install the exact frontend Node/pnpm toolchain and workspace dependencies
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.0.0
+        run_install: false
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: frontend/.node-version
+        cache: pnpm
+        cache-dependency-path: frontend/pnpm-lock.yaml
+
+    - name: Install frontend dependencies
+      shell: bash
+      working-directory: frontend
+      run: pnpm install --frozen-lockfile

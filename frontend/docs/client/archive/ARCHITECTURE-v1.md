@@ -7,13 +7,15 @@ This document represents the absolute **Source of Truth (SSOT)** and target-stat
 ## 1. Architectural Philosophy: Target-State First
 
 Notrelix is designed as an enterprise-grade platform. We **reject** temporary shortcut philosophies such as:
-*   *❌ "Let's keep it flat first, then modularize later."*
-*   *❌ "Let's use safe alias paths as a long-term implementation."*
-*   *❌ "Wait for the system to grow before refactoring."*
-*   *❌ "Folderize only for cosmetic purposes."*
-*   *❌ "Copy the backend Clean Architecture 1:1."*
+
+- _❌ "Let's keep it flat first, then modularize later."_
+- _❌ "Let's use safe alias paths as a long-term implementation."_
+- _❌ "Wait for the system to grow before refactoring."_
+- _❌ "Folderize only for cosmetic purposes."_
+- _❌ "Copy the backend Clean Architecture 1:1."_
 
 ### The Correct Mindset:
+
 1.  **Target-State Architecture Immediately**: All code, whether new or refactored, must align with the target FSD (Feature-Sliced Design) modular structure.
 2.  **Bounded-Context-Aligned & Frontend-Oriented**: We align with backend bounded contexts, but optimize folder groupings for frontend user experiences (e.g., combining boards, lists, and fields under `work-management`).
 3.  **Product Capability Ownership**: Each feature slice owns its entire domain: from HTTP calls, hooks, schemas, and models to business UI components.
@@ -26,15 +28,15 @@ Notrelix is designed as an enterprise-grade platform. We **reject** temporary sh
 
 The codebase is strictly segregated into layers. The following table defines the responsibility and boundaries of each directory:
 
-| Layer | Path | Responsibility | Permitted Imports | Forbidden Imports |
-| :--- | :--- | :--- | :--- | :--- |
-| **App Routing** | `app/` | Routing, layouts, page composition, and server-side route guards. | `features/*` (via public API), `components/*`, `lib/*` | Internals of features (e.g., `features/auth/hooks/...`) |
-| **Route-Private UI** | `app/**/_components/` | Visual-only layouts, composition structures unique to a specific route. | `features/*` (via public API), `components/*`, `lib/*` | Sibling route-private components, feature internals. |
-| **Feature Slices** | `features/` | Product capabilities containing business UI, feature APIs, query/mutation hooks, domain models, caches, and schemas. | Sibling features (via **public API only**), `components/*`, `lib/*` | Sibling feature internals, `app/*` layer. |
-| **UI Primitives** | `components/ui/` | Pure design system primitives (buttons, inputs, dialogs). Business-blind. | None (completely self-contained) | `features/*`, `app/*`, `lib/*` (except pure utils) |
-| **Generic UI Blocks** | `components/<type>/` | Generic reusable UI blocks (`layout`, `feedback`, `data-display`, `forms`). Business-blind. | `components/ui/*`, `lib/utils` | `features/*`, `app/*` |
-| **Infrastructure** | `lib/` | Cross-cutting technical infrastructure (API client, query client, websocket stream, auth helpers). | None (infrastructure is self-contained) | `features/*`, `app/*`, `components/*` |
-| **Design System** | `styles/` | Global style sheets and Tailwind/CSS design token variables. | None | Any JS/TS modules |
+| Layer                 | Path                  | Responsibility                                                                                                       | Permitted Imports                                                   | Forbidden Imports                                       |
+| :-------------------- | :-------------------- | :------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------ | :------------------------------------------------------ |
+| **App Routing**       | `app/`                | Routing, layouts, page composition, and server-side route guards.                                                    | `features/*` (via public API), `components/*`, `lib/*`              | Internals of features (e.g., `features/auth/hooks/...`) |
+| **Route-Private UI**  | `app/**/_components/` | Visual-only layouts, composition structures unique to a specific route.                                              | `features/*` (via public API), `components/*`, `lib/*`              | Sibling route-private components, feature internals.    |
+| **Feature Slices**    | `features/`           | Product capabilities containing business UI, feature APIs, query/mutation hooks, domain models, caches, and schemas. | Sibling features (via **public API only**), `components/*`, `lib/*` | Sibling feature internals, `app/*` layer.               |
+| **UI Primitives**     | `components/ui/`      | Pure design system primitives (buttons, inputs, dialogs). Business-blind.                                            | None (completely self-contained)                                    | `features/*`, `app/*`, `lib/*` (except pure utils)      |
+| **Generic UI Blocks** | `components/<type>/`  | Generic reusable UI blocks (`layout`, `feedback`, `data-display`, `forms`). Business-blind.                          | `components/ui/*`, `lib/utils`                                      | `features/*`, `app/*`                                   |
+| **Infrastructure**    | `lib/`                | Cross-cutting technical infrastructure (API client, query client, websocket stream, auth helpers).                   | None (infrastructure is self-contained)                             | `features/*`, `app/*`, `components/*`                   |
+| **Design System**     | `styles/`             | Global style sheets and Tailwind/CSS design token variables.                                                         | None                                                                | Any JS/TS modules                                       |
 
 ---
 
@@ -66,6 +68,7 @@ features/
 The `work-management` module is the core of Notrelix's productivity capabilities. It is structured as a nested modular context to support diverse view renderers (Table, Kanban, Calendar, Timeline) over a unified data model.
 
 ### Strict Directory Tree:
+
 ```txt
 features/work-management/
   ├── boards/
@@ -145,88 +148,100 @@ features/work-management/
 Every frontend feature must be structured according to FSD standards. Below is the blueprint for the other 12 features:
 
 ### 1. `auth`
-*   **Responsibility**: Session lifecycle, login/signup, password reset flow, and token storage orchestration.
-*   **Owned Screens/Components**: `LoginForm`, `RegisterForm`, `ForgotPasswordForm`, `ResetPasswordForm`.
-*   **API/Query/Model/Cache**: `auth.service.ts`, `useAuthUser`, `useLogin`, `useLogout`. Clears all TanStack query caches upon logout.
-*   **Public API Policy**: Exports authentication forms, session state hooks (`useAuthUser`), and logout mutation.
-*   **Forbidden Imports**: Must not import from other business features (except `workspace` or `account` in public-facing setup flows).
+
+- **Responsibility**: Session lifecycle, login/signup, password reset flow, and token storage orchestration.
+- **Owned Screens/Components**: `LoginForm`, `RegisterForm`, `ForgotPasswordForm`, `ResetPasswordForm`.
+- **API/Query/Model/Cache**: `auth.service.ts`, `useAuthUser`, `useLogin`, `useLogout`. Clears all TanStack query caches upon logout.
+- **Public API Policy**: Exports authentication forms, session state hooks (`useAuthUser`), and logout mutation.
+- **Forbidden Imports**: Must not import from other business features (except `workspace` or `account` in public-facing setup flows).
 
 ### 2. `account`
-*   **Responsibility**: User profile management, appearance settings (dark mode, layout density), and security credentials.
-*   **Owned Screens/Components**: `ProfileForm`, `SecurityForm`, `AppearanceSelector`.
-*   **API/Query/Model/Cache**: `account.service.ts`, `useUpdateProfile`, `useUpdatePassword`.
-*   **Public API Policy**: Exports profile updating hooks and profile forms.
-*   **Forbidden Imports**: Must not import from `work-management` or `docs`.
+
+- **Responsibility**: User profile management, appearance settings (dark mode, layout density), and security credentials.
+- **Owned Screens/Components**: `ProfileForm`, `SecurityForm`, `AppearanceSelector`.
+- **API/Query/Model/Cache**: `account.service.ts`, `useUpdateProfile`, `useUpdatePassword`.
+- **Public API Policy**: Exports profile updating hooks and profile forms.
+- **Forbidden Imports**: Must not import from `work-management` or `docs`.
 
 ### 3. `workspace`
-*   **Responsibility**: Workspace lifecycle, team membership, roles, and invitation workflows.
-*   **Owned Screens/Components**: `WorkspaceSwitcher`, `WorkspaceManagementPanel`, `PendingInvitationsMenu`, `InviteMemberDialog`.
-*   **API/Query/Model/Cache**: `workspace.api.ts`, `useWorkspaceSnapshot`, `useWorkspaceList`, `usePendingInvitations`.
-*   **Public API Policy**: Exports workspace switcher, settings panel, and invitation acceptance hooks.
-*   **Forbidden Imports**: Must not deep-import `auth` (must use `@/features/auth` public API).
+
+- **Responsibility**: Workspace lifecycle, team membership, roles, and invitation workflows.
+- **Owned Screens/Components**: `WorkspaceSwitcher`, `WorkspaceManagementPanel`, `PendingInvitationsMenu`, `InviteMemberDialog`.
+- **API/Query/Model/Cache**: `workspace.api.ts`, `useWorkspaceSnapshot`, `useWorkspaceList`, `usePendingInvitations`.
+- **Public API Policy**: Exports workspace switcher, settings panel, and invitation acceptance hooks.
+- **Forbidden Imports**: Must not deep-import `auth` (must use `@/features/auth` public API).
 
 ### 4. `docs`
-*   **Responsibility**: Notion-like collaborative document editing, page trees, and document hierarchy.
-*   **Owned Screens/Components**: `DocumentEditor`, `PageTreeSidebar`, `BlockRenderer`, `TemplateSelector`.
-*   **API/Query/Model/Cache**: `docs.api.ts`, `usePage`, `useUpdatePageTitle`, `useMovePage`.
-*   **Public API Policy**: Exports page editor screens and navigation tree panels.
-*   **Forbidden Imports**: Must not import directly from `work-management` (must use cross-linking helpers in `lib/`).
+
+- **Responsibility**: Notion-like collaborative document editing, page trees, and document hierarchy.
+- **Owned Screens/Components**: `DocumentEditor`, `PageTreeSidebar`, `BlockRenderer`, `TemplateSelector`.
+- **API/Query/Model/Cache**: `docs.api.ts`, `usePage`, `useUpdatePageTitle`, `useMovePage`.
+- **Public API Policy**: Exports page editor screens and navigation tree panels.
+- **Forbidden Imports**: Must not import directly from `work-management` (must use cross-linking helpers in `lib/`).
 
 ### 5. `collaboration`
-*   **Responsibility**: Comments, user mentions, emoji reactions, presence indicators, and file attachments.
-*   **Owned Screens/Components**: `CommentThread`, `MentionList`, `ReactionSelector`, `PresenceAvatarStack`.
-*   **API/Query/Model/Cache**: `collaboration.api.ts`, `useComments`, `usePresenceStream`.
-*   **Public API Policy**: Exports reusable comment threads and presence stacks.
-*   **Forbidden Imports**: Must not import visual components from `work-management` or `docs`.
+
+- **Responsibility**: Comments, user mentions, emoji reactions, presence indicators, and file attachments.
+- **Owned Screens/Components**: `CommentThread`, `MentionList`, `ReactionSelector`, `PresenceAvatarStack`.
+- **API/Query/Model/Cache**: `collaboration.api.ts`, `useComments`, `usePresenceStream`.
+- **Public API Policy**: Exports reusable comment threads and presence stacks.
+- **Forbidden Imports**: Must not import visual components from `work-management` or `docs`.
 
 ### 6. `notifications`
-*   **Responsibility**: In-app inbox notifications, unread count badge, and visual notification streams.
-*   **Owned Screens/Components**: `NotificationBell`, `NotificationList`, `UnreadBadge`.
-*   **API/Query/Model/Cache**: `notifications.service.ts`, `useNotifications`, `useMarkRead`.
-*   **Public API Policy**: Exports notification bell and badge components.
-*   **Forbidden Imports**: Must not import from `governance` or `billing`.
+
+- **Responsibility**: In-app inbox notifications, unread count badge, and visual notification streams.
+- **Owned Screens/Components**: `NotificationBell`, `NotificationList`, `UnreadBadge`.
+- **API/Query/Model/Cache**: `notifications.service.ts`, `useNotifications`, `useMarkRead`.
+- **Public API Policy**: Exports notification bell and badge components.
+- **Forbidden Imports**: Must not import from `governance` or `billing`.
 
 ### 7. `search`
-*   **Responsibility**: Global full-text search, command palette, and quick-access palette.
-*   **Owned Screens/Components**: `GlobalSearchDialog`, `CommandPalette`.
-*   **API/Query/Model/Cache**: `search.api.ts`, `useGlobalSearch`.
-*   **Public API Policy**: Exports search dialog and command palette.
-*   **Forbidden Imports**: Must not import write-mutations from other features.
+
+- **Responsibility**: Global full-text search, command palette, and quick-access palette.
+- **Owned Screens/Components**: `GlobalSearchDialog`, `CommandPalette`.
+- **API/Query/Model/Cache**: `search.api.ts`, `useGlobalSearch`.
+- **Public API Policy**: Exports search dialog and command palette.
+- **Forbidden Imports**: Must not import write-mutations from other features.
 
 ### 8. `billing`
-*   **Responsibility**: Plan comparison matrices, payment forms, invoice history, and pricing cards.
-*   **Owned Screens/Components**: `PricingMatrix`, `SubscriptionDetailsCard`, `PaymentMethodsList`.
-*   **API/Query/Model/Cache**: `billing.api.ts`, `useSubscriptionDetails`, `usePaymentIntent`.
-*   **Public API Policy**: Exports entitlement locks, billing details, and pricing cards.
-*   **Forbidden Imports**: Must not import from `automation` or `integrations`.
+
+- **Responsibility**: Plan comparison matrices, payment forms, invoice history, and pricing cards.
+- **Owned Screens/Components**: `PricingMatrix`, `SubscriptionDetailsCard`, `PaymentMethodsList`.
+- **API/Query/Model/Cache**: `billing.api.ts`, `useSubscriptionDetails`, `usePaymentIntent`.
+- **Public API Policy**: Exports entitlement locks, billing details, and pricing cards.
+- **Forbidden Imports**: Must not import from `automation` or `integrations`.
 
 ### 9. `governance`
-*   **Responsibility**: Audit logs, security policy editors, and workspace-level permission mapping.
-*   **Owned Screens/Components**: `AuditLogTable`, `PermissionSettingsForm`, `GovernanceDashboard`.
-*   **API/Query/Model/Cache**: `governance.api.ts`, `useAuditLogs`, `usePermissionsSchema`.
-*   **Public API Policy**: Exports permission settings forms and audit logs.
-*   **Forbidden Imports**: Must not import domain logic from `docs` or `work-management`.
+
+- **Responsibility**: Audit logs, security policy editors, and workspace-level permission mapping.
+- **Owned Screens/Components**: `AuditLogTable`, `PermissionSettingsForm`, `GovernanceDashboard`.
+- **API/Query/Model/Cache**: `governance.api.ts`, `useAuditLogs`, `usePermissionsSchema`.
+- **Public API Policy**: Exports permission settings forms and audit logs.
+- **Forbidden Imports**: Must not import domain logic from `docs` or `work-management`.
 
 ### 10. `automation`
-*   **Responsibility**: Rule builder, triggers, action composers, and execution history.
-*   **Owned Screens/Components**: `RuleBuilder`, `TriggerSelector`, `ActionComposer`, `ExecutionHistoryList`.
-*   **API/Query/Model/Cache**: `automation.api.ts`, `useAutomationRules`, `useExecutionLogs`.
-*   **Public API Policy**: Exports automation settings and rule builders.
-*   **Forbidden Imports**: Must not import internal components from `work-management`.
+
+- **Responsibility**: Rule builder, triggers, action composers, and execution history.
+- **Owned Screens/Components**: `RuleBuilder`, `TriggerSelector`, `ActionComposer`, `ExecutionHistoryList`.
+- **API/Query/Model/Cache**: `automation.api.ts`, `useAutomationRules`, `useExecutionLogs`.
+- **Public API Policy**: Exports automation settings and rule builders.
+- **Forbidden Imports**: Must not import internal components from `work-management`.
 
 ### 11. `integrations`
-*   **Responsibility**: Webhook creators, third-party connection setups (Slack, GitHub, Calendar), and integration listings.
-*   **Owned Screens/Components**: `WebhookManager`, `IntegrationsCatalog`, `ConnectionStatusCard`.
-*   **API/Query/Model/Cache**: `integrations.api.ts`, `useWebhooks`, `useConnections`.
-*   **Public API Policy**: Exports webhook managers and connection setups.
-*   **Forbidden Imports**: Must not import database/query client configurations directly.
+
+- **Responsibility**: Webhook creators, third-party connection setups (Slack, GitHub, Calendar), and integration listings.
+- **Owned Screens/Components**: `WebhookManager`, `IntegrationsCatalog`, `ConnectionStatusCard`.
+- **API/Query/Model/Cache**: `integrations.api.ts`, `useWebhooks`, `useConnections`.
+- **Public API Policy**: Exports webhook managers and connection setups.
+- **Forbidden Imports**: Must not import database/query client configurations directly.
 
 ### 12. `activity`
-*   **Responsibility**: Live feed of workspace activities and events.
-*   **Owned Screens/Components**: `ActivityFeed`, `ActivityFeedItem`.
-*   **API/Query/Model/Cache**: `activity.api.ts`, `useWorkspaceActivity`.
-*   **Public API Policy**: Exports activity feeds.
-*   **Forbidden Imports**: Must not import edit mutations from other features.
+
+- **Responsibility**: Live feed of workspace activities and events.
+- **Owned Screens/Components**: `ActivityFeed`, `ActivityFeedItem`.
+- **API/Query/Model/Cache**: `activity.api.ts`, `useWorkspaceActivity`.
+- **Public API Policy**: Exports activity feeds.
+- **Forbidden Imports**: Must not import edit mutations from other features.
 
 ---
 
@@ -234,21 +249,21 @@ Every frontend feature must be structured according to FSD standards. Below is t
 
 Next.js App Router routes act as pure **composers**. They must map explicitly to the feature slices that own the capabilities.
 
-| Route Path | Associated Feature | Page Component Composition |
-| :--- | :--- | :--- |
-| `/` | `marketing` (Shared) | Landing screen, features list, testimonial sliders |
-| `/sign-in` | `auth` | `LoginForm` wrapped in `AuthShell` |
-| `/sign-up` | `auth` | `RegisterForm` wrapped in `AuthShell` |
-| `/forgot-password` | `auth` | `ForgotPasswordForm` wrapped in `AuthShell` |
-| `/dashboard` | `dashboard` (Shared) | Composition of `WorkspaceList`, `NotificationBell`, and `RecentSection` |
-| `/[workspaceId]` | `workspace` | `WorkspaceHomeScreen` composing recent boards + recent docs |
-| `/[workspaceId]/boards/[boardId]` | `work-management` | `WorkspaceBoardShell` composing `WorkspaceViewTabs` and active view |
-| `/[workspaceId]/docs/[pageId]` | `docs` | `DocsWorkspaceChrome` rendering `DocumentEditor` |
-| `/[workspaceId]/settings/members` | `workspace` | `WorkspaceManagementPanel` with tab set to "members" |
-| `/[workspaceId]/settings/billing` | `billing` | `WorkspaceManagementPanel` with tab set to "billing" |
-| `/[workspaceId]/settings/permissions` | `governance` | `WorkspaceManagementPanel` with tab set to "permissions" |
-| `/account/profile` | `account` | `AccountLayout` rendering `ProfileForm` |
-| `/invite/[token]` | `auth` / `workspace` | `InviteClientPage` displaying workspace details and accept button |
+| Route Path                            | Associated Feature   | Page Component Composition                                              |
+| :------------------------------------ | :------------------- | :---------------------------------------------------------------------- |
+| `/`                                   | `marketing` (Shared) | Landing screen, features list, testimonial sliders                      |
+| `/sign-in`                            | `auth`               | `LoginForm` wrapped in `AuthShell`                                      |
+| `/sign-up`                            | `auth`               | `RegisterForm` wrapped in `AuthShell`                                   |
+| `/forgot-password`                    | `auth`               | `ForgotPasswordForm` wrapped in `AuthShell`                             |
+| `/dashboard`                          | `dashboard` (Shared) | Composition of `WorkspaceList`, `NotificationBell`, and `RecentSection` |
+| `/[workspaceId]`                      | `workspace`          | `WorkspaceHomeScreen` composing recent boards + recent docs             |
+| `/[workspaceId]/boards/[boardId]`     | `work-management`    | `WorkspaceBoardShell` composing `WorkspaceViewTabs` and active view     |
+| `/[workspaceId]/docs/[pageId]`        | `docs`               | `DocsWorkspaceChrome` rendering `DocumentEditor`                        |
+| `/[workspaceId]/settings/members`     | `workspace`          | `WorkspaceManagementPanel` with tab set to "members"                    |
+| `/[workspaceId]/settings/billing`     | `billing`            | `WorkspaceManagementPanel` with tab set to "billing"                    |
+| `/[workspaceId]/settings/permissions` | `governance`         | `WorkspaceManagementPanel` with tab set to "permissions"                |
+| `/account/profile`                    | `account`            | `AccountLayout` rendering `ProfileForm`                                 |
+| `/invite/[token]`                     | `auth` / `workspace` | `InviteClientPage` displaying workspace details and accept button       |
 
 > [!IMPORTANT]
 > **View Routing Principle**: Board view is a presentation state. Separate routing paths (like `/[workspaceId]/boards/[boardId]/table`) are **strictly forbidden**. All board view switches (Table, Kanban, Calendar, Timeline) must resolve through the search query parameter `?view=...` on the base board route.
@@ -260,16 +275,20 @@ Next.js App Router routes act as pure **composers**. They must map explicitly to
 To enforce consistency across all features, the following software engineering contracts are established:
 
 ### 7.1. Naming Conventions
-*   **DTOs (Data Transfer Objects)**: Suffix with `DtoApi` (e.g., `BoardDtoApi`, `CardSummaryDtoApi`). Represents the raw JSON payload from the backend.
-*   **ViewModels (Frontend Models)**: Clean camelCase interfaces without the DTO suffix (e.g., `Board`, `Card`, `WorkspaceMember`). Represents the normalized data consumed by React.
-*   **FormValues**: Suffix with `Request` or `FormData` (e.g., `LoginRequest`, `ForgotPasswordRequest`, `CreateWorkspaceInput`). Matches the payload sent to the API.
+
+- **DTOs (Data Transfer Objects)**: Suffix with `DtoApi` (e.g., `BoardDtoApi`, `CardSummaryDtoApi`). Represents the raw JSON payload from the backend.
+- **ViewModels (Frontend Models)**: Clean camelCase interfaces without the DTO suffix (e.g., `Board`, `Card`, `WorkspaceMember`). Represents the normalized data consumed by React.
+- **FormValues**: Suffix with `Request` or `FormData` (e.g., `LoginRequest`, `ForgotPasswordRequest`, `CreateWorkspaceInput`). Matches the payload sent to the API.
 
 ### 7.2. Mapper Rules
-*   All backend API payloads **must** pass through a mapper function (e.g., `mapBoardDto`) in the `model/` folder of the feature before being stored in the TanStack Query cache.
-*   Direct consumption of raw DTOs in React components is **forbidden**.
+
+- All backend API payloads **must** pass through a mapper function (e.g., `mapBoardDto`) in the `model/` folder of the feature before being stored in the TanStack Query cache.
+- Direct consumption of raw DTOs in React components is **forbidden**.
 
 ### 7.3. Query Key Taxonomy
+
 All query keys must be declared in `lib/query/query-keys.ts` using a structured key factory:
+
 ```ts
 export const queryKeys = {
   auth: {
@@ -283,53 +302,64 @@ export const queryKeys = {
     detail: (id: string) => ["boards", id] as const,
   },
   // Hardcoded inline array keys in useQuery are forbidden.
-}
+};
 ```
 
 ### 7.4. Mutation Invalidation & Optimistic Updates
-*   **Cache Invalidation**: Mutations must declare explicit cache invalidations on success rather than relying on global refetches:
-    ```ts
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.boards.detail(boardId) })
-    }
-    ```
-*   **Optimistic Updates**: High-frequency user interactions (e.g., moving a card in Kanban, editing a table cell) must implement optimistic updates by writing directly to the cache using `queryClient.setQueryData`, with full rollback handlers in `onError`.
+
+- **Cache Invalidation**: Mutations must declare explicit cache invalidations on success rather than relying on global refetches:
+  ```ts
+  onSuccess: () => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.boards.detail(boardId),
+    });
+  };
+  ```
+- **Optimistic Updates**: High-frequency user interactions (e.g., moving a card in Kanban, editing a table cell) must implement optimistic updates by writing directly to the cache using `queryClient.setQueryData`, with full rollback handlers in `onError`.
 
 ### 7.5. Permission Evaluation & Entitlement Guards
-*   All visual action triggers (buttons, menus) must be wrapped using the centralized `useCan` helper.
-*   Features must not evaluate raw role strings locally.
-*   Route-level authorization is handled in Next.js Middleware or Server Component wrappers.
+
+- All visual action triggers (buttons, menus) must be wrapped using the centralized `useCan` helper.
+- Features must not evaluate raw role strings locally.
+- Route-level authorization is handled in Next.js Middleware or Server Component wrappers.
 
 ### 7.6. Error, Loading & Access-Denied States
-*   Each feature must export a loading skeleton (e.g., `BoardSkeleton`) and an error boundary state.
-*   Forbidden actions must render a standardized `AccessDeniedState` from `components/feedback/`.
+
+- Each feature must export a loading skeleton (e.g., `BoardSkeleton`) and an error boundary state.
+- Forbidden actions must render a standardized `AccessDeniedState` from `components/feedback/`.
 
 ### 7.7. Realtime Event Handling
-*   Realtime event listeners (WebSockets/SSE) must be declared in `useEffect` hooks and dispatch actions directly into the TanStack Query cache via `queryClient.setQueryData` to keep UI in sync across clients.
+
+- Realtime event listeners (WebSockets/SSE) must be declared in `useEffect` hooks and dispatch actions directly into the TanStack Query cache via `queryClient.setQueryData` to keep UI in sync across clients.
 
 ### 7.8. Performance Rules
-*   Large list structures (e.g., Table view rows, page trees) **must** use virtual windowing (e.g., React Virtualized or simple CSS containment) if items exceed 200.
-*   Prevent unnecessary re-renders in Table cells by memoizing column definition arrays and utilizing fine-grained Zustand selector states.
+
+- Large list structures (e.g., Table view rows, page trees) **must** use virtual windowing (e.g., React Virtualized or simple CSS containment) if items exceed 200.
+- Prevent unnecessary re-renders in Table cells by memoizing column definition arrays and utilizing fine-grained Zustand selector states.
 
 ---
 
 ## 8. Testing & Observability Architecture
 
 ### 8.1. Testing Architecture
+
 We employ a three-tier testing model:
+
 1.  **Domain Tests (Unit)**: Testing mappers, utility functions (e.g., fractional indexing), and state hooks in isolation using `bun test`.
 2.  **API Contract Tests**: Automated static analysis to verify that features do not import legacy modules and that API configurations remain strictly versioned.
 3.  **End-to-End Tests (E2E)**: High-criticality flows (login, workspace creation, card movement) tested via Playwright.
 
 ### 8.2. Observability & Telemetry Rules
-*   All fetch errors must be automatically logged by the Axios interceptor in `lib/api/api-client.ts` to Sentry/OpenTelemetry.
-*   Crucial user actions (e.g., view changes, document export) must trigger a telemetry event using a centralized `trackEvent` helper in `lib/telemetry`.
+
+- All fetch errors must be automatically logged by the Axios interceptor in `lib/api/api-client.ts` to Sentry/OpenTelemetry.
+- Crucial user actions (e.g., view changes, document export) must trigger a telemetry event using a centralized `trackEvent` helper in `lib/telemetry`.
 
 ---
 
 ## 9. Architecture Enforcement Rules (Quality Gate)
 
 To prevent architectural drift, the following automated gates are set up:
+
 1.  **ESLint Boundaries**: Using `eslint-plugin-import` to block cross-feature deep imports.
 2.  **TypeScript Compilation**: `tsc --noEmit` must be run in pre-commit hooks.
 3.  **CI Pipeline Gate**: Any PR that references forbidden imports, has circular dependencies, or skips DTO mappers will fail the build and be blocked from merging.
@@ -339,62 +369,69 @@ To prevent architectural drift, the following automated gates are set up:
 ## 10. Enterprise Product Readiness & Policy
 
 ### 10.1. Production Readiness Definition
+
 To be classified as **Production-Ready**, a feature slice must satisfy all the following rules:
-*   **Backend Integrated**: Uses real Axios API clients to query PostgreSQL/Redis. No mock stubs in production critical paths.
-*   **Permission-Aware**: UI access is governed strictly by capability checks via `useCan()` or `hasPermission()`. Zero raw role string checks.
-*   **Entitlement-Aware**: High-tier features verify subscription boundaries prior to rendering actions.
-*   **Error/Loading Resilient**: Implements standard loading skeletons, error fallbacks, and empty visual cards.
-*   **Centralized Query Cache**: Leverages centralized `queryKeys` factories with strict invalidations scoped per mutation.
-*   **Zero Quality Debt**: Compiles without warnings, has passing Vitest unit tests, and complies with architecture gates.
+
+- **Backend Integrated**: Uses real Axios API clients to query PostgreSQL/Redis. No mock stubs in production critical paths.
+- **Permission-Aware**: UI access is governed strictly by capability checks via `useCan()` or `hasPermission()`. Zero raw role string checks.
+- **Entitlement-Aware**: High-tier features verify subscription boundaries prior to rendering actions.
+- **Error/Loading Resilient**: Implements standard loading skeletons, error fallbacks, and empty visual cards.
+- **Centralized Query Cache**: Leverages centralized `queryKeys` factories with strict invalidations scoped per mutation.
+- **Zero Quality Debt**: Compiles without warnings, has passing Vitest unit tests, and complies with architecture gates.
 
 ### 10.2. Feature Readiness Matrix
 
 | Feature | Architecture Status | Backend Integration | UI Completeness | Test Coverage | Production Readiness | Notes |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| :------ | :------------------ | :------------------ | :-------------- | :------------ | :------------------- | :---- |
+
 ### 10.2. Feature Readiness Matrix
 
-| Feature | Architecture Status | Backend Integration | UI Completeness | Test Coverage | Production Readiness | Notes |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **auth** | Aligned (Public API) | Real API (JWT/Cookie) | Completed | High | **Production-Ready** | Handles refresh token mutex. |
-| **account** | Aligned (Public API) | Real API | Completed | Medium | **Production-Ready** | User preferences and settings. |
-| **workspace** | Aligned (Public API) | Real API | Completed | High | **Production-Ready** | Members, switchers, and invites. |
-| **work-management** | Aligned (Public API) | Real API | Completed | High | **Production-Ready** | Table, Kanban, Calendar, Timeline views. |
-| **docs** | Aligned (Public API) | Real API | Completed | Medium | **Production-Ready** | Notion-like document editor & page trees. |
-| **notifications** | Aligned (Public API) | Real API | Completed | Medium | **Integration-Ready** | Actionable activity updates feed. |
-| **activity** | Aligned (Public API) | Real API | Completed | Medium | **Integration-Ready** | Audit logs feed integrated. |
-| **collaboration** | Aligned (Public API) | Stubbed | Completed | Low | **Architecture-Ready** | Mentions/comments structure defined. |
-| **billing** | Aligned (Public API) | Stubbed | Completed | Low | **Contract-Ready** | Plan stubs defined in billingApi contract. |
-| **search** | Aligned (Public API) | Stubbed | Completed | Low | **Contract-Ready** | Simulated search queries. |
-| **governance** | Aligned (Public API) | None (UI-only) | Static Tabs | None | **Mock-Only** | Static tab in Workspace Settings. |
-| **automation** | Aligned (Public API) | None (UI-only) | Static Tabs | None | **Mock-Only** | Switch-only rules stubs. |
-| **integrations** | Aligned (Public API) | None (UI-only) | Static Tabs | None | **Mock-Only** | Static connections panel stubs. |
+| Feature             | Architecture Status  | Backend Integration   | UI Completeness | Test Coverage | Production Readiness   | Notes                                      |
+| :------------------ | :------------------- | :-------------------- | :-------------- | :------------ | :--------------------- | :----------------------------------------- |
+| **auth**            | Aligned (Public API) | Real API (JWT/Cookie) | Completed       | High          | **Production-Ready**   | Handles refresh token mutex.               |
+| **account**         | Aligned (Public API) | Real API              | Completed       | Medium        | **Production-Ready**   | User preferences and settings.             |
+| **workspace**       | Aligned (Public API) | Real API              | Completed       | High          | **Production-Ready**   | Members, switchers, and invites.           |
+| **work-management** | Aligned (Public API) | Real API              | Completed       | High          | **Production-Ready**   | Table, Kanban, Calendar, Timeline views.   |
+| **docs**            | Aligned (Public API) | Real API              | Completed       | Medium        | **Production-Ready**   | Notion-like document editor & page trees.  |
+| **notifications**   | Aligned (Public API) | Real API              | Completed       | Medium        | **Integration-Ready**  | Actionable activity updates feed.          |
+| **activity**        | Aligned (Public API) | Real API              | Completed       | Medium        | **Integration-Ready**  | Audit logs feed integrated.                |
+| **collaboration**   | Aligned (Public API) | Stubbed               | Completed       | Low           | **Architecture-Ready** | Mentions/comments structure defined.       |
+| **billing**         | Aligned (Public API) | Stubbed               | Completed       | Low           | **Contract-Ready**     | Plan stubs defined in billingApi contract. |
+| **search**          | Aligned (Public API) | Stubbed               | Completed       | Low           | **Contract-Ready**     | Simulated search queries.                  |
+| **governance**      | Aligned (Public API) | None (UI-only)        | Static Tabs     | None          | **Mock-Only**          | Static tab in Workspace Settings.          |
+| **automation**      | Aligned (Public API) | None (UI-only)        | Static Tabs     | None          | **Mock-Only**          | Switch-only rules stubs.                   |
+| **integrations**    | Aligned (Public API) | None (UI-only)        | Static Tabs     | None          | **Mock-Only**          | Static connections panel stubs.            |
 
 ### 10.3. Composition Boundary Policy
-*   **Settings Presentation Composition**: `WorkspaceManagementPanel` acts as a composite page rendering tabs from governance, automation, integrations, and activity. It must import them as isolated black-box UI components through their public barrels.
-*   **Hook Decoupling**: Sibling features must not import each other's internal query hooks. For example, `useWorkspaceSnapshot` cannot import `useWorkspaceActivity` directly. The composition of multiple sibling states must happen at the `app/` page layer.
+
+- **Settings Presentation Composition**: `WorkspaceManagementPanel` acts as a composite page rendering tabs from governance, automation, integrations, and activity. It must import them as isolated black-box UI components through their public barrels.
+- **Hook Decoupling**: Sibling features must not import each other's internal query hooks. For example, `useWorkspaceSnapshot` cannot import `useWorkspaceActivity` directly. The composition of multiple sibling states must happen at the `app/` page layer.
 
 ### 10.4. Mock/Stub Policy
-*   **Allowed Contract Stubs**: Permitted when a backend endpoint does not exist yet. Must reside in a `mock/` subdirectory, match types defined in `types/`, and be excluded from production build paths.
-*   **Forbidden Mocking**: Call mock hooks on critical paths that have active endpoints. Fake permission guards or fake feature entitlements without fallback guards.
+
+- **Allowed Contract Stubs**: Permitted when a backend endpoint does not exist yet. Must reside in a `mock/` subdirectory, match types defined in `types/`, and be excluded from production build paths.
+- **Forbidden Mocking**: Call mock hooks on critical paths that have active endpoints. Fake permission guards or fake feature entitlements without fallback guards.
 
 ### 10.5. Permission/Entitlement Policy
-*   **No Raw Checks**: Do not write `member.role === 'admin'` or `subscription.plan === 'free'` in UI components.
-*   **Centralized Guards**: Call `const { can } = useCan()` for actions, and `const { hasFeature } = useEntitlements()` for pricing limits.
+
+- **No Raw Checks**: Do not write `member.role === 'admin'` or `subscription.plan === 'free'` in UI components.
+- **Centralized Guards**: Call `const { can } = useCan()` for actions, and `const { hasFeature } = useEntitlements()` for pricing limits.
 
 ### 10.6. Route Ownership Matrix
 
-| Route | Owner Feature | Composition Dependencies |
-| :--- | :--- | :--- |
-| `/` | `marketing/app` | `auth` |
-| `/sign-in` | `auth` | None |
-| `/sign-up` | `auth` | None |
-| `/home` | `dashboard` (composition) | `workspace`, `activity`, `work-management` |
-| `/[workspaceId]` | `workspace` (composition) | `activity`, `work-management`, `docs` |
-| `/[workspaceId]/boards/[boardId]` | `work-management` | `workspace` (via route-tabbed layout) |
-| `/[workspaceId]/docs/[pageId]` | `docs` | `workspace` (via route-tabbed layout) |
-| `/account/profile` | `account` | None |
+| Route                             | Owner Feature             | Composition Dependencies                   |
+| :-------------------------------- | :------------------------ | :----------------------------------------- |
+| `/`                               | `marketing/app`           | `auth`                                     |
+| `/sign-in`                        | `auth`                    | None                                       |
+| `/sign-up`                        | `auth`                    | None                                       |
+| `/home`                           | `dashboard` (composition) | `workspace`, `activity`, `work-management` |
+| `/[workspaceId]`                  | `workspace` (composition) | `activity`, `work-management`, `docs`      |
+| `/[workspaceId]/boards/[boardId]` | `work-management`         | `workspace` (via route-tabbed layout)      |
+| `/[workspaceId]/docs/[pageId]`    | `docs`                    | `workspace` (via route-tabbed layout)      |
+| `/account/profile`                | `account`                 | None                                       |
 
 ### 10.7. Quality Debt Register
+
 1.  **Tabbed Shell Coupling**: `work-management` views rely on `WorkspaceTabbedRouteFrame` layout. Will be resolved by moving the tabbed shell structure into `features/workspace` in the next phase.
 
 ---
@@ -402,33 +439,41 @@ To be classified as **Production-Ready**, a feature slice must satisfy all the f
 ## 11. Frontend Foundation Lock (Phase 11 Update)
 
 ### 11.1. Legacy Compatibility Policy
-*   The legacy compatibility folder `features/boards/` has been **deleted**. All active board views and card editors now reside in `@/features/work-management/`.
-*   Legacy query key aliases (e.g., `queryKeys.boards`, `queryKeys.cards`, `queryKeys.pages`) in [query-keys.ts](file:///Users/nqvinh/Documents/projects/notrelix/frontend/lib/query/query-keys.ts) are preserved solely for backwards compatibility during this transition and will be progressively refactored to use `queryKeys.workManagement` and `queryKeys.docs`.
+
+- The legacy compatibility folder `features/boards/` has been **deleted**. All active board views and card editors now reside in `@/features/work-management/`.
+- Legacy query key aliases (e.g., `queryKeys.boards`, `queryKeys.cards`, `queryKeys.pages`) in [query-keys.ts](file:///Users/nqvinh/Documents/projects/notrelix/frontend/lib/query/query-keys.ts) are preserved solely for backwards compatibility during this transition and will be progressively refactored to use `queryKeys.workManagement` and `queryKeys.docs`.
 
 ### 11.2. Theme Infrastructure Policy
-*   Color theme management has been moved entirely out of the `features/` directory and into [lib/theme](file:///Users/nqvinh/Documents/projects/notrelix/frontend/lib/theme).
-*   Theme configuration is considered **technical UI infrastructure**, not a business capability. Settings pages can consume the hook but must not own the files.
-*   The previous `setTimeout` hydration workaround in `useColorTheme` has been removed. Local storage sync is handled safely inside standard React lifecycle effects.
+
+- Color theme management has been moved entirely out of the `features/` directory and into [lib/theme](file:///Users/nqvinh/Documents/projects/notrelix/frontend/lib/theme).
+- Theme configuration is considered **technical UI infrastructure**, not a business capability. Settings pages can consume the hook but must not own the files.
+- The previous `setTimeout` hydration workaround in `useColorTheme` has been removed. Local storage sync is handled safely inside standard React lifecycle effects.
 
 ### 11.3. UX State Component Contract
+
 A set of business-blind, premium feedback components has been standardized in [components/feedback](file:///Users/nqvinh/Documents/projects/notrelix/frontend/components/feedback):
-*   `LoadingState`: Spinning loader with custom title/description.
-*   `EmptyState`: Dash-bordered card with icon, title, description, and action button.
-*   `ErrorState`: Red-alert card accepting raw errors, displaying `AppError` messages automatically.
-*   `AccessDeniedState`: Amber-alert card for permission gate failures.
-*   `NotFoundState`: Generic resource-not-found state.
-*   `MockDisabledState`: Gated feature warning when mock mode is turned off.
+
+- `LoadingState`: Spinning loader with custom title/description.
+- `EmptyState`: Dash-bordered card with icon, title, description, and action button.
+- `ErrorState`: Red-alert card accepting raw errors, displaying `AppError` messages automatically.
+- `AccessDeniedState`: Amber-alert card for permission gate failures.
+- `NotFoundState`: Generic resource-not-found state.
+- `MockDisabledState`: Gated feature warning when mock mode is turned off.
 
 These components are business-blind: they do not reference board, docs, or workspace terms directly. Feature screens must pass descriptive strings and action buttons as props.
 
 ### 11.4. App Shell and Layout Contract
+
 Layout ownership is split into three clean layers:
+
 1.  **Route-Specific Shells** (`app/(workspace)/[workspaceId]/_components/shell`): Owns Next.js route-specific tabbed frame wrappers and sidebar viewport layouts.
 2.  **Generic Visual Layouts** (`components/layout`): Business-blind visual grids, flex frames, and responsive page container classes.
 3.  **Workspace-Aware Shells** (`features/workspace/components`): Reusable, workspace-contextual components (e.g. member switcher dropdown, invitation menus) that do not depend on specific route parameters.
 
 ### 11.5. Form and Mutation UX Contract
+
 All forms and mutations must adhere to the following contract:
+
 1.  **Validation**: Use `react-hook-form` + `zod` for all complex inputs.
 2.  **Server Mapping**: HTTP 400/422 validation errors must be passed through `applyServerValidationErrors(form, error)` to bind error messages directly to input fields.
 3.  **Pending States**: Form submit buttons must show a loading spinner and disable interactions when `mutation.isPending` is true.
@@ -437,8 +482,7 @@ All forms and mutations must adhere to the following contract:
 6.  **Silent Mutation Errors**: If a form UI already displays the error message, the mutation hook must suppress global error toasts (using `skipGlobalErrorToast: true` in the API options) to prevent double-toasting.
 
 ### 11.6. E2E Smoke Readiness
-*   An E2E smoke testing plan has been drafted in [E2E_SMOKE_PLAN.md](file:///Users/nqvinh/Documents/projects/notrelix/frontend/E2E_SMOKE_PLAN.md).
-*   Minimum smoke flows cover: Sign-in, Auth Refresh Failure Redirect, Workspace Switcher, Board Tab Switching, Docs Editor Interaction, Mock Disabled State, and Access Denied State.
-*   Playwright is the designated E2E framework. Tests will run against the local development server in the CI pipeline.
 
-
+- An E2E smoke testing plan has been drafted in [E2E_SMOKE_PLAN.md](file:///Users/nqvinh/Documents/projects/notrelix/frontend/E2E_SMOKE_PLAN.md).
+- Minimum smoke flows cover: Sign-in, Auth Refresh Failure Redirect, Workspace Switcher, Board Tab Switching, Docs Editor Interaction, Mock Disabled State, and Access Denied State.
+- Playwright is the designated E2E framework. Tests will run against the local development server in the CI pipeline.

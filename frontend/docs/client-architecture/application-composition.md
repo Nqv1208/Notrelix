@@ -7,6 +7,7 @@
 ## 1. Composition Root Responsibilities
 
 The Composition Root in `apps/web/src/composition` is the single source of truth for instantiating long-lived system singletons:
+
 1. **API Client:** `NotrelixClient` created with `createNotrelixClient`.
 2. **Query Client:** `QueryClient` initialized with standard retry and failure policies.
 3. **Realtime Client:** `RealtimeClient` initialized with browser WebSocket factory and state machine parameters.

@@ -1,15 +1,23 @@
+import { workspaceQueryKey } from "@notrelix/query";
+
 export const automationQueryKeys = {
-  all: ['automation'] as const,
-  workspace: (workspaceId: string) =>
-    [...automationQueryKeys.all, 'workspace', workspaceId] as const,
+  all: (workspaceId: string) => workspaceQueryKey(workspaceId, "automation"),
   rules: (workspaceId: string) =>
-    [...automationQueryKeys.workspace(workspaceId), 'rules'] as const,
-  ruleDetail: (ruleId: string) =>
-    [...automationQueryKeys.all, 'rules', ruleId] as const,
+    workspaceQueryKey(workspaceId, "automation", "rules"),
+  ruleDetail: (workspaceId: string, ruleId: string) =>
+    workspaceQueryKey(workspaceId, "automation", "rules", ruleId),
   executionHistory: (workspaceId: string, ruleId?: string) =>
-    [...automationQueryKeys.workspace(workspaceId), 'executions', { ruleId: ruleId ?? null }] as const,
-  executionDetail: (executionId: string) =>
-    [...automationQueryKeys.all, 'executions', executionId] as const,
+    ruleId
+      ? workspaceQueryKey(
+          workspaceId,
+          "automation",
+          "executions",
+          "rule",
+          ruleId,
+        )
+      : workspaceQueryKey(workspaceId, "automation", "executions"),
+  executionDetail: (workspaceId: string, executionId: string) =>
+    workspaceQueryKey(workspaceId, "automation", "executions", executionId),
   templates: (workspaceId: string) =>
-    [...automationQueryKeys.workspace(workspaceId), 'templates'] as const,
-};
+    workspaceQueryKey(workspaceId, "automation", "templates"),
+} as const;
