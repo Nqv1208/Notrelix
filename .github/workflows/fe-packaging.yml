@@ -16,6 +16,7 @@ on:
       - "frontend/pnpm-workspace.yaml"
       - "frontend/.npmrc"
       - "frontend/turbo.json"
+      - ".dockerignore"
       - ".github/workflows/fe-packaging.yml"
   push:
     branches: [main, develop]
@@ -31,6 +32,7 @@ on:
       - "frontend/pnpm-workspace.yaml"
       - "frontend/.npmrc"
       - "frontend/turbo.json"
+      - ".dockerignore"
       - ".github/workflows/fe-packaging.yml"
 
 permissions:
