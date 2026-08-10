@@ -14,7 +14,8 @@
   "scripts": {
     "test": "vitest run",
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@notrelix/contracts": "workspace:*",
@@ -28,6 +29,7 @@
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

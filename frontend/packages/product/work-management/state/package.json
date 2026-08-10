@@ -10,7 +10,8 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@notrelix/work-management-core": "workspace:*",
@@ -27,6 +28,7 @@
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
     "@types/node": "^20.0.0",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

@@ -8,5 +8,8 @@
     "web-app.json",
     "mobile-app.json",
     "node-tooling.json"
-  ]
+  ],
+  "devDependencies": {
+    "@notrelix/eslint-config": "workspace:*"
+  }
 }

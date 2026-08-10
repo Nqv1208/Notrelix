@@ -11,13 +11,15 @@
   "scripts": {
     "clean": "rm -rf node_modules dist",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "dependencies": {
     "lucide-react": "^0.562.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }
