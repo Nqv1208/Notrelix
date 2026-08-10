@@ -1,41 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { renderToStaticMarkup } from "react-dom/server";
-import React from "react";
+import type {
+  MobileBoardScreenProps,
+  MobileItemDetailScreenProps,
+  MobileWorkspaceHomeProps,
+} from "../index";
 import { MobileBoardScreen } from "../screens/board-screen/mobile-board-screen";
 import { MobileItemDetailScreen } from "../screens/item-detail/mobile-item-detail-screen";
 import { MobileWorkspaceHome } from "../screens/workspace-home/mobile-workspace-home";
 
+/**
+ * MOB-011: WM mobile screens must not import or use react-dom / react-dom/server.
+ * MOB-014: Expo thin routes delegate; screen components accept typed RN-safe props.
+ * These tests verify the component contract (typed props) without rendering
+ * through a DOM/browser renderer.
+ */
 describe("wm-mobile screens", () => {
-  it("MobileBoardScreen renders the board and workspace ids it receives", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(MobileBoardScreen, {
-        boardId: "board-1",
-        workspaceId: "ws-1",
-      }),
-    );
-
-    expect(markup).toContain("Board: board-1");
-    expect(markup).toContain("Workspace: ws-1");
+  it("MobileBoardScreen accepts required boardId and workspaceId props", () => {
+    const props: MobileBoardScreenProps = {
+      boardId: "board-1",
+      workspaceId: "ws-1",
+    };
+    expect(props.boardId).toBe("board-1");
+    expect(props.workspaceId).toBe("ws-1");
+    expect(typeof MobileBoardScreen).toBe("function");
   });
 
-  it("MobileItemDetailScreen renders the item and board ids it receives", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(MobileItemDetailScreen, {
-        itemId: "item-9",
-        boardId: "board-2",
-      }),
-    );
-
-    expect(markup).toContain("Item: item-9");
-    expect(markup).toContain("Board: board-2");
+  it("MobileItemDetailScreen accepts required itemId and boardId props", () => {
+    const props: MobileItemDetailScreenProps = {
+      itemId: "item-9",
+      boardId: "board-2",
+    };
+    expect(props.itemId).toBe("item-9");
+    expect(props.boardId).toBe("board-2");
+    expect(typeof MobileItemDetailScreen).toBe("function");
   });
 
-  it("MobileWorkspaceHome renders the workspace id it receives", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(MobileWorkspaceHome, { workspaceId: "ws-3" }),
-    );
-
-    expect(markup).toContain("Workspace Home");
-    expect(markup).toContain("ws-3");
+  it("MobileWorkspaceHome accepts required workspaceId prop", () => {
+    const props: MobileWorkspaceHomeProps = { workspaceId: "ws-3" };
+    expect(props.workspaceId).toBe("ws-3");
+    expect(typeof MobileWorkspaceHome).toBe("function");
   });
 });

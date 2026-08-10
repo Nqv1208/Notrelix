@@ -18,12 +18,12 @@
     "@notrelix/work-management-plugins": "workspace:*",
     "@notrelix/ui-mobile": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "react": "^19.0.0"
+    "react": "catalog:",
+    "react-native": "latest"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+    "@types/react-native": "^0.73.0"
   }
 }
