@@ -1,0 +1,9 @@
+.git
+**/node_modules
+**/.turbo
+**/.next
+**/.expo
+**/dist
+**/coverage
+**/playwright-report
+**/test-results
