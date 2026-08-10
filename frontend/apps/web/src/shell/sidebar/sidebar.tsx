@@ -16,20 +16,14 @@ import {
 import { ScrollArea } from "@notrelix/ui-web";
 import { GlobalSearch } from "../global-search";
 import { WorkspaceSwitcher } from "./workspace-switcher";
-import {
-  Bell,
-  ChevronDown,
-  Home,
-  Inbox,
-  LifeBuoy,
-  MessageSquareText,
-  Search,
-  Settings,
-  Star,
-  UserRoundCheck,
-} from "lucide-react";
+import { ChevronDown, Search, Star } from "lucide-react";
 import type { WorkspaceMember } from "@notrelix/features-workspace/core";
 import { cn } from "@notrelix/ui-web";
+import {
+  PRIMARY_NAV_CONTRIBUTIONS,
+  SUPPORT_NAV_CONTRIBUTIONS,
+  type NavigationContribution,
+} from "../navigation-contributions";
 
 const avatarColors = [
   "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
@@ -41,12 +35,7 @@ const avatarColors = [
   "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
 ];
 
-type NavItem = {
-  label: string;
-  icon: typeof Home;
-  to: string;
-  params: Record<string, string>;
-};
+type NavItem = NavigationContribution;
 
 function SidebarSection({
   title,
@@ -101,53 +90,15 @@ export function WorkspaceSidebar() {
     [views, workspaceId],
   );
 
-  const primaryNav: NavItem[] = [
-    {
-      label: "Home",
-      icon: Home,
-      to: "/workspaces/$workspaceId",
-      params: { workspaceId },
-    },
-    {
-      label: "My Work",
-      icon: UserRoundCheck,
-      to: "/workspaces/$workspaceId",
-      params: { workspaceId },
-    },
-    {
-      label: "Inbox",
-      icon: Inbox,
-      to: "/workspaces/$workspaceId",
-      params: { workspaceId },
-    },
-    {
-      label: "Notifications",
-      icon: Bell,
-      to: "/workspaces/$workspaceId",
-      params: { workspaceId },
-    },
-    {
-      label: "Chat Rooms",
-      icon: MessageSquareText,
-      to: "/workspaces/$workspaceId",
-      params: { workspaceId },
-    },
-  ];
+  const primaryNav: NavItem[] = PRIMARY_NAV_CONTRIBUTIONS.map((c) => ({
+    ...c,
+    to: c.to.replace("$workspaceId", workspaceId),
+  }));
 
-  const supportNav: NavItem[] = [
-    {
-      label: "Help / Support",
-      icon: LifeBuoy,
-      to: "/workspaces/$workspaceId",
-      params: { workspaceId },
-    },
-    {
-      label: "Settings",
-      icon: Settings,
-      to: "/workspaces/$workspaceId/settings",
-      params: { workspaceId },
-    },
-  ];
+  const supportNav: NavItem[] = SUPPORT_NAV_CONTRIBUTIONS.map((c) => ({
+    ...c,
+    to: c.to.replace("$workspaceId", workspaceId),
+  }));
 
   return (
     <aside className="w-64 border-r bg-card flex flex-col h-screen text-card-foreground">
@@ -169,16 +120,13 @@ export function WorkspaceSidebar() {
         <nav className="space-y-1">
           {primaryNav.map((item) => {
             const isActive =
-              item.to === "/workspaces/$workspaceId"
+              item.to === `/workspaces/${workspaceId}`
                 ? pathname === `/workspaces/${workspaceId}`
-                : pathname.startsWith(
-                    item.to.replace("$workspaceId", workspaceId),
-                  );
+                : pathname.startsWith(item.to);
             return (
               <Link
-                key={item.label}
+                key={item.id}
                 to={item.to as "/workspaces/$workspaceId"}
-                params={item.params}
                 className={cn(
                   "flex h-9 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
                   isActive && "bg-accent text-accent-foreground",
@@ -251,9 +199,8 @@ export function WorkspaceSidebar() {
         <div className="space-y-1">
           {supportNav.map((item) => (
             <Link
-              key={item.label}
+              key={item.id}
               to={item.to as "/workspaces/$workspaceId"}
-              params={item.params}
               className="flex h-9 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
               <item.icon className="size-4 shrink-0" />
