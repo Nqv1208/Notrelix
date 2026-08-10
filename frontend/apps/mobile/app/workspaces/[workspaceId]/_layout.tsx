@@ -1,16 +1,16 @@
 import React, { useEffect } from "react";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useMobileRuntime } from "@notrelix/runtime-mobile";
+import { useMobileApplicationServices } from "@notrelix/runtime-mobile";
 
 export default function WorkspaceLayout() {
   const { workspaceId } = useLocalSearchParams<{ workspaceId: string }>();
-  const runtime = useMobileRuntime();
+  const { workspaceLifecycle } = useMobileApplicationServices();
 
   useEffect(() => {
     if (workspaceId) {
-      runtime.realtime.connect({ sessionGeneration: workspaceId });
+      workspaceLifecycle.prepareWorkspaceTransition(workspaceId);
     }
-  }, [workspaceId, runtime]);
+  }, [workspaceId, workspaceLifecycle]);
 
   return (
     <Stack>

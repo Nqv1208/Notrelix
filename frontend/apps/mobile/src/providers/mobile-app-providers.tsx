@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import {
   createMobileRuntime,
   MobileRuntimeProvider,
+  MobileApplicationServicesProvider,
   createMobileApplicationServices,
 } from "@notrelix/runtime-mobile";
 
@@ -18,10 +19,12 @@ export function MobileAppProviders({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <QueryClientProvider client={services.queryClient}>
-      <MobileRuntimeProvider runtime={services.runtime}>
-        {children}
-      </MobileRuntimeProvider>
-    </QueryClientProvider>
+    <MobileApplicationServicesProvider services={services}>
+      <QueryClientProvider client={services.queryClient}>
+        <MobileRuntimeProvider runtime={services.runtime}>
+          {children}
+        </MobileRuntimeProvider>
+      </QueryClientProvider>
+    </MobileApplicationServicesProvider>
   );
 }
