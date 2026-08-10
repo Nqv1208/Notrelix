@@ -19,6 +19,7 @@ export interface ResolvedRuntimeEnvironment {
   readonly realtimeUrl: string;
   readonly wsUrl: string; // Alias for realtimeUrl backward compatibility
   readonly appUrl: string;
+  readonly webUrl: string; // Alias for appUrl backward compatibility
   readonly releaseSha: string;
   readonly mockApi: boolean;
   readonly nodeEnv: RuntimeMode; // Alias for mode backward compatibility
@@ -70,18 +71,24 @@ export function parseEnv(
   const rawApiUrl =
     (input.apiUrl as string) ||
     (input.VITE_API_URL as string) ||
-    (input.NEXT_PUBLIC_API_URL as string);
+    (input.NEXT_PUBLIC_API_URL as string) ||
+    (input.EXPO_PUBLIC_API_URL as string);
 
   const rawRealtimeUrl =
     (input.realtimeUrl as string) ||
     (input.VITE_WS_URL as string) ||
-    (input.NEXT_PUBLIC_WS_URL as string);
+    (input.NEXT_PUBLIC_WS_URL as string) ||
+    (input.EXPO_PUBLIC_REALTIME_URL as string);
 
-  const rawAppUrl = (input.appUrl as string) || (input.VITE_APP_URL as string);
+  const rawAppUrl =
+    (input.appUrl as string) ||
+    (input.VITE_APP_URL as string) ||
+    (input.EXPO_PUBLIC_APP_URL as string);
 
   const releaseSha =
     (input.releaseSha as string) ||
     (input.VITE_RELEASE_SHA as string) ||
+    (input.EXPO_PUBLIC_RELEASE_SHA as string) ||
     "dev-local";
 
   const mockApi =
@@ -125,6 +132,7 @@ export function parseEnv(
     realtimeUrl: resolvedRealtimeUrl,
     wsUrl: resolvedRealtimeUrl,
     appUrl: resolvedAppUrl,
+    webUrl: resolvedAppUrl,
     releaseSha,
     mockApi,
     nodeEnv: mode,
