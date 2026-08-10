@@ -19,7 +19,7 @@ export async function createAutomationRuleCommand(input: {
     commandId: input.commandId,
     updates: [],
     variables: input.variables,
-    mutationFn: (variables, context) =>
+    mutationFn: (variables, _context) =>
       input.repositories.rules.create({
         ...variables,
         name: variables.name.trim(),

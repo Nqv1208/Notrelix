@@ -18,7 +18,7 @@ export function KanbanBoard({
   workspaceId,
   onOpenDetails,
   onMoveCard,
-  onReorderColumns,
+  onReorderColumns: _onReorderColumns,
   onAdd,
   onRenameColumn,
   onColorChangeColumn,

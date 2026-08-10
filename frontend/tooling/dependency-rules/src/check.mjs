@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process */
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

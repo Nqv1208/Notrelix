@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { createBrowserWebSocketFactory } from "../browser-websocket-factory";
+import type { RealtimeTransport } from "@notrelix/realtime";
+import type { TelemetryPort } from "@notrelix/observability";
 
 // Capture constructor arguments of the canonical RealtimeClient when the
 // runtime composes its default realtime transport.
@@ -79,7 +81,7 @@ describe("browser realtime socket factory", () => {
 
 describe("app runtime realtime composition", () => {
   it("RT-021 uses the provided fake realtime factory when specified", () => {
-    const fakeTransport = { dispose: vi.fn() } as any;
+    const fakeTransport = { dispose: vi.fn() } as unknown as RealtimeTransport;
     const createRealtimeClient = vi.fn().mockReturnValue(fakeTransport);
 
     const runtime = createAppRuntime(
@@ -102,7 +104,7 @@ describe("app runtime realtime composition", () => {
 
     createAppRuntime(
       { apiUrl: "http://api.test", realtimeUrl: "ws://realtime.test" },
-      { telemetry: telemetry as any },
+      { telemetry: telemetry as unknown as TelemetryPort },
     );
 
     expect(realtimeConstructorCalls).toHaveLength(1);
@@ -130,7 +132,7 @@ describe("app runtime realtime composition", () => {
   });
 
   it("RT-023 runtime dispose disposes realtime exactly once", async () => {
-    const fakeTransport = { dispose: vi.fn() } as any;
+    const fakeTransport = { dispose: vi.fn() } as unknown as RealtimeTransport;
 
     const runtime = createAppRuntime(
       { apiUrl: "http://api.test", realtimeUrl: "ws://realtime.test" },

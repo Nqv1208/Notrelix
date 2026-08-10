@@ -46,7 +46,7 @@ const priorityColors: Record<
 };
 
 export function KanbanCard({
-  board,
+  board: _board,
   card,
   onOpenDetails,
   onDuplicate,

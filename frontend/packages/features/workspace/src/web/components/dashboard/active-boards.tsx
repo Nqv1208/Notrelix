@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { LayoutGrid, ArrowRight, Users } from "lucide-react";
+import { LayoutGrid, ArrowRight } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 
 interface Board {

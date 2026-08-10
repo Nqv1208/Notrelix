@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { createAppRuntime } from "../runtime/app-runtime";
+import type { RealtimeTransport } from "@notrelix/realtime";
 
 describe("AppRuntime", () => {
   it("instantiates runtime with normalized environment and freezes top-level runtime object", () => {
@@ -14,7 +15,7 @@ describe("AppRuntime", () => {
   });
 
   it("supports injecting custom test factories", () => {
-    const mockApiClient = { api: {} } as any;
+    const mockApiClient = { api: {} } as unknown;
     const createApiClientSpy = vi.fn().mockReturnValue(mockApiClient);
 
     const mockClock = {
@@ -37,7 +38,7 @@ describe("AppRuntime", () => {
   it("executes dispose idempotently and cleans up session events and realtime connection", async () => {
     const mockRealtime = {
       dispose: vi.fn(),
-    } as any;
+    } as unknown as RealtimeTransport;
     const telemetry = {
       track: vi.fn(),
       reportError: vi.fn(),

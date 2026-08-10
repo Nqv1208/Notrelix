@@ -61,8 +61,8 @@ const PageTreeItem = memo(function PageTreeItem({
             style={{
               paddingLeft:
                 density === "compact"
-                  ? 6 + (node as any).depth * 14
-                  : 8 + (node as any).depth * 18,
+                  ? 6 + ((node as { depth?: number }).depth ?? 0) * 14
+                  : 8 + ((node as { depth?: number }).depth ?? 0) * 18,
             }}
           >
             <CollapsibleTrigger asChild disabled={!hasChildren}>

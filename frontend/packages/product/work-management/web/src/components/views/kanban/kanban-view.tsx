@@ -35,7 +35,11 @@ export function KanbanView({
     deleteColumn,
   } = useBoardKanban(boardId, workspaceId);
 
-  const { selectedCardId, openCard, closePanel } = useSelectedCardPanel();
+  const {
+    selectedCardId: _selectedCardId,
+    openCard,
+    closePanel,
+  } = useSelectedCardPanel();
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const deleteCard = useDeleteCard(boardId, workspaceId);
 

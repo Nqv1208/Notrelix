@@ -2,7 +2,6 @@ import { describe, expect, test, vi } from "vitest";
 import {
   initObservability,
   trackEvent,
-  reportError,
   getObservabilityConfig,
   RecordingTelemetryAdapter,
   redactTelemetryProperties,

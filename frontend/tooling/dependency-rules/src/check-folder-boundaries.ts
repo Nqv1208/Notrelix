@@ -49,7 +49,9 @@ export function checkFolderBoundaries(rootDir: string): {
           results.push(full);
         }
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
     return results;
   }
 
@@ -72,7 +74,9 @@ export function checkFolderBoundaries(rootDir: string): {
           if (depth < 4) results.push(...findPackageDirs(full, depth + 1));
         }
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
     return results;
   }
 

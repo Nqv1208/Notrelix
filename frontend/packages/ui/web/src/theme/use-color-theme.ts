@@ -100,7 +100,6 @@ export function useColorTheme(storage?: KeyValueStorage) {
     try {
       const stored = storage?.getItem(STORAGE_KEY);
       if (isValidTheme(stored)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setColorThemeState(stored);
       }
     } catch {

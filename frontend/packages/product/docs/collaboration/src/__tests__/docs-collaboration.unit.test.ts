@@ -4,7 +4,7 @@ import type { RealtimeTransport } from "@notrelix/realtime";
 
 function makeMockRealtime() {
   const unsubscribeMock = vi.fn();
-  let capturedHandler: ((env: any) => void) | undefined;
+  let capturedHandler: ((env: unknown) => void) | undefined;
 
   const mockRealtime: RealtimeTransport = {
     connect: vi.fn(),

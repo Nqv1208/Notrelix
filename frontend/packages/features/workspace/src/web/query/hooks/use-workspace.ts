@@ -17,7 +17,7 @@ interface UseWorkspaceDeps {
 export function createUseWorkspace({
   api,
   endpoints,
-  options,
+  options: _options,
 }: UseWorkspaceDeps) {
   const service = createWorkspaceService(api, endpoints);
 

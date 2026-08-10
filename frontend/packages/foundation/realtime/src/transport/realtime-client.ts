@@ -42,10 +42,10 @@ export interface WebSocketLike {
   readyState: number;
   send(data: string): void;
   close(code?: number, reason?: string): void;
-  onopen: ((event: any) => void) | null;
-  onmessage: ((event: { data: any }) => void) | null;
+  onopen: ((event: unknown) => void) | null;
+  onmessage: ((event: { data: unknown }) => void) | null;
   onclose: ((event: { code: number; reason: string }) => void) | null;
-  onerror: ((event: any) => void) | null;
+  onerror: ((event: unknown) => void) | null;
 }
 
 export type WebSocketFactory = (
@@ -268,9 +268,10 @@ export class RealtimeClient implements RealtimeTransport {
     this.clock = options.clock ?? { now: () => new Date() };
     this.scheduler = options.scheduler ?? {
       setTimeout: (fn, ms) => setTimeout(fn, ms),
-      clearTimeout: (id) => clearTimeout(id as any),
+      clearTimeout: (id) => clearTimeout(id as ReturnType<typeof setTimeout>),
       setInterval: (fn, ms) => setInterval(fn, ms),
-      clearInterval: (id) => clearInterval(id as any),
+      clearInterval: (id) =>
+        clearInterval(id as ReturnType<typeof setInterval>),
     };
     this.telemetry = options.telemetry;
 

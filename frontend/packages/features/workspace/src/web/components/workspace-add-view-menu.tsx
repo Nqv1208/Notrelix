@@ -15,6 +15,8 @@ import { workspaceViewTemplates } from "../../core/constants/view-templates";
 import type { WorkspaceViewType } from "../../core/types/workspace";
 import { createUseCreateWorkspaceView } from "../hooks/mutations/use-create-workspace-view";
 
+import type { WorkspaceApiClient } from "../../core";
+
 export function WorkspaceAddViewMenu({
   workspaceId,
   createViewHook: customCreateViewHook,
@@ -24,12 +26,12 @@ export function WorkspaceAddViewMenu({
   workspaceId: string;
   createViewHook?: ReturnType<typeof createUseCreateWorkspaceView>;
   boards?: Array<{ id: string }>;
-  api?: any;
+  api?: WorkspaceApiClient;
 }) {
   const navigate = useNavigate();
 
   const defaultCreateViewHook = useMemo(
-    () => createUseCreateWorkspaceView({ api }),
+    () => createUseCreateWorkspaceView({ api: api! }),
     [api],
   );
   const createViewHook = customCreateViewHook || defaultCreateViewHook;

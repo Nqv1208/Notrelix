@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useDebounce } from "./use-debounce";
-import type { BoardGroup, Card } from "@notrelix/work-management-core";
+import type { BoardGroup } from "@notrelix/work-management-core";
 
 export function useKanbanSearch(groups: BoardGroup[], delay = 250) {
   const [query, setQuery] = useState("");

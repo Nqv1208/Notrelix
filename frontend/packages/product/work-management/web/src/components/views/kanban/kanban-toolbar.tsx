@@ -1,7 +1,6 @@
 import { Plus } from "lucide-react";
 import { Button } from "@notrelix/ui-web";
 import { Input } from "@notrelix/ui-web";
-import { KanbanFilterMenu } from "./kanban-filter-menu";
 import { KanbanSortMenu } from "./kanban-sort-menu";
 import type { KanbanSortOption } from "@notrelix/work-management-core";
 
@@ -18,7 +17,7 @@ interface KanbanToolbarProps {
 export function KanbanToolbar({
   searchQuery,
   onSearchChange,
-  onClearFilters,
+  onClearFilters: _onClearFilters,
   activeSort,
   onSortChange,
   onCreateCard,

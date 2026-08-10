@@ -1,6 +1,5 @@
 import {
   createUsePageBreadcrumb,
-  createUseUpdatePage,
   createUseToggleFavorite,
   type DocsApiClient,
   type PageApiEndpoints,
@@ -29,15 +28,12 @@ export function DocPageHeader({
   endpoints,
   workspaceId,
   pageId,
-  pageTitle,
   isFavorited,
 }: DocPageHeaderProps) {
   const usePageBreadcrumb = createUsePageBreadcrumb(api, endpoints);
-  const useUpdatePage = createUseUpdatePage(api, endpoints);
   const useToggleFavorite = createUseToggleFavorite(api, endpoints);
 
   const { data: breadcrumbs = [] } = usePageBreadcrumb(workspaceId, pageId);
-  const updatePageMutation = useUpdatePage(workspaceId, pageId);
   const toggleFavoriteMutation = useToggleFavorite(workspaceId, pageId);
 
   const [showActions, setShowActions] = useState(false);

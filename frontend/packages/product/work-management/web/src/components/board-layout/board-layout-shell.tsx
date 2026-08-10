@@ -10,8 +10,8 @@ interface BoardLayoutShellProps {
 }
 
 export function BoardLayoutShell({
-  workspaceId,
-  boardId,
+  workspaceId: _workspaceId,
+  boardId: _boardId,
   boardTitle,
   activeView,
   onViewChange,

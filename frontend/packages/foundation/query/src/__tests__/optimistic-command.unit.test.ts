@@ -34,15 +34,20 @@ describe("executeOptimisticCommand with defineOptimisticUpdate", () => {
       updates: [
         defineOptimisticUpdate(
           detailKey,
-          (old: any, vars: { title: string }) => ({
+          (
+            old: Record<string, unknown> | undefined,
+            vars: { title: string },
+          ) => ({
             ...old,
             title: vars.title,
           }),
         ),
         defineOptimisticUpdate(
           listKey,
-          (old: any[] | undefined, vars: { title: string }) =>
-            (old ?? []).map((item) => ({ ...item, title: vars.title })),
+          (
+            old: Array<Record<string, unknown>> | undefined,
+            vars: { title: string },
+          ) => (old ?? []).map((item) => ({ ...item, title: vars.title })),
         ),
       ],
       mutationFn,
@@ -72,7 +77,10 @@ describe("executeOptimisticCommand with defineOptimisticUpdate", () => {
         updates: [
           defineOptimisticUpdate(
             detailKey,
-            (old: any, vars: { title: string }) => ({
+            (
+              old: Record<string, unknown> | undefined,
+              vars: { title: string },
+            ) => ({
               ...old,
               title: vars.title,
             }),
@@ -104,7 +112,7 @@ describe("executeOptimisticCommand with defineOptimisticUpdate", () => {
         updates: [
           defineOptimisticUpdate(
             nonExistentKey,
-            (_old: any, vars: { title: string }) => ({
+            (_old: unknown, vars: { title: string }) => ({
               id: "new-id",
               title: vars.title,
             }),
@@ -134,10 +142,13 @@ describe("executeOptimisticCommand with defineOptimisticUpdate", () => {
       correlationId: "corr-context",
       idempotencyKey: "idem-context",
       updates: [
-        defineOptimisticUpdate(key, (old: any) => ({
-          ...old,
-          title: "Optimistic",
-        })),
+        defineOptimisticUpdate(
+          key,
+          (old: Record<string, unknown> | undefined) => ({
+            ...old,
+            title: "Optimistic",
+          }),
+        ),
       ],
       mutationFn,
       reconcile,
@@ -172,10 +183,13 @@ describe("executeOptimisticCommand with defineOptimisticUpdate", () => {
         queryClient,
         commandId: "cmd-conflict",
         updates: [
-          defineOptimisticUpdate(key, (old: any) => ({
-            ...old,
-            title: "Optimistic",
-          })),
+          defineOptimisticUpdate(
+            key,
+            (old: Record<string, unknown> | undefined) => ({
+              ...old,
+              title: "Optimistic",
+            }),
+          ),
         ],
         mutationFn: vi.fn().mockRejectedValue(conflict),
         onConflict: () => "refetch",

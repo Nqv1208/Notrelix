@@ -1,4 +1,4 @@
-import { Search, Filter, Settings } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { Button, Input } from "@notrelix/ui-web";
 import { ViewTabs, AddViewMenu } from "./view-tabs";
 

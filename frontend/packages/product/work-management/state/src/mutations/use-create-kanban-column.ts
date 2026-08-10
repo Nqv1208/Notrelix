@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
-import type { CreateListInput } from "../api/list.api";
+
 import type {
   FullBoardResponse,
   BoardGroup,

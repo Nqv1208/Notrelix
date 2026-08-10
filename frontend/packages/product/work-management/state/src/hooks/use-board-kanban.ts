@@ -7,7 +7,6 @@ import { useReorderKanbanColumns } from "../mutations/use-reorder-kanban-columns
 import { useCreateKanbanColumn } from "../mutations/use-create-kanban-column";
 import { useUpdateKanbanColumn } from "../mutations/use-update-kanban-column";
 import { useDeleteKanbanColumn } from "../mutations/use-delete-kanban-column";
-import type { BoardGroup } from "@notrelix/work-management-core";
 
 export function useBoardKanban(boardId: string, workspaceId: string) {
   const {

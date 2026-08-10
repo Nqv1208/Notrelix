@@ -17,12 +17,16 @@ import {
 } from "@notrelix/ui-web";
 import { createUsePendingInvitations } from "../query/hooks/use-pending-invitations";
 import { createUseAcceptInvitation } from "../hooks/mutations/use-accept-invitation";
-import type { WorkspaceInvitation } from "../../core";
+import type {
+  WorkspaceInvitation,
+  WorkspaceApiClient,
+  InvitationsEndpoints,
+} from "../../core";
 import { cn } from "@notrelix/ui-web";
 
 interface PendingInvitationsMenuProps {
-  api: any;
-  endpoints: any;
+  api: WorkspaceApiClient;
+  endpoints: InvitationsEndpoints;
 }
 
 export function PendingInvitationsMenu({

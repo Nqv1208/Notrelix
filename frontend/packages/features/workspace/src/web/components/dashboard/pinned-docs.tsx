@@ -1,7 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { FileText, ArrowRight } from "lucide-react";
-import { Badge } from "@notrelix/ui-web";
-import { cn } from "@notrelix/ui-web";
+import { FileText } from "lucide-react";
 
 interface Doc {
   id: string;

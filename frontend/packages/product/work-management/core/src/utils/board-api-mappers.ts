@@ -167,7 +167,7 @@ export function mapCommentDtoToCardUpdate(
       name: dto.userName,
       initials: getInitials(dto.userName),
       avatarUrl: dto.userAvatar ?? undefined,
-      color: memberColors[0]!!,
+      color: memberColors[0]!,
     },
     body: dto.contentMd,
     mentionUserIds: [],
@@ -537,7 +537,7 @@ function optionFromLabel(label: string, index: number): FieldOption {
   return {
     id: normalizeOptionId(label),
     label,
-    color: memberColors[index % memberColors.length]!!,
+    color: memberColors[index % memberColors.length]!,
   };
 }
 

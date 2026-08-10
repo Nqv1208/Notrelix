@@ -28,7 +28,6 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   type ForgotPasswordRequest,
-  type ResetPasswordRequest,
   parseAuthError,
   resolveErrorDisplay,
 } from "../../core";

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { BoardGroup, Card } from "@notrelix/work-management-core";
+import type { BoardGroup } from "@notrelix/work-management-core";
 import type { KanbanFiltersState } from "@notrelix/work-management-core";
 
 export function useKanbanFilters(groups: BoardGroup[]) {

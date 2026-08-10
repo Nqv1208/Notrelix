@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
 import type { WorkspaceView } from "../../core/types/workspace";
+import type { WorkspaceApiClient } from "../../core";
 import { createUseReorderWorkspaceViews } from "..";
 import { WorkspaceAddViewMenu } from "./workspace-add-view-menu";
 
@@ -74,13 +75,17 @@ export function WorkspaceViewTabs({
   activeViewId?: string;
   currentBoardId?: string;
   reorderHook?: ReturnType<typeof createUseReorderWorkspaceViews>;
-  api?: any;
+  api?: WorkspaceApiClient;
 }) {
   const defaultReorderHook = useMemo(
-    () => createUseReorderWorkspaceViews({ api }),
+    () => (api ? createUseReorderWorkspaceViews({ api }) : undefined),
     [api],
   );
   const reorderHook = customReorderHook || defaultReorderHook;
+
+  if (!reorderHook) {
+    throw new Error("WorkspaceViewTabs requires api or reorderHook");
+  }
 
   const [items, setItems] = useState<WorkspaceView[]>(views);
   const isDraggingRef = useRef(false);

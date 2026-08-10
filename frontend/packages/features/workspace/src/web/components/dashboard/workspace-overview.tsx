@@ -1,5 +1,4 @@
-import { FileText, LayoutGrid, Users, ClipboardList } from "lucide-react";
-import type { WorkspaceMember } from "../../../core";
+import { FileText, LayoutGrid, Users } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 
 interface WorkspaceOverviewProps {

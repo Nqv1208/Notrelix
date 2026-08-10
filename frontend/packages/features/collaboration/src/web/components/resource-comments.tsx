@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import type { Comment } from "../../core";
+import type { Comment, CollaborationApiClient } from "../../core";
 import {
   createUseComments,
   createUseCreateComment,
@@ -21,7 +21,7 @@ interface ResourceCommentsProps {
   resourceType: "page" | "block" | "card";
   currentUserId?: string;
   currentUserName?: string;
-  api: any;
+  api: CollaborationApiClient;
 }
 
 export function ResourceComments({

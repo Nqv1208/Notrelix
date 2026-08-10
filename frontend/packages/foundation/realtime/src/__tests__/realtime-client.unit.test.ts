@@ -314,8 +314,11 @@ describe("RealtimeClient foundation contract", () => {
   });
 
   it("RT-012 no reconnect happens after dispose", async () => {
-    const { scheduler, activeTimeouts, fireLastTimeout } =
-      createFakeScheduler();
+    const {
+      scheduler,
+      activeTimeouts,
+      fireLastTimeout: _fireLastTimeout,
+    } = createFakeScheduler();
     const client = new RealtimeClient(TEST_URL, {
       socketFactory: factory,
       scheduler,

@@ -1,9 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { wmQueryKeys } from "./keys";
 import type {
-  CreateChecklistInput,
   UpdateChecklistInput,
-  CreateChecklistItemInput,
   UpdateChecklistItemInput,
 } from "../api/checklist.api";
 import { useWorkManagementServices } from "../services";

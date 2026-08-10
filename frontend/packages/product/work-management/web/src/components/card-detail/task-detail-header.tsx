@@ -26,7 +26,7 @@ import {
 } from "@notrelix/work-management-state";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { cn } from "@notrelix/ui-web";
-import { formatDate, getOptionToneClass } from "../views/table/table-utils";
+import { formatDate } from "../views/table/table-utils";
 
 export function TaskDetailHeader({
   board,
@@ -37,19 +37,12 @@ export function TaskDetailHeader({
   card: CardDetail;
   onClose: () => void;
 }) {
-  const [prevTitle, setPrevTitle] = useState(card.title);
-  const [title, setTitle] = useState(card.title);
   const [isWatched, setIsWatched] = useState(card.isWatched);
   const titleRef = useRef<HTMLDivElement>(null);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
   const deleteCard = useDeleteCard(card.boardId, card.workspaceId);
   const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
   const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
-
-  if (card.title !== prevTitle) {
-    setPrevTitle(card.title);
-    setTitle(card.title);
-  }
 
   const personField = board.fieldDefinitions.find(
     (f) => f.fieldType === "person" || f.id.endsWith("field-person"),
@@ -82,11 +75,9 @@ export function TaskDetailHeader({
   const commitTitle = useCallback(() => {
     const nextTitle = (titleRef.current?.textContent ?? "").trim();
     if (!nextTitle || nextTitle === card.title) {
-      setTitle(card.title);
       if (titleRef.current) titleRef.current.textContent = card.title;
       return;
     }
-    setTitle(nextTitle);
     updateCard.mutate({ cardId: card.id, patch: { title: nextTitle } });
   }, [card.id, card.title, updateCard]);
 
@@ -97,7 +88,6 @@ export function TaskDetailHeader({
     }
     if (event.key === "Escape") {
       if (titleRef.current) titleRef.current.textContent = card.title;
-      setTitle(card.title);
       event.currentTarget.blur();
     }
   }

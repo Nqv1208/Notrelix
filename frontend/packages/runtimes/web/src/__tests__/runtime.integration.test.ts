@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { QueryClient } from "@tanstack/react-query";
 import { createAppRuntime } from "../runtime/app-runtime";
 import { createBrowserWebSocketFactory } from "../realtime/browser-websocket-factory";
 import { RealtimeClient, type WebSocketLike } from "@notrelix/realtime";
