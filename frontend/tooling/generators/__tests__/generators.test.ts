@@ -174,6 +174,10 @@ function buildFixtureWorkspace(): void {
 function writeVitestConfig(include: string[]): void {
   const patterns = include.map((p) => `'${p}'`).join(", ");
   const uiWebSrc = join(tempDir, "packages/ui/web/src").replace(/\\/g, "/");
+  const rnMockPath = join(
+    frontendRoot,
+    "tooling/testing/react-native-mock.ts",
+  ).replace(/\\/g, "/");
   writeConfig(
     "vitest.config.mjs",
     `import { defineConfig } from 'vitest/config';
@@ -182,6 +186,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '~': '${uiWebSrc}',
+      'react-native': '${rnMockPath}',
     },
   },
   test: {
@@ -411,6 +416,37 @@ describe("create-product-module generator", () => {
     expect(statePkg.dependencies["@notrelix/analytics-core"]).toBe(
       "workspace:*",
     );
+    // G2: state package declares @notrelix/query and uses workspaceQueryKey
+    expect(statePkg.dependencies["@notrelix/query"]).toBe("workspace:*");
+    const stateSource = readFileSync(
+      join(moduleDir, "state/src/index.ts"),
+      "utf8",
+    );
+    expect(stateSource).toContain("workspaceQueryKey");
+    expect(stateSource).toContain("analyticsQueryKeys");
+
+    // G4: mobile adapter is native-safe .tsx, no HTML/DOM tags
+    const mobileScreenFile = join(
+      moduleDir,
+      "mobile/src/analytics-mobile-screen.tsx",
+    );
+    expect(existsSync(mobileScreenFile)).toBe(true);
+    const mobileSource = readFileSync(mobileScreenFile, "utf8");
+    expect(mobileSource).toContain("react-native");
+    expect(mobileSource).not.toContain("<div");
+    expect(mobileSource).not.toContain("<h1");
+    expect(mobileSource).toContain("<View");
+    expect(mobileSource).toContain("<Text");
+
+    // G6: mobile test uses .mobile.test.ts taxonomy
+    expect(
+      existsSync(join(moduleDir, "mobile/src/__tests__/smoke.mobile.test.ts")),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(moduleDir, "state/src/__tests__/query-keys.unit.test.ts"),
+      ),
+    ).toBe(true);
   });
 
   it("rejects an invalid --extension target", () => {
@@ -626,21 +662,31 @@ describe("generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)", () => {
       );
       expect(fixtureDocs).toContain("freeze-smoke-analytics");
 
-      const coreDir = join(
+      const moduleDir = join(
         tempDir,
-        "packages/product/freeze-smoke-analytics/core",
+        "packages/product/freeze-smoke-analytics",
       );
 
-      // Gate: typecheck
-      runTsc(join(coreDir, "tsconfig.json"));
+      // G3: Gate all six subpackages per 13-GENERATOR-FANOUT-CLOSURE-SPEC.md
+      for (const sub of [
+        "core",
+        "state",
+        "web",
+        "mobile",
+        "testing",
+        "plugins",
+      ]) {
+        runTsc(join(moduleDir, sub, "tsconfig.json"));
+        runEslint(`packages/product/freeze-smoke-analytics/${sub}/src`);
+      }
 
-      // Gate: test
       runVitest([
-        "packages/product/freeze-smoke-analytics/core/src/**/*.test.ts",
+        "packages/product/freeze-smoke-analytics/*/src/**/*.test.ts",
+        "packages/product/freeze-smoke-analytics/*/src/**/*.test.tsx",
       ]);
 
-      // Gate: lint
-      runEslint("packages/product/freeze-smoke-analytics/core/src");
+      // G3: Architecture check after product generation
+      runArchitectureCheck();
 
       // GEN-030: real worktree untouched
       expect(readFileSync(realManifestPath, "utf8")).toBe(manifestBefore);

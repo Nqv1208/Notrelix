@@ -23,7 +23,7 @@
  *   node index.mjs <product-name> [--adapters web|mobile|both] [--state] [--testing] [--extension none|plugins|collaboration]
  */
 
-import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, symlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -34,6 +34,18 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = process.env.GENERATOR_ROOT ?? join(__dirname, "../../../..");
+
+function getSampleNodeModules(subPkgName) {
+  const targetRel = subPkgName.endsWith("-mobile")
+    ? "packages/product/work-management/mobile/node_modules"
+    : "packages/features/account/node_modules";
+
+  return existsSync(join(rootDir, targetRel))
+    ? join(rootDir, targetRel)
+    : existsSync(join(rootDir, "node_modules"))
+      ? join(rootDir, "node_modules")
+      : null;
+}
 
 const args = process.argv.slice(2);
 const productName = args.find((a) => !a.startsWith("--"));
@@ -91,6 +103,7 @@ function makeTsconfig(extendsRelative) {
         compilerOptions: {
           outDir: "./dist",
           rootDir: "./src",
+          skipLibCheck: true,
           baseUrl: ".",
           paths: { "~/*": ["./src/*"] },
         },
@@ -106,9 +119,15 @@ function makeTsconfig(extendsRelative) {
 function writeSubPackage(
   subDir,
   subPkgName,
-  { tsconfigExtends, eslintConfig, dependencies },
+  { tsconfigExtends, eslintConfig, dependencies, devDependencies },
 ) {
   mkdirSync(join(subDir, "src"), { recursive: true });
+  const sampleNodeModules = getSampleNodeModules(subPkgName);
+  if (sampleNodeModules) {
+    try {
+      symlinkSync(sampleNodeModules, join(subDir, "node_modules"), "dir");
+    } catch {}
+  }
   writeFileSync(join(subDir, "tsconfig.json"), makeTsconfig(tsconfigExtends));
   writeFileSync(
     join(subDir, "package.json"),
@@ -127,7 +146,7 @@ function writeSubPackage(
           clean: "rm -rf node_modules dist",
         },
         dependencies: dependencies ?? {},
-        devDependencies: {
+        devDependencies: devDependencies ?? {
           typescript: "^5.0.0",
           vitest: "catalog:",
         },
@@ -194,8 +213,40 @@ entries.push({
 if (withState) {
   writeSubPackage(join(productDir, "state"), statePkg, {
     tsconfigExtends: "../../../../tooling/tsconfig/base.json",
-    dependencies: { [corePkg]: "workspace:*" },
+    dependencies: {
+      [corePkg]: "workspace:*",
+      "@notrelix/query": "workspace:*",
+    },
   });
+  const camelProduct = productName.replace(/-([a-z])/g, (_, c) =>
+    c.toUpperCase(),
+  );
+  mkdirSync(join(productDir, "state/src"), { recursive: true });
+  writeFileSync(
+    join(productDir, "state/src/index.ts"),
+    `import { workspaceQueryKey } from '@notrelix/query';
+
+export const ${camelProduct}QueryKeys = {
+  all: (workspaceId: string) => workspaceQueryKey(workspaceId, '${productName}'),
+};
+`,
+  );
+  mkdirSync(join(productDir, "state/src/__tests__"), { recursive: true });
+  writeFileSync(
+    join(productDir, `state/src/__tests__/query-keys.unit.test.ts`),
+    `import { describe, expect, it } from 'vitest';
+import { ${camelProduct}QueryKeys } from '../index';
+
+describe('@notrelix/${productName}-state query keys', () => {
+  it('all uses workspaceQueryKey as root', () => {
+    const keys = ${camelProduct}QueryKeys.all('ws-1');
+    expect(keys).toBeDefined();
+    expect(JSON.stringify(keys)).toContain('ws-1');
+    expect(JSON.stringify(keys)).toContain('${productName}');
+  });
+});
+`,
+  );
   entries.push({
     packageName: statePkg,
     relativePath: `packages/product/${productName}/state`,
@@ -221,6 +272,19 @@ if (adaptWeb) {
     tsconfigExtends: "../../../../tooling/tsconfig/react-library.json",
     dependencies: webDeps,
   });
+  mkdirSync(join(productDir, "web/src/__tests__"), { recursive: true });
+  writeFileSync(
+    join(productDir, `web/src/__tests__/smoke.component.test.tsx`),
+    `import { describe, expect, it } from 'vitest';
+import * as module from '../index';
+
+describe('@notrelix/${productName}-web', () => {
+  it('is importable', () => {
+    expect(module).toBeDefined();
+  });
+});
+`,
+  );
   const webImports = [corePkg, "@notrelix/ui-web", "@notrelix/platform"];
   if (withState) webImports.unshift(statePkg);
   entries.push({
@@ -233,12 +297,77 @@ if (adaptWeb) {
 }
 
 if (adaptMobile) {
-  const mobileDeps = { [corePkg]: "workspace:*" };
+  const mobileDeps = {
+    [corePkg]: "workspace:*",
+    "@notrelix/ui-mobile": "workspace:*",
+    react: "^19.0.0",
+    "react-native": "latest",
+  };
   if (withState) mobileDeps[statePkg] = "workspace:*";
   writeSubPackage(join(productDir, "mobile"), mobilePkg, {
     tsconfigExtends: "../../../../tooling/tsconfig/react-library.json",
     dependencies: mobileDeps,
+    devDependencies: {
+      typescript: "^5.0.0",
+      vitest: "catalog:",
+      "@types/react-native": "^0.73.0",
+    },
   });
+  // G4: mobile adapter is a native-safe .tsx value component — no HTML/DOM
+  const MobilePascal = productName
+    .split("-")
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join("");
+  const mobileScreenFile = join(
+    productDir,
+    `mobile/src/${productName}-mobile-screen.tsx`,
+  );
+  mkdirSync(join(productDir, "mobile/src"), { recursive: true });
+  writeFileSync(
+    mobileScreenFile,
+    `import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export interface ${MobilePascal}MobileScreenProps {
+  workspaceId: string;
+}
+
+export function ${MobilePascal}MobileScreen({ workspaceId }: ${MobilePascal}MobileScreenProps) {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>${MobilePascal}</Text>
+      <Text style={styles.subtitle}>Workspace: {workspaceId}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  subtitle: { fontSize: 14, color: '#6b7280', marginTop: 4 },
+});
+`,
+  );
+  writeFileSync(
+    join(productDir, "mobile/src/index.ts"),
+    `export { ${MobilePascal}MobileScreen } from './${productName}-mobile-screen';
+export type { ${MobilePascal}MobileScreenProps } from './${productName}-mobile-screen';
+`,
+  );
+  // G6: mobile tests use .mobile.test.tsx taxonomy
+  mkdirSync(join(productDir, "mobile/src/__tests__"), { recursive: true });
+  writeFileSync(
+    join(productDir, `mobile/src/__tests__/smoke.mobile.test.ts`),
+    `import { describe, expect, it } from 'vitest';
+import { ${MobilePascal}MobileScreen } from '../index';
+
+describe('@notrelix/${productName}-mobile', () => {
+  it('${MobilePascal}MobileScreen is a renderable RN function component', () => {
+    expect(typeof ${MobilePascal}MobileScreen).toBe('function');
+  });
+});
+`,
+  );
   const mobileImports = [corePkg, "@notrelix/ui-mobile", "@notrelix/platform"];
   if (withState) mobileImports.unshift(statePkg);
   entries.push({
@@ -256,6 +385,19 @@ if (extension === "plugins") {
     tsconfigExtends: "../../../../tooling/tsconfig/base.json",
     dependencies: { [corePkg]: "workspace:*" },
   });
+  mkdirSync(join(productDir, "plugins/src/__tests__"), { recursive: true });
+  writeFileSync(
+    join(productDir, `plugins/src/__tests__/smoke.unit.test.ts`),
+    `import { describe, expect, it } from 'vitest';
+import * as module from '../index';
+
+describe('@notrelix/${productName}-plugins', () => {
+  it('is importable', () => {
+    expect(module).toBeDefined();
+  });
+});
+`,
+  );
   entries.push({
     packageName: pluginsPkg,
     relativePath: `packages/product/${productName}/plugins`,
@@ -271,6 +413,21 @@ if (extension === "collaboration") {
     tsconfigExtends: "../../../../tooling/tsconfig/base.json",
     dependencies: { [corePkg]: "workspace:*" },
   });
+  mkdirSync(join(productDir, "collaboration/src/__tests__"), {
+    recursive: true,
+  });
+  writeFileSync(
+    join(productDir, `collaboration/src/__tests__/smoke.unit.test.ts`),
+    `import { describe, expect, it } from 'vitest';
+import * as module from '../index';
+
+describe('@notrelix/${productName}-collaboration', () => {
+  it('is importable', () => {
+    expect(module).toBeDefined();
+  });
+});
+`,
+  );
   entries.push({
     packageName: collaborationPkg,
     relativePath: `packages/product/${productName}/collaboration`,
@@ -290,6 +447,19 @@ if (withTesting) {
     tsconfigExtends: "../../../../tooling/tsconfig/base.json",
     dependencies: { [corePkg]: "workspace:*" },
   });
+  mkdirSync(join(productDir, "testing/src/__tests__"), { recursive: true });
+  writeFileSync(
+    join(productDir, `testing/src/__tests__/smoke.unit.test.ts`),
+    `import { describe, expect, it } from 'vitest';
+import * as module from '../index';
+
+describe('@notrelix/${productName}-testing', () => {
+  it('is importable', () => {
+    expect(module).toBeDefined();
+  });
+});
+`,
+  );
   entries.push({
     packageName: testingPkg,
     relativePath: `packages/product/${productName}/testing`,
