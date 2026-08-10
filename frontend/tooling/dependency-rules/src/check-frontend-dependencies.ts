@@ -4,7 +4,7 @@ import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ARCHITECTURE_MANIFEST,
-  ARCHITECTURE_POLICY_BY_PACKAGE,
+  type ArchitecturePackagePolicy,
   validateArchitectureManifest,
 } from "./architecture-manifest";
 import { FORBIDDEN_IMPORTS } from "./forbidden-imports";
@@ -44,7 +44,9 @@ function findPackageDirs(base: string, depth = 0): string[] {
         if (depth < 4) results.push(...findPackageDirs(full, depth + 1));
       }
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   return results;
 }
 
@@ -82,13 +84,19 @@ export function discoverWorkspacePackages(
  * manifest set exactly. Violations carry stable codes so tests and CI can
  * assert them.
  */
-export function preflightArchitectureManifest(rootDir: string): {
+export function preflightArchitectureManifest(
+  rootDir: string,
+  manifest: readonly ArchitecturePackagePolicy[] = ARCHITECTURE_MANIFEST,
+): {
   violations: string[];
   registered: Map<string, DiscoveredPackage>;
 } {
   const violations: string[] = [];
+  const policyByPackage = new Map<string, ArchitecturePackagePolicy>(
+    manifest.map((entry) => [entry.packageName, entry] as const),
+  );
 
-  for (const violation of validateArchitectureManifest(ARCHITECTURE_MANIFEST)) {
+  for (const violation of validateArchitectureManifest(manifest)) {
     violations.push(
       `[${violation.code}] manifest defect for "${violation.packageName}": ${violation.message}`,
     );
@@ -117,7 +125,7 @@ export function preflightArchitectureManifest(rootDir: string): {
   }
 
   for (const pkg of discovered) {
-    const policy = ARCHITECTURE_POLICY_BY_PACKAGE.get(pkg.name);
+    const policy = policyByPackage.get(pkg.name);
     if (!policy) {
       violations.push(
         `[UNREGISTERED_PACKAGE] workspace package "${pkg.name}" at ${pkg.relativePath} has no architecture-manifest entry`,
@@ -133,7 +141,7 @@ export function preflightArchitectureManifest(rootDir: string): {
     registered.set(pkg.name, pkg);
   }
 
-  for (const entry of ARCHITECTURE_MANIFEST) {
+  for (const entry of manifest) {
     if (
       discoveredByPath.has(entry.relativePath) ||
       discoveredByName.has(entry.packageName)
@@ -145,7 +153,7 @@ export function preflightArchitectureManifest(rootDir: string): {
     );
   }
 
-  for (const entry of ARCHITECTURE_MANIFEST) {
+  for (const entry of manifest) {
     const atPath = discoveredByPath.get(entry.relativePath);
     if (atPath && atPath.name !== entry.packageName) {
       violations.push(
@@ -178,22 +186,92 @@ function walkDir(dir: string, exts = [".ts", ".tsx"]): string[] {
         results.push(full);
       }
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   return results;
 }
 
-export function checkArchitecture(rootDir = DEFAULT_ROOT): {
+const FORBIDDEN_MOBILE_DOM_ELEMENTS = new Set([
+  "div",
+  "span",
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "button",
+  "input",
+  "textarea",
+  "select",
+  "option",
+  "form",
+  "label",
+  "section",
+  "article",
+  "main",
+  "header",
+  "footer",
+  "nav",
+  "a",
+  "img",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "td",
+  "th",
+]);
+
+const FORBIDDEN_MOBILE_PLATFORM_IMPORTS = [
+  "react-dom",
+  "@notrelix/ui-web",
+  "@notrelix/runtime-web",
+  "@notrelix/app-web",
+] as const;
+
+function isMobilePolicy(
+  policy: ArchitecturePackagePolicy,
+  packageName: string,
+): boolean {
+  return (
+    policy.freezeScope === "core-production" &&
+    (packageName.endsWith("-mobile") ||
+      policy.relativePath === "apps/mobile" ||
+      policy.relativePath === "packages/ui/mobile" ||
+      policy.relativePath === "packages/runtimes/mobile" ||
+      policy.relativePath.includes("/mobile/") ||
+      policy.relativePath.endsWith("/mobile"))
+  );
+}
+
+export function checkArchitecture(
+  rootDir = DEFAULT_ROOT,
+  manifest: readonly ArchitecturePackagePolicy[] = ARCHITECTURE_MANIFEST,
+): {
   ok: boolean;
   violations: string[];
 } {
-  const { violations, registered } = preflightArchitectureManifest(rootDir);
+  const { violations, registered } = preflightArchitectureManifest(
+    rootDir,
+    manifest,
+  );
+  const policyByPackage = new Map<string, ArchitecturePackagePolicy>(
+    manifest.map((entry) => [entry.packageName, entry] as const),
+  );
 
   // Unregistered packages already failed preflight; skip their detailed import
   // scan to avoid cascading noise, but keep scanning every registered package.
   for (const [pkgName, pkg] of registered) {
-    const policy = ARCHITECTURE_POLICY_BY_PACKAGE.get(pkgName)!;
+    const policy = policyByPackage.get(pkgName)!;
     const allowed = policy.allowedInternalImports;
-    const forbidden = FORBIDDEN_IMPORTS[pkgName] ?? [];
+    const isManifestMobileUnit = isMobilePolicy(policy, pkgName);
+    const forbidden = [
+      ...(FORBIDDEN_IMPORTS[pkgName] ?? []),
+      ...(isManifestMobileUnit ? FORBIDDEN_MOBILE_PLATFORM_IMPORTS : []),
+    ];
 
     const files = walkDir(pkg.dir);
 
@@ -201,6 +279,10 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): {
       const relPath = file.replace(rootDir, "");
       const content = readFileSync(file, "utf8");
       const layer = classifyLayer(relPath, pkgName);
+      const isMobileUnit =
+        isManifestMobileUnit ||
+        layer === "mobile" ||
+        relPath.includes("/mobile/");
 
       const sourceFile = ts.createSourceFile(
         file,
@@ -210,6 +292,30 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): {
       );
 
       function visitNode(node: ts.Node) {
+        if (
+          isMobileUnit &&
+          file.endsWith(".tsx") &&
+          !relPath.includes("/__tests__/") &&
+          !relPath.includes(".test.") &&
+          !relPath.includes(".spec.")
+        ) {
+          let jsxTagName: ts.Node | undefined;
+          if (ts.isJsxElement(node)) {
+            jsxTagName = node.openingElement.tagName;
+          } else if (ts.isJsxSelfClosingElement(node)) {
+            jsxTagName = node.tagName;
+          }
+
+          if (
+            jsxTagName &&
+            ts.isIdentifier(jsxTagName) &&
+            FORBIDDEN_MOBILE_DOM_ELEMENTS.has(jsxTagName.text)
+          ) {
+            violations.push(
+              `[FORBIDDEN_MOBILE_DOM_ELEMENT] ${pkgName} rendered intrinsic DOM element <${jsxTagName.text}> in ${relPath}`,
+            );
+          }
+        }
         // Check ImportDeclarations
         if (
           ts.isImportDeclaration(node) &&
@@ -242,7 +348,11 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): {
             ? "next"
             : (imported.match(/^(@notrelix\/[^/]+)/)?.[1] ?? imported);
 
-          if (forbidden.includes(imported) || forbidden.includes(basePkg)) {
+          if (
+            forbidden.includes(imported) ||
+            forbidden.includes(basePkg) ||
+            (isManifestMobileUnit && imported.startsWith("react-dom/"))
+          ) {
             const tag = imported.startsWith("@notrelix/")
               ? "[FORBIDDEN]"
               : "[EXTERNAL_FORBIDDEN]";

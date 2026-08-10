@@ -193,3 +193,115 @@ test("rejects exported API instances from production source", () => {
   expect(result.stderr).toContain("EXPORTED_API_INSTANCE");
   expect(result.stderr).toContain("boardApi");
 });
+
+test("rejects react-dom and @notrelix/ui-web imports in mobile packages", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/product/work-management/mobile",
+    "@notrelix/work-management-mobile",
+    'import React from "react";\nimport { render } from "react-dom";\nimport { Button } from "@notrelix/ui-web";\nexport const x = 1;\n',
+  );
+
+  const result = runChecker(root);
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("FORBIDDEN");
+  expect(result.stderr).toContain("react-dom");
+  expect(result.stderr).toContain("@notrelix/ui-web");
+});
+
+test("rejects runtime-web and react-dom subpath imports in mobile packages", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/product/work-management/mobile",
+    "@notrelix/work-management-mobile",
+    'import { createRoot } from "react-dom/client";\nimport { createWebRuntime } from "@notrelix/runtime-web";\nexport const leaked = [createRoot, createWebRuntime];\n',
+  );
+
+  const result = runChecker(root);
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("react-dom/client");
+  expect(result.stderr).toContain("@notrelix/runtime-web");
+});
+
+test("rejects intrinsic DOM JSX elements inside mobile package TSX", () => {
+  const root = createFixtureRoot();
+  const dir = join(root, "packages/product/work-management/mobile");
+  mkdirSync(join(dir, "src"), { recursive: true });
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify(
+      {
+        name: "@notrelix/work-management-mobile",
+        version: "0.0.0",
+        type: "module",
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(
+    join(dir, "src", "screen.tsx"),
+    'import React from "react";\nexport function Screen() { return <div><button>Click</button></div>; }\n',
+  );
+
+  const result = runChecker(root);
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("FORBIDDEN_MOBILE_DOM_ELEMENT");
+  expect(result.stderr).toContain("div");
+  expect(result.stderr).toContain("button");
+});
+
+test("passes React Native components and imports in mobile package TSX", () => {
+  const root = createFixtureRoot();
+  const dir = join(root, "packages/product/work-management/mobile");
+  mkdirSync(join(dir, "src"), { recursive: true });
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify(
+      {
+        name: "@notrelix/work-management-mobile",
+        version: "0.0.0",
+        type: "module",
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(
+    join(dir, "src", "screen.tsx"),
+    'import React from "react";\nimport { View, Text } from "react-native";\nexport function Screen() { return <View><Text>Hello</Text></View>; }\n',
+  );
+
+  const result = runChecker(root);
+
+  expect(result.stderr).not.toContain("FORBIDDEN_MOBILE_DOM_ELEMENT");
+  expect(result.stderr).not.toContain("react-native");
+});
+
+test("applies mobile platform rules to future manifest-registered mobile packages", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/product/future/mobile",
+    "@notrelix/future-mobile",
+    'import { Button } from "@notrelix/ui-web";\nexport const leaked = Button;\n',
+  );
+
+  const result = checkArchitecture(root, [
+    {
+      packageName: "@notrelix/future-mobile",
+      relativePath: "packages/product/future/mobile",
+      layer: "product-adapter",
+      freezeScope: "core-production",
+      allowedInternalImports: [],
+    },
+  ]);
+
+  expect(result.ok).toBe(false);
+  expect(result.violations.join("\n")).toContain("@notrelix/ui-web");
+});

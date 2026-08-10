@@ -87,20 +87,53 @@ export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
 
   // Cross-runtime: web must not import mobile, mobile must not import web
   "@notrelix/ui-web": ["@notrelix/ui-mobile", "react-native"],
-  "@notrelix/ui-mobile": ["@notrelix/ui-web", "@radix-ui", "shadcn", "cmdk"],
+  "@notrelix/ui-mobile": [
+    "react-dom",
+    "@notrelix/ui-web",
+    "@notrelix/runtime-web",
+    "@notrelix/app-web",
+    "@radix-ui",
+    "shadcn",
+    "cmdk",
+  ],
   "@notrelix/work-management-web": [
     "@notrelix/ui-mobile",
     "@notrelix/runtime-mobile",
     "react-native",
   ],
   "@notrelix/work-management-mobile": [
+    "react-dom",
     "@notrelix/ui-web",
     "@notrelix/runtime-web",
+    "@notrelix/app-web",
+    "@radix-ui",
+    "shadcn",
+  ],
+  "@notrelix/docs-mobile": [
+    "react-dom",
+    "@notrelix/ui-web",
+    "@notrelix/runtime-web",
+    "@notrelix/app-web",
+    "@radix-ui",
+    "shadcn",
+  ],
+  "@notrelix/automation-mobile": [
+    "react-dom",
+    "@notrelix/ui-web",
+    "@notrelix/runtime-web",
+    "@notrelix/app-web",
     "@radix-ui",
     "shadcn",
   ],
   "@notrelix/runtime-web": ["react-native"],
-  "@notrelix/runtime-mobile": ["@radix-ui", "shadcn"],
+  "@notrelix/runtime-mobile": [
+    "react-dom",
+    "@notrelix/ui-web",
+    "@notrelix/runtime-web",
+    "@notrelix/app-web",
+    "@radix-ui",
+    "shadcn",
+  ],
 
   // Marketing: no product state, no realtime, no platform internals
   "@notrelix/app-marketing": [
@@ -114,5 +147,11 @@ export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
   "@notrelix/app-web": ["next", "next-themes"],
 
   // Mobile app: no web, no Next.js
-  "@notrelix/app-mobile": ["next", "@notrelix/ui-web", "@notrelix/runtime-web"],
+  "@notrelix/app-mobile": [
+    "react-dom",
+    "next",
+    "@notrelix/ui-web",
+    "@notrelix/runtime-web",
+    "@notrelix/app-web",
+  ],
 };
