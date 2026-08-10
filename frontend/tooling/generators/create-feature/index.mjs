@@ -134,6 +134,7 @@ writeFileSync(
       exports: exportsMap,
       scripts: {
         typecheck: "tsc --noEmit",
+        lint: "eslint .",
         test: "vitest run",
         clean: "rm -rf node_modules dist",
       },

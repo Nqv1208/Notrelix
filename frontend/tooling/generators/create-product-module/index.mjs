@@ -142,6 +142,7 @@ function writeSubPackage(
         exports: { ".": "./src/index.ts" },
         scripts: {
           typecheck: "tsc --noEmit",
+          lint: "eslint .",
           test: "vitest run",
           clean: "rm -rf node_modules dist",
         },
@@ -190,7 +191,7 @@ writeSubPackage(join(productDir, "core"), corePkg, {
 });
 mkdirSync(join(productDir, "core/src/__tests__"), { recursive: true });
 writeFileSync(
-  join(productDir, "core/src/__tests__/smoke.test.ts"),
+  join(productDir, "core/src/__tests__/smoke.unit.test.ts"),
   `import { describe, expect, it } from 'vitest';
 import * as module from '../index';
 
@@ -357,7 +358,7 @@ export type { ${MobilePascal}MobileScreenProps } from './${productName}-mobile-s
   // G6: mobile tests use .mobile.test.tsx taxonomy
   mkdirSync(join(productDir, "mobile/src/__tests__"), { recursive: true });
   writeFileSync(
-    join(productDir, `mobile/src/__tests__/smoke.mobile.test.ts`),
+    join(productDir, `mobile/src/__tests__/smoke.mobile.test.tsx`),
     `import { describe, expect, it } from 'vitest';
 import { ${MobilePascal}MobileScreen } from '../index';
 

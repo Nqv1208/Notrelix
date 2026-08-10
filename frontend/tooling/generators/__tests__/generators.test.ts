@@ -16,6 +16,8 @@ import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { validateTestTaxonomy } from "../../../scripts/test-taxonomy-core.mjs";
+
 const generatorsDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const frontendRoot = resolve(generatorsDir, "../..");
 const repoRoot = resolve(frontendRoot, "..");
@@ -374,7 +376,7 @@ describe("create-product-module generator", () => {
     expect(corePkg.name).toBe("@notrelix/analytics-core");
     expect(corePkg.scripts.test).toBe("vitest run");
     expect(
-      existsSync(join(moduleDir, "core/src/__tests__/smoke.test.ts")),
+      existsSync(join(moduleDir, "core/src/__tests__/smoke.unit.test.ts")),
     ).toBe(true);
     expect(existsSync(join(moduleDir, "core/eslint.config.js"))).toBe(true);
 
@@ -438,9 +440,9 @@ describe("create-product-module generator", () => {
     expect(mobileSource).toContain("<View");
     expect(mobileSource).toContain("<Text");
 
-    // G6: mobile test uses .mobile.test.ts taxonomy
+    // G6: mobile test uses .mobile.test.tsx taxonomy
     expect(
-      existsSync(join(moduleDir, "mobile/src/__tests__/smoke.mobile.test.ts")),
+      existsSync(join(moduleDir, "mobile/src/__tests__/smoke.mobile.test.tsx")),
     ).toBe(true);
     expect(
       existsSync(
@@ -491,7 +493,7 @@ describe("create-ui-component generator", () => {
       existsSync(
         join(
           tempDir,
-          "packages/ui/web/src/components/ui/__tests__/alert.test.tsx",
+          "packages/ui/web/src/components/ui/__tests__/alert.component.test.tsx",
         ),
       ),
     ).toBe(true);
@@ -518,7 +520,10 @@ describe("create-ui-component generator", () => {
     expect(existsSync(contractFile)).toBe(true);
     expect(
       existsSync(
-        join(tempDir, "packages/ui/mobile/src/__tests__/toggle.mobile.test.ts"),
+        join(
+          tempDir,
+          "packages/ui/mobile/src/__tests__/toggle.mobile.test.tsx",
+        ),
       ),
     ).toBe(true);
 
@@ -685,8 +690,9 @@ describe("generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)", () => {
         "packages/product/freeze-smoke-analytics/*/src/**/*.test.tsx",
       ]);
 
-      // G3: Architecture check after product generation
+      // G3 & G-TAX-05: Architecture check and taxonomy check after product generation
       runArchitectureCheck();
+      expect(validateTestTaxonomy(tempDir).valid).toBe(true);
 
       // GEN-030: real worktree untouched
       expect(readFileSync(realManifestPath, "utf8")).toBe(manifestBefore);
@@ -696,12 +702,16 @@ describe("generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)", () => {
   );
 
   it(
-    "create-ui-component: updates public export, passes gates, leaves real worktree untouched",
+    "create-ui-component: updates public exports for web and mobile, passes gates, leaves real worktree untouched",
     { timeout: 180_000 },
     () => {
       const gitBefore = gitPorcelain();
       const realIndexBefore = readFileSync(
         join(frontendRoot, "packages/ui/web/src/index.ts"),
+        "utf8",
+      );
+      const realMobileIndexBefore = readFileSync(
+        join(frontendRoot, "packages/ui/mobile/src/index.ts"),
         "utf8",
       );
 
@@ -712,6 +722,13 @@ describe("generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)", () => {
         "freeze-smoke-badge",
         "--target",
         "web",
+      );
+      runGeneratorIn(
+        "create-ui-component",
+        tempDir,
+        "freeze-smoke-chip",
+        "--target",
+        "mobile",
       );
 
       const componentFile = join(
@@ -724,17 +741,33 @@ describe("generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)", () => {
       ).toContain(
         'export { FreezeSmokeBadge } from "./components/ui/freeze-smoke-badge"',
       );
+      const mobileComponentFile = join(
+        tempDir,
+        "packages/ui/mobile/src/components/freeze-smoke-chip.tsx",
+      );
+      expect(existsSync(mobileComponentFile)).toBe(true);
+      expect(
+        readFileSync(join(tempDir, "packages/ui/mobile/src/index.ts"), "utf8"),
+      ).toContain(
+        'export { FreezeSmokeChip, type FreezeSmokeChipProps } from "./components/freeze-smoke-chip"',
+      );
 
-      // Gate: typecheck (whole ui-web package)
+      // Gate: typecheck (whole UI packages)
       runTsc(join(tempDir, "packages/ui/web/tsconfig.json"));
+      runTsc(join(tempDir, "packages/ui/mobile/tsconfig.json"));
 
       // Gate: test
       runVitest([
-        "packages/ui/web/src/components/ui/__tests__/freeze-smoke-badge.test.tsx",
+        "packages/ui/web/src/components/ui/__tests__/freeze-smoke-badge.component.test.tsx",
+        "packages/ui/mobile/src/__tests__/freeze-smoke-chip.mobile.test.tsx",
       ]);
+
+      // Gate: taxonomy check
+      expect(validateTestTaxonomy(tempDir).valid).toBe(true);
 
       // Gate: lint
       runEslint("packages/ui/web/src/components/ui/freeze-smoke-badge.tsx");
+      runEslint("packages/ui/mobile/src/components/freeze-smoke-chip.tsx");
 
       // GEN-030: real worktree untouched
       expect(
@@ -743,6 +776,12 @@ describe("generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)", () => {
           "utf8",
         ),
       ).toBe(realIndexBefore);
+      expect(
+        readFileSync(
+          join(frontendRoot, "packages/ui/mobile/src/index.ts"),
+          "utf8",
+        ),
+      ).toBe(realMobileIndexBefore);
       expect(gitPorcelain()).toBe(gitBefore);
     },
   );

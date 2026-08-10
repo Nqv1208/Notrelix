@@ -54,7 +54,11 @@ function appendExport(indexPath, exportLine) {
 if (target === "web") {
   const componentDir = join(rootDir, "packages/ui/web/src/components/ui");
   const componentFile = join(componentDir, `${componentName}.tsx`);
-  const testFile = join(componentDir, "__tests__", `${componentName}.test.tsx`);
+  const testFile = join(
+    componentDir,
+    "__tests__",
+    `${componentName}.component.test.tsx`,
+  );
   const storyFile = join(
     rootDir,
     "tooling/storybook/web/stories",
@@ -146,7 +150,7 @@ export const Default: Story = {
   const testFile = join(
     rootDir,
     "packages/ui/mobile/src/__tests__",
-    `${componentName}.mobile.test.ts`,
+    `${componentName}.mobile.test.tsx`,
   );
   const indexPath = join(rootDir, "packages/ui/mobile/src/index.ts");
 
