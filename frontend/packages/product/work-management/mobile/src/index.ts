@@ -5,6 +5,15 @@
  * Uses @notrelix/ui-mobile primitives (not shadcn/web).
  */
 
-export { MobileBoardScreen } from './screens/board-screen/mobile-board-screen';
-export { MobileItemDetailScreen } from './screens/item-detail/mobile-item-detail-screen';
-export { MobileWorkspaceHome } from './screens/workspace-home/mobile-workspace-home';
+export {
+  MobileBoardScreen,
+  type MobileBoardScreenProps,
+} from "./screens/board-screen/mobile-board-screen";
+export {
+  MobileItemDetailScreen,
+  type MobileItemDetailScreenProps,
+} from "./screens/item-detail/mobile-item-detail-screen";
+export {
+  MobileWorkspaceHome,
+  type MobileWorkspaceHomeProps,
+} from "./screens/workspace-home/mobile-workspace-home";

@@ -8,7 +8,10 @@ export type {
   UserProfile,
   UserPreferences,
   SecuritySettings,
-} from './types/account';
+} from "./types/account";
 
-export { createAccountService, type AccountApiClient, type AccountEndpoints } from './api/account.service';
-export * from './query';
+export {
+  createAccountService,
+  type AccountApiClient,
+  type AccountEndpoints,
+} from "./api/account.service";

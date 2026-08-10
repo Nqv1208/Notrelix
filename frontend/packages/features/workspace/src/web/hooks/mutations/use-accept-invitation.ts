@@ -1,14 +1,20 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createInvitationsService, type InvitationsEndpoints } from '../../../core/api/invitations.service';
-import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
-import { workspaceQueryKeys } from '../../../core/query/keys';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createInvitationsService,
+  type InvitationsEndpoints,
+} from "../../../core/api/invitations.service";
+import type { WorkspaceApiClient } from "../../../core/api/workspace.service";
+import { workspaceQueryKeys } from "../../../query/keys";
 
 interface UseAcceptInvitationDeps {
   api: WorkspaceApiClient;
   endpoints: InvitationsEndpoints;
 }
 
-export function createUseAcceptInvitation({ api, endpoints }: UseAcceptInvitationDeps) {
+export function createUseAcceptInvitation({
+  api,
+  endpoints,
+}: UseAcceptInvitationDeps) {
   const service = createInvitationsService(api, endpoints);
 
   return function useAcceptInvitation() {
@@ -19,7 +25,9 @@ export function createUseAcceptInvitation({ api, endpoints }: UseAcceptInvitatio
       onSuccess: () => {
         // Accept invitation changes all workspaces, so clear/invalidate workspaces
         queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all });
-        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.pendingInvitations });
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.pendingInvitations,
+        });
       },
     });
   };

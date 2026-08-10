@@ -1,15 +1,10 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import {
-  ArrowRight,
-  Check,
-  LayoutGrid,
-  GripVertical,
-} from 'lucide-react'
+import Link from "next/link";
+import { ArrowRight, Check, LayoutGrid, GripVertical } from "lucide-react";
 
-import { Button } from '@notrelix/ui-web/components/ui/button'
-import { Badge } from '@notrelix/ui-web/components/ui/badge'
+import { Button } from "@notrelix/ui-web/components/ui/button";
+import { Badge } from "@notrelix/ui-web/components/ui/badge";
 
 export function HeroSection() {
   return (
@@ -58,16 +53,18 @@ export function HeroSection() {
           </div>
 
           <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            {['No credit card required', 'Free for small teams', 'Setup in 30s'].map(
-              (text) => (
-                <div key={text} className="flex items-center gap-1.5">
-                  <div className="flex items-center justify-center size-4 rounded-full bg-emerald-500/15">
-                    <Check className="size-2.5 text-emerald-600" />
-                  </div>
-                  {text}
+            {[
+              "No credit card required",
+              "Free for small teams",
+              "Setup in 30s",
+            ].map((text) => (
+              <div key={text} className="flex items-center gap-1.5">
+                <div className="flex items-center justify-center size-4 rounded-full bg-emerald-500/15">
+                  <Check className="size-2.5 text-emerald-600" />
                 </div>
-              )
-            )}
+                {text}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -95,17 +92,17 @@ export function HeroSection() {
                   WORKSPACE
                 </div>
                 {[
-                  { icon: '🚀', label: 'Getting Started', active: true },
-                  { icon: '🗺️', label: 'Product Roadmap', active: false },
-                  { icon: '📝', label: 'Meeting Notes', active: false },
-                  { icon: '🎯', label: 'Design System', active: false },
+                  { icon: "🚀", label: "Getting Started", active: true },
+                  { icon: "🗺️", label: "Product Roadmap", active: false },
+                  { icon: "📝", label: "Meeting Notes", active: false },
+                  { icon: "🎯", label: "Design System", active: false },
                 ].map((item) => (
                   <div
                     key={item.label}
                     className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm mb-0.5 ${
                       item.active
-                        ? 'bg-accent font-medium'
-                        : 'text-muted-foreground'
+                        ? "bg-accent font-medium"
+                        : "text-muted-foreground"
                     }`}
                   >
                     <span className="text-base">{item.icon}</span>
@@ -118,11 +115,11 @@ export function HeroSection() {
                 {[
                   {
                     icon: <LayoutGrid className="size-4 text-violet-500" />,
-                    label: 'Sprint Board',
+                    label: "Sprint Board",
                   },
                   {
                     icon: <LayoutGrid className="size-4 text-emerald-500" />,
-                    label: 'Bug Tracker',
+                    label: "Bug Tracker",
                   },
                 ].map((item) => (
                   <div
@@ -159,10 +156,10 @@ export function HeroSection() {
                     <div className="flex gap-3 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 p-3 flex-1">
                       <span className="text-lg">💡</span>
                       <span className="text-sm">
-                        Type{' '}
+                        Type{" "}
                         <kbd className="px-1.5 py-0.5 rounded bg-background border text-xs font-mono">
                           /
-                        </kbd>{' '}
+                        </kbd>{" "}
                         to insert blocks — headings, lists, code, images, and
                         more.
                       </span>
@@ -193,5 +190,5 @@ export function HeroSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

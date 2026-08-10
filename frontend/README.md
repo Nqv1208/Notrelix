@@ -1,59 +1,39 @@
-# Notrelix Frontend
+# Notrelix Client Monorepo
 
-Multi-client enterprise workspace UI for Notrelix.
+> **Notrelix Enterprise Work-Management OS Frontend Platform**
 
-## Architecture
+---
 
-```
-frontend/
-  apps/
-    marketing/     Next.js App Router (SEO/public)
-    web/           Vite + React + TanStack Router (product app)
-    mobile/        Expo placeholder
+## Architecture Documentation
 
-  packages/
-    foundation/    contracts, kernel, platform, query, realtime, observability
-    runtimes/      web, mobile adapters
-    ui/            tokens, web (shadcn), mobile, icons
-    product/       work-management, docs, automation
-    features/      auth, workspace, account, billing, etc.
+For complete, authoritative frontend architecture documentation, refer to the [Client Architecture Specification](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/README.md).
 
-  tooling/         eslint, tsconfig, dependency-rules, testing, codegen
-```
+### Quick Links
 
-## Tech Stack
+- [Dependency Model](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/dependency-model.md)
+- [Application Composition](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/application-composition.md)
+- [Module Template](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/module-template.md)
+- [API & Contracts](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/api-and-contracts.md)
+- [Realtime Architecture](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/realtime.md)
+- [Freeze Governance](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/freeze-governance.md)
 
-| App | Framework | Router | Bundler |
-|-----|-----------|--------|---------|
-| marketing | Next.js 16 | App Router | Webpack |
-| web | React 19 | TanStack Router | Vite |
-| mobile | Expo | Expo Router | Metro |
+---
 
-## Quick Start
+## Development Workflow
+
+### Requirements
+
+- Node.js >= 22
+- pnpm >= 10
+
+### Common Commands
 
 ```bash
-# Requirements: Node 22+, pnpm 10+
-pnpm install
-pnpm dev:web        # http://localhost:5173
-pnpm dev:marketing  # http://localhost:3000
+pnpm install           # Install dependencies
+pnpm typecheck         # Type-check all packages
+pnpm lint              # Lint all packages
+pnpm test              # Run unit & component tests
+pnpm check:deps        # Run AST architecture checks
+pnpm build             # Build web and marketing apps
+pnpm validate          # Full local validation suite
 ```
-
-## Scripts
-
-```bash
-pnpm dev            # Run all apps
-pnpm build          # Build all apps
-pnpm typecheck      # Type check all packages
-pnpm lint           # Lint all packages
-pnpm test           # Run all tests
-pnpm check:deps     # Check dependency boundaries
-pnpm validate       # typecheck + lint + test + check:deps
-```
-
-## Rules
-
-- Packages must not import `next/*` (except apps/marketing)
-- `apps/web` must not import `next/*`
-- `packages/*` must not read env directly
-- Import via package exports, not deep paths
-- No delete without Safe Delete Audit

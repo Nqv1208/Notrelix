@@ -1,4 +1,4 @@
-export type PlanTier = 'free' | 'pro' | 'business' | 'enterprise';
+export type PlanTier = "free" | "pro" | "business" | "enterprise";
 
 export interface BillingPlan {
   id: string;
@@ -13,7 +13,7 @@ export interface Subscription {
   id: string;
   workspaceId: string;
   planId: string;
-  status: 'active' | 'canceled' | 'past_due' | 'trialing';
+  status: "active" | "canceled" | "past_due" | "trialing";
   currentPeriodStart: string;
   currentPeriodEnd: string;
   cancelAt?: string;
@@ -24,7 +24,7 @@ export interface Invoice {
   workspaceId: string;
   amount: number;
   currency: string;
-  status: 'paid' | 'pending' | 'failed';
+  status: "paid" | "pending" | "failed";
   createdAt: string;
   pdfUrl?: string;
 }

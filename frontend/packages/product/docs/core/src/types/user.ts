@@ -1,7 +1,7 @@
-import type { ID } from './ids';
+import type { ID } from "./ids";
 
-export type DocsRole = 'owner' | 'editor' | 'commenter' | 'viewer';
-export type PresenceStatus = 'active' | 'idle' | 'offline';
+export type DocsRole = "owner" | "editor" | "commenter" | "viewer";
+export type PresenceStatus = "active" | "idle" | "offline";
 
 export interface DocsUser {
   id: ID;

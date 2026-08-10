@@ -8,13 +8,13 @@
 
 ## Summary
 
-| Category | Count | Can Delete Now | Delete After Migration |
-|----------|-------|----------------|----------------------|
-| Duplicate mock files | 4 | 4 | 0 |
-| Old UI components | 52 | 0 | 52 |
-| Lib re-export files | 12 | 0 | 12 |
-| Feature index re-exports | 10 | 0 | 10 |
-| **Total** | **78** | **4** | **74** |
+| Category                 | Count  | Can Delete Now | Delete After Migration |
+| ------------------------ | ------ | -------------- | ---------------------- |
+| Duplicate mock files     | 4      | 4              | 0                      |
+| Old UI components        | 52     | 0              | 52                     |
+| Lib re-export files      | 12     | 0              | 12                     |
+| Feature index re-exports | 10     | 0              | 10                     |
+| **Total**                | **78** | **4**          | **74**                 |
 
 ---
 
@@ -24,12 +24,12 @@
 
 These files are exact duplicates of files in `packages/product/work-management/core/src/mock/` and are not imported anywhere.
 
-| File | Replacement | Imports | Risk |
-|------|-------------|---------|------|
-| `apps/app/features/work-management/mock/mock-service.ts` | `packages/product/work-management/core/src/mock/mock-service.ts` | 0 | None |
-| `apps/app/features/work-management/mock/mock-card-detail-service.ts` | `packages/product/work-management/core/src/mock/mock-card-detail-service.ts` | 0 | None |
-| `apps/app/features/work-management/mock/mock-data.ts` | `packages/product/work-management/core/src/mock/mock-data.ts` | 0 | None |
-| `apps/app/features/work-management/mock/mock-delay.ts` | `packages/product/work-management/core/src/mock/mock-delay.ts` | 0 | None |
+| File                                                                 | Replacement                                                                  | Imports | Risk |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------- | ---- |
+| `apps/app/features/work-management/mock/mock-service.ts`             | `packages/product/work-management/core/src/mock/mock-service.ts`             | 0       | None |
+| `apps/app/features/work-management/mock/mock-card-detail-service.ts` | `packages/product/work-management/core/src/mock/mock-card-detail-service.ts` | 0       | None |
+| `apps/app/features/work-management/mock/mock-data.ts`                | `packages/product/work-management/core/src/mock/mock-data.ts`                | 0       | None |
+| `apps/app/features/work-management/mock/mock-delay.ts`               | `packages/product/work-management/core/src/mock/mock-delay.ts`               | 0       | None |
 
 **Action:** Delete `apps/app/features/work-management/mock/` directory.
 
@@ -53,23 +53,23 @@ These files are exact duplicates of files in `packages/product/work-management/c
 
 12 files re-export from foundation packages. They're compatibility layers.
 
-| File | Replacement | Imports | Can Migrate |
-|------|-------------|---------|-------------|
-| `lib/api/api-client.ts` | `@notrelix/contracts` | 46 | Yes |
-| `lib/api/endpoints.ts` | `@notrelix/contracts` | 46 | Yes |
-| `lib/api/csrf.ts` | `@notrelix/contracts` | 0 | Yes |
-| `lib/api/request-id.ts` | `@notrelix/kernel` | 0 | Yes |
-| `lib/errors/app-error.ts` | `@notrelix/kernel` | 3 | Yes |
-| `lib/errors/error-map.ts` | `@notrelix/kernel` | 0 | Yes |
-| `lib/errors/apply-server-validation-errors.ts` | `@notrelix/kernel` | 0 | Yes |
-| `lib/permissions/use-can.ts` | `@notrelix/platform` | 0 | Yes |
-| `lib/permissions/ability.ts` | `@notrelix/platform` | 0 | Yes |
-| `lib/permissions/permissions.ts` | `@notrelix/platform` | 0 | Yes |
-| `lib/permissions/permission-context.ts` | `@notrelix/platform` | 0 | Yes |
-| `lib/permissions/permission-guard.tsx` | `@notrelix/platform` | 0 | Yes |
-| `lib/query/query-client.ts` | `@notrelix/query` | 0 | Yes |
-| `lib/realtime/realtime-client.ts` | `@notrelix/realtime` | 0 | Yes |
-| `lib/routes.ts` | `@notrelix/platform` | 0 | Yes |
+| File                                           | Replacement           | Imports | Can Migrate |
+| ---------------------------------------------- | --------------------- | ------- | ----------- |
+| `lib/api/api-client.ts`                        | `@notrelix/contracts` | 46      | Yes         |
+| `lib/api/endpoints.ts`                         | `@notrelix/contracts` | 46      | Yes         |
+| `lib/api/csrf.ts`                              | `@notrelix/contracts` | 0       | Yes         |
+| `lib/api/request-id.ts`                        | `@notrelix/kernel`    | 0       | Yes         |
+| `lib/errors/app-error.ts`                      | `@notrelix/kernel`    | 3       | Yes         |
+| `lib/errors/error-map.ts`                      | `@notrelix/kernel`    | 0       | Yes         |
+| `lib/errors/apply-server-validation-errors.ts` | `@notrelix/kernel`    | 0       | Yes         |
+| `lib/permissions/use-can.ts`                   | `@notrelix/platform`  | 0       | Yes         |
+| `lib/permissions/ability.ts`                   | `@notrelix/platform`  | 0       | Yes         |
+| `lib/permissions/permissions.ts`               | `@notrelix/platform`  | 0       | Yes         |
+| `lib/permissions/permission-context.ts`        | `@notrelix/platform`  | 0       | Yes         |
+| `lib/permissions/permission-guard.tsx`         | `@notrelix/platform`  | 0       | Yes         |
+| `lib/query/query-client.ts`                    | `@notrelix/query`     | 0       | Yes         |
+| `lib/realtime/realtime-client.ts`              | `@notrelix/realtime`  | 0       | Yes         |
+| `lib/routes.ts`                                | `@notrelix/platform`  | 0       | Yes         |
 
 **Action:** After migrating all imports to packages, delete `apps/app/lib/api/`, `apps/app/lib/errors/`, `apps/app/lib/permissions/`, `apps/app/lib/query/`, `apps/app/lib/realtime/`, `apps/app/lib/routes.ts`.
 
@@ -79,12 +79,12 @@ These files are exact duplicates of files in `packages/product/work-management/c
 
 10 feature index files re-export from packages.
 
-| Feature | Re-exports From | Imports | Can Migrate |
-|---------|-----------------|---------|-------------|
-| `features/auth/index.ts` | `@notrelix/feature-auth` | Many | Yes |
-| `features/workspace/index.ts` | `@notrelix/feature-workspace` | Many | Yes |
-| `features/work-management/index.ts` | `@notrelix/wm-core`, `@notrelix/wm-state`, `@notrelix/wm-web` | Many | Yes |
-| Others (7) | Various packages | Few | Yes |
+| Feature                             | Re-exports From                                               | Imports | Can Migrate |
+| ----------------------------------- | ------------------------------------------------------------- | ------- | ----------- |
+| `features/auth/index.ts`            | `@notrelix/feature-auth`                                      | Many    | Yes         |
+| `features/workspace/index.ts`       | `@notrelix/feature-workspace`                                 | Many    | Yes         |
+| `features/work-management/index.ts` | `@notrelix/wm-core`, `@notrelix/wm-state`, `@notrelix/wm-web` | Many    | Yes         |
+| Others (7)                          | Various packages                                              | Few     | Yes         |
 
 **Action:** After migrating all imports to packages, delete feature index files.
 
@@ -118,6 +118,7 @@ The actual feature code in `apps/app/features/` (components, hooks, API clients)
 ## Verification Checklist
 
 Before each deletion:
+
 - [ ] Grep for imports of the file/directory
 - [ ] Verify replacement exists in package
 - [ ] Run `pnpm type-check`

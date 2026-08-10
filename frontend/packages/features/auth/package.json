@@ -14,13 +14,13 @@
   "scripts": {
     "test": "vitest run",
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "zod": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
-    "@notrelix/platform": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "react-hook-form": "^7.71.2",
     "@hookform/resolvers": "^5.2.2",
@@ -31,6 +31,7 @@
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

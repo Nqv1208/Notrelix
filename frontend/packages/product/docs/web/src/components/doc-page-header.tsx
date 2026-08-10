@@ -1,13 +1,18 @@
 import {
   createUsePageBreadcrumb,
-  createUseUpdatePage,
   createUseToggleFavorite,
   type DocsApiClient,
   type PageApiEndpoints,
-} from '@notrelix/docs-core';
-import { Button } from '@notrelix/ui-web';
-import { Star, Share2, MoreHorizontal, ChevronRight, BookOpen } from 'lucide-react';
-import { useState } from 'react';
+} from "@notrelix/docs-state";
+import { Button } from "@notrelix/ui-web";
+import {
+  Star,
+  Share2,
+  MoreHorizontal,
+  ChevronRight,
+  BookOpen,
+} from "lucide-react";
+import { useState } from "react";
 
 interface DocPageHeaderProps {
   api: DocsApiClient;
@@ -23,15 +28,12 @@ export function DocPageHeader({
   endpoints,
   workspaceId,
   pageId,
-  pageTitle,
   isFavorited,
 }: DocPageHeaderProps) {
   const usePageBreadcrumb = createUsePageBreadcrumb(api, endpoints);
-  const useUpdatePage = createUseUpdatePage(api, endpoints);
   const useToggleFavorite = createUseToggleFavorite(api, endpoints);
 
-  const { data: breadcrumbs = [] } = usePageBreadcrumb(pageId);
-  const updatePageMutation = useUpdatePage(workspaceId, pageId);
+  const { data: breadcrumbs = [] } = usePageBreadcrumb(workspaceId, pageId);
   const toggleFavoriteMutation = useToggleFavorite(workspaceId, pageId);
 
   const [showActions, setShowActions] = useState(false);
@@ -44,8 +46,13 @@ export function DocPageHeader({
         <ChevronRight className="h-3 w-3" />
         {breadcrumbs.map((bc, idx) => (
           <div key={bc.id} className="flex items-center gap-1">
-            <span>{bc.icon && `${bc.icon} `}{bc.title}</span>
-            {idx < breadcrumbs.length - 1 && <ChevronRight className="h-3 w-3" />}
+            <span>
+              {bc.icon && `${bc.icon} `}
+              {bc.title}
+            </span>
+            {idx < breadcrumbs.length - 1 && (
+              <ChevronRight className="h-3 w-3" />
+            )}
           </div>
         ))}
       </div>
@@ -57,12 +64,16 @@ export function DocPageHeader({
             variant="ghost"
             size="sm"
             className={`h-7 gap-1.5 text-xs ${
-              isFavorited ? 'text-yellow-500 hover:text-yellow-600' : 'text-muted-foreground hover:text-foreground'
+              isFavorited
+                ? "text-yellow-500 hover:text-yellow-600"
+                : "text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => toggleFavoriteMutation.mutate()}
           >
-            <Star className={`h-3.5 w-3.5 ${isFavorited ? 'fill-yellow-500' : ''}`} />
-            {isFavorited ? 'Favorited' : 'Favorite'}
+            <Star
+              className={`h-3.5 w-3.5 ${isFavorited ? "fill-yellow-500" : ""}`}
+            />
+            {isFavorited ? "Favorited" : "Favorite"}
           </Button>
           <Button
             variant="ghost"
@@ -85,7 +96,10 @@ export function DocPageHeader({
           </Button>
           {showActions && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowActions(false)} />
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowActions(false)}
+              />
               <div className="absolute right-0 top-8 z-50 w-48 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
                 <div className="p-1">
                   <button className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">

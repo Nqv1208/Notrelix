@@ -1,12 +1,13 @@
-import { useQuery } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/work-management-core"
-import { commentApi } from "../api/item-comments.api"
+import { useQuery } from "@tanstack/react-query";
+import { wmQueryKeys } from "./keys";
+import { useWorkManagementServices } from "../services";
 
-export function useCardComments(cardId: string) {
+export function useCardComments(cardId: string, workspaceId: string) {
+  const { comments } = useWorkManagementServices();
   return useQuery({
-    queryKey: queryKeys.cards.updates(cardId),
-    queryFn: () => commentApi.getCardUpdates(cardId),
+    queryKey: wmQueryKeys.cardUpdates(workspaceId, cardId),
+    queryFn: () => comments.getCardUpdates(cardId),
     enabled: Boolean(cardId),
     staleTime: 30_000,
-  })
+  });
 }

@@ -13,6 +13,7 @@ node_modules/
 out/
 dist/
 build/
+.expo/
 
 # Turbo
 .turbo/
@@ -47,3 +48,9 @@ next-env.d.ts
 # Lock files (keep one)
 # pnpm-lock.yaml
 # bun.lock
+# Storybook
+storybook-static/
+
+# Playwright
+playwright-report/
+test-results/

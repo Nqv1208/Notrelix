@@ -2,12 +2,12 @@
  * API error response types
  */
 export type ApiError = {
-  code: string
-  message: string
-  details?: Record<string, unknown>
-}
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+};
 
 export type ValidationError = {
-  field: string
-  message: string
-}
+  field: string;
+  message: string;
+};

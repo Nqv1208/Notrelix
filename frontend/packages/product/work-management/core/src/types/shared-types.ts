@@ -1,21 +1,21 @@
 export interface DragItem {
-  type: "card" | "column" | "group"
-  id: string
-  sourceGroupId: string
-  sourceIndex: number
+  type: "card" | "column" | "group";
+  id: string;
+  sourceGroupId: string;
+  sourceIndex: number;
 }
 
 export interface BoardTableGroupState {
-  id: string
-  isCollapsed: boolean
+  id: string;
+  isCollapsed: boolean;
 }
 
 export interface BoardTableSelectionState {
-  selectedCardIds: string[]
-  isAllSelected: boolean
+  selectedCardIds: string[];
+  isAllSelected: boolean;
 }
 
 export interface BoardTableDraftCard {
-  listId: string
-  title: string
+  listId: string;
+  title: string;
 }

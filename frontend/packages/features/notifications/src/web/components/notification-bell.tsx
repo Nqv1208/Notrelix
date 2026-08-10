@@ -1,19 +1,29 @@
-import React, { useState } from 'react';
-import {
-  createUseNotifications,
-  createUseUnreadCount,
-  createUseMarkRead,
-  createUseArchiveNotification,
-} from '../../core';
-import type { NotificationsApiClient, NotificationsEndpoints } from '../../core/api/notifications.service';
+import React, { useState } from "react";
+import { createUseNotifications } from "../query/hooks/use-notifications";
+import { createUseUnreadCount } from "../query/hooks/use-unread-count";
+import { createUseMarkRead } from "../query/hooks/use-mark-read";
+import { createUseArchiveNotification } from "../query/hooks/use-archive-notification";
+import type {
+  NotificationsApiClient,
+  NotificationsEndpoints,
+} from "../../core/api/notifications.service";
 import {
   Button,
   Popover,
   PopoverTrigger,
   PopoverContent,
   ScrollArea,
-} from '@notrelix/ui-web';
-import { Bell, Check, Trash2, MailOpen, MessageSquare, AlertCircle, UserPlus, LayoutGrid } from 'lucide-react';
+} from "@notrelix/ui-web";
+import {
+  Bell,
+  Check,
+  Trash2,
+  MailOpen,
+  MessageSquare,
+  AlertCircle,
+  UserPlus,
+  LayoutGrid,
+} from "lucide-react";
 
 interface CreateNotificationBellDeps {
   api: NotificationsApiClient;
@@ -30,7 +40,8 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
   const useArchiveNotification = createUseArchiveNotification(deps);
 
   return function NotificationBell() {
-    const { data: notifications = [], isLoading: listLoading } = useNotifications();
+    const { data: notifications = [], isLoading: listLoading } =
+      useNotifications();
     const { data: countData } = useUnreadCount();
     const { markRead, markAllRead } = useMarkRead();
     const archiveMutation = useArchiveNotification();
@@ -55,7 +66,7 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
     const formatTime = (isoString: string) => {
       const date = new Date(isoString);
       const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-      if (seconds < 60) return 'Just now';
+      if (seconds < 60) return "Just now";
       const minutes = Math.floor(seconds / 60);
       if (minutes < 60) return `${minutes}m ago`;
       const hours = Math.floor(minutes / 60);
@@ -65,13 +76,13 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
 
     const getIcon = (type: string) => {
       switch (type) {
-        case 'mention':
+        case "mention":
           return <UserPlus className="h-4 w-4 text-blue-500" />;
-        case 'comment':
+        case "comment":
           return <MessageSquare className="h-4 w-4 text-green-500" />;
-        case 'assignment':
+        case "assignment":
           return <LayoutGrid className="h-4 w-4 text-amber-500" />;
-        case 'system':
+        case "system":
         default:
           return <AlertCircle className="h-4 w-4 text-red-500" />;
       }
@@ -121,16 +132,22 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
                   <div
                     key={notif.id}
                     className={`p-3 text-left space-y-1 hover:bg-muted/30 transition-colors flex items-start gap-3 relative group ${
-                      !notif.isRead ? 'bg-muted/10 font-medium' : ''
+                      !notif.isRead ? "bg-muted/10 font-medium" : ""
                     }`}
                   >
                     <div className="mt-0.5 shrink-0 bg-muted/40 p-1.5 rounded-lg">
                       {getIcon(notif.type)}
                     </div>
                     <div className="flex-1 space-y-0.5 overflow-hidden">
-                      <p className="text-xs text-foreground leading-tight truncate">{notif.title}</p>
-                      <p className="text-[11px] text-muted-foreground leading-snug">{notif.body}</p>
-                      <span className="text-[10px] text-muted-foreground">{formatTime(notif.createdAt)}</span>
+                      <p className="text-xs text-foreground leading-tight truncate">
+                        {notif.title}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        {notif.body}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatTime(notif.createdAt)}
+                      </span>
                     </div>
 
                     {/* Actions Panel */}

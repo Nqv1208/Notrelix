@@ -1,12 +1,18 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+import { useState } from "react";
+import { useRouter } from "expo-router";
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   return (
     <View style={styles.container}>
@@ -46,7 +52,7 @@ export default function SignUpScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity onPress={() => router.push('/sign-in')}>
+      <TouchableOpacity onPress={() => router.push("/sign-in")}>
         <Text style={styles.link}>
           Already have an account? <Text style={styles.linkBold}>Sign in</Text>
         </Text>
@@ -56,14 +62,26 @@ export default function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
-  subtitle: { fontSize: 14, color: '#666', marginBottom: 32 },
+  container: { flex: 1, justifyContent: "center", padding: 20 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 4 },
+  subtitle: { fontSize: 14, color: "#666", marginBottom: 32 },
   form: { marginBottom: 24 },
-  label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: '#d0d4e4', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 16 },
-  button: { backgroundColor: '#6161ff', padding: 12, borderRadius: 8, alignItems: 'center' },
-  buttonText: { color: 'white', fontWeight: '600', fontSize: 16 },
-  link: { textAlign: 'center', color: '#666' },
-  linkBold: { fontWeight: '600', color: '#333' },
+  label: { fontSize: 14, fontWeight: "500", marginBottom: 4 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#d0d4e4",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: "#6161ff",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonText: { color: "white", fontWeight: "600", fontSize: 16 },
+  link: { textAlign: "center", color: "#666" },
+  linkBold: { fontWeight: "600", color: "#333" },
 });

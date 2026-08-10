@@ -8,13 +8,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./core": "./src/core/index.ts",
-    "./core/query/keys": "./src/core/query/keys.ts",
+    "./query/keys": "./src/query/keys.ts",
     "./web": "./src/web/index.ts"
   },
   "scripts": {
     "test": "vitest run",
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@notrelix/contracts": "workspace:*",
@@ -45,6 +46,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sonner": "^2.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

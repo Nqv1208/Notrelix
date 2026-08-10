@@ -1,6 +1,23 @@
-export { apiFetch, createNotrelixClient, type ApiRequestOptions, type NotrelixClient } from './client'
-/** @deprecated Use createNotrelixClient via AppRuntime instead */
-export { api, configureApi } from './client'
-export { getCsrfToken } from './client'
-export { endpoints } from './endpoints'
-export type { ApiError, ValidationError, PaginationParams, PaginatedResponse } from './types'
+export {
+  createNotrelixClient,
+  type ApiRequestOptions,
+  type NotrelixClient,
+  type NotrelixClientConfig,
+  type SessionExpiredEvent,
+  getCsrfToken,
+} from "./client";
+export { endpoints } from "./endpoints";
+export type {
+  ApiError,
+  ValidationError,
+  PaginationParams,
+  PaginatedResponse,
+  OperationPathParams,
+  OperationRequestBody,
+  OperationResponse,
+} from "./types";
+export type { paths, operations } from "./generated/rest";
+export type {
+  GeneratedRealtimeMessage,
+  RealtimeEventMessage,
+} from "./generated/realtime";

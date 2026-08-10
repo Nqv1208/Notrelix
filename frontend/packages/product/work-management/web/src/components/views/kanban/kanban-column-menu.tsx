@@ -1,5 +1,5 @@
-import { MoreHorizontal, Palette, Pen, Trash2 } from "lucide-react"
-import { Button } from "@notrelix/ui-web"
+import { MoreHorizontal, Palette, Pen, Trash2 } from "lucide-react";
+import { Button } from "@notrelix/ui-web";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@notrelix/ui-web"
+} from "@notrelix/ui-web";
 
 const COLOR_OPTIONS = [
   { name: "Mint", value: "#bcfe90" },
@@ -24,16 +24,16 @@ const COLOR_OPTIONS = [
   { name: "Teal", value: "#2a9d99" },
   { name: "Coral", value: "#ff8a33" },
   { name: "Grape", value: "#ad6ded" },
-]
+];
 
 export function KanbanColumnMenu({
   onRename,
   onColorChange,
   onDelete,
 }: {
-  onRename: () => void
-  onColorChange: (color: string) => void
-  onDelete: () => void
+  onRename: () => void;
+  onColorChange: (color: string) => void;
+  onDelete: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -70,11 +70,14 @@ export function KanbanColumnMenu({
         </DropdownMenuSub>
 
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={onDelete}>
+        <DropdownMenuItem
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+          onClick={onDelete}
+        >
           <Trash2 className="mr-2 size-4" />
           Delete column
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

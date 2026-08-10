@@ -1,64 +1,62 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { queryKeys } from "@notrelix/work-management-core"
-import { cardApi } from "../api/item.api"
-import { labelApi } from "../api/label.api"
-import type { CardDetail } from "@notrelix/work-management-core"
-import { useUpdateCard } from "../mutations/use-update-card"
-import { useUpdateFieldValue } from "../mutations/use-update-field-value"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { wmQueryKeys } from "./keys";
+import type { CardDetail } from "@notrelix/work-management-core";
+import { useUpdateCard } from "../mutations/use-update-card";
+import { useUpdateFieldValue } from "../mutations/use-update-field-value";
+import { useWorkManagementServices } from "../services";
 
-export function useCardDetail(cardId: string, boardId: string, workspaceId: string) {
-  const queryClient = useQueryClient()
-  const detailKey = queryKeys.cards.detail(cardId)
-  const fullBoardKey = queryKeys.boards.fullBoard(boardId, workspaceId)
+export function useCardDetail(
+  cardId: string,
+  boardId: string,
+  workspaceId: string,
+) {
+  const queryClient = useQueryClient();
+  const { cards, labels } = useWorkManagementServices();
+  const detailKey = wmQueryKeys.cardDetail(workspaceId, cardId);
+  const fullBoardKey = wmQueryKeys.fullBoard(workspaceId!, boardId);
 
   const cardQuery = useQuery<CardDetail>({
     queryKey: detailKey,
-    queryFn: () => cardApi.getCard(cardId),
+    queryFn: () => cards.getCard(cardId),
     enabled: Boolean(cardId),
     staleTime: 10_000,
-  })
+  });
 
-  const updateCardMutation = useUpdateCard(boardId, workspaceId)
-  const updateFieldValueMutation = useUpdateFieldValue(boardId, workspaceId)
+  const updateCardMutation = useUpdateCard(boardId, workspaceId);
+  const updateFieldValueMutation = useUpdateFieldValue(boardId, workspaceId);
 
   const addLabelMutation = useMutation({
-    mutationFn: (labelId: string) => labelApi.addLabelToCard(cardId, labelId),
+    mutationFn: (labelId: string) => labels.addLabelToCard(cardId, labelId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: detailKey })
-      void queryClient.invalidateQueries({ queryKey: fullBoardKey })
+      void queryClient.invalidateQueries({ queryKey: detailKey });
+      void queryClient.invalidateQueries({ queryKey: fullBoardKey });
     },
-    onError: () => {
-      toast.error("Failed to add label.")
-    },
-  })
+  });
 
   const removeLabelMutation = useMutation({
-    mutationFn: (labelId: string) => labelApi.removeLabelFromCard(cardId, labelId),
+    mutationFn: (labelId: string) =>
+      labels.removeLabelFromCard(cardId, labelId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: detailKey })
-      void queryClient.invalidateQueries({ queryKey: fullBoardKey })
+      void queryClient.invalidateQueries({ queryKey: detailKey });
+      void queryClient.invalidateQueries({ queryKey: fullBoardKey });
     },
-    onError: () => {
-      toast.error("Failed to remove label.")
-    },
-  })
+  });
 
   const updateTitle = (title: string) => {
-    updateCardMutation.mutate({ cardId, patch: { title } })
-  }
+    updateCardMutation.mutate({ cardId, patch: { title } });
+  };
 
   const updateDescription = (descriptionMd: string) => {
-    updateCardMutation.mutate({ cardId, patch: { descriptionMd } })
-  }
+    updateCardMutation.mutate({ cardId, patch: { descriptionMd } });
+  };
 
   const addLabel = (labelId: string) => {
-    addLabelMutation.mutate(labelId)
-  }
+    addLabelMutation.mutate(labelId);
+  };
 
   const removeLabel = (labelId: string) => {
-    removeLabelMutation.mutate(labelId)
-  }
+    removeLabelMutation.mutate(labelId);
+  };
 
   return {
     card: cardQuery.data,
@@ -70,5 +68,5 @@ export function useCardDetail(cardId: string, boardId: string, workspaceId: stri
     removeLabel,
     updateCard: updateCardMutation.mutate,
     updateFieldValue: updateFieldValueMutation.mutate,
-  }
+  };
 }

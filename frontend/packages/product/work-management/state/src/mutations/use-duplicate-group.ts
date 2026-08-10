@@ -1,22 +1,16 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { queryKeys } from "@notrelix/work-management-core"
-import { groupApi } from "../api/group.api"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { wmQueryKeys } from "../queries/keys";
+import { useWorkManagementServices } from "../services";
 
 export function useDuplicateGroup(boardId: string, workspaceId?: string) {
-  const queryClient = useQueryClient()
-  const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
+  const queryClient = useQueryClient();
+  const { groups } = useWorkManagementServices();
+  const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId);
 
   return useMutation({
-    mutationFn: groupApi.duplicateGroup,
-    onSuccess: () => {
-      toast.success("Group duplicated.")
-    },
-    onError: () => {
-      toast.error("Failed to duplicate group.")
-    },
+    mutationFn: groups.duplicateGroup,
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey })
+      queryClient.invalidateQueries({ queryKey });
     },
-  })
+  });
 }

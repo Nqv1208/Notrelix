@@ -483,6 +483,22 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 3. Review existing code in the same domain for patterns
 4. Check git history for similar changes: `git log --grep="keyword"`
 
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as GitHub issues (`Nqv1208/Notrelix`). See [`docs/agents/issue-tracker.md`](file:///Users/nqvinh/Documents/projects/todo-app/docs/agents/issue-tracker.md).
+
+### Triage labels
+
+Canonical triage roles mapped to repo labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See [`docs/agents/triage-labels.md`](file:///Users/nqvinh/Documents/projects/todo-app/docs/agents/triage-labels.md).
+
+### Domain docs
+
+Multi-context layout using `CONTEXT-MAP.md` at root pointing to per-context `CONTEXT.md` files. See [`docs/agents/domain.md`](file:///Users/nqvinh/Documents/projects/todo-app/docs/agents/domain.md).
+
 ---
 
-*Last updated: 2026-05-31*
+*Last updated: 2026-08-08*
+

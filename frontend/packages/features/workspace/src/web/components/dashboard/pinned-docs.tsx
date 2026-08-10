@@ -1,7 +1,5 @@
-import { Link } from '@tanstack/react-router';
-import { FileText, ArrowRight } from 'lucide-react';
-import { Badge } from '@notrelix/ui-web';
-import { cn } from '@notrelix/ui-web';
+import { Link } from "@tanstack/react-router";
+import { FileText } from "lucide-react";
 
 interface Doc {
   id: string;
@@ -41,7 +39,9 @@ export function PinnedDocs({ workspaceId, docs, isLoading }: PinnedDocsProps) {
           ))}
         </div>
       ) : docs.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4">No documents yet. Create your first document to get started.</p>
+        <p className="text-sm text-muted-foreground py-4">
+          No documents yet. Create your first document to get started.
+        </p>
       ) : (
         <div className="space-y-1">
           {docs.slice(0, 5).map((doc) => (

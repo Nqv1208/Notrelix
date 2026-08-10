@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "next build",
+  "buildCommand": "next build --webpack",
   "outputDirectory": ".next",
   "installCommand": "pnpm install --frozen-lockfile",
   "regions": ["sin1"],
@@ -15,6 +15,10 @@
     }
   ],
   "redirects": [
-    { "source": "/app", "destination": "https://app.notrelix.com", "permanent": false }
+    {
+      "source": "/app",
+      "destination": "https://app.notrelix.com",
+      "permanent": false
+    }
   ]
 }

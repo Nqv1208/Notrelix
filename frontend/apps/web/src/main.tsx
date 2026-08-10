@@ -1,34 +1,53 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { RouterProvider } from '@tanstack/react-router';
-// @deprecated — configureApi will be removed once all components migrate to useAppRuntime()
-import { configureApi } from '@notrelix/contracts';
-import { createAppRuntime } from '@notrelix/runtime-web';
-import { AppProviders } from './providers/app-providers';
-import { router } from './router';
-import './styles/globals.css';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { RouterProvider } from "@tanstack/react-router";
+import { createAppRuntime } from "@notrelix/runtime-web";
+import { readWebRuntimeEnvironment } from "./config/read-runtime-environment";
+import { createWebApplicationServices } from "./composition/application-services";
+import { AppProviders } from "./providers/app-providers";
+import { router } from "./router";
+import { sanitizeInternalReturnUrl } from "./routing/sanitize-return-url";
+import "./styles/globals.css";
 
 /**
- * Composition root: build the application runtime from environment variables
- * and inject it into the provider tree. NO new code should use `api` directly;
- * new components must use `useAppRuntime()` and `runtime.api`.
- *
- * The `configureApi()` call below is a DEPRECATED bridge for legacy module-level
- * component factories that have not yet migrated to the AppRuntime pattern.
- * Track migration progress: see `MIGRATION_TRACKER.md`
+ * Composition root: read normalized runtime environment and instantiate AppRuntime.
  */
-const runtime = createAppRuntime(import.meta.env);
-configureApi(runtime.env.apiUrl); // bridge: synchronizes legacy api singleton URL
+const runtimeEnvironment = readWebRuntimeEnvironment(import.meta.env);
+const runtime = createAppRuntime(runtimeEnvironment);
+const services = createWebApplicationServices(runtime, {
+  navigateToSignedOut: () => {
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const redirectPath = sanitizeInternalReturnUrl(currentUrl);
+    void router.navigate({
+      to: "/sign-in",
+      search: { redirect: redirectPath },
+      replace: true,
+    });
+  },
+});
+
+// Register HMR disposal and pagehide cleanup
+const teardown = () => {
+  void services.dispose();
+};
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(teardown);
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", teardown, { once: true });
+}
 
 function App() {
   return (
-    <AppProviders runtime={runtime}>
-      <RouterProvider router={router} />
+    <AppProviders services={services}>
+      <RouterProvider router={router} context={{ services }} />
     </AppProviders>
   );
 }
 
-const rootElement = document.getElementById('root')!;
+const rootElement = document.getElementById("root")!;
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <App />

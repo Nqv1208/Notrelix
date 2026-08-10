@@ -1,0 +1,23 @@
+/*
+ * Storybook-only Tailwind v4 entry.
+ *
+ * The web app entry (globals.css) scans only its own source tree, so the
+ * ui packages and this story package would otherwise be unstyled. This
+ * stylesheet adds the missing source roots and disables motion for the
+ * deterministic visual smoke gate.
+ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@source "../../../packages/ui/web/src";
+@source "../../../packages/ui/tokens/src";
+@source "../stories";
+
+/* Deterministic visual smoke: no animation, no transition, no autofill. */
+*,
+*::before,
+*::after {
+  animation: none !important;
+  transition: none !important;
+}

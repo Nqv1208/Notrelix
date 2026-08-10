@@ -1,10 +1,10 @@
 export type NotificationType =
-  | 'mention'
-  | 'comment'
-  | 'assignment'
-  | 'status_change'
-  | 'invitation'
-  | 'system';
+  | "mention"
+  | "comment"
+  | "assignment"
+  | "status_change"
+  | "invitation"
+  | "system";
 
 export interface Notification {
   id: string;

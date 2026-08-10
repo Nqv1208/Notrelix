@@ -9,18 +9,12 @@ export type {
   Reaction,
   Presence,
   Attachment,
-} from './types/collaboration';
+} from "./types/collaboration";
 
-export { collaborationQueryKeys } from './query/keys';
-
-export {
-  createUseComments,
-  createUseCreateComment,
-  createUseDeleteComment,
-} from './query/hooks/use-comments';
+export { collaborationQueryKeys } from "./query/keys";
 
 export {
   createCommentService,
   type CollaborationApiClient,
   type CollaborationEndpoints,
-} from './api/comment.service';
+} from "./api/comment.service";

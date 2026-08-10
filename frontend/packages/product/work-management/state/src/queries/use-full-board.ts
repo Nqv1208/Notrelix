@@ -1,14 +1,15 @@
-import { useQuery } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/work-management-core"
-import { boardApi } from "../api/board.api"
+import { useQuery } from "@tanstack/react-query";
+import { wmQueryKeys } from "./keys";
+import { useWorkManagementServices } from "../services";
 
 export function useFullBoard(boardId?: string, workspaceId?: string) {
+  const { boards } = useWorkManagementServices();
   const query = useQuery({
-    queryKey: queryKeys.boards.fullBoard(boardId ?? "pending", workspaceId),
-    queryFn: () => boardApi.getFullBoard(boardId!, { workspaceId: workspaceId! }),
+    queryKey: wmQueryKeys.fullBoard(workspaceId!, boardId ?? "pending"),
+    queryFn: () => boards.getFullBoard(boardId!, { workspaceId: workspaceId! }),
     enabled: Boolean(boardId && workspaceId),
     staleTime: 10_000,
-  })
+  });
 
   return {
     board: query.data?.board,
@@ -16,5 +17,5 @@ export function useFullBoard(boardId?: string, workspaceId?: string) {
     fieldDefinitions: query.data?.fieldDefinitions ?? [],
     isLoading: query.isLoading,
     error: query.error,
-  }
+  };
 }

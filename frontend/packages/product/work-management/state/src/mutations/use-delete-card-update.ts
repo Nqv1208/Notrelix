@@ -1,17 +1,20 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { queryKeys } from "@notrelix/work-management-core"
-import { commentApi } from "../api/item-comments.api"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { wmQueryKeys } from "../queries/keys";
+import { useWorkManagementServices } from "../services";
 
-export function useDeleteCardUpdate(cardId: string) {
-  const queryClient = useQueryClient()
+export function useDeleteCardUpdate(cardId: string, workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { comments } = useWorkManagementServices();
 
   return useMutation({
-    mutationFn: commentApi.deleteCardUpdate,
+    mutationFn: comments.deleteCardUpdate,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.cards.updates(cardId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.cards.activity(cardId) })
+      queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.cardUpdates(workspaceId, cardId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.cardActivity(workspaceId, cardId),
+      });
     },
-    onError: () => toast.error("Failed to delete update."),
-  })
+  });
 }

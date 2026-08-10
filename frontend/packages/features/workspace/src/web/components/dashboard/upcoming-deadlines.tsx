@@ -1,11 +1,11 @@
-import { Clock } from 'lucide-react';
-import { cn } from '@notrelix/ui-web';
+import { Clock } from "lucide-react";
+import { cn } from "@notrelix/ui-web";
 
 interface Deadline {
   id: string;
   title: string;
   dueDate: string;
-  priority: 'urgent' | 'high' | 'medium' | 'low';
+  priority: "urgent" | "high" | "medium" | "low";
   source?: string;
 }
 
@@ -15,10 +15,10 @@ interface UpcomingDeadlinesProps {
 }
 
 const priorityDot: Record<string, string> = {
-  urgent: 'bg-red-500',
-  high: 'bg-amber-500',
-  medium: 'bg-violet-500',
-  low: 'bg-slate-400',
+  urgent: "bg-red-500",
+  high: "bg-amber-500",
+  medium: "bg-violet-500",
+  low: "bg-slate-400",
 };
 
 function formatDateLabel(dateStr: string) {
@@ -29,13 +29,17 @@ function formatDateLabel(dateStr: string) {
   target.setHours(0, 0, 0, 0);
   const diffDays = Math.round((target.getTime() - today.getTime()) / 86400000);
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays < 7) return date.toLocaleDateString('en-US', { weekday: 'long' });
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays < 7)
+    return date.toLocaleDateString("en-US", { weekday: "long" });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export function UpcomingDeadlines({ deadlines, isLoading }: UpcomingDeadlinesProps) {
+export function UpcomingDeadlines({
+  deadlines,
+  isLoading,
+}: UpcomingDeadlinesProps) {
   const grouped = deadlines.reduce<Record<string, Deadline[]>>((acc, d) => {
     const label = formatDateLabel(d.dueDate);
     (acc[label] ??= []).push(d);
@@ -56,20 +60,36 @@ export function UpcomingDeadlines({ deadlines, isLoading }: UpcomingDeadlinesPro
           ))}
         </div>
       ) : deadlines.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4">Your tasks with due dates will appear in this timeline.</p>
+        <p className="text-sm text-muted-foreground py-4">
+          Your tasks with due dates will appear in this timeline.
+        </p>
       ) : (
         <div className="space-y-4">
           {Object.entries(grouped).map(([label, items]) => (
             <div key={label}>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">{label}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                {label}
+              </p>
               <div className="space-y-1">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/30 transition-colors">
-                    <span className={cn('size-2 rounded-full shrink-0', priorityDot[item.priority])} />
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/30 transition-colors"
+                  >
+                    <span
+                      className={cn(
+                        "size-2 rounded-full shrink-0",
+                        priorityDot[item.priority],
+                      )}
+                    />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate text-foreground">{item.title}</p>
+                      <p className="text-sm truncate text-foreground">
+                        {item.title}
+                      </p>
                       {item.source && (
-                        <p className="text-[11px] text-muted-foreground truncate">{item.source}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {item.source}
+                        </p>
                       )}
                     </div>
                   </div>

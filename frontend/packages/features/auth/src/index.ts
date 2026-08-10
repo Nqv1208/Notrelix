@@ -16,10 +16,10 @@ export type {
   RefreshRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-} from './core';
+} from "./core";
 
-export { createAuthService } from './core';
-export type { AuthApiClient, AuthEndpoints } from './core';
+export { createAuthService } from "./core";
+export type { AuthApiClient, AuthEndpoints } from "./core";
 
 export {
   loginSchema,
@@ -27,9 +27,9 @@ export {
   forgotPasswordSchema,
   resetPasswordSchema,
   AUTH_ERROR_KEYS,
-} from './core';
+} from "./core";
 
-export { parseAuthError, resolveErrorDisplay } from './core';
+export { parseAuthError, resolveErrorDisplay } from "./core";
 
 // Web
 export {
@@ -45,4 +45,4 @@ export {
   createAuthProvider,
   useAuth,
   useCurrentUser,
-} from './web';
+} from "./web";

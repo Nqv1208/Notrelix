@@ -10,15 +10,21 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "@notrelix/docs-core": "workspace:*",
     "@notrelix/docs-collaboration": "workspace:*",
+    "@notrelix/docs-core": "workspace:*",
+    "@notrelix/platform": "workspace:*",
     "@notrelix/ui-mobile": "workspace:*",
-    "@notrelix/platform": "workspace:*"
+    "react": "catalog:",
+    "react-native": "latest"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-native": "^0.73.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

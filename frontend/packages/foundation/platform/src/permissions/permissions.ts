@@ -28,13 +28,13 @@ export const permissionValues = [
   "governance.role.manage",
   "automation.manage",
   "integration.manage",
-] as const
+] as const;
 
-export type Permission = (typeof permissionValues)[number]
+export type Permission = (typeof permissionValues)[number];
 
 type NestedRecord<T> = {
-  [key: string]: T | NestedRecord<T>
-}
+  [key: string]: T | NestedRecord<T>;
+};
 
 export const permissions = {
   workspace: {
@@ -89,4 +89,4 @@ export const permissions = {
   integration: {
     manage: "integration.manage" as Permission,
   },
-} as const satisfies NestedRecord<Permission>
+} as const satisfies NestedRecord<Permission>;

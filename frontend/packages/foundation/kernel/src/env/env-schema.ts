@@ -1,60 +1,143 @@
 import { z } from "zod";
 
+export type RuntimeMode = "development" | "test" | "production";
+
+export interface RuntimeEnvironmentInput {
+  readonly mode?: RuntimeMode;
+  readonly apiUrl?: string;
+  readonly realtimeUrl?: string;
+  readonly appUrl?: string;
+  readonly releaseSha?: string;
+  readonly mockApi?: boolean;
+}
+
+export interface ResolvedRuntimeEnvironment {
+  readonly mode: RuntimeMode;
+  readonly isProduction: boolean;
+  readonly isDevelopment: boolean;
+  readonly apiUrl: string;
+  readonly realtimeUrl: string;
+  readonly wsUrl: string; // Alias for realtimeUrl backward compatibility
+  readonly appUrl: string;
+  readonly webUrl: string; // Alias for appUrl backward compatibility
+  readonly releaseSha: string;
+  readonly mockApi: boolean;
+  readonly nodeEnv: RuntimeMode; // Alias for mode backward compatibility
+}
+
 export const envSchema = z.object({
-  NEXT_PUBLIC_API_URL: z.string().url().optional(),
-  NEXT_PUBLIC_WS_URL: z.string().url().optional(),
+  mode: z.enum(["development", "production", "test"]).default("development"),
+  apiUrl: z.string().url().optional(),
+  realtimeUrl: z.string().url().optional(),
+  appUrl: z.string().url().optional(),
+  releaseSha: z.string().optional(),
+  mockApi: z.boolean().default(false),
+
+  // Legacy Vite / Next environment mapping fallbacks
   VITE_API_URL: z.string().url().optional(),
   VITE_WS_URL: z.string().url().optional(),
   VITE_APP_URL: z.string().url().optional(),
   VITE_RELEASE_SHA: z.string().optional(),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  VITE_MOCK_API: z.string().optional(),
+  NODE_ENV: z.enum(["development", "production", "test"]).optional(),
 });
 
-export type Env = z.infer<typeof envSchema>;
-
-export interface ResolvedEnv {
-  apiUrl: string;
-  wsUrl: string;
-  nodeEnv: "development" | "production" | "test";
-  appUrl?: string;
-  releaseSha?: string;
+function isValidUrl(val: string | undefined): boolean {
+  if (!val || typeof val !== "string") return false;
+  try {
+    new URL(val);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export function parseEnv(input: Partial<Record<string, string | undefined>>): ResolvedEnv {
-  const parsedEnv = envSchema.safeParse(input);
+export function parseEnv(
+  rawInput: RuntimeEnvironmentInput | Record<string, unknown> = {},
+): ResolvedRuntimeEnvironment {
+  const input = rawInput as Record<string, unknown>;
 
-  if (!parsedEnv.success) {
-    console.error("[Kernel Env] Invalid environment variables:", parsedEnv.error.format());
-    throw new Error("Invalid environment variables configuration");
-  }
+  const mode: RuntimeMode =
+    input.mode === "production" ||
+    input.mode === "test" ||
+    input.mode === "development"
+      ? (input.mode as RuntimeMode)
+      : input.NODE_ENV === "production" ||
+          input.NODE_ENV === "test" ||
+          input.NODE_ENV === "development"
+        ? (input.NODE_ENV as RuntimeMode)
+        : "development";
 
-  const data = parsedEnv.data;
-  const isProduction = data.NODE_ENV === "production";
+  const rawApiUrl =
+    (input.apiUrl as string) ||
+    (input.VITE_API_URL as string) ||
+    (input.NEXT_PUBLIC_API_URL as string) ||
+    (input.EXPO_PUBLIC_API_URL as string);
 
-  // Fail-fast in production if required URLs are missing
+  const rawRealtimeUrl =
+    (input.realtimeUrl as string) ||
+    (input.VITE_WS_URL as string) ||
+    (input.NEXT_PUBLIC_WS_URL as string) ||
+    (input.EXPO_PUBLIC_REALTIME_URL as string);
+
+  const rawAppUrl =
+    (input.appUrl as string) ||
+    (input.VITE_APP_URL as string) ||
+    (input.EXPO_PUBLIC_APP_URL as string);
+
+  const releaseSha =
+    (input.releaseSha as string) ||
+    (input.VITE_RELEASE_SHA as string) ||
+    (input.EXPO_PUBLIC_RELEASE_SHA as string) ||
+    "dev-local";
+
+  const mockApi =
+    typeof input.mockApi === "boolean"
+      ? input.mockApi
+      : input.VITE_MOCK_API === "true";
+
+  const isProduction = mode === "production";
+  const isDevelopment = mode === "development";
+
   if (isProduction) {
-    const missingVars: string[] = [];
-    if (!data.VITE_API_URL && !data.NEXT_PUBLIC_API_URL) missingVars.push("VITE_API_URL");
-    if (!data.VITE_WS_URL && !data.NEXT_PUBLIC_WS_URL) missingVars.push("VITE_WS_URL");
-    if (missingVars.length > 0) {
+    const missing: string[] = [];
+    if (!isValidUrl(rawApiUrl)) missing.push("apiUrl");
+    if (!isValidUrl(rawRealtimeUrl)) missing.push("realtimeUrl");
+    if (!isValidUrl(rawAppUrl)) missing.push("appUrl");
+    if (missing.length > 0) {
       throw new Error(
-        `[Kernel Env] Missing required environment variables in production: ${missingVars.join(", ")}`
+        `[Kernel Env] Missing or invalid required environment variables in production: ${missing.join(", ")}`,
       );
+    }
+    if (mockApi) {
+      throw new Error("[Kernel Env] mockApi cannot be true in production mode");
     }
   }
 
-  const apiUrl = data.VITE_API_URL ?? data.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-  const wsUrl = data.VITE_WS_URL ?? data.NEXT_PUBLIC_WS_URL ?? "ws://localhost:5000/stream";
+  const resolvedApiUrl = isValidUrl(rawApiUrl)
+    ? rawApiUrl!
+    : "http://localhost:5000";
+  const resolvedRealtimeUrl = isValidUrl(rawRealtimeUrl)
+    ? rawRealtimeUrl!
+    : "ws://localhost:5000/realtime";
+  const resolvedAppUrl = isValidUrl(rawAppUrl)
+    ? rawAppUrl!
+    : "http://localhost:3000";
 
   return {
-    apiUrl,
-    wsUrl,
-    nodeEnv: data.NODE_ENV,
-    appUrl: data.VITE_APP_URL,
-    releaseSha: data.VITE_RELEASE_SHA,
+    mode,
+    isProduction,
+    isDevelopment,
+    apiUrl: resolvedApiUrl,
+    realtimeUrl: resolvedRealtimeUrl,
+    wsUrl: resolvedRealtimeUrl,
+    appUrl: resolvedAppUrl,
+    webUrl: resolvedAppUrl,
+    releaseSha,
+    mockApi,
+    nodeEnv: mode,
   };
 }
 
-// NOTE: Do NOT export a global `env = parseEnv()` singleton.
-// Applications must call parseEnv(import.meta.env) explicitly via createAppRuntime().
+export type Env = ResolvedRuntimeEnvironment;
 export const envSchemaDefinition = envSchema;

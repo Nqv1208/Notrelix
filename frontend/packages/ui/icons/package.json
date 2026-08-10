@@ -10,12 +10,16 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "dependencies": {
     "lucide-react": "^0.562.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "catalog:",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

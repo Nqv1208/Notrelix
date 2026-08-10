@@ -10,7 +10,8 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -18,6 +19,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@notrelix/docs-collaboration": "workspace:*",
     "@notrelix/docs-core": "workspace:*",
+    "@notrelix/docs-state": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "lucide-react": "^0.562.0",
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

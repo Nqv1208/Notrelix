@@ -1,6 +1,8 @@
-export type IntegrationProvider = 'slack' | 'github' | 'jira' | 'linear' | 'figma' | 'custom';
+export type IntegrationProvider =
+  "slack" | "github" | "jira" | "linear" | "figma" | "custom";
 
-export type ConnectionStatus = 'connected' | 'disconnected' | 'error' | 'pending';
+export type ConnectionStatus =
+  "connected" | "disconnected" | "error" | "pending";
 
 export interface IntegrationConnection {
   id: string;

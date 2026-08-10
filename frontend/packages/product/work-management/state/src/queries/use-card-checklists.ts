@@ -1,82 +1,76 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { queryKeys } from "@notrelix/work-management-core"
-import { checklistApi } from "../api/checklist.api"
-import type { CreateChecklistInput, UpdateChecklistInput, CreateChecklistItemInput, UpdateChecklistItemInput } from "../api/checklist.api"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { wmQueryKeys } from "./keys";
+import type {
+  UpdateChecklistInput,
+  UpdateChecklistItemInput,
+} from "../api/checklist.api";
+import { useWorkManagementServices } from "../services";
 
-export function useCardChecklists(cardId: string, boardId?: string, workspaceId?: string) {
-  const queryClient = useQueryClient()
-  const detailKey = queryKeys.cards.detail(cardId)
-  const fullBoardKey = boardId ? queryKeys.boards.fullBoard(boardId, workspaceId) : null
+export function useCardChecklists(
+  cardId: string,
+  boardId?: string,
+  workspaceId?: string,
+) {
+  const queryClient = useQueryClient();
+  const { checklists } = useWorkManagementServices();
+  const detailKey = wmQueryKeys.cardDetail(workspaceId!, cardId);
+  const fullBoardKey = boardId
+    ? wmQueryKeys.fullBoard(workspaceId!, boardId)
+    : null;
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: detailKey })
+    void queryClient.invalidateQueries({ queryKey: detailKey });
     if (fullBoardKey) {
-      void queryClient.invalidateQueries({ queryKey: fullBoardKey })
+      void queryClient.invalidateQueries({ queryKey: fullBoardKey });
     }
-  }
+  };
 
   const createChecklistMutation = useMutation({
-    mutationFn: (title: string) => checklistApi.createChecklist({ cardId, title }),
+    mutationFn: (title: string) =>
+      checklists.createChecklist({ cardId, title }),
     onSuccess: () => {
-      toast.success("Checklist created.")
-      invalidate()
+      invalidate();
     },
-    onError: () => {
-      toast.error("Failed to create checklist.")
-    },
-  })
+  });
 
   const updateChecklistMutation = useMutation({
-    mutationFn: (input: Omit<UpdateChecklistInput, "cardId">) => checklistApi.updateChecklist(input),
+    mutationFn: (input: Omit<UpdateChecklistInput, "cardId">) =>
+      checklists.updateChecklist(input),
     onSuccess: () => {
-      invalidate()
+      invalidate();
     },
-    onError: () => {
-      toast.error("Failed to update checklist.")
-    },
-  })
+  });
 
   const deleteChecklistMutation = useMutation({
-    mutationFn: (checklistId: string) => checklistApi.deleteChecklist(checklistId),
+    mutationFn: (checklistId: string) =>
+      checklists.deleteChecklist(checklistId),
     onSuccess: () => {
-      toast.success("Checklist deleted.")
-      invalidate()
+      invalidate();
     },
-    onError: () => {
-      toast.error("Failed to delete checklist.")
-    },
-  })
+  });
 
   const createItemMutation = useMutation({
-    mutationFn: (input: { checklistId: string; title: string }) => checklistApi.createChecklistItem(input),
+    mutationFn: (input: { checklistId: string; title: string }) =>
+      checklists.createChecklistItem(input),
     onSuccess: () => {
-      invalidate()
+      invalidate();
     },
-    onError: () => {
-      toast.error("Failed to create checklist item.")
-    },
-  })
+  });
 
   const updateItemMutation = useMutation({
-    mutationFn: (input: UpdateChecklistItemInput) => checklistApi.updateChecklistItem(input),
+    mutationFn: (input: UpdateChecklistItemInput) =>
+      checklists.updateChecklistItem(input),
     onSuccess: () => {
-      invalidate()
+      invalidate();
     },
-    onError: () => {
-      toast.error("Failed to update checklist item.")
-    },
-  })
+  });
 
   const deleteItemMutation = useMutation({
-    mutationFn: (itemId: string) => checklistApi.deleteChecklistItem(itemId),
+    mutationFn: (itemId: string) => checklists.deleteChecklistItem(itemId),
     onSuccess: () => {
-      invalidate()
+      invalidate();
     },
-    onError: () => {
-      toast.error("Failed to delete checklist item.")
-    },
-  })
+  });
 
   return {
     createChecklist: createChecklistMutation.mutate,
@@ -87,5 +81,5 @@ export function useCardChecklists(cardId: string, boardId?: string, workspaceId?
     isCreatingChecklistItem: createItemMutation.isPending,
     updateChecklistItem: updateItemMutation.mutate,
     deleteChecklistItem: deleteItemMutation.mutate,
-  }
+  };
 }

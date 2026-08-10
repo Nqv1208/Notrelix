@@ -4,7 +4,7 @@ export function createCookieAdapter() {
       try {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+        if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
       } catch {
         return null;
       }
@@ -12,13 +12,13 @@ export function createCookieAdapter() {
     },
     setCookie(name: string, value: string, days?: number): void {
       try {
-        let expires = '';
+        let expires = "";
         if (days) {
           const date = new Date();
           date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
           expires = `; expires=${date.toUTCString()}`;
         }
-        document.cookie = `${name}=${value || ''}${expires}; path=/; SameSite=Lax; Secure`;
+        document.cookie = `${name}=${value || ""}${expires}; path=/; SameSite=Lax; Secure`;
       } catch {
         // Ignored
       }

@@ -1,24 +1,24 @@
 export type WorkspaceViewType =
-  | 'table'
-  | 'doc'
-  | 'kanban'
-  | 'calendar'
-  | 'timeline'
-  | 'dashboard'
-  | 'form'
-  | 'gallery'
-  | 'chart'
-  | 'gantt';
+  | "table"
+  | "doc"
+  | "kanban"
+  | "calendar"
+  | "timeline"
+  | "dashboard"
+  | "form"
+  | "gallery"
+  | "chart"
+  | "gantt";
 
-export type WorkspaceViewVisibility = 'private' | 'workspace' | 'public';
+export type WorkspaceViewVisibility = "private" | "workspace" | "public";
 
 export interface WorkspaceMember {
   id: string;
   userId: string;
   name: string;
   initials: string;
-  role: 'owner' | 'admin' | 'member' | 'guest';
-  status: 'active' | 'idle' | 'offline' | 'in-call';
+  role: "owner" | "admin" | "member" | "guest";
+  status: "active" | "idle" | "offline" | "in-call";
   workload: number;
   color: string;
   avatarUrl?: string;
@@ -28,7 +28,7 @@ export interface WorkspaceInvitation {
   id: string;
   token?: string;
   email: string;
-  role: WorkspaceMember['role'];
+  role: WorkspaceMember["role"];
   expiresAt: string;
   isAccepted: boolean;
   isExpired?: boolean;
@@ -45,7 +45,7 @@ export interface WorkspaceSummary {
   name: string;
   description?: string;
   icon: string;
-  plan: 'free' | 'pro' | 'business' | 'enterprise';
+  plan: "free" | "pro" | "business" | "enterprise";
   memberCount: number;
   isPersonal: boolean;
   settings?: string;
@@ -62,9 +62,9 @@ export interface WorkspaceViewConfig {
   groupBy?: string;
   hiddenFields?: string[];
   columnOrder?: string[];
-  density?: 'compact' | 'default' | 'comfortable';
+  density?: "compact" | "default" | "comfortable";
   filters?: Array<{ fieldId: string; operator: string; value: unknown }>;
-  sortBy?: Array<{ fieldId: string; direction: 'asc' | 'desc' }>;
+  sortBy?: Array<{ fieldId: string; direction: "asc" | "desc" }>;
 }
 
 export interface WorkspaceView {
@@ -86,7 +86,7 @@ export interface WorkspaceView {
 export interface WorkspaceFavorite {
   id: string;
   title: string;
-  type: 'view' | 'doc' | 'board' | 'dashboard';
+  type: "view" | "doc" | "board" | "dashboard";
   icon: string;
   href: string;
 }
@@ -94,7 +94,7 @@ export interface WorkspaceFavorite {
 export interface WorkspaceRecentItem {
   id: string;
   title: string;
-  type: 'view' | 'doc' | 'board' | 'task' | 'chat';
+  type: "view" | "doc" | "board" | "task" | "chat";
   icon: string;
   href: string;
   updatedAt: string;
@@ -145,5 +145,5 @@ export interface UpdateWorkspaceInput {
 
 export interface CreateWorkspaceInvitationInput {
   email: string;
-  role: WorkspaceMember['role'] | string;
+  role: WorkspaceMember["role"] | string;
 }

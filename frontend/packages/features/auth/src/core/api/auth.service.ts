@@ -8,7 +8,7 @@ import type {
   RegisterResponseApi,
   ResetPasswordRequest,
   User,
-} from '../types/auth';
+} from "../types/auth";
 
 export interface AuthApiClient {
   get<T>(url: string): Promise<T>;

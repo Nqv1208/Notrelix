@@ -1,40 +1,45 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { Moon, Sun } from 'lucide-react'
-import { Button } from '@notrelix/ui-web/components/ui/button'
+import * as React from "react";
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@notrelix/ui-web/components/ui/button";
 
 export function ThemeToggle() {
-  const [theme, setThemeState] = React.useState<'light' | 'dark'>('light')
-  const [mounted, setMounted] = React.useState(false)
+  const [theme, setThemeState] = React.useState<"light" | "dark">("light");
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setMounted(true)
-      const stored = localStorage.getItem('theme') as 'light' | 'dark' | null
+      setMounted(true);
+      const stored = localStorage.getItem("theme") as "light" | "dark" | null;
       if (stored) {
-        setThemeState(stored)
-        document.documentElement.classList.add(stored)
+        setThemeState(stored);
+        document.documentElement.classList.add(stored);
       }
-    })
+    });
 
-    return () => window.cancelAnimationFrame(frame)
-  }, [])
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark'
-    setThemeState(newTheme)
-    document.documentElement.classList.remove('light', 'dark')
-    document.documentElement.classList.add(newTheme)
-    localStorage.setItem('theme', newTheme)
-  }
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setThemeState(newTheme);
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(newTheme);
+    localStorage.setItem("theme", newTheme);
+  };
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="rounded-full" aria-label="Đổi giao diện">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="rounded-full"
+        aria-label="Đổi giao diện"
+      >
         <span className="w-4 h-4" />
       </Button>
-    )
+    );
   }
 
   return (
@@ -43,14 +48,18 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggleTheme}
       className="rounded-full"
-      aria-label={theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
-      title={theme === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'}
+      aria-label={
+        theme === "dark"
+          ? "Chuyển sang giao diện sáng"
+          : "Chuyển sang giao diện tối"
+      }
+      title={theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
     >
-      {theme === 'dark' ? (
+      {theme === "dark" ? (
         <Sun className="w-4 h-4" />
       ) : (
         <Moon className="w-4 h-4" />
       )}
     </Button>
-  )
+  );
 }

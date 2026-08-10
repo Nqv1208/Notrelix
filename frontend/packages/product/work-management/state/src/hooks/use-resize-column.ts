@@ -1,9 +1,9 @@
-import { useCallback } from "react"
-import type { ViewConfig } from "@notrelix/work-management-core"
+import { useCallback } from "react";
+import type { ViewConfig } from "@notrelix/work-management-core";
 
 export function useResizeColumn(
   viewConfig: ViewConfig,
-  updateViewConfig: (patch: Partial<ViewConfig>) => void
+  updateViewConfig: (patch: Partial<ViewConfig>) => void,
 ) {
   const resizeColumn = useCallback(
     (columnId: string, width: number) => {
@@ -12,11 +12,10 @@ export function useResizeColumn(
           ...viewConfig.columnWidths,
           [columnId]: Math.round(width),
         },
-      })
+      });
     },
-    [updateViewConfig, viewConfig.columnWidths]
-  )
+    [updateViewConfig, viewConfig.columnWidths],
+  );
 
-  return { resizeColumn }
+  return { resizeColumn };
 }
-

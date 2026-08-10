@@ -1,24 +1,35 @@
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from '@notrelix/platform/navigation';
-import { createAuthService, type AuthApiClient, type AuthEndpoints } from '../../core/api/auth.service';
+import { useMutation } from "@tanstack/react-query";
+import {
+  createAuthService,
+  type AuthApiClient,
+  type AuthEndpoints,
+} from "../../core/api/auth.service";
 
-interface UseLoginDeps {
+export interface NavigationDeps {
+  navigate: (options: { to: string; replace?: boolean }) => void;
+  getSearchParams: () => URLSearchParams;
+}
+
+interface UseLoginDeps extends NavigationDeps {
   api: AuthApiClient;
   endpoints: AuthEndpoints;
 }
 
-export function createUseLogin({ api, endpoints }: UseLoginDeps) {
+export function createUseLogin({
+  api,
+  endpoints,
+  navigate,
+  getSearchParams,
+}: UseLoginDeps) {
   const authService = createAuthService(api, endpoints);
 
   return function useLogin() {
-    const navigate = useNavigate();
-    const searchParams = useSearchParams();
-    const redirect = searchParams.get('redirect');
+    const redirect = getSearchParams().get("redirect");
 
     return useMutation({
       mutationFn: authService.login,
       onSuccess: () => {
-        navigate({ to: redirect || '/home' });
+        navigate({ to: redirect || "/home" });
       },
     });
   };

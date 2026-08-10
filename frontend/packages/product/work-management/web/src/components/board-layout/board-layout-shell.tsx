@@ -1,4 +1,4 @@
-import { BoardToolbar } from './board-toolbar';
+import { BoardToolbar } from "./board-toolbar";
 
 interface BoardLayoutShellProps {
   workspaceId: string;
@@ -10,8 +10,8 @@ interface BoardLayoutShellProps {
 }
 
 export function BoardLayoutShell({
-  workspaceId,
-  boardId,
+  workspaceId: _workspaceId,
+  boardId: _boardId,
   boardTitle,
   activeView,
   onViewChange,
@@ -24,9 +24,7 @@ export function BoardLayoutShell({
         activeView={activeView}
         onViewChange={onViewChange}
       />
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {children}
-      </div>
+      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>
   );
 }

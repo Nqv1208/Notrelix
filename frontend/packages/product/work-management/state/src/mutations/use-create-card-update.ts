@@ -1,20 +1,22 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { queryKeys } from "@notrelix/work-management-core"
-import { commentApi } from "../api/item-comments.api"
-import type { CreateCardUpdateInput } from "@notrelix/work-management-core"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { wmQueryKeys } from "../queries/keys";
+import { useWorkManagementServices } from "../services";
+import type { CreateCardUpdateInput } from "@notrelix/work-management-core";
 
-export function useCreateCardUpdate(cardId: string) {
-  const queryClient = useQueryClient()
+export function useCreateCardUpdate(cardId: string, workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { comments } = useWorkManagementServices();
 
   return useMutation({
-    mutationFn: (input: CreateCardUpdateInput) => commentApi.createCardUpdate(input),
+    mutationFn: (input: CreateCardUpdateInput) =>
+      comments.createCardUpdate(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.cards.updates(cardId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.cards.detail(cardId) })
+      queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.cardUpdates(workspaceId, cardId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.cardDetail(workspaceId, cardId),
+      });
     },
-    onError: () => {
-      toast.error("Failed to post update.")
-    },
-  })
+  });
 }

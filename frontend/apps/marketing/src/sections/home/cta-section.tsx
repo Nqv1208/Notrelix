@@ -1,7 +1,7 @@
-import Link from 'next/link'
-import { ArrowRight, Layers } from 'lucide-react'
+import Link from "next/link";
+import { ArrowRight, Layers } from "lucide-react";
 
-import { Button } from '@notrelix/ui-web/components/ui/button'
+import { Button } from "@notrelix/ui-web/components/ui/button";
 
 export function CTASection() {
   return (
@@ -49,5 +49,5 @@ export function CTASection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

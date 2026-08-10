@@ -6,11 +6,11 @@ export { updateCardInFullBoard };
 export function updateFullBoardCache(
   old: FullBoardResponse | undefined,
   cardId: string,
-  updater: (card: Card) => Partial<Card>
+  updater: (card: Card) => Partial<Card>,
 ): FullBoardResponse | undefined {
   if (!old) return old;
   return updateCardInFullBoard(old, cardId, (card) => ({
     ...card,
-    ...updater(card) as Card,
+    ...(updater(card) as Card),
   }));
 }

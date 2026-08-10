@@ -10,22 +10,27 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@notrelix/contracts": "workspace:*",
     "@notrelix/kernel": "workspace:*",
-    "@notrelix/platform": "workspace:*"
+    "@notrelix/observability": "workspace:*",
+    "@notrelix/platform": "workspace:*",
+    "@notrelix/realtime": "workspace:*"
   },
   "peerDependencies": {
     "react": "catalog:",
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@tanstack/react-query": "catalog:",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

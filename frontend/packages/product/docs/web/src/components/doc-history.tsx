@@ -3,16 +3,24 @@ import {
   type DocsApiClient,
   type PageApiEndpoints,
   type PageActivity,
-} from '@notrelix/docs-core';
-import { Clock, FileText, MessageSquare, Share2, ArrowRight, Sparkles } from 'lucide-react';
+} from "@notrelix/docs-state";
+import {
+  Clock,
+  FileText,
+  MessageSquare,
+  Share2,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 
 interface DocHistoryProps {
   api: DocsApiClient;
   endpoints: PageApiEndpoints;
+  workspaceId: string;
   pageId: string;
 }
 
-const ACTION_ICONS: Record<PageActivity['action'], React.ReactNode> = {
+const ACTION_ICONS: Record<PageActivity["action"], React.ReactNode> = {
   created: <FileText className="h-3.5 w-3.5" />,
   edited: <FileText className="h-3.5 w-3.5" />,
   commented: <MessageSquare className="h-3.5 w-3.5" />,
@@ -21,18 +29,23 @@ const ACTION_ICONS: Record<PageActivity['action'], React.ReactNode> = {
   published: <Sparkles className="h-3.5 w-3.5" />,
 };
 
-const ACTION_LABELS: Record<PageActivity['action'], string> = {
-  created: 'created this page',
-  edited: 'edited this page',
-  commented: 'commented on this page',
-  shared: 'shared this page',
-  moved: 'moved this page',
-  published: 'published this page',
+const ACTION_LABELS: Record<PageActivity["action"], string> = {
+  created: "created this page",
+  edited: "edited this page",
+  commented: "commented on this page",
+  shared: "shared this page",
+  moved: "moved this page",
+  published: "published this page",
 };
 
-export function DocHistory({ api, endpoints, pageId }: DocHistoryProps) {
+export function DocHistory({
+  api,
+  endpoints,
+  workspaceId,
+  pageId,
+}: DocHistoryProps) {
   const usePageHistory = createUsePageHistory(api, endpoints);
-  const { data: history = [], isLoading } = usePageHistory(pageId);
+  const { data: history = [], isLoading } = usePageHistory(workspaceId, pageId);
 
   return (
     <div className="space-y-4">
@@ -61,8 +74,14 @@ export function DocHistory({ api, endpoints, pageId }: DocHistoryProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm">
-                  <span className="font-medium">{activity.actorId}</span>{' '}
-                  <span className="text-muted-foreground">{ACTION_LABELS[activity.action as keyof typeof ACTION_LABELS]}</span>
+                  <span className="font-medium">{activity.actorId}</span>{" "}
+                  <span className="text-muted-foreground">
+                    {
+                      ACTION_LABELS[
+                        activity.action as keyof typeof ACTION_LABELS
+                      ]
+                    }
+                  </span>
                 </p>
                 {activity.targetLabel && (
                   <p className="text-xs text-muted-foreground truncate mt-0.5">

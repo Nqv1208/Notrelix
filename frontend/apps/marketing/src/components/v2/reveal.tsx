@@ -1,46 +1,51 @@
-'use client'
+"use client";
 
-import * as React from 'react'
+import * as React from "react";
 
 type RevealProps = {
-  children: React.ReactNode
-  className?: string
-  delay?: number
-  once?: boolean
-}
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  once?: boolean;
+};
 
-export function Reveal({ children, className = '', delay = 0, once = true }: RevealProps) {
-  const [visible, setVisible] = React.useState(false)
-  const ref = React.useRef<HTMLDivElement>(null)
+export function Reveal({
+  children,
+  className = "",
+  delay = 0,
+  once = true,
+}: RevealProps) {
+  const [visible, setVisible] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    const element = ref.current
-    if (!element) return
+    const element = ref.current;
+    if (!element) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry) return
+        if (!entry) return;
         if (entry.isIntersecting) {
-          setVisible(true)
-          if (once) observer.disconnect()
+          setVisible(true);
+          if (once) observer.disconnect();
         } else if (!once) {
-          setVisible(false)
+          setVisible(false);
         }
       },
-      { threshold: 0.12 }
-    )
+      { threshold: 0.12 },
+    );
 
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [once])
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [once]);
 
   return (
     <div
       ref={ref}
-      className={`v2-reveal ${visible ? 'is-visible' : ''} ${className}`}
-      style={{ '--reveal-delay': `${delay}ms` } as React.CSSProperties}
+      className={`v2-reveal ${visible ? "is-visible" : ""} ${className}`}
+      style={{ "--reveal-delay": `${delay}ms` } as React.CSSProperties}
     >
       {children}
     </div>
-  )
+  );
 }

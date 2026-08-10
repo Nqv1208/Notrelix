@@ -1,13 +1,13 @@
-import * as React from "react"
-import { FileQuestion } from "lucide-react"
+import * as React from "react";
+import { FileQuestion } from "lucide-react";
 
-import { cn } from '../../lib/cn'
+import { cn } from "../../lib/cn";
 
 interface NotFoundStateProps {
-  title?: string
-  description?: string
-  action?: React.ReactNode
-  className?: string
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+  className?: string;
 }
 
 export function NotFoundState({
@@ -17,7 +17,12 @@ export function NotFoundState({
   className,
 }: NotFoundStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center p-8 text-center min-h-[300px] space-y-4", className)}>
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center p-8 text-center min-h-[300px] space-y-4",
+        className,
+      )}
+    >
       <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted text-muted-foreground">
         <FileQuestion className="h-6 w-6" />
       </div>
@@ -27,5 +32,5 @@ export function NotFoundState({
       </div>
       {action && <div className="mt-2">{action}</div>}
     </div>
-  )
+  );
 }

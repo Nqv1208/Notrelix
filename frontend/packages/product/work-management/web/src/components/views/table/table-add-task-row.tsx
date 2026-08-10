@@ -1,10 +1,13 @@
-import { useState } from "react"
-import { Plus } from "lucide-react"
-import { Button } from "@notrelix/ui-web"
-import { Input } from "@notrelix/ui-web"
-import { useCreateCard } from "@notrelix/work-management-state"
-import type { BoardGroup, BoardTableColumn } from "@notrelix/work-management-core"
-import { generatePosition } from "@notrelix/work-management-core"
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@notrelix/ui-web";
+import { Input } from "@notrelix/ui-web";
+import { useCreateCard } from "@notrelix/work-management-state";
+import type {
+  BoardGroup,
+  BoardTableColumn,
+} from "@notrelix/work-management-core";
+import { generatePosition } from "@notrelix/work-management-core";
 
 export function TableAddTaskRow({
   boardId,
@@ -14,27 +17,27 @@ export function TableAddTaskRow({
   gridTemplate,
   inputId,
 }: {
-  boardId: string
-  workspaceId: string
-  group: BoardGroup
-  columns: BoardTableColumn[]
-  gridTemplate: string
-  inputId: string
+  boardId: string;
+  workspaceId: string;
+  group: BoardGroup;
+  columns: BoardTableColumn[];
+  gridTemplate: string;
+  inputId: string;
 }) {
-  const [title, setTitle] = useState("")
-  const createCard = useCreateCard(boardId, workspaceId)
-  const firstColumn = columns[0]
+  const [title, setTitle] = useState("");
+  const createCard = useCreateCard(boardId, workspaceId);
+  const firstColumn = columns[0];
 
   function submit() {
-    const nextTitle = title.trim()
-    if (!nextTitle) return
-    const lastPosition = group.cards.at(-1)?.position
+    const nextTitle = title.trim();
+    if (!nextTitle) return;
+    const lastPosition = group.cards.at(-1)?.position;
     createCard.mutate({
       listId: group.id,
       title: nextTitle,
       position: generatePosition(lastPosition, undefined),
-    })
-    setTitle("")
+    });
+    setTitle("");
   }
 
   return (
@@ -47,13 +50,17 @@ export function TableAddTaskRow({
         <Plus className="size-4 text-muted-foreground/50" />
       </div>
       {columns.map((column, index) => (
-        <div key={column.id} role="gridcell" className="min-w-0 border-r border-border/70 px-3 py-1.5">
+        <div
+          key={column.id}
+          role="gridcell"
+          className="min-w-0 border-r border-border/70 px-3 py-1.5"
+        >
           {index === 0 ? (
             <form
               className="flex min-w-0 items-center gap-2"
               onSubmit={(event) => {
-                event.preventDefault()
-                submit()
+                event.preventDefault();
+                submit();
               }}
             >
               <Input
@@ -72,11 +79,13 @@ export function TableAddTaskRow({
               ) : null}
             </form>
           ) : firstColumn ? (
-            <span className="text-xs text-muted-foreground/70">{column.field.name}</span>
+            <span className="text-xs text-muted-foreground/70">
+              {column.field.name}
+            </span>
           ) : null}
         </div>
       ))}
       <div className="border-r border-border/70" />
     </div>
-  )
+  );
 }

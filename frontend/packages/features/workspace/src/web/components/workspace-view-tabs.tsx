@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link } from '@tanstack/react-router';
-import { MoreHorizontal } from 'lucide-react';
-import { Button, cn } from '@notrelix/ui-web';
-import type { WorkspaceView } from '../../core/types/workspace';
-import { createUseReorderWorkspaceViews } from '..';
-import { WorkspaceAddViewMenu } from './workspace-add-view-menu';
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Link } from "@tanstack/react-router";
+import { MoreHorizontal } from "lucide-react";
+import { Button, cn } from "@notrelix/ui-web";
+import type { WorkspaceView } from "../../core/types/workspace";
+import type { WorkspaceApiClient } from "../../core";
+import { createUseReorderWorkspaceViews } from "..";
+import { WorkspaceAddViewMenu } from "./workspace-add-view-menu";
 
 import {
   DndContext,
@@ -14,16 +15,16 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-} from '@dnd-kit/core';
-import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
+} from "@dnd-kit/core";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
   useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 function getViewLink(
   workspaceId: string,
@@ -31,31 +32,31 @@ function getViewLink(
   currentBoardId?: string,
 ): { to: string; params: Record<string, string> } {
   switch (view.type) {
-    case 'kanban':
-    case 'table':
-    case 'calendar':
-    case 'timeline': {
-      const boardId = view.target.boardId || currentBoardId || '';
+    case "kanban":
+    case "table":
+    case "calendar":
+    case "timeline": {
+      const boardId = view.target.boardId || currentBoardId || "";
       return {
-        to: '/workspaces/$workspaceId/boards/$boardId',
+        to: "/workspaces/$workspaceId/boards/$boardId",
         params: { workspaceId, boardId },
       };
     }
-    case 'doc': {
-      const pageId = view.target.pageId || '';
+    case "doc": {
+      const docId = view.target.pageId || "";
       return {
-        to: '/workspaces/$workspaceId/docs/$pageId',
-        params: { workspaceId, pageId },
+        to: "/workspaces/$workspaceId/docs/$docId",
+        params: { workspaceId, docId },
       };
     }
-    case 'dashboard':
+    case "dashboard":
       return {
-        to: '/workspaces/$workspaceId/dashboard',
+        to: "/workspaces/$workspaceId/dashboard",
         params: { workspaceId },
       };
     default:
       return {
-        to: '/workspaces/$workspaceId',
+        to: "/workspaces/$workspaceId",
         params: { workspaceId },
       };
   }
@@ -66,14 +67,26 @@ export function WorkspaceViewTabs({
   views,
   activeViewId,
   currentBoardId,
-  reorderHook,
+  reorderHook: customReorderHook,
+  api,
 }: {
   workspaceId: string;
   views: WorkspaceView[];
   activeViewId?: string;
   currentBoardId?: string;
-  reorderHook: ReturnType<typeof createUseReorderWorkspaceViews>;
+  reorderHook?: ReturnType<typeof createUseReorderWorkspaceViews>;
+  api?: WorkspaceApiClient;
 }) {
+  const defaultReorderHook = useMemo(
+    () => (api ? createUseReorderWorkspaceViews({ api }) : undefined),
+    [api],
+  );
+  const reorderHook = customReorderHook || defaultReorderHook;
+
+  if (!reorderHook) {
+    throw new Error("WorkspaceViewTabs requires api or reorderHook");
+  }
+
   const [items, setItems] = useState<WorkspaceView[]>(views);
   const isDraggingRef = useRef(false);
   const cleanupClickRef = useRef<(() => void) | null>(null);
@@ -110,9 +123,9 @@ export function WorkspaceViewTabs({
       e.stopImmediatePropagation();
       e.preventDefault();
     };
-    window.addEventListener('click', preventClick, true);
+    window.addEventListener("click", preventClick, true);
     cleanupClickRef.current = () => {
-      window.removeEventListener('click', preventClick, true);
+      window.removeEventListener("click", preventClick, true);
     };
   };
 
@@ -151,7 +164,11 @@ export function WorkspaceViewTabs({
               items={items.map((item) => item.id)}
               strategy={horizontalListSortingStrategy}
             >
-              <div role="tablist" aria-label="Workspace views" className="flex h-12 items-center gap-1.5 py-1">
+              <div
+                role="tablist"
+                aria-label="Workspace views"
+                className="flex h-12 items-center gap-1.5 py-1"
+              >
                 {items.map((view) => (
                   <SortableTabItem
                     key={view.id}
@@ -166,7 +183,7 @@ export function WorkspaceViewTabs({
             </SortableContext>
           </DndContext>
         </div>
-        <WorkspaceAddViewMenu workspaceId={workspaceId} />
+        <WorkspaceAddViewMenu workspaceId={workspaceId} api={api} />
         <Button variant="ghost" size="icon" aria-label="More view actions">
           <MoreHorizontal className="size-4" />
         </Button>
@@ -201,7 +218,7 @@ function SortableTabItem({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
-    zIndex: isDragging ? 50 : ('auto' as const),
+    zIndex: isDragging ? 50 : ("auto" as const),
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -220,8 +237,8 @@ function SortableTabItem({
       {...attributes}
       {...listeners}
       className={cn(
-        'inline-flex cursor-grab active:cursor-grabbing touch-none select-none rounded-lg',
-        isDragging && 'shadow-md bg-accent/40',
+        "inline-flex cursor-grab active:cursor-grabbing touch-none select-none rounded-lg",
+        isDragging && "shadow-md bg-accent/40",
       )}
     >
       <Link
@@ -231,12 +248,14 @@ function SortableTabItem({
         aria-selected={active}
         onClick={handleClick}
         className={cn(
-          'relative inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          active && 'text-foreground bg-muted/40 font-semibold',
+          "relative inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          active && "text-foreground bg-muted/40 font-semibold",
         )}
       >
         {view.name}
-        {active ? <span className="absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-primary" /> : null}
+        {active ? (
+          <span className="absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-primary" />
+        ) : null}
       </Link>
     </div>
   );

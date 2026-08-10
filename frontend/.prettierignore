@@ -1,0 +1,8 @@
+# Ignore auto-generated artifacts from prettier checking
+packages/foundation/contracts/src/generated/
+docs/client/architecture/*.generated.md
+playwright-report-*/
+test-results/
+storybook-static/
+
+pnpm-lock.yaml

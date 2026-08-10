@@ -1,8 +1,15 @@
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from "lucide-react";
 
-import { Reveal } from '../../components/v2/reveal'
+import { Reveal } from "../../components/v2/reveal";
 
-const teams = ['Northstar', 'Morrow', 'Cedar Labs', 'Orbit', 'Kite Studio', 'Aster']
+const teams = [
+  "Northstar",
+  "Morrow",
+  "Cedar Labs",
+  "Orbit",
+  "Kite Studio",
+  "Aster",
+];
 
 export function SocialProofSection() {
   return (
@@ -14,7 +21,10 @@ export function SocialProofSection() {
           </p>
           <div className="grid w-full grid-cols-2 items-center gap-x-7 gap-y-4 sm:grid-cols-3 lg:w-auto lg:grid-cols-6">
             {teams.map((team) => (
-              <span key={team} className="text-center text-sm font-semibold tracking-[-0.03em] text-[var(--v2-ink)]/45 transition-colors hover:text-[var(--v2-ink)]/75">
+              <span
+                key={team}
+                className="text-center text-sm font-semibold tracking-[-0.03em] text-[var(--v2-ink)]/45 transition-colors hover:text-[var(--v2-ink)]/75"
+              >
                 {team}
               </span>
             ))}
@@ -22,14 +32,20 @@ export function SocialProofSection() {
         </Reveal>
       </div>
     </section>
-  )
+  );
 }
 
 export function TrustStrip() {
   return (
     <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-[var(--v2-muted)]">
-      <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-3.5 text-[var(--v2-teal)]" /> Phân quyền theo workspace</span>
-      <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-3.5 text-[var(--v2-teal)]" /> Dữ liệu luôn thuộc về đội ngũ</span>
+      <span className="inline-flex items-center gap-1.5">
+        <CheckCircle2 className="size-3.5 text-[var(--v2-teal)]" /> Phân quyền
+        theo workspace
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <CheckCircle2 className="size-3.5 text-[var(--v2-teal)]" /> Dữ liệu luôn
+        thuộc về đội ngũ
+      </span>
     </div>
-  )
+  );
 }

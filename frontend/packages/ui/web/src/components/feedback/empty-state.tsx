@@ -1,14 +1,14 @@
-import * as React from "react"
-import { Inbox } from "lucide-react"
+import * as React from "react";
+import { Inbox } from "lucide-react";
 
-import { cn } from '../../lib/cn'
+import { cn } from "../../lib/cn";
 
 interface EmptyStateProps {
-  icon?: React.ReactNode
-  title: string
-  description: string
-  action?: React.ReactNode
-  className?: string
+  icon?: React.ReactNode;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+  className?: string;
 }
 
 export function EmptyState({
@@ -19,7 +19,12 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center p-8 text-center min-h-[300px] border border-dashed rounded-lg bg-muted/20 space-y-4", className)}>
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center p-8 text-center min-h-[300px] border border-dashed rounded-lg bg-muted/20 space-y-4",
+        className,
+      )}
+    >
       <div className="flex items-center justify-center w-16 h-16 rounded-full bg-muted">
         {icon}
       </div>
@@ -29,5 +34,5 @@ export function EmptyState({
       </div>
       {action && <div className="mt-2">{action}</div>}
     </div>
-  )
+  );
 }

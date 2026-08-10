@@ -10,7 +10,7 @@ export interface UserProfile {
 
 export interface UserPreferences {
   userId: string;
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   colorTheme: string;
   sidebarCollapsed: boolean;
   defaultView: string;

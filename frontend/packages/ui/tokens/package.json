@@ -11,13 +11,15 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

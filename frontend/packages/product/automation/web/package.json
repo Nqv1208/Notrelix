@@ -10,18 +10,19 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@notrelix/automation-core": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "react": "^19.0.0",
-    "lucide-react": "^0.562.0",
-    "sonner": "^2.0.7"
+    "lucide-react": "^0.562.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/react": "^19.0.0"
+    "@types/react": "^19.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

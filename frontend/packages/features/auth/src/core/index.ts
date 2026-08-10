@@ -15,11 +15,11 @@ export type {
   RefreshRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-} from './types/auth';
+} from "./types/auth";
 
 // API
-export { createAuthService } from './api/auth.service';
-export type { AuthApiClient, AuthEndpoints } from './api/auth.service';
+export { createAuthService } from "./api/auth.service";
+export type { AuthApiClient, AuthEndpoints } from "./api/auth.service";
 
 // Schemas
 export {
@@ -28,12 +28,12 @@ export {
   forgotPasswordSchema,
   resetPasswordSchema,
   AUTH_ERROR_KEYS,
-} from './schemas';
-export type { LoginRequest } from './schemas/login.schema';
-export type { RegisterRequest } from './schemas/register.schema';
-export type { ForgotPasswordRequest as ForgotPasswordFormRequest } from './schemas/forgot-password.schema';
-export type { ResetPasswordRequest as ResetPasswordFormRequest } from './schemas/reset-password.schema';
+} from "./schemas";
+export type { LoginRequest } from "./schemas/login.schema";
+export type { RegisterRequest } from "./schemas/register.schema";
+export type { ForgotPasswordRequest as ForgotPasswordFormRequest } from "./schemas/forgot-password.schema";
+export type { ResetPasswordRequest as ResetPasswordFormRequest } from "./schemas/reset-password.schema";
 
 // Utils
-export { parseAuthError, resolveErrorDisplay } from './utils';
-export type { ParsedAuthError } from './utils/parse-auth-error';
+export { parseAuthError, resolveErrorDisplay } from "./utils";
+export type { ParsedAuthError } from "./utils/parse-auth-error";

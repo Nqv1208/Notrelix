@@ -1,6 +1,6 @@
-import type { FullBoardResponse } from '@notrelix/work-management-core';
-import { boardFixture, boardGroupFixture } from '../fixtures/board.fixture';
-import { itemFixture } from '../fixtures/item.fixture';
+import type { FullBoardResponse } from "@notrelix/work-management-core";
+import { boardFixture, boardGroupFixture } from "../fixtures/board.fixture";
+import { itemFixture } from "../fixtures/item.fixture";
 
 export function createBoardSnapshot(
   itemCount = 3,

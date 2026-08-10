@@ -8,16 +8,14 @@ export interface BoardPatch {
   timestamp: string;
 }
 
-export function createBoardPatch(
-  overrides?: Partial<BoardPatch>,
-): BoardPatch {
+export function createBoardPatch(overrides?: Partial<BoardPatch>): BoardPatch {
   return {
-    type: 'cell.updated',
-    boardId: 'board-test',
-    fieldId: 'field-status',
-    itemId: 'card-test',
-    groupId: 'group-test',
-    value: 'status-doing',
+    type: "cell.updated",
+    boardId: "board-test",
+    fieldId: "field-status",
+    itemId: "card-test",
+    groupId: "group-test",
+    value: "status-doing",
     timestamp: new Date().toISOString(),
     ...overrides,
   };

@@ -1,15 +1,18 @@
-import { type ReactNode, useMemo } from 'react';
-import { Navigate, useParams } from '@tanstack/react-router';
-import { useAppRuntime } from '@notrelix/runtime-web';
-import { createUseWorkspaceList } from '@notrelix/features-workspace';
-import { LoadingState } from '@notrelix/ui-web';
+import { type ReactNode, useMemo } from "react";
+import { Navigate, useParams } from "@tanstack/react-router";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { createUseWorkspaceList } from "@notrelix/features-workspace";
+import { LoadingState } from "@notrelix/ui-web";
 
 interface WorkspaceGuardProps {
   workspaceId?: string;
   children: ReactNode;
 }
 
-export function WorkspaceGuard({ workspaceId: propWorkspaceId, children }: WorkspaceGuardProps) {
+export function WorkspaceGuard({
+  workspaceId: propWorkspaceId,
+  children,
+}: WorkspaceGuardProps) {
   const { workspaceId: paramWorkspaceId } = useParams({ strict: false });
   const workspaceId = propWorkspaceId ?? paramWorkspaceId;
 
@@ -34,7 +37,10 @@ export function WorkspaceGuard({ workspaceId: propWorkspaceId, children }: Works
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-background">
-        <LoadingState title="Loading" description="Verifying workspace access..." />
+        <LoadingState
+          title="Loading"
+          description="Verifying workspace access..."
+        />
       </div>
     );
   }

@@ -1,11 +1,21 @@
-import * as React from 'react';
+import * as React from "react";
 
-type Theme = 'dark' | 'light' | 'system';
+export interface ThemeStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
+  clear?(): void;
+}
+
+export type KeyValueStorage = ThemeStorage;
+
+type Theme = "dark" | "light" | "system";
 
 interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   storageKey?: string;
+  storage?: ThemeStorage;
 }
 
 interface ThemeProviderState {
@@ -14,33 +24,56 @@ interface ThemeProviderState {
 }
 
 const initialState: ThemeProviderState = {
-  theme: 'system',
+  theme: "system",
   setTheme: () => null,
 };
 
-const ThemeProviderContext = React.createContext<ThemeProviderState>(initialState);
+const ThemeProviderContext =
+  React.createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
-  storageKey = 'notrelix-ui-theme',
+  defaultTheme = "system",
+  storageKey = "notrelix-ui-theme",
+  storage,
   ...props
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(
-    () => (typeof window !== 'undefined' ? (localStorage.getItem(storageKey) as Theme) : undefined) || defaultTheme
+    () =>
+      (storage ? (storage.getItem(storageKey) as Theme) : undefined) ||
+      defaultTheme,
   );
 
   React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
+    const applyTheme = (nextTheme: Theme) => {
+      root.classList.remove("light", "dark");
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-      return;
-    }
+      if (nextTheme === "system") {
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+          .matches
+          ? "dark"
+          : "light";
+        root.classList.add(systemTheme);
+        return;
+      }
 
-    root.classList.add(theme);
+      root.classList.add(nextTheme);
+    };
+
+    applyTheme(theme);
+
+    if (theme !== "system") return;
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemThemeChange = () => applyTheme("system");
+    media.addEventListener("change", onSystemThemeChange);
+
+    return () => {
+      media.removeEventListener("change", onSystemThemeChange);
+    };
   }, [theme, storageKey]);
 
   const value = React.useMemo(
@@ -48,14 +81,14 @@ export function ThemeProvider({
       theme,
       setTheme: (newTheme: Theme) => {
         try {
-          localStorage.setItem(storageKey, newTheme);
+          storage?.setItem(storageKey, newTheme);
         } catch {
-          // localStorage unavailable
+          // storage unavailable
         }
         setThemeState(newTheme);
       },
     }),
-    [theme, storageKey]
+    [theme, storageKey, storage],
   );
 
   return (
@@ -68,7 +101,7 @@ export function ThemeProvider({
 export const useTheme = () => {
   const context = React.useContext(ThemeProviderContext);
   if (context === undefined) {
-    return { theme: 'system' as Theme, setTheme: () => null };
+    return { theme: "system" as Theme, setTheme: () => null };
   }
   return context;
 };

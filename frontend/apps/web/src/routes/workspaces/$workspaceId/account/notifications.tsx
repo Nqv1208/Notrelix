@@ -1,31 +1,53 @@
-import { useState } from 'react';
-import { createUsePreferences, createUseUpdatePreferences } from '@notrelix/features-account';
-import { api, endpoints } from '@notrelix/contracts';
-import { Button } from '@notrelix/ui-web';
-import { toast } from 'sonner';
-
-const usePreferences = createUsePreferences({ api, endpoints, options: { mockMode: true } });
-const useUpdatePreferences = createUseUpdatePreferences({ api, endpoints, options: { mockMode: true } });
+import { useState, useMemo } from "react";
+import {
+  createUsePreferences,
+  createUseUpdatePreferences,
+} from "@notrelix/features-account";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { Button } from "@notrelix/ui-web";
+import { toast } from "sonner";
 
 const NOTIFICATION_CHANNELS = [
   {
-    id: 'email',
-    label: 'Email notifications',
-    description: 'Receive notifications via email',
+    id: "email",
+    label: "Email notifications",
+    description: "Receive notifications via email",
   },
   {
-    id: 'in_app',
-    label: 'In-app notifications',
-    description: 'Show notifications in the app',
+    id: "in_app",
+    label: "In-app notifications",
+    description: "Show notifications in the app",
   },
   {
-    id: 'desktop',
-    label: 'Desktop push notifications',
-    description: 'Receive push notifications on your desktop',
+    id: "desktop",
+    label: "Desktop push notifications",
+    description: "Receive push notifications on your desktop",
   },
 ];
 
 export function AccountNotificationsPage() {
+  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+
+  const usePreferences = useMemo(
+    () =>
+      createUsePreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === "development" },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
+  const useUpdatePreferences = useMemo(
+    () =>
+      createUseUpdatePreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === "development" },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
   const { preferences: _preferences, isLoading } = usePreferences();
   const updateMutation = useUpdatePreferences();
 
@@ -42,9 +64,9 @@ export function AccountNotificationsPage() {
   const handleSave = async () => {
     try {
       await updateMutation.mutateAsync({});
-      toast.success('Notification preferences saved');
+      toast.success("Notification preferences saved");
     } catch {
-      toast.success('Notification preferences saved');
+      toast.success("Notification preferences saved");
     }
   };
 
@@ -62,7 +84,9 @@ export function AccountNotificationsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="font-semibold text-sm mb-1">Notifications</h2>
-        <p className="text-xs text-muted-foreground">Choose how you want to be notified.</p>
+        <p className="text-xs text-muted-foreground">
+          Choose how you want to be notified.
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -73,21 +97,23 @@ export function AccountNotificationsPage() {
           >
             <div>
               <p className="text-sm font-medium">{channel.label}</p>
-              <p className="text-xs text-muted-foreground">{channel.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {channel.description}
+              </p>
             </div>
             <button
               onClick={() => handleToggle(channel.id as keyof typeof settings)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
                 settings[channel.id as keyof typeof settings]
-                  ? 'bg-primary'
-                  : 'bg-input'
+                  ? "bg-primary"
+                  : "bg-input"
               }`}
             >
               <span
                 className={`pointer-events-none block size-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
                   settings[channel.id as keyof typeof settings]
-                    ? 'translate-x-4'
-                    : 'translate-x-0'
+                    ? "translate-x-4"
+                    : "translate-x-0"
                 }`}
               />
             </button>
@@ -96,7 +122,7 @@ export function AccountNotificationsPage() {
       </div>
 
       <Button onClick={handleSave} disabled={updateMutation.isPending}>
-        {updateMutation.isPending ? 'Saving...' : 'Save preferences'}
+        {updateMutation.isPending ? "Saving..." : "Save preferences"}
       </Button>
     </div>
   );

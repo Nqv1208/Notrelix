@@ -5,13 +5,12 @@
  */
 
 export const billingQueryKeys = {
-  all: ['billing'] as const,
+  all: ["billing"] as const,
   subscription: (workspaceId: string) =>
-    ['billing', 'subscription', workspaceId] as const,
+    ["billing", "subscription", workspaceId] as const,
   invoices: (workspaceId: string) =>
-    ['billing', 'invoices', workspaceId] as const,
+    ["billing", "invoices", workspaceId] as const,
   entitlements: (workspaceId: string) =>
-    ['billing', 'entitlements', workspaceId] as const,
-  usage: (workspaceId: string) =>
-    ['billing', 'usage', workspaceId] as const,
+    ["billing", "entitlements", workspaceId] as const,
+  usage: (workspaceId: string) => ["billing", "usage", workspaceId] as const,
 } as const;

@@ -1,93 +1,157 @@
-import type { QueryClient, QueryKey } from '@tanstack/react-query';
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import type { AppError } from "@notrelix/kernel";
 
-/**
- * Snapshot of a single query before an optimistic mutation.
- * Tracks both the data value AND whether the query cache entry existed at all,
- * so rollback can remove stale optimistic entries when previousData was undefined.
- */
-interface OptimisticSnapshot {
-  queryKey: QueryKey;
-  previousData: unknown;
-  /** True if the cache entry existed before the mutation (even if data was undefined) */
-  hadCacheEntry: boolean;
+export interface OptimisticSnapshot {
+  readonly queryKey: QueryKey;
+  readonly existed: boolean;
+  readonly value: unknown;
 }
 
-export interface OptimisticCommandOptions<TData, TVariables> {
+export interface OptimisticUpdate<TVariables> {
+  readonly queryKey: QueryKey;
+  apply(queryClient: QueryClient, variables: TVariables): OptimisticSnapshot;
+}
+
+export interface CommandContext {
+  readonly commandId: string;
+  readonly correlationId: string;
+  readonly idempotencyKey: string;
+}
+
+export function defineOptimisticUpdate<TData, TVariables>(
+  queryKey: QueryKey,
+  updater: (current: TData | undefined, variables: TVariables) => TData,
+): OptimisticUpdate<TVariables> {
+  return {
+    queryKey,
+    apply(queryClient: QueryClient, variables: TVariables): OptimisticSnapshot {
+      const existed = queryClient.getQueryState(queryKey) !== undefined;
+      const previousValue = queryClient.getQueryData<TData>(queryKey);
+
+      queryClient.setQueryData<TData>(queryKey, (current) =>
+        updater(current, variables),
+      );
+
+      return {
+        queryKey,
+        existed,
+        value: previousValue,
+      };
+    },
+  };
+}
+
+export interface ExecuteOptimisticCommandOptions<TResult, TVariables> {
   queryClient: QueryClient;
-  /**
-   * One or more query keys whose cache should be atomically snapshotted,
-   * optimistically updated, and rolled back together on mutation failure.
-   */
-  queryKeys: QueryKey[];
-  updateFn: (oldData: TData | undefined, variables: TVariables) => TData;
-  mutationFn: (variables: TVariables) => Promise<TData>;
+  commandId: string;
+  updates: OptimisticUpdate<TVariables>[];
+  mutationFn: (
+    variables: TVariables,
+    context: CommandContext,
+  ) => Promise<TResult>;
   variables: TVariables;
+  correlationId?: string;
+  idempotencyKey?: string;
+  reconcile?: (
+    result: TResult,
+    queryClient: QueryClient,
+    context: CommandContext,
+  ) => void | Promise<void>;
+  onConflict?: (
+    error: AppError,
+    snapshots: readonly OptimisticSnapshot[],
+    context: CommandContext,
+  ) => Promise<"rollback" | "refetch"> | "rollback" | "refetch";
+  invalidate?: readonly QueryKey[];
 }
 
-/**
- * Execute an optimistic mutation that atomically updates multiple query cache
- * entries and rolls them back on failure — including removing entries that
- * were created by the optimistic update (previousData === undefined).
- *
- * @example
- * await executeOptimisticCommand({
- *   queryClient,
- *   queryKeys: [boardKeys.detail(boardId), boardKeys.list(workspaceId)],
- *   updateFn: (old, vars) => ({ ...old, title: vars.title }),
- *   mutationFn: (vars) => api.post('/boards', vars),
- *   variables: { title: 'New Board' },
- * });
- */
-export async function executeOptimisticCommand<TData, TVariables>({
+export async function executeOptimisticCommand<TResult, TVariables>({
   queryClient,
-  queryKeys,
-  updateFn,
+  commandId,
+  updates,
   mutationFn,
   variables,
-}: OptimisticCommandOptions<TData, TVariables>): Promise<TData> {
-  // 1. Cancel any outgoing refetches for all affected queries so they don't
-  //    overwrite our optimistic update.
-  await Promise.all(
-    queryKeys.map((key) => queryClient.cancelQueries({ queryKey: key }))
-  );
-
-  // 2. Snapshot the current cache state for ALL affected query keys.
-  //    We track `hadCacheEntry` to distinguish "data was undefined" from
-  //    "no cache entry existed", which changes the rollback strategy.
-  const snapshots: OptimisticSnapshot[] = queryKeys.map((key) => ({
-    queryKey: key,
-    previousData: queryClient.getQueryData(key),
-    hadCacheEntry: queryClient.getQueryState(key) !== undefined,
-  }));
-
-  // 3. Apply optimistic updates to all query keys immediately.
-  for (const key of queryKeys) {
-    queryClient.setQueryData<TData>(key, (old) => updateFn(old, variables));
+  correlationId = commandId,
+  idempotencyKey = commandId,
+  reconcile,
+  onConflict,
+  invalidate,
+}: ExecuteOptimisticCommandOptions<TResult, TVariables>): Promise<TResult> {
+  // Check for duplicate query keys
+  const keyStrings = updates.map((u) => JSON.stringify(u.queryKey));
+  const uniqueKeys = new Set(keyStrings);
+  if (uniqueKeys.size !== keyStrings.length) {
+    throw new Error(
+      "[OptimisticCommand] Duplicate query keys passed in single command",
+    );
   }
 
+  // 1. Cancel ongoing refetches for all target queries
+  await Promise.all(
+    updates.map((update) =>
+      queryClient.cancelQueries({ queryKey: update.queryKey }),
+    ),
+  );
+
+  const context: CommandContext = {
+    commandId,
+    correlationId,
+    idempotencyKey,
+  };
+
+  const snapshots: OptimisticSnapshot[] = [];
+  const invalidateKeys = invalidate ?? updates.map((update) => update.queryKey);
+
   try {
-    const result = await mutationFn(variables);
+    // 2. Snapshot & apply optimistic updates sequentially
+    for (const update of updates) {
+      snapshots.push(update.apply(queryClient, variables));
+    }
+
+    // 3. Run the actual mutation
+    const result = await mutationFn(variables, context);
+    await reconcile?.(result, queryClient, context);
     return result;
   } catch (error) {
-    // 4. ROLLBACK: restore every query key to its pre-mutation state.
-    for (const snapshot of snapshots) {
-      if (snapshot.hadCacheEntry) {
-        // Restore to original data (even if it was undefined — that's valid cache state)
-        queryClient.setQueryData(snapshot.queryKey, snapshot.previousData);
-      } else {
-        // The cache entry did not exist before our optimistic update.
-        // Remove it entirely so stale optimistic data doesn't linger.
-        queryClient.removeQueries({ queryKey: snapshot.queryKey, exact: true });
-      }
+    let conflictPolicy: "rollback" | "refetch" | null = null;
+    if (onConflict && isConflictError(error)) {
+      conflictPolicy = await onConflict(error, snapshots, context);
+    }
+
+    // 4. ROLLBACK in reverse order if anything fails
+    if (conflictPolicy !== "refetch") {
+      rollbackSnapshots(queryClient, snapshots);
     }
     throw error;
   } finally {
-    // 5. Invalidate all affected queries to trigger a server refetch,
-    //    ensuring the cache converges with the authoritative server state.
+    // 5. Invalidate explicit target queries to ensure authoritative server convergence.
     await Promise.all(
-      queryKeys.map((key) =>
-        queryClient.invalidateQueries({ queryKey: key })
-      )
+      invalidateKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
     );
   }
+}
+
+function rollbackSnapshots(
+  queryClient: QueryClient,
+  snapshots: readonly OptimisticSnapshot[],
+): void {
+  for (let i = snapshots.length - 1; i >= 0; i--) {
+    const snapshot = snapshots[i]!;
+    if (snapshot.existed) {
+      queryClient.setQueryData(snapshot.queryKey, snapshot.value);
+    } else {
+      queryClient.removeQueries({ queryKey: snapshot.queryKey, exact: true });
+    }
+  }
+}
+
+function isConflictError(error: unknown): error is AppError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "kind" in error &&
+    (error as { kind?: unknown }).kind === "conflict"
+  );
 }

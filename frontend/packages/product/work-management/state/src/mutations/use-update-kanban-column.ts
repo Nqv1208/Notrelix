@@ -1,45 +1,44 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { queryKeys } from "@notrelix/work-management-core"
-import { listApi } from "../api/list.api"
-import type { UpdateListInput } from "../api/list.api"
-import type { FullBoardResponse } from "@notrelix/work-management-core"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { wmQueryKeys } from "../queries/keys";
+import { useWorkManagementServices } from "../services";
+import type { UpdateListInput } from "../api/list.api";
+import type { FullBoardResponse } from "@notrelix/work-management-core";
 
-type MutationContext = { previous?: FullBoardResponse }
+type MutationContext = { previous?: FullBoardResponse };
 
 export function useUpdateKanbanColumn(boardId: string, workspaceId: string) {
-  const queryClient = useQueryClient()
-  const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
+  const queryClient = useQueryClient();
+  const { lists } = useWorkManagementServices();
+  const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId);
 
   return useMutation<void, Error, UpdateListInput, MutationContext>({
-    mutationFn: (input) => listApi.updateList(input),
+    mutationFn: (input) => lists.updateList(input),
     onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey })
-      const previous = queryClient.getQueryData<FullBoardResponse>(queryKey)
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<FullBoardResponse>(queryKey);
 
       queryClient.setQueryData<FullBoardResponse>(queryKey, (old) => {
-        if (!old) return old
+        if (!old) return old;
         return {
           ...old,
           groups: old.groups.map((group) => {
-            if (group.id !== input.listId) return group
+            if (group.id !== input.listId) return group;
             return {
               ...group,
               title: input.title ?? group.title,
               color: input.color ?? group.color,
-            }
+            };
           }),
-        }
-      })
+        };
+      });
 
-      return { previous }
+      return { previous };
     },
     onError: (_error, _input, context) => {
-      queryClient.setQueryData(queryKey, context?.previous)
-      toast.error("Failed to update column. Changes reverted.")
+      queryClient.setQueryData(queryKey, context?.previous);
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey })
+      void queryClient.invalidateQueries({ queryKey });
     },
-  })
+  });
 }

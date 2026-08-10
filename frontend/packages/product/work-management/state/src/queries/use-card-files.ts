@@ -1,12 +1,13 @@
-import { useQuery } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/work-management-core"
-import { cardApi } from "../api/item.api"
+import { useQuery } from "@tanstack/react-query";
+import { wmQueryKeys } from "./keys";
+import { useWorkManagementServices } from "../services";
 
-export function useCardFiles(cardId: string) {
+export function useCardFiles(cardId: string, workspaceId: string) {
+  const { cards } = useWorkManagementServices();
   return useQuery({
-    queryKey: queryKeys.cards.files(cardId),
-    queryFn: () => cardApi.getCardFiles(cardId),
+    queryKey: wmQueryKeys.cardFiles(workspaceId, cardId),
+    queryFn: () => cards.getCardFiles(cardId),
     enabled: Boolean(cardId),
     staleTime: 30_000,
-  })
+  });
 }

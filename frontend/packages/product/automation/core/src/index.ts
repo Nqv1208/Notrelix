@@ -9,4 +9,11 @@ export type {
   AutomationActionType,
   AutomationRule,
   AutomationRun,
-} from './types';
+  AutomationExecutionStatus,
+  AutomationExecutionStep,
+  AutomationExecution,
+  AutomationTemplate,
+  AutomationCursorPage,
+  CreateAutomationRuleInput,
+  UpdateAutomationRuleInput,
+} from "./types";

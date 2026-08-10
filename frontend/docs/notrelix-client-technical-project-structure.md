@@ -69,14 +69,17 @@ frontend/
 
       docs/
         core/
+        state/
         collaboration/
         web/
         mobile/
 
       automation/
         core/
+        state/
         web/
         mobile/
+        testing/
 
     features/
       auth/
@@ -477,21 +480,20 @@ next.config.ts
     "react": "latest",
     "react-dom": "latest",
     "@notrelix/ui-web": "workspace:*",
-    "@notrelix/ui-tokens": "workspace:*",
-    "@notrelix/icons": "workspace:*"
+    "@notrelix/ui-tokens": "workspace:*"
   }
 }
 ```
 
 ### 3.5 Marketing import rules
 
-Allowed:
+Allowed (exact edge list: `docs/client/architecture/package-boundaries.generated.md`):
 
 ```txt
 next/*
 @notrelix/ui-web
 @notrelix/ui-tokens
-@notrelix/icons
+@notrelix/ui-icons
 ```
 
 Forbidden:
@@ -639,11 +641,7 @@ export function RouteComponent() {
   const { view } = Route.useSearch();
 
   return (
-    <BoardScreen
-      workspaceId={workspaceId}
-      boardId={boardId}
-      viewId={view}
-    />
+    <BoardScreen workspaceId={workspaceId} boardId={boardId} viewId={view} />
   );
 }
 ```
@@ -703,13 +701,10 @@ import react from "@vitejs/plugin-react";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
 export default defineConfig({
-  plugins: [
-    TanStackRouterVite(),
-    react()
-  ],
+  plugins: [TanStackRouterVite(), react()],
   server: {
-    port: 5173
-  }
+    port: 5173,
+  },
 });
 ```
 
@@ -1386,21 +1381,20 @@ packages/ui/mobile/
 
 ---
 
-### 8.4 `@notrelix/icons`
+### 8.4 `@notrelix/ui-icons`
 
 ```txt
 packages/ui/icons/
   src/
-    brand/
-      notrelix-logo.tsx
-      notrelix-symbol.tsx
-    generated/
-      index.ts
     index.ts
 
   package.json
   tsconfig.json
 ```
+
+The icon package re-exports the shared icon set (currently `lucide-react`).
+It has no internal workspace dependencies and must not gain product/feature
+imports.
 
 ---
 
@@ -2012,7 +2006,7 @@ Correct:
 
 ```ts
 createNotrelixClient({
-  baseUrl: appConfig.apiUrl
+  baseUrl: appConfig.apiUrl,
 });
 ```
 
@@ -2035,8 +2029,13 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
-pnpm check:deps
+pnpm check:architecture
 ```
+
+`pnpm check:architecture` runs the closed-world dependency policy, folder
+boundary purity, declared-dependency validation, and the architecture-doc
+drift check against the generated package boundary table
+(`docs/client/architecture/package-boundaries.generated.md`).
 
 Required CI stages:
 

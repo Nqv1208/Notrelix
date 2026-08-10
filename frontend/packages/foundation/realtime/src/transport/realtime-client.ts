@@ -1,76 +1,292 @@
-/**
- * RealtimeClient - Enterprise WebSocket transport
- *
- * Key design decisions:
- * - isManualClose flag prevents reconnect loops on intentional disconnects (logout, unmount)
- * - Exponential backoff with jitter avoids thundering herd reconnect storms
- * - Envelope validation rejects malformed messages before dispatching to listeners
- * - No singleton exported - instantiate via AppRuntime composition root
- */
+import {
+  parseRealtimeMessage,
+  type RealtimeEnvelope,
+  type RealtimeControlMessage,
+} from "../protocol";
 
 export type RealtimeConnectionState =
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'disconnected'
-  | 'failed';
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "offline"
+  | "closed"
+  | "failed";
 
-export interface RealtimeEnvelope<TPayload = unknown> {
-  /** Unique event identifier for deduplication */
-  eventId: string;
-  /** Domain event type (e.g. 'board.item.moved') */
-  eventType: string;
-  tenantId?: string;
-  workspaceId: string;
-  aggregateId?: string;
-  /** Schema version for forward compatibility */
-  schemaVersion: number;
-  /** Aggregate version for optimistic concurrency */
-  aggregateVersion?: number;
-  /** Global monotonic sequence number for gap detection */
-  sequence?: number;
-  /** Tracing correlation ID matching the originating HTTP request */
-  correlationId: string;
-  /** ID of the event that caused this event */
-  causationId?: string;
-  /** Subscription channel identifier */
-  subscriptionId?: string;
-  /** ISO-8601 timestamp */
-  timestamp: string;
-  payload: TPayload;
+export interface RealtimeConnectContext {
+  readonly sessionGeneration: string;
 }
 
-export type RealtimeEvent = RealtimeEnvelope<unknown>;
-
-export type ConnectionStateListener = (state: RealtimeConnectionState) => void;
-export type EventListener<T = unknown> = (envelope: RealtimeEnvelope<T>) => void;
-
-function isValidEnvelope(data: unknown): data is RealtimeEnvelope {
-  if (!data || typeof data !== 'object') return false;
-  const e = data as Record<string, unknown>;
-  return (
-    typeof e.eventId === 'string' &&
-    typeof e.eventType === 'string' &&
-    typeof e.workspaceId === 'string' &&
-    typeof e.correlationId === 'string' &&
-    typeof e.timestamp === 'string'
-  );
+export interface RealtimeConnectionDescriptor {
+  readonly url: string;
+  readonly protocols?: readonly string[];
 }
 
-export class RealtimeClient {
-  private socket: WebSocket | null = null;
-  private state: RealtimeConnectionState = 'disconnected';
-  private eventListeners: Set<EventListener> = new Set();
-  private stateListeners: Set<ConnectionStateListener> = new Set();
-  private reconnectAttempts = 0;
-  private readonly maxReconnectAttempts = 10;
-  private readonly baseReconnectDelayMs = 1000;
-  private readonly maxReconnectDelayMs = 30_000;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Prevents onclose from scheduling a reconnect after intentional disconnect() */
+export interface RealtimeConnectionDescriptorProvider {
+  getDescriptor(
+    context: RealtimeConnectContext,
+  ): Promise<RealtimeConnectionDescriptor>;
+}
+
+export function createCookieConnectionDescriptorProvider(options: {
+  realtimeUrl: string;
+}): RealtimeConnectionDescriptorProvider {
+  return {
+    getDescriptor: async () => ({
+      url: options.realtimeUrl,
+    }),
+  };
+}
+
+export interface WebSocketLike {
+  readyState: number;
+  send(data: string): void;
+  close(code?: number, reason?: string): void;
+  onopen: ((event: unknown) => void) | null;
+  onmessage: ((event: { data: unknown }) => void) | null;
+  onclose: ((event: { code: number; reason: string }) => void) | null;
+  onerror: ((event: unknown) => void) | null;
+}
+
+export type WebSocketFactory = (
+  descriptor: RealtimeConnectionDescriptor,
+) => WebSocketLike;
+
+export interface RealtimeSubscriptionFilter {
+  readonly workspaceId: string;
+  readonly eventTypes?: readonly string[];
+  readonly subscriptionId?: string;
+}
+
+export interface RealtimeSequenceGap {
+  readonly workspaceId: string;
+  readonly subscriptionId?: string;
+  readonly expected: number;
+  readonly received: number;
+}
+
+export type RealtimeEventListener = (
+  envelope: RealtimeEnvelope<unknown>,
+) => void;
+export type RealtimeStateListener = (state: RealtimeConnectionState) => void;
+export type RealtimeRecoveryListener = (gap: RealtimeSequenceGap) => void;
+
+export interface RealtimeTelemetry {
+  track(event: string, properties?: Record<string, unknown>): void;
+  reportError(error: unknown, context?: Record<string, unknown>): void;
+}
+
+export interface RealtimeClientOptions {
+  readonly connectionDescriptorProvider?: RealtimeConnectionDescriptorProvider;
+  readonly socketFactory: WebSocketFactory;
+  readonly clock?: { now(): Date };
+  readonly scheduler?: {
+    setTimeout(fn: () => void, delayMs: number): unknown;
+    clearTimeout(id: unknown): void;
+    setInterval(fn: () => void, intervalMs: number): unknown;
+    clearInterval(id: unknown): void;
+  };
+  readonly telemetry?: RealtimeTelemetry;
+
+  readonly reconnect?: {
+    readonly initialDelayMs?: number;
+    readonly maximumDelayMs?: number;
+    readonly maximumAttempts?: number | "unlimited";
+  };
+
+  readonly heartbeat?: {
+    readonly intervalMs?: number;
+    readonly pongTimeoutMs?: number;
+    readonly maximumMissedPongs?: number;
+  };
+
+  readonly deduplication?: {
+    readonly maximumEntries?: number;
+    readonly ttlMs?: number;
+  };
+}
+
+export interface RealtimeTransport {
+  connect(context: RealtimeConnectContext): Promise<void>;
+  disconnect(reason?: string): void;
+  subscribe(
+    filter: RealtimeSubscriptionFilter,
+    listener: RealtimeEventListener,
+  ): () => void;
+  subscribeState(listener: RealtimeStateListener): () => void;
+  subscribeRecovery(listener: RealtimeRecoveryListener): () => void;
+  getState(): RealtimeConnectionState;
+  dispose(): void;
+}
+
+// Bounded TTL LRU Cache for deduplication
+class DedupLruCache {
+  private cache = new Map<string, number>();
+
+  constructor(
+    private readonly maxEntries: number,
+    private readonly ttlMs: number,
+  ) {}
+
+  public has(eventId: string, now: number): boolean {
+    const timestamp = this.cache.get(eventId);
+    if (timestamp === undefined) return false;
+    if (now - timestamp > this.ttlMs) {
+      this.cache.delete(eventId);
+      return false;
+    }
+    return true;
+  }
+
+  public add(eventId: string, now: number): void {
+    if (this.cache.size >= this.maxEntries) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
+    }
+    this.cache.set(eventId, now);
+  }
+
+  public clear(): void {
+    this.cache.clear();
+  }
+}
+
+export type RealtimeStateEvent =
+  | "CONNECT_REQUESTED"
+  | "DESCRIPTOR_RESOLVED"
+  | "SOCKET_OPENED"
+  | "SOCKET_CLOSED"
+  | "SOCKET_FAILED"
+  | "OFFLINE"
+  | "ONLINE"
+  | "RECONNECT_SCHEDULED"
+  | "MANUAL_DISCONNECT"
+  | "DISPOSED";
+
+export function transitionState(
+  current: RealtimeConnectionState,
+  event: RealtimeStateEvent,
+): RealtimeConnectionState {
+  if (event === "DISPOSED") return "closed";
+  if (event === "MANUAL_DISCONNECT") return "closed";
+
+  switch (current) {
+    case "idle":
+    case "closed":
+    case "failed":
+      if (event === "CONNECT_REQUESTED") return "connecting";
+      if (event === "OFFLINE") return "offline";
+      return current;
+    case "connecting":
+      if (event === "SOCKET_OPENED") return "connected";
+      if (event === "SOCKET_CLOSED" || event === "SOCKET_FAILED")
+        return "reconnecting";
+      if (event === "OFFLINE") return "offline";
+      return current;
+    case "connected":
+      if (event === "SOCKET_CLOSED" || event === "SOCKET_FAILED")
+        return "reconnecting";
+      if (event === "OFFLINE") return "offline";
+      return current;
+    case "reconnecting":
+      if (event === "SOCKET_OPENED") return "connected";
+      if (event === "SOCKET_FAILED") return "failed";
+      if (event === "OFFLINE") return "offline";
+      return current;
+    case "offline":
+      if (event === "ONLINE") return "reconnecting";
+      return current;
+    default:
+      return current;
+  }
+}
+
+export class RealtimeClient implements RealtimeTransport {
+  private state: RealtimeConnectionState = "idle";
+  private socket: WebSocketLike | null = null;
+  private currentContext: RealtimeConnectContext | null = null;
+
+  private reconnectAttempt = 0;
+  private reconnectTimer: unknown = null;
+
+  private heartbeatIntervalTimer: unknown = null;
+  private pongTimeoutTimer: unknown = null;
+  private missedPongs = 0;
+
+  private readonly descriptorProvider: RealtimeConnectionDescriptorProvider;
+  private readonly socketFactory: WebSocketFactory;
+  private readonly clock: { now(): Date };
+  private readonly scheduler: {
+    setTimeout(fn: () => void, delayMs: number): unknown;
+    clearTimeout(id: unknown): void;
+    setInterval(fn: () => void, intervalMs: number): unknown;
+    clearInterval(id: unknown): void;
+  };
+  private readonly telemetry?: RealtimeTelemetry;
+
+  private readonly initialDelayMs: number;
+  private readonly maximumDelayMs: number;
+  private readonly maximumAttempts: number | "unlimited";
+
+  private readonly heartbeatIntervalMs: number;
+  private readonly pongTimeoutMs: number;
+  private readonly maximumMissedPongs: number;
+
+  private readonly dedupCache: DedupLruCache;
+
+  private readonly subscribers = new Set<{
+    filter: RealtimeSubscriptionFilter;
+    listener: RealtimeEventListener;
+  }>();
+
+  private readonly stateListeners = new Set<RealtimeStateListener>();
+  private readonly recoveryListeners = new Set<RealtimeRecoveryListener>();
+
+  private readonly sequenceTracker = new Map<string, number>();
+
+  private isDisposed = false;
   private isManualClose = false;
 
-  constructor(private readonly url: string) {}
+  constructor(realtimeUrl: string, options: RealtimeClientOptions) {
+    if (typeof realtimeUrl !== "string" || realtimeUrl.length === 0) {
+      throw new Error(
+        "RealtimeClient requires an explicit realtime URL from the runtime composition root.",
+      );
+    }
+    if (!options?.socketFactory) {
+      throw new Error(
+        "RealtimeClient requires a socketFactory from the runtime composition root.",
+      );
+    }
+
+    this.descriptorProvider =
+      options.connectionDescriptorProvider ??
+      createCookieConnectionDescriptorProvider({ realtimeUrl });
+    this.socketFactory = options.socketFactory;
+    this.clock = options.clock ?? { now: () => new Date() };
+    this.scheduler = options.scheduler ?? {
+      setTimeout: (fn, ms) => setTimeout(fn, ms),
+      clearTimeout: (id) => clearTimeout(id as ReturnType<typeof setTimeout>),
+      setInterval: (fn, ms) => setInterval(fn, ms),
+      clearInterval: (id) =>
+        clearInterval(id as ReturnType<typeof setInterval>),
+    };
+    this.telemetry = options.telemetry;
+
+    this.initialDelayMs = options.reconnect?.initialDelayMs ?? 1000;
+    this.maximumDelayMs = options.reconnect?.maximumDelayMs ?? 30_000;
+    this.maximumAttempts = options.reconnect?.maximumAttempts ?? "unlimited";
+
+    this.heartbeatIntervalMs = options.heartbeat?.intervalMs ?? 15_000;
+    this.pongTimeoutMs = options.heartbeat?.pongTimeoutMs ?? 5_000;
+    this.maximumMissedPongs = options.heartbeat?.maximumMissedPongs ?? 2;
+
+    const maxEntries = options.deduplication?.maximumEntries ?? 1000;
+    const ttlMs = options.deduplication?.ttlMs ?? 60_000;
+    this.dedupCache = new DedupLruCache(maxEntries, ttlMs);
+  }
 
   public getState(): RealtimeConnectionState {
     return this.state;
@@ -79,119 +295,309 @@ export class RealtimeClient {
   private setState(newState: RealtimeConnectionState): void {
     if (this.state !== newState) {
       this.state = newState;
-      this.stateListeners.forEach((listener) => listener(newState));
+      this.stateListeners.forEach((listener) => {
+        try {
+          listener(newState);
+        } catch (err) {
+          this.telemetry?.reportError(err, { context: "stateListener" });
+        }
+      });
     }
   }
 
-  public connect(): void {
-    if (this.state === 'connected' || this.state === 'connecting') return;
+  public async connect(context: RealtimeConnectContext): Promise<void> {
+    if (this.isDisposed) return;
+    if (this.state === "connected" || this.state === "connecting") return;
 
-    // Reset manual-close flag on an explicit connect() call
     this.isManualClose = false;
-
-    this.setState(this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting');
+    this.currentContext = context;
+    this.setState(transitionState(this.state, "CONNECT_REQUESTED"));
 
     try {
-      this.socket = new WebSocket(this.url);
+      const descriptor = await this.descriptorProvider.getDescriptor(context);
+      if (this.isDisposed || this.isManualClose) return;
 
-      this.socket.onopen = () => {
-        this.reconnectAttempts = 0;
-        this.setState('connected');
-      };
+      this.socket = this.socketFactory(descriptor);
+      this.bindSocketEvents();
+    } catch (err) {
+      this.telemetry?.reportError(err, { context: "descriptorResolution" });
+      this.handleSocketFailure();
+    }
+  }
 
-      this.socket.onmessage = (event) => {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(event.data as string);
-        } catch {
-          console.warn('[RealtimeClient] Received non-JSON message, ignoring.');
-          return;
-        }
+  private bindSocketEvents(): void {
+    if (!this.socket) return;
 
-        if (!isValidEnvelope(parsed)) {
-          console.warn('[RealtimeClient] Received invalid envelope, ignoring:', parsed);
-          return;
-        }
+    this.socket.onopen = () => {
+      if (this.isDisposed || this.isManualClose) return;
+      this.reconnectAttempt = 0;
+      this.setState(transitionState(this.state, "SOCKET_OPENED"));
+      this.startHeartbeat();
+    };
 
-        this.eventListeners.forEach((listener) => listener(parsed as RealtimeEnvelope));
-      };
+    this.socket.onmessage = (event) => {
+      if (this.isDisposed) return;
+      this.handleIncomingMessage(event.data);
+    };
 
-      this.socket.onclose = () => {
-        this.socket = null;
-        if (this.isManualClose) {
-          // Intentional disconnect - do NOT schedule reconnect
-          this.setState('disconnected');
-        } else {
-          // Unexpected close (network drop, server restart, etc.) - reconnect
-          this.scheduleReconnect();
-        }
-      };
-
-      this.socket.onerror = () => {
-        // onerror is always followed by onclose; let onclose drive state transitions
-        console.warn('[RealtimeClient] WebSocket error encountered.');
-      };
-    } catch (e) {
-      console.error('[RealtimeClient] Failed to create WebSocket:', e);
+    this.socket.onclose = () => {
+      this.stopHeartbeat();
       this.socket = null;
-      this.scheduleReconnect();
-    }
-  }
+      if (this.isManualClose || this.isDisposed) {
+        this.setState(transitionState(this.state, "MANUAL_DISCONNECT"));
+      } else {
+        this.setState(transitionState(this.state, "SOCKET_CLOSED"));
+        this.scheduleReconnect();
+      }
+    };
 
-  private scheduleReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      this.setState('failed');
-      return;
-    }
-
-    this.reconnectAttempts++;
-    const exponentialDelay = this.baseReconnectDelayMs * Math.pow(2, this.reconnectAttempts - 1);
-    // Add +-25% jitter to prevent thundering herd reconnect storms
-    const jitter = exponentialDelay * 0.25 * (Math.random() * 2 - 1);
-    const delay = Math.min(exponentialDelay + jitter, this.maxReconnectDelayMs);
-
-    this.setState('reconnecting');
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = setTimeout(() => this.connect(), Math.max(delay, 0));
-  }
-
-  public subscribe<T = unknown>(listener: EventListener<T>): () => void {
-    this.eventListeners.add(listener as EventListener);
-    return () => {
-      this.eventListeners.delete(listener as EventListener);
+    this.socket.onerror = (err) => {
+      this.telemetry?.reportError(err, { context: "socketError" });
     };
   }
 
-  public onStateChange(listener: ConnectionStateListener): () => void {
+  private handleIncomingMessage(data: unknown): void {
+    const parseResult = parseRealtimeMessage(data);
+
+    if (!parseResult.ok) {
+      this.telemetry?.reportError(
+        new Error(`Unparseable realtime message: ${parseResult.error.reason}`),
+        { context: "messageParse", reason: parseResult.error.reason },
+      );
+      return;
+    }
+
+    const { value } = parseResult;
+
+    if (value.kind === "control") {
+      this.handleControlMessage(value.message);
+      return;
+    }
+
+    if (value.kind === "domain") {
+      this.handleDomainEnvelope(value.envelope);
+    }
+  }
+
+  private handleControlMessage(message: RealtimeControlMessage): void {
+    if (message.type === "pong") {
+      this.missedPongs = 0;
+      if (this.pongTimeoutTimer) {
+        this.scheduler.clearTimeout(this.pongTimeoutTimer);
+        this.pongTimeoutTimer = null;
+      }
+    }
+  }
+
+  private handleDomainEnvelope(envelope: RealtimeEnvelope<unknown>): void {
+    const now = this.clock.now().getTime();
+
+    // Deduplication check
+    if (this.dedupCache.has(envelope.eventId, now)) {
+      this.telemetry?.track("realtime.duplicate_ignored", {
+        eventId: envelope.eventId,
+      });
+      return;
+    }
+    this.dedupCache.add(envelope.eventId, now);
+
+    // Sequence tracking and gap detection
+    if (envelope.sequence !== undefined) {
+      const channelKey = `${envelope.workspaceId}:${envelope.subscriptionId || "default"}`;
+      const previousSeq = this.sequenceTracker.get(channelKey);
+
+      if (previousSeq !== undefined) {
+        if (envelope.sequence <= previousSeq) {
+          this.telemetry?.track("realtime.stale_sequence_ignored", {
+            workspaceId: envelope.workspaceId,
+            subscriptionId: envelope.subscriptionId,
+            previous: previousSeq,
+            received: envelope.sequence,
+          });
+          return;
+        }
+
+        if (envelope.sequence > previousSeq + 1) {
+          const gap: RealtimeSequenceGap = {
+            workspaceId: envelope.workspaceId,
+            subscriptionId: envelope.subscriptionId,
+            expected: previousSeq + 1,
+            received: envelope.sequence,
+          };
+          this.recoveryListeners.forEach((listener) => {
+            try {
+              listener(gap);
+            } catch (err) {
+              this.telemetry?.reportError(err, { context: "recoveryListener" });
+            }
+          });
+          return;
+        }
+      }
+
+      this.sequenceTracker.set(channelKey, envelope.sequence);
+    }
+
+    // Workspace and subscription filtering
+    this.subscribers.forEach(({ filter, listener }) => {
+      if (filter.workspaceId !== envelope.workspaceId) return;
+      if (
+        filter.subscriptionId &&
+        filter.subscriptionId !== envelope.subscriptionId
+      )
+        return;
+      if (
+        filter.eventTypes &&
+        filter.eventTypes.length > 0 &&
+        !filter.eventTypes.includes(envelope.eventType)
+      )
+        return;
+
+      try {
+        listener(envelope);
+      } catch (err) {
+        this.telemetry?.reportError(err, {
+          context: "eventListener",
+          eventId: envelope.eventId,
+        });
+      }
+    });
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.missedPongs = 0;
+
+    this.heartbeatIntervalTimer = this.scheduler.setInterval(() => {
+      if (!this.socket || this.socket.readyState !== 1) return; // 1 = OPEN
+
+      try {
+        this.socket.send(
+          JSON.stringify({
+            type: "ping",
+            sentAt: this.clock.now().toISOString(),
+          }),
+        );
+      } catch (err) {
+        this.telemetry?.reportError(err, { context: "pingSend" });
+      }
+
+      // Start pong timeout timer
+      this.pongTimeoutTimer = this.scheduler.setTimeout(() => {
+        this.missedPongs++;
+        if (this.missedPongs >= this.maximumMissedPongs) {
+          this.telemetry?.track("realtime.heartbeat_timeout", {
+            missedPongs: this.missedPongs,
+          });
+          this.socket?.close(4000, "Heartbeat timeout");
+        }
+      }, this.pongTimeoutMs);
+    }, this.heartbeatIntervalMs);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatIntervalTimer) {
+      this.scheduler.clearInterval(this.heartbeatIntervalTimer);
+      this.heartbeatIntervalTimer = null;
+    }
+    if (this.pongTimeoutTimer) {
+      this.scheduler.clearTimeout(this.pongTimeoutTimer);
+      this.pongTimeoutTimer = null;
+    }
+  }
+
+  private handleSocketFailure(): void {
+    this.setState(transitionState(this.state, "SOCKET_FAILED"));
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.isManualClose || this.isDisposed) return;
+
+    if (
+      typeof this.maximumAttempts === "number" &&
+      this.reconnectAttempt >= this.maximumAttempts
+    ) {
+      this.setState("failed");
+      return;
+    }
+
+    this.reconnectAttempt++;
+    // Deterministic exponential backoff: 1s, 2s, 4s, ... capped at 30s.
+    // Freeze v1 intentionally has no jitter so reconnect behavior is testable.
+    const delay = Math.min(
+      this.maximumDelayMs,
+      this.initialDelayMs * Math.pow(2, this.reconnectAttempt - 1),
+    );
+
+    this.setState(transitionState(this.state, "RECONNECT_SCHEDULED"));
+
+    if (this.reconnectTimer) {
+      this.scheduler.clearTimeout(this.reconnectTimer);
+    }
+
+    this.reconnectTimer = this.scheduler.setTimeout(
+      () => {
+        if (this.currentContext && !this.isManualClose && !this.isDisposed) {
+          void this.connect(this.currentContext);
+        }
+      },
+      Math.max(delay, 0),
+    );
+  }
+
+  public disconnect(reason?: string): void {
+    this.isManualClose = true;
+    this.stopHeartbeat();
+
+    if (this.reconnectTimer) {
+      this.scheduler.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    if (this.socket) {
+      this.socket.close(1000, reason || "Manual disconnect");
+      this.socket = null;
+    }
+
+    this.setState(transitionState(this.state, "MANUAL_DISCONNECT"));
+  }
+
+  public subscribe(
+    filter: RealtimeSubscriptionFilter,
+    listener: RealtimeEventListener,
+  ): () => void {
+    const entry = { filter, listener };
+    this.subscribers.add(entry);
+    return () => {
+      this.subscribers.delete(entry);
+    };
+  }
+
+  public subscribeState(listener: RealtimeStateListener): () => void {
     this.stateListeners.add(listener);
     return () => {
       this.stateListeners.delete(listener);
     };
   }
 
-  /**
-   * Intentionally close the WebSocket and prevent automatic reconnection.
-   * Call this on logout, component unmount, or explicit user action.
-   */
-  public disconnect(): void {
-    // Mark as intentional BEFORE closing the socket so that the onclose
-    // handler knows not to schedule a reconnect.
-    this.isManualClose = true;
+  public subscribeRecovery(listener: RealtimeRecoveryListener): () => void {
+    this.recoveryListeners.add(listener);
+    return () => {
+      this.recoveryListeners.delete(listener);
+    };
+  }
 
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    this.reconnectAttempts = 0;
+  public dispose(): void {
+    if (this.isDisposed) return;
+    this.isDisposed = true;
 
-    if (this.socket) {
-      this.socket.close();
-      // onclose will fire and call setState('disconnected') since isManualClose === true
-    } else {
-      this.setState('disconnected');
-    }
+    this.disconnect("Disposed");
+    this.subscribers.clear();
+    this.stateListeners.clear();
+    this.recoveryListeners.clear();
+    this.sequenceTracker.clear();
+    this.dedupCache.clear();
+    this.setState(transitionState(this.state, "DISPOSED"));
   }
 }
-
-// NOTE: No singleton exported. Instantiate via AppRuntime composition root:
-// const realtimeClient = new RealtimeClient(runtime.env.wsUrl);

@@ -1,72 +1,72 @@
-import Link from 'next/link'
-import { Check } from 'lucide-react'
+import Link from "next/link";
+import { Check } from "lucide-react";
 
-import { Button } from '@notrelix/ui-web/components/ui/button'
-import { Badge } from '@notrelix/ui-web/components/ui/badge'
-import { cn } from '@notrelix/ui-web/lib/cn'
+import { Button } from "@notrelix/ui-web/components/ui/button";
+import { Badge } from "@notrelix/ui-web/components/ui/badge";
+import { cn } from "@notrelix/ui-web/lib/cn";
 
 type Plan = {
-  name: string
-  price: string
-  period: string
-  description: string
-  features: string[]
-  cta: string
-  popular?: boolean
-}
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  features: string[];
+  cta: string;
+  popular?: boolean;
+};
 
 const plans: Plan[] = [
   {
-    name: 'Free',
-    price: '$0',
-    period: 'forever',
-    description: 'For individuals and small side projects.',
+    name: "Free",
+    price: "$0",
+    period: "forever",
+    description: "For individuals and small side projects.",
     features: [
-      'Up to 3 members',
-      'Unlimited pages',
-      '5 boards',
-      '1 GB storage',
-      '7-day page history',
-      'Community support',
+      "Up to 3 members",
+      "Unlimited pages",
+      "5 boards",
+      "1 GB storage",
+      "7-day page history",
+      "Community support",
     ],
-    cta: 'Get started',
+    cta: "Get started",
   },
   {
-    name: 'Pro',
-    price: '$8',
-    period: 'per member / month',
-    description: 'For growing teams that need more power.',
+    name: "Pro",
+    price: "$8",
+    period: "per member / month",
+    description: "For growing teams that need more power.",
     features: [
-      'Unlimited members',
-      'Unlimited pages & boards',
-      '50 GB storage',
-      '30-day page history',
-      'Automations & webhooks',
-      'Advanced permissions',
-      'Priority support',
-      'Custom integrations',
+      "Unlimited members",
+      "Unlimited pages & boards",
+      "50 GB storage",
+      "30-day page history",
+      "Automations & webhooks",
+      "Advanced permissions",
+      "Priority support",
+      "Custom integrations",
     ],
-    cta: 'Start free trial',
+    cta: "Start free trial",
     popular: true,
   },
   {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: 'contact sales',
-    description: 'For organizations with advanced needs.',
+    name: "Enterprise",
+    price: "Custom",
+    period: "contact sales",
+    description: "For organizations with advanced needs.",
     features: [
-      'Everything in Pro',
-      'Unlimited storage',
-      'Unlimited history',
-      'SAML SSO',
-      'Audit logs',
-      'Dedicated support',
-      'Custom contracts',
-      'SLA guarantee',
+      "Everything in Pro",
+      "Unlimited storage",
+      "Unlimited history",
+      "SAML SSO",
+      "Audit logs",
+      "Dedicated support",
+      "Custom contracts",
+      "SLA guarantee",
     ],
-    cta: 'Contact sales',
+    cta: "Contact sales",
   },
-]
+];
 
 export function PricingSection() {
   return (
@@ -92,10 +92,10 @@ export function PricingSection() {
             <div
               key={plan.name}
               className={cn(
-                'relative rounded-2xl border bg-card p-8 transition-shadow',
+                "relative rounded-2xl border bg-card p-8 transition-shadow",
                 plan.popular
-                  ? 'border-violet-500/50 shadow-xl shadow-violet-500/10 scale-[1.02]'
-                  : 'hover:shadow-lg'
+                  ? "border-violet-500/50 shadow-xl shadow-violet-500/10 scale-[1.02]"
+                  : "hover:shadow-lg",
               )}
             >
               {plan.popular && (
@@ -121,21 +121,15 @@ export function PricingSection() {
                 </p>
               </div>
 
-              <Link
-                href={
-                  plan.name === 'Enterprise'
-                    ? '/contact'
-                    : '/sign-up'
-                }
-              >
+              <Link href={plan.name === "Enterprise" ? "/contact" : "/sign-up"}>
                 <Button
                   className={cn(
-                    'w-full mb-6',
+                    "w-full mb-6",
                     plan.popular
-                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-lg shadow-violet-500/20'
-                      : ''
+                      ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-lg shadow-violet-500/20"
+                      : "",
                   )}
-                  variant={plan.popular ? 'default' : 'outline'}
+                  variant={plan.popular ? "default" : "outline"}
                 >
                   {plan.cta}
                 </Button>
@@ -159,5 +153,5 @@ export function PricingSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

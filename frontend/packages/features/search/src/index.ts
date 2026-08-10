@@ -1,3 +1,2 @@
-// @notrelix/feature-search — barrel export
-// TODO: Populate during Milestone 5 (Feature Extraction)
-export {}
+export * from "./core";
+export * from "./web";

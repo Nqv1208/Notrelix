@@ -1,13 +1,15 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createViewsService } from '../../../core/api/views.service';
-import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
-import { workspaceQueryKeys } from '../../../core/query/keys';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createViewsService } from "../../../core/api/views.service";
+import type { WorkspaceApiClient } from "../../../core/api/workspace.service";
+import { workspaceQueryKeys } from "../../../query/keys";
 
 interface UseCreateWorkspaceViewDeps {
   api: WorkspaceApiClient;
 }
 
-export function createUseCreateWorkspaceView({ api }: UseCreateWorkspaceViewDeps) {
+export function createUseCreateWorkspaceView({
+  api,
+}: UseCreateWorkspaceViewDeps) {
   const service = createViewsService(api);
 
   return function useCreateWorkspaceView(workspaceId: string) {
@@ -16,7 +18,9 @@ export function createUseCreateWorkspaceView({ api }: UseCreateWorkspaceViewDeps
     return useMutation({
       mutationFn: service.create,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.views(workspaceId) });
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.views(workspaceId),
+        });
       },
     });
   };

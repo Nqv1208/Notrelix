@@ -6,6 +6,7 @@ packages:
   - "packages/product/*/*"
   - "packages/features/*"
   - "tooling/*"
+  - "tooling/storybook/web"
 
 catalog:
   "react": "^19.0.0"
@@ -18,6 +19,8 @@ catalog:
   "eslint-config-next": "^15.1.0"
   "prettier": "^3.4.2"
   "vitest": "^3.0.0"
+  "jsdom": "^26.0.0"
+  "@testing-library/dom": "^10.0.0"
   "zod": "^3.23.8"
   "@tanstack/react-query": "^5.62.0"
   "@tanstack/react-router": "^1.90.0"

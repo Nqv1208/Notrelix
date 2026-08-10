@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig/base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["node"]
+  },
+  "include": [
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
+    "stories/**/*.tsx",
+    "postcss.config.cjs"
+  ]
+}

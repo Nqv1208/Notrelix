@@ -1,32 +1,32 @@
-import { Badge } from '@notrelix/ui-web/components/ui/badge'
-import { UserPlus, PenLine, Rocket } from 'lucide-react'
+import { Badge } from "@notrelix/ui-web/components/ui/badge";
+import { UserPlus, PenLine, Rocket } from "lucide-react";
 
 const steps = [
   {
-    step: '01',
+    step: "01",
     icon: UserPlus,
-    title: 'Create a workspace',
+    title: "Create a workspace",
     description:
-      'Sign up in seconds, name your workspace, and invite your team. Everyone gets access instantly.',
-    color: 'from-violet-500 to-indigo-500',
+      "Sign up in seconds, name your workspace, and invite your team. Everyone gets access instantly.",
+    color: "from-violet-500 to-indigo-500",
   },
   {
-    step: '02',
+    step: "02",
     icon: PenLine,
-    title: 'Write & organize',
+    title: "Write & organize",
     description:
-      'Create pages with our block editor, build wikis, or spin up kanban boards — whatever fits your workflow.',
-    color: 'from-indigo-500 to-purple-500',
+      "Create pages with our block editor, build wikis, or spin up kanban boards — whatever fits your workflow.",
+    color: "from-indigo-500 to-purple-500",
   },
   {
-    step: '03',
+    step: "03",
     icon: Rocket,
-    title: 'Ship together',
+    title: "Ship together",
     description:
-      'Collaborate in real time with comments, assignments, and notifications. Keep everyone aligned and shipping.',
-    color: 'from-purple-500 to-fuchsia-500',
+      "Collaborate in real time with comments, assignments, and notifications. Keep everyone aligned and shipping.",
+    color: "from-purple-500 to-fuchsia-500",
   },
-]
+];
 
 export function HowItWorksSection() {
   return (
@@ -49,7 +49,7 @@ export function HowItWorksSection() {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {steps.map((step, i) => {
-            const Icon = step.icon
+            const Icon = step.icon;
             return (
               <div key={step.step} className="relative text-center">
                 {i < steps.length - 1 && (
@@ -72,10 +72,10 @@ export function HowItWorksSection() {
                   {step.description}
                 </p>
               </div>
-            )
+            );
           })}
         </div>
       </div>
     </section>
-  )
+  );
 }

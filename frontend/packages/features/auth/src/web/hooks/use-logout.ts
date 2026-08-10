@@ -1,17 +1,20 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@notrelix/platform/navigation';
-import { createAuthService, type AuthApiClient, type AuthEndpoints } from '../../core/api/auth.service';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createAuthService,
+  type AuthApiClient,
+  type AuthEndpoints,
+} from "../../core/api/auth.service";
+import type { NavigationDeps } from "./use-login";
 
-interface UseLogoutDeps {
+interface UseLogoutDeps extends NavigationDeps {
   api: AuthApiClient;
   endpoints: AuthEndpoints;
 }
 
-export function createUseLogout({ api, endpoints }: UseLogoutDeps) {
+export function createUseLogout({ api, endpoints, navigate }: UseLogoutDeps) {
   const authService = createAuthService(api, endpoints);
 
   return function useLogout() {
-    const navigate = useNavigate();
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -24,7 +27,7 @@ export function createUseLogout({ api, endpoints }: UseLogoutDeps) {
       },
       onSettled: () => {
         queryClient.clear();
-        navigate({ to: '/', replace: true });
+        navigate({ to: "/", replace: true });
       },
     });
   };

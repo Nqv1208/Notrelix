@@ -1,8 +1,8 @@
-import type { ID } from './ids';
+import type { ID } from "./ids";
 
 export interface Mention {
   id: ID;
-  type: 'user' | 'page' | 'task' | 'board';
+  type: "user" | "page" | "task" | "board";
   targetId: ID;
   label: string;
 }
@@ -10,7 +10,7 @@ export interface Mention {
 export interface LinkedTask {
   id: ID;
   title: string;
-  status: 'todo' | 'in_progress' | 'done' | 'blocked';
+  status: "todo" | "in_progress" | "done" | "blocked";
   dueDate: string | null;
   assigneeId: ID | null;
   boardId: ID;

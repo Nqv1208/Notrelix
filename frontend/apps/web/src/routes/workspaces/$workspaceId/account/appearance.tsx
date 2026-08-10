@@ -1,33 +1,56 @@
-import { createUsePreferences, createUseUpdatePreferences } from '@notrelix/features-account';
-import { api, endpoints } from '@notrelix/contracts';
-import { Button } from '@notrelix/ui-web';
-import { useColorTheme } from '@notrelix/ui-web';
-import { Monitor, Sun, Moon } from 'lucide-react';
-import { toast } from 'sonner';
-
-const usePreferences = createUsePreferences({ api, endpoints, options: { mockMode: true } });
-const useUpdatePreferences = createUseUpdatePreferences({ api, endpoints, options: { mockMode: true } });
+import { useMemo } from "react";
+import {
+  createUsePreferences,
+  createUseUpdatePreferences,
+} from "@notrelix/features-account";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { Button } from "@notrelix/ui-web";
+import { useColorTheme } from "@notrelix/ui-web";
+import { Monitor, Sun, Moon } from "lucide-react";
+import { toast } from "sonner";
 
 const THEME_OPTIONS = [
-  { value: 'light' as const, label: 'Light', icon: Sun },
-  { value: 'dark' as const, label: 'Dark', icon: Moon },
-  { value: 'system' as const, label: 'System', icon: Monitor },
+  { value: "light" as const, label: "Light", icon: Sun },
+  { value: "dark" as const, label: "Dark", icon: Moon },
+  { value: "system" as const, label: "System", icon: Monitor },
 ];
 
 const COLOR_THEMES = [
-  { id: 'zinc', label: 'Zinc' },
-  { id: 'slate', label: 'Slate' },
-  { id: 'stone', label: 'Stone' },
-  { id: 'gray', label: 'Gray' },
-  { id: 'neutral', label: 'Neutral' },
+  { id: "zinc", label: "Zinc" },
+  { id: "slate", label: "Slate" },
+  { id: "stone", label: "Stone" },
+  { id: "gray", label: "Gray" },
+  { id: "neutral", label: "Neutral" },
 ];
 
 export function AccountAppearancePage() {
+  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+
+  const usePreferences = useMemo(
+    () =>
+      createUsePreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === "development" },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
+  const useUpdatePreferences = useMemo(
+    () =>
+      createUseUpdatePreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === "development" },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
   const { preferences, isLoading } = usePreferences();
   const updateMutation = useUpdatePreferences();
   const { colorTheme, setColorTheme } = useColorTheme();
 
-  const handleThemeChange = async (theme: 'light' | 'dark' | 'system') => {
+  const handleThemeChange = async (theme: "light" | "dark" | "system") => {
     try {
       await updateMutation.mutateAsync({ theme });
     } catch {
@@ -49,7 +72,9 @@ export function AccountAppearancePage() {
     <div className="space-y-6">
       <div>
         <h2 className="font-semibold text-sm mb-1">Appearance</h2>
-        <p className="text-xs text-muted-foreground">Customize how Notrelix looks on your device.</p>
+        <p className="text-xs text-muted-foreground">
+          Customize how Notrelix looks on your device.
+        </p>
       </div>
 
       {/* Theme */}
@@ -65,8 +90,8 @@ export function AccountAppearancePage() {
                 onClick={() => handleThemeChange(option.value)}
                 className={`flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
                   isActive
-                    ? 'border-primary bg-primary/5 text-foreground'
-                    : 'border-border text-muted-foreground hover:bg-muted/50'
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted/50"
                 }`}
               >
                 <Icon className="size-5" />
@@ -79,7 +104,9 @@ export function AccountAppearancePage() {
 
       {/* Color Theme */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">Accent Color</label>
+        <label className="text-sm font-medium text-foreground">
+          Accent Color
+        </label>
         <div className="flex gap-2">
           {COLOR_THEMES.map((color) => (
             <button
@@ -90,8 +117,8 @@ export function AccountAppearancePage() {
               }}
               className={`size-8 rounded-full border-2 transition-colors ${
                 colorTheme === color.id
-                  ? 'border-primary ring-2 ring-primary/20'
-                  : 'border-border hover:border-primary/50'
+                  ? "border-primary ring-2 ring-primary/20"
+                  : "border-border hover:border-primary/50"
               }`}
               style={{
                 backgroundColor: `var(--color-${color.id}-500, #71717a)`,
@@ -108,16 +135,18 @@ export function AccountAppearancePage() {
         <div className="flex items-center justify-between rounded-lg border border-border p-4">
           <div>
             <p className="text-sm">Collapsed by default</p>
-            <p className="text-xs text-muted-foreground">Start with sidebar collapsed</p>
+            <p className="text-xs text-muted-foreground">
+              Start with sidebar collapsed
+            </p>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
-              toast.success('Sidebar preference saved');
+              toast.success("Sidebar preference saved");
             }}
           >
-            {preferences?.sidebarCollapsed ? 'Expanded' : 'Collapsed'}
+            {preferences?.sidebarCollapsed ? "Expanded" : "Collapsed"}
           </Button>
         </div>
       </div>
