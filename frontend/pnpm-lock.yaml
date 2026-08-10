@@ -394,6 +394,9 @@ importers:
         specifier: ^5.95.2
         version: 5.101.2(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -422,6 +425,9 @@ importers:
         specifier: workspace:*
         version: link:../../foundation/query
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -462,6 +468,9 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -499,6 +508,9 @@ importers:
         specifier: 'catalog:'
         version: 0.469.0(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -536,6 +548,9 @@ importers:
         specifier: 'catalog:'
         version: 0.469.0(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -567,6 +582,9 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -598,6 +616,9 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -635,6 +656,9 @@ importers:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -669,6 +693,9 @@ importers:
         specifier: 'catalog:'
         version: 0.469.0(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -718,6 +745,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.7)
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@tanstack/react-router':
         specifier: ^1.120.3
         version: 1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -743,6 +773,9 @@ importers:
         specifier: workspace:*
         version: link:../kernel
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -756,6 +789,9 @@ importers:
         specifier: ^3.23.0
         version: 3.25.76
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -768,6 +804,9 @@ importers:
 
   packages/foundation/observability:
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -781,6 +820,9 @@ importers:
         specifier: workspace:*
         version: link:../kernel
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -797,6 +839,9 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -806,6 +851,9 @@ importers:
 
   packages/foundation/realtime:
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -822,6 +870,9 @@ importers:
         specifier: workspace:*
         version: link:../../../foundation/kernel
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -844,6 +895,9 @@ importers:
         specifier: latest
         version: 0.86.2(@types/react@19.2.17)(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -869,6 +923,9 @@ importers:
         specifier: ^5.95.2
         version: 5.101.2(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -891,6 +948,9 @@ importers:
         specifier: workspace:*
         version: link:../../../foundation/realtime
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -913,6 +973,9 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -929,12 +992,18 @@ importers:
         specifier: workspace:*
         version: link:../../../foundation/realtime
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
 
   packages/product/docs/core:
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -960,6 +1029,9 @@ importers:
         specifier: latest
         version: 0.86.2(@types/react@19.2.17)(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -982,6 +1054,9 @@ importers:
         specifier: ^5.95.2
         version: 5.101.2(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -1025,6 +1100,9 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -1041,6 +1119,9 @@ importers:
         specifier: workspace:*
         version: link:../../../foundation/kernel
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -1071,16 +1152,19 @@ importers:
       react:
         specifier: ^19.2.7
         version: 19.2.7
+      react-native:
+        specifier: latest
+        version: 0.86.2(@types/react@19.2.17)(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.17)
-      react-dom:
-        specifier: ^19.2.7
-        version: 19.2.7(react@19.2.7)
+      '@types/react-native':
+        specifier: ^0.73.0
+        version: 0.73.0(@types/react@19.2.17)(react@19.2.7)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -1091,6 +1175,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -1116,6 +1203,9 @@ importers:
         specifier: ^8.0.0
         version: 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -1138,6 +1228,9 @@ importers:
         specifier: workspace:*
         version: link:../state
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -1181,6 +1274,9 @@ importers:
         specifier: ^2.0.0
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../tooling/eslint-config
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
@@ -1227,6 +1323,9 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -1252,6 +1351,9 @@ importers:
         specifier: workspace:*
         version: link:../../foundation/realtime
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.7)
@@ -1277,6 +1379,9 @@ importers:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -1296,6 +1401,9 @@ importers:
         specifier: latest
         version: 0.86.2(@types/react@19.2.17)(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -1315,6 +1423,9 @@ importers:
         specifier: ^3.4.0
         version: 3.6.0
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -1373,6 +1484,9 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint-config
       '@testing-library/react':
         specifier: ^16.0.0
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1394,6 +1508,9 @@ importers:
 
   tooling/codegen:
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       openapi-typescript:
         specifier: ^7.6.1
         version: 7.13.0(typescript@5.9.3)
@@ -1403,6 +1520,9 @@ importers:
 
   tooling/dependency-rules:
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       tsx:
         specifier: ^4.19.0
         version: 4.23.1
@@ -1432,6 +1552,9 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/ui/web
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../../eslint-config
       '@storybook/addon-a11y':
         specifier: 8.6.14
         version: 8.6.14(storybook@8.6.14(prettier@3.9.5))
@@ -1490,6 +1613,9 @@ importers:
         specifier: ^16.0.0
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
     devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@playwright/test':
         specifier: ^1.50.0
         version: 1.61.1
@@ -1512,7 +1638,11 @@ importers:
         specifier: 'catalog:'
         version: 3.2.7(@types/node@20.19.43)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
 
-  tooling/tsconfig: {}
+  tooling/tsconfig:
+    devDependencies:
+      '@notrelix/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
 
 packages:
 
