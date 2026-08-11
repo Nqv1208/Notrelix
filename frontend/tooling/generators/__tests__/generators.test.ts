@@ -273,10 +273,7 @@ const realManifestPath = join(
   frontendRoot,
   "tooling/dependency-rules/src/architecture-manifest.ts",
 );
-const realDocsPath = join(
-  frontendRoot,
-  "docs/generated/package-boundaries.md",
-);
+const realDocsPath = join(frontendRoot, "docs/generated/package-boundaries.md");
 
 // ── create-feature ────────────────────────────────────────────────────
 
