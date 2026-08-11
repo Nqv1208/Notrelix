@@ -28,10 +28,7 @@ export function getFrontendRoot(): string {
 export function getArchitectureDocsPath(
   rootDir: string = getFrontendRoot(),
 ): string {
-  return join(
-    rootDir,
-    "docs/client/architecture/package-boundaries.generated.md",
-  );
+  return join(rootDir, "docs/generated/package-boundaries.md");
 }
 
 export function generateArchitectureDocs(): string {

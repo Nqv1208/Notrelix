@@ -1,39 +1,47 @@
-# Notrelix Client Monorepo
+# Notrelix Frontend
 
-> **Notrelix Enterprise Work-Management OS Frontend Platform**
+The frontend is a pnpm/Turborepo workspace for the Notrelix enterprise
+work-management platform.
 
----
+## Hosts
 
-## Architecture Documentation
+- Vite web app: `apps/web`
+- Expo mobile app: `apps/mobile`
+- Next marketing app: `apps/marketing`
 
-For complete, authoritative frontend architecture documentation, refer to the [Client Architecture Specification](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/README.md).
+## Package Families
 
-### Quick Links
+- `packages/foundation/*` for framework/runtime-neutral primitives and contracts.
+- `packages/runtimes/*` for host runtime adapters.
+- `packages/ui/*` for tokens and platform UI implementations.
+- `packages/product/*/*` for product capability packages.
+- `packages/features/*` for cross-product feature slices.
+- `tooling/*` for generators, dependency rules and test infrastructure.
 
-- [Dependency Model](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/dependency-model.md)
-- [Application Composition](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/application-composition.md)
-- [Module Template](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/module-template.md)
-- [API & Contracts](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/api-and-contracts.md)
-- [Realtime Architecture](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/realtime.md)
-- [Freeze Governance](file:///Users/nqvinh/Documents/projects/Notrelix/frontend/docs/client-architecture/freeze-governance.md)
+## Requirements
 
----
+- Node `>=22`
+- pnpm `>=10`
 
-## Development Workflow
-
-### Requirements
-
-- Node.js >= 22
-- pnpm >= 10
-
-### Common Commands
+## Commands
 
 ```bash
-pnpm install           # Install dependencies
-pnpm typecheck         # Type-check all packages
-pnpm lint              # Lint all packages
-pnpm test              # Run unit & component tests
-pnpm check:deps        # Run AST architecture checks
-pnpm build             # Build web and marketing apps
-pnpm validate          # Full local validation suite
+pnpm install --frozen-lockfile
+pnpm dev:web
+pnpm dev:mobile
+pnpm dev:marketing
+pnpm build
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm validate:fast
+pnpm validate
 ```
+
+## Documentation
+
+- [Frontend agent contract](AGENTS.md)
+- [Frontend documentation index](docs/README.md)
+- [Frontend overview](docs/architecture/frontend-overview.md)
+- [Dependency boundaries](docs/architecture/dependency-boundaries.md)
+- [Testing and quality gates](docs/architecture/testing-and-quality-gates.md)

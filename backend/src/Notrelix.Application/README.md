@@ -1,7 +1,6 @@
 # Notrelix.Application — Layer Structure
 
-> Source of truth: `docs/application/notrelix-application-enterprise-rules-v4.md`
-> and `docs/application/notrelix-application-layer-development-guide.md`.
+> Source of truth: `../../docs/architecture/application-model.md`.
 
 This document describes the **canonical folder structure** the Application layer is
 being harmonized to. The scaffolding (empty module folders) mirrors the bounded

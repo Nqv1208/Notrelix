@@ -28,7 +28,7 @@ DOTNET_RUN_API := dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --
 	be-build be-test be-clean-nuget be-shell backend-image-build \
 	staging staging-up staging-down staging-logs \
 	prod prod-up prod-down prod-logs \
-	build build-staging ps config-dev clean
+	build build-staging ps config-dev docs-check clean
 
 help:
 	@echo "Notrelix — Docker"
@@ -65,6 +65,7 @@ help:
 	@echo ""
 	@echo "Config:"
 	@echo "  make config-dev          Print resolved dev compose config"
+	@echo "  make docs-check          Validate documentation authority"
 
 # ---------------------------------------------------------------------
 # Development stack
@@ -213,6 +214,9 @@ ps:
 
 config-dev:
 	@JWT_SECRET=dev-only-not-for-production-but-at-least-32-chars!! $(COMPOSE_DEV) $(ENV_DEV) config
+
+docs-check:
+	node scripts/check-documentation.mjs
 
 clean:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v
