@@ -7,6 +7,7 @@ import type { Messages } from "../messages/en";
 
 import { Reveal } from "../components/reveal";
 import { SectionHeading } from "../components/section-heading";
+import { MarketingButton } from "../components/marketing-button";
 import { env } from "../config/env";
 
 type BillingCycle = "monthly" | "yearly";
@@ -101,25 +102,33 @@ export function PricingTeaserSection() {
                     </>
                   )}
                 </div>
-                <a
+                <MarketingButton
+                  variant={
+                    plan.name === "Growth"
+                      ? "primary"
+                      : plan.name === "Enterprise"
+                        ? "inverse"
+                        : "secondary"
+                  }
+                  size="md"
                   href={
                     plan.name === "Enterprise"
                       ? "/contact"
                       : `${env.webAppUrl}/sign-up`
                   }
-                  className={`mt-7 flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-transform hover:-translate-y-0.5 ${plan.name === "Growth" ? "bg-[var(--ink)] text-white" : plan.name === "Enterprise" ? "bg-white text-[var(--ink)]" : "border border-[var(--line-strong)] text-[var(--ink)] hover:bg-[var(--surface)]"}`}
+                  className="mt-7 w-full"
                 >
                   {plan.name === "Enterprise"
                     ? t("talkToSales")
                     : t("startFree")}
-                </a>
+                </MarketingButton>
                 <ul className="mt-8 space-y-3 border-t border-current/10 pt-7">
                   {plan.features.map((feature) => (
                     <li
                       key={feature}
                       className="flex gap-2.5 text-sm opacity-80"
                     >
-                      <Check className="mt-0.5 size-4 shrink-0 text-[var(--teal)]" />
+                      <Check className="mt-0.5 size-4 shrink-0 text-[var(--mkt-brand-400)]" />
                       {feature}
                     </li>
                   ))}

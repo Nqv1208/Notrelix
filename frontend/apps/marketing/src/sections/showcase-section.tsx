@@ -32,7 +32,7 @@ const tabIcons: Record<ShowcaseTab, typeof LayoutGrid> = {
 function PlanPanel({ data }: { data: Messages["showcase"]["calendar"] }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-      <div className="rounded-2xl border border-[var(--line)] bg-white p-5">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-5">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-[var(--ink)]">
@@ -59,16 +59,16 @@ function PlanPanel({ data }: { data: Messages["showcase"]["calendar"] }) {
           {Array.from({ length: 28 }, (_, index) => (
             <span
               key={index}
-              className={`flex aspect-square items-center justify-center rounded-md text-[0.6rem] ${index === 14 ? "bg-[var(--cobalt)] font-semibold text-white" : index > 9 && index < 14 ? "bg-[var(--lilac)] text-[var(--cobalt)]" : "text-[var(--muted-text)] hover:bg-[var(--surface)]"}`}
+              className={`flex aspect-square items-center justify-center rounded-md text-[0.6rem] ${index === 14 ? "bg-[var(--cobalt)] font-semibold text-[var(--mkt-text-on-brand)]" : index > 9 && index < 14 ? "bg-[var(--lilac)] text-[var(--cobalt)]" : "text-[var(--muted-text)] hover:bg-[var(--surface)]"}`}
             >
               {index + 1}
             </span>
           ))}
         </div>
       </div>
-      <div className="rounded-2xl border border-[var(--line)] bg-white p-5">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-5">
         <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ink)]">
-          <ListChecks className="size-4 text-[var(--teal)]" />{" "}
+          <ListChecks className="size-4 text-[var(--mkt-brand-400)]" />{" "}
           {data.milestones.title}
         </div>
         <div className="mt-5 space-y-3">
@@ -78,7 +78,7 @@ function PlanPanel({ data }: { data: Messages["showcase"]["calendar"] }) {
               className="flex items-start gap-3 rounded-xl bg-[var(--surface)] p-3"
             >
               <span
-                className={`mt-0.5 flex size-5 items-center justify-center rounded-full ${index === 2 ? "bg-emerald-100 text-emerald-600" : "bg-white text-[var(--cobalt)]"}`}
+                className={`mt-0.5 flex size-5 items-center justify-center rounded-full ${index === 2 ? "bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-600)]" : "bg-[var(--mkt-surface)] text-[var(--cobalt)]"}`}
               >
                 {index === 2 ? (
                   <Check className="size-3" />
@@ -112,7 +112,7 @@ function ProgressPanel({
       {data.map((column) => (
         <div
           key={column.title}
-          className="rounded-2xl border border-[var(--line)] bg-white p-4"
+          className="rounded-2xl border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-4"
         >
           <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ink)]">
             <span className={`size-2 rounded-full ${column.tone}`} />
@@ -132,7 +132,7 @@ function ProgressPanel({
                     {item}
                   </span>
                   <span
-                    className={`size-5 shrink-0 rounded-full ${index === 0 ? "bg-[var(--peach)]" : "bg-[var(--lilac)]"}`}
+                    className={`size-5 shrink-0 rounded-full ${index === 0 ? "bg-[var(--mkt-surface-brand-strong)]" : "bg-[var(--mkt-surface-brand)]"}`}
                   />
                 </div>
                 <div className="mt-3 flex items-center justify-between text-[0.6rem] text-[var(--muted-text)]">
@@ -154,7 +154,7 @@ function AutomationPanel({
   data: Messages["showcase"]["automation"];
 }) {
   return (
-    <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-7">
+    <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-5 sm:p-7">
       <div className="flex items-center justify-between border-b border-[var(--line)] pb-5">
         <div>
           <p className="text-sm font-semibold text-[var(--ink)]">
@@ -164,8 +164,8 @@ function AutomationPanel({
             {data.subtitle}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[0.65rem] font-semibold text-emerald-700">
-          <span className="size-1.5 rounded-full bg-emerald-500" />{" "}
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--mkt-brand-100)] px-2.5 py-1 text-[0.65rem] font-semibold text-[var(--mkt-brand-700)]">
+          <span className="size-1.5 rounded-full bg-[var(--mkt-brand-500)]" />{" "}
           {data.enabled}
         </span>
       </div>
@@ -181,7 +181,7 @@ function AutomationPanel({
         </div>
         <ArrowRight className="hidden size-4 text-[var(--muted-text)] sm:block" />
         <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-          <Sparkles className="size-4 text-[var(--coral)]" />
+          <Sparkles className="size-4 text-[var(--mkt-brand-500)]" />
           <p className="mt-3 text-xs font-semibold text-[var(--ink)]">
             {data.condition}
           </p>
@@ -191,7 +191,7 @@ function AutomationPanel({
         </div>
         <ArrowRight className="hidden size-4 text-[var(--muted-text)] sm:block" />
         <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-          <Check className="size-4 text-[var(--teal)]" />
+          <Check className="size-4 text-[var(--mkt-brand-400)]" />
           <p className="mt-3 text-xs font-semibold text-[var(--ink)]">
             {data.action}
           </p>
@@ -213,7 +213,7 @@ function ReportingPanel({
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      <div className="rounded-2xl border border-[var(--line)] bg-white p-5 sm:col-span-2">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-5 sm:col-span-2">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-[var(--ink)]">
@@ -223,13 +223,13 @@ function ReportingPanel({
               {data.subtitle}
             </p>
           </div>
-          <BarChart3 className="size-4 text-[var(--teal)]" />
+          <BarChart3 className="size-4 text-[var(--mkt-brand-400)]" />
         </div>
         <div className="mt-8 flex h-32 items-end gap-2">
           {[32, 46, 39, 58, 52, 76, 68, 92].map((height, index) => (
             <div
               key={index}
-              className="relative flex-1 rounded-t-lg bg-gradient-to-t from-[var(--cobalt)] to-[#9aa1ff]"
+              className="relative flex-1 rounded-t-lg bg-gradient-to-t from-[var(--cobalt)] to-[var(--mkt-brand-300)]"
               style={{ height: `${height}%` }}
             >
               <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[0.55rem] text-[var(--muted-text)]">
@@ -239,16 +239,18 @@ function ReportingPanel({
           ))}
         </div>
       </div>
-      <div className="rounded-2xl border border-[var(--line)] bg-white p-5">
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-5">
         <p className="text-xs font-semibold text-[var(--ink)]">
           {data.signalTitle}
         </p>
         <div className="mt-6 text-4xl font-semibold tracking-[-0.06em] text-[var(--ink)]">
           +28%
         </div>
-        <p className="mt-1 text-xs text-emerald-600">{data.signalDelta}</p>
+        <p className="mt-1 text-xs text-[var(--mkt-brand-600)]">
+          {data.signalDelta}
+        </p>
         <div className="mt-7 h-2 overflow-hidden rounded-full bg-[var(--surface)]">
-          <div className="h-full w-[78%] rounded-full bg-[var(--teal)]" />
+          <div className="h-full w-[78%] rounded-full bg-[var(--mkt-brand-500)]" />
         </div>
         <p className="mt-2 text-[0.62rem] text-[var(--muted-text)]">
           {goal(78)}
@@ -353,9 +355,9 @@ export function ShowcaseSection() {
         >
           <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3 sm:px-6">
             <div className="flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-[#ef7866]" />
-              <span className="size-2 rounded-full bg-[#e9b64e]" />
-              <span className="size-2 rounded-full bg-[#55b985]" />
+              <span className="size-2 rounded-full bg-[var(--mkt-border-strong)]" />
+              <span className="size-2 rounded-full bg-[var(--mkt-border-strong)]" />
+              <span className="size-2 rounded-full bg-[var(--mkt-border-strong)]" />
             </div>
             <span className="text-[0.65rem] font-medium text-[var(--muted-text)]">
               workspace.notrelix.com

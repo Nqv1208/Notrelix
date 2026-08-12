@@ -6,7 +6,7 @@ import { Reveal } from "../components/reveal";
 import { SectionHeading } from "../components/section-heading";
 
 const shiftIcons = [CircleAlert, Layers3, Route];
-const shiftColors = ["coral", "violet", "teal"] as const;
+const shiftColors = ["violet", "brand", "blue"] as const;
 
 export async function ProblemSolutionSection() {
   const t = await getTranslations("problemSolution");
@@ -35,12 +35,12 @@ export async function ProblemSolutionSection() {
               <Reveal key={shift.before} delay={index * 80}>
                 <article className="shift-card h-full">
                   <div
-                    className={`icon-box icon-box--${shiftColors[index] ?? "coral"}`}
+                    className={`icon-box icon-box--${shiftColors[index] ?? "violet"}`}
                   >
                     <Icon className="size-5" />
                   </div>
                   <div className="mt-7 flex items-center gap-2 text-sm text-[var(--muted-text)]">
-                    <span className="line-through decoration-[var(--coral)]/60">
+                    <span className="line-through decoration-[var(--mkt-brand-400)]/70">
                       {shift.before}
                     </span>
                     <ArrowRight className="size-3.5" />

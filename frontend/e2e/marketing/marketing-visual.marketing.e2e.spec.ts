@@ -34,4 +34,24 @@ test.describe("Marketing Visual", () => {
     ).toBeVisible();
     await expect(page).toHaveScreenshot("contact-desktop.png", FULL_PAGE);
   });
+
+  test("homepage desktop dark snapshot", async ({ browser }) => {
+    const context = await browser.newContext({ colorScheme: "dark" });
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/");
+    await expect(page.locator("#hero")).toBeVisible();
+    await expect(page).toHaveScreenshot("homepage-desktop-dark.png", FULL_PAGE);
+    await context.close();
+  });
+
+  test("homepage mobile dark snapshot", async ({ browser }) => {
+    const context = await browser.newContext({ colorScheme: "dark" });
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(page.locator("#hero")).toBeVisible();
+    await expect(page).toHaveScreenshot("homepage-mobile-dark.png", FULL_PAGE);
+    await context.close();
+  });
 });

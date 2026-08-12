@@ -71,7 +71,7 @@ export async function MarketingFooter() {
           <div className="flex items-center gap-4">
             <span id="status" className="inline-flex items-center gap-2">
               <span
-                className="size-2 rounded-full bg-emerald-500"
+                className="size-2 rounded-full bg-[var(--mkt-brand-500)]"
                 aria-hidden="true"
               />
               {t("status")}

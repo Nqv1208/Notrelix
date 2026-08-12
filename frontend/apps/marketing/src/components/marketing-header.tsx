@@ -15,7 +15,7 @@ import {
 import { useTranslations } from "next-intl";
 import type { Messages } from "../messages/en";
 
-import { Button } from "@notrelix/ui-web/components/ui/button";
+import { MarketingButton } from "./marketing-button";
 import { ThemeToggle } from "./theme-toggle";
 import Image from "next/image";
 import { env } from "../config/env";
@@ -133,19 +133,15 @@ export function MarketingHeader() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <a href={`${env.webAppUrl}/sign-in`} className="hidden sm:block">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="px-4 text-[var(--ink)] hover:bg-[var(--lilac)]"
-            >
+            <MarketingButton variant="ghost" size="sm">
               {t("signIn")}
-            </Button>
+            </MarketingButton>
           </a>
           <a href={`${env.webAppUrl}/sign-up`} className="hidden sm:block">
-            <Button size="sm" className="px-4 primary-button">
+            <MarketingButton variant="primary" size="sm">
               {t("tryFree")}
-              <ArrowUpRight className="ml-1.5 size-3.5" />
-            </Button>
+              <ArrowUpRight className="size-3.5" />
+            </MarketingButton>
           </a>
           <button
             type="button"
@@ -192,13 +188,15 @@ export function MarketingHeader() {
               >
                 {t("signIn")}
               </a>
-              <a
+              <MarketingButton
+                variant="primary"
+                size="md"
                 href={`${env.webAppUrl}/sign-up`}
                 onClick={closeMobile}
-                className="mobile-link justify-center bg-[var(--ink)] text-white"
+                className="w-full"
               >
                 {t("tryFree")}
-              </a>
+              </MarketingButton>
             </div>
           </nav>
         </div>

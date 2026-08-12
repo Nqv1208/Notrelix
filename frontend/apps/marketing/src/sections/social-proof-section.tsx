@@ -16,7 +16,7 @@ export async function SocialProofSection() {
   const t = await getTranslations("socialProof");
 
   return (
-    <section className="border-y border-[var(--line)] bg-white/55 py-9">
+    <section className="border-y border-[var(--line)] bg-[var(--mkt-surface)]/55 py-9">
       <div className="container">
         <Reveal className="flex flex-col items-center gap-7 lg:flex-row lg:justify-between">
           <p className="text-center text-sm font-medium text-[var(--muted-text)] lg:text-left">
@@ -46,7 +46,8 @@ export async function TrustStrip() {
     <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-[var(--muted-text)]">
       {trust.map((item) => (
         <span key={item} className="inline-flex items-center gap-1.5">
-          <CheckCircle2 className="size-3.5 text-[var(--teal)]" /> {item}
+          <CheckCircle2 className="size-3.5 text-[var(--mkt-brand-400)]" />{" "}
+          {item}
         </span>
       ))}
     </div>

@@ -9,9 +9,9 @@ import { Avatar, AvatarFallback } from "@notrelix/ui-web/components/ui/avatar";
 import { Reveal } from "../components/reveal";
 
 const tones = [
-  "bg-[var(--peach)] text-[#a24831]",
+  "bg-[var(--mkt-surface-brand-strong)] text-[var(--mkt-text-on-brand)]",
   "bg-[var(--lilac)] text-[var(--cobalt)]",
-  "bg-[#d8f4e5] text-[#1b7c62]",
+  "bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-700)]",
 ];
 
 export function TestimonialsSection() {
@@ -25,7 +25,7 @@ export function TestimonialsSection() {
     <section id="testimonials" className="section">
       <div className="container">
         <Reveal>
-          <div className="mx-auto max-w-4xl rounded-[2rem] border border-[var(--line)] bg-white p-7 shadow-[0_24px_80px_rgba(21,32,57,0.06)] sm:p-12 lg:p-16">
+          <div className="mx-auto max-w-4xl rounded-[2rem] border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-7 shadow-[0_24px_80px_rgb(var(--mkt-shadow-rgb)_/_6%)] sm:p-12 lg:p-16">
             <div className="flex items-center justify-between">
               <span className="eyebrow">{t("eyebrow")}</span>
               <Quote className="size-8 text-[var(--lilac-strong)]" />

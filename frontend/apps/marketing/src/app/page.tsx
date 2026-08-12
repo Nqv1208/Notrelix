@@ -1,4 +1,4 @@
-import { DecorativeBackground } from "../components/decorative-background";
+import { AmbientBackground } from "../components/ambient-background";
 import { FinalCtaSection } from "../sections/final-cta-section";
 import { HeroSection } from "../sections/hero-section";
 import { MetricsSection } from "../sections/metrics-section";
@@ -17,7 +17,7 @@ import { UseCasesSection } from "../sections/use-cases-section";
 export default function MarketingHomePage() {
   return (
     <div className="page min-h-screen overflow-clip">
-      <DecorativeBackground />
+      <AmbientBackground />
       <main>
         <HeroSection />
         <SocialProofSection />

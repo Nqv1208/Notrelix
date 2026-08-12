@@ -49,8 +49,27 @@ export default async function RootLayout({
   const localeMessages = await getMessages();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              try {
+                var stored = localStorage.getItem("theme");
+                var preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                var theme = stored === "dark" || stored === "light" ? stored : preferred;
+                var root = document.documentElement;
+                root.classList.remove("light", "dark");
+                root.classList.add(theme);
+                root.style.colorScheme = theme;
+              } catch (e) {
+                var root = document.documentElement;
+                root.classList.add("light");
+                root.style.colorScheme = "light";
+              }
+            })();`,
+          }}
+        />
         <NextIntlClientProvider messages={localeMessages}>
           <script
             type="application/ld+json"

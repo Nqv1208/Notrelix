@@ -19,7 +19,7 @@ type StoryT = Awaited<ReturnType<typeof getTranslations<"story">>>;
 function WorkspaceVisual({ t }: { t: StoryT }) {
   const v = t.raw("visuals") as Messages["story"]["visuals"];
   return (
-    <div className="story-visual story-visual--lilac">
+    <div className="story-visual story-visual--a">
       <div className="mini-window">
         <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ink)]">
@@ -34,9 +34,9 @@ function WorkspaceVisual({ t }: { t: StoryT }) {
             <div className="h-3 w-3/4 rounded-full bg-[var(--ink)]/85" />
             <div className="mt-3 h-2 w-full rounded-full bg-[var(--ink)]/10" />
             <div className="mt-2 h-2 w-11/12 rounded-full bg-[var(--ink)]/10" />
-            <div className="mt-7 rounded-xl border border-[var(--line)] bg-white p-3">
+            <div className="mt-7 rounded-xl border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-3">
               <div className="flex items-center gap-2 text-[0.62rem] font-semibold text-[var(--ink)]">
-                <LayoutGrid className="size-3 text-[var(--coral)]" />{" "}
+                <LayoutGrid className="size-3 text-[var(--cobalt)]" />{" "}
                 {v.relatedItems}
               </div>
               <div className="mt-3 space-y-2">
@@ -46,7 +46,7 @@ function WorkspaceVisual({ t }: { t: StoryT }) {
                     className="flex items-center gap-2 text-[0.62rem] text-[var(--muted-text)]"
                   >
                     <span
-                      className={`size-2 rounded-full ${index === 1 ? "bg-[var(--coral)]" : "bg-[var(--teal)]"}`}
+                      className={`size-2 rounded-full ${index === 1 ? "bg-[var(--mkt-brand-500)]" : "bg-[var(--mkt-brand-300)]"}`}
                     />
                     {item}
                   </div>
@@ -62,13 +62,13 @@ function WorkspaceVisual({ t }: { t: StoryT }) {
               {["AN", "ML", "QN"].map((initials) => (
                 <span
                   key={initials}
-                  className="flex size-7 items-center justify-center rounded-full border-2 border-[var(--surface)] bg-[var(--peach)] text-[0.55rem] font-bold text-[#a24831]"
+                  className="flex size-7 items-center justify-center rounded-full border-2 border-[var(--surface)] bg-[var(--mkt-surface-brand-strong)] text-[0.55rem] font-bold text-[var(--mkt-text-on-brand)]"
                 >
                   {initials}
                 </span>
               ))}
             </div>
-            <div className="mt-8 rounded-lg bg-white p-2 text-[0.6rem] text-[var(--muted-text)] shadow-sm">
+            <div className="mt-8 rounded-lg bg-[var(--mkt-surface-raised)] p-2 text-[0.6rem] text-[var(--muted-text)] shadow-sm">
               <MessageCircle className="mb-1 size-3 text-[var(--cobalt)]" />{" "}
               {v.comments}
             </div>
@@ -82,8 +82,8 @@ function WorkspaceVisual({ t }: { t: StoryT }) {
 function AutomationVisual({ t }: { t: StoryT }) {
   const v = t.raw("visuals") as Messages["story"]["visuals"];
   return (
-    <div className="story-visual story-visual--peach">
-      <div className="mx-auto max-w-sm rounded-2xl border border-white/80 bg-white/90 p-5 shadow-xl shadow-[#c56b4a]/10">
+    <div className="story-visual story-visual--b">
+      <div className="mx-auto max-w-sm rounded-2xl border border-[var(--mkt-border)] bg-[var(--mkt-surface-raised)] p-5 shadow-xl shadow-rgb-[var(--mkt-shadow-rgb)]">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-[var(--muted-text)]">
@@ -93,7 +93,7 @@ function AutomationVisual({ t }: { t: StoryT }) {
               {v.automationTitle}
             </div>
           </div>
-          <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--peach)] text-[#bb5339]">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--mkt-surface-brand)] text-[var(--mkt-text-on-brand)]">
             <Sparkles className="size-4" />
           </span>
         </div>
@@ -101,16 +101,16 @@ function AutomationVisual({ t }: { t: StoryT }) {
           {v.automationSteps.map((step, index) => (
             <div key={step.title}>
               {index > 0 ? (
-                <div className="ml-4 h-4 border-l border-dashed border-[var(--coral)]/50" />
+                <div className="ml-4 h-4 border-l border-dashed border-[var(--mkt-brand-400)]/50" />
               ) : null}
               <div className="flow-node">
                 <span
                   className={`flex size-7 items-center justify-center rounded-lg ${
                     index === 0
-                      ? "bg-[var(--lilac)] text-[var(--cobalt)]"
+                      ? "bg-[var(--mkt-brand-200)] text-[var(--mkt-brand-700)]"
                       : index === 1
-                        ? "bg-emerald-50 text-emerald-600"
-                        : "bg-sky-50 text-sky-600"
+                        ? "bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-600)]"
+                        : "bg-[var(--mkt-surface-brand)] text-[var(--mkt-text-on-brand)]"
                   }`}
                 >
                   {index === 0 ? (
@@ -137,8 +137,8 @@ function AutomationVisual({ t }: { t: StoryT }) {
 function InsightVisual({ t }: { t: StoryT }) {
   const v = t.raw("visuals") as Messages["story"]["visuals"];
   return (
-    <div className="story-visual story-visual--mint">
-      <div className="mx-auto max-w-lg rounded-2xl border border-white/80 bg-white/90 p-5 shadow-xl shadow-[#3e8a77]/10">
+    <div className="story-visual story-visual--c">
+      <div className="mx-auto max-w-lg rounded-2xl border border-[var(--mkt-border)] bg-[var(--mkt-surface-raised)] p-5 shadow-xl shadow-rgb-[var(--mkt-shadow-rgb)]">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-[var(--muted-text)]">
@@ -148,14 +148,14 @@ function InsightVisual({ t }: { t: StoryT }) {
               {v.pulseTitle}
             </div>
           </div>
-          <BarChart3 className="size-5 text-[var(--teal)]" />
+          <BarChart3 className="size-5 text-[var(--mkt-brand-500)]" />
         </div>
         <div className="mt-6 grid grid-cols-[1fr_110px] gap-4">
           <div className="flex h-36 items-end gap-2 rounded-xl bg-[var(--surface)] px-4 pb-4 pt-6">
             {[38, 52, 44, 74, 62, 88, 78, 96].map((height, index) => (
               <div
                 key={index}
-                className="group relative flex-1 rounded-t-md bg-gradient-to-t from-[var(--teal)] to-[#83d8c3]"
+                className="group relative flex-1 rounded-t-md bg-gradient-to-t from-[var(--mkt-brand-400)] to-[var(--mkt-brand-200)]"
                 style={{ height: `${height}%` }}
               >
                 <span className="absolute -top-5 left-1/2 hidden -translate-x-1/2 text-[0.55rem] text-[var(--muted-text)] group-hover:block">
@@ -172,7 +172,7 @@ function InsightVisual({ t }: { t: StoryT }) {
               <div className="mt-1 text-2xl font-semibold text-[var(--ink)]">
                 84%
               </div>
-              <span className="text-[0.6rem] font-semibold text-emerald-600">
+              <span className="text-[0.6rem] font-semibold text-[var(--mkt-brand-600)]">
                 {v.completionDelta}
               </span>
             </div>
@@ -239,7 +239,7 @@ export async function StorySections() {
                           key={benefit}
                           className="flex items-center gap-2.5 text-sm font-medium text-[var(--ink)]"
                         >
-                          <span className="flex size-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                          <span className="flex size-5 items-center justify-center rounded-full bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-600)]">
                             <Check className="size-3" />
                           </span>
                           {benefit}

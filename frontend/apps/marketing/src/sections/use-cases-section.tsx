@@ -13,7 +13,7 @@ import { Reveal } from "../components/reveal";
 import { SectionHeading } from "../components/section-heading";
 
 const useCaseIcons = [Megaphone, PackageOpen, Settings2, Target, UsersRound];
-const useCaseTones = ["coral", "violet", "teal", "amber", "ink"] as const;
+const useCaseTones = ["violet", "blue", "lilac", "brand", "strong"] as const;
 
 export async function UseCasesSection() {
   const t = await getTranslations("useCases");
@@ -41,7 +41,7 @@ export async function UseCasesSection() {
               <Reveal key={item.title} delay={index * 60} className="h-full">
                 <article className="use-case-card h-full">
                   <div
-                    className={`icon-box icon-box--${useCaseTones[index] ?? "coral"}`}
+                    className={`icon-box icon-box--${useCaseTones[index] ?? "violet"}`}
                   >
                     <Icon className="size-5" />
                   </div>

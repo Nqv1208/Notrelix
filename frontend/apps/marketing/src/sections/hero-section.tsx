@@ -13,15 +13,16 @@ import type { Messages } from "../messages/en";
 
 import { Badge } from "@notrelix/ui-web/components/ui/badge";
 import { env } from "../config/env";
+import { MarketingButton } from "../components/marketing-button";
 import { Reveal } from "../components/reveal";
 
 type HeroT = Awaited<ReturnType<typeof getTranslations<"hero">>>;
 
 const statusStyles = {
-  amber: "bg-amber-100 text-amber-700",
-  violet: "bg-violet-100 text-violet-700",
-  emerald: "bg-emerald-100 text-emerald-700",
-  slate: "bg-slate-100 text-slate-600",
+  amber: "bg-[var(--mkt-brand-200)] text-[var(--mkt-brand-700)]",
+  violet: "bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-700)]",
+  emerald: "bg-[var(--mkt-surface-brand-strong)] text-[var(--mkt-brand-600)]",
+  slate: "bg-[var(--mkt-bg-soft)] text-[var(--mkt-text-muted)]",
 } as const;
 
 const sidebarIcons = [Sparkles, LayoutGrid, FileText];
@@ -50,7 +51,7 @@ function ProductWindow({ t }: { t: HeroT }) {
       <div className="grid min-h-[330px] grid-cols-[150px_1fr]">
         <aside className="hidden border-r border-[var(--line)] bg-[var(--surface)] p-3 sm:block">
           <div className="mb-4 flex items-center gap-2 px-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-[var(--ink)] text-[0.65rem] font-bold text-white">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-[var(--ink)] text-[0.65rem] font-bold text-[var(--bg)]">
               A
             </span>
             <span className="text-[0.68rem] font-semibold text-[var(--ink)]">
@@ -63,7 +64,7 @@ function ProductWindow({ t }: { t: HeroT }) {
               return (
                 <div
                   key={item.label}
-                  className={`flex items-center gap-2 rounded-lg px-2 py-2 ${item.active ? "bg-white font-semibold text-[var(--ink)] shadow-sm" : "text-[var(--muted-text)]"}`}
+                  className={`flex items-center gap-2 rounded-lg px-2 py-2 ${item.active ? "bg-[var(--mkt-surface)] font-semibold text-[var(--ink)] shadow-sm" : "text-[var(--muted-text)]"}`}
                 >
                   <Icon className="size-3.5" />
                   {item.label}
@@ -82,14 +83,14 @@ function ProductWindow({ t }: { t: HeroT }) {
             ))}
           </div>
         </aside>
-        <div className="min-w-0 bg-white p-4 sm:p-5">
+        <div className="min-w-0 bg-[var(--mkt-surface-raised)] p-4 sm:p-5">
           <div className="mb-5 flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-semibold tracking-[-0.02em] text-[var(--ink)] sm:text-lg">
                   {window.boardTitle}
                 </h3>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[0.6rem] font-semibold text-emerald-700">
+                <span className="rounded-full bg-[var(--mkt-brand-100)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--mkt-brand-700)]">
                   {window.live}
                 </span>
               </div>
@@ -119,7 +120,7 @@ function ProductWindow({ t }: { t: HeroT }) {
                 <span className="truncate font-medium text-[var(--ink)]">
                   {row.title}
                 </span>
-                <span className="flex size-6 items-center justify-center rounded-full bg-[var(--peach)] text-[0.55rem] font-bold text-[#a24831]">
+                <span className="flex size-6 items-center justify-center rounded-full bg-[var(--mkt-surface-brand-strong)] text-[0.55rem] font-bold text-[var(--cobalt)]">
                   {row.owner}
                 </span>
                 <span
@@ -152,7 +153,7 @@ export async function HeroSection() {
           <Reveal>
             <Badge className="beta-badge">
               <span
-                className="size-1.5 rounded-full bg-[var(--teal)]"
+                className="size-1.5 rounded-full bg-[var(--cobalt)]"
                 aria-hidden="true"
               />
               {t("badge")}
@@ -171,28 +172,32 @@ export async function HeroSection() {
           </Reveal>
           <Reveal delay={210}>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a
+              <MarketingButton
+                variant="primary"
+                size="lg"
                 href={`${env.webAppUrl}/sign-up`}
-                className="primary-button inline-flex h-12 w-full items-center justify-center gap-2 px-6 text-sm sm:w-auto"
+                className="w-full sm:w-auto"
               >
                 {t("ctaPrimary")} <ArrowRight className="size-4" />
-              </a>
-              <a
+              </MarketingButton>
+              <MarketingButton
+                variant="secondary"
+                size="lg"
                 href="#showcase"
-                className="secondary-button inline-flex h-12 w-full items-center justify-center gap-2 px-6 text-sm sm:w-auto"
+                className="w-full sm:w-auto"
               >
                 {t("ctaSecondary")}
                 <span className="flex size-5 items-center justify-center rounded-full bg-[var(--lilac)] text-[var(--cobalt)]">
                   ▶
                 </span>
-              </a>
+              </MarketingButton>
             </div>
           </Reveal>
           <Reveal delay={280}>
             <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-[var(--muted-text)] sm:text-sm">
               {checks.map((item) => (
                 <span key={item} className="inline-flex items-center gap-1.5">
-                  <Check className="size-3.5 text-[var(--teal)]" /> {item}
+                  <Check className="size-3.5 text-[var(--cobalt)]" /> {item}
                 </span>
               ))}
             </div>
@@ -206,7 +211,7 @@ export async function HeroSection() {
           <div className="hero-glow" aria-hidden="true" />
           <ProductWindow t={t} />
           <div className="float-card float-card--left hidden sm:block">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-600)]">
               <Check className="size-4" />
             </span>
             <span>
@@ -215,7 +220,7 @@ export async function HeroSection() {
             </span>
           </div>
           <div className="float-card float-card--right hidden sm:flex">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--peach)] text-[#bb5339]">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--surface-brand)] text-[var(--cobalt)]">
               <Sparkles className="size-4" />
             </span>
             <span>
