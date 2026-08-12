@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build --webpack",
-    "start": "next start --port 3000",
+    "start": "next start --port ${PORT:-3000}",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "clean": "rm -rf .next node_modules"
@@ -18,18 +18,19 @@
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "latest",
+    "next-intl": "4.13.6",
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "latest",
     "tw-animate-css": "latest"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "catalog:",
     "@notrelix/tsconfig": "workspace:*",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@eslint/eslintrc": "catalog:",
     "eslint": "catalog:",
     "eslint-config-next": "catalog:",
     "tailwindcss": "^4",

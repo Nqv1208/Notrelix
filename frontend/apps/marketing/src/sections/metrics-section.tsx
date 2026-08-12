@@ -1,61 +1,45 @@
 import { ArrowUpRight, Clock3, ListChecks, TrendingUp } from "lucide-react";
+import { getTranslations } from "next-intl/server";
+import type { Messages } from "../messages/en";
 
-import { Reveal } from "../../components/v2/reveal";
+import { Reveal } from "../components/reveal";
 
-const metrics = [
-  {
-    value: "30%",
-    label: "ít thời gian tìm thông tin hơn",
-    icon: Clock3,
-    tone: "violet",
-  },
-  {
-    value: "2,4×",
-    label: "tốc độ hoàn thành dự án",
-    icon: TrendingUp,
-    tone: "teal",
-  },
-  {
-    value: "40%",
-    label: "công việc thủ công được tự động hóa",
-    icon: ListChecks,
-    tone: "coral",
-  },
-];
+const metricIcons = [Clock3, TrendingUp, ListChecks];
+const metricTones = ["violet", "teal", "coral"] as const;
 
-export function MetricsSection() {
+export async function MetricsSection() {
+  const t = await getTranslations("metrics");
+  const items = t.raw("items") as Messages["metrics"]["items"];
+
   return (
-    <section className="v2-section v2-metrics-section">
-      <div className="v2-container">
+    <section className="section metrics-section">
+      <div className="container">
         <div className="grid items-end gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <Reveal>
             <div>
-              <span className="v2-eyebrow text-white/70">
-                Kết quả nhìn thấy được
-              </span>
+              <span className="eyebrow text-white/70">{t("eyebrow")}</span>
               <h2 className="mt-4 max-w-md text-3xl font-semibold tracking-[-0.045em] text-white sm:text-4xl">
-                Ít chuyển tab hơn. Nhiều tiến độ hơn.
+                {t("title")}
               </h2>
               <p className="mt-5 max-w-md text-sm leading-6 text-white/65">
-                Khi cả team làm việc trên cùng một nguồn dữ liệu, những thay đổi
-                nhỏ tạo ra khác biệt lớn.
+                {t("subtitle")}
               </p>
               <a
                 href="/contact"
                 className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-white hover:gap-3"
               >
-                Trao đổi với đội ngũ <ArrowUpRight className="size-4" />
+                {t("link")} <ArrowUpRight className="size-4" />
               </a>
             </div>
           </Reveal>
           <div className="grid gap-3 sm:grid-cols-3">
-            {metrics.map((metric, index) => {
-              const Icon = metric.icon;
+            {items.map((metric, index) => {
+              const Icon = metricIcons[index] ?? Clock3;
               return (
                 <Reveal key={metric.value} delay={index * 80}>
-                  <div className="v2-metric-card">
+                  <div className="metric-card">
                     <div
-                      className={`v2-metric-icon v2-metric-icon--${metric.tone}`}
+                      className={`metric-icon metric-icon--${metricTones[index] ?? "violet"}`}
                     >
                       <Icon className="size-4" />
                     </div>

@@ -19,12 +19,12 @@ export function SectionHeading({
     <div
       className={`${align === "center" ? "mx-auto text-center" : ""} max-w-2xl`}
     >
-      <span className={`v2-eyebrow ${tone === "light" ? "text-white/70" : ""}`}>
+      <span className={`eyebrow ${tone === "light" ? "text-white/70" : ""}`}>
         {eyebrow}
       </span>
       <h2
         className={`mt-4 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl lg:text-[3.45rem] lg:leading-[1.03] ${
-          tone === "light" ? "text-white" : "text-[var(--v2-ink)]"
+          tone === "light" ? "text-white" : "text-[var(--ink)]"
         }`}
       >
         {title}
@@ -32,7 +32,7 @@ export function SectionHeading({
       {description ? (
         <p
           className={`mt-5 max-w-xl text-base leading-7 sm:text-lg ${
-            tone === "light" ? "text-white/72" : "text-[var(--v2-muted)]"
+            tone === "light" ? "text-white/72" : "text-[var(--muted-text)]"
           }`}
         >
           {description}

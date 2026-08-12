@@ -18,7 +18,7 @@ export function BrandLockup({
       <span
         className={`font-semibold tracking-[-0.04em] ${
           compact ? "text-base" : "text-[1.1rem]"
-        } ${light ? "text-white" : "text-[var(--v2-ink)]"}`}
+        } ${light ? "text-white" : "text-[var(--ink)]"}`}
       >
         notrelix
       </span>

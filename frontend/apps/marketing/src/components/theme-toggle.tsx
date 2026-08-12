@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@notrelix/ui-web/components/ui/button";
 
 export function ThemeToggle() {
+  const t = useTranslations("themeToggle");
   const [theme, setThemeState] = React.useState<"light" | "dark">("light");
   const [mounted, setMounted] = React.useState(false);
 
@@ -35,7 +37,7 @@ export function ThemeToggle() {
         variant="ghost"
         size="icon"
         className="rounded-full"
-        aria-label="Đổi giao diện"
+        aria-label={t("switch")}
       >
         <span className="w-4 h-4" />
       </Button>
@@ -48,12 +50,8 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggleTheme}
       className="rounded-full"
-      aria-label={
-        theme === "dark"
-          ? "Chuyển sang giao diện sáng"
-          : "Chuyển sang giao diện tối"
-      }
-      title={theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
+      aria-label={theme === "dark" ? t("switchToLight") : t("switchToDark")}
+      title={theme === "dark" ? t("light") : t("dark")}
     >
       {theme === "dark" ? (
         <Sun className="w-4 h-4" />

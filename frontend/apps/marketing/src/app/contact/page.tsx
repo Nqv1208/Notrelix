@@ -1,45 +1,58 @@
 import Link from "next/link";
+import { ArrowLeft, Mail, Reply } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const t = await getTranslations("contact");
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-3xl">
+    <div className="page min-h-screen pb-24 pt-16 sm:pt-20">
+      <div className="container mx-auto max-w-3xl">
         <Link
           href="/"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors mb-8 inline-block"
+          className="inline-flex items-center gap-2 text-sm text-[var(--muted-text)] transition-colors hover:text-[var(--ink)]"
         >
-          &larr; Back to home
+          <ArrowLeft className="size-3.5" /> {t("backHome")}
         </Link>
-        <h1 className="text-3xl font-bold mb-4">Contact Us</h1>
-        <p className="text-muted-foreground mb-8">
-          Have a question or need help? We&apos;d love to hear from you.
+        <h1 className="mt-8 text-4xl font-semibold tracking-[-0.04em] text-[var(--ink)] sm:text-5xl">
+          {t("title")}
+        </h1>
+        <p className="mt-4 text-base leading-7 text-[var(--muted-text)] sm:text-lg">
+          {t("subtitle")}
         </p>
-        <div className="space-y-6">
-          <div className="p-6 rounded-2xl border bg-card">
-            <h2 className="text-lg font-semibold mb-2">Email</h2>
-            <p className="text-muted-foreground">
-              For general inquiries:{" "}
+
+        <div className="mt-10 space-y-4">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-[var(--ink)]">
+              <Mail className="size-4 text-[var(--cobalt)]" /> {t("emailTitle")}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--muted-text)]">
+              {t("general")}{" "}
               <a
                 href="mailto:hello@notrelix.com"
-                className="text-primary hover:underline"
+                className="font-medium text-[var(--cobalt)] hover:underline"
               >
                 hello@notrelix.com
               </a>
             </p>
-            <p className="text-muted-foreground mt-1">
-              For support:{" "}
+            <p className="mt-1 text-sm leading-6 text-[var(--muted-text)]">
+              {t("support")}{" "}
               <a
                 href="mailto:support@notrelix.com"
-                className="text-primary hover:underline"
+                className="font-medium text-[var(--cobalt)] hover:underline"
               >
                 support@notrelix.com
               </a>
             </p>
           </div>
-          <div className="p-6 rounded-2xl border bg-card">
-            <h2 className="text-lg font-semibold mb-2">Response Time</h2>
-            <p className="text-muted-foreground">
-              We typically respond within 24 hours during business days.
+
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-[var(--ink)]">
+              <Reply className="size-4 text-[var(--cobalt)]" />{" "}
+              {t("responseTitle")}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--muted-text)]">
+              {t("responseText")}
             </p>
           </div>
         </div>

@@ -1,41 +1,34 @@
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 
 import { MarketingFooter } from "../components/marketing-footer";
 import { MarketingHeader } from "../components/marketing-header";
 import { env } from "../config/env";
+import { messages } from "../messages/en";
 import "../styles/globals.css";
-
-const description =
-  "Notrelix kết nối tài liệu, Board, quy trình và dữ liệu trong một workspace duy nhất để đội ngũ biết việc gì cần làm tiếp theo.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
   title: {
-    default: "Notrelix | Không gian làm việc cho đội ngũ hiện đại",
+    default: messages.layout.title,
     template: "%s | Notrelix",
   },
-  description,
-  keywords: [
-    "work OS",
-    "quản lý công việc",
-    "workspace",
-    "board",
-    "tài liệu đội ngũ",
-    "tự động hóa quy trình",
-  ],
+  description: messages.layout.description,
+  keywords: [...messages.layout.keywords],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Notrelix | Từ ý tưởng đến kết quả rõ ràng",
-    description,
+    title: messages.layout.ogTitle,
+    description: messages.layout.description,
     type: "website",
     siteName: "Notrelix",
     url: env.siteUrl,
-    locale: "vi_VN",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Notrelix | Từ ý tưởng đến kết quả rõ ràng",
-    description,
+    title: messages.layout.ogTitle,
+    description: messages.layout.description,
   },
 };
 
@@ -45,24 +38,28 @@ const structuredData = {
   name: "Notrelix",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
-  description,
+  description: messages.layout.description,
   url: env.siteUrl,
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const localeMessages = await getMessages();
+
   return (
-    <html lang="vi">
+    <html lang="en">
       <body>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-        <MarketingHeader />
-        {children}
-        <MarketingFooter />
+        <NextIntlClientProvider messages={localeMessages}>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          />
+          <MarketingHeader />
+          {children}
+          <MarketingFooter />
+        </NextIntlClientProvider>
       </body>
     </html>
   );
