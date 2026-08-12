@@ -12,7 +12,7 @@ export async function MetricsSection() {
   const items = t.raw("items") as Messages["metrics"]["items"];
 
   return (
-    <section className="section metrics-section">
+    <section id="metrics" className="section metrics-section">
       <div className="container">
         <div className="grid items-end gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <Reveal>

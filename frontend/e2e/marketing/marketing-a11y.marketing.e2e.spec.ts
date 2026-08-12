@@ -14,6 +14,7 @@ for (const path of PUBLIC_PAGES) {
   test(`a11y: ${path} has no critical or serious violations`, async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
     await page.goto(path);
     await page.waitForLoadState("networkidle");
     await page.evaluate(() => document.fonts.ready);
