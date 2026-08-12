@@ -22,6 +22,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Testcontainers.PostgreSQL" />
+    <PackageReference Include="SSH.NET" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
