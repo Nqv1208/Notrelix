@@ -46,7 +46,7 @@ public sealed class CacheTestContainer : IAsyncLifetime
             .WithImage("redis:7-alpine")
             .WithName($"notrelix-test-redis-{Guid.NewGuid():N}")
             .WithPortBinding(6379, true)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(6379))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(6379))
             .Build();
 
         await _redis.StartAsync();

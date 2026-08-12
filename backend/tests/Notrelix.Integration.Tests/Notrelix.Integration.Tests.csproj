@@ -24,6 +24,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Testcontainers.PostgreSQL" />
+    <PackageReference Include="SSH.NET" PrivateAssets="all" />
     <PackageReference Include="MediatR" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
