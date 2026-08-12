@@ -1,0 +1,196 @@
+name: Documentation Governance
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+    paths:
+      - "*.md"
+
+      - "docs/**"
+
+      - "backend/README.md"
+      - "backend/AGENTS.md"
+      - "backend/CONTEXT.md"
+      - "backend/tests/AGENTS.md"
+      - "backend/docs/**"
+      - "backend/backend.slnx"
+      - "backend/**/*.csproj"
+
+      - "frontend/README.md"
+      - "frontend/AGENTS.md"
+      - "frontend/docs/**"
+      - "frontend/package.json"
+      - "frontend/pnpm-workspace.yaml"
+      - "frontend/pnpm-lock.yaml"
+      - "frontend/.npmrc"
+      - "frontend/.node-version"
+
+      - "frontend/apps/web/package.json"
+      - "frontend/apps/mobile/package.json"
+      - "frontend/apps/marketing/package.json"
+
+      - "frontend/tooling/dependency-rules/**"
+
+      - "scripts/docs/**"
+      - "scripts/check-documentation.mjs"
+
+      - "Makefile"
+
+      - ".github/actions/setup-frontend/action.yml"
+      - ".github/workflows/docs-governance.yml"
+
+  # Deliberately do not path-filter pull requests.
+  #
+  # If Documentation Governance becomes a required check, GitHub can leave
+  # the check pending when the entire workflow is skipped by path filters.
+  #
+  # The changes job below keeps unrelated PRs cheap while ensuring the final
+  # gate always resolves.
+  pull_request:
+    branches:
+      - main
+      - develop
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-governance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Documentation change detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      docs: ${{ steps.detect.outputs.docs }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+        with:
+          fetch-depth: 0
+
+      - name: Detect documentation-governance changes
+        id: detect
+        shell: bash
+
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+        run: |
+          set -euo pipefail
+
+          # Push execution is already constrained by the workflow-level
+          # path filter, so every push reaching this job is relevant.
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- \
+            '*.md' \
+            docs \
+            backend/README.md \
+            backend/AGENTS.md \
+            backend/CONTEXT.md \
+            backend/tests/AGENTS.md \
+            backend/docs \
+            backend/backend.slnx \
+            'backend/**/*.csproj' \
+            frontend/README.md \
+            frontend/AGENTS.md \
+            frontend/docs \
+            frontend/package.json \
+            frontend/pnpm-workspace.yaml \
+            frontend/pnpm-lock.yaml \
+            frontend/.npmrc \
+            frontend/.node-version \
+            frontend/apps/web/package.json \
+            frontend/apps/mobile/package.json \
+            frontend/apps/marketing/package.json \
+            frontend/tooling/dependency-rules \
+            scripts/docs \
+            scripts/check-documentation.mjs \
+            Makefile \
+            .github/actions/setup-frontend/action.yml \
+            .github/workflows/docs-governance.yml
+          then
+            echo "docs=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  governance:
+    name: Documentation governance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    needs:
+      - changes
+
+    if: needs.changes.outputs.docs == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # check-generated.mjs delegates frontend package-boundary drift to the
+      # existing @notrelix/dependency-rules producer. Reuse the canonical
+      # frontend setup action instead of creating another pnpm installation
+      # path for documentation CI.
+      - name: Setup frontend toolchain
+        uses: ./.github/actions/setup-frontend
+
+      - name: Check documentation governance
+        run: make docs-check
+
+  docs-gate:
+    name: Documentation Governance Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    needs:
+      - changes
+      - governance
+
+    if: always()
+
+    steps:
+      - name: Verify documentation governance result
+        shell: bash
+
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          DOCS_CHANGED: ${{ needs.changes.outputs.docs }}
+          GOVERNANCE_RESULT: ${{ needs.governance.result }}
+
+        run: |
+          set -euo pipefail
+
+          if [[ "$CHANGES_RESULT" != "success" ]]; then
+            echo "Documentation change detection failed: $CHANGES_RESULT"
+            exit 1
+          fi
+
+          if [[ "$DOCS_CHANGED" == "false" ]]; then
+            echo "No documentation-governance relevant changes."
+            exit 0
+          fi
+
+          if [[ "$GOVERNANCE_RESULT" != "success" ]]; then
+            echo "Documentation governance failed: $GOVERNANCE_RESULT"
+            exit 1
+          fi
+
+          echo "Documentation governance passed."

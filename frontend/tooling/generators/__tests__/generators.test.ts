@@ -170,7 +170,7 @@ function buildFixtureWorkspace(): void {
   }
 
   // Docs output location
-  mkdirSync(join(tempDir, "docs/client/architecture"), { recursive: true });
+  mkdirSync(join(tempDir, "docs/generated"), { recursive: true });
 }
 
 function writeVitestConfig(include: string[]): void {
@@ -273,10 +273,7 @@ const realManifestPath = join(
   frontendRoot,
   "tooling/dependency-rules/src/architecture-manifest.ts",
 );
-const realDocsPath = join(
-  frontendRoot,
-  "docs/client/architecture/package-boundaries.generated.md",
-);
+const realDocsPath = join(frontendRoot, "docs/generated/package-boundaries.md");
 
 // ── create-feature ────────────────────────────────────────────────────
 
@@ -587,10 +584,7 @@ describe("generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)", () => {
       );
 
       const fixtureDocs = readFileSync(
-        join(
-          tempDir,
-          "docs/client/architecture/package-boundaries.generated.md",
-        ),
+        join(tempDir, "docs/generated/package-boundaries.md"),
         "utf8",
       );
       expect(fixtureDocs).toContain("freeze-smoke-feature");
@@ -659,10 +653,7 @@ describe("generator golden path (13-TEAM-FANOUT-GOLDEN-PATH-SPEC)", () => {
       expect(fixtureManifest).toContain("layer: 'product-plugin'");
 
       const fixtureDocs = readFileSync(
-        join(
-          tempDir,
-          "docs/client/architecture/package-boundaries.generated.md",
-        ),
+        join(tempDir, "docs/generated/package-boundaries.md"),
         "utf8",
       );
       expect(fixtureDocs).toContain("freeze-smoke-analytics");
