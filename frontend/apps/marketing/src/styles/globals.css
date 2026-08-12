@@ -133,14 +133,31 @@
 
   --mkt-shadow-rgb: 28 33 53;
 
-  --mkt-ambient-red: rgb(233 83 93 / 0.12);
-  --mkt-ambient-blue: rgb(82 148 238 / 0.13);
-  --mkt-ambient-mix: rgb(240 200 95 / 0.08);
+  --mkt-ambient-red: color-mix(
+    in srgb,
+    var(--mkt-brand-red-500) 12%,
+    transparent
+  );
+  --mkt-ambient-blue: color-mix(
+    in srgb,
+    var(--mkt-brand-blue-500) 13%,
+    transparent
+  );
+  --mkt-ambient-mix: color-mix(
+    in srgb,
+    var(--mkt-brand-bridge-gold) 08%,
+    transparent
+  );
 
   --mkt-cta-fill-top: #ffffff;
   --mkt-cta-fill-bottom: #f8f8fc;
   --mkt-cta-text: #1f2435;
-  --mkt-cta-shadow: rgb(82 148 238 / 0.16);
+  --mkt-cta-inverse-text: #1f2435;
+  --mkt-cta-shadow: color-mix(
+    in srgb,
+    var(--mkt-brand-blue-500) 16%,
+    transparent
+  );
 
   --mkt-grid-line: rgb(28 33 53 / 0.018);
   --mkt-ambient-glow: rgb(244 243 249 / 0.5);
@@ -188,14 +205,31 @@
 
   --mkt-shadow-rgb: 0 0 0;
 
-  --mkt-ambient-red: rgb(233 83 93 / 0.14);
-  --mkt-ambient-blue: rgb(82 148 238 / 0.16);
-  --mkt-ambient-mix: rgb(240 200 95 / 0.08);
+  --mkt-ambient-red: color-mix(
+    in srgb,
+    var(--mkt-brand-red-500) 14%,
+    transparent
+  );
+  --mkt-ambient-blue: color-mix(
+    in srgb,
+    var(--mkt-brand-blue-500) 16%,
+    transparent
+  );
+  --mkt-ambient-mix: color-mix(
+    in srgb,
+    var(--mkt-brand-bridge-gold) 08%,
+    transparent
+  );
 
   --mkt-cta-fill-top: #1a2438;
   --mkt-cta-fill-bottom: #141d31;
   --mkt-cta-text: #ffffff;
-  --mkt-cta-shadow: rgb(82 148 238 / 0.18);
+  --mkt-cta-inverse-text: #1f2435;
+  --mkt-cta-shadow: color-mix(
+    in srgb,
+    var(--mkt-brand-blue-500) 18%,
+    transparent
+  );
 
   --mkt-grid-line: rgb(255 255 255 / 0.026);
   --mkt-ambient-glow: rgb(24 29 52 / 0.36);
@@ -500,9 +534,9 @@
   background-size:
     100% 100%,
     280% 100%;
-  color: #1f2435;
+  color: var(--mkt-cta-inverse-text);
   box-shadow:
-    0 8px 24px rgb(82 148 238 / 0.26),
+    0 8px 24px color-mix(in srgb, var(--mkt-brand-blue-500) 26%, transparent),
     inset 0 1px 0 rgb(255 255 255 / 0.6);
 }
 
@@ -597,8 +631,8 @@
 }
 
 .dark .beta-badge {
-  border-color: var(--mkt-brand-blue-700);
-  background: rgb(82 148 238 / 0.14);
+  border-color: var(--mkt-border-brand);
+  background: color-mix(in srgb, var(--mkt-brand-blue-500) 14%, transparent);
   color: var(--mkt-brand-blue-300);
 }
 
@@ -608,9 +642,9 @@
   border-radius: 2.5rem;
   background: linear-gradient(
     110deg,
-    rgb(233 83 93 / 12%),
-    rgb(240 200 95 / 8%),
-    rgb(82 148 238 / 13%)
+    var(--mkt-ambient-red),
+    var(--mkt-ambient-mix),
+    var(--mkt-ambient-blue)
   );
   filter: blur(38px);
   pointer-events: none;
@@ -861,7 +895,8 @@
 .tab.is-active {
   background: var(--mkt-brand-blue-500);
   color: var(--mkt-text-on-brand);
-  box-shadow: 0 5px 12px rgb(82 148 238 / 22%);
+  box-shadow: 0 5px 12px
+    color-mix(in srgb, var(--mkt-brand-blue-500) 22%, transparent);
 }
 
 .showcase-shell {
@@ -896,16 +931,16 @@
   border-radius: 0.7rem;
 }
 .metric-icon--violet {
-  background: rgb(233 83 93 / 18%);
-  color: #f3b3b9;
+  background: color-mix(in srgb, var(--mkt-brand-red-500) 18%, transparent);
+  color: var(--mkt-brand-red-300);
 }
 .metric-icon--blue {
-  background: rgb(82 148 238 / 16%);
-  color: #a9c8f2;
+  background: color-mix(in srgb, var(--mkt-brand-blue-500) 16%, transparent);
+  color: var(--mkt-brand-blue-300);
 }
 .metric-icon--lilac {
-  background: rgb(240 200 95 / 16%);
-  color: #ecd492;
+  background: color-mix(in srgb, var(--mkt-brand-blue-300) 22%, transparent);
+  color: var(--mkt-brand-blue-500);
 }
 
 .icon-button {
@@ -976,7 +1011,8 @@
         var(--mkt-brand-blue-500)
       )
       border-box;
-  box-shadow: 0 20px 45px rgb(82 148 238 / 14%);
+  box-shadow: 0 20px 45px
+    color-mix(in srgb, var(--mkt-brand-blue-500) 14%, transparent);
 }
 .price-card.is-dark {
   border-color: var(--mkt-border-strong);
@@ -1008,7 +1044,11 @@
   border-radius: 1.5rem;
   padding: 5rem 1.5rem;
   background:
-    radial-gradient(50% 90% at 85% 0%, rgb(82 148 238 / 0.24), transparent 70%),
+    radial-gradient(
+      50% 90% at 85% 0%,
+      color-mix(in srgb, var(--mkt-brand-blue-500) 24%, transparent),
+      transparent 70%
+    ),
     linear-gradient(
       120deg,
       var(--mkt-brand-red-600) 0%,

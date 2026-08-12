@@ -266,12 +266,12 @@ export const messages = {
         },
         {
           title: "In progress",
-          tone: "bg-[var(--coral)]",
+          tone: "bg-[var(--mkt-brand-blue-500)]",
           items: ["Member invite flow", "Experience map"],
         },
         {
           title: "Done",
-          tone: "bg-[var(--teal)]",
+          tone: "bg-[var(--mkt-brand-bridge-gold)]",
           items: ["Q3 brief", "Monthly KPI review"],
         },
       ],
