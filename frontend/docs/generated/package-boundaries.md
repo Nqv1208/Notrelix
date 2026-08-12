@@ -1,8 +1,33 @@
-# Notrelix Client — Package Boundaries (generated)
+---
+document_id: FE-GEN-PACKAGE-BOUNDARIES
+document_type: generated
+status: generated
+owner: frontend-architecture
+applies_to:
+  - frontend-package-graph
+  - frontend-import-boundaries
+  - frontend-architecture-evidence
+evidence:
+  - tooling/dependency-rules/src/architecture-manifest.ts
+  - tooling/dependency-rules/src/generate-architecture-docs.ts
+review_on:
+  - architecture-manifest-change
+  - package-layer-change
+  - package-freeze-scope-change
+  - package-allowed-import-change
+  - package-boundary-generator-change
+---
 
-<!-- GENERATED FILE — do not edit. -->
+# Notrelix Frontend — Package Boundaries
+
+<!-- GENERATED FILE — DO NOT EDIT. -->
 <!-- Source of truth: tooling/dependency-rules/src/architecture-manifest.ts -->
+<!-- Producer: tooling/dependency-rules/src/generate-architecture-docs.ts -->
 <!-- Regenerate: pnpm --filter @notrelix/dependency-rules docs:generate -->
+<!-- Check drift: pnpm --filter @notrelix/dependency-rules docs:check -->
+
+> This file is generated evidence. It is not the semantic architecture owner.
+> Read `../architecture/dependency-boundaries.md` for package-boundary meaning and policy.
 
 Package count: 41
 

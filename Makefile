@@ -28,7 +28,7 @@ DOTNET_RUN_API := dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --
 	be-build be-test be-clean-nuget be-shell backend-image-build \
 	staging staging-up staging-down staging-logs \
 	prod prod-up prod-down prod-logs \
-	build build-staging ps config-dev docs-check clean
+	build build-staging ps config-dev docs-generate docs-check clean
 
 help:
 	@echo "Notrelix — Docker"
@@ -65,7 +65,8 @@ help:
 	@echo ""
 	@echo "Config:"
 	@echo "  make config-dev          Print resolved dev compose config"
-	@echo "  make docs-check          Validate documentation authority"
+	@echo "  make docs-generate       Regenerate governed documentation artifacts"
+	@echo "  make docs-check          Run repository documentation governance gates"
 
 # ---------------------------------------------------------------------
 # Development stack
@@ -215,8 +216,19 @@ ps:
 config-dev:
 	@JWT_SECRET=dev-only-not-for-production-but-at-least-32-chars!! $(COMPOSE_DEV) $(ENV_DEV) config
 
+docs-generate:
+	node scripts/docs/generate-document-index.mjs
+	node scripts/docs/generate-rule-index.mjs
+	node scripts/docs/generate-backend-project-map.mjs
+	cd frontend && pnpm --filter @notrelix/dependency-rules docs:generate
+
 docs-check:
-	node scripts/check-documentation.mjs
+	node scripts/docs/check-links.mjs
+	node scripts/docs/check-metadata.mjs
+	node scripts/docs/check-authority.mjs
+	node scripts/docs/check-rule-ids.mjs
+	node scripts/docs/check-source-inventory.mjs
+	node scripts/docs/check-generated.mjs
 
 clean:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v
