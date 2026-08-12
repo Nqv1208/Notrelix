@@ -82,11 +82,11 @@ The decision chose separate hosts.
 
 Notrelix uses three separate frontend host applications:
 
-| Host | Accepted framework direction | Accepted purpose |
-|---|---|---|
-| `apps/marketing` | Next.js App Router | SEO/public marketing pages |
-| `apps/web` | Vite + React + TanStack Router | Authenticated product SPA |
-| `apps/mobile` | Expo / React Native | Native/mobile application |
+| Host             | Accepted framework direction   | Accepted purpose           |
+| ---------------- | ------------------------------ | -------------------------- |
+| `apps/marketing` | Next.js App Router             | SEO/public marketing pages |
+| `apps/web`       | Vite + React + TanStack Router | Authenticated product SPA  |
+| `apps/mobile`    | Expo / React Native            | Native/mobile application  |
 
 The durable decision is the **host/framework split**.
 

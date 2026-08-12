@@ -27,12 +27,7 @@
  * deterministic output.
  */
 
-import {
-  existsSync,
-  readFileSync,
-  realpathSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -137,9 +132,7 @@ export function generateArchitectureDocs(): string {
   return lines.join("\n");
 }
 
-export function checkArchitectureDocs(
-  rootDir: string = getFrontendRoot(),
-): {
+export function checkArchitectureDocs(rootDir: string = getFrontendRoot()): {
   ok: boolean;
   violations: string[];
 } {
@@ -179,7 +172,8 @@ function writeArchitectureDocs(rootDir: string = getFrontendRoot()): void {
 
 const isDirectRun =
   !!process.argv[1] &&
-  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  realpathSync(process.argv[1]) ===
+    realpathSync(fileURLToPath(import.meta.url));
 
 if (isDirectRun) {
   const checkMode = process.argv.includes("--check");

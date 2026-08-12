@@ -1639,7 +1639,7 @@ semantic utility
 over:
 
 ```ts
-theme === "dark" ? "#..." : "#..."
+theme === "dark" ? "#..." : "#...";
 ```
 
 scattered in components.

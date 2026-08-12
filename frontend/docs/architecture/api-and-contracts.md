@@ -485,9 +485,9 @@ It does not require every HTTP call to be fully generated implementation code.
 Do not turn a generated request/response contract into:
 
 ```ts
-any
-unknown as SomeDto
-Record<string, any>
+any;
+unknown as SomeDto;
+Record<string, any>;
 ```
 
 without a narrow validated reason.

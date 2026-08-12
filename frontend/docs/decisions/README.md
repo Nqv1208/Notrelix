@@ -90,13 +90,13 @@ Renaming a file does not change the ADR ID.
 
 Current frontend ADRs are:
 
-| ID | Decision | Status | Historical date | Current architecture owner |
-|---|---|---|---|---|
-| `FE-ADR-001` | Framework split | Accepted | 2026-07-12 | `../architecture/frontend-overview.md`, `../architecture/hosts-composition-routing.md` |
-| `FE-ADR-002` | Package manager | Accepted | 2026-07-12 | `../architecture/dependency-boundaries.md`, frontend workspace/tooling configuration |
-| `FE-ADR-003` | Package exports | Accepted | 2026-07-12 | `../architecture/dependency-boundaries.md` |
-| `FE-ADR-004` | No Next.js in reusable packages | Accepted | 2026-07-12 | `../architecture/dependency-boundaries.md`, `../architecture/hosts-composition-routing.md` |
-| `FE-ADR-005` | Auth session model | Accepted | 2026-07-09 | `../architecture/hosts-composition-routing.md`, `../architecture/api-and-contracts.md` |
+| ID           | Decision                        | Status   | Historical date | Current architecture owner                                                                 |
+| ------------ | ------------------------------- | -------- | --------------- | ------------------------------------------------------------------------------------------ |
+| `FE-ADR-001` | Framework split                 | Accepted | 2026-07-12      | `../architecture/frontend-overview.md`, `../architecture/hosts-composition-routing.md`     |
+| `FE-ADR-002` | Package manager                 | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`, frontend workspace/tooling configuration       |
+| `FE-ADR-003` | Package exports                 | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`                                                 |
+| `FE-ADR-004` | No Next.js in reusable packages | Accepted | 2026-07-12      | `../architecture/dependency-boundaries.md`, `../architecture/hosts-composition-routing.md` |
+| `FE-ADR-005` | Auth session model              | Accepted | 2026-07-09      | `../architecture/hosts-composition-routing.md`, `../architecture/api-and-contracts.md`     |
 
 The status/date values above are recovered directly from the current legacy ADR documents.
 

@@ -501,7 +501,7 @@ Invalid messages are reported and ignored.
 Do not cast:
 
 ```ts
-JSON.parse(data) as SomeEvent
+JSON.parse(data) as SomeEvent;
 ```
 
 and pass it directly into product state.
