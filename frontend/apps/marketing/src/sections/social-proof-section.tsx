@@ -46,7 +46,7 @@ export async function TrustStrip() {
     <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-[var(--muted-text)]">
       {trust.map((item) => (
         <span key={item} className="inline-flex items-center gap-1.5">
-          <CheckCircle2 className="size-3.5 text-[var(--mkt-brand-400)]" />{" "}
+          <CheckCircle2 className="size-3.5 text-[var(--mkt-brand-blue-400)]" />{" "}
           {item}
         </span>
       ))}

@@ -11,7 +11,7 @@ import { Reveal } from "../components/reveal";
 const tones = [
   "bg-[var(--mkt-surface-brand-strong)] text-[var(--mkt-text-on-brand)]",
   "bg-[var(--lilac)] text-[var(--cobalt)]",
-  "bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-700)]",
+  "bg-[var(--mkt-brand-blue-100)] text-[var(--mkt-brand-blue-700)]",
 ];
 
 export function TestimonialsSection() {

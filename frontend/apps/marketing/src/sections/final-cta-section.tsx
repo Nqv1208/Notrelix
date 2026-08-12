@@ -18,7 +18,7 @@ export async function FinalCtaSection() {
           <div className="final-cta">
             <div className="final-cta-grid" aria-hidden="true" />
             <div className="relative z-10 mx-auto max-w-2xl text-center">
-              <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-white/12">
+              <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-[var(--mkt-inverse-text)]/12">
                 <Logo className="size-6 brightness-0 invert" />
               </span>
               <h2 className="mt-6 text-3xl font-semibold tracking-[-0.05em] text-[var(--mkt-inverse-text)] sm:text-5xl sm:leading-[1.05]">
@@ -51,7 +51,7 @@ export async function FinalCtaSection() {
                     key={check}
                     className="inline-flex items-center gap-1.5"
                   >
-                    <Check className="size-3.5 text-[var(--mkt-cta-text-inverse)]" />{" "}
+                    <Check className="size-3.5 text-[var(--mkt-inverse-text)]" />{" "}
                     {check}
                   </span>
                 ))}

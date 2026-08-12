@@ -68,7 +68,7 @@ function PlanPanel({ data }: { data: Messages["showcase"]["calendar"] }) {
       </div>
       <div className="rounded-2xl border border-[var(--line)] bg-[var(--mkt-surface-raised)] p-5">
         <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ink)]">
-          <ListChecks className="size-4 text-[var(--mkt-brand-400)]" />{" "}
+          <ListChecks className="size-4 text-[var(--mkt-brand-blue-400)]" />{" "}
           {data.milestones.title}
         </div>
         <div className="mt-5 space-y-3">
@@ -78,7 +78,7 @@ function PlanPanel({ data }: { data: Messages["showcase"]["calendar"] }) {
               className="flex items-start gap-3 rounded-xl bg-[var(--surface)] p-3"
             >
               <span
-                className={`mt-0.5 flex size-5 items-center justify-center rounded-full ${index === 2 ? "bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-600)]" : "bg-[var(--mkt-surface)] text-[var(--cobalt)]"}`}
+                className={`mt-0.5 flex size-5 items-center justify-center rounded-full ${index === 2 ? "bg-[var(--mkt-brand-blue-100)] text-[var(--mkt-brand-blue-600)]" : "bg-[var(--mkt-surface)] text-[var(--cobalt)]"}`}
               >
                 {index === 2 ? (
                   <Check className="size-3" />
@@ -164,8 +164,8 @@ function AutomationPanel({
             {data.subtitle}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--mkt-brand-100)] px-2.5 py-1 text-[0.65rem] font-semibold text-[var(--mkt-brand-700)]">
-          <span className="size-1.5 rounded-full bg-[var(--mkt-brand-500)]" />{" "}
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--mkt-brand-blue-100)] px-2.5 py-1 text-[0.65rem] font-semibold text-[var(--mkt-brand-blue-700)]">
+          <span className="size-1.5 rounded-full bg-[var(--mkt-brand-blue-500)]" />{" "}
           {data.enabled}
         </span>
       </div>
@@ -181,7 +181,7 @@ function AutomationPanel({
         </div>
         <ArrowRight className="hidden size-4 text-[var(--muted-text)] sm:block" />
         <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-          <Sparkles className="size-4 text-[var(--mkt-brand-500)]" />
+          <Sparkles className="size-4 text-[var(--mkt-brand-blue-500)]" />
           <p className="mt-3 text-xs font-semibold text-[var(--ink)]">
             {data.condition}
           </p>
@@ -191,7 +191,7 @@ function AutomationPanel({
         </div>
         <ArrowRight className="hidden size-4 text-[var(--muted-text)] sm:block" />
         <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-          <Check className="size-4 text-[var(--mkt-brand-400)]" />
+          <Check className="size-4 text-[var(--mkt-brand-blue-400)]" />
           <p className="mt-3 text-xs font-semibold text-[var(--ink)]">
             {data.action}
           </p>
@@ -223,13 +223,13 @@ function ReportingPanel({
               {data.subtitle}
             </p>
           </div>
-          <BarChart3 className="size-4 text-[var(--mkt-brand-400)]" />
+          <BarChart3 className="size-4 text-[var(--mkt-brand-blue-400)]" />
         </div>
         <div className="mt-8 flex h-32 items-end gap-2">
           {[32, 46, 39, 58, 52, 76, 68, 92].map((height, index) => (
             <div
               key={index}
-              className="relative flex-1 rounded-t-lg bg-gradient-to-t from-[var(--cobalt)] to-[var(--mkt-brand-300)]"
+              className="relative flex-1 rounded-t-lg bg-gradient-to-t from-[var(--cobalt)] to-[var(--mkt-brand-blue-300)]"
               style={{ height: `${height}%` }}
             >
               <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[0.55rem] text-[var(--muted-text)]">
@@ -246,11 +246,11 @@ function ReportingPanel({
         <div className="mt-6 text-4xl font-semibold tracking-[-0.06em] text-[var(--ink)]">
           +28%
         </div>
-        <p className="mt-1 text-xs text-[var(--mkt-brand-600)]">
+        <p className="mt-1 text-xs text-[var(--mkt-brand-blue-600)]">
           {data.signalDelta}
         </p>
         <div className="mt-7 h-2 overflow-hidden rounded-full bg-[var(--surface)]">
-          <div className="h-full w-[78%] rounded-full bg-[var(--mkt-brand-500)]" />
+          <div className="h-full w-[78%] rounded-full bg-[var(--mkt-brand-blue-500)]" />
         </div>
         <p className="mt-2 text-[0.62rem] text-[var(--muted-text)]">
           {goal(78)}

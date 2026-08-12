@@ -40,7 +40,7 @@ export async function ProblemSolutionSection() {
                     <Icon className="size-5" />
                   </div>
                   <div className="mt-7 flex items-center gap-2 text-sm text-[var(--muted-text)]">
-                    <span className="line-through decoration-[var(--mkt-brand-400)]/70">
+                    <span className="line-through decoration-[var(--mkt-brand-blue-400)]/70">
                       {shift.before}
                     </span>
                     <ArrowRight className="size-3.5" />

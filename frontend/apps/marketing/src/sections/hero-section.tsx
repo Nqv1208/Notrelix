@@ -19,9 +19,10 @@ import { Reveal } from "../components/reveal";
 type HeroT = Awaited<ReturnType<typeof getTranslations<"hero">>>;
 
 const statusStyles = {
-  amber: "bg-[var(--mkt-brand-200)] text-[var(--mkt-brand-700)]",
-  violet: "bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-700)]",
-  emerald: "bg-[var(--mkt-surface-brand-strong)] text-[var(--mkt-brand-600)]",
+  amber: "bg-[var(--mkt-brand-blue-200)] text-[var(--mkt-brand-blue-700)]",
+  violet: "bg-[var(--mkt-brand-blue-100)] text-[var(--mkt-brand-blue-700)]",
+  emerald:
+    "bg-[var(--mkt-surface-brand-strong)] text-[var(--mkt-brand-blue-600)]",
   slate: "bg-[var(--mkt-bg-soft)] text-[var(--mkt-text-muted)]",
 } as const;
 
@@ -90,7 +91,7 @@ function ProductWindow({ t }: { t: HeroT }) {
                 <h3 className="text-base font-semibold tracking-[-0.02em] text-[var(--ink)] sm:text-lg">
                   {window.boardTitle}
                 </h3>
-                <span className="rounded-full bg-[var(--mkt-brand-100)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--mkt-brand-700)]">
+                <span className="rounded-full bg-[var(--mkt-brand-blue-100)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--mkt-brand-blue-700)]">
                   {window.live}
                 </span>
               </div>
@@ -211,7 +212,7 @@ export async function HeroSection() {
           <div className="hero-glow" aria-hidden="true" />
           <ProductWindow t={t} />
           <div className="float-card float-card--left hidden sm:block">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-600)]">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--mkt-brand-blue-100)] text-[var(--mkt-brand-blue-600)]">
               <Check className="size-4" />
             </span>
             <span>

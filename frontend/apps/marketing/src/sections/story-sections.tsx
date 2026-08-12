@@ -46,7 +46,7 @@ function WorkspaceVisual({ t }: { t: StoryT }) {
                     className="flex items-center gap-2 text-[0.62rem] text-[var(--muted-text)]"
                   >
                     <span
-                      className={`size-2 rounded-full ${index === 1 ? "bg-[var(--mkt-brand-500)]" : "bg-[var(--mkt-brand-300)]"}`}
+                      className={`size-2 rounded-full ${index === 1 ? "bg-[var(--mkt-brand-blue-500)]" : "bg-[var(--mkt-brand-blue-300)]"}`}
                     />
                     {item}
                   </div>
@@ -101,15 +101,15 @@ function AutomationVisual({ t }: { t: StoryT }) {
           {v.automationSteps.map((step, index) => (
             <div key={step.title}>
               {index > 0 ? (
-                <div className="ml-4 h-4 border-l border-dashed border-[var(--mkt-brand-400)]/50" />
+                <div className="ml-4 h-4 border-l border-dashed border-[var(--mkt-brand-blue-400)]/50" />
               ) : null}
               <div className="flow-node">
                 <span
                   className={`flex size-7 items-center justify-center rounded-lg ${
                     index === 0
-                      ? "bg-[var(--mkt-brand-200)] text-[var(--mkt-brand-700)]"
+                      ? "bg-[var(--mkt-brand-blue-200)] text-[var(--mkt-brand-blue-700)]"
                       : index === 1
-                        ? "bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-600)]"
+                        ? "bg-[var(--mkt-brand-blue-100)] text-[var(--mkt-brand-blue-600)]"
                         : "bg-[var(--mkt-surface-brand)] text-[var(--mkt-text-on-brand)]"
                   }`}
                 >
@@ -148,14 +148,14 @@ function InsightVisual({ t }: { t: StoryT }) {
               {v.pulseTitle}
             </div>
           </div>
-          <BarChart3 className="size-5 text-[var(--mkt-brand-500)]" />
+          <BarChart3 className="size-5 text-[var(--mkt-brand-blue-500)]" />
         </div>
         <div className="mt-6 grid grid-cols-[1fr_110px] gap-4">
           <div className="flex h-36 items-end gap-2 rounded-xl bg-[var(--surface)] px-4 pb-4 pt-6">
             {[38, 52, 44, 74, 62, 88, 78, 96].map((height, index) => (
               <div
                 key={index}
-                className="group relative flex-1 rounded-t-md bg-gradient-to-t from-[var(--mkt-brand-400)] to-[var(--mkt-brand-200)]"
+                className="group relative flex-1 rounded-t-md bg-gradient-to-t from-[var(--mkt-brand-blue-400)] to-[var(--mkt-brand-blue-200)]"
                 style={{ height: `${height}%` }}
               >
                 <span className="absolute -top-5 left-1/2 hidden -translate-x-1/2 text-[0.55rem] text-[var(--muted-text)] group-hover:block">
@@ -172,7 +172,7 @@ function InsightVisual({ t }: { t: StoryT }) {
               <div className="mt-1 text-2xl font-semibold text-[var(--ink)]">
                 84%
               </div>
-              <span className="text-[0.6rem] font-semibold text-[var(--mkt-brand-600)]">
+              <span className="text-[0.6rem] font-semibold text-[var(--mkt-brand-blue-600)]">
                 {v.completionDelta}
               </span>
             </div>
@@ -239,7 +239,7 @@ export async function StorySections() {
                           key={benefit}
                           className="flex items-center gap-2.5 text-sm font-medium text-[var(--ink)]"
                         >
-                          <span className="flex size-5 items-center justify-center rounded-full bg-[var(--mkt-brand-100)] text-[var(--mkt-brand-600)]">
+                          <span className="flex size-5 items-center justify-center rounded-full bg-[var(--mkt-brand-blue-100)] text-[var(--mkt-brand-blue-600)]">
                             <Check className="size-3" />
                           </span>
                           {benefit}

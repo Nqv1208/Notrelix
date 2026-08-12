@@ -128,7 +128,7 @@ export function PricingTeaserSection() {
                       key={feature}
                       className="flex gap-2.5 text-sm opacity-80"
                     >
-                      <Check className="mt-0.5 size-4 shrink-0 text-[var(--mkt-brand-400)]" />
+                      <Check className="mt-0.5 size-4 shrink-0 text-[var(--mkt-brand-blue-400)]" />
                       {feature}
                     </li>
                   ))}
