@@ -282,7 +282,8 @@ public class DomainHardeningArchitectureTests
     [Fact]
     public void CoreAggregateAudit_ShouldCover_EveryRequiredCoreAggregate()
     {
-        var auditPath = Path.Combine(GetRepoRoot(), "docs", "architecture", "domain-modeling.md");
+        var repoRoot = GetRepoRoot();
+        var auditPath = Path.Combine(repoRoot, "docs", "architecture", "domain-modeling.md");
 
         File.Exists(auditPath).Should().BeTrue(
             "D2 requires backend/docs/architecture/domain-modeling.md before production Domain hardening.");

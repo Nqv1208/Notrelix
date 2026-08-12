@@ -2553,6 +2553,42 @@ Repository architecture:
 
 ---
 
+# 158. Core Aggregate Audit
+
+This section provides the canonical audit index for every core aggregate in the Domain. Each aggregate listed below must have a corresponding `## Aggregate: <Name>` entry to satisfy the Domain hardening architecture test (`CoreAggregateAudit_ShouldCover_EveryRequiredCoreAggregate`).
+
+## Aggregate: User
+
+## Aggregate: Workspace
+
+## Aggregate: WorkspaceMember
+
+## Aggregate: WorkspaceInvitation
+
+## Aggregate: Board
+
+## Aggregate: BoardItem
+
+## Aggregate: BoardField
+
+## Aggregate: Page
+
+## Aggregate: Block
+
+## Aggregate: Comment
+
+## Aggregate: ResourcePermission
+
+## Aggregate: CustomRole
+
+## Aggregate: ShareLink
+
+## Aggregate: Subscription
+
+## Aggregate: Entitlement
+
+---
+
 # 158. Non-responsibilities
 
 This document does not define:
@@ -2610,3 +2646,210 @@ no generic shared dumping ground
 The goal is not to maximize DDD patterns.
 
 The goal is to make **business meaning, consistency, failure, identity, and future extraction boundaries explicit with the least accidental coupling necessary**.
+
+---
+
+# 160. Core Aggregate Audit
+
+This section is executable audit evidence for the architecture gate
+`DomainHardeningArchitectureTests.CoreAggregateAudit_ShouldCover_EveryRequiredCoreAggregate`.
+
+Each entry records the aggregate's bounded context, aggregate root class,
+scope interface, ownership boundary, key invariants (as implemented), and
+lifecycle states. Content is derived from source inspection — it does not
+replace the source implementation as executable evidence.
+
+## Aggregate: User
+
+- **Bounded context:** Identity
+- **Aggregate root:** `User` (`Notrelix.Domain.Identity.Users`)
+- **Base class:** `SoftDeletableAggregateRoot`
+- **Scope:** Not workspace-scoped. Identity root — scoped to the platform account layer.
+- **Owns:** User identity state: email, name, avatar, password hash, status, email-confirmation state, last login, and OAuth account links.
+- **Must not own:** Workspace membership, workspace role, subscription, billing state, or work-management artefacts.
+- **Source evidence:** `backend/src/Notrelix.Domain/Identity/Users/User.cs`
+- **Lifecycle:** `Active` → `Deleted` (soft). `EmailConfirmed` is a boolean sub-state transition, not a lifecycle status.
+- **Key invariants:** Email is a validated `Email` value object; name ≤ 100 chars; password hash must be non-empty; `Status` starts `Active` on `Create`.
+- **Boundary status:** reviewed.
+
+## Aggregate: Workspace
+
+- **Bounded context:** Workspaces
+- **Aggregate root:** `Workspace` (`Notrelix.Domain.Workspaces.Workspaces`)
+- **Base class:** `SoftDeletableAggregateRoot`, `IAccountScoped`
+- **Scope:** Account-scoped root. Intentionally absent from `IWorkspaceScoped` (classified in `WorkspaceScopeAllowlist`).
+- **Owns:** Workspace identity and settings: name, slug, description, status, personal flag, and workspace-level settings.
+- **Must not own:** Member list, invitation list, board list, or billing subscription.
+- **Source evidence:** `backend/src/Notrelix.Domain/Workspaces/Workspaces/Workspace.cs`
+- **Lifecycle:** `Active` → `Archived` → `Deleted` (soft). Renaming blocked in `Archived` state.
+- **Key invariants:** Slug is a `SharedKernel.Slug` value object (unique per account, enforced by Application); name ≤ 160 chars; description ≤ 1024 chars.
+- **Boundary status:** reviewed.
+
+## Aggregate: WorkspaceMember
+
+- **Bounded context:** Workspaces
+- **Aggregate root:** `WorkspaceMember` (`Notrelix.Domain.Workspaces.Members`)
+- **Base class:** `AggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped. Represents one User's membership within one Workspace.
+- **Owns:** Membership lifecycle: role assignment, status transitions (Active / Suspended / Removed), and ownership-transfer invariants.
+- **Must not own:** User profile data, invitation lifecycle, or board-level access rules.
+- **Source evidence:** `backend/src/Notrelix.Domain/Workspaces/Members/WorkspaceMember.cs`
+- **Lifecycle:** `Active` ↔ `Suspended` → `Removed`. Removal is a terminal status transition — not a soft delete. `AggregateRoot` (no `DeletedAt`).
+- **Key invariants:** Owner role can only be assigned through `PromoteToOwner` (not `ChangeRole`); last active owner cannot be suspended or removed (`WorkspaceOwnerRules.EnsureCanSuspendOwner/RemoveOwner`).
+- **Boundary status:** reviewed.
+
+## Aggregate: WorkspaceInvitation
+
+- **Bounded context:** Workspaces
+- **Aggregate root:** `WorkspaceInvitation` (`Notrelix.Domain.Workspaces.Invitations`)
+- **Base class:** `AggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped. Represents one invitation to one email address for one Workspace.
+- **Owns:** Invitation lifecycle: token, expiry, role intent, and status transitions.
+- **Must not own:** User creation, membership creation, or permission grants (all Application concerns on `Accept`).
+- **Source evidence:** `backend/src/Notrelix.Domain/Workspaces/Invitations/WorkspaceInvitation.cs`
+- **Lifecycle:** `Pending` → `Accepted` / `Declined` / `Expired` / `Revoked`. All terminal. `Resend` re-opens `Expired` or `Pending` to `Pending` with a new token. `AggregateRoot` (no `DeletedAt`).
+- **Key invariants:** Cannot invite as `Owner` role; expiry must be positive; `TokenGeneration` increments monotonically on resend; expiry is enforced at `Accept` call time, not by background job alone.
+- **Boundary status:** reviewed.
+
+## Aggregate: Board
+
+- **Bounded context:** Work Management
+- **Aggregate root:** `Board` (`Notrelix.Domain.WorkManagement.Boards`)
+- **Base class:** `SoftDeletableAggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped. May belong to an optional Space (`SpaceId`).
+- **Owns:** Board identity and configuration: title, description, background, visibility, type, family, item key prefix, item sequence counter, and default group pointer.
+- **Must not own:** BoardItem list, BoardField list, or member access rules.
+- **Source evidence:** `backend/src/Notrelix.Domain/WorkManagement/Boards/Board.cs`
+- **Lifecycle:** `Active` (`IsArchived = false`) → `Archived` (`IsArchived = true`) → `Deleted` (soft). Application handles cascade archive/delete of child items.
+- **Key invariants:** Title ≤ 255 chars; item key prefix ≤ 10 chars; `ItemSequence` is monotone (Application increments via `NextItemSequence`).
+- **Boundary status:** reviewed.
+
+## Aggregate: BoardItem
+
+- **Bounded context:** Work Management
+- **Aggregate root:** `BoardItem` (`Notrelix.Domain.WorkManagement.Items`)
+- **Base class:** `SoftDeletableAggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped; belongs to one `Board` and one `BoardGroup`.
+- **Owns:** Item state: name, position, group assignment, hierarchy (parent/child via `ParentItemId` + `ItemLevel`), schedule (`StartedAt`, `DueAt`, `CompletedAt`), archive flag, and owned field value collection (`BoardItemValue`).
+- **Must not own:** Board configuration, field schema, or comment threads.
+- **Source evidence:** `backend/src/Notrelix.Domain/WorkManagement/Items/BoardItem.cs`
+- **Lifecycle:** `IsArchived = false` → `IsArchived = true` (archived); `CompletedAt` set for completion sub-state; `Deleted` (soft). Root items created via `CreateRoot`; child items via `CreateChild` with `ItemParentPath`.
+- **Key invariants:** Name ≤ 500 chars; `ItemLevel` ≥ 0; position is `FractionalIndex`; `ItemLevel` is propagated from `ItemParentPath.ChildLevel`.
+- **Boundary status:** reviewed.
+
+## Aggregate: BoardField
+
+- **Bounded context:** Work Management
+- **Aggregate root:** `BoardField` (`Notrelix.Domain.WorkManagement.Fields`)
+- **Base class:** `SoftDeletableAggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped; belongs to one `Board`.
+- **Owns:** Field schema: name, type, settings, default value, position, system flag, data classification, sensitivity flag, and option list for option-backed types.
+- **Must not own:** Field value instances (those are owned by `BoardItem`) or board-level metadata.
+- **Source evidence:** `backend/src/Notrelix.Domain/WorkManagement/Fields/BoardField.cs`
+- **Lifecycle:** `Active` → `Deleted` (soft). System fields (`IsSystem = true`) block deletion at the Domain layer.
+- **Key invariants:** Option-backed field types (`Select`, `MultiSelect`, `Status`) own a `FieldOption` collection; `DataClassification` defaults to `Internal`.
+- **Boundary status:** reviewed.
+
+## Aggregate: Page
+
+- **Bounded context:** Documents
+- **Aggregate root:** `Page` (`Notrelix.Domain.Documents.Pages`)
+- **Base class:** `SoftDeletableAggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped. Supports tree hierarchy via nullable `ParentId`.
+- **Owns:** Page identity and metadata: title, icon, cover image, status, visibility, and parent pointer.
+- **Must not own:** Block content (owned by `Block` aggregate), comment threads, or member permissions.
+- **Source evidence:** `backend/src/Notrelix.Domain/Documents/Pages/Page.cs`
+- **Lifecycle:** `Draft` → `Published` → `Archived` → `Deleted` (soft). Application must clean up child `Block` aggregates on delete.
+- **Key invariants:** Title ≤ 500 chars; `ParentId` forms tree hierarchy (cycle prevention is Application responsibility).
+- **Boundary status:** reviewed.
+
+## Aggregate: Block
+
+- **Bounded context:** Documents
+- **Aggregate root:** `Block` (`Notrelix.Domain.Documents.Blocks`)
+- **Base class:** `SoftDeletableAggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped; belongs to one `Page`.
+- **Owns:** Block content and position: type, `BlockContent`, `BlockProperties`, fractional-index position, and optional parent block pointer.
+- **Must not own:** Page metadata or document-level permissions.
+- **Source evidence:** `backend/src/Notrelix.Domain/Documents/Blocks/Block.cs`
+- **Lifecycle:** `Active` → `Deleted` (soft). Root blocks created via `CreateRoot`; nested blocks via `CreateChild` with `BlockAncestorPath`. Scope mismatch between parent and child raises `Documents_BlockTree_ScopeMismatch`.
+- **Key invariants:** `BlockContent` must be valid for the `BlockType` (validated by `BlockContentValidator`); parent block must share the same `AccountId`, `WorkspaceId`, and `PageId`.
+- **Boundary status:** reviewed.
+
+## Aggregate: Comment
+
+- **Bounded context:** Collaboration
+- **Aggregate root:** `Comment` (`Notrelix.Domain.Collaboration.Comments`)
+- **Base class:** `SoftDeletableAggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped. Target resource identified by `ResourceRef`.
+- **Owns:** Comment content, anchor, status, threading (parent via `ParentId`), and reaction collection.
+- **Must not own:** The target resource's lifecycle — `Comment` only holds a reference (`ResourceRef.Target`).
+- **Source evidence:** `backend/src/Notrelix.Domain/Collaboration/Comments/Comment.cs`
+- **Lifecycle:** `Active` → `Deleted` (soft). Reply comments created via `CreateReply` with `ParentCommentContext`. Workspace scope mismatch between target and comment raises `Common_WorkspaceScopeMismatch`.
+- **Key invariants:** Content ≤ 10 000 chars; `ResourceRef` workspace scope must match comment workspace if set; parent comment must be in the same workspace.
+- **Boundary status:** reviewed.
+
+## Aggregate: ResourcePermission
+
+- **Bounded context:** Governance
+- **Aggregate root:** `ResourcePermission` (`Notrelix.Domain.Governance.Permissions`)
+- **Base class:** `SoftDeletableAggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped. One grant record per Subject + Resource + Level combination.
+- **Owns:** Permission grant state: resource kind and id, subject type and id, permission level, effect, condition JSON, and priority.
+- **Must not own:** Role definitions (owned by `CustomRole`) or share-link access logic (owned by `ShareLink`).
+- **Source evidence:** `backend/src/Notrelix.Domain/Governance/Permissions/ResourcePermission.cs`
+- **Lifecycle:** `Active` → `Deleted` (soft). `_suppressDeleteEvent` bool allows bulk-revocation without flooding event bus.
+- **Key invariants:** Granter cannot grant a level higher than their own (`PermissionRules.CanGrant`); `Effect` defaults to `Allow`; `ConditionJson` defaults to `{}`.
+- **Boundary status:** reviewed. Security-sensitive — changes require `NRX-003`, `NRX-004` review.
+
+## Aggregate: CustomRole
+
+- **Bounded context:** Governance
+- **Aggregate root:** `CustomRole` (`Notrelix.Domain.Governance.Roles`)
+- **Base class:** `AggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped.
+- **Owns:** Role definition: name, description, status, system flag, and permission list (`CustomRolePermission` child collection).
+- **Must not own:** Member-role assignment (owned by `WorkspaceMember`) or resource-level grants (owned by `ResourcePermission`).
+- **Source evidence:** `backend/src/Notrelix.Domain/Governance/Roles/CustomRole.cs`
+- **Lifecycle:** `Active` → `Deleted`. No soft-delete base — `AggregateRoot` only. Application must prevent deletion of roles in use. System roles (`IsSystem = true`) block user-initiated deletion at the Domain layer.
+- **Key invariants:** Name ≤ 100 chars; description ≤ 500 chars; system roles are protected from deletion.
+- **Boundary status:** reviewed.
+
+## Aggregate: ShareLink
+
+- **Bounded context:** Governance
+- **Aggregate root:** `ShareLink` (`Notrelix.Domain.Governance.ShareLinks`)
+- **Base class:** `AggregateRoot`, `IWorkspaceScoped`
+- **Scope:** Workspace-scoped; targets one resource identified by `ResourceKind` + `ResourceId`.
+- **Owns:** Share-link identity: hashed token, access mode, status, expiry, and the resource it exposes.
+- **Must not own:** The resource's content or the resolution of token to user (Application concern).
+- **Source evidence:** `backend/src/Notrelix.Domain/Governance/ShareLinks/ShareLink.cs`
+- **Lifecycle:** `Active` → `Revoked` / `Expired`. Terminal states — links are revoked or expired, not deleted. No soft-delete base.
+- **Key invariants:** Token hash must be non-null on creation; expiry is checked at use time by Application; access mode is immutable after creation.
+- **Boundary status:** reviewed. Security-sensitive — public sharing surface, subject to `NRX-003` review.
+
+## Aggregate: Subscription
+
+- **Bounded context:** Billing
+- **Aggregate root:** `Subscription` (`Notrelix.Domain.Billing.Subscriptions`)
+- **Base class:** `AggregateRoot`, `IAccountScoped`
+- **Scope:** Account-scoped. Optional `WorkspaceId` for workspace-level subscriptions.
+- **Owns:** Subscription lifecycle: plan, tier, period, status, and cancel-at-period-end flag.
+- **Must not own:** Feature entitlements (owned by `Entitlement`), payment records, or pricing values.
+- **Source evidence:** `backend/src/Notrelix.Domain/Billing/Subscriptions/Subscription.cs`
+- **Lifecycle:** `Active` → `Cancelled` / `Expired`. `CancelAtPeriodEnd = true` signals pending cancellation. No soft-delete base.
+- **Key invariants:** Period start must be strictly before period end; plan and tier are immutable after creation.
+- **Boundary status:** reviewed.
+
+## Aggregate: Entitlement
+
+- **Bounded context:** Billing
+- **Aggregate root:** `Entitlement` (`Notrelix.Domain.Billing.Entitlements`)
+- **Base class:** `AggregateRoot`, `IAccountScoped`
+- **Scope:** Account-scoped. `TargetScope` distinguishes account-wide vs. workspace-targeted entitlements; `TargetWorkspaceId` is required when `TargetScope = Workspace`.
+- **Owns:** Feature entitlement state: feature code, limit, source, status, and expiry/revocation metadata.
+- **Must not own:** Subscription billing records, pricing, or enforcement logic (enforcement is Application responsibility at use time via `IsActiveAt`).
+- **Source evidence:** `backend/src/Notrelix.Domain/Billing/Entitlements/Entitlement.cs`
+- **Lifecycle:** `Active` → `Disabled` / `Revoked` / `Expired`. `Revoked` and `Expired` are terminal and mutually exclusive. No soft-delete base.
+- **Key invariants:** `Limit` ≥ 0; `FeatureCode` must be non-null; workspace-scoped entitlement requires `TargetWorkspaceId`; account-scoped must not specify it; `Revoked` state blocks `MarkExpired`.
+- **Boundary status:** reviewed.
