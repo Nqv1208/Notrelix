@@ -56,8 +56,7 @@ export default async function RootLayout({
             __html: `(function(){
               try {
                 var stored = localStorage.getItem("theme");
-                var preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-                var theme = stored === "dark" || stored === "light" ? stored : preferred;
+                var theme = stored === "dark" || stored === "light" ? stored : "light";
                 var root = document.documentElement;
                 root.classList.remove("light", "dark");
                 root.classList.add(theme);
@@ -74,6 +73,11 @@ export default async function RootLayout({
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          />
+          <div
+            id="header-scroll-sentinel"
+            aria-hidden="true"
+            className="absolute top-0 left-0 h-10 w-full pointer-events-none"
           />
           <MarketingHeader />
           {children}

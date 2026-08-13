@@ -8,15 +8,12 @@ import {
   BookOpen,
   ChevronDown,
   LayoutGrid,
-  Menu,
   Workflow,
-  X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Messages } from "../messages/en";
 
 import { MarketingButton } from "./marketing-button";
-import { ThemeToggle } from "./theme-toggle";
 import Image from "next/image";
 import { env } from "../config/env";
 
@@ -29,51 +26,64 @@ export function MarketingHeader() {
     "productLinks",
   ) as Messages["header"]["productLinks"];
 
-  const [mobileOpen, setMobileOpen] = React.useState(false);
   const [productOpen, setProductOpen] = React.useState(false);
   const [scrolled, setScrolled] = React.useState(false);
 
   React.useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 18);
+    const sentinel = document.getElementById("header-scroll-sentinel");
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setProductOpen(false);
-        setMobileOpen(false);
       }
     };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
+
+    if (!sentinel) {
+      return () => window.removeEventListener("keydown", onKeyDown);
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry) {
+          setScrolled(!entry.isIntersecting);
+        }
+      },
+      { threshold: 0 },
+    );
+
+    observer.observe(sentinel);
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      observer.disconnect();
       window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
     };
-  }, [mobileOpen]);
-
-  const closeMobile = () => setMobileOpen(false);
+  }, []);
 
   return (
-    <header className={`header ${scrolled ? "is-scrolled" : ""}`}>
-      <div className="container flex h-[4.5rem] items-center justify-between">
-        <Link href="/" aria-label={t("logoAria")} onClick={closeMobile}>
+    <header
+      className={`header marketing-header ${scrolled ? "is-scrolled" : ""}`}
+      data-scrolled={scrolled}
+    >
+      <div className="header-visual-shell" aria-hidden="true" />
+      <div className="header-content">
+        <Link
+          href="/"
+          aria-label={t("logoAria")}
+          className="header-logo"
+        >
           <Image
             src="/logo.svg"
             alt=""
             width={36}
             height={28}
             aria-hidden="true"
-            className="h-9 w-auto"
+            className="header-logo-image"
             priority
           />
         </Link>
 
-        <nav
-          className="hidden items-center gap-1 lg:flex"
-          aria-label={t("navAria")}
-        >
+        <nav className="header-nav" aria-label={t("navAria")}>
           {navLinks.map((link) => (
             <div key={link.label} className="relative">
               {link.href === "#showcase" ? (
@@ -130,77 +140,26 @@ export function MarketingHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <a href={`${env.webAppUrl}/sign-in`} className="hidden sm:block">
-            <MarketingButton variant="ghost" size="sm">
-              {t("signIn")}
-            </MarketingButton>
-          </a>
-          <a href={`${env.webAppUrl}/sign-up`} className="hidden sm:block">
-            <MarketingButton variant="primary" size="sm">
-              {t("tryFree")}
-              <ArrowUpRight className="size-3.5" />
-            </MarketingButton>
-          </a>
-          <button
-            type="button"
-            aria-label={mobileOpen ? t("closeMenu") : t("openMenu")}
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen((open) => !open)}
-            className="flex size-10 items-center justify-center rounded-xl border border-[var(--line)] text-[var(--ink)] transition-colors hover:bg-[var(--lilac)] lg:hidden"
+        <div className="header-actions">
+          <MarketingButton
+            variant="ghost"
+            size="sm"
+            href={`${env.webAppUrl}/sign-in`}
+            className="header-action-link"
           >
-            {mobileOpen ? (
-              <X className="size-5" />
-            ) : (
-              <Menu className="size-5" />
-            )}
-          </button>
+            {t("signIn")}
+          </MarketingButton>
+          <MarketingButton
+            variant="primary"
+            size="sm"
+            href={`${env.webAppUrl}/sign-up`}
+            className="header-action-link"
+          >
+            {t("tryFree")}
+            <ArrowUpRight className="size-3.5" />
+          </MarketingButton>
         </div>
       </div>
-
-      {mobileOpen ? (
-        <div
-          className="mobile-menu lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("menuAria")}
-        >
-          <nav
-            className="container flex flex-col gap-1 py-5"
-            aria-label={t("mobileNavAria")}
-          >
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={closeMobile}
-                className="mobile-link"
-              >
-                {link.label}
-              </a>
-            ))}
-            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--line)] pt-4">
-              <a
-                href={`${env.webAppUrl}/sign-in`}
-                onClick={closeMobile}
-                className="mobile-link justify-center border border-[var(--line)]"
-              >
-                {t("signIn")}
-              </a>
-              <MarketingButton
-                variant="primary"
-                size="md"
-                href={`${env.webAppUrl}/sign-up`}
-                onClick={closeMobile}
-                className="w-full"
-              >
-                {t("tryFree")}
-              </MarketingButton>
-            </div>
-          </nav>
-        </div>
-      ) : null}
     </header>
   );
 }

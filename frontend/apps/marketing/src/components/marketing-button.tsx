@@ -43,16 +43,23 @@ export function MarketingButton({
         href={href}
         aria-disabled={disabled || undefined}
         className={classes}
+        data-disabled={disabled || undefined}
         {...rest}
       >
-        {children}
+        <span className="v2-cta__content">{children}</span>
       </a>
     );
   }
 
   return (
-    <button type="button" disabled={disabled} className={classes} {...rest}>
-      {children}
+    <button
+      type="button"
+      disabled={disabled}
+      className={classes}
+      data-disabled={disabled || undefined}
+      {...rest}
+    >
+      <span className="v2-cta__content">{children}</span>
     </button>
   );
 }
