@@ -33,6 +33,7 @@
     "test:ui:visual": "playwright test --config playwright.storybook.config.ts --grep visual",
     "test:ui:freeze": "playwright test --config playwright.storybook.config.ts",
     "e2e": "playwright test --config playwright.config.ts",
+    "e2e:marketing": "playwright test --config playwright.marketing.config.ts",
     "e2e:report": "playwright show-report",
     "codegen": "turbo codegen",
     "codegen:check": "pnpm codegen && git diff --exit-code -- packages/foundation/contracts/src/generated",
@@ -60,7 +61,8 @@
   "pnpm": {
     "overrides": {
       "react": "^19.2.7",
-      "react-dom": "^19.2.7"
+      "react-dom": "^19.2.7",
+      "react-native": "~0.81.5"
     }
   },
   "engines": {
