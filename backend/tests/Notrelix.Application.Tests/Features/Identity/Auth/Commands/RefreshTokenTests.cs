@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 using Notrelix.Domain.Identity.Sessions;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
 
@@ -40,5 +41,37 @@ public class RefreshTokenTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("invalid or expired"));
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserIsInactive_RevokesSessionAndFails()
+    {
+        var user = CreateUser(status: UserStatus.Inactive);
+        var session = CreateSession(rawRefreshToken: TestRefreshToken);
+        SetupUsers(user);
+        SetupSessions(session);
+
+        var sut = CreateSut();
+        var result = await sut.Handle(new RefreshTokenCommand { RefreshToken = TestRefreshToken }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Contains("invalid or expired"));
+        session.Status.Should().Be(SessionStatus.Revoked);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserIsSuspended_RevokesSessionAndFails()
+    {
+        var user = CreateUser(status: UserStatus.Suspended);
+        var session = CreateSession(rawRefreshToken: TestRefreshToken);
+        SetupUsers(user);
+        SetupSessions(session);
+
+        var sut = CreateSut();
+        var result = await sut.Handle(new RefreshTokenCommand { RefreshToken = TestRefreshToken }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Contains("invalid or expired"));
+        session.Status.Should().Be(SessionStatus.Revoked);
     }
 }

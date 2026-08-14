@@ -43,27 +43,17 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
 
-        if (user is null)
+        var passwordValid = _passwordHasher.VerifyPassword(request.Password, user?.PasswordHash ?? DummyPasswordHash);
+
+        if (user is null || !passwordValid)
         {
-            _logger.LogInformation("Login failed: user not found for email {NormalizedEmail}", normalizedEmail);
+            _logger.LogInformation("Login failed: invalid credentials for {NormalizedEmail}", normalizedEmail);
             return Result<AuthResult>.Failure("Invalid email or password");
         }
 
-        if (user.Status == UserStatus.Inactive)
+        if (user.Status is not UserStatus.Active)
         {
-            _logger.LogWarning("Login blocked: inactive account {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
-            return Result<AuthResult>.Failure("Account has been deactivated");
-        }
-
-        if (user.Status == UserStatus.Suspended)
-        {
-            _logger.LogWarning("Login blocked: suspended account {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
-            return Result<AuthResult>.Failure("Account has been suspended");
-        }
-
-        if (!_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
-        {
-            _logger.LogInformation("Login failed: invalid password for {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
+            _logger.LogWarning("Login blocked: non-active account {UserId} (status {UserStatus})", user.Id, user.Status);
             return Result<AuthResult>.Failure("Invalid email or password");
         }
 
@@ -75,4 +65,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
         return Result<AuthResult>.Success(authResult);
     }
+
+    private const string DummyPasswordHash = "$2b$12$l21rZMRnrPl/Lfm2kVzYOuxlKgQzbwMzEvK7cOBZI40eJ42/FIuh2";
 }

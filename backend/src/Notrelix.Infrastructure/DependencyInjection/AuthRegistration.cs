@@ -42,6 +42,11 @@ public static class AuthRegistration
         return services;
     }
 
+    private static DateTimeOffset? ParseIssuedAt(string? value)
+        => long.TryParse(value, out var epochSeconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(epochSeconds)
+            : null;
+
     private static IServiceCollection AddJwtBearer(
         this IServiceCollection services, IConfiguration configuration)
     {
@@ -101,6 +106,19 @@ public static class AuthRegistration
                         if (jti is not null && await blacklist.IsBlacklistedAsync(jti))
                         {
                             context.Fail("Token has been revoked");
+                            return;
+                        }
+
+                        var userIdClaim = context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+                        if (userIdClaim is not null && Guid.TryParse(userIdClaim, out var userId))
+                        {
+                            var revokedBefore = await blacklist.GetUserRevokedBeforeAsync(userId);
+                            if (AccessTokenRevocationEvaluator.ShouldReject(
+                                    ParseIssuedAt(context.Principal?.FindFirst(JwtRegisteredClaimNames.Iat)?.Value),
+                                    revokedBefore))
+                            {
+                                context.Fail("User access has been revoked");
+                            }
                         }
                     },
                     OnMessageReceived = context =>

@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
@@ -48,6 +49,12 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         if (user is null)
         {
             return Result<AuthResult>.Failure("User not found");
+        }
+
+        if (user.Status is not UserStatus.Active)
+        {
+            session.Revoke(now);
+            return Result<AuthResult>.Failure("Refresh token is invalid or expired");
         }
 
         session.Revoke(now);

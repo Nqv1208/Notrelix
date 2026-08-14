@@ -36,7 +36,7 @@ public class LoginTests : IdentityHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_WhenUserNotFound_ReturnsFailure()
+    public async Task Handle_WhenUserNotFound_ReturnsGenericFailureAndStillVerifiesPassword()
     {
         SetupUsers();
         var sut = CreateSut();
@@ -44,30 +44,39 @@ public class LoginTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("Invalid email or password"));
+        PasswordHasherMock.Verify(h => h.VerifyPassword(TestPassword, It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenUserInactive_ReturnsFailure()
+    public async Task Handle_WhenUserInactive_ReturnsGenericFailureAndIssuesNoSession()
     {
         var user = CreateUser(status: UserStatus.Inactive);
         SetupUsers(user);
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+
         var sut = CreateSut();
         var result = await sut.Handle(new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("deactivated"));
+        result.Errors.Should().Contain(e => e.Contains("Invalid email or password"));
+        result.Errors.Should().NotContain(e => e.Contains("deactivated") || e.Contains("suspended"));
+        SessionIssuerMock.Verify(s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task Handle_WhenUserSuspended_ReturnsFailure()
+    public async Task Handle_WhenUserSuspended_ReturnsGenericFailureAndIssuesNoSession()
     {
         var user = CreateUser(status: UserStatus.Suspended);
         SetupUsers(user);
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+
         var sut = CreateSut();
         var result = await sut.Handle(new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("suspended"));
+        result.Errors.Should().Contain(e => e.Contains("Invalid email or password"));
+        result.Errors.Should().NotContain(e => e.Contains("deactivated") || e.Contains("suspended"));
+        SessionIssuerMock.Verify(s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
