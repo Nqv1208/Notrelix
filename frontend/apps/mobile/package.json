@@ -34,6 +34,7 @@
     "@tanstack/react-query": "catalog:"
   },
   "devDependencies": {
+    "hermes-compiler": "latest",
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
     "@notrelix/eslint-config": "workspace:*"
