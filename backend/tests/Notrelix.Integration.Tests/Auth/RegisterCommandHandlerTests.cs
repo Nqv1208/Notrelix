@@ -5,6 +5,7 @@ using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Testing.Application.Fakes;
+using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Auth;
@@ -44,7 +45,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
 
-        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context), passwordHasher.Object, sessionIssuer.Object, dateTimeProvider.Object, integrationEventCollector.Object);
+        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccessGrantProjectionService(context)), passwordHasher.Object, sessionIssuer.Object, dateTimeProvider.Object, integrationEventCollector.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -76,7 +77,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object);
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
-        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
+        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccessGrantProjectionService(context)), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 
         var now = DateTime.UtcNow;
         var result = await handler.Handle(new RegisterCommand
@@ -133,7 +134,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
 
         var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object);
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
+        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccessGrantProjectionService(context)), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -169,7 +170,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object);
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
-        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
+        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccessGrantProjectionService(context)), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {

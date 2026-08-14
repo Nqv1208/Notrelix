@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember;
@@ -17,12 +18,14 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
-    public ActivateMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public ActivateMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessGrantProjectionService grantProjection)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _grantProjection = grantProjection;
     }
 
     public async Task<Result> Handle(ActivateMemberCommand request, CancellationToken ct)
@@ -40,6 +43,15 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
             throw new NotFoundException("WorkspaceMember", request.UserId);
 
         member.Activate(_requestContext.UserId, _dateTimeProvider.UtcNow);
+
+        await _grantProjection.SyncWorkspaceMemberGrantAsync(
+            workspace.AccountId,
+            workspace.Id,
+            request.UserId,
+            member.Role,
+            _dateTimeProvider.UtcNow,
+            ct);
+
         return Result.Success();
     }
 }

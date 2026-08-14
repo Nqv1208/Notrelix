@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
@@ -29,6 +30,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -37,7 +39,8 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         IAccountStatusReader accountStatusReader,
         IOneTimeTokenService oneTimeTokenService,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IAccessGrantProjectionService grantProjection)
     {
         _workspaceContext = workspaceContext;
         _identityUserLookup = identityUserLookup;
@@ -46,6 +49,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         _oneTimeTokenService = oneTimeTokenService;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _grantProjection = grantProjection;
     }
 
     public async Task<Result<AcceptInvitationResultDto>> Handle(
@@ -161,6 +165,14 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             now);
 
         _workspaceContext.WorkspaceMembers.Add(member);
+
+        await _grantProjection.SyncWorkspaceMemberGrantAsync(
+            workspace.AccountId,
+            invitation.WorkspaceId,
+            currentUserId,
+            invitation.Role,
+            now,
+            ct);
 
         return Result<AcceptInvitationResultDto>.Success(
             new AcceptInvitationResultDto(workspace.Slug, invitation.WorkspaceId));

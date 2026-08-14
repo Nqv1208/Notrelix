@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
@@ -17,15 +18,18 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
     public RemoveMemberCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IAccessGrantProjectionService grantProjection)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _grantProjection = grantProjection;
     }
 
     public async Task<Result> Handle(RemoveMemberCommand request, CancellationToken ct)
@@ -46,6 +50,14 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);
 
         member.Remove(activeOwnerCount, _requestContext.UserId, _dateTimeProvider.UtcNow);
+
+        await _grantProjection.RevokeWorkspaceMemberGrantAsync(
+            workspace.AccountId,
+            workspace.Id,
+            request.UserId,
+            _dateTimeProvider.UtcNow,
+            ct);
+
         return Result.Success();
     }
 }

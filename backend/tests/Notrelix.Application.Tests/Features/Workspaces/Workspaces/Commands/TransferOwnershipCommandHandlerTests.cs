@@ -1,11 +1,12 @@
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
+using Notrelix.Application.Common.Tenancy;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Workspaces.Commands;
 
 public class TransferOwnershipCommandHandlerTests : WorkspaceHandlerTestBase
 {
     private TransferOwnershipCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object);
 
     [Fact]
     public async Task Handle_WhenWorkspaceAndMembersExist_TransfersOwnership()

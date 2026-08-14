@@ -9,7 +9,7 @@ public class AccountProvisioningServiceTests : IdentityHandlerTestBase
 {
     private static readonly Guid UserId = Guid.CreateVersion7();
 
-    private AccountProvisioningService CreateSut() => new(AccountContextMock.Object);
+    private AccountProvisioningService CreateSut() => new(AccountContextMock.Object, GrantProjectionMock.Object);
 
     [Fact]
     public async Task ProvisionPersonalAccountAsync_CreatesPersonalAccount_WithOwnerMembership()
@@ -27,6 +27,8 @@ public class AccountProvisioningServiceTests : IdentityHandlerTestBase
             member.AccountId == result.AccountId
             && member.UserId == UserId
             && member.Role == AccountRole.Owner)), Times.Once);
+        GrantProjectionMock.Verify(g => g.SyncAccountMemberGrantAsync(
+            result.AccountId, UserId, AccountRole.Owner, TestNow, CancellationToken.None), Times.Once);
     }
 
     [Fact]

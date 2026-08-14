@@ -8330,6 +8330,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_access_grants");
 
+                    b.HasIndex("AccountId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_access_grants_account_user_account_level")
+                        .HasFilter("\"workspace_id\" IS NULL");
+
                     b.HasIndex("UserId", "AccountId")
                         .HasDatabaseName("ix_access_grants_user_account_active")
                         .HasFilter("\"membership_status\" = 'Active' AND \"revoked_at\" IS NULL");

@@ -4,6 +4,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Notrelix.Application.Common.Email;
+using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Common.Security.Auth;
@@ -42,6 +43,7 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<IOneTimeTokenService> OneTimeTokenServiceMock = new();
     protected readonly Mock<IIntegrationEventCollector> IntegrationEventCollectorMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();
+    protected readonly Mock<IAccessGrantProjectionService> GrantProjectionMock = new();
     protected readonly Mock<ILogger<LoginCommandHandler>> LoginLoggerMock = new();
     protected readonly Mock<ILogger<LogoutCommandHandler>> LogoutLoggerMock = new();
     protected readonly Mock<ILogger<ForgotPasswordCommandHandler>> ForgotPasswordLoggerMock = new();

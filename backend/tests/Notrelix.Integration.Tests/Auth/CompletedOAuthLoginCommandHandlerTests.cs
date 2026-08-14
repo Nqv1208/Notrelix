@@ -7,6 +7,7 @@ using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Auth;
@@ -72,7 +73,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             providerClient.Object,
             optionsProvider.Object,
             context,
-            new AccountProvisioningService(context),
+            new AccountProvisioningService(context, new AccessGrantProjectionService(context)),
             sessionIssuer.Object,
             passwordHasher.Object,
             dateTimeProvider.Object,

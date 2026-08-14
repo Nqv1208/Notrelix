@@ -1067,7 +1067,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("pk_idempotency_records", x => x.id);
                     table.CheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
-                    table.CheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
+                    table.CheckConstraint("ck_idempotency_records_completed_result", "(\n  state = 'Processing'\n  AND result_json IS NULL\n  AND result_contract IS NULL\n  AND completed_at IS NULL\n)\nOR\n(\n  state = 'Completed'\n  AND result_json IS NOT NULL\n  AND result_contract IS NOT NULL\n  AND completed_at IS NOT NULL\n)");
                 });
 
             migrationBuilder.CreateTable(
@@ -3956,6 +3956,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 table: "access_grants",
                 columns: new[] { "account_id", "workspace_id", "user_id" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_access_grants_account_user_account_level",
+                schema: "authz",
+                table: "access_grants",
+                columns: new[] { "account_id", "user_id" },
+                unique: true,
+                filter: "\"workspace_id\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "idx_account_domains_domain",
