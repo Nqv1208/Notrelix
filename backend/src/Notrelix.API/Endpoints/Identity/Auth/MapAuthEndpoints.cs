@@ -27,6 +27,7 @@ public static class MapAuthEndpoints
             .WithOpenApi();
 
         authGroup.MapLogout();
+        authGroup.MapChangePassword();
         authGroup.MapGetCurrentUser();
         authGroup.MapGetBootstrap();
 

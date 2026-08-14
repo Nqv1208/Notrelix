@@ -23,6 +23,7 @@ using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
+using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 
 namespace Notrelix.Application.Tests.Features.Identity;
 
@@ -48,6 +49,7 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<ILogger<LogoutCommandHandler>> LogoutLoggerMock = new();
     protected readonly Mock<ILogger<ForgotPasswordCommandHandler>> ForgotPasswordLoggerMock = new();
     protected readonly Mock<ILogger<ResetPasswordCommandHandler>> ResetPasswordLoggerMock = new();
+    protected readonly Mock<ILogger<ChangePasswordCommandHandler>> ChangePasswordLoggerMock = new();
 
     protected readonly Guid TestUserId = Guid.CreateVersion7();
     protected readonly string TestEmail = "test@example.com";
