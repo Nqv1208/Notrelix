@@ -1816,3 +1816,217 @@ html[data-theme-changing="true"] .final-cta {
     border-color 220ms ease,
     box-shadow 240ms ease;
 }
+
+/* ------------------------------------------------------------------ */
+/* ProblemTransitionSection & Rotator                                  */
+/* ------------------------------------------------------------------ */
+
+.problem-rotator-mask {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 18%,
+    black 82%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 18%,
+    black 82%,
+    transparent 100%
+  );
+}
+
+.problem-rotator__phrase[data-active="true"] .problem-rotator__text-gradient {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    var(--mkt-brand-red-500) 0%,
+    var(--mkt-brand-bridge-orange) 33%,
+    var(--mkt-brand-bridge-gold) 66%,
+    var(--mkt-brand-blue-500) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.problem-rotator__phrase[data-active="false"] .problem-rotator__text-gradient {
+  color: var(--mkt-text);
+}
+
+/* Animated Gradient Text for Hero Highlight */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-text-animated {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    var(--mkt-brand-red-500) 0%,
+    var(--mkt-brand-bridge-orange) 33%,
+    var(--mkt-brand-bridge-gold) 66%,
+    var(--mkt-brand-blue-500) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-shift 6s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/* OutcomeProgressRail                                                */
+/* ------------------------------------------------------------------ */
+
+.outcome-progress-rail__fill-h {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-rail__fill-h {
+  transform: scaleX(1);
+}
+
+.outcome-progress-rail__fill-v {
+  transform: scaleY(0);
+  transform-origin: top center;
+  transition: transform 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-rail__fill-v {
+  transform: scaleY(1);
+}
+
+.outcome-progress-item__marker {
+  opacity: 0;
+  transform: translateY(8px) scale(0.92);
+  transition: opacity 380ms cubic-bezier(0.16, 1, 0.3, 1), transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.outcome-progress-item__value {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.outcome-progress-item__label {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Staggered Entrance Animations */
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 0"] .outcome-progress-item__marker,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:0"] .outcome-progress-item__marker {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 100ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 0"] .outcome-progress-item__value,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:0"] .outcome-progress-item__value {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 180ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 0"] .outcome-progress-item__label,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:0"] .outcome-progress-item__label {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 240ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 1"] .outcome-progress-item__marker,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:1"] .outcome-progress-item__marker {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 380ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 1"] .outcome-progress-item__value,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:1"] .outcome-progress-item__value {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 460ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 1"] .outcome-progress-item__label,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:1"] .outcome-progress-item__label {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 520ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 2"] .outcome-progress-item__marker,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:2"] .outcome-progress-item__marker {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 660ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 2"] .outcome-progress-item__value,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:2"] .outcome-progress-item__value {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 740ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 2"] .outcome-progress-item__label,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:2"] .outcome-progress-item__label {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 800ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 3"] .outcome-progress-item__marker,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:3"] .outcome-progress-item__marker {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 940ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 3"] .outcome-progress-item__value,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:3"] .outcome-progress-item__value {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 1020ms;
+}
+
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 3"] .outcome-progress-item__label,
+.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:3"] .outcome-progress-item__label {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 1080ms;
+}
+
+/* Reduced Motion Fallback */
+@media (prefers-reduced-motion: reduce) {
+  .outcome-progress-rail__fill-h,
+  .outcome-progress-rail__fill-v {
+    transform: scale(1) !important;
+    transition: none !important;
+  }
+
+  .outcome-progress-item__marker,
+  .outcome-progress-item__value,
+  .outcome-progress-item__label {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+

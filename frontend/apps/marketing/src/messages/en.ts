@@ -62,8 +62,8 @@ export const messages = {
   },
   hero: {
     badge: "Work OS for modern teams",
-    title: "From idea to",
-    titleHighlight: "clear outcomes.",
+    titleLine1: "Work Management Made",
+    titleHighlight: "Simple and Powerful",
     subtitle:
       "Notrelix connects documents, Boards, workflows and data in a single workspace so your team always knows what to do next.",
     ctaPrimary: "Get started free",
@@ -547,6 +547,26 @@ export const messages = {
         },
       ],
     },
+  },
+  problemTransition: {
+    heading: "Wave goodbye to",
+    accessibleSummary:
+      "Wave goodbye to missed deadlines, disorganized workflows, unnecessary complexity, slow progress, wasted time, lack of collaboration, and task overload.",
+    problems: {
+      missedDeadlines: "missed deadlines",
+      disorganizedWorkflows: "disorganized workflows",
+      unnecessaryComplexity: "unnecessary complexity",
+      slowProgress: "slow progress",
+      wastedTime: "wasted time",
+      lackOfCollaboration: "lack of collaboration",
+      taskOverload: "task overload",
+    },
+    metrics: [
+      { value: "300K+", label: "Team Collaborations" },
+      { value: "500K+", label: "Tasks Completed" },
+      { value: "15M+", label: "Projects Managed" },
+      { value: "150K+", label: "Successful Integrations" },
+    ],
   },
 } as const;
 

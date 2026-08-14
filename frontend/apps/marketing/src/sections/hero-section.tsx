@@ -147,7 +147,7 @@ export async function HeroSection() {
   return (
     <section
       id="hero"
-      className="relative overflow-hidden pb-24 pt-16 sm:pb-32 sm:pt-24 lg:pt-28"
+      className="relative overflow-hidden pb-24 pt-[160px] sm:pb-32 sm:pt-[160px] lg:pt-[160px]"
     >
       <div className="container">
         <div className="mx-auto max-w-4xl text-center">
@@ -161,9 +161,11 @@ export async function HeroSection() {
             </Badge>
           </Reveal>
           <Reveal delay={70}>
-            <h1 className="mt-7 text-5xl font-semibold leading-[0.98] tracking-[-0.065em] text-[var(--ink)] sm:text-6xl lg:text-[5.7rem]">
-              {t("title")}
-              <span className="gradient-text block">{t("titleHighlight")}</span>
+            <h1 className="mt-7 text-4xl font-semibold leading-[1.12] tracking-[-0.01em] text-[var(--ink)] sm:text-5xl lg:text-6xl">
+              {t("titleLine1")}{" "}
+              <span className="gradient-text-animated block">
+                {t("titleHighlight")}
+              </span>
             </h1>
           </Reveal>
           <Reveal delay={140}>

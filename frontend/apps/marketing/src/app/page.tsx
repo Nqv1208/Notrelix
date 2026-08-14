@@ -1,4 +1,5 @@
 import { AmbientBackground } from "../components/ambient-background";
+import { OutcomeProgressRail } from "../components/outcome-progress/outcome-progress-rail";
 import { ComparisonSection } from "../sections/comparison-section";
 import { FaqSection } from "../sections/faq-section";
 import { FinalCtaSection } from "../sections/final-cta-section";
@@ -7,6 +8,7 @@ import { MetricsSection } from "../sections/metrics-section";
 import { PricingTeaserSection } from "../sections/pricing-teaser-section";
 import { ProblemMarqueeSection } from "../sections/problem-marquee-section";
 import { ProblemSolutionSection } from "../sections/problem-solution-section";
+import { ProblemTransitionSection } from "../sections/problem-transition-section";
 import { ShowcaseSection } from "../sections/showcase-section";
 import {
   SocialProofSection,
@@ -26,6 +28,8 @@ export default function MarketingHomePage() {
         <ProblemSolutionSection />
         <StorySections />
         <ProblemMarqueeSection />
+        <ProblemTransitionSection />
+        <OutcomeProgressRail />
         <ShowcaseSection />
         <MetricsSection />
         <UseCasesSection />
