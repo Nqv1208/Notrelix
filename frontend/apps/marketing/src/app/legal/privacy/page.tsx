@@ -1,40 +1,55 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
+import type { Messages } from "../../../messages/en";
 
-export default function PrivacyPage() {
+const CONTACT_EMAIL = "privacy@notrelix.com";
+
+export default async function PrivacyPage() {
+  const t = await getTranslations("legal");
+  const privacy = t.raw("privacy") as Messages["legal"]["privacy"];
+  const sections = privacy.sections;
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-3xl">
+    <div className="page min-h-screen pb-24 pt-16 sm:pt-20">
+      <div className="container mx-auto max-w-3xl">
         <Link
           href="/"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors mb-8 inline-block"
+          className="inline-flex items-center gap-2 text-sm text-[var(--muted-text)] transition-colors hover:text-[var(--ink)]"
         >
-          &larr; Back to home
+          <ArrowLeft className="size-3.5" /> {t("backHome")}
         </Link>
-        <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
-        <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
-          <p>Last updated: {new Date().toLocaleDateString()}</p>
-          <h2>1. Information We Collect</h2>
-          <p>
-            We collect information you provide directly to us, such as when you
-            create an account, use our services, or contact us for support.
-          </p>
-          <h2>2. How We Use Your Information</h2>
-          <p>
-            We use the information we collect to provide, maintain, and improve
-            our services, to send you technical notices and support messages,
-            and to communicate with you.
-          </p>
-          <h2>3. Data Security</h2>
-          <p>
-            We take reasonable measures to help protect your personal
-            information from loss, theft, misuse, unauthorized access,
-            disclosure, alteration, and destruction.
-          </p>
-          <h2>4. Contact Us</h2>
-          <p>
-            If you have any questions about this Privacy Policy, please contact
-            us at privacy@notrelix.com.
-          </p>
+        <h1 className="mt-8 text-4xl font-semibold tracking-[-0.04em] text-[var(--ink)] sm:text-5xl">
+          {privacy.title}
+        </h1>
+        <p className="mt-4 text-sm text-[var(--muted-text)]">
+          {t("updated", {
+            date: new Date().toLocaleDateString("en-US"),
+          })}
+        </p>
+
+        <div className="mt-10 space-y-8 text-[15px] leading-7 text-[var(--ink)]">
+          {sections.map((section, index) => (
+            <section key={section.heading}>
+              <h2 className="text-lg font-semibold tracking-[-0.02em] text-[var(--ink)]">
+                {section.heading}
+              </h2>
+              <p className="mt-3 text-[var(--muted-text)]">
+                {section.body}
+                {index === sections.length - 1 ? (
+                  <>
+                    {" "}
+                    <a
+                      href={`mailto:${CONTACT_EMAIL}`}
+                      className="font-medium text-[var(--cobalt)] hover:underline"
+                    >
+                      {CONTACT_EMAIL}
+                    </a>
+                  </>
+                ) : null}
+              </p>
+            </section>
+          ))}
         </div>
       </div>
     </div>

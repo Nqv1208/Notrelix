@@ -18,7 +18,7 @@
     "expo-linking": "latest",
     "expo-router": "latest",
     "react": "latest",
-    "react-native": "latest",
+    "react-native": "~0.81.5",
     "react-native-gesture-handler": "latest",
     "react-native-reanimated": "latest",
     "react-native-safe-area-context": "latest",
@@ -34,6 +34,7 @@
     "@tanstack/react-query": "catalog:"
   },
   "devDependencies": {
+    "hermes-compiler": "latest",
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
     "@notrelix/eslint-config": "workspace:*"
