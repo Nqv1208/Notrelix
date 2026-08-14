@@ -735,6 +735,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change the authenticated user's password */
+        post: operations["Identity.Auth.ChangePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -3542,6 +3559,10 @@ export interface components {
         "Notrelix.API.Endpoints.Automation.Rules.Commands.SetAutomationRuleEnabledRequest": {
             isEnabled?: boolean;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.ChangePasswordRequest": {
+            currentPassword?: string | null;
+            newPassword?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.EmailVerificationEndpoints.ResendEmailVerificationRequest": {
             email?: string | null;
         };
@@ -4927,6 +4948,30 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Auth.ChangePassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.ChangePasswordRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
