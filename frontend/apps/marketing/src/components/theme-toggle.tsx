@@ -2,31 +2,41 @@
 
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@notrelix/ui-web/components/ui/button";
 
+function applyTheme(theme: "light" | "dark", persist = true) {
+  const root = document.documentElement;
+  root.classList.remove("light", "dark");
+  root.classList.add(theme);
+  root.style.colorScheme = theme;
+  if (persist) {
+    localStorage.setItem("theme", theme);
+  }
+}
+
 export function ThemeToggle() {
-  const [theme, setThemeState] = React.useState<"light" | "dark">("light");
+  const t = useTranslations("themeToggle");
   const [mounted, setMounted] = React.useState(false);
+  const [theme, setThemeState] = React.useState<"light" | "dark">("light");
 
   React.useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setMounted(true);
-      const stored = localStorage.getItem("theme") as "light" | "dark" | null;
-      if (stored) {
-        setThemeState(stored);
-        document.documentElement.classList.add(stored);
-      }
-    });
-
-    return () => window.cancelAnimationFrame(frame);
+    const rootTheme = document.documentElement.classList.contains("dark")
+      ? ("dark" as const)
+      : ("light" as const);
+    setThemeState(rootTheme);
+    setMounted(true);
   }, []);
 
   const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setThemeState(newTheme);
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(newTheme);
-    localStorage.setItem("theme", newTheme);
+    const next: "light" | "dark" = theme === "dark" ? "light" : "dark";
+    const root = document.documentElement;
+    root.setAttribute("data-theme-changing", "true");
+    window.setTimeout(() => {
+      root.removeAttribute("data-theme-changing");
+    }, 320);
+    applyTheme(next);
+    setThemeState(next);
   };
 
   if (!mounted) {
@@ -35,7 +45,7 @@ export function ThemeToggle() {
         variant="ghost"
         size="icon"
         className="rounded-full"
-        aria-label="Đổi giao diện"
+        aria-label={t("switch")}
       >
         <span className="w-4 h-4" />
       </Button>
@@ -48,12 +58,8 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggleTheme}
       className="rounded-full"
-      aria-label={
-        theme === "dark"
-          ? "Chuyển sang giao diện sáng"
-          : "Chuyển sang giao diện tối"
-      }
-      title={theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
+      aria-label={theme === "dark" ? t("switchToLight") : t("switchToDark")}
+      title={theme === "dark" ? t("light") : t("dark")}
     >
       {theme === "dark" ? (
         <Sun className="w-4 h-4" />
