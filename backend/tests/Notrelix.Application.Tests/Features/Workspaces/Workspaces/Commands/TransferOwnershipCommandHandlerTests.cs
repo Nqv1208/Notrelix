@@ -1,5 +1,4 @@
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
-using Notrelix.Application.Common.Tenancy;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Workspaces.Commands;
 

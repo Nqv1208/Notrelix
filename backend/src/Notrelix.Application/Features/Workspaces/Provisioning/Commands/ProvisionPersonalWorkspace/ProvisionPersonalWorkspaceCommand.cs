@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Requests.Scoping;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;

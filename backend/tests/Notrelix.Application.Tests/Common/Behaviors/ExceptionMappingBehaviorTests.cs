@@ -1,9 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Context;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Tests.Common.Behaviors;
@@ -32,7 +28,7 @@ public sealed class ExceptionMappingBehaviorTests
 
         var act = async () => await _behavior.Handle(
             new SampleRequest(),
-            (_ ) => throw dbException,
+            (_) => throw dbException,
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ConflictException>()
@@ -48,7 +44,7 @@ public sealed class ExceptionMappingBehaviorTests
 
         var act = async () => await _behavior.Handle(
             new SampleRequest(),
-            (_ ) => throw dbException,
+            (_) => throw dbException,
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ConflictException>();
@@ -61,7 +57,7 @@ public sealed class ExceptionMappingBehaviorTests
 
         var act = async () => await _behavior.Handle(
             new SampleRequest(),
-            (_ ) => throw dbException,
+            (_) => throw dbException,
             CancellationToken.None);
 
         await act.Should().ThrowAsync<DbUpdateException>().Where(e => e == dbException);
@@ -74,7 +70,7 @@ public sealed class ExceptionMappingBehaviorTests
 
         var act = async () => await _behavior.Handle(
             new SampleRequest(),
-            (_ ) => throw concurrencyException,
+            (_) => throw concurrencyException,
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ConflictException>()
@@ -86,7 +82,7 @@ public sealed class ExceptionMappingBehaviorTests
     {
         var result = await _behavior.Handle(
             new SampleRequest(),
-            (_ ) => Task.FromResult(Result.Success()),
+            (_) => Task.FromResult(Result.Success()),
             CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();

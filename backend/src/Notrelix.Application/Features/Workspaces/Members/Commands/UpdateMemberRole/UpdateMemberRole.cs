@@ -1,5 +1,4 @@
 using global::Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;

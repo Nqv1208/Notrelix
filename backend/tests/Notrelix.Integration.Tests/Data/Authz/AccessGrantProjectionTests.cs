@@ -3,7 +3,6 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration;
 
 namespace Notrelix.Integration.Tests.Data.Authz;
 

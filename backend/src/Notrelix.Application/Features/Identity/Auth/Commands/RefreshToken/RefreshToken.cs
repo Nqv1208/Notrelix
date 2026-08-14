@@ -1,7 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
-using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 

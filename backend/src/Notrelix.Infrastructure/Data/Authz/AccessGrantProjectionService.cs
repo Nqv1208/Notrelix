@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Workspaces.Members;
 

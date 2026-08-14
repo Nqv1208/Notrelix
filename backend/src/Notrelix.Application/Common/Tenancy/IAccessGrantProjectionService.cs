@@ -1,5 +1,4 @@
 using Notrelix.Domain.Accounts.Members;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Application.Common.Tenancy;
 

@@ -1,5 +1,4 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Domain.Accounts.Members;
 
 namespace Notrelix.Application.Features.Accounts.Services;

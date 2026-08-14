@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -6,7 +5,6 @@ using Notrelix.Application.Common.Idempotency;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Integration.Tests.Containers;
-using Notrelix.Testing.Integration;
 
 namespace Notrelix.Integration.Tests.Data.Ops;
 

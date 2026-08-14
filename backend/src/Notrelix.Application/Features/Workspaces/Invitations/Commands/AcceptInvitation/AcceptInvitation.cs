@@ -1,5 +1,4 @@
 using global::Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
