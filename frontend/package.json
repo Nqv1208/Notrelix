@@ -61,7 +61,8 @@
   "pnpm": {
     "overrides": {
       "react": "^19.2.7",
-      "react-dom": "^19.2.7"
+      "react-dom": "^19.2.7",
+      "react-native": "~0.81.5"
     }
   },
   "engines": {
