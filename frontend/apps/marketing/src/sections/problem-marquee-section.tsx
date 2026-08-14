@@ -18,7 +18,11 @@ const problems = [
 
 export function ProblemMarqueeSection() {
   return (
-    <MarketingSection variant="soft" spacing="md" className="border-y border-[color-mix(in_srgb,var(--mkt-border)_50%,transparent)]">
+    <MarketingSection
+      variant="soft"
+      spacing="md"
+      className="border-y border-[color-mix(in_srgb,var(--mkt-border)_50%,transparent)]"
+    >
       <MarketingContainer>
         <SectionHeading
           eyebrow="Eliminate Friction"

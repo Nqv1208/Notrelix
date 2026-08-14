@@ -67,11 +67,7 @@ export function MarketingHeader() {
     >
       <div className="header-visual-shell" aria-hidden="true" />
       <div className="header-content">
-        <Link
-          href="/"
-          aria-label={t("logoAria")}
-          className="header-logo"
-        >
+        <Link href="/" aria-label={t("logoAria")} className="header-logo">
           <Image
             src="/logo.svg"
             alt=""

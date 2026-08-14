@@ -17,7 +17,7 @@ export async function ProblemTransitionSection() {
       acc[key] = t(`problems.${key}`);
       return acc;
     },
-    {} as Record<ProblemKey, string>
+    {} as Record<ProblemKey, string>,
   );
 
   return (

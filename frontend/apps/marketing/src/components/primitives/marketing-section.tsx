@@ -1,11 +1,7 @@
 import * as React from "react";
 
 export type SectionVariant =
-  | "default"
-  | "soft"
-  | "brand"
-  | "inverse"
-  | "transparent";
+  "default" | "soft" | "brand" | "inverse" | "transparent";
 
 export type SectionSpacing = "sm" | "md" | "lg" | "xl" | "none";
 
@@ -21,7 +17,8 @@ interface MarketingSectionProps extends React.HTMLAttributes<HTMLElement> {
 const variantClasses: Record<SectionVariant, string> = {
   default: "bg-transparent text-[var(--mkt-text)]",
   soft: "bg-[color-mix(in_srgb,var(--mkt-surface)_88%,transparent)] text-[var(--mkt-text)] border-y border-[color-mix(in_srgb,var(--mkt-border)_60%,transparent)]",
-  brand: "bg-[var(--mkt-surface-brand)] text-[var(--mkt-text)] border-y border-[var(--mkt-border-brand)]",
+  brand:
+    "bg-[var(--mkt-surface-brand)] text-[var(--mkt-text)] border-y border-[var(--mkt-border-brand)]",
   inverse: "bg-[var(--mkt-brand-blue-950)] text-white dark:bg-[#070b14]",
   transparent: "bg-transparent text-[var(--mkt-text)]",
 };

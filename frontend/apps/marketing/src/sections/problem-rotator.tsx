@@ -8,7 +8,10 @@ interface ProblemRotatorProps {
   className?: string;
 }
 
-export function ProblemRotator({ problemsMap, className }: ProblemRotatorProps) {
+export function ProblemRotator({
+  problemsMap,
+  className,
+}: ProblemRotatorProps) {
   const [activeIndex, setActiveIndex] = React.useState(0);
   const [isPaused, setIsPaused] = React.useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);

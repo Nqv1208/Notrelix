@@ -57,7 +57,10 @@ export function ComparisonSection() {
                   Fragmented Tools
                 </h3>
               </div>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--mkt-border)_60%,transparent)] text-[var(--mkt-text-muted)] font-bold text-sm" aria-hidden="true">
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--mkt-border)_60%,transparent)] text-[var(--mkt-text-muted)] font-bold text-sm"
+                aria-hidden="true"
+              >
                 ✕
               </span>
             </div>
@@ -65,7 +68,10 @@ export function ComparisonSection() {
             <ul className="space-y-5">
               {comparisonPoints.map((pt) => (
                 <li key={pt.title} className="flex items-start gap-3">
-                  <span className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-[10px] font-bold text-red-500" aria-hidden="true">
+                  <span
+                    className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-[10px] font-bold text-red-500"
+                    aria-hidden="true"
+                  >
                     ✕
                   </span>
                   <div>
@@ -96,7 +102,10 @@ export function ComparisonSection() {
                   Notrelix Connected Workspace
                 </h3>
               </div>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-sm" aria-hidden="true">
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-sm"
+                aria-hidden="true"
+              >
                 ✓
               </span>
             </div>
@@ -104,7 +113,10 @@ export function ComparisonSection() {
             <ul className="space-y-5">
               {comparisonPoints.map((pt) => (
                 <li key={pt.title} className="flex items-start gap-3">
-                  <span className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-[10px] font-bold text-emerald-600 dark:text-emerald-400" aria-hidden="true">
+                  <span
+                    className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
+                    aria-hidden="true"
+                  >
                     ✓
                   </span>
                   <div>

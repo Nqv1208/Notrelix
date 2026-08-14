@@ -21,7 +21,7 @@ export function FaqAccordion({
   className = "",
 }: FaqAccordionProps) {
   const [openId, setOpenId] = React.useState<string | null>(
-    defaultOpenId ?? (items[0]?.id || null)
+    defaultOpenId ?? (items[0]?.id || null),
   );
 
   const toggle = (id: string) => {
@@ -29,7 +29,9 @@ export function FaqAccordion({
   };
 
   return (
-    <div className={`divide-y divide-[color-mix(in_srgb,var(--mkt-border)_65%,transparent)] border-y border-[color-mix(in_srgb,var(--mkt-border)_65%,transparent)] ${className}`}>
+    <div
+      className={`divide-y divide-[color-mix(in_srgb,var(--mkt-border)_65%,transparent)] border-y border-[color-mix(in_srgb,var(--mkt-border)_65%,transparent)] ${className}`}
+    >
       {items.map((item) => {
         const isOpen = openId === item.id;
         const buttonId = `faq-btn-${item.id}`;
@@ -49,7 +51,9 @@ export function FaqAccordion({
                 <span className="text-base sm:text-lg">{item.question}</span>
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--mkt-border)_80%,transparent)] bg-[color-mix(in_srgb,var(--mkt-surface)_80%,transparent)] text-sm font-semibold transition-transform duration-200 ${
-                    isOpen ? "rotate-45 text-[var(--mkt-brand-blue-600)]" : "text-[var(--mkt-text-muted)]"
+                    isOpen
+                      ? "rotate-45 text-[var(--mkt-brand-blue-600)]"
+                      : "text-[var(--mkt-text-muted)]"
                   }`}
                   aria-hidden="true"
                 >
@@ -63,7 +67,9 @@ export function FaqAccordion({
               aria-labelledby={buttonId}
               aria-hidden={!isOpen}
               className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
-                isOpen ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0"
+                isOpen
+                  ? "grid-rows-[1fr] opacity-100 mt-2"
+                  : "grid-rows-[0fr] opacity-0"
               }`}
             >
               <div className="overflow-hidden">

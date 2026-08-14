@@ -39,9 +39,21 @@ export function SwirlArrowDecoration({
           gradientUnits="userSpaceOnUse"
         >
           <stop stopColor="var(--mkt-brand-red-500)" stopOpacity="0" />
-          <stop offset=".32" stopColor="var(--mkt-brand-bridge-orange)" stopOpacity=".4" />
-          <stop offset=".54" stopColor="var(--mkt-brand-bridge-gold)" stopOpacity=".8" />
-          <stop offset="1" stopColor="var(--mkt-brand-blue-500)" stopOpacity="0" />
+          <stop
+            offset=".32"
+            stopColor="var(--mkt-brand-bridge-orange)"
+            stopOpacity=".4"
+          />
+          <stop
+            offset=".54"
+            stopColor="var(--mkt-brand-bridge-gold)"
+            stopOpacity=".8"
+          />
+          <stop
+            offset="1"
+            stopColor="var(--mkt-brand-blue-500)"
+            stopOpacity="0"
+          />
         </linearGradient>
         <linearGradient
           id="notrelix-swirl-grad-b"
@@ -52,10 +64,26 @@ export function SwirlArrowDecoration({
           gradientUnits="userSpaceOnUse"
         >
           <stop stopColor="var(--mkt-brand-red-500)" stopOpacity="0" />
-          <stop offset=".25" stopColor="var(--mkt-brand-red-500)" stopOpacity=".7" />
-          <stop offset=".45" stopColor="var(--mkt-brand-bridge-orange)" stopOpacity="1" />
-          <stop offset=".7" stopColor="var(--mkt-brand-bridge-gold)" stopOpacity="1" />
-          <stop offset="1" stopColor="var(--mkt-brand-blue-500)" stopOpacity="1" />
+          <stop
+            offset=".25"
+            stopColor="var(--mkt-brand-red-500)"
+            stopOpacity=".7"
+          />
+          <stop
+            offset=".45"
+            stopColor="var(--mkt-brand-bridge-orange)"
+            stopOpacity="1"
+          />
+          <stop
+            offset=".7"
+            stopColor="var(--mkt-brand-bridge-gold)"
+            stopOpacity="1"
+          />
+          <stop
+            offset="1"
+            stopColor="var(--mkt-brand-blue-500)"
+            stopOpacity="1"
+          />
         </linearGradient>
         <filter
           id="notrelix-swirl-blur"
@@ -68,7 +96,10 @@ export function SwirlArrowDecoration({
         >
           <feFlood floodOpacity="0" result="BackgroundImageFix" />
           <feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-          <feGaussianBlur result="effect1_foregroundBlur_88_6471" stdDeviation="7.5" />
+          <feGaussianBlur
+            result="effect1_foregroundBlur_88_6471"
+            stdDeviation="7.5"
+          />
         </filter>
       </defs>
     </svg>

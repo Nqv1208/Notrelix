@@ -482,7 +482,8 @@
   align-items: center;
   flex: none;
   justify-self: start;
-  transition: transform var(--header-motion-duration) var(--header-motion-easing);
+  transition: transform var(--header-motion-duration)
+    var(--header-motion-easing);
 }
 
 .header-logo-image {
@@ -502,7 +503,8 @@
   align-items: center;
   gap: 0.35rem;
   justify-self: end;
-  transition: transform var(--header-motion-duration) var(--header-motion-easing);
+  transition: transform var(--header-motion-duration)
+    var(--header-motion-easing);
 }
 
 /* Content Inward Motion on Compact State */
@@ -768,7 +770,9 @@
   filter: blur(12px);
   transform: translateY(4px) scale(0.95);
   pointer-events: none;
-  transition: opacity 220ms ease, transform 220ms ease;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
 }
 
 /* Inner content alignment */
@@ -810,7 +814,9 @@
 .v2-cta--primary {
   --v2-cta-surface: var(--mkt-cta-fill-top);
   --v2-cta-text: var(--mkt-cta-text);
-  box-shadow: 0 4px 14px var(--mkt-cta-shadow), inset 0 1px 0 rgb(255 255 255 / 0.42);
+  box-shadow:
+    0 4px 14px var(--mkt-cta-shadow),
+    inset 0 1px 0 rgb(255 255 255 / 0.42);
 }
 
 .v2-cta--primary::before {
@@ -821,7 +827,9 @@
 .v2-cta--primary:hover {
   --v2-cta-lift: -2px;
   filter: saturate(1.04);
-  box-shadow: 0 8px 24px var(--mkt-cta-shadow), inset 0 1px 0 rgb(255 255 255 / 0.5);
+  box-shadow:
+    0 8px 24px var(--mkt-cta-shadow),
+    inset 0 1px 0 rgb(255 255 255 / 0.5);
 }
 
 .v2-cta--primary:hover::after {
@@ -838,7 +846,8 @@
 .v2-cta--inverse {
   --v2-cta-surface: #ffffff;
   --v2-cta-text: var(--mkt-cta-inverse-text);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--mkt-brand-blue-500) 26%, transparent);
+  box-shadow: 0 8px 24px
+    color-mix(in srgb, var(--mkt-brand-blue-500) 26%, transparent);
 }
 
 .v2-cta--inverse::before {
@@ -943,11 +952,7 @@
   background: color-mix(in srgb, var(--mkt-brand-blue-50) 42%, var(--mkt-bg));
   overflow: hidden;
   pointer-events: none;
-  mask-image: linear-gradient(
-    0deg,
-    rgb(0 0 0 / 0) 0%,
-    rgb(0 0 0) 37%
-  );
+  mask-image: linear-gradient(0deg, rgb(0 0 0 / 0) 0%, rgb(0 0 0) 37%);
 }
 
 .dark .hero-background {
@@ -1003,41 +1008,25 @@
 .hero-blob--red {
   top: 5rem;
   left: 0.55rem;
-  background: color-mix(
-    in srgb,
-    var(--mkt-brand-red-500) 52%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--mkt-brand-red-500) 52%, transparent);
 }
 
 .hero-blob--gold {
   top: 0;
   left: 13.3rem;
-  background: color-mix(
-    in srgb,
-    var(--mkt-brand-bridge-gold) 52%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--mkt-brand-bridge-gold) 52%, transparent);
 }
 
 .hero-blob--blue {
   top: 12.95rem;
   left: 0;
-  background: color-mix(
-    in srgb,
-    var(--mkt-brand-blue-500) 54%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--mkt-brand-blue-500) 54%, transparent);
 }
 
 .hero-blob--violet {
   top: 22.7rem;
   left: 2.3rem;
-  background: color-mix(
-    in srgb,
-    var(--mkt-brand-blue-700) 38%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--mkt-brand-blue-700) 38%, transparent);
 }
 
 .hero-bg-wash {
@@ -1912,101 +1901,155 @@ html[data-theme-changing="true"] .final-cta {
 .outcome-progress-item__marker {
   opacity: 0;
   transform: translateY(8px) scale(0.92);
-  transition: opacity 380ms cubic-bezier(0.16, 1, 0.3, 1), transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 380ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .outcome-progress-item__value {
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .outcome-progress-item__label {
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Staggered Entrance Animations */
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 0"] .outcome-progress-item__marker,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:0"] .outcome-progress-item__marker {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 0"]
+  .outcome-progress-item__marker,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:0"]
+  .outcome-progress-item__marker {
   opacity: 1;
   transform: translateY(0) scale(1);
   transition-delay: 100ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 0"] .outcome-progress-item__value,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:0"] .outcome-progress-item__value {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 0"]
+  .outcome-progress-item__value,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:0"]
+  .outcome-progress-item__value {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 180ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 0"] .outcome-progress-item__label,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:0"] .outcome-progress-item__label {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 0"]
+  .outcome-progress-item__label,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:0"]
+  .outcome-progress-item__label {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 240ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 1"] .outcome-progress-item__marker,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:1"] .outcome-progress-item__marker {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 1"]
+  .outcome-progress-item__marker,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:1"]
+  .outcome-progress-item__marker {
   opacity: 1;
   transform: translateY(0) scale(1);
   transition-delay: 380ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 1"] .outcome-progress-item__value,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:1"] .outcome-progress-item__value {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 1"]
+  .outcome-progress-item__value,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:1"]
+  .outcome-progress-item__value {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 460ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 1"] .outcome-progress-item__label,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:1"] .outcome-progress-item__label {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 1"]
+  .outcome-progress-item__label,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:1"]
+  .outcome-progress-item__label {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 520ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 2"] .outcome-progress-item__marker,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:2"] .outcome-progress-item__marker {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 2"]
+  .outcome-progress-item__marker,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:2"]
+  .outcome-progress-item__marker {
   opacity: 1;
   transform: translateY(0) scale(1);
   transition-delay: 660ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 2"] .outcome-progress-item__value,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:2"] .outcome-progress-item__value {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 2"]
+  .outcome-progress-item__value,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:2"]
+  .outcome-progress-item__value {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 740ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 2"] .outcome-progress-item__label,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:2"] .outcome-progress-item__label {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 2"]
+  .outcome-progress-item__label,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:2"]
+  .outcome-progress-item__label {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 800ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 3"] .outcome-progress-item__marker,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:3"] .outcome-progress-item__marker {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 3"]
+  .outcome-progress-item__marker,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:3"]
+  .outcome-progress-item__marker {
   opacity: 1;
   transform: translateY(0) scale(1);
   transition-delay: 940ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 3"] .outcome-progress-item__value,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:3"] .outcome-progress-item__value {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 3"]
+  .outcome-progress-item__value,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:3"]
+  .outcome-progress-item__value {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 1020ms;
 }
 
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index: 3"] .outcome-progress-item__label,
-.outcome-progress-rail.is-visible .outcome-progress-item[style*="--node-index:3"] .outcome-progress-item__label {
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index: 3"]
+  .outcome-progress-item__label,
+.outcome-progress-rail.is-visible
+  .outcome-progress-item[style*="--node-index:3"]
+  .outcome-progress-item__label {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 1080ms;
@@ -2028,5 +2071,3 @@ html[data-theme-changing="true"] .final-cta {
     transition: none !important;
   }
 }
-
-
