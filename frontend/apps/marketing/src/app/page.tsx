@@ -10,10 +10,7 @@ import { ProblemMarqueeSection } from "../sections/problem-marquee-section";
 import { ProblemSolutionSection } from "../sections/problem-solution-section";
 import { ProblemTransitionSection } from "../sections/problem-transition-section";
 import { ShowcaseSection } from "../sections/showcase-section";
-import {
-  SocialProofSection,
-  TrustStrip,
-} from "../sections/social-proof-section";
+import { SocialProofSection } from "../sections/social-proof-section";
 import { StorySections } from "../sections/story-sections";
 import { TestimonialsSection } from "../sections/testimonials-section";
 import { UseCasesSection } from "../sections/use-cases-section";
@@ -38,7 +35,6 @@ export default function MarketingHomePage() {
         <PricingTeaserSection />
         <FaqSection />
         <FinalCtaSection />
-        <TrustStrip />
       </main>
     </div>
   );
