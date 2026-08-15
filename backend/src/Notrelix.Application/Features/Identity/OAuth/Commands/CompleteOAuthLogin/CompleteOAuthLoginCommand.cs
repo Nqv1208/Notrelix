@@ -121,11 +121,16 @@ public sealed class CompleteOAuthLoginCommandHandler
 
         var normalizedEmail = profile.Email.Trim().ToLowerInvariant();
         var existingUser = await _identityContext.Users
+            .AsNoTracking()
             .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
 
         if (existingUser is not null)
         {
-            return await LinkToExistingUser(existingUser, profile, now, cancellationToken);
+            _logger.LogWarning(
+                "OAuth login blocked: subject {Subject} unlinked but email {Email} already belongs to user {UserId}",
+                profile.Subject, normalizedEmail, existingUser.Id);
+            return Result<AuthResult>.Failure(
+                "An account with this email already exists. Sign in with your existing method, or link this provider from your signed-in account.");
         }
 
         return await CreateNewUser(profile, now, cancellationToken);
@@ -156,27 +161,6 @@ public sealed class CompleteOAuthLoginCommandHandler
         return Result<AuthResult>.Success(authResult);
     }
 
-    private async Task<Result<AuthResult>> LinkToExistingUser(
-        User user, ExternalOAuthProfile profile, DateTimeOffset now, CancellationToken cancellationToken)
-    {
-        if (user.Status != UserStatus.Active)
-        {
-            _logger.LogWarning("OAuth link blocked: user {UserId} is {Status}", user.Id, user.Status);
-            return Result<AuthResult>.Failure("Account is not active.");
-        }
-
-        user.LinkOAuthAccount(profile.Provider, profile.Subject,
-            OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, user.Id, now);
-        var oauthAccount = user.OAuthAccounts.Last();
-        _identityContext.OAuthAccounts.Add(oauthAccount);
-        user.RecordLogin(now);
-
-        var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
-
-        _logger.LogInformation("OAuth linked to existing user {UserId} via email", user.Id);
-        return Result<AuthResult>.Success(authResult);
-    }
-
     private async Task<Result<AuthResult>> CreateNewUser(
         ExternalOAuthProfile profile, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -184,7 +168,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         var email = profile.Email!;
         var sentinelHash = _passwordHasher.HashPassword("OAUTH_ONLY_" + Guid.CreateVersion7().ToString("N"));
 
-        var user = User.Create(email, displayName, sentinelHash, now);
+        var user = User.Create(email, displayName, sentinelHash, now, hasPasswordCredential: false);
         _identityContext.Users.Add(user);
 
         var accountName = $"{displayName}'s Account";

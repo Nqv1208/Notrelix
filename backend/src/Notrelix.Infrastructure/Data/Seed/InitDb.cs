@@ -144,7 +144,7 @@ internal static class InitDb
                 ? defaultEmails[i].Split('@')[0]
                 : $"User {i + 1}";
 
-            var user = User.Create(email, name, passwordHash, Epoch.AddDays(i));
+            var user = User.Create(email, name, passwordHash, Epoch.AddDays(i), hasPasswordCredential: true);
             users.Add(user);
 
             var profile = UserProfile.Create(user.Id, Epoch.AddDays(i));

@@ -14,6 +14,7 @@ public sealed class User : SoftDeletableAggregateRoot
 
     public string? AvatarUrl => Avatar;
     public string PasswordHash { get; private set; } = null!;
+    public bool HasPasswordCredential { get; private set; }
     public UserStatus Status { get; private set; }
     public bool EmailConfirmed { get; private set; }
     public DateTimeOffset? EmailConfirmedAt { get; private set; }
@@ -31,7 +32,8 @@ public sealed class User : SoftDeletableAggregateRoot
         string email,
         string name,
         string passwordHash,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        bool hasPasswordCredential)
     {
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 100);
@@ -45,6 +47,7 @@ public sealed class User : SoftDeletableAggregateRoot
             NormalizedEmail = NormalizeEmail(emailValue.Value),
             Name = name.Trim(),
             PasswordHash = passwordHash,
+            HasPasswordCredential = hasPasswordCredential,
             Status = UserStatus.Active,
             EmailConfirmed = false,
             EmailConfirmedAt = null
@@ -123,6 +126,7 @@ public sealed class User : SoftDeletableAggregateRoot
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         PasswordHash = passwordHash;
+        HasPasswordCredential = true;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserPasswordChangedDomainEvent(Id, updatedBy, updatedAt));
@@ -306,6 +310,14 @@ public sealed class User : SoftDeletableAggregateRoot
 
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null) return;
+
+        var remainingPrimaryMethods = (HasPasswordCredential ? 1 : 0) + _oauthAccounts.Count - 1;
+        if (remainingPrimaryMethods == 0)
+        {
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_LastPrimaryAuthMethod,
+                "Cannot unlink the last primary authentication method.");
+        }
 
         var pending = PrepareAuditUpdate(unlinkedBy, unlinkedAt);
         _oauthAccounts.Remove(existing);

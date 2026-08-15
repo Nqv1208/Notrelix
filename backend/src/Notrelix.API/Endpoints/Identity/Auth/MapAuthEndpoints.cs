@@ -30,6 +30,9 @@ public static class MapAuthEndpoints
         authGroup.MapChangePassword();
         authGroup.MapGetCurrentUser();
         authGroup.MapGetBootstrap();
+        authGroup.MapStartOAuthLink();
+        authGroup.MapCompleteOAuthLink();
+        authGroup.MapUnlinkOAuth();
 
         return app;
     }

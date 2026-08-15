@@ -43,7 +43,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
 
-        var passwordValid = _passwordHasher.VerifyPassword(request.Password, user?.PasswordHash ?? DummyPasswordHash);
+        var passwordHash = user is { HasPasswordCredential: true } ? user.PasswordHash : DummyPasswordHash;
+        var passwordValid = _passwordHasher.VerifyPassword(request.Password, passwordHash);
 
         if (user is null || !passwordValid)
         {

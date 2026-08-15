@@ -6,4 +6,6 @@ public sealed record OAuthLoginState(
     string CodeVerifier,
     OAuthProvider Provider,
     string? ReturnUrl,
-    DateTimeOffset ExpiresAt);
+    DateTimeOffset ExpiresAt,
+    OAuthFlowKind Flow = OAuthFlowKind.Login,
+    Guid? BoundUserId = null);

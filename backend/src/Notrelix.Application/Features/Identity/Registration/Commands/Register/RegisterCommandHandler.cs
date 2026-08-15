@@ -48,7 +48,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
 
         var now = _dateTimeProvider.UtcNow;
         var passwordHash = _passwordHasher.HashPassword(request.Password);
-        var user = User.Create(request.Email, request.Name, passwordHash, now);
+        var user = User.Create(request.Email, request.Name, passwordHash, now, hasPasswordCredential: true);
         _identityContext.Users.Add(user);
 
         // Create personal account through the Accounts-owned provisioning service
