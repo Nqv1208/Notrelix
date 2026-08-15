@@ -48,7 +48,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
     {
         await using var context = _db.CreateContext();
 
-        var user = User.Create("refresh@example.com", "Refresh User", "hashed", DateTimeOffset.UtcNow);
+        var user = User.Create("refresh@example.com", "Refresh User", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(user);
 
         var oldRefreshToken = "old-refresh";

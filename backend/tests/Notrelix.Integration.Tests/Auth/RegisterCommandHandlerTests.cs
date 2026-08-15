@@ -34,7 +34,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
     {
         await using var context = _db.CreateContext();
 
-        var existing = User.Create("test@example.com", "Old", "hash", DateTimeOffset.UtcNow);
+        var existing = User.Create("test@example.com", "Old", "hash", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(existing);
         await context.SaveChangesAsync();
 

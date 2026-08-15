@@ -51,7 +51,7 @@ public class LoginCommandHandlerTests : IAsyncLifetime
     {
         await using var context = _db.CreateContext();
 
-        var user = User.Create("login@example.com", "User", "hashed", DateTimeOffset.UtcNow);
+        var user = User.Create("login@example.com", "User", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         // Status default is Active
         context.Users.Add(user);
         await context.SaveChangesAsync();

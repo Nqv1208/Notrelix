@@ -66,7 +66,7 @@ public class OAuthAccountTests
     public void User_LinkOAuthAccount_ShouldAddAccountAndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         ((IHasDomainEvents)user).ClearDomainEvents();
 
         var token = OAuthToken.Create(AccessRef, RefreshRef);
@@ -90,7 +90,7 @@ public class OAuthAccountTests
     public void User_LinkDuplicateProvider_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "id-1", TestSnapshot, null, user.Id, now);
 
         var act = () => user.LinkOAuthAccount(OAuthProvider.Google, "id-2", TestSnapshot, null, user.Id, now);
@@ -102,7 +102,7 @@ public class OAuthAccountTests
     public void User_UnlinkOAuthAccount_ShouldRemoveAccountAndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, null, user.Id, now);
         ((IHasDomainEvents)user).ClearDomainEvents();
 
@@ -122,7 +122,7 @@ public class OAuthAccountTests
     public void User_RotateOAuthToken_ShouldUpdateTokenAndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         var oldToken = OAuthToken.Create(AccessRef);
         user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, oldToken, user.Id, now);
         ((IHasDomainEvents)user).ClearDomainEvents();

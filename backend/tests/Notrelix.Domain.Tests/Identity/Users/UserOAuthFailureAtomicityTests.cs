@@ -10,7 +10,7 @@ public class UserOAuthFailureAtomicityTests
 
     private static User CreateUser()
     {
-        return User.Create("test@example.com", "Test User", "hash", Now);
+        return User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
     }
 
     private static OAuthProfileSnapshot CreateSnapshot(OAuthProvider provider = OAuthProvider.Google)

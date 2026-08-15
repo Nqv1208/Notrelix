@@ -113,6 +113,9 @@ public class CommandMarkerArchitectureTests
         ["StartOAuthLoginCommand"] = new("StartOAuthLoginCommand", AllowlistClassification.PublicCommand,
             "Non-mutating command: generates crypto + stores OAuth state in Redis, no DB mutation",
             "Keep as-is; read-only command does not need transactional behavior"),
+        ["StartOAuthLinkCommand"] = new("StartOAuthLinkCommand", AllowlistClassification.Intentional,
+            "Non-mutating authenticated command: generates crypto + stores OAuth link state in Redis, no DB mutation",
+            "Keep as-is; read-only command does not need transactional behavior"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingWorkspaceRequest = new()

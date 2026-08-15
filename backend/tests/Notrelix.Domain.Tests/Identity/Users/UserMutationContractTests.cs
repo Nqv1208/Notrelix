@@ -7,7 +7,7 @@ public class UserMutationContractTests
     private static User CreateUser()
     {
         var now = DateTimeOffset.UtcNow;
-        return User.Create("test@example.com", "Test User", "hash123", now);
+        return User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
     }
 
     [Fact]

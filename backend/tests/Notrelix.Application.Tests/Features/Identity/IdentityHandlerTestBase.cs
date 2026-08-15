@@ -110,7 +110,8 @@ public abstract class IdentityHandlerTestBase
             email ?? TestEmail,
             name ?? "Test User",
             TestHashedPassword,
-            TestNow);
+            TestNow,
+            hasPasswordCredential: true);
 
         user.GetType().GetProperty(nameof(User.Id))!.SetValue(user, id ?? TestUserId);
 

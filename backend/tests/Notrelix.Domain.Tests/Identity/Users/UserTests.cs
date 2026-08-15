@@ -10,7 +10,7 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
 
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
 
         user.Email.Value.Should().Be("test@example.com");
         user.Name.Should().Be("Test User");
@@ -27,7 +27,7 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
 
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
 
         user.CreatedAt.Should().Be(now);
     }
@@ -36,7 +36,7 @@ public class UserTests
     public void RecordLogin_ShouldUseSuppliedTimestamp()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         ((IHasDomainEvents)user).ClearDomainEvents();
 
         var loginTime = now.AddHours(1);
@@ -52,7 +52,7 @@ public class UserTests
     public void UpdateProfile_ShouldUseSuppliedTimestamp()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         ((IHasDomainEvents)user).ClearDomainEvents();
 
         var updateTime = now.AddHours(1);
@@ -67,7 +67,7 @@ public class UserTests
     public void UpdateProfile_OnDeletedUser_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         user.Delete(Guid.NewGuid(), now);
 
         var act = () => user.UpdateProfile("New Name", null, user.Id, now);
@@ -79,7 +79,7 @@ public class UserTests
     public void UpdateEmail_WithValidEmail_ShouldChangeEmail()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("old@example.com", "Test User", "hash123", now);
+        var user = User.Create("old@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
 
         user.UpdateEmail("new@example.com", user.Id, now);
 
@@ -90,7 +90,7 @@ public class UserTests
     public void UpdatePassword_ShouldChangePasswordHash()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "oldhash", now);
+        var user = User.Create("test@example.com", "Test User", "oldhash", now, hasPasswordCredential: true);
 
         user.UpdatePassword("newhash", user.Id, now);
 
@@ -101,7 +101,7 @@ public class UserTests
     public void Suspend_ShouldSetStatusToSuspended()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
 
         user.Suspend(user.Id, now);
 
@@ -112,7 +112,7 @@ public class UserTests
     public void Activate_AfterSuspend_ShouldSetStatusToActive()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         user.Suspend(user.Id, now);
 
         user.Activate(user.Id, now);
@@ -124,7 +124,7 @@ public class UserTests
     public void User_ShouldExtendAggregateRoot()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
 
         user.Should().BeAssignableTo<AggregateRoot>();
     }
@@ -133,7 +133,7 @@ public class UserTests
     public void User_ShouldNotHaveSessionManagement()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
 
         var hasSessionProperty = user.GetType().GetProperty("Sessions");
         hasSessionProperty.Should().BeNull("sessions are managed by a separate aggregate");
@@ -149,7 +149,7 @@ public class UserTests
     public void UpdatePassword_SameHash_ShouldBeNoOp()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
@@ -164,7 +164,7 @@ public class UserTests
     public void UpdatePassword_DifferentHash_ShouldChangePassword()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "oldhash", now);
+        var user = User.Create("test@example.com", "Test User", "oldhash", now, hasPasswordCredential: true);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
@@ -179,7 +179,7 @@ public class UserTests
     public void RotateOAuthToken_SameToken_ShouldBeNoOp()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         var token = OAuthToken.Create(SecretRef.Create("access"), SecretRef.Create("refresh"), now.AddHours(1));
         user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
             OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
@@ -198,7 +198,7 @@ public class UserTests
     public void RotateOAuthToken_DifferentToken_ShouldRotate()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         var oldToken = OAuthToken.Create(SecretRef.Create("old-access"));
         user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
             OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
@@ -218,7 +218,7 @@ public class UserTests
     public void UnlinkOAuthAccount_EmptyActor_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var user = User.Create("test@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
             OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
             null, user.Id, now);
