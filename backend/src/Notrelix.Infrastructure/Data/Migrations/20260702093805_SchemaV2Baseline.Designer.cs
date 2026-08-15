@@ -4563,6 +4563,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<bool>("HasPasswordCredential")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("has_password_credential");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)

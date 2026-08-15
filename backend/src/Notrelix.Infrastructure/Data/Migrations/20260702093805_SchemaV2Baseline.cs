@@ -2305,6 +2305,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     avatar = table.Column<string>(type: "text", nullable: true),
                     password_hash = table.Column<string>(type: "text", nullable: false),
+                    has_password_credential = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     email_confirmed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     email_confirmed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
