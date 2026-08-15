@@ -52,7 +52,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
-        var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
+        var user = User.Create("test@example.com", "Test User", "hashedpassword", now, hasPasswordCredential: true);
         context.Users.Add(user);
         context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
         await context.SaveChangesAsync();
@@ -76,7 +76,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
-        var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
+        var user = User.Create("test@example.com", "Test User", "hashedpassword", now, hasPasswordCredential: true);
         context.Users.Add(user);
         context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
 
@@ -108,7 +108,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
-        var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
+        var user = User.Create("test@example.com", "Test User", "hashedpassword", now, hasPasswordCredential: true);
         context.Users.Add(user);
         context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
 
@@ -134,7 +134,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
-        var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
+        var user = User.Create("test@example.com", "Test User", "hashedpassword", now, hasPasswordCredential: true);
         context.Users.Add(user);
         context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
         await context.SaveChangesAsync();
@@ -157,8 +157,8 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
-        var caller = User.Create("caller@example.com", "Caller", "hashedpassword", now);
-        var other = User.Create("other@example.com", "Other", "hashedpassword", now);
+        var caller = User.Create("caller@example.com", "Caller", "hashedpassword", now, hasPasswordCredential: true);
+        var other = User.Create("other@example.com", "Other", "hashedpassword", now, hasPasswordCredential: true);
         context.Users.Add(caller);
         context.Users.Add(other);
         context.AccountMembers.Add(AccountMember.Create(Guid.NewGuid(), caller.Id, AccountRole.Owner, caller.Id, now));
