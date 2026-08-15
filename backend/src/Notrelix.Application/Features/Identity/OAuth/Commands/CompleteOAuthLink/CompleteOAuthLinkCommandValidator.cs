@@ -1,6 +1,3 @@
-using FluentValidation;
-using Notrelix.Domain.Identity.OAuth;
-
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLink;
 
 public sealed class CompleteOAuthLinkCommandValidator : AbstractValidator<CompleteOAuthLinkCommand>
