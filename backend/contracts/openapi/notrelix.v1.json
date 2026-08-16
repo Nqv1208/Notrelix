@@ -2404,6 +2404,188 @@
         ]
       }
     },
+    "/api/v1/auth/mfa/verify": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Mfa"
+        ],
+        "summary": "Complete an MFA challenge with a TOTP or recovery code",
+        "operationId": "Identity.Mfa.VerifyChallenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteMfaChallengeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/mfa/enrollment/start": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Mfa"
+        ],
+        "summary": "Start MFA authenticator app enrollment",
+        "operationId": "Identity.Mfa.StartEnrollment",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/mfa/enrollment/verify": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Mfa"
+        ],
+        "summary": "Verify MFA enrollment code and activate the authenticator",
+        "operationId": "Identity.Mfa.VerifyEnrollment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.VerifyMfaEnrollmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/mfa/status": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Mfa"
+        ],
+        "summary": "Get MFA status for the authenticated user",
+        "operationId": "Identity.Mfa.Status",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/mfa/recovery-codes/regenerate": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Mfa"
+        ],
+        "summary": "Invalidate existing recovery codes and issue a fresh batch",
+        "operationId": "Identity.Mfa.RegenerateRecoveryCodes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/mfa/disable": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Mfa"
+        ],
+        "summary": "Disable MFA and revoke all active sessions",
+        "operationId": "Identity.Mfa.Disable",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/profile": {
       "patch": {
         "tags": [
@@ -13874,6 +14056,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteMfaChallengeRequest": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Auth.Commands.EmailVerificationEndpoints.ResendEmailVerificationRequest": {
         "type": "object",
         "properties": {
@@ -13910,6 +14106,20 @@
             "nullable": true
           },
           "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.VerifyMfaEnrollmentRequest": {
+        "type": "object",
+        "properties": {
+          "mfaMethodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
             "type": "string",
             "nullable": true
           }

@@ -846,6 +846,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/mfa/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete an MFA challenge with a TOTP or recovery code */
+        post: operations["Identity.Mfa.VerifyChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/enrollment/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start MFA authenticator app enrollment */
+        post: operations["Identity.Mfa.StartEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/enrollment/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify MFA enrollment code and activate the authenticator */
+        post: operations["Identity.Mfa.VerifyEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get MFA status for the authenticated user */
+        get: operations["Identity.Mfa.Status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/recovery-codes/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invalidate existing recovery codes and issue a fresh batch */
+        post: operations["Identity.Mfa.RegenerateRecoveryCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable MFA and revoke all active sessions */
+        post: operations["Identity.Mfa.Disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/profile": {
         parameters: {
             query?: never;
@@ -3623,6 +3725,10 @@ export interface components {
             currentPassword?: string | null;
             newPassword?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteMfaChallengeRequest": {
+            challengeToken?: string | null;
+            code?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.EmailVerificationEndpoints.ResendEmailVerificationRequest": {
             email?: string | null;
         };
@@ -3634,6 +3740,11 @@ export interface components {
             email?: string | null;
             password?: string | null;
             name?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.VerifyMfaEnrollmentRequest": {
+            /** Format: uuid */
+            mfaMethodId?: string;
+            code?: string | null;
         };
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.AddFieldOptionRequest": {
             name?: string | null;
@@ -5142,6 +5253,134 @@ export interface operations {
             path: {
                 provider: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.VerifyChallenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteMfaChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.StartEnrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.VerifyEnrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.VerifyMfaEnrollmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.Status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.RegenerateRecoveryCodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.Disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

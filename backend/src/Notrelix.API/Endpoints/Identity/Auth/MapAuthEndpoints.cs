@@ -20,6 +20,7 @@ public static class MapAuthEndpoints
         publicGroup.MapStartOAuthLogin();
         publicGroup.MapCompleteOAuthLogin();
         publicGroup.MapEmailVerification();
+        publicGroup.MapCompleteMfaChallenge();
 
         var authGroup = app
             .MapGroup("/api/v1/auth")
@@ -33,6 +34,11 @@ public static class MapAuthEndpoints
         authGroup.MapStartOAuthLink();
         authGroup.MapCompleteOAuthLink();
         authGroup.MapUnlinkOAuth();
+        authGroup.MapStartMfaEnrollment();
+        authGroup.MapVerifyMfaEnrollment();
+        authGroup.MapGetMfaStatus();
+        authGroup.MapRegenerateRecoveryCodes();
+        authGroup.MapDisableMfa();
 
         return app;
     }

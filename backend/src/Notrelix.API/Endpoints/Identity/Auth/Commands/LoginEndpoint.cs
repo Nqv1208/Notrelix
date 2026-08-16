@@ -29,9 +29,9 @@ public static class LoginEndpoint
 
         var result = await sender.Send(command);
 
-        if (result.Succeeded && result.Data is not null)
+        if (result.Succeeded && result.Data is { MfaRequired: false, AccessToken: not null } auth)
         {
-            cookieService.SetTokenCookie(result.Data.AccessToken, result.Data.RefreshToken);
+            cookieService.SetTokenCookie(auth.AccessToken, auth.RefreshToken!);
         }
 
         return result.ToApiResult();
