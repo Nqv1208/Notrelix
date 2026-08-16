@@ -2,6 +2,10 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Mfa;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Mfa.DTOs;
+using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
@@ -30,6 +34,7 @@ public sealed class CompleteOAuthLoginCommandHandler
     private readonly IIdentityDbContext _identityContext;
     private readonly IAccountProvisioningService _provisioningService;
     private readonly IAuthSessionIssuer _sessionIssuer;
+    private readonly IMfaChallengeStore _challengeStore;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IIntegrationEventCollector _integrationEventCollector;
@@ -42,6 +47,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         IIdentityDbContext identityContext,
         IAccountProvisioningService provisioningService,
         IAuthSessionIssuer sessionIssuer,
+        IMfaChallengeStore challengeStore,
         IPasswordHasher passwordHasher,
         IDateTimeProvider dateTimeProvider,
         IIntegrationEventCollector integrationEventCollector,
@@ -53,6 +59,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         _identityContext = identityContext;
         _provisioningService = provisioningService;
         _sessionIssuer = sessionIssuer;
+        _challengeStore = challengeStore;
         _passwordHasher = passwordHasher;
         _dateTimeProvider = dateTimeProvider;
         _integrationEventCollector = integrationEventCollector;
@@ -152,6 +159,25 @@ public sealed class CompleteOAuthLoginCommandHandler
         {
             _logger.LogWarning("OAuth login blocked: user {UserId} is {Status}", user.Id, user.Status);
             return Result<AuthResult>.Failure("Account is not active.");
+        }
+
+        var mfaEnabled = await _identityContext.UserMfaMethods
+            .AnyAsync(m => m.UserId == user.Id && m.Status == MfaMethodStatus.Active, cancellationToken);
+
+        if (mfaEnabled)
+        {
+            var (token, payload) = await MfaChallengeFactory.CreateAsync(
+                _challengeStore, user.Id, MfaChallengePurpose.OAuthLogin, now, cancellationToken);
+
+            _logger.LogInformation("OAuth login requires MFA challenge for {UserId}", user.Id);
+
+            return Result<AuthResult>.Success(new AuthResult
+            {
+                MfaRequired = true,
+                MfaChallengeToken = token,
+                MfaMethod = nameof(MfaMethodType.AuthenticatorApp),
+                MfaExpiresAt = payload.ExpiresAt.UtcDateTime
+            });
         }
 
         user.RecordLogin(now);

@@ -1,6 +1,10 @@
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Mfa;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Mfa.DTOs;
+using Notrelix.Domain.Identity.Mfa;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Login;
 
@@ -19,6 +23,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     private readonly IIdentityDbContext _context;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IAuthSessionIssuer _sessionIssuer;
+    private readonly IMfaChallengeStore _challengeStore;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<LoginCommandHandler> _logger;
 
@@ -26,12 +31,14 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         IIdentityDbContext context,
         IPasswordHasher passwordHasher,
         IAuthSessionIssuer sessionIssuer,
+        IMfaChallengeStore challengeStore,
         IDateTimeProvider dateTimeProvider,
         ILogger<LoginCommandHandler> logger)
     {
         _context = context;
         _passwordHasher = passwordHasher;
         _sessionIssuer = sessionIssuer;
+        _challengeStore = challengeStore;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
@@ -59,6 +66,27 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         }
 
         var now = _dateTimeProvider.UtcNow;
+
+        var mfaEnabled = await _context.UserMfaMethods
+            .AnyAsync(m => m.UserId == user.Id && m.Status == MfaMethodStatus.Active, cancellationToken);
+
+        if (mfaEnabled)
+        {
+            var (token, payload) = await MfaChallengeFactory.CreateAsync(
+                _challengeStore, user.Id, MfaChallengePurpose.PasswordLogin, now, cancellationToken);
+
+            _logger.LogInformation("Login requires MFA challenge for {UserId} ({NormalizedEmail})",
+                user.Id, normalizedEmail);
+
+            return Result<AuthResult>.Success(new AuthResult
+            {
+                MfaRequired = true,
+                MfaChallengeToken = token,
+                MfaMethod = nameof(MfaMethodType.AuthenticatorApp),
+                MfaExpiresAt = payload.ExpiresAt.UtcDateTime
+            });
+        }
+
         user.RecordLogin(now);
 
         _logger.LogInformation("Login succeeded for {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
