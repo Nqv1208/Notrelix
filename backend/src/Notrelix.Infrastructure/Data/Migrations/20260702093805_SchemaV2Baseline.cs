@@ -2246,6 +2246,47 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "mfa_recovery_batches",
+                schema: "identity",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    invalidated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_mfa_recovery_batches", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "mfa_recovery_codes",
+                schema: "identity",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    batch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    code_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    consumed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_mfa_recovery_codes", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_mfa_recovery_codes_mfa_recovery_batches_batch_id",
+                        column: x => x.batch_id,
+                        principalSchema: "identity",
+                        principalTable: "mfa_recovery_batches",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "user_security_settings",
                 schema: "identity",
                 columns: table => new
@@ -5496,6 +5537,30 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "identity",
                 table: "user_mfa_methods",
                 column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_batches_user_id",
+                schema: "identity",
+                table: "mfa_recovery_batches",
+                column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_batches_invalidated_at",
+                schema: "identity",
+                table: "mfa_recovery_batches",
+                column: "invalidated_at");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_codes_batch_code",
+                schema: "identity",
+                table: "mfa_recovery_codes",
+                columns: new[] { "batch_id", "code_hash" });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_codes_consumed_at",
+                schema: "identity",
+                table: "mfa_recovery_codes",
+                column: "consumed_at");
 
             migrationBuilder.CreateIndex(
                 name: "idx_user_profiles_user_id",

@@ -3817,6 +3817,88 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("permission_templates", "governance");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Identity.Mfa.MfaRecoveryBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("InvalidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("invalidated_at");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_mfa_recovery_batches");
+
+                    b.HasIndex("InvalidatedAt")
+                        .HasDatabaseName("idx_mfa_recovery_batches_invalidated_at");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_mfa_recovery_batches_user_id");
+
+                    b.ToTable("mfa_recovery_batches", "identity");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Identity.Mfa.MfaRecoveryCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("batch_id");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTimeOffset?>("ConsumedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("consumed_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_mfa_recovery_codes");
+
+                    b.HasIndex("ConsumedAt")
+                        .HasDatabaseName("idx_mfa_recovery_codes_consumed_at");
+
+                    b.HasIndex("BatchId", "CodeHash")
+                        .HasDatabaseName("idx_mfa_recovery_codes_batch_code");
+
+                    b.ToTable("mfa_recovery_codes", "identity");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Identity.Mfa.UserMfaMethod", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4539,6 +4621,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("email_confirmed_at");
 
+                    b.Property<bool>("HasPasswordCredential")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("has_password_credential");
+
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
@@ -4559,12 +4647,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
-
-                    b.Property<bool>("HasPasswordCredential")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("has_password_credential");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -11314,6 +11396,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Identity.Mfa.MfaRecoveryCode", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Identity.Mfa.MfaRecoveryBatch", null)
+                        .WithMany("Codes")
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_mfa_recovery_codes_mfa_recovery_batches_batch_id");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Identity.OAuth.OAuthAccount", b =>
                 {
                     b.HasOne("Notrelix.Domain.Identity.Users.User", null)
@@ -12347,6 +12439,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.Governance.Roles.CustomRole", b =>
                 {
                     b.Navigation("Permissions");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Identity.Mfa.MfaRecoveryBatch", b =>
+                {
+                    b.Navigation("Codes");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Identity.Users.User", b =>
