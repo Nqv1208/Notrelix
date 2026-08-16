@@ -43,6 +43,7 @@ public static class IdentityRuleCodes
     public const string Identity_Mfa_EmailSmsRequiresDestination = "Identity_Mfa_EmailSmsRequiresDestination";
     public const string Identity_Mfa_CannotVerifyDisabled = "Identity_Mfa_CannotVerifyDisabled";
     public const string Identity_Mfa_CannotSetPrimaryUnlessVerifiedActive = "Identity_Mfa_CannotSetPrimaryUnlessVerifiedActive";
+    public const string Identity_Mfa_RecoveryBatch_RequiresCodes = "Identity_Mfa_RecoveryBatch_RequiresCodes";
 
     // ── Profiles ──────────────────────────────────────────────────────────
     public const string Identity_Profile_InvalidPreferencesJson = "Identity_Profile_InvalidPreferencesJson";
