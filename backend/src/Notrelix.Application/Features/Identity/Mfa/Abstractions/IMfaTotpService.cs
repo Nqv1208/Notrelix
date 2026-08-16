@@ -1,5 +1,3 @@
-using Notrelix.Application.Features.Identity.Mfa.DTOs;
-
 namespace Notrelix.Application.Features.Identity.Mfa.Abstractions;
 
 /// <summary>

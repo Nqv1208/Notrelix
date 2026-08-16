@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 
 namespace Notrelix.Infrastructure.Identity.Mfa;

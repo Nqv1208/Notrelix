@@ -1,10 +1,8 @@
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Common.Security.Auth;
-using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
 

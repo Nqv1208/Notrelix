@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Microsoft.AspNetCore.DataProtection;
 using Notrelix.Infrastructure.Identity.Mfa;
 
