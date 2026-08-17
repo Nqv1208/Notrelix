@@ -4,7 +4,7 @@
  * Each context registers its own operations independently.
  * The registry enforces the closed-world rule on dispatch.
  *
- * Plan: 06-HANDLERS-PROJECTIONS.md §Context layout
+ * Plan: 06-HANDLERS-PROJECTIONS.md §Context layout, 01-FREEZE-SPEC.md §FZ-S06
  */
 
 import { MockOperationRegistry } from "./operation-registry";
@@ -14,7 +14,6 @@ import { accountOperations } from "../contexts/account/account.handlers";
 import { notificationsOperations } from "../contexts/notifications/notifications.handlers";
 import { workManagementOperations } from "../contexts/work-management";
 import { documentsOperations } from "../contexts/documents";
-import { searchOperations } from "../contexts/search/search.handlers";
 
 export function buildOperationRegistry(): MockOperationRegistry {
   const registry = new MockOperationRegistry();
@@ -22,9 +21,9 @@ export function buildOperationRegistry(): MockOperationRegistry {
   registry.registerMany([
     // Core identity
     ...identityOperations,
-    // Workspace (includes CONTRACT-BLOCKED legacy views/members)
+    // Workspace (includes COMPATIBILITY-GAP legacy views/members)
     ...workspaceOperations,
-    // Account (all CONTRACT-BLOCKED)
+    // Account (COMPATIBILITY-GAP)
     ...accountOperations,
     // Notifications
     ...notificationsOperations,
@@ -32,8 +31,7 @@ export function buildOperationRegistry(): MockOperationRegistry {
     ...workManagementOperations,
     // Documents (pages)
     ...documentsOperations,
-    // Search
-    ...searchOperations,
+    // Note: Search is CONTRACT-BLOCKED (CTR-GAP-SEARCH) until authoritative producer contract lands.
   ]);
 
   return registry;

@@ -4,9 +4,10 @@
  * Uses Maps + secondary indexes for O(1) scoped lookups.
  * Uses the deterministic clock — no uncontrolled new Date().
  * Factories generate records from seed + index — no Math.random().
+ * Enforces relational integrity across parent-child resources.
  *
- * Plan: 03-MOCK-DATA-MODEL.md §Store structure, §Clone policy,
- *       §Relational invariants, §Stateful mutation rule
+ * Plan: 01-FREEZE-SPEC.md §FZ-S07, §FZ-S08, §FZ-S10, §FZ-S11, §FZ-S13
+ *       02-IMPLEMENTATION-PLAN.md §MFB-FZ-03, §MFB-FZ-04, §MFB-FZ-05
  */
 
 import type {
@@ -21,10 +22,24 @@ import type {
   MockPageRecord,
 } from "./records";
 import { mockIds } from "./mock-ids";
-import type { MockBackendConfig } from "../config/mock-config";
+import type { MockBackendConfig, MockPersona } from "../config/mock-config";
 import { defaultConfig } from "../config/mock-config";
-import { createMockClock, defaultClock, type MockClock } from "./clock";
-import { createFactories, defaultFactories, type MockFactories } from "./factories";
+import { createMockClock, type MockClock } from "./clock";
+import { createFactories, type MockFactories } from "./factories";
+
+export class MockSeedInvariantError extends Error {
+  constructor(message: string) {
+    super(`[MockSeedInvariantError] ${message}`);
+    this.name = "MockSeedInvariantError";
+  }
+}
+
+export class MockRelationalInvariantError extends Error {
+  constructor(message: string) {
+    super(`[MockRelationalInvariantError] ${message}`);
+    this.name = "MockRelationalInvariantError";
+  }
+}
 
 // ─── MockStore ────────────────────────────────────────────────────────────────
 
@@ -88,17 +103,7 @@ export class MockStore {
   seedBaseWorld(): void {
     this.clearAll();
 
-    if (this.config.state === "new-user") {
-      this.insertUser({
-        id: mockIds.users.owner,
-        email: "ui-dev@notrelix.local",
-        name: "UI Developer (Owner)",
-        avatarUrl: null,
-      });
-      return;
-    }
-
-    // ── Users ────────────────────────────────────────────────────────────────
+    // ── All 4 Persona Actors (Plan: 01-FREEZE-SPEC.md §FZ-S07) ───────────────
     const owner: MockUserRecord = {
       id: mockIds.users.owner,
       email: "ui-dev@notrelix.local",
@@ -111,14 +116,43 @@ export class MockStore {
       name: "Alex Rivera (Admin)",
       avatarUrl: null,
     };
+    const member: MockUserRecord = {
+      id: mockIds.users.member,
+      email: "member@notrelix.local",
+      name: "Jordan Lee (Member)",
+      avatarUrl: null,
+    };
+    const viewer: MockUserRecord = {
+      id: mockIds.users.viewer,
+      email: "viewer@notrelix.local",
+      name: "Taylor Morgan (Viewer)",
+      avatarUrl: null,
+    };
+
+    if (this.config.state === "new-user") {
+      // In new-user scenario, only the configured persona actor exists with no workspaces/memberships
+      const personaUserMap: Record<MockPersona, MockUserRecord> = {
+        owner,
+        admin,
+        member,
+        viewer,
+      };
+      const user = personaUserMap[this.config.persona] ?? owner;
+      this.insertUser(user);
+      return;
+    }
+
+    // Seed all 4 users for normal / other worlds
     this.insertUser(owner);
     this.insertUser(admin);
+    this.insertUser(member);
+    this.insertUser(viewer);
 
     // ── Workspaces ───────────────────────────────────────────────────────────
     const primaryWs: MockWorkspaceRecord = {
       id: mockIds.workspaces.primary,
-      name: "Notrelix UI Lab",
-      slug: "dev-workspace",
+      name: "Notrelix Product Lab",
+      slug: mockIds.workspaces.primary,
       plan: "pro",
       icon: "Layout",
       isPersonal: false,
@@ -126,7 +160,7 @@ export class MockStore {
     const secWs: MockWorkspaceRecord = {
       id: mockIds.workspaces.secondary,
       name: "Secondary Workspace",
-      slug: "dev-workspace-secondary",
+      slug: mockIds.workspaces.secondary,
       plan: "free",
       icon: "Layers",
       isPersonal: false,
@@ -134,8 +168,8 @@ export class MockStore {
     this.insertWorkspace(primaryWs);
     this.insertWorkspace(secWs);
 
-    // ── Memberships ──────────────────────────────────────────────────────────
-    const mem1: MockMembershipRecord = {
+    // ── Memberships (All 4 actors in primary workspace) ───────────────────────
+    const memOwner: MockMembershipRecord = {
       id: "mem-0001",
       workspaceId: primaryWs.id,
       userId: owner.id,
@@ -145,7 +179,7 @@ export class MockStore {
       color: "#1E90FF",
       joinedAt: this.clock.offsetDays(-30),
     };
-    const mem2: MockMembershipRecord = {
+    const memAdmin: MockMembershipRecord = {
       id: "mem-0002",
       workspaceId: primaryWs.id,
       userId: admin.id,
@@ -155,8 +189,42 @@ export class MockStore {
       color: "#22C55E",
       joinedAt: this.clock.offsetDays(-20),
     };
-    this.insertMembership(mem1);
-    this.insertMembership(mem2);
+    const memMember: MockMembershipRecord = {
+      id: "mem-0003",
+      workspaceId: primaryWs.id,
+      userId: member.id,
+      role: "member",
+      status: "active",
+      workload: 2,
+      color: "#A855F7",
+      joinedAt: this.clock.offsetDays(-15),
+    };
+    const memViewer: MockMembershipRecord = {
+      id: "mem-0004",
+      workspaceId: primaryWs.id,
+      userId: viewer.id,
+      role: "guest",
+      status: "active",
+      workload: 0,
+      color: "#F59E0B",
+      joinedAt: this.clock.offsetDays(-5),
+    };
+    this.insertMembership(memOwner);
+    this.insertMembership(memAdmin);
+    this.insertMembership(memMember);
+    this.insertMembership(memViewer);
+
+    // Secondary workspace membership (owner only)
+    this.insertMembership({
+      id: "mem-0005",
+      workspaceId: secWs.id,
+      userId: owner.id,
+      role: "owner",
+      status: "active",
+      workload: 0,
+      color: "#1E90FF",
+      joinedAt: this.clock.offsetDays(-10),
+    });
 
     // ── Views ─────────────────────────────────────────────────────────────────
     const view1: MockWorkspaceViewRecord = {
@@ -187,16 +255,24 @@ export class MockStore {
     this.insertView(view2);
 
     if (this.config.state === "empty-workspace") {
-      // Seed pages only — no boards/cards
-      this.seedPages(primaryWs.id, 2);
+      // In empty-workspace, workspaces and memberships exist, but collections are empty
       return;
     }
 
     // ── Boards + Lists + Cards ────────────────────────────────────────────────
+    const isUnicode = this.config.overlays.includes("unicode");
+    const isLongTitles = this.config.overlays.includes("long-titles");
+
+    let boardTitle = "Product Roadmap";
+    if (isUnicode) boardTitle = "🚀 Product Roadmap (日本語・Üñîçødé)";
+    if (isLongTitles)
+      boardTitle =
+        "Product Roadmap — Comprehensive Multi-Quarter Strategic Deliverables & Features";
+
     const board: MockBoardRecord = {
       id: mockIds.boards.roadmap,
       workspaceId: primaryWs.id,
-      title: "Product Roadmap",
+      title: boardTitle,
       description: "Main workspace product features and tasks",
       background: { type: "color", value: "#1E90FF" },
       visibility: "workspace",
@@ -209,7 +285,7 @@ export class MockStore {
     const listTodo: MockListRecord = {
       id: "list-todo",
       boardId: board.id,
-      title: "To Do",
+      title: isUnicode ? "📋 To Do (準備中)" : "To Do",
       color: "#1E90FF",
       position: 0,
       isCollapsed: false,
@@ -217,7 +293,7 @@ export class MockStore {
     const listInProgress: MockListRecord = {
       id: "list-inprogress",
       boardId: board.id,
-      title: "In Progress",
+      title: isUnicode ? "⚡ In Progress (進行中)" : "In Progress",
       color: "#FC744C",
       position: 1,
       isCollapsed: false,
@@ -225,7 +301,7 @@ export class MockStore {
     const listDone: MockListRecord = {
       id: "list-done",
       boardId: board.id,
-      title: "Done",
+      title: isUnicode ? "✅ Done (完了)" : "Done",
       color: "#22C55E",
       position: 2,
       isCollapsed: false,
@@ -234,34 +310,54 @@ export class MockStore {
     this.insertList(listInProgress);
     this.insertList(listDone);
 
-    const densityCardCount = this.densityCardCount();
+    if (this.config.overlays.includes("many-columns")) {
+      for (let c = 3; c < 8; c++) {
+        this.insertList({
+          id: `list-col-${c}`,
+          boardId: board.id,
+          title: `Column ${c}`,
+          color: "#A855F7",
+          position: c,
+          isCollapsed: false,
+        });
+      }
+    }
+
+    const densityCardCount = this.config.overlays.includes("many-cards")
+      ? 100
+      : this.densityCardCount();
 
     // Seed cards per list based on density
     for (let i = 0; i < densityCardCount; i++) {
+      let cardTitle =
+        i === 0 ? "Ship mock runtime" : `Task ${i}: Sample work item`;
+      if (isUnicode) cardTitle = `[🚀 ✨] ${cardTitle} — 祝 100%`;
+      if (isLongTitles)
+        cardTitle = `${cardTitle} — Extended In-Depth Description of Engineering Requirements and Specifications`;
+
       const card = this.factories.card(i, board.id, listInProgress.id, {
         id: i === 0 ? "card-main-0001" : undefined,
-        title:
-          i === 0
-            ? "Redesign Auth UI with Core Brand Tokens"
-            : undefined,
+        title: cardTitle,
         description:
-          i === 0
-            ? "Migrate auth layout and form controls to Notrelix Core Brand palette."
-            : undefined,
+          i === 0 ? "Notrelix mock runtime specification." : undefined,
       });
       this.insertCard(card);
     }
 
-    // Seed a few todo cards
-    const todoCount = Math.min(3, Math.max(1, Math.floor(densityCardCount / 4)));
+    // Seed todo cards
+    const todoCount = Math.min(
+      3,
+      Math.max(1, Math.floor(densityCardCount / 4)),
+    );
     for (let i = 0; i < todoCount; i++) {
       this.insertCard(
         this.factories.card(densityCardCount + i, board.id, listTodo.id),
       );
     }
 
-    // Seed notifications
-    this.seedNotifications(owner.id, this.densityNotificationCount());
+    // Seed notifications for the active user
+    const activeUser = this.getCurrentUser();
+    this.seedNotifications(activeUser.id, this.densityNotificationCount());
 
     // Seed pages
     this.seedPages(primaryWs.id, this.densityPageCount());
@@ -281,11 +377,19 @@ export class MockStore {
   }
 
   private seedPages(workspaceId: string, count: number): void {
+    const isUnicode = this.config.overlays.includes("unicode");
+    const isLongTitles = this.config.overlays.includes("long-titles");
+
     for (let i = 0; i < count; i++) {
+      let title = i === 0 ? "Product specification" : `Page ${i}`;
+      if (isUnicode) title = `📑 ${title} (ドキュメント)`;
+      if (isLongTitles)
+        title = `${title} — Architectural Specification & Engineering Requirements`;
+
       this.insertPage(
         this.factories.page(i, workspaceId, {
-          id: i === 0 ? "page-product-spec" : undefined,
-          title: i === 0 ? "Product Specification" : undefined,
+          id: i === 0 ? "mock-doc-product-spec" : undefined,
+          title,
         }),
       );
     }
@@ -313,28 +417,40 @@ export class MockStore {
 
   private densityCardCount(): number {
     switch (this.config.density) {
-      case "tiny": return 2;
-      case "normal": return 8;
-      case "large": return 50;
-      case "stress": return 200;
+      case "tiny":
+        return 2;
+      case "normal":
+        return 8;
+      case "large":
+        return 50;
+      case "stress":
+        return 200;
     }
   }
 
   private densityNotificationCount(): number {
     switch (this.config.density) {
-      case "tiny": return 1;
-      case "normal": return 5;
-      case "large": return 20;
-      case "stress": return 100;
+      case "tiny":
+        return 1;
+      case "normal":
+        return 5;
+      case "large":
+        return 20;
+      case "stress":
+        return 100;
     }
   }
 
   private densityPageCount(): number {
     switch (this.config.density) {
-      case "tiny": return 1;
-      case "normal": return 4;
-      case "large": return 15;
-      case "stress": return 50;
+      case "tiny":
+        return 1;
+      case "normal":
+        return 4;
+      case "large":
+        return 15;
+      case "stress":
+        return 50;
     }
   }
 
@@ -403,7 +519,11 @@ export class MockStore {
     this.addIndex(this.pageIdsByWorkspaceId, p.workspaceId, p.id);
   }
 
-  private addIndex(index: Map<string, Set<string>>, key: string, id: string): void {
+  private addIndex(
+    index: Map<string, Set<string>>,
+    key: string,
+    id: string,
+  ): void {
     let set = index.get(key);
     if (!set) {
       set = new Set();
@@ -412,31 +532,35 @@ export class MockStore {
     set.add(id);
   }
 
-  private removeIndex(index: Map<string, Set<string>>, key: string, id: string): void {
+  private removeIndex(
+    index: Map<string, Set<string>>,
+    key: string,
+    id: string,
+  ): void {
     index.get(key)?.delete(id);
   }
 
   // ─── Repository Accessors ─────────────────────────────────────────────────
 
+  getUser(id: string): MockUserRecord | undefined {
+    return this.usersById.get(id);
+  }
+
   getCurrentUser(): MockUserRecord {
-    const personaMap: Record<string, string> = {
+    const personaMap: Record<MockPersona, string> = {
       owner: mockIds.users.owner,
       admin: mockIds.users.admin,
       member: mockIds.users.member,
       viewer: mockIds.users.viewer,
     };
     const targetId = personaMap[this.config.persona] ?? mockIds.users.owner;
-    const fallback: MockUserRecord = {
-      id: mockIds.users.owner,
-      email: "ui-dev@notrelix.local",
-      name: "UI Developer (Owner)",
-      avatarUrl: null,
-    };
-    return (
-      this.usersById.get(targetId) ??
-      Array.from(this.usersById.values())[0] ??
-      fallback
-    );
+    const user = this.usersById.get(targetId);
+    if (!user) {
+      throw new MockSeedInvariantError(
+        `Configured persona "${this.config.persona}" (ID: "${targetId}") is not seeded in MockStore.`,
+      );
+    }
+    return user;
   }
 
   getWorkspaces(): MockWorkspaceRecord[] {
@@ -447,9 +571,159 @@ export class MockStore {
     return this.workspacesById.get(id);
   }
 
-  addWorkspace(record: MockWorkspaceRecord): void {
-    this.insertWorkspace(record);
+  // ─── Relational Transaction Methods (Plan: 02-IMPLEMENTATION-PLAN.md §MFB-FZ-05) ─
+
+  createWorkspaceForCurrentUser(input: {
+    name?: string;
+    slug?: string;
+    isPersonal?: boolean;
+  }): { workspace: MockWorkspaceRecord; membership: MockMembershipRecord } {
+    const currentUser = this.getCurrentUser();
+    const newId = `ws-${this.workspacesById.size + 1}-${Date.now()}`;
+    const workspace: MockWorkspaceRecord = {
+      id: newId,
+      name: input.name ?? "New Workspace",
+      slug: input.slug ?? newId,
+      plan: "free",
+      icon: "Layout",
+      isPersonal: input.isPersonal ?? false,
+    };
+
+    this.insertWorkspace(workspace);
+
+    const membership: MockMembershipRecord = {
+      id: `mem-${this.membershipsById.size + 1}-${Date.now()}`,
+      workspaceId: workspace.id,
+      userId: currentUser.id,
+      role: "owner",
+      status: "active",
+      workload: 0,
+      color: "#1E90FF",
+      joinedAt: this.clock.isoNow(),
+    };
+
+    this.insertMembership(membership);
+    return { workspace, membership };
   }
+
+  createBoard(
+    workspaceId: string,
+    input: { title?: string; description?: string },
+  ): MockBoardRecord {
+    if (!this.workspacesById.has(workspaceId)) {
+      throw new MockRelationalInvariantError(
+        `Cannot create board: Workspace "${workspaceId}" does not exist.`,
+      );
+    }
+    const factories = this.getFactories();
+    const board = factories.board(
+      this.getBoards(workspaceId).length,
+      workspaceId,
+      {
+        id: `board-${Date.now()}`,
+        title: input.title ?? "New Board",
+        description: input.description,
+      },
+    );
+    this.insertBoard(board);
+    return board;
+  }
+
+  createList(boardId: string, input: { title?: string }): MockListRecord {
+    if (!this.boardsById.has(boardId)) {
+      throw new MockRelationalInvariantError(
+        `Cannot create list: Board "${boardId}" does not exist.`,
+      );
+    }
+    const factories = this.getFactories();
+    const list = factories.list(this.getLists(boardId).length, boardId, {
+      id: `list-${Date.now()}`,
+      title: input.title ?? "New List",
+    });
+    this.insertList(list);
+    return list;
+  }
+
+  createCard(
+    boardId: string,
+    listId: string,
+    input: { title?: string; description?: string },
+  ): MockCardRecord {
+    const list = this.listsById.get(listId);
+    if (!list) {
+      throw new MockRelationalInvariantError(
+        `Cannot create card: List "${listId}" does not exist.`,
+      );
+    }
+    if (list.boardId !== boardId) {
+      throw new MockRelationalInvariantError(
+        `Cannot create card: List "${listId}" belongs to board "${list.boardId}", not "${boardId}".`,
+      );
+    }
+    const factories = this.getFactories();
+    const card = factories.card(this.getCards(listId).length, boardId, listId, {
+      id: `card-${Date.now()}`,
+      title: input.title ?? "New Card",
+      description: input.description,
+    });
+    this.insertCard(card);
+    return card;
+  }
+
+  moveCard(cardId: string, targetListId: string, newPosition: number): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+
+    const targetList = this.listsById.get(targetListId);
+    if (!targetList) return false;
+
+    // Relational check: card and target list must belong to the same board
+    if (targetList.boardId !== card.boardId) {
+      return false;
+    }
+
+    // Remove from old list index
+    this.removeIndex(this.cardIdsByListId, card.listId, card.id);
+
+    // Update record
+    const updated: MockCardRecord = {
+      ...card,
+      listId: targetListId,
+      position: newPosition,
+      updatedAt: this.clock.isoNow(),
+    };
+    this.cardsById.set(cardId, updated);
+
+    // Add to new list index
+    this.addIndex(this.cardIdsByListId, targetListId, card.id);
+    return true;
+  }
+
+  createPage(
+    workspaceId: string,
+    input: { title?: string; icon?: string; parentId?: string },
+  ): MockPageRecord {
+    if (!this.workspacesById.has(workspaceId)) {
+      throw new MockRelationalInvariantError(
+        `Cannot create page: Workspace "${workspaceId}" does not exist.`,
+      );
+    }
+    const factories = this.getFactories();
+    const page = factories.page(
+      this.getPages(workspaceId).length,
+      workspaceId,
+      {
+        id: `page-${Date.now()}`,
+        title: input.title ?? "New Page",
+        icon: input.icon,
+        parentId: input.parentId,
+      },
+    );
+    this.insertPage(page);
+    return page;
+  }
+
+  // ─── Query Accessors ──────────────────────────────────────────────────────
 
   getWorkspaceMembers(workspaceId: string): MockMembershipRecord[] {
     const ids = this.membershipIdsByWorkspaceId.get(workspaceId);
@@ -480,10 +754,6 @@ export class MockStore {
     return this.boardsById.get(id);
   }
 
-  addBoard(record: MockBoardRecord): void {
-    this.insertBoard(record);
-  }
-
   getLists(boardId: string): MockListRecord[] {
     const ids = this.listIdsByBoardId.get(boardId);
     if (!ids) return [];
@@ -491,10 +761,6 @@ export class MockStore {
       .map((id) => this.listsById.get(id))
       .filter((l): l is MockListRecord => l !== undefined)
       .sort((a, b) => a.position - b.position);
-  }
-
-  addList(record: MockListRecord): void {
-    this.insertList(record);
   }
 
   getCards(listId: string): MockCardRecord[] {
@@ -508,31 +774,6 @@ export class MockStore {
 
   getCard(id: string): MockCardRecord | undefined {
     return this.cardsById.get(id);
-  }
-
-  addCard(record: MockCardRecord): void {
-    this.insertCard(record);
-  }
-
-  moveCard(cardId: string, newListId: string, newPosition: number): boolean {
-    const card = this.cardsById.get(cardId);
-    if (!card) return false;
-
-    // Remove from old list index
-    this.removeIndex(this.cardIdsByListId, card.listId, card.id);
-
-    // Update record
-    const updated: MockCardRecord = {
-      ...card,
-      listId: newListId,
-      position: newPosition,
-      updatedAt: this.clock.isoNow(),
-    };
-    this.cardsById.set(cardId, updated);
-
-    // Add to new list index
-    this.addIndex(this.cardIdsByListId, newListId, card.id);
-    return true;
   }
 
   getNotifications(userId: string): MockNotificationRecord[] {
@@ -575,9 +816,97 @@ export class MockStore {
     return this.pagesById.get(id);
   }
 
-  addPage(record: MockPageRecord): void {
-    this.insertPage(record);
+  // ─── Invariant Verification (Plan: 02-IMPLEMENTATION-PLAN.md §MFB-FZ-05) ───
+
+  assertInvariants(): void {
+    // 1. Memberships point to existing users and workspaces
+    for (const m of this.membershipsById.values()) {
+      if (!this.usersById.has(m.userId)) {
+        throw new MockRelationalInvariantError(
+          `Membership "${m.id}" references non-existent user "${m.userId}".`,
+        );
+      }
+      if (!this.workspacesById.has(m.workspaceId)) {
+        throw new MockRelationalInvariantError(
+          `Membership "${m.id}" references non-existent workspace "${m.workspaceId}".`,
+        );
+      }
+    }
+
+    // 2. Boards point to existing workspaces
+    for (const b of this.boardsById.values()) {
+      if (!this.workspacesById.has(b.workspaceId)) {
+        throw new MockRelationalInvariantError(
+          `Board "${b.id}" references non-existent workspace "${b.workspaceId}".`,
+        );
+      }
+    }
+
+    // 3. Lists point to existing boards
+    for (const l of this.listsById.values()) {
+      if (!this.boardsById.has(l.boardId)) {
+        throw new MockRelationalInvariantError(
+          `List "${l.id}" references non-existent board "${l.boardId}".`,
+        );
+      }
+    }
+
+    // 4. Cards point to existing boards and lists, with boardId matching list.boardId
+    for (const c of this.cardsById.values()) {
+      const list = this.listsById.get(c.listId);
+      if (!list) {
+        throw new MockRelationalInvariantError(
+          `Card "${c.id}" references non-existent list "${c.listId}".`,
+        );
+      }
+      if (list.boardId !== c.boardId) {
+        throw new MockRelationalInvariantError(
+          `Card "${c.id}" has boardId "${c.boardId}" but its list "${c.listId}" belongs to board "${list.boardId}".`,
+        );
+      }
+    }
+
+    // 5. Pages point to existing workspaces
+    for (const p of this.pagesById.values()) {
+      if (!this.workspacesById.has(p.workspaceId)) {
+        throw new MockRelationalInvariantError(
+          `Page "${p.id}" references non-existent workspace "${p.workspaceId}".`,
+        );
+      }
+    }
+
+    // 6. Secondary indexes match primary records exactly
+    for (const [wsId, memSet] of this.membershipIdsByWorkspaceId.entries()) {
+      for (const memId of memSet) {
+        const m = this.membershipsById.get(memId);
+        if (!m || m.workspaceId !== wsId) {
+          throw new MockRelationalInvariantError(
+            `Secondary index membershipIdsByWorkspaceId corrupted for workspace "${wsId}", membership "${memId}".`,
+          );
+        }
+      }
+    }
+
+    for (const [boardId, listSet] of this.listIdsByBoardId.entries()) {
+      for (const listId of listSet) {
+        const l = this.listsById.get(listId);
+        if (!l || l.boardId !== boardId) {
+          throw new MockRelationalInvariantError(
+            `Secondary index listIdsByBoardId corrupted for board "${boardId}", list "${listId}".`,
+          );
+        }
+      }
+    }
+
+    for (const [listId, cardSet] of this.cardIdsByListId.entries()) {
+      for (const cardId of cardSet) {
+        const c = this.cardsById.get(cardId);
+        if (!c || c.listId !== listId) {
+          throw new MockRelationalInvariantError(
+            `Secondary index cardIdsByListId corrupted for list "${listId}", card "${cardId}".`,
+          );
+        }
+      }
+    }
   }
 }
-
-export const globalMockStore = new MockStore();

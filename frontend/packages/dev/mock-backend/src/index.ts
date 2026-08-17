@@ -21,12 +21,28 @@ export type { MockFactories } from "./state/factories";
 
 // Transport
 export * from "./transport/create-mock-fetch";
-export { MockUnhandledOperationError, MockAmbiguousOperationError } from "./transport/route-matcher";
+export {
+  MockUnhandledOperationError,
+  MockAmbiguousOperationError,
+} from "./transport/route-matcher";
 export type { NormalizedMockRequest } from "./transport/normalize-request";
 export type { MockHttpResult } from "./transport/create-response";
 
 // Operations
-export { MockOperationRegistry } from "./operations/operation-registry";
+export {
+  MockOperationRegistry,
+  MockDuplicateOperationIdError,
+  MockDuplicateRouteError,
+} from "./operations/operation-registry";
 export { buildOperationRegistry } from "./operations/build-registry";
-export type { MockOperationDefinition, MockOperationContext } from "./operations/types";
+export type {
+  MockOperationDefinition,
+  MockOperationContext,
+} from "./operations/types";
 export { defineMockOperation } from "./operations/types";
+
+// Realtime
+export {
+  createMockRealtimeTransport,
+  MockRealtimeTransport,
+} from "./realtime/mock-realtime-transport";

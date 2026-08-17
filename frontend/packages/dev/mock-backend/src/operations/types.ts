@@ -33,7 +33,9 @@ export interface MockOperationDefinition<
   readonly id: string;
   readonly method: string;
   readonly route: string;
-  handle(ctx: MockOperationContext<Params, Body>): Promise<MockHttpResult<unknown>>;
+  handle(
+    ctx: MockOperationContext<Params, Body>,
+  ): Promise<MockHttpResult<unknown>>;
 }
 
 /**

@@ -77,8 +77,7 @@ export const gradients = {
     "linear-gradient(135deg, #FF1E56 0%, #FC744C 35%, #1E90FF 100%)",
   brandSweep:
     "linear-gradient(90deg, #FF1E56 0%, #FC744C 25%, #F9C942 50%, #8CADA1 75%, #1E90FF 100%)",
-  vibrantFlow:
-    "linear-gradient(90deg, #FF1E56 0%, #FC744C 50%, #1E90FF 100%)",
+  vibrantFlow: "linear-gradient(90deg, #FF1E56 0%, #FC744C 50%, #1E90FF 100%)",
   depthFade: "linear-gradient(180deg, #02093a 0%, #000000 100%)",
   glassLight:
     "linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))",

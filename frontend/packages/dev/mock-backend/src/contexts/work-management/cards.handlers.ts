@@ -16,7 +16,16 @@ import { defineMockOperation } from "../../operations/types";
 import { ok, created, notFound } from "../../transport/create-response";
 
 function projectCardDto(
-  c: { id: string; boardId: string; listId: string; title: string; description?: string; position: number; createdAt: string; updatedAt: string },
+  c: {
+    id: string;
+    boardId: string;
+    listId: string;
+    title: string;
+    description?: string;
+    position: number;
+    createdAt: string;
+    updatedAt: string;
+  },
   workspaceId: string,
 ): CardDtoApi {
   return {
@@ -79,28 +88,29 @@ export const cardsOperations = [
 
   // ─── POST /lists/:listId/cards ────────────────────────────────────────────
 
-  defineMockOperation<{ listId: string }, { title?: string; boardId?: string }, CardDtoApi>({
+  defineMockOperation<
+    { listId: string },
+    { title?: string; boardId?: string },
+    CardDtoApi
+  >({
     id: "cards.create",
     method: "POST",
     route: "/lists/:listId/cards",
     async handle({ params, body, store }) {
       const data = (body ?? {}) as { title?: string; boardId?: string };
       if (!data.boardId) {
-        return { status: 400, body: { message: "boardId required", code: "BAD_REQUEST" } };
+        return {
+          status: 400,
+          body: { message: "boardId required", code: "BAD_REQUEST" },
+        };
       }
-      const factories = store.getFactories();
-      const newCard = factories.card(
-        store.getCards(params.listId).length,
-        data.boardId,
-        params.listId,
-        {
-          id: `card-new-${Date.now()}`,
-          title: data.title ?? "New Card",
-        },
-      );
-      store.addCard(newCard);
+      const newCard = store.createCard(data.boardId, params.listId, {
+        title: data.title,
+      });
       const board = store.getBoard(data.boardId);
-      return created<CardDtoApi>(projectCardDto(newCard, board?.workspaceId ?? ""));
+      return created<CardDtoApi>(
+        projectCardDto(newCard, board?.workspaceId ?? ""),
+      );
     },
   }),
 
@@ -113,11 +123,18 @@ export const cardsOperations = [
     async handle({ params, body, store }) {
       const data = (body ?? {}) as { listId?: string; position?: number };
       if (!data.listId) {
-        return { status: 400, body: { message: "listId required", code: "BAD_REQUEST" } };
+        return {
+          status: 400,
+          body: { message: "listId required", code: "BAD_REQUEST" },
+        };
       }
       const moved = store.moveCard(params.id, data.listId, data.position ?? 0);
       if (!moved) return notFound("Card not found");
-      return ok({ id: params.id, listId: data.listId, position: data.position ?? 0 });
+      return ok({
+        id: params.id,
+        listId: data.listId,
+        position: data.position ?? 0,
+      });
     },
   }),
 ];

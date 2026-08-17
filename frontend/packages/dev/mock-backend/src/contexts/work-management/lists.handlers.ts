@@ -58,12 +58,9 @@ export const listsOperations = [
     route: "/boards/:boardId/lists",
     async handle({ params, body, store }) {
       const data = (body ?? {}) as { title?: string };
-      const factories = store.getFactories();
-      const newList = factories.list(store.getLists(params.boardId).length, params.boardId, {
-        id: `list-new-${Date.now()}`,
-        title: data.title ?? "New List",
+      const newList = store.createList(params.boardId, {
+        title: data.title,
       });
-      store.addList(newList);
       return created<ListDtoApi>({
         id: newList.id,
         title: newList.title,
@@ -82,7 +79,10 @@ export const listsOperations = [
     method: "POST",
     route: "/boards/:boardId/lists/reorder",
     async handle({ params, store }) {
-      return ok({ boardId: params.boardId, count: store.getLists(params.boardId).length });
+      return ok({
+        boardId: params.boardId,
+        count: store.getLists(params.boardId).length,
+      });
     },
   }),
 ];

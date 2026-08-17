@@ -13,14 +13,9 @@ import {
   EyeOff,
   ShieldCheck,
 } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
 import { Button } from "@notrelix/ui-web";
 import { Label } from "@notrelix/ui-web";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@notrelix/ui-web";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@notrelix/ui-web";
 import {
   InputOTP,
   InputOTPGroup,
@@ -253,7 +248,9 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? (
                       <EyeOff className="size-4" />

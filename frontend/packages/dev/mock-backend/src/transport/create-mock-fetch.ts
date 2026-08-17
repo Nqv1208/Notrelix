@@ -8,20 +8,21 @@
  *   4. Dispatch to typed operation registry → context handler → MockHttpResult
  *   5. Convert MockHttpResult → real fetch Response
  *
- * The old monolithic if/else chain has been replaced by the typed operation registry.
- * MockUnhandledOperationError is re-exported for backwards-compat.
- *
- * Plan: 04-TRANSPORT-PROTOCOL.md §MockFetch, §Latency, §Fault profiles
- *       06-HANDLERS-PROJECTIONS.md §Context layout
+ * Plan: 01-FREEZE-SPEC.md §FZ-S13, 04-TRANSPORT-PROTOCOL.md
  */
 
-import { globalMockStore, MockStore } from "../state/mock-store";
+import type { MockStore } from "../state/mock-store";
 import { normalizeMockRequest } from "./normalize-request";
-import { MockUnhandledOperationError } from "./route-matcher";
 import { buildOperationRegistry } from "../operations/build-registry";
 import { MockOperationRegistry } from "../operations/operation-registry";
 import type { MockBackendConfig } from "../config/mock-config";
-import { serverError, unauthorized, conflict, validationError, createMockResponse } from "./create-response";
+import {
+  serverError,
+  unauthorized,
+  conflict,
+  validationError,
+  createMockResponse,
+} from "./create-response";
 
 // Re-export for backwards-compat with any external consumers
 export { MockUnhandledOperationError } from "./route-matcher";
@@ -38,7 +39,9 @@ function getRegistry(): MockOperationRegistry {
 
 // ─── Latency simulation ───────────────────────────────────────────────────────
 
-async function applyLatency(latency: MockBackendConfig["latency"]): Promise<void> {
+async function applyLatency(
+  latency: MockBackendConfig["latency"],
+): Promise<void> {
   const delayMs: Record<string, number> = {
     instant: 0,
     fast: 80,
@@ -53,7 +56,7 @@ async function applyLatency(latency: MockBackendConfig["latency"]): Promise<void
 
 // ─── Factory ─────────────────────────────────────────────────────────────────
 
-export function createMockFetch(store: MockStore = globalMockStore): typeof fetch {
+export function createMockFetch(store: MockStore): typeof fetch {
   const registry = getRegistry();
 
   return async function mockFetch(
@@ -93,5 +96,3 @@ export function createMockFetch(store: MockStore = globalMockStore): typeof fetc
     return registry.dispatch(request, store);
   };
 }
-
-export const mockFetch: typeof fetch = createMockFetch();

@@ -1,29 +1,77 @@
 /**
  * Operation registry — stores all typed mock operations and dispatches requests.
  *
- * Plan: 06-HANDLERS-PROJECTIONS.md §Typed operations, 04-TRANSPORT-PROTOCOL.md
+ * Enforces registry uniqueness (no duplicate IDs, no duplicate method+route).
+ *
+ * Plan: 01-FREEZE-SPEC.md §FZ-S12, 02-IMPLEMENTATION-PLAN.md §MFB-FZ-06
  */
 
-import { createRouteMatcher, type RouteMatcher } from "../transport/route-matcher";
+import {
+  createRouteMatcher,
+  type RouteMatcher,
+} from "../transport/route-matcher";
 import { createMockResponse } from "../transport/create-response";
 import type { MockOperationDefinition } from "./types";
 import type { NormalizedMockRequest } from "../transport/normalize-request";
 import type { MockStore } from "../state/mock-store";
+
+export class MockDuplicateOperationIdError extends Error {
+  constructor(operationId: string, route: string) {
+    super(
+      `[MockDuplicateOperationIdError] Operation ID "${operationId}" is already registered (route: "${route}"). Duplicate IDs are forbidden.`,
+    );
+    this.name = "MockDuplicateOperationIdError";
+  }
+}
+
+export class MockDuplicateRouteError extends Error {
+  constructor(
+    newOpId: string,
+    existingOpId: string,
+    method: string,
+    route: string,
+  ) {
+    super(
+      `[MockDuplicateRouteError] Route "${method} ${route}" for operation "${newOpId}" conflicts with already-registered operation "${existingOpId}".`,
+    );
+    this.name = "MockDuplicateRouteError";
+  }
+}
 
 export class MockOperationRegistry {
   private readonly operations = new Map<string, MockOperationDefinition>();
   private _matcher: RouteMatcher | null = null;
 
   register(op: MockOperationDefinition): void {
+    if (this.operations.has(op.id)) {
+      throw new MockDuplicateOperationIdError(op.id, op.route);
+    }
+
+    // Check for exact method + route duplicate
+    for (const existing of this.operations.values()) {
+      if (
+        (existing.method === op.method ||
+          existing.method === "*" ||
+          op.method === "*") &&
+        existing.route === op.route
+      ) {
+        throw new MockDuplicateRouteError(
+          op.id,
+          existing.id,
+          op.method,
+          op.route,
+        );
+      }
+    }
+
     this.operations.set(op.id, op);
     this._matcher = null; // invalidate compiled matcher
   }
 
   registerMany(ops: MockOperationDefinition[]): void {
     for (const op of ops) {
-      this.operations.set(op.id, op);
+      this.register(op);
     }
-    this._matcher = null;
   }
 
   private getMatcher(): RouteMatcher {

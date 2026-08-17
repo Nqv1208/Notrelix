@@ -1,13 +1,19 @@
 import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { Activity, Clock3, FileText, Search, SquareKanban } from "lucide-react";
-import { createUseDocsFavorites, createUsePageList } from "@notrelix/docs-state";
+import {
+  createUseDocsFavorites,
+  createUsePageList,
+} from "@notrelix/docs-state";
 import {
   createUseWorkspaceList,
   WorkspaceDirectory,
 } from "@notrelix/features-workspace/web";
 import type { WorkspaceSummary } from "@notrelix/features-workspace/core";
-import { useFeatureRuntimeDependencies, useAppRuntime } from "@notrelix/runtime-web";
+import {
+  useFeatureRuntimeDependencies,
+  useAppRuntime,
+} from "@notrelix/runtime-web";
 import { useWorkspaceBoards } from "@notrelix/work-management-state";
 import { Button, Skeleton } from "@notrelix/ui-web";
 import { AuthGuard } from "@/shell/guards/auth-guard";
@@ -57,7 +63,9 @@ function HomeContent({
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-4 flex items-center gap-2">
             <FileText className="size-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Recent docs</h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              Recent docs
+            </h2>
           </div>
           {pagesLoading ? (
             <div className="grid gap-3 md:grid-cols-3">
@@ -66,7 +74,9 @@ function HomeContent({
               ))}
             </div>
           ) : pages.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No recent documents.</p>
+            <p className="text-sm text-muted-foreground">
+              No recent documents.
+            </p>
           ) : (
             <div className="grid gap-3 md:grid-cols-3">
               {pages.slice(0, 3).map((page) => (
@@ -103,7 +113,9 @@ function HomeContent({
       <section className="rounded-2xl border border-border bg-card p-5">
         <div className="mb-4 flex items-center gap-2">
           <SquareKanban className="size-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">Recent boards</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            Recent boards
+          </h2>
         </div>
         {boardsLoading ? (
           <div className="grid gap-3 md:grid-cols-3">
@@ -151,8 +163,12 @@ export function HomePage() {
       }),
     [runtimeClient],
   );
-  const { data: workspaces = [], isLoading, isError, refetch } =
-    useWorkspaceList();
+  const {
+    data: workspaces = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useWorkspaceList();
   const primaryWorkspaceId = workspaces[0]?.id ?? "";
   const usePageList = useMemo(
     () => createUsePageList(api, endpoints),

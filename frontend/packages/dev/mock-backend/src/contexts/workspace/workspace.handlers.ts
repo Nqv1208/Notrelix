@@ -6,11 +6,12 @@
  *   workspace.create       — POST /workspaces
  *   workspace.get          — GET /workspaces/:id
  *
- * Operations with CONTRACT-BLOCKED gaps (temporary legacy behavior):
+ * Operations with COMPATIBILITY-GAP (temporary legacy behavior):
  *   workspace.views.list   — GET /workspaces/:id/views   [CTR-GAP-WS-VIEWS]
  *   workspace.members.list — GET /workspaces/:id/members [CTR-GAP-WS-MEMBERS]
  *
- * Plan: 06-HANDLERS-PROJECTIONS.md, 10-CONTRACT-GAP-REGISTER.md
+ * Plan: 01-FREEZE-SPEC.md §FZ-S06, §FZ-S07, §FZ-S10, §FZ-S11
+ *       02-IMPLEMENTATION-PLAN.md §MFB-FZ-03, §MFB-FZ-05
  */
 
 import type {
@@ -20,7 +21,6 @@ import type {
 } from "@notrelix/features-workspace";
 import { defineMockOperation } from "../../operations/types";
 import { ok, created, notFound } from "../../transport/create-response";
-import { mockIds } from "../../state/mock-ids";
 
 export const workspaceOperations = [
   // ─── GET /workspaces ──────────────────────────────────────────────────────
@@ -46,23 +46,34 @@ export const workspaceOperations = [
 
   // ─── POST /workspaces ─────────────────────────────────────────────────────
 
-  defineMockOperation<Record<string, never>, { name?: string; slug?: string; isPersonal?: boolean }, WorkspaceSummary>({
+  defineMockOperation<
+    Record<string, never>,
+    { name?: string; slug?: string; isPersonal?: boolean },
+    WorkspaceSummary
+  >({
     id: "workspace.create",
     method: "POST",
     route: "/workspaces",
     async handle({ body, store }) {
-      const data = (body ?? {}) as { name?: string; slug?: string; isPersonal?: boolean };
-      const newId = `ws-${store.getWorkspaces().length + 1}`;
-      const ws = {
-        id: newId,
-        name: data.name ?? "New Workspace",
-        slug: data.slug ?? newId,
-        plan: "free" as const,
-        icon: "Layout",
-        isPersonal: data.isPersonal ?? false,
+      const data = (body ?? {}) as {
+        name?: string;
+        slug?: string;
+        isPersonal?: boolean;
       };
-      store.addWorkspace(ws);
-      return created<WorkspaceSummary>({ ...ws, memberCount: 1 });
+      const { workspace } = store.createWorkspaceForCurrentUser({
+        name: data.name,
+        slug: data.slug,
+        isPersonal: data.isPersonal,
+      });
+      return created<WorkspaceSummary>({
+        id: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+        plan: workspace.plan,
+        icon: workspace.icon,
+        memberCount: store.getWorkspaceMembers(workspace.id).length,
+        isPersonal: workspace.isPersonal,
+      });
     },
   }),
 
@@ -73,8 +84,8 @@ export const workspaceOperations = [
     method: "GET",
     route: "/workspaces/:id",
     async handle({ params, store }) {
-      const w = store.getWorkspace(params.id) ?? store.getWorkspaces()[0];
-      if (!w) return notFound("Workspace not found");
+      const w = store.getWorkspace(params.id);
+      if (!w) return notFound(`Workspace "${params.id}" not found`);
       return ok<WorkspaceSummary>({
         id: w.id,
         name: w.name,
@@ -88,7 +99,7 @@ export const workspaceOperations = [
   }),
 
   // ─── GET /workspaces/:id/views ────────────────────────────────────────────
-  // CONTRACT-BLOCKED: CTR-GAP-WS-VIEWS
+  // COMPATIBILITY-GAP: CTR-GAP-WS-VIEWS
   // Temporary legacy handler — remove when official producer contract lands.
 
   defineMockOperation<{ id: string }, never, WorkspaceView[]>({
@@ -117,8 +128,8 @@ export const workspaceOperations = [
   }),
 
   // ─── GET /workspaces/:id/members ──────────────────────────────────────────
-  // CONTRACT-BLOCKED: CTR-GAP-WS-MEMBERS
-  // Temporary legacy handler — remove when official producer contract lands.
+  // COMPATIBILITY-GAP: CTR-GAP-WS-MEMBERS
+  // Temporary legacy handler — resolves actual user records for memberships.
 
   defineMockOperation<{ id: string }, never, WorkspaceMember[]>({
     id: "workspace.members.list",
@@ -126,19 +137,27 @@ export const workspaceOperations = [
     route: "/workspaces/:id/members",
     async handle({ params, store }) {
       const memberRecords = store.getWorkspaceMembers(params.id);
-      const currentUser = store.getCurrentUser();
       return ok<WorkspaceMember[]>(
         memberRecords.map((m) => {
-          const isOwner = m.userId === mockIds.users.owner;
+          const user = store.getUser(m.userId);
+          const name = user ? user.name : `User ${m.userId}`;
+          const initials = name
+            .split(" ")
+            .map((part) => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+
           return {
             id: m.id,
             userId: m.userId,
-            name: isOwner ? currentUser.name : "Alex Rivera",
-            initials: isOwner ? currentUser.name.substring(0, 2).toUpperCase() : "AR",
+            name,
+            initials: initials || "U",
             role: m.role,
             status: m.status,
             workload: m.workload,
             color: m.color,
+            avatarUrl: user?.avatarUrl ?? undefined,
           };
         }),
       );

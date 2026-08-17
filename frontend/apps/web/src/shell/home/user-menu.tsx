@@ -178,14 +178,24 @@ export function UserMenu({ workspaceId }: { workspaceId?: string }) {
             <DropdownMenuLabel className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Account
             </DropdownMenuLabel>
-            <UserMenuItem icon={User} label="My profile" disabled={!workspaceId} onSelect={() => navigateToAccount("profile")} />
+            <UserMenuItem
+              icon={User}
+              label="My profile"
+              disabled={!workspaceId}
+              onSelect={() => navigateToAccount("profile")}
+            />
             <UserMenuItem icon={Download} label="Import data" disabled />
             <UserMenuItem icon={Code2} label="Developers" disabled />
             <UserMenuItem icon={Rocket} label="Spaces" badge="Alpha" disabled />
             <UserMenuItem icon={Trash2} label="Trash" disabled />
             <UserMenuItem icon={Archive} label="Archive" disabled />
             <UserMenuItem icon={Sparkles} label="AI usage" disabled />
-            <UserMenuItem icon={Settings} label="Administration" disabled={!workspaceId} onSelect={() => navigateToAccount("profile")} />
+            <UserMenuItem
+              icon={Settings}
+              label="Administration"
+              disabled={!workspaceId}
+              onSelect={() => navigateToAccount("profile")}
+            />
             <UserMenuItem icon={Users} label="Teams" disabled />
             <UserMenuItem
               icon={LogOut}
@@ -222,11 +232,13 @@ export function UserMenu({ workspaceId }: { workspaceId?: string }) {
                 Theme
               </button>
               <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted p-0.5">
-                {([
-                  ["light", Sun, "Light theme"],
-                  ["dark", Moon, "Dark theme"],
-                  ["system", Laptop, "System theme"],
-                ] as const).map(([value, Icon, label]) => (
+                {(
+                  [
+                    ["light", Sun, "Light theme"],
+                    ["dark", Moon, "Dark theme"],
+                    ["system", Laptop, "System theme"],
+                  ] as const
+                ).map(([value, Icon, label]) => (
                   <button
                     key={value}
                     type="button"

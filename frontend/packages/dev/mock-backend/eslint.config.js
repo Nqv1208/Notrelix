@@ -1,10 +1,9 @@
-import baseConfig from "../../tooling/eslint/base.js";
+import { defineConfig } from "eslint/config";
+import baseConfig from "@notrelix/eslint-config/library";
 
-export default [
-  ...baseConfig,
+export default defineConfig([
   {
-    rules: {
-      "@typescript-eslint/no-explicit-any": "error",
-    },
+    ignores: ["dist/**", "node_modules/**", ".turbo/**"],
   },
-];
+  ...baseConfig,
+]);

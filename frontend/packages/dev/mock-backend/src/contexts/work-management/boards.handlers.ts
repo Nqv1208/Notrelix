@@ -22,7 +22,7 @@ import { ok, created, notFound } from "../../transport/create-response";
 
 function projectCardSummary(
   card: { id: string; title: string; position: number; createdAt: string },
-  listId: string,
+  _listId: string,
 ): CardSummaryDtoApi {
   return {
     id: card.id,
@@ -125,19 +125,20 @@ export const boardsOperations = [
 
   // ─── POST /workspaces/:workspaceId/boards ─────────────────────────────────
 
-  defineMockOperation<{ workspaceId: string }, { title?: string; description?: string }, BoardDtoApi>({
+  defineMockOperation<
+    { workspaceId: string },
+    { title?: string; description?: string },
+    BoardDtoApi
+  >({
     id: "boards.create",
     method: "POST",
     route: "/workspaces/:workspaceId/boards",
     async handle({ params, body, store }) {
       const data = (body ?? {}) as { title?: string; description?: string };
-      const factories = store.getFactories();
-      const newBoard = factories.board(store.getBoards(params.workspaceId).length, params.workspaceId, {
-        id: `board-new-${Date.now()}`,
-        title: data.title ?? "New Board",
+      const newBoard = store.createBoard(params.workspaceId, {
+        title: data.title,
         description: data.description,
       });
-      store.addBoard(newBoard);
       return created<BoardDtoApi>({
         id: newBoard.id,
         workspaceId: newBoard.workspaceId,

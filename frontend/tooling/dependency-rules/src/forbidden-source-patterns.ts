@@ -78,7 +78,12 @@ export function isForbiddenQueryClientInstantiation(filePath: string): boolean {
 
 export function isForbiddenBackendFetch(filePath: string): boolean {
   const normalized = filePath.replace(/\\/g, "/");
-  if (normalized.includes("/__tests__/") || normalized.includes(".test.") || normalized.includes(".spec.")) return false;
+  if (
+    normalized.includes("/__tests__/") ||
+    normalized.includes(".test.") ||
+    normalized.includes(".spec.")
+  )
+    return false;
   return /^\/(apps\/web|packages\/(features|product))\//.test(normalized);
 }
 

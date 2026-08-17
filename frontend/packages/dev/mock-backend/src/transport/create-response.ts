@@ -21,7 +21,8 @@ export function createMockResponse<T>(result: MockHttpResult<T>): Response {
     });
   }
 
-  const bodyStr = result.body !== undefined ? JSON.stringify(result.body) : null;
+  const bodyStr =
+    result.body !== undefined ? JSON.stringify(result.body) : null;
   const contentType: Record<string, string> =
     bodyStr !== null ? { "Content-Type": "application/json" } : {};
   const headers: Record<string, string> = {
@@ -52,8 +53,14 @@ export function notFound(
   return { status: 404, body: { message, code: "NOT_FOUND" } };
 }
 
-export function unauthorized(): MockHttpResult<{ message: string; code: string }> {
-  return { status: 401, body: { message: "Unauthorized", code: "UNAUTHORIZED" } };
+export function unauthorized(): MockHttpResult<{
+  message: string;
+  code: string;
+}> {
+  return {
+    status: 401,
+    body: { message: "Unauthorized", code: "UNAUTHORIZED" },
+  };
 }
 
 export function forbidden(): MockHttpResult<{ message: string; code: string }> {
@@ -68,10 +75,18 @@ export function conflict(
 
 export function validationError(
   fields: Record<string, string[]>,
-): MockHttpResult<{ message: string; code: string; errors: Record<string, string[]> }> {
+): MockHttpResult<{
+  message: string;
+  code: string;
+  errors: Record<string, string[]>;
+}> {
   return {
     status: 422,
-    body: { message: "Validation failed", code: "VALIDATION_ERROR", errors: fields },
+    body: {
+      message: "Validation failed",
+      code: "VALIDATION_ERROR",
+      errors: fields,
+    },
   };
 }
 

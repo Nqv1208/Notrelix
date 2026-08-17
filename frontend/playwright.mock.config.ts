@@ -7,8 +7,9 @@ const mockEnv = {
   VITE_RELEASE_SHA: "mock-e2e",
   VITE_MOCK_API: "true",
   VITE_MOCK_PERSONA: process.env.VITE_MOCK_PERSONA ?? "owner",
-  VITE_MOCK_SCENARIO: process.env.VITE_MOCK_SCENARIO ?? "default",
-  VITE_MOCK_LATENCY_MS: "0",
+  VITE_MOCK_STATE: process.env.VITE_MOCK_STATE ?? "default",
+  VITE_MOCK_LATENCY: process.env.VITE_MOCK_LATENCY ?? "instant",
+  VITE_MOCK_SEED: process.env.VITE_MOCK_SEED ?? "1001",
 };
 
 export default defineConfig({

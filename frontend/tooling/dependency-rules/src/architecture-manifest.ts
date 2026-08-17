@@ -442,6 +442,7 @@ export const ARCHITECTURE_MANIFEST = [
       "@notrelix/contracts",
       "@notrelix/kernel",
       "@notrelix/platform",
+      "@notrelix/realtime",
       "@notrelix/features-auth",
       "@notrelix/features-workspace",
       "@notrelix/work-management-core",

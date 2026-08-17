@@ -37,7 +37,7 @@ export const accountOperations = [
     method: "PATCH",
     route: "/account/preferences",
     async handle({ body }) {
-      return ok({ ...DEFAULT_PREFERENCES, ...(body as object | null ?? {}) });
+      return ok({ ...DEFAULT_PREFERENCES, ...((body as object | null) ?? {}) });
     },
   }),
 

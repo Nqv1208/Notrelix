@@ -16,11 +16,7 @@ import { cn } from "@notrelix/ui-web";
 import { Button } from "@notrelix/ui-web";
 import { Label } from "@notrelix/ui-web";
 import { Checkbox } from "@notrelix/ui-web";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@notrelix/ui-web";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@notrelix/ui-web";
 import {
   registerSchema,
   type RegisterRequest,
@@ -125,7 +121,11 @@ export function createRegisterForm(deps: RegisterFormDeps) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" type="button" className="h-10 text-sm font-medium">
+          <Button
+            variant="outline"
+            type="button"
+            className="h-10 text-sm font-medium"
+          >
             <svg className="size-4 mr-2 shrink-0" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -146,7 +146,11 @@ export function createRegisterForm(deps: RegisterFormDeps) {
             </svg>
             Google
           </Button>
-          <Button variant="outline" type="button" className="h-10 text-sm font-medium">
+          <Button
+            variant="outline"
+            type="button"
+            className="h-10 text-sm font-medium"
+          >
             <svg
               className="size-4 mr-2 shrink-0"
               fill="currentColor"
@@ -296,7 +300,10 @@ export function createRegisterForm(deps: RegisterFormDeps) {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm password</Label>
-            <InputGroup className="h-10" aria-invalid={!!errors.confirmPassword}>
+            <InputGroup
+              className="h-10"
+              aria-invalid={!!errors.confirmPassword}
+            >
               <InputGroupAddon align="inline-start">
                 <Lock className="size-4 text-muted-foreground" />
               </InputGroupAddon>

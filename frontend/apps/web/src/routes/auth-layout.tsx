@@ -46,7 +46,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             Docs, boards & wikis — unified.
           </h2>
           <p className="text-slate-300/80 leading-relaxed mb-8 text-[15px]">
-            Write, plan, and ship together in one cohesive workspace designed for modern product and engineering teams.
+            Write, plan, and ship together in one cohesive workspace designed
+            for modern product and engineering teams.
           </p>
 
           <div className="space-y-4">
@@ -66,13 +67,17 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         {/* Bottom Proof / Value Block */}
         <div className="relative z-10 pt-6 border-t border-white/10">
           <div className="flex items-start gap-3 rounded-xl bg-white/[0.05] p-4 border border-white/10 backdrop-blur-sm">
-            <CheckCircle2 className="size-5 shrink-0 mt-0.5" style={{ color: "#1E90FF" }} />
+            <CheckCircle2
+              className="size-5 shrink-0 mt-0.5"
+              style={{ color: "#1E90FF" }}
+            />
             <div>
               <div className="font-semibold text-sm text-white">
                 Connected Workspace Operating System
               </div>
               <div className="text-slate-400 text-xs mt-0.5 leading-relaxed">
-                Replace fragmented single-purpose tools with one authoritative workspace.
+                Replace fragmented single-purpose tools with one authoritative
+                workspace.
               </div>
             </div>
           </div>

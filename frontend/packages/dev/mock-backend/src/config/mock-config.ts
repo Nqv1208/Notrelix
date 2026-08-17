@@ -10,16 +10,15 @@
  *   faultProfile — per-route forced error injection
  *   seed      — deterministic PRNG seed for factories + clock
  *
- * Named presets:
- *   Defined in this file as NAMED_PRESETS.
- *   Apply with: applyPreset(presetName, baseConfig)
- *
- * Environment variable parsing:
- *   parseMockConfigFromEnv(import.meta.env) → Partial<MockBackendConfig>
- *   Merge with defaultConfig in composition root.
- *
- * Plan: 05-SCENARIOS-DENSITY-FAULTS.md, 07-IMPLEMENTATION-MIGRATION-PLAN.md
+ * Plan: 05-SCENARIOS-DENSITY-FAULTS.md, 01-FREEZE-SPEC.md §FZ-S09, 02-IMPLEMENTATION-PLAN.md §MFB-FZ-00
  */
+
+export class MockConfigurationError extends Error {
+  constructor(message: string) {
+    super(`[MockConfigurationError] ${message}`);
+    this.name = "MockConfigurationError";
+  }
+}
 
 // ─── Dimension types ──────────────────────────────────────────────────────────
 
@@ -36,11 +35,7 @@ export type MockBusinessState =
 export type MockDensity = "tiny" | "normal" | "large" | "stress";
 
 export type MockOverlay =
-  | "long-titles"
-  | "unicode"
-  | "missing-avatars"
-  | "many-columns"
-  | "many-cards";
+  "long-titles" | "unicode" | "missing-avatars" | "many-columns" | "many-cards";
 
 export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
@@ -151,50 +146,107 @@ export function applyPreset(
 ): MockBackendConfig {
   const preset = NAMED_PRESETS[presetName];
   if (!preset) {
-    console.warn(`[MockBackend] Unknown preset: ${presetName}. Using defaultConfig.`);
-    return base;
+    throw new MockConfigurationError(
+      `Unknown preset "${presetName}". Available presets: ${Object.keys(NAMED_PRESETS).join(", ")}`,
+    );
   }
   return { ...base, ...preset };
 }
 
 // ─── Env variable parsing (Plan: 05-SCENARIOS-DENSITY-FAULTS.md §Env parsing) ─
 
-const VALID_PERSONAS = new Set<MockPersona>(["owner", "admin", "member", "viewer"]);
-const VALID_STATES = new Set<MockBusinessState>([
-  "default", "new-user", "empty-workspace", "permission-limited", "expired-session", "onboarding",
+const VALID_PERSONAS = new Set<string>(["owner", "admin", "member", "viewer"]);
+const VALID_STATES = new Set<string>([
+  "default",
+  "new-user",
+  "empty-workspace",
+  "permission-limited",
+  "expired-session",
+  "onboarding",
 ]);
-const VALID_DENSITIES = new Set<MockDensity>(["tiny", "normal", "large", "stress"]);
-const VALID_LATENCIES = new Set<MockLatency>(["instant", "fast", "normal", "slow"]);
+const VALID_DENSITIES = new Set<string>(["tiny", "normal", "large", "stress"]);
+const VALID_LATENCIES = new Set<string>(["instant", "fast", "normal", "slow"]);
 
 export function parseMockConfigFromEnv(
   env: Record<string, string | undefined>,
 ): Partial<MockBackendConfig> {
   const partial: Partial<MockBackendConfig> = {};
 
-  // VITE_MOCK_PRESET — apply named preset first; individual vars override
-  if (env["VITE_MOCK_PRESET"] && NAMED_PRESETS[env["VITE_MOCK_PRESET"]]) {
-    Object.assign(partial, NAMED_PRESETS[env["VITE_MOCK_PRESET"]]);
+  // VITE_MOCK_PRESET — fail fast if unknown
+  if (env["VITE_MOCK_PRESET"] !== undefined && env["VITE_MOCK_PRESET"] !== "") {
+    const presetName = env["VITE_MOCK_PRESET"];
+    const preset = NAMED_PRESETS[presetName];
+    if (!preset) {
+      throw new MockConfigurationError(
+        `Invalid VITE_MOCK_PRESET="${presetName}". Available presets: ${Object.keys(NAMED_PRESETS).join(", ")}`,
+      );
+    }
+    Object.assign(partial, preset);
   }
 
-  if (env["VITE_MOCK_PERSONA"] && VALID_PERSONAS.has(env["VITE_MOCK_PERSONA"] as MockPersona)) {
-    partial.persona = env["VITE_MOCK_PERSONA"] as MockPersona;
+  // VITE_MOCK_PERSONA
+  if (
+    env["VITE_MOCK_PERSONA"] !== undefined &&
+    env["VITE_MOCK_PERSONA"] !== ""
+  ) {
+    const val = env["VITE_MOCK_PERSONA"];
+    if (!VALID_PERSONAS.has(val)) {
+      throw new MockConfigurationError(
+        `Invalid VITE_MOCK_PERSONA="${val}". Must be one of: ${Array.from(VALID_PERSONAS).join(", ")}`,
+      );
+    }
+    partial.persona = val as MockPersona;
   }
 
-  if (env["VITE_MOCK_STATE"] && VALID_STATES.has(env["VITE_MOCK_STATE"] as MockBusinessState)) {
-    partial.state = env["VITE_MOCK_STATE"] as MockBusinessState;
+  // VITE_MOCK_STATE
+  if (env["VITE_MOCK_STATE"] !== undefined && env["VITE_MOCK_STATE"] !== "") {
+    const val = env["VITE_MOCK_STATE"];
+    if (!VALID_STATES.has(val)) {
+      throw new MockConfigurationError(
+        `Invalid VITE_MOCK_STATE="${val}". Must be one of: ${Array.from(VALID_STATES).join(", ")}`,
+      );
+    }
+    partial.state = val as MockBusinessState;
   }
 
-  if (env["VITE_MOCK_DENSITY"] && VALID_DENSITIES.has(env["VITE_MOCK_DENSITY"] as MockDensity)) {
-    partial.density = env["VITE_MOCK_DENSITY"] as MockDensity;
+  // VITE_MOCK_DENSITY
+  if (
+    env["VITE_MOCK_DENSITY"] !== undefined &&
+    env["VITE_MOCK_DENSITY"] !== ""
+  ) {
+    const val = env["VITE_MOCK_DENSITY"];
+    if (!VALID_DENSITIES.has(val)) {
+      throw new MockConfigurationError(
+        `Invalid VITE_MOCK_DENSITY="${val}". Must be one of: ${Array.from(VALID_DENSITIES).join(", ")}`,
+      );
+    }
+    partial.density = val as MockDensity;
   }
 
-  if (env["VITE_MOCK_LATENCY"] && VALID_LATENCIES.has(env["VITE_MOCK_LATENCY"] as MockLatency)) {
-    partial.latency = env["VITE_MOCK_LATENCY"] as MockLatency;
+  // VITE_MOCK_LATENCY
+  if (
+    env["VITE_MOCK_LATENCY"] !== undefined &&
+    env["VITE_MOCK_LATENCY"] !== ""
+  ) {
+    const val = env["VITE_MOCK_LATENCY"];
+    if (!VALID_LATENCIES.has(val)) {
+      throw new MockConfigurationError(
+        `Invalid VITE_MOCK_LATENCY="${val}". Must be one of: ${Array.from(VALID_LATENCIES).join(", ")}`,
+      );
+    }
+    partial.latency = val as MockLatency;
   }
 
-  if (env["VITE_MOCK_SEED"]) {
-    const seed = parseInt(env["VITE_MOCK_SEED"], 10);
-    if (!isNaN(seed)) partial.seed = seed;
+  // VITE_MOCK_SEED
+  if (env["VITE_MOCK_SEED"] !== undefined && env["VITE_MOCK_SEED"] !== "") {
+    const raw = env["VITE_MOCK_SEED"];
+    const seed = Number(raw);
+    if (!Number.isSafeInteger(seed) || seed < 0) {
+      throw new MockConfigurationError(
+        `Invalid VITE_MOCK_SEED="${raw}". Must be a non-negative safe integer.`,
+      );
+    }
+    partial.seed = seed;
   }
 
   return partial;

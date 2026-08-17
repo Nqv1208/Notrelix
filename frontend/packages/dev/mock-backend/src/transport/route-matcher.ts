@@ -14,7 +14,9 @@
 
 export class MockUnhandledOperationError extends Error {
   constructor(method: string, pathname: string) {
-    super(`[MockFetch] Unhandled closed-world operation: ${method} ${pathname}`);
+    super(
+      `[MockFetch] Unhandled closed-world operation: ${method} ${pathname}`,
+    );
     this.name = "MockUnhandledOperationError";
   }
 }
@@ -67,12 +69,18 @@ function compileRoute(route: RouteDefinition): CompiledRoute {
 
 // ─── Matcher factory ─────────────────────────────────────────────────────────
 
-export type RouteMatcher = (method: string, normalizedPathname: string) => RouteMatch;
+export type RouteMatcher = (
+  method: string,
+  normalizedPathname: string,
+) => RouteMatch;
 
 export function createRouteMatcher(routes: RouteDefinition[]): RouteMatcher {
   const compiled = routes.map(compileRoute);
 
-  return function matchRoute(method: string, normalizedPathname: string): RouteMatch {
+  return function matchRoute(
+    method: string,
+    normalizedPathname: string,
+  ): RouteMatch {
     const matches: RouteMatch[] = [];
 
     for (const route of compiled) {

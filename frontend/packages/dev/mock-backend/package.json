@@ -13,11 +13,13 @@
     "@notrelix/contracts": "workspace:*",
     "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*",
+    "@notrelix/realtime": "workspace:*",
     "@notrelix/features-auth": "workspace:*",
     "@notrelix/features-workspace": "workspace:*",
     "@notrelix/work-management-core": "workspace:*"
   },
   "devDependencies": {
+    "@notrelix/eslint-config": "workspace:*",
     "@notrelix/tsconfig": "workspace:*"
   }
 }

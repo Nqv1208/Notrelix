@@ -6,7 +6,10 @@ export interface NotrelixLogoProps extends React.HTMLAttributes<HTMLDivElement> 
   showWordmark?: boolean;
 }
 
-export function NotrelixLogoMark({ className, ...props }: React.SVGProps<SVGSVGElement>) {
+export function NotrelixLogoMark({
+  className,
+  ...props
+}: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 408 318"

@@ -25,19 +25,48 @@ function padId(prefix: string, index: number): string {
 }
 
 const PLANS = ["free", "pro", "business", "enterprise"] as const;
-const ICONS = ["Layout", "Layers", "BarChart", "Kanban", "FileText", "Globe"] as const;
-const BG_COLORS = ["#1E90FF", "#FC744C", "#22C55E", "#A855F7", "#F59E0B", "#EF4444"] as const;
-const LIST_COLORS = ["#1E90FF", "#FC744C", "#22C55E", "#A855F7", "#F59E0B"] as const;
+const ICONS = [
+  "Layout",
+  "Layers",
+  "BarChart",
+  "Kanban",
+  "FileText",
+  "Globe",
+] as const;
+const BG_COLORS = [
+  "#1E90FF",
+  "#FC744C",
+  "#22C55E",
+  "#A855F7",
+  "#F59E0B",
+  "#EF4444",
+] as const;
+const LIST_COLORS = [
+  "#1E90FF",
+  "#FC744C",
+  "#22C55E",
+  "#A855F7",
+  "#F59E0B",
+] as const;
 const VIEW_TYPES = ["kanban", "table", "doc", "calendar", "timeline"] as const;
 const MEMBER_COLORS = [
-  "#1E90FF", "#FC744C", "#22C55E", "#A855F7", "#F59E0B",
-  "#EF4444", "#06B6D4", "#84CC16",
+  "#1E90FF",
+  "#FC744C",
+  "#22C55E",
+  "#A855F7",
+  "#F59E0B",
+  "#EF4444",
+  "#06B6D4",
+  "#84CC16",
 ] as const;
 
 export interface MockFactories {
   readonly clock: MockClock;
   user(index: number, overrides?: Partial<MockUserRecord>): MockUserRecord;
-  workspace(index: number, overrides?: Partial<MockWorkspaceRecord>): MockWorkspaceRecord;
+  workspace(
+    index: number,
+    overrides?: Partial<MockWorkspaceRecord>,
+  ): MockWorkspaceRecord;
   membership(
     index: number,
     workspaceId: string,
@@ -54,7 +83,11 @@ export interface MockFactories {
     workspaceId: string,
     overrides?: Partial<MockBoardRecord>,
   ): MockBoardRecord;
-  list(index: number, boardId: string, overrides?: Partial<MockListRecord>): MockListRecord;
+  list(
+    index: number,
+    boardId: string,
+    overrides?: Partial<MockListRecord>,
+  ): MockListRecord;
   card(
     index: number,
     boardId: string,
@@ -73,7 +106,9 @@ export interface MockFactories {
   ): MockPageRecord;
 }
 
-export function createFactories(clock: MockClock = defaultClock): MockFactories {
+export function createFactories(
+  clock: MockClock = defaultClock,
+): MockFactories {
   return {
     clock,
 

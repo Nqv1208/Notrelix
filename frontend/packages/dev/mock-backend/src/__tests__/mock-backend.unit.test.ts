@@ -31,12 +31,12 @@ describe("@notrelix/dev-mock-backend — Canonical v3 Architecture", () => {
       fetchImpl: mockFetch,
     });
 
-    const workspaces = await client.api.get<Array<{ id: string; name: string }>>(
-      endpoints.workspaces.list,
-    );
+    const workspaces = await client.api.get<
+      Array<{ id: string; name: string }>
+    >(endpoints.workspaces.list);
 
     expect(workspaces.length).toBeGreaterThan(0);
-    expect(workspaces[0]?.name).toBe("Notrelix UI Lab");
+    expect(workspaces[0]?.name).toBe("Notrelix Product Lab");
   });
 
   it("fails closed on unhandled operations with MockUnhandledOperationError", async () => {
