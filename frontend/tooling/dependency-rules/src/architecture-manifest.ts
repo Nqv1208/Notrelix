@@ -22,6 +22,7 @@ export type ArchitectureLayer =
   | "product-adapter"
   | "product-testing"
   | "feature"
+  | "dev-support"
   | "app";
 
 /**
@@ -431,6 +432,22 @@ export const ARCHITECTURE_MANIFEST = [
     allowedInternalImports: [...FEATURE_WEB_REALTIME],
   },
 
+  // ── Dev Support ───────────────────────────────────────────────────
+  {
+    packageName: "@notrelix/dev-mock-backend",
+    relativePath: "packages/dev/mock-backend",
+    layer: "dev-support",
+    freezeScope: "verification",
+    allowedInternalImports: [
+      "@notrelix/contracts",
+      "@notrelix/kernel",
+      "@notrelix/platform",
+      "@notrelix/features-auth",
+      "@notrelix/features-workspace",
+      "@notrelix/work-management-core",
+    ],
+  },
+
   // ── Apps ───────────────────────────────────────────────────────────
   {
     packageName: "@notrelix/app-web",
@@ -468,6 +485,7 @@ export const ARCHITECTURE_MANIFEST = [
       "@notrelix/features-governance",
       "@notrelix/features-search",
       "@notrelix/features-collaboration",
+      "@notrelix/dev-mock-backend",
     ],
   },
   {

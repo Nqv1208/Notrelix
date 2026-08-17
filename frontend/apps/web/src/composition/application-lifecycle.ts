@@ -12,7 +12,6 @@ export interface ApplicationLifecycleDependencies {
   readonly realtime: RealtimeTransport;
   readonly sessionEvents: SessionEventBus;
   readonly navigateToSignedOut: () => void;
-  readonly mockApi?: boolean;
 }
 
 export interface ApplicationLifecycle {
@@ -28,7 +27,7 @@ export function createApplicationLifecycle(
   let disposed = false;
 
   const handleSessionExpired = (event: SessionExpiredEvent): void => {
-    if (disposed || deps.mockApi || handledSessionEventIds.has(event.eventId)) {
+    if (disposed || handledSessionEventIds.has(event.eventId)) {
       return;
     }
 

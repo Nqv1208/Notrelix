@@ -38,7 +38,6 @@ export function createWebApplicationServices(
     realtime: runtime.realtime,
     sessionEvents: runtime.sessionEvents,
     navigateToSignedOut: options.navigateToSignedOut,
-    mockApi: runtime.env?.mockApi,
   });
 
   const searchApi: SearchApi = {
