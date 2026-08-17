@@ -2262,13 +2262,20 @@
           "Identity.Auth"
         ],
         "summary": "Start OAuth link flow",
-        "description": "Redirects an authenticated user to the OAuth provider's authorization endpoint to link a provider identity.",
+        "description": "Redirects an authenticated user to the OAuth provider's authorization endpoint to link a provider identity, protected by step-up verification.",
         "operationId": "Identity.Auth.OAuth.LinkStart",
         "parameters": [
           {
             "name": "provider",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stepUpToken",
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -2366,6 +2373,124 @@
         ]
       }
     },
+    "/api/v1/auth/oauth/{provider}/step-up/start": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Auth"
+        ],
+        "summary": "Start OAuth step-up (re-authentication) flow",
+        "description": "Redirects the authenticated user to the OAuth provider to re-authenticate for a security purpose. Completion grants a purpose-bound step-up proof; no new session is issued.",
+        "operationId": "Identity.Auth.OAuth.StepUpStart",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "returnUrl",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/oauth/{provider}/step-up/callback": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Auth"
+        ],
+        "summary": "Complete OAuth step-up callback",
+        "description": "Handles the OAuth provider callback for an authenticated step-up (re-authentication) flow and grants a purpose-bound step-up proof.",
+        "operationId": "Identity.Auth.OAuth.StepUpCallback",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error_description",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/auth/oauth/{provider}/unlink": {
       "post": {
         "tags": [
@@ -2373,7 +2498,7 @@
           "Identity.Auth"
         ],
         "summary": "Unlink an OAuth provider identity",
-        "description": "Removes a linked provider identity from the current user, protected by the last-primary-auth-method invariant.",
+        "description": "Removes a linked provider identity from the current user, protected by the last-primary-auth-method invariant and step-up verification.",
         "operationId": "Identity.Auth.OAuth.Unlink",
         "parameters": [
           {
@@ -2385,6 +2510,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -2539,7 +2674,18 @@
           "Identity.Mfa"
         ],
         "summary": "Invalidate existing recovery codes and issue a fresh batch",
+        "description": "Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose.",
         "operationId": "Identity.Mfa.RegenerateRecoveryCodes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.RegenerateRecoveryCodesRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -2566,7 +2712,18 @@
           "Identity.Mfa"
         ],
         "summary": "Disable MFA and revoke all active sessions",
+        "description": "Requires a single-use step-up proof for the DisableMfa purpose.",
         "operationId": "Identity.Mfa.Disable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.DisableMfaRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -2641,6 +2798,213 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/security/step-up/requirement": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Security"
+        ],
+        "summary": "Get the step-up factor required for a security operation",
+        "description": "Returns the factor (MFA challenge, password or OAuth re-authentication) the current user must satisfy before a security-sensitive operation.",
+        "operationId": "Identity.Security.StepUpRequirement",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.GetStepUpRequirementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/security/step-up/complete-mfa": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Security"
+        ],
+        "summary": "Complete step-up verification with a TOTP or recovery code",
+        "description": "Verifies the MFA challenge bound to the current session and issues a single-use step-up proof.",
+        "operationId": "Identity.Security.StepUpCompleteMfa",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpMfaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/security/step-up/complete-password": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Security"
+        ],
+        "summary": "Complete step-up verification with the current password",
+        "description": "Verifies the current password and issues a single-use step-up proof.",
+        "operationId": "Identity.Security.StepUpCompletePassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Sessions"
+        ],
+        "summary": "List active sessions for the authenticated user",
+        "operationId": "Identity.Sessions.List",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/sessions/{sessionId}/revoke": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Sessions"
+        ],
+        "summary": "Revoke a session",
+        "operationId": "Identity.Sessions.Revoke",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/sessions/revoke-others": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Sessions"
+        ],
+        "summary": "Revoke all other sessions",
+        "description": "Revokes every active session of the current user except the session that issued the request.",
+        "operationId": "Identity.Sessions.RevokeOthers",
         "responses": {
           "200": {
             "description": "OK",
@@ -14070,10 +14434,62 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpMfaRequest": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "nullable": true
+          },
+          "challengeToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.DisableMfaRequest": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Auth.Commands.EmailVerificationEndpoints.ResendEmailVerificationRequest": {
         "type": "object",
         "properties": {
           "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.GetStepUpRequirementRequest": {
+        "type": "object",
+        "properties": {
+          "purpose": {
             "type": "string",
             "nullable": true
           }
@@ -14094,6 +14510,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.RegenerateRecoveryCodesRequest": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Auth.Commands.RegisterRequest": {
         "type": "object",
         "properties": {
@@ -14106,6 +14532,16 @@
             "nullable": true
           },
           "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
             "type": "string",
             "nullable": true
           }
