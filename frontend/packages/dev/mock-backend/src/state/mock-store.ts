@@ -472,6 +472,7 @@ export class MockStore {
     this.cardIdsByListId.clear();
     this.notificationIdsByUserId.clear();
     this.pageIdsByWorkspaceId.clear();
+    this.sequenceCounters.clear();
   }
 
   // ─── Primary insert helpers (maintain indexes) ────────────────────────────
@@ -571,7 +572,19 @@ export class MockStore {
     return this.workspacesById.get(id);
   }
 
-  // ─── Relational Transaction Methods (Plan: 02-IMPLEMENTATION-PLAN.md §MFB-FZ-05) ─
+  private sequenceCounters = new Map<string, number>();
+
+  nextSequence(entity: string): number {
+    const current = this.sequenceCounters.get(entity) ?? 0;
+    const next = current + 1;
+    this.sequenceCounters.set(entity, next);
+    return next;
+  }
+
+  nextId(entity: string): string {
+    const seq = this.nextSequence(entity);
+    return `${entity}-${String(seq).padStart(5, "0")}`;
+  }
 
   createWorkspaceForCurrentUser(input: {
     name?: string;
@@ -579,7 +592,7 @@ export class MockStore {
     isPersonal?: boolean;
   }): { workspace: MockWorkspaceRecord; membership: MockMembershipRecord } {
     const currentUser = this.getCurrentUser();
-    const newId = `ws-${this.workspacesById.size + 1}-${Date.now()}`;
+    const newId = this.nextId("ws");
     const workspace: MockWorkspaceRecord = {
       id: newId,
       name: input.name ?? "New Workspace",
@@ -592,7 +605,7 @@ export class MockStore {
     this.insertWorkspace(workspace);
 
     const membership: MockMembershipRecord = {
-      id: `mem-${this.membershipsById.size + 1}-${Date.now()}`,
+      id: this.nextId("mem"),
       workspaceId: workspace.id,
       userId: currentUser.id,
       role: "owner",
@@ -620,7 +633,7 @@ export class MockStore {
       this.getBoards(workspaceId).length,
       workspaceId,
       {
-        id: `board-${Date.now()}`,
+        id: this.nextId("board"),
         title: input.title ?? "New Board",
         description: input.description,
       },
@@ -637,7 +650,7 @@ export class MockStore {
     }
     const factories = this.getFactories();
     const list = factories.list(this.getLists(boardId).length, boardId, {
-      id: `list-${Date.now()}`,
+      id: this.nextId("list"),
       title: input.title ?? "New List",
     });
     this.insertList(list);
@@ -662,7 +675,7 @@ export class MockStore {
     }
     const factories = this.getFactories();
     const card = factories.card(this.getCards(listId).length, boardId, listId, {
-      id: `card-${Date.now()}`,
+      id: this.nextId("card"),
       title: input.title ?? "New Card",
       description: input.description,
     });
@@ -713,7 +726,7 @@ export class MockStore {
       this.getPages(workspaceId).length,
       workspaceId,
       {
-        id: `page-${Date.now()}`,
+        id: this.nextId("page"),
         title: input.title ?? "New Page",
         icon: input.icon,
         parentId: input.parentId,
@@ -908,5 +921,19 @@ export class MockStore {
         }
       }
     }
+  }
+
+  getSnapshot(): Record<string, unknown[]> {
+    return {
+      users: Array.from(this.usersById.values()),
+      workspaces: Array.from(this.workspacesById.values()),
+      memberships: Array.from(this.membershipsById.values()),
+      views: Array.from(this.viewsById.values()),
+      boards: Array.from(this.boardsById.values()),
+      lists: Array.from(this.listsById.values()),
+      cards: Array.from(this.cardsById.values()),
+      notifications: Array.from(this.notificationsById.values()),
+      pages: Array.from(this.pagesById.values()),
+    };
   }
 }
