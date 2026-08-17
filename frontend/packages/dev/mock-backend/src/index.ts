@@ -18,6 +18,7 @@ export { createMockClock, defaultClock } from "./state/clock";
 export type { MockClock } from "./state/clock";
 export { createFactories, defaultFactories } from "./state/factories";
 export type { MockFactories } from "./state/factories";
+export * from "./state/mock-dataset.manifest";
 
 // Transport
 export * from "./transport/create-mock-fetch";

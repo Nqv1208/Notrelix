@@ -34,6 +34,7 @@ import type { MockBackendConfig, MockPersona } from "../config/mock-config";
 import { defaultConfig } from "../config/mock-config";
 import { createMockClock, type MockClock } from "./clock";
 import { createFactories, type MockFactories } from "./factories";
+import { MOCK_DATASET_CARDINALITIES } from "./mock-dataset.manifest";
 
 export class MockSeedInvariantError extends Error {
   constructor(message: string) {
@@ -582,42 +583,17 @@ export class MockStore {
   }
 
   private densityCardCount(): number {
-    switch (this.config.density) {
-      case "tiny":
-        return 2;
-      case "normal":
-        return 8;
-      case "large":
-        return 50;
-      case "stress":
-        return 200;
-    }
+    return MOCK_DATASET_CARDINALITIES[this.config.density].cardsPerList;
   }
 
   private densityNotificationCount(): number {
-    switch (this.config.density) {
-      case "tiny":
-        return 1;
-      case "normal":
-        return 5;
-      case "large":
-        return 20;
-      case "stress":
-        return 100;
-    }
+    return MOCK_DATASET_CARDINALITIES[this.config.density]
+      .notificationsPerCurrentActor;
   }
 
   private densityPageCount(): number {
-    switch (this.config.density) {
-      case "tiny":
-        return 1;
-      case "normal":
-        return 4;
-      case "large":
-        return 15;
-      case "stress":
-        return 50;
-    }
+    return MOCK_DATASET_CARDINALITIES[this.config.density]
+      .pagesInPrimaryWorkspace;
   }
 
   private clearAll(): void {
