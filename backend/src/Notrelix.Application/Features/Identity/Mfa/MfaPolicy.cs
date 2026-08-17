@@ -11,9 +11,6 @@ public static class MfaPolicy
     /// <summary>Maximum verification attempts allowed per challenge within its TTL window.</summary>
     public const int ChallengeMaxAttempts = 5;
 
-    /// <summary>Generic rate-limit policy name for MFA challenge verification.</summary>
-    public const string ChallengeVerificationRatePolicy = "identity.mfa.challenge.verify";
-
     /// <summary>Number of one-time recovery codes issued per batch.</summary>
     public const int RecoveryCodeCount = 8;
 

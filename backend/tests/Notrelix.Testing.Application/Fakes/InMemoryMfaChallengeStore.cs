@@ -11,6 +11,8 @@ public sealed class InMemoryMfaChallengeStore : IMfaChallengeStore
 {
     private readonly Dictionary<string, MfaChallengePayload> _items = new();
 
+    private readonly Dictionary<string, int> _attempts = new();
+
     private readonly IDateTimeProvider _clock;
 
     public InMemoryMfaChallengeStore(IDateTimeProvider clock)
@@ -47,5 +49,20 @@ public sealed class InMemoryMfaChallengeStore : IMfaChallengeStore
         }
 
         return Task.FromResult<MfaChallengePayload?>(null);
+    }
+
+    public Task<MfaChallengeAttempt> RecordAttemptAsync(
+        string token, int maxAttempts, TimeSpan ttl, CancellationToken ct = default)
+    {
+        var attempts = _attempts.TryGetValue(token, out var prior) ? prior + 1 : 1;
+        _attempts[token] = attempts;
+
+        var exceeded = attempts > maxAttempts;
+        if (exceeded)
+        {
+            _items.Remove(token);
+        }
+
+        return Task.FromResult(new MfaChallengeAttempt(attempts, exceeded));
     }
 }

@@ -4,7 +4,6 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Mfa;
@@ -26,7 +25,6 @@ using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Identity.Mfa;
 using Notrelix.Infrastructure.Identity.Security;
-using Notrelix.Infrastructure.RateLimiting;
 using Notrelix.Integration.Tests.Containers;
 using StackExchange.Redis;
 
@@ -509,6 +507,63 @@ public sealed class MfaFlowTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task AttemptBudget_IsCumulativePerChallenge_NotWallClockWindow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = Guid.NewGuid().ToString("N");
+        var payload = new MfaChallengePayload(
+            Guid.CreateVersion7(), _user.Id, MfaChallengePurpose.PasswordLogin, now, now.Add(MfaPolicy.ChallengeTtl));
+        await _services.ChallengeStore.StoreAsync(token, payload, MfaPolicy.ChallengeTtl);
+
+        for (var i = 0; i < MfaPolicy.ChallengeMaxAttempts; i++)
+        {
+            var attempt = await _services.ChallengeStore.RecordAttemptAsync(
+                token, MfaPolicy.ChallengeMaxAttempts, MfaPolicy.ChallengeTtl);
+            attempt.Exceeded.Should().BeFalse();
+            attempt.Attempts.Should().Be(i + 1);
+        }
+
+        var stillPeekable = await _services.ChallengeStore.PeekAsync(token);
+        stillPeekable.Should().NotBeNull();
+
+        var sixth = await _services.ChallengeStore.RecordAttemptAsync(
+            token, MfaPolicy.ChallengeMaxAttempts, MfaPolicy.ChallengeTtl);
+        sixth.Exceeded.Should().BeTrue();
+        sixth.Attempts.Should().Be(MfaPolicy.ChallengeMaxAttempts + 1);
+
+        var invalidated = await _services.ChallengeStore.PeekAsync(token);
+        invalidated.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AttemptBudget_IsIndependentPerChallenge()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var firstToken = Guid.NewGuid().ToString("N");
+        var secondToken = Guid.NewGuid().ToString("N");
+
+        var firstPayload = new MfaChallengePayload(
+            Guid.CreateVersion7(), _user.Id, MfaChallengePurpose.PasswordLogin, now, now.Add(MfaPolicy.ChallengeTtl));
+        var secondPayload = new MfaChallengePayload(
+            Guid.CreateVersion7(), _user.Id, MfaChallengePurpose.PasswordLogin, now, now.Add(MfaPolicy.ChallengeTtl));
+        await _services.ChallengeStore.StoreAsync(firstToken, firstPayload, MfaPolicy.ChallengeTtl);
+        await _services.ChallengeStore.StoreAsync(secondToken, secondPayload, MfaPolicy.ChallengeTtl);
+
+        for (var i = 0; i < MfaPolicy.ChallengeMaxAttempts; i++)
+        {
+            (await _services.ChallengeStore.RecordAttemptAsync(firstToken, MfaPolicy.ChallengeMaxAttempts, MfaPolicy.ChallengeTtl))
+                .Exceeded.Should().BeFalse();
+        }
+
+        var secondFirstAttempt = await _services.ChallengeStore.RecordAttemptAsync(
+            secondToken, MfaPolicy.ChallengeMaxAttempts, MfaPolicy.ChallengeTtl);
+        secondFirstAttempt.Attempts.Should().Be(1);
+        secondFirstAttempt.Exceeded.Should().BeFalse();
+
+        (await _services.ChallengeStore.PeekAsync(secondToken)).Should().NotBeNull();
+    }
+
     // ---------------------------------------------------------------
     // IA-SEC-002-CRED — ChangePassword step-up matrix (directive 9.5)
     // ---------------------------------------------------------------
@@ -740,7 +795,6 @@ public sealed class MfaFlowTests : IAsyncLifetime
         private readonly MfaRecoveryCodeGenerator _recoveryGenerator;
         private readonly IMfaChallengeStore _challengeStore;
         private readonly IStepUpProofStore _proofStore;
-        private readonly IRateLimitService _rateLimiter;
         private readonly Mock<IDateTimeProvider> _time;
         private readonly Mock<IJwtBlacklistService> _jwtBlacklist;
         private readonly Mock<IJwtService> _jwt;
@@ -764,7 +818,6 @@ public sealed class MfaFlowTests : IAsyncLifetime
             });
             _challengeStore = new MfaChallengeStore(new RedisCacheService(distributedCache, multiplexer));
             _proofStore = new StepUpProofStore(new RedisCacheService(distributedCache, multiplexer));
-            _rateLimiter = new RedisRateLimitService(multiplexer);
 
             _recoveryGenerator = new MfaRecoveryCodeGenerator();
 
@@ -792,7 +845,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         private ISecurityStepUpService StepUp(ApplicationDbContext context) =>
             new SecurityStepUpService(
-                context, _challengeStore, _proofStore, _rateLimiter, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
+                context, _challengeStore, _proofStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
                 new Mock<IPasswordHasher>().Object, _time.Object);
 
         private IAuthSessionIssuer SessionIssuer(ApplicationDbContext context) =>
@@ -902,7 +955,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             await using var context = _fixture.CreatePostgresContext();
             var handler = new CompleteMfaChallengeCommandHandler(
-                context, _challengeStore, _rateLimiter, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
+                context, _challengeStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
                 SessionIssuer(context), _time.Object,
                 NullLogger<CompleteMfaChallengeCommandHandler>.Instance);
             var result = await handler.Handle(new CompleteMfaChallengeCommand { ChallengeToken = token, Code = code }, CancellationToken.None);

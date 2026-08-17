@@ -32,7 +32,6 @@ public class StartOAuthLinkCommandHandlerTests
             new Mock<IIdentityDbContext>().Object,
             new InMemoryMfaChallengeStore(clock),
             new InMemoryStepUpProofStore(clock),
-            new InMemoryRateLimitService(),
             new Mock<IMfaCodeVerifier>().Object,
             new Mock<IPasswordHasher>().Object,
             clock);

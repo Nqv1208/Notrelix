@@ -41,6 +41,15 @@ public sealed class MfaChallengeStore : IMfaChallengeStore
         return value is null ? null : JsonSerializer.Deserialize<MfaChallengePayload>(value);
     }
 
+    public async Task<MfaChallengeAttempt> RecordAttemptAsync(
+        string token, int maxAttempts, TimeSpan ttl, CancellationToken ct)
+    {
+        var key = GetKey(token);
+        var (attempts, exceeded) = await _cache.IncrementWithConditionalDeleteAsync(
+            $"{key}:attempts", key, maxAttempts, ttl, ct);
+        return new MfaChallengeAttempt((int)attempts, exceeded);
+    }
+
     private static string GetKey(string token)
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));

@@ -21,7 +21,6 @@ public sealed class CompleteMfaChallengeCommandHandler
 {
     private readonly IIdentityDbContext _context;
     private readonly IMfaChallengeStore _challengeStore;
-    private readonly IRateLimitService _rateLimiter;
     private readonly IMfaCodeVerifier _codeVerifier;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -30,7 +29,6 @@ public sealed class CompleteMfaChallengeCommandHandler
     public CompleteMfaChallengeCommandHandler(
         IIdentityDbContext context,
         IMfaChallengeStore challengeStore,
-        IRateLimitService rateLimiter,
         IMfaCodeVerifier codeVerifier,
         IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
@@ -38,7 +36,6 @@ public sealed class CompleteMfaChallengeCommandHandler
     {
         _context = context;
         _challengeStore = challengeStore;
-        _rateLimiter = rateLimiter;
         _codeVerifier = codeVerifier;
         _sessionIssuer = sessionIssuer;
         _dateTimeProvider = dateTimeProvider;
@@ -64,17 +61,11 @@ public sealed class CompleteMfaChallengeCommandHandler
             return InvalidChallenge();
         }
 
-        var rate = await _rateLimiter.CheckAsync(
-            MfaPolicy.ChallengeVerificationRatePolicy,
-            $"{challenge.UserId:N}:{challenge.ChallengeId:N}",
-            MfaPolicy.ChallengeMaxAttempts,
-            MfaPolicy.ChallengeTtl,
-            RateLimitAlgorithm.FixedWindow,
-            cancellationToken);
+        var attempt = await _challengeStore.RecordAttemptAsync(
+            request.ChallengeToken, MfaPolicy.ChallengeMaxAttempts, MfaPolicy.ChallengeTtl, cancellationToken);
 
-        if (!rate.IsAllowed)
+        if (attempt.Exceeded)
         {
-            await _challengeStore.ConsumeAsync(request.ChallengeToken, cancellationToken);
             return InvalidChallenge();
         }
 
@@ -95,11 +86,6 @@ public sealed class CompleteMfaChallengeCommandHandler
         {
             _logger.LogWarning("MFA challenge failed verification for {UserId} (purpose {Purpose})",
                 user.Id, challenge.Purpose);
-
-            if (rate.Remaining == 0)
-            {
-                await _challengeStore.ConsumeAsync(request.ChallengeToken, cancellationToken);
-            }
 
             return Result<AuthResult>.Failure(new ApplicationError(
                 "identity.mfa.invalid-code",

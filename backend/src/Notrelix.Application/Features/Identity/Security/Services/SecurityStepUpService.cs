@@ -21,7 +21,6 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
     private readonly IIdentityDbContext _context;
     private readonly IMfaChallengeStore _challengeStore;
     private readonly IStepUpProofStore _proofStore;
-    private readonly IRateLimitService _rateLimiter;
     private readonly IMfaCodeVerifier _codeVerifier;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -32,7 +31,6 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         IIdentityDbContext context,
         IMfaChallengeStore challengeStore,
         IStepUpProofStore proofStore,
-        IRateLimitService rateLimiter,
         IMfaCodeVerifier codeVerifier,
         IPasswordHasher passwordHasher,
         IDateTimeProvider dateTimeProvider)
@@ -40,7 +38,6 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         _context = context;
         _challengeStore = challengeStore;
         _proofStore = proofStore;
-        _rateLimiter = rateLimiter;
         _codeVerifier = codeVerifier;
         _passwordHasher = passwordHasher;
         _dateTimeProvider = dateTimeProvider;
@@ -87,28 +84,17 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
             return InvalidProofResult();
         }
 
-        var rate = await _rateLimiter.CheckAsync(
-            MfaPolicy.ChallengeVerificationRatePolicy,
-            $"{userId:N}:{challenge.ChallengeId:N}",
-            MfaPolicy.ChallengeMaxAttempts,
-            MfaPolicy.ChallengeTtl,
-            RateLimitAlgorithm.FixedWindow,
-            ct);
+        var attempt = await _challengeStore.RecordAttemptAsync(
+            challengeToken, MfaPolicy.ChallengeMaxAttempts, MfaPolicy.ChallengeTtl, ct);
 
-        if (!rate.IsAllowed)
+        if (attempt.Exceeded)
         {
-            await _challengeStore.ConsumeAsync(challengeToken, ct);
             return InvalidProofResult();
         }
 
         var verified = await _codeVerifier.VerifyAsync(userId, code, now, ct);
         if (!verified)
         {
-            if (rate.Remaining == 0)
-            {
-                await _challengeStore.ConsumeAsync(challengeToken, ct);
-            }
-
             return Result<StepUpProofResult>.Failure(new ApplicationError(
                 "identity.security.step-up-invalid-code",
                 "Invalid step-up verification code.",
