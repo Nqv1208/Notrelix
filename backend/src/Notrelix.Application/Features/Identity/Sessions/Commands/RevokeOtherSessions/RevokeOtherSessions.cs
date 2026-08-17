@@ -63,7 +63,7 @@ public sealed class RevokeOtherSessionsCommandHandler
 
         foreach (var session in sessions)
         {
-            session.Revoke(now);
+            session.Revoke(now, SessionRevocationReasons.UserRevokedOtherSessions);
             await _jwtBlacklist.RevokeSessionBeforeAsync(session.Id, now, SessionRevocationMarkerTtl);
         }
 

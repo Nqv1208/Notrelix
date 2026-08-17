@@ -25,6 +25,7 @@ using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Tests.Features.Identity;
@@ -39,6 +40,7 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<IJwtService> JwtServiceMock = new();
     protected readonly Mock<IJwtBlacklistService> JwtBlacklistMock = new();
     protected readonly Mock<IMfaChallengeStore> ChallengeStoreMock = new();
+    protected readonly Mock<ISecurityStepUpService> StepUpServiceMock = new();
     protected readonly Mock<IOtpService> OtpServiceMock = new();
     protected readonly Mock<IRateLimitService> RateLimitServiceMock = new();
     protected readonly Mock<IEmailService> EmailServiceMock = new();
@@ -56,6 +58,7 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<ILogger<ChangePasswordCommandHandler>> ChangePasswordLoggerMock = new();
 
     protected readonly Guid TestUserId = Guid.CreateVersion7();
+    protected readonly Guid TestSessionId = Guid.CreateVersion7();
     protected readonly string TestEmail = "test@example.com";
     protected readonly string TestPassword = "Password123!";
     protected readonly string TestHashedPassword = "hashed-password";

@@ -90,7 +90,7 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
 
         foreach (var session in activeSessions)
         {
-            session.Revoke(now);
+            session.Revoke(now, SessionRevocationReasons.MfaDisabled);
         }
 
         await _jwtBlacklist.RevokeUserBeforeAsync(userId, now, RevocationWatermarkTtl);

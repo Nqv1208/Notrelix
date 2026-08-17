@@ -41,7 +41,7 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
         if (session is not null)
         {
             var now = _dateTimeProvider.UtcNow;
-            session.Revoke(now);
+            session.Revoke(now, SessionRevocationReasons.UserRequested);
             await _jwtBlacklist.RevokeSessionBeforeAsync(session.Id, now, SessionRevocationMarkerTtl);
         }
 

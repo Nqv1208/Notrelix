@@ -59,7 +59,7 @@ public sealed class RevokeSessionCommandHandler
         }
 
         var now = _dateTimeProvider.UtcNow;
-        session.Revoke(now);
+        session.Revoke(now, SessionRevocationReasons.UserRequested);
         await _jwtBlacklist.RevokeSessionBeforeAsync(session.Id, now, SessionRevocationMarkerTtl);
 
         _logger.LogInformation("Session {SessionId} revoked by user {UserId}", session.Id, userId);

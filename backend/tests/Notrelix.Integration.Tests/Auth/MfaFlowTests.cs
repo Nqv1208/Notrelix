@@ -2,8 +2,10 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging.Abstractions;
+using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.RateLimiting;
+using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
@@ -18,6 +20,7 @@ using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
@@ -506,6 +509,153 @@ public sealed class MfaFlowTests : IAsyncLifetime
         }
     }
 
+    // ---------------------------------------------------------------
+    // IA-SEC-002-CRED — ChangePassword step-up matrix (directive 9.5)
+    // ---------------------------------------------------------------
+
+    private async Task SeedActiveSessionAsync()
+    {
+        await using var context = _fixture.CreatePostgresContext();
+        var session = UserSession.Create(
+            _user.Id, RefreshTokenHash.Create($"refresh-{Guid.NewGuid()}"),
+            DateTimeOffset.UtcNow.AddDays(30), DateTimeOffset.UtcNow);
+        context.Sessions.Add(session);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task AssertPasswordUnchangedAsync()
+    {
+        await using var context = _fixture.CreatePostgresContext();
+        context.Users.Single(u => u.Id == _user.Id).PasswordHash.Should().Be("hashed");
+    }
+
+    [Fact]
+    public async Task ChangePassword_NoMfa_CorrectPassword_Succeeds()
+    {
+        var result = await _services.SendChangePassword(_user.Id, null, "Password1!", null);
+        result.Succeeded.Should().BeTrue();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.Users.Single(u => u.Id == _user.Id).PasswordHash.Should().Be("new-hashed-password");
+        }
+    }
+
+    [Fact]
+    public async Task ChangePassword_NoMfa_WrongPassword_Rejects()
+    {
+        var result = await _services.SendChangePassword(_user.Id, null, "wrong-password", null);
+        result.Succeeded.Should().BeFalse();
+        await AssertPasswordUnchangedAsync();
+    }
+
+    [Fact]
+    public async Task ChangePassword_Mfa_CorrectPassword_NoProof_Rejects()
+    {
+        await EnrollAsync();
+        var result = await _services.SendChangePassword(_user.Id, Guid.CreateVersion7(), "Password1!", null);
+        result.Succeeded.Should().BeFalse();
+        await AssertPasswordUnchangedAsync();
+    }
+
+    [Fact]
+    public async Task ChangePassword_Mfa_CorrectPassword_RawChallengeToken_Rejects()
+    {
+        await EnrollAsync();
+
+        var login = await _services.SendLogin(Email);
+        login.Data!.MfaRequired.Should().BeTrue();
+        var rawChallenge = login.Data!.MfaChallengeToken!;
+
+        var changed = await _services.SendChangePassword(_user.Id, Guid.CreateVersion7(), "Password1!", rawChallenge);
+        changed.Succeeded.Should().BeFalse();
+        await AssertPasswordUnchangedAsync();
+
+        var completed = await _services.SendCompleteChallenge(
+            rawChallenge, ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        completed.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ChangePassword_Mfa_CorrectPassword_WrongPurposeProof_Rejects()
+    {
+        await EnrollAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var proof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionId, StepUpPurpose.DisableMfa,
+            ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        proof.Succeeded.Should().BeTrue();
+
+        var changed = await _services.SendChangePassword(_user.Id, sessionId, "Password1!", proof.Data!.ProofToken);
+        changed.Succeeded.Should().BeFalse();
+        await AssertPasswordUnchangedAsync();
+    }
+
+    [Fact]
+    public async Task ChangePassword_Mfa_CorrectPassword_ProofFromAnotherSession_Rejects()
+    {
+        await EnrollAsync();
+        var sessionA = Guid.CreateVersion7();
+        var sessionB = Guid.CreateVersion7();
+
+        var proof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionA, StepUpPurpose.ChangePassword,
+            ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        proof.Succeeded.Should().BeTrue();
+
+        var changed = await _services.SendChangePassword(_user.Id, sessionB, "Password1!", proof.Data!.ProofToken);
+        changed.Succeeded.Should().BeFalse();
+        await AssertPasswordUnchangedAsync();
+    }
+
+    [Fact]
+    public async Task ChangePassword_Mfa_CorrectPassword_ValidProof_SucceedsAndRevokesSessions()
+    {
+        await EnrollAsync();
+        await SeedActiveSessionAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var proof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionId, StepUpPurpose.ChangePassword,
+            ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        proof.Succeeded.Should().BeTrue();
+
+        var changed = await _services.SendChangePassword(_user.Id, sessionId, "Password1!", proof.Data!.ProofToken);
+        changed.Succeeded.Should().BeTrue();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.Users.Single(u => u.Id == _user.Id).PasswordHash.Should().Be("new-hashed-password");
+            context.Sessions.Where(s => s.UserId == _user.Id)
+                .Should().OnlyContain(s => s.Status == SessionStatus.Revoked);
+        }
+    }
+
+    [Fact]
+    public async Task ChangePassword_Mfa_WrongPassword_ValidProof_RejectsAndProofNotBurned()
+    {
+        await EnrollAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var proof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionId, StepUpPurpose.ChangePassword,
+            ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        proof.Succeeded.Should().BeTrue();
+
+        var first = await _services.SendChangePassword(_user.Id, sessionId, "wrong-password", proof.Data!.ProofToken);
+        first.Succeeded.Should().BeFalse();
+        await AssertPasswordUnchangedAsync();
+
+        var second = await _services.SendChangePassword(_user.Id, sessionId, "Password1!", proof.Data!.ProofToken);
+        second.Succeeded.Should().BeTrue();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.Users.Single(u => u.Id == _user.Id).PasswordHash.Should().Be("new-hashed-password");
+        }
+    }
+
     private MfaEnrollmentStartResult LastEnrollment { get; set; } = null!;
 
     private async Task EnrollAsync(Guid? userId = null)
@@ -724,6 +874,26 @@ public sealed class MfaFlowTests : IAsyncLifetime
                 context, passwordHasher.Object, SessionIssuer(context), _challengeStore, _time.Object,
                 NullLogger<LoginCommandHandler>.Instance);
             var result = await handler.Handle(new LoginCommand { Email = email, Password = "Password1!" }, CancellationToken.None);
+            await context.SaveChangesAsync();
+            return result;
+        }
+
+        public async Task<Result> SendChangePassword(Guid userId, Guid? sessionId, string currentPassword, string? stepUpToken)
+        {
+            await using var context = _fixture.CreatePostgresContext();
+            var passwordHasher = new Mock<IPasswordHasher>();
+            passwordHasher.Setup(x => x.VerifyPassword("Password1!", It.IsAny<string>())).Returns(true);
+            passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("new-hashed-password");
+            var handler = new ChangePasswordCommandHandler(
+                context, Actor(userId, sessionId).Object, passwordHasher.Object, _jwtBlacklist.Object,
+                new Mock<IEmailService>().Object, _time.Object,
+                NullLogger<ChangePasswordCommandHandler>.Instance, StepUp(context));
+            var result = await handler.Handle(new ChangePasswordCommand
+            {
+                CurrentPassword = currentPassword,
+                NewPassword = "NewPassword123!",
+                StepUpToken = stepUpToken
+            }, CancellationToken.None);
             await context.SaveChangesAsync();
             return result;
         }
