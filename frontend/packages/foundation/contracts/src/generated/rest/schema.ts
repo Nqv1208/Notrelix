@@ -3884,6 +3884,7 @@ export interface components {
         "Notrelix.API.Endpoints.Identity.Auth.Commands.ChangePasswordRequest": {
             currentPassword?: string | null;
             newPassword?: string | null;
+            stepUpToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteMfaChallengeRequest": {
             challengeToken?: string | null;
