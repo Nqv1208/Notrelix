@@ -70,12 +70,12 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
 
         var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
+        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
         var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccessGrantProjectionService(context)), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 
@@ -129,10 +129,10 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
 
         var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
+        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccessGrantProjectionService(context)), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 
@@ -163,12 +163,12 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
 
         var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
+        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
         var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccessGrantProjectionService(context)), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
 

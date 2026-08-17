@@ -30,6 +30,8 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
         _logger = logger;
     }
 
+    private static readonly TimeSpan SessionRevocationMarkerTtl = TimeSpan.FromHours(24);
+
     public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
     {
         var tokenHash = RefreshTokenHash.Create(request.RefreshToken);
@@ -38,7 +40,9 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
 
         if (session is not null)
         {
-            session.Revoke(_dateTimeProvider.UtcNow);
+            var now = _dateTimeProvider.UtcNow;
+            session.Revoke(now);
+            await _jwtBlacklist.RevokeSessionBeforeAsync(session.Id, now, SessionRevocationMarkerTtl);
         }
 
         if (!string.IsNullOrWhiteSpace(request.AccessToken))

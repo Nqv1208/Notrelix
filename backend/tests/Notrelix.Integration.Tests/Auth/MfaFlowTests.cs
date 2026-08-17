@@ -12,6 +12,10 @@ using Notrelix.Application.Features.Identity.Mfa.Commands.RegenerateRecoveryCode
 using Notrelix.Application.Features.Identity.Mfa.Commands.StartMfaEnrollment;
 using Notrelix.Application.Features.Identity.Mfa.Commands.VerifyMfaEnrollment;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
+using Notrelix.Application.Features.Identity.Mfa.Services;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Caching;
@@ -139,7 +143,14 @@ public sealed class MfaFlowTests : IAsyncLifetime
             _user.Id, enrollment.Data!.MfaMethodId, ComputeTotpCode(enrollment.Data.Secret, DateTimeOffset.UtcNow));
         var oldCode = verification.Data!.RecoveryCodes.First();
 
-        var regenerated = await _services.SendRegenerateRecoveryCodes(_user.Id);
+        var sessionId = Guid.CreateVersion7();
+        var stepUpProof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionId, StepUpPurpose.RegenerateRecoveryCodes,
+            ComputeTotpCode(enrollment.Data!.Secret, DateTimeOffset.UtcNow));
+        stepUpProof.Succeeded.Should().BeTrue(
+            $"step-up proof should be issued: {string.Join(", ", stepUpProof.Errors)}");
+
+        var regenerated = await _services.SendRegenerateRecoveryCodes(_user.Id, sessionId, stepUpProof.Data!.ProofToken);
         regenerated.Succeeded.Should().BeTrue();
         regenerated.Data!.RecoveryCodes.Should().HaveCount(MfaPolicy.RecoveryCodeCount);
         regenerated.Data.RecoveryCodes.Should().NotContain(oldCode);
@@ -161,7 +172,14 @@ public sealed class MfaFlowTests : IAsyncLifetime
             _user.Id, enrollment.Data!.MfaMethodId, ComputeTotpCode(enrollment.Data.Secret, DateTimeOffset.UtcNow));
         verification.Succeeded.Should().BeTrue();
 
-        var disabled = await _services.SendDisableMfa(_user.Id);
+        var sessionId = Guid.CreateVersion7();
+        var stepUpProof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionId, StepUpPurpose.DisableMfa,
+            ComputeTotpCode(enrollment.Data!.Secret, DateTimeOffset.UtcNow));
+        stepUpProof.Succeeded.Should().BeTrue(
+            $"step-up proof should be issued: {string.Join(", ", stepUpProof.Errors)}");
+
+        var disabled = await _services.SendDisableMfa(_user.Id, sessionId, stepUpProof.Data!.ProofToken);
         disabled.Succeeded.Should().BeTrue();
 
         await using (var context = _fixture.CreatePostgresContext())
@@ -286,19 +304,26 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
             _jwtBlacklist = new Mock<IJwtBlacklistService>();
             _jwt = new Mock<IJwtService>();
-            _jwt.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
+            _jwt.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
             _jwt.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
         }
 
-        private Mock<ICurrentRequestContext> Actor(Guid userId)
+        private Mock<ICurrentRequestContext> Actor(Guid userId, Guid? sessionId = null)
         {
             var ctx = new Mock<ICurrentRequestContext>();
             ctx.Setup(x => x.UserId).Returns(userId);
+            if (sessionId is not null)
+                ctx.Setup(x => x.SessionId).Returns(sessionId);
             return ctx;
         }
 
+        private ISecurityStepUpService StepUp(ApplicationDbContext context) =>
+            new SecurityStepUpService(
+                context, _challengeStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
+                new Mock<IPasswordHasher>().Object, _time.Object);
+
         private IAuthSessionIssuer SessionIssuer(ApplicationDbContext context) =>
-            new AuthSessionIssuer(_jwt.Object, context, _time.Object);
+            new AuthSessionIssuer(_jwt.Object, context, _time.Object, new Mock<IClientMetadata>().Object);
 
         public async Task<Result<MfaEnrollmentStartResult>> SendStartEnrollment(Guid userId)
         {
@@ -321,26 +346,40 @@ public sealed class MfaFlowTests : IAsyncLifetime
             return result;
         }
 
-        public async Task<Result<MfaEnrollmentVerifyResult>> SendRegenerateRecoveryCodes(Guid userId)
+        public async Task<Result<MfaEnrollmentVerifyResult>> SendRegenerateRecoveryCodes(Guid userId, Guid sessionId, string stepUpToken)
         {
             await using var context = _fixture.CreatePostgresContext();
             var handler = new RegenerateRecoveryCodesCommandHandler(
-                context, Actor(userId).Object, _recoveryGenerator, _time.Object,
+                context, Actor(userId, sessionId).Object, _recoveryGenerator, StepUp(context), _time.Object,
                 NullLogger<RegenerateRecoveryCodesCommandHandler>.Instance);
-            var result = await handler.Handle(new RegenerateRecoveryCodesCommand(), CancellationToken.None);
+            var result = await handler.Handle(new RegenerateRecoveryCodesCommand { StepUpToken = stepUpToken }, CancellationToken.None);
             await context.SaveChangesAsync();
             return result;
         }
 
-        public async Task<Result> SendDisableMfa(Guid userId)
+        public async Task<Result> SendDisableMfa(Guid userId, Guid sessionId, string stepUpToken)
         {
             await using var context = _fixture.CreatePostgresContext();
             var handler = new DisableMfaCommandHandler(
-                context, Actor(userId).Object, _jwtBlacklist.Object, _time.Object,
+                context, Actor(userId, sessionId).Object, _jwtBlacklist.Object, StepUp(context), _time.Object,
                 NullLogger<DisableMfaCommandHandler>.Instance);
-            var result = await handler.Handle(new DisableMfaCommand(), CancellationToken.None);
+            var result = await handler.Handle(new DisableMfaCommand { StepUpToken = stepUpToken }, CancellationToken.None);
             await context.SaveChangesAsync();
             return result;
+        }
+
+        public async Task<Result<StepUpProofResult>> SendStepUpMfaProof(Guid userId, Guid sessionId, StepUpPurpose purpose, string code)
+        {
+            await using var context = _fixture.CreatePostgresContext();
+            var stepUpService = StepUp(context);
+            var requirement = await stepUpService.GetRequirementAsync(
+                userId, sessionId, purpose, CancellationToken.None);
+            if (!requirement.Succeeded || requirement.Data?.ChallengeToken is not { } challengeToken)
+            {
+                return Result<StepUpProofResult>.Failure("Step-up requirement could not be satisfied.");
+            }
+            return await stepUpService.CompleteMfaAsync(
+                userId, sessionId, purpose, challengeToken, code, CancellationToken.None);
         }
 
         public async Task<Result<AuthResult>> SendLogin(string email)
@@ -360,7 +399,8 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             await using var context = _fixture.CreatePostgresContext();
             var handler = new CompleteMfaChallengeCommandHandler(
-                context, _challengeStore, _totp, _recoveryGenerator, SessionIssuer(context), _time.Object,
+                context, _challengeStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
+                SessionIssuer(context), _time.Object,
                 NullLogger<CompleteMfaChallengeCommandHandler>.Instance);
             var result = await handler.Handle(new CompleteMfaChallengeCommand { ChallengeToken = token, Code = code }, CancellationToken.None);
             await context.SaveChangesAsync();

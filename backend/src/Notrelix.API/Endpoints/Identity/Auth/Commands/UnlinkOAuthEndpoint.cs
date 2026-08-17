@@ -12,7 +12,7 @@ public static class UnlinkOAuthEndpoint
             .WithName("Identity.Auth.OAuth.Unlink")
             .WithTags("Identity.Auth")
             .WithSummary("Unlink an OAuth provider identity")
-            .WithDescription("Removes a linked provider identity from the current user, protected by the last-primary-auth-method invariant.")
+            .WithDescription("Removes a linked provider identity from the current user, protected by the last-primary-auth-method invariant and step-up verification.")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
 
         return group;
@@ -20,6 +20,7 @@ public static class UnlinkOAuthEndpoint
 
     private static async Task<IResult> HandleAsync(
         string provider,
+        UnlinkOAuthRequest request,
         ISender sender)
     {
         if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider))
@@ -29,11 +30,17 @@ public static class UnlinkOAuthEndpoint
 
         var command = new UnlinkOAuthCommand
         {
-            Provider = oauthProvider
+            Provider = oauthProvider,
+            StepUpToken = request.StepUpToken
         };
 
         var result = await sender.Send(command);
 
         return result.ToApiResult();
     }
+}
+
+public sealed record UnlinkOAuthRequest
+{
+    public string StepUpToken { get; init; } = string.Empty;
 }

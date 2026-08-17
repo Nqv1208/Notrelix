@@ -84,6 +84,12 @@ public sealed class CompleteOAuthLoginCommandHandler
             return Result<AuthResult>.Failure("Invalid or expired OAuth state.");
         }
 
+        if (storedState.Flow != OAuthFlowKind.Login)
+        {
+            _logger.LogWarning("OAuth state bound to {Flow} flow cannot complete a login", storedState.Flow);
+            return Result<AuthResult>.Failure("OAuth state is not bound to a login flow.");
+        }
+
         if (storedState.Provider != request.Provider)
         {
             _logger.LogWarning("OAuth provider mismatch: stored={Stored}, request={Request}",

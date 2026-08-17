@@ -2,7 +2,6 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
-using Notrelix.Domain.Identity.Mfa;
 
 namespace Notrelix.Application.Features.Identity.Mfa.Commands.CompleteMfaChallenge;
 
@@ -21,8 +20,7 @@ public sealed class CompleteMfaChallengeCommandHandler
 {
     private readonly IIdentityDbContext _context;
     private readonly IMfaChallengeStore _challengeStore;
-    private readonly IMfaTotpService _totp;
-    private readonly IMfaRecoveryCodeGenerator _recoveryGenerator;
+    private readonly IMfaCodeVerifier _codeVerifier;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<CompleteMfaChallengeCommandHandler> _logger;
@@ -30,16 +28,14 @@ public sealed class CompleteMfaChallengeCommandHandler
     public CompleteMfaChallengeCommandHandler(
         IIdentityDbContext context,
         IMfaChallengeStore challengeStore,
-        IMfaTotpService totp,
-        IMfaRecoveryCodeGenerator recoveryGenerator,
+        IMfaCodeVerifier codeVerifier,
         IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
         ILogger<CompleteMfaChallengeCommandHandler> logger)
     {
         _context = context;
         _challengeStore = challengeStore;
-        _totp = totp;
-        _recoveryGenerator = recoveryGenerator;
+        _codeVerifier = codeVerifier;
         _sessionIssuer = sessionIssuer;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
@@ -78,12 +74,7 @@ public sealed class CompleteMfaChallengeCommandHandler
                 ApplicationErrorType.Conflict));
         }
 
-        var verified = await TryVerifyTotpAsync(user.Id, request.Code, now, cancellationToken);
-
-        if (!verified)
-        {
-            verified = await TryVerifyRecoveryCodeAsync(user.Id, request.Code, now, cancellationToken);
-        }
+        var verified = await _codeVerifier.VerifyAsync(user.Id, request.Code, now, cancellationToken);
 
         if (!verified)
         {
@@ -102,51 +93,5 @@ public sealed class CompleteMfaChallengeCommandHandler
             user.Id, challenge.Purpose);
 
         return Result<AuthResult>.Success(authResult);
-    }
-
-    private async Task<bool> TryVerifyTotpAsync(
-        Guid userId, string code, DateTimeOffset now, CancellationToken cancellationToken)
-    {
-        var method = await _context.UserMfaMethods
-            .FirstOrDefaultAsync(m =>
-                m.UserId == userId &&
-                m.Status == MfaMethodStatus.Active &&
-                m.Type == MfaMethodType.AuthenticatorApp,
-                cancellationToken);
-
-        if (method is null || method.SecretRef is null)
-        {
-            return false;
-        }
-
-        string unprotectedSecret;
-        try
-        {
-            unprotectedSecret = _totp.UnprotectSecret(method.SecretRef.Value);
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-
-        return _totp.VerifyCode(unprotectedSecret, code, now);
-    }
-
-    private async Task<bool> TryVerifyRecoveryCodeAsync(
-        Guid userId, string code, DateTimeOffset now, CancellationToken cancellationToken)
-    {
-        var batch = await _context.MfaRecoveryBatches
-            .Include(b => b.Codes)
-            .Where(b => b.UserId == userId && b.InvalidatedAt == null)
-            .OrderBy(b => b.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (batch is null)
-        {
-            return false;
-        }
-
-        var hash = _recoveryGenerator.Hash(code);
-        return batch.TryConsume(hash, now, userId);
     }
 }

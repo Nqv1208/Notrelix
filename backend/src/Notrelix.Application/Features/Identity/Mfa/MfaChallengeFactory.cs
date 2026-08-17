@@ -11,10 +11,11 @@ internal static class MfaChallengeFactory
         Guid userId,
         MfaChallengePurpose purpose,
         DateTimeOffset now,
-        CancellationToken ct)
+        CancellationToken ct,
+        Guid? sessionId = null)
     {
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        var payload = new MfaChallengePayload(userId, purpose, now, now.Add(MfaPolicy.ChallengeTtl));
+        var payload = new MfaChallengePayload(userId, purpose, now, now.Add(MfaPolicy.ChallengeTtl), sessionId);
         await store.StoreAsync(token, payload, MfaPolicy.ChallengeTtl, ct);
         return (token, payload);
     }

@@ -8,4 +8,5 @@ public class FakeCurrentUser : ICurrentUser
     public string Name { get; set; } = "Test User";
     public bool IsAuthenticated { get; set; } = true;
     public Guid? WorkspaceId { get; set; }
+    public Guid? SessionId { get; set; }
 }

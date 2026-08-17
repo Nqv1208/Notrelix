@@ -6,4 +6,7 @@ public interface IJwtBlacklistService
     Task<bool> IsBlacklistedAsync(string jti);
     Task<DateTimeOffset?> GetUserRevokedBeforeAsync(Guid userId);
     Task RevokeUserBeforeAsync(Guid userId, DateTimeOffset revokedBefore, TimeSpan expiration);
+
+    Task<DateTimeOffset?> GetSessionRevokedBeforeAsync(Guid sessionId);
+    Task RevokeSessionBeforeAsync(Guid sessionId, DateTimeOffset revokedBefore, TimeSpan expiration);
 }

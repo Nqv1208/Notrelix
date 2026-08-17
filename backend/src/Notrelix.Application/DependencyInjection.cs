@@ -2,6 +2,10 @@ using System.Reflection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Mfa.Services;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Services;
 
@@ -54,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IWorkspacePermissionService, WorkspacePermissionService>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IPermissionEvaluator, PermissionService>();
+        services.AddScoped<IResourceAuthorizationSnapshotStore, ResourceAuthorizationSnapshotStore>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
 
         // Execution context (scoped per request)
@@ -82,6 +87,10 @@ public static class DependencyInjection
         // Auth session issuer
         services.AddScoped<IAuthSessionIssuer, AuthSessionIssuer>();
         services.AddScoped<IEmailVerificationTokenIssuer, EmailVerificationTokenIssuer>();
+
+        // Identity security: canonical step-up verification + shared MFA code verification
+        services.AddScoped<ISecurityStepUpService, SecurityStepUpService>();
+        services.AddScoped<IMfaCodeVerifier, MfaCodeVerifier>();
 
         // Accounts-owned onboarding provisioning (spec 5.2)
         services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();

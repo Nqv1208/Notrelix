@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.Mfa;
 
 namespace Notrelix.Application.Features.Identity.Mfa.Commands.DisableMfa;
@@ -9,13 +11,18 @@ public sealed record DisableMfaCommand
     : ICommand<Result>,
       ITransactionalRequest,
       IGlobalRequest,
-      IAuthenticatedRequest;
+      IAuthenticatedRequest
+{
+    /// <summary>Single-use step-up proof for the DisableMfa purpose (TOTP, recovery code or password).</summary>
+    public required string StepUpToken { get; init; }
+}
 
 public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand, Result>
 {
     private readonly IIdentityDbContext _context;
     private readonly ICurrentRequestContext _currentUser;
     private readonly IJwtBlacklistService _jwtBlacklist;
+    private readonly ISecurityStepUpService _stepUpService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<DisableMfaCommandHandler> _logger;
 
@@ -25,12 +32,14 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
         IIdentityDbContext context,
         ICurrentRequestContext currentUser,
         IJwtBlacklistService jwtBlacklist,
+        ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider,
         ILogger<DisableMfaCommandHandler> logger)
     {
         _context = context;
         _currentUser = currentUser;
         _jwtBlacklist = jwtBlacklist;
+        _stepUpService = stepUpService;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
@@ -46,6 +55,12 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
         if (activeMethods.Count == 0)
         {
             return Result.Success();
+        }
+
+        var stepUp = await ConsumeStepUpAsync(userId, request.StepUpToken, cancellationToken);
+        if (!stepUp.Succeeded)
+        {
+            return stepUp;
         }
 
         var now = _dateTimeProvider.UtcNow;
@@ -83,5 +98,27 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
         _logger.LogWarning("MFA disabled for {UserId}; {SessionCount} sessions revoked", userId, activeSessions.Count);
 
         return Result.Success();
+    }
+
+    private async Task<Result> ConsumeStepUpAsync(Guid userId, string stepUpToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(stepUpToken))
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        if (_currentUser.SessionId is not { } sessionId)
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        return await _stepUpService.ConsumeAsync(
+            stepUpToken, userId, sessionId, StepUpPurpose.DisableMfa, cancellationToken);
     }
 }

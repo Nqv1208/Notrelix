@@ -61,13 +61,13 @@ public class LoginCommandHandlerTests : IAsyncLifetime
         passwordHasher.Setup(x => x.VerifyPassword(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
 
         var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
+        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
         var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer, Mock.Of<IMfaChallengeStore>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
 
         var before = DateTimeOffset.UtcNow;

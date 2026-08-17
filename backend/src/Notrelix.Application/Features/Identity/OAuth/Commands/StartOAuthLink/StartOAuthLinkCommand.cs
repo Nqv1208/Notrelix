@@ -2,6 +2,8 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
 
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLink;
 
@@ -12,6 +14,9 @@ public sealed record StartOAuthLinkCommand
 {
     public required OAuthProvider Provider { get; init; }
     public string? ReturnUrl { get; init; }
+
+    /// <summary>Single-use step-up proof for the LinkOAuth purpose (TOTP, recovery code, password or OAuth re-authentication).</summary>
+    public required string StepUpToken { get; init; }
 }
 
 public sealed class StartOAuthLinkCommandHandler
@@ -21,6 +26,7 @@ public sealed class StartOAuthLinkCommandHandler
     private readonly IOAuthProviderClient _providerClient;
     private readonly IOAuthStateStore _stateStore;
     private readonly ICurrentRequestContext _currentUser;
+    private readonly ISecurityStepUpService _stepUpService;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public StartOAuthLinkCommandHandler(
@@ -28,12 +34,14 @@ public sealed class StartOAuthLinkCommandHandler
         IOAuthProviderClient providerClient,
         IOAuthStateStore stateStore,
         ICurrentRequestContext currentUser,
+        ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider)
     {
         _optionsProvider = optionsProvider;
         _providerClient = providerClient;
         _stateStore = stateStore;
         _currentUser = currentUser;
+        _stepUpService = stepUpService;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -44,6 +52,12 @@ public sealed class StartOAuthLinkCommandHandler
         if (!_optionsProvider.IsProviderEnabled(request.Provider))
         {
             return Result<OAuthLoginStartResult>.Failure($"OAuth provider {request.Provider} is not enabled");
+        }
+
+        var stepUp = await ConsumeStepUpAsync(_currentUser.UserId, request.StepUpToken, cancellationToken);
+        if (!stepUp.Succeeded)
+        {
+            return Result<OAuthLoginStartResult>.Failure(stepUp.TypedErrors);
         }
 
         var state = GenerateCryptographicValue();
@@ -96,5 +110,27 @@ public sealed class StartOAuthLinkCommandHandler
             .TrimEnd('=')
             .Replace('+', '-')
             .Replace('/', '_');
+    }
+
+    private async Task<Result> ConsumeStepUpAsync(Guid userId, string stepUpToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(stepUpToken))
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        if (_currentUser.SessionId is not { } sessionId)
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        return await _stepUpService.ConsumeAsync(
+            stepUpToken, userId, sessionId, StepUpPurpose.LinkOAuth, cancellationToken);
     }
 }

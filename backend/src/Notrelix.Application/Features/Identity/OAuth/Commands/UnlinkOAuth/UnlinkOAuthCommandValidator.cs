@@ -7,5 +7,9 @@ public sealed class UnlinkOAuthCommandValidator : AbstractValidator<UnlinkOAuthC
         RuleFor(x => x.Provider)
             .IsInEnum()
             .WithMessage("A valid OAuth provider is required.");
+
+        RuleFor(x => x.StepUpToken)
+            .NotEmpty()
+            .WithMessage("Strong verification is required for this action.");
     }
 }

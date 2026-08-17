@@ -43,6 +43,7 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<IRateLimitService> RateLimitServiceMock = new();
     protected readonly Mock<IEmailService> EmailServiceMock = new();
     protected readonly Mock<ICurrentRequestContext> RequestContextMock = new();
+    protected readonly Mock<IClientMetadata> ClientMetadataMock = new();
     protected readonly Mock<IEmailVerificationTokenIssuer> TokenIssuerMock = new();
     protected readonly Mock<IOneTimeTokenService> OneTimeTokenServiceMock = new();
     protected readonly Mock<IIntegrationEventCollector> IntegrationEventCollectorMock = new();

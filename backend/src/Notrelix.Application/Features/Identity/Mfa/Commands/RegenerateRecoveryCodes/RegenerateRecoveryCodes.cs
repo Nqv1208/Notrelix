@@ -2,8 +2,10 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
-using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Domain.Identity.Mfa;
 
 namespace Notrelix.Application.Features.Identity.Mfa.Commands.RegenerateRecoveryCodes;
 
@@ -11,7 +13,11 @@ public sealed record RegenerateRecoveryCodesCommand
     : ICommand<Result<MfaEnrollmentVerifyResult>>,
       ITransactionalRequest,
       IGlobalRequest,
-      IAuthenticatedRequest;
+      IAuthenticatedRequest
+{
+    /// <summary>Single-use step-up proof for the RegenerateRecoveryCodes purpose (TOTP, recovery code or password).</summary>
+    public required string StepUpToken { get; init; }
+}
 
 public sealed class RegenerateRecoveryCodesCommandHandler
     : IRequestHandler<RegenerateRecoveryCodesCommand, Result<MfaEnrollmentVerifyResult>>
@@ -19,6 +25,7 @@ public sealed class RegenerateRecoveryCodesCommandHandler
     private readonly IIdentityDbContext _context;
     private readonly ICurrentRequestContext _currentUser;
     private readonly IMfaRecoveryCodeGenerator _recoveryGenerator;
+    private readonly ISecurityStepUpService _stepUpService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<RegenerateRecoveryCodesCommandHandler> _logger;
 
@@ -26,12 +33,14 @@ public sealed class RegenerateRecoveryCodesCommandHandler
         IIdentityDbContext context,
         ICurrentRequestContext currentUser,
         IMfaRecoveryCodeGenerator recoveryGenerator,
+        ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider,
         ILogger<RegenerateRecoveryCodesCommandHandler> logger)
     {
         _context = context;
         _currentUser = currentUser;
         _recoveryGenerator = recoveryGenerator;
+        _stepUpService = stepUpService;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
@@ -50,6 +59,12 @@ public sealed class RegenerateRecoveryCodesCommandHandler
                 "identity.mfa.not-enabled",
                 "MFA is not enabled for this account.",
                 ApplicationErrorType.PreconditionFailed));
+        }
+
+        var stepUp = await ConsumeStepUpAsync(userId, request.StepUpToken, cancellationToken);
+        if (!stepUp.Succeeded)
+        {
+            return Result<MfaEnrollmentVerifyResult>.Failure(stepUp.TypedErrors);
         }
 
         var now = _dateTimeProvider.UtcNow;
@@ -72,5 +87,27 @@ public sealed class RegenerateRecoveryCodesCommandHandler
 
         var result = new MfaEnrollmentVerifyResult(newBatch.Id, plaintextCodes);
         return Result<MfaEnrollmentVerifyResult>.Success(result);
+    }
+
+    private async Task<Result> ConsumeStepUpAsync(Guid userId, string stepUpToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(stepUpToken))
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        if (_currentUser.SessionId is not { } sessionId)
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        return await _stepUpService.ConsumeAsync(
+            stepUpToken, userId, sessionId, StepUpPurpose.RegenerateRecoveryCodes, cancellationToken);
     }
 }

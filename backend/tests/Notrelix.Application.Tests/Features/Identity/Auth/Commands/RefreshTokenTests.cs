@@ -9,7 +9,8 @@ public class RefreshTokenTests : IdentityHandlerTestBase
     private RefreshTokenCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
         JwtServiceMock.Object,
-        DateTimeProviderMock.Object);
+        DateTimeProviderMock.Object,
+        ClientMetadataMock.Object);
 
     [Fact]
     public async Task Handle_WhenValidSession_ReturnsNewTokens()
@@ -19,7 +20,7 @@ public class RefreshTokenTests : IdentityHandlerTestBase
         SetupUsers(user);
         SetupSessions(session);
 
-        JwtServiceMock.Setup(j => j.GenerateAccessToken(user)).Returns("new-access-token");
+        JwtServiceMock.Setup(j => j.GenerateAccessToken(user, It.IsAny<Guid?>())).Returns("new-access-token");
         JwtServiceMock.Setup(j => j.GenerateRefreshToken()).Returns("new-refresh-token");
 
         var sut = CreateSut();

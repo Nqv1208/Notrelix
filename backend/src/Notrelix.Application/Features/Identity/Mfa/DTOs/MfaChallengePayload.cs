@@ -3,7 +3,13 @@ namespace Notrelix.Application.Features.Identity.Mfa.DTOs;
 public enum MfaChallengePurpose
 {
     PasswordLogin,
-    OAuthLogin
+    OAuthLogin,
+    StepUpDisableMfa,
+    StepUpRegenerateRecoveryCodes,
+    StepUpLinkOAuth,
+    StepUpUnlinkOAuth,
+    StepUpIssueApiToken,
+    StepUpChangeSecurityIdentity
 }
 
 /// <summary>
@@ -14,4 +20,5 @@ public sealed record MfaChallengePayload(
     Guid UserId,
     MfaChallengePurpose Purpose,
     DateTimeOffset IssuedAt,
-    DateTimeOffset ExpiresAt);
+    DateTimeOffset ExpiresAt,
+    Guid? SessionId = null);

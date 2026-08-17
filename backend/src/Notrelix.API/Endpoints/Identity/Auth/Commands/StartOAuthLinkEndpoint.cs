@@ -12,7 +12,7 @@ public static class StartOAuthLinkEndpoint
             .WithName("Identity.Auth.OAuth.LinkStart")
             .WithTags("Identity.Auth")
             .WithSummary("Start OAuth link flow")
-            .WithDescription("Redirects an authenticated user to the OAuth provider's authorization endpoint to link a provider identity.")
+            .WithDescription("Redirects an authenticated user to the OAuth provider's authorization endpoint to link a provider identity, protected by step-up verification.")
             .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
 
         return group;
@@ -20,6 +20,7 @@ public static class StartOAuthLinkEndpoint
 
     private static async Task<IResult> HandleAsync(
         string provider,
+        string? stepUpToken,
         string? returnUrl,
         ISender sender)
     {
@@ -31,6 +32,7 @@ public static class StartOAuthLinkEndpoint
         var command = new StartOAuthLinkCommand
         {
             Provider = oauthProvider,
+            StepUpToken = stepUpToken ?? string.Empty,
             ReturnUrl = returnUrl
         };
 

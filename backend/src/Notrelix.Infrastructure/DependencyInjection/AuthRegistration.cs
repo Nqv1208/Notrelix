@@ -26,6 +26,7 @@ public static class AuthRegistration
         services.AddScoped<ICurrentAccount, CurrentAccount>();
         services.AddScoped<ICurrentTenantContext, CurrentTenantContext>();
         services.AddScoped<ICurrentRequestContext, CurrentRequestContext>();
+        services.AddScoped<IClientMetadata, HttpClientMetadata>();
 
         // Correlation context for events/outbox/logs.
         services.AddScoped<ICorrelationContext, CurrentCorrelationContext>();
@@ -118,6 +119,18 @@ public static class AuthRegistration
                                     revokedBefore))
                             {
                                 context.Fail("User access has been revoked");
+                            }
+                        }
+
+                        var sessionIdClaim = context.Principal?.FindFirst(JwtClaimNames.SessionId)?.Value;
+                        if (sessionIdClaim is not null && Guid.TryParse(sessionIdClaim, out var sessionId))
+                        {
+                            var sessionRevokedBefore = await blacklist.GetSessionRevokedBeforeAsync(sessionId);
+                            if (AccessTokenRevocationEvaluator.ShouldReject(
+                                    ParseIssuedAt(context.Principal?.FindFirst(JwtRegisteredClaimNames.Iat)?.Value),
+                                    sessionRevokedBefore))
+                            {
+                                context.Fail("Session access has been revoked");
                             }
                         }
                     },

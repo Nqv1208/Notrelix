@@ -16,6 +16,7 @@ public sealed class CurrentRequestContext : ICurrentRequestContext
     public string Name => _currentUser.Name;
     public bool IsAuthenticated => _currentUser.IsAuthenticated;
     public bool IsSystemContext => _tenant.IsSystemContext;
+    public Guid? SessionId => _currentUser.SessionId;
 
     public Guid RequireAccountId() => _tenant.RequireAccountId();
     public Guid RequireWorkspaceId() => _tenant.RequireWorkspaceId();

@@ -33,12 +33,16 @@ public static class MapAuthEndpoints
         authGroup.MapGetBootstrap();
         authGroup.MapStartOAuthLink();
         authGroup.MapCompleteOAuthLink();
+        authGroup.MapStartOAuthStepUp();
+        authGroup.MapCompleteOAuthStepUp();
         authGroup.MapUnlinkOAuth();
         authGroup.MapStartMfaEnrollment();
         authGroup.MapVerifyMfaEnrollment();
         authGroup.MapGetMfaStatus();
         authGroup.MapRegenerateRecoveryCodes();
         authGroup.MapDisableMfa();
+        authGroup.MapSecurityStepUp();
+        authGroup.MapSessionEndpoints();
 
         return app;
     }
