@@ -58,7 +58,6 @@ public static class DependencyInjection
         services.AddScoped<IWorkspacePermissionService, WorkspacePermissionService>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IPermissionEvaluator, PermissionService>();
-        services.AddScoped<IResourceAuthorizationSnapshotStore, ResourceAuthorizationSnapshotStore>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
 
         // Execution context (scoped per request)
