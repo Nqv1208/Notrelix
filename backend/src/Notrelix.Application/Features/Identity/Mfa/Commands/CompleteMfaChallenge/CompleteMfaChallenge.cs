@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;

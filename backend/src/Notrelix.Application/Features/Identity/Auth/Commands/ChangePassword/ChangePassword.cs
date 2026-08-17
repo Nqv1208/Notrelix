@@ -4,7 +4,6 @@ using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.Mfa;
-using Notrelix.Domain.Identity.Sessions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 

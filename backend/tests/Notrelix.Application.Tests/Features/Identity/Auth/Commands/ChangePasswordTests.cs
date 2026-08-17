@@ -1,6 +1,5 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
-using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.Sessions;
