@@ -14416,6 +14416,10 @@
           "newPassword": {
             "type": "string",
             "nullable": true
+          },
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
