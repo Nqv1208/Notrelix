@@ -88,3 +88,74 @@ export interface MockNotificationRecord {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface MockBoardViewRecord {
+  boardId: string;
+  viewMode: string;
+  viewConfig: string;
+  filters?: string;
+}
+
+export interface MockColumnRecord {
+  id: string;
+  boardId: string;
+  name: string;
+  fieldType: string;
+  settings?: string;
+  position: number;
+  isHidden?: boolean;
+}
+
+export interface MockLabelRecord {
+  id: string;
+  boardId: string;
+  name: string;
+  color: string;
+}
+
+export interface MockCardLabelRecord {
+  id: string;
+  cardId: string;
+  labelId: string;
+}
+
+export interface MockChecklistRecord {
+  id: string;
+  cardId: string;
+  title: string;
+  position: number;
+}
+
+export interface MockChecklistItemRecord {
+  id: string;
+  checklistId: string;
+  title: string;
+  isChecked: boolean;
+  dueDate?: string | null;
+  assigneeId?: string | null;
+  position?: number;
+}
+
+export interface MockCommentRecord {
+  id: string;
+  cardId: string;
+  userId: string;
+  contentMd: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface MockCardFieldValueRecord {
+  id: string;
+  cardId: string;
+  fieldDefinitionId: string;
+  value: unknown;
+}
+
+export interface MockUserPreferencesRecord {
+  userId: string;
+  theme: "system" | "light" | "dark";
+  colorTheme: string;
+  sidebarCollapsed: boolean;
+  defaultView: string;
+}

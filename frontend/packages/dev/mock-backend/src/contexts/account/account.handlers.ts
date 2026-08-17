@@ -1,34 +1,27 @@
 /**
  * Account context handlers.
  *
- * All operations in this context are CONTRACT-BLOCKED:
- *   account.preferences.get    [CTR-GAP-ACC-PREFERENCES]
- *   account.preferences.update [CTR-GAP-ACC-PREFERENCES]
- *   account.profile.update     [CTR-GAP-ACC-SECURITY]
+ * Operations:
+ *   account.preferences.get    [CTR-GAP-ACC-PREFERENCES] — GET /account/preferences
+ *   account.preferences.update [CTR-GAP-ACC-PREFERENCES] — PATCH /account/preferences
+ *   account.profile.update     — PATCH /users/profile
+ *   account.security.get       [CTR-GAP-ACC-SECURITY]    — GET /users/security
  *
- * These are temporary legacy handlers.
- * Remove once official producer contracts land and close the gaps.
- *
- * Plan: 10-CONTRACT-GAP-REGISTER.md §CTR-GAP-ACC-PREFERENCES, §CTR-GAP-ACC-SECURITY
+ * Plan: 06-HANDLERS-PROJECTIONS.md §Account context
  */
 
 import { defineMockOperation } from "../../operations/types";
 import { ok } from "../../transport/create-response";
-
-/** @contractBlocked CTR-GAP-ACC-PREFERENCES */
-const DEFAULT_PREFERENCES = {
-  theme: "system" as const,
-  notificationsEnabled: true,
-  emailDigest: "daily" as const,
-};
 
 export const accountOperations = [
   defineMockOperation({
     id: "account.preferences.get",
     method: "GET",
     route: "/account/preferences",
-    async handle() {
-      return ok(DEFAULT_PREFERENCES);
+    async handle({ store }) {
+      const user = store.getCurrentUser();
+      const prefs = store.getUserPreferences(user.id);
+      return ok(prefs);
     },
   }),
 
@@ -36,8 +29,11 @@ export const accountOperations = [
     id: "account.preferences.update",
     method: "PATCH",
     route: "/account/preferences",
-    async handle({ body }) {
-      return ok({ ...DEFAULT_PREFERENCES, ...((body as object | null) ?? {}) });
+    async handle({ body, store }) {
+      const user = store.getCurrentUser();
+      const patch = (body ?? {}) as object;
+      const updated = store.updateUserPreferences(user.id, patch);
+      return ok(updated);
     },
   }),
 
@@ -46,13 +42,29 @@ export const accountOperations = [
     method: "PATCH",
     route: "/users/profile",
     async handle({ body, store }) {
+      const user = store.getCurrentUser();
       const data = (body ?? {}) as { name?: string; email?: string };
+      const updated = store.updateUserProfile(user.id, data);
+      return ok({
+        id: updated?.id ?? user.id,
+        email: updated?.email ?? user.email,
+        name: updated?.name ?? user.name,
+        avatarUrl: updated?.avatarUrl ?? user.avatarUrl,
+      });
+    },
+  }),
+
+  defineMockOperation({
+    id: "account.security.get",
+    method: "GET",
+    route: "/users/security",
+    async handle({ store }) {
       const user = store.getCurrentUser();
       return ok({
-        id: user.id,
-        email: data.email ?? user.email,
-        name: data.name ?? user.name,
-        avatarUrl: user.avatarUrl,
+        userId: user.id,
+        twoFactorEnabled: false,
+        lastPasswordChange: store.getClock().offsetDays(-30),
+        activeSessions: 1,
       });
     },
   }),

@@ -8,6 +8,7 @@
  *
  * Plan: 01-FREEZE-SPEC.md §FZ-S07, §FZ-S08, §FZ-S10, §FZ-S11, §FZ-S13
  *       02-IMPLEMENTATION-PLAN.md §MFB-FZ-03, §MFB-FZ-04, §MFB-FZ-05
+ *       04-MOCK-DATASET-SPEC.md §1-12
  */
 
 import type {
@@ -20,6 +21,13 @@ import type {
   MockCardRecord,
   MockNotificationRecord,
   MockPageRecord,
+  MockBoardViewRecord,
+  MockColumnRecord,
+  MockLabelRecord,
+  MockChecklistRecord,
+  MockChecklistItemRecord,
+  MockCommentRecord,
+  MockUserPreferencesRecord,
 } from "./records";
 import { mockIds } from "./mock-ids";
 import type { MockBackendConfig, MockPersona } from "../config/mock-config";
@@ -54,6 +62,18 @@ export class MockStore {
   private cardsById = new Map<string, MockCardRecord>();
   private notificationsById = new Map<string, MockNotificationRecord>();
   private pagesById = new Map<string, MockPageRecord>();
+  private boardViewsByBoardId = new Map<string, MockBoardViewRecord>();
+  private columnsById = new Map<string, MockColumnRecord>();
+  private labelsById = new Map<string, MockLabelRecord>();
+  private checklistsById = new Map<string, MockChecklistRecord>();
+  private checklistItemsById = new Map<string, MockChecklistItemRecord>();
+  private commentsById = new Map<string, MockCommentRecord>();
+  private fieldValuesByCardId = new Map<string, Map<string, unknown>>();
+  private userPreferencesByUserId = new Map<
+    string,
+    MockUserPreferencesRecord
+  >();
+  private loggedOutUserIds = new Set<string>();
 
   // Secondary indexes (Plan: 03-MOCK-DATA-MODEL.md §Store structure)
   private membershipIdsByWorkspaceId = new Map<string, Set<string>>();
@@ -63,10 +83,17 @@ export class MockStore {
   private cardIdsByListId = new Map<string, Set<string>>();
   private notificationIdsByUserId = new Map<string, Set<string>>();
   private pageIdsByWorkspaceId = new Map<string, Set<string>>();
+  private columnIdsByBoardId = new Map<string, Set<string>>();
+  private labelIdsByBoardId = new Map<string, Set<string>>();
+  private labelIdsByCardId = new Map<string, Set<string>>();
+  private checklistIdsByCardId = new Map<string, Set<string>>();
+  private checklistItemIdsByChecklistId = new Map<string, Set<string>>();
+  private commentIdsByCardId = new Map<string, Set<string>>();
 
   private config: MockBackendConfig;
   private clock: MockClock;
   private factories: MockFactories;
+  private sequenceCounters = new Map<string, number>();
 
   constructor(config: MockBackendConfig = defaultConfig) {
     this.config = { ...config };
@@ -98,39 +125,73 @@ export class MockStore {
     return this.factories;
   }
 
+  nextSequence(entity: string): number {
+    const current = this.sequenceCounters.get(entity) ?? 0;
+    const next = current + 1;
+    this.sequenceCounters.set(entity, next);
+    return next;
+  }
+
+  nextId(entity: string): string {
+    const seq = this.nextSequence(entity);
+    return `${entity}-m-${String(seq).padStart(5, "0")}`;
+  }
+
   // ─── Seed / Reset ─────────────────────────────────────────────────────────
 
   seedBaseWorld(): void {
     this.clearAll();
 
+    const isMissingAvatars = this.config.overlays.includes("missing-avatars");
+    const isUnicode = this.config.overlays.includes("unicode");
+    const isLongTitles = this.config.overlays.includes("long-titles");
+
     // ── All 4 Persona Actors (Plan: 01-FREEZE-SPEC.md §FZ-S07) ───────────────
     const owner: MockUserRecord = {
       id: mockIds.users.owner,
       email: "ui-dev@notrelix.local",
-      name: "UI Developer (Owner)",
-      avatarUrl: null,
+      name: isUnicode ? "UI Developer (Owner) 🚀" : "UI Developer (Owner)",
+      avatarUrl: isMissingAvatars
+        ? null
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=owner",
     };
     const admin: MockUserRecord = {
       id: mockIds.users.admin,
       email: "admin@notrelix.local",
-      name: "Alex Rivera (Admin)",
-      avatarUrl: null,
+      name: isUnicode ? "Alex Rivera (Admin) ✨" : "Alex Rivera (Admin)",
+      avatarUrl: isMissingAvatars
+        ? null
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
     };
     const member: MockUserRecord = {
       id: mockIds.users.member,
       email: "member@notrelix.local",
-      name: "Jordan Lee (Member)",
-      avatarUrl: null,
+      name: isUnicode ? "Jordan Lee (Member) 💼" : "Jordan Lee (Member)",
+      avatarUrl: isMissingAvatars
+        ? null
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=member",
     };
     const viewer: MockUserRecord = {
       id: mockIds.users.viewer,
       email: "viewer@notrelix.local",
-      name: "Taylor Morgan (Viewer)",
-      avatarUrl: null,
+      name: isUnicode ? "Taylor Morgan (Viewer) 👀" : "Taylor Morgan (Viewer)",
+      avatarUrl: isMissingAvatars
+        ? null
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=viewer",
     };
 
+    // Seed default user preferences
+    for (const u of [owner, admin, member, viewer]) {
+      this.userPreferencesByUserId.set(u.id, {
+        userId: u.id,
+        theme: "system",
+        colorTheme: "zinc",
+        sidebarCollapsed: false,
+        defaultView: "board",
+      });
+    }
+
     if (this.config.state === "new-user") {
-      // In new-user scenario, only the configured persona actor exists with no workspaces/memberships
       const personaUserMap: Record<MockPersona, MockUserRecord> = {
         owner,
         admin,
@@ -149,9 +210,15 @@ export class MockStore {
     this.insertUser(viewer);
 
     // ── Workspaces ───────────────────────────────────────────────────────────
+    let primaryWsName = "Notrelix Product Lab";
+    if (isUnicode) primaryWsName = "🪐 Notrelix Product Lab (プロダクト)";
+    if (isLongTitles)
+      primaryWsName =
+        "Notrelix Product Lab — Enterprise Digital Workspace & Engineering Innovation Hub";
+
     const primaryWs: MockWorkspaceRecord = {
       id: mockIds.workspaces.primary,
-      name: "Notrelix Product Lab",
+      name: primaryWsName,
       slug: mockIds.workspaces.primary,
       plan: "pro",
       icon: "Layout",
@@ -226,7 +293,7 @@ export class MockStore {
       joinedAt: this.clock.offsetDays(-10),
     });
 
-    // ── Views ─────────────────────────────────────────────────────────────────
+    // ── Workspace Views ───────────────────────────────────────────────────────
     const view1: MockWorkspaceViewRecord = {
       id: mockIds.views.kanban,
       workspaceId: primaryWs.id,
@@ -255,14 +322,10 @@ export class MockStore {
     this.insertView(view2);
 
     if (this.config.state === "empty-workspace") {
-      // In empty-workspace, workspaces and memberships exist, but collections are empty
       return;
     }
 
     // ── Boards + Lists + Cards ────────────────────────────────────────────────
-    const isUnicode = this.config.overlays.includes("unicode");
-    const isLongTitles = this.config.overlays.includes("long-titles");
-
     let boardTitle = "Product Roadmap";
     if (isUnicode) boardTitle = "🚀 Product Roadmap (日本語・Üñîçødé)";
     if (isLongTitles)
@@ -281,6 +344,71 @@ export class MockStore {
       updatedAt: this.clock.offsetDays(-1),
     };
     this.insertBoard(board);
+
+    // Board View configuration
+    this.boardViewsByBoardId.set(board.id, {
+      boardId: board.id,
+      viewMode: "table",
+      viewConfig: JSON.stringify({
+        groupBy: "list",
+        hiddenFields: [],
+        columnOrder: [],
+        columnWidths: {},
+        collapsedGroups: {},
+        filters: [],
+        sortBy: [],
+      }),
+    });
+
+    // Board Columns / Field Definitions
+    this.insertColumn({
+      id: "col-0001",
+      boardId: board.id,
+      name: "Status",
+      fieldType: "status",
+      position: 1,
+    });
+    this.insertColumn({
+      id: "col-0002",
+      boardId: board.id,
+      name: "Assignee",
+      fieldType: "user",
+      position: 2,
+    });
+    this.insertColumn({
+      id: "col-0003",
+      boardId: board.id,
+      name: "Due Date",
+      fieldType: "date",
+      position: 3,
+    });
+    this.insertColumn({
+      id: "col-0004",
+      boardId: board.id,
+      name: "Priority",
+      fieldType: "select",
+      position: 4,
+    });
+
+    // Board Labels
+    this.insertLabel({
+      id: "lbl-0001",
+      boardId: board.id,
+      name: "Bug",
+      color: "#EF4444",
+    });
+    this.insertLabel({
+      id: "lbl-0002",
+      boardId: board.id,
+      name: "Feature",
+      color: "#1E90FF",
+    });
+    this.insertLabel({
+      id: "lbl-0003",
+      boardId: board.id,
+      name: "Design",
+      color: "#A855F7",
+    });
 
     const listTodo: MockListRecord = {
       id: "list-todo",
@@ -335,12 +463,20 @@ export class MockStore {
       if (isLongTitles)
         cardTitle = `${cardTitle} — Extended In-Depth Description of Engineering Requirements and Specifications`;
 
-      const card = this.factories.card(i, board.id, listInProgress.id, {
-        id: i === 0 ? "card-main-0001" : undefined,
+      const overrides: { id?: string; title: string; description?: string } = {
         title: cardTitle,
-        description:
-          i === 0 ? "Notrelix mock runtime specification." : undefined,
-      });
+      };
+      if (i === 0) {
+        overrides.id = "card-main-0001";
+        overrides.description = "Notrelix mock runtime specification.";
+      }
+
+      const card = this.factories.card(
+        i,
+        board.id,
+        listInProgress.id,
+        overrides,
+      );
       this.insertCard(card);
     }
 
@@ -354,6 +490,36 @@ export class MockStore {
         this.factories.card(densityCardCount + i, board.id, listTodo.id),
       );
     }
+
+    // Assign label and checklist to card-main-0001
+    this.addIndex(this.labelIdsByCardId, "card-main-0001", "lbl-0002");
+
+    this.insertChecklist({
+      id: "chk-0001",
+      cardId: "card-main-0001",
+      title: "Release Checklist",
+      position: 1,
+    });
+    this.insertChecklistItem({
+      id: "chki-0001",
+      checklistId: "chk-0001",
+      title: "Contract tests green",
+      isChecked: true,
+    });
+    this.insertChecklistItem({
+      id: "chki-0002",
+      checklistId: "chk-0001",
+      title: "E2E verification complete",
+      isChecked: false,
+    });
+
+    this.insertComment({
+      id: "cmt-0001",
+      cardId: "card-main-0001",
+      userId: owner.id,
+      contentMd: "Initial specification drafted and verified.",
+      createdAt: this.clock.offsetDays(-2),
+    });
 
     // Seed notifications for the active user
     const activeUser = this.getCurrentUser();
@@ -386,12 +552,12 @@ export class MockStore {
       if (isLongTitles)
         title = `${title} — Architectural Specification & Engineering Requirements`;
 
-      this.insertPage(
-        this.factories.page(i, workspaceId, {
-          id: i === 0 ? "mock-doc-product-spec" : undefined,
-          title,
-        }),
-      );
+      const overrides: { id?: string; title: string } = { title };
+      if (i === 0) {
+        overrides.id = "mock-doc-product-spec";
+      }
+
+      this.insertPage(this.factories.page(i, workspaceId, overrides));
     }
   }
 
@@ -464,6 +630,15 @@ export class MockStore {
     this.cardsById.clear();
     this.notificationsById.clear();
     this.pagesById.clear();
+    this.boardViewsByBoardId.clear();
+    this.columnsById.clear();
+    this.labelsById.clear();
+    this.checklistsById.clear();
+    this.checklistItemsById.clear();
+    this.commentsById.clear();
+    this.fieldValuesByCardId.clear();
+    this.userPreferencesByUserId.clear();
+    this.loggedOutUserIds.clear();
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -472,10 +647,16 @@ export class MockStore {
     this.cardIdsByListId.clear();
     this.notificationIdsByUserId.clear();
     this.pageIdsByWorkspaceId.clear();
+    this.columnIdsByBoardId.clear();
+    this.labelIdsByBoardId.clear();
+    this.labelIdsByCardId.clear();
+    this.checklistIdsByCardId.clear();
+    this.checklistItemIdsByChecklistId.clear();
+    this.commentIdsByCardId.clear();
     this.sequenceCounters.clear();
   }
 
-  // ─── Primary insert helpers (maintain indexes) ────────────────────────────
+  // ─── Private Insertion Helpers (maintains primary + secondary indexes) ────
 
   private insertUser(u: MockUserRecord): void {
     this.usersById.set(u.id, u);
@@ -510,6 +691,35 @@ export class MockStore {
     this.addIndex(this.cardIdsByListId, c.listId, c.id);
   }
 
+  private insertColumn(col: MockColumnRecord): void {
+    this.columnsById.set(col.id, col);
+    this.addIndex(this.columnIdsByBoardId, col.boardId, col.id);
+  }
+
+  private insertLabel(lbl: MockLabelRecord): void {
+    this.labelsById.set(lbl.id, lbl);
+    this.addIndex(this.labelIdsByBoardId, lbl.boardId, lbl.id);
+  }
+
+  private insertChecklist(chk: MockChecklistRecord): void {
+    this.checklistsById.set(chk.id, chk);
+    this.addIndex(this.checklistIdsByCardId, chk.cardId, chk.id);
+  }
+
+  private insertChecklistItem(item: MockChecklistItemRecord): void {
+    this.checklistItemsById.set(item.id, item);
+    this.addIndex(
+      this.checklistItemIdsByChecklistId,
+      item.checklistId,
+      item.id,
+    );
+  }
+
+  private insertComment(cmt: MockCommentRecord): void {
+    this.commentsById.set(cmt.id, cmt);
+    this.addIndex(this.commentIdsByCardId, cmt.cardId, cmt.id);
+  }
+
   private insertNotification(n: MockNotificationRecord): void {
     this.notificationsById.set(n.id, n);
     this.addIndex(this.notificationIdsByUserId, n.userId, n.id);
@@ -541,10 +751,27 @@ export class MockStore {
     index.get(key)?.delete(id);
   }
 
-  // ─── Repository Accessors ─────────────────────────────────────────────────
+  // ─── Repository Accessors & Mutations ─────────────────────────────────────
 
   getUser(id: string): MockUserRecord | undefined {
     return this.usersById.get(id);
+  }
+
+  updateUserProfile(
+    userId: string,
+    patch: { name?: string; email?: string; avatarUrl?: string | null },
+  ): MockUserRecord | undefined {
+    const user = this.usersById.get(userId);
+    if (!user) return undefined;
+    const updated: MockUserRecord = {
+      ...user,
+      name: patch.name ?? user.name,
+      email: patch.email ?? user.email,
+      avatarUrl:
+        patch.avatarUrl !== undefined ? patch.avatarUrl : user.avatarUrl,
+    };
+    this.usersById.set(userId, updated);
+    return updated;
   }
 
   getCurrentUser(): MockUserRecord {
@@ -564,26 +791,57 @@ export class MockStore {
     return user;
   }
 
+  logoutCurrentUser(): void {
+    const user = this.getCurrentUser();
+    this.loggedOutUserIds.add(user.id);
+  }
+
+  isCurrentUserLoggedOut(): boolean {
+    try {
+      const user = this.getCurrentUser();
+      return (
+        this.loggedOutUserIds.has(user.id) ||
+        this.config.state === "expired-session"
+      );
+    } catch {
+      return true;
+    }
+  }
+
+  getUserPreferences(userId: string): MockUserPreferencesRecord {
+    const prefs = this.userPreferencesByUserId.get(userId);
+    if (prefs) return prefs;
+    const fallback: MockUserPreferencesRecord = {
+      userId,
+      theme: "system",
+      colorTheme: "zinc",
+      sidebarCollapsed: false,
+      defaultView: "board",
+    };
+    this.userPreferencesByUserId.set(userId, fallback);
+    return fallback;
+  }
+
+  updateUserPreferences(
+    userId: string,
+    patch: Partial<MockUserPreferencesRecord>,
+  ): MockUserPreferencesRecord {
+    const current = this.getUserPreferences(userId);
+    const updated: MockUserPreferencesRecord = {
+      ...current,
+      ...patch,
+      userId,
+    };
+    this.userPreferencesByUserId.set(userId, updated);
+    return updated;
+  }
+
   getWorkspaces(): MockWorkspaceRecord[] {
     return Array.from(this.workspacesById.values());
   }
 
   getWorkspace(id: string): MockWorkspaceRecord | undefined {
     return this.workspacesById.get(id);
-  }
-
-  private sequenceCounters = new Map<string, number>();
-
-  nextSequence(entity: string): number {
-    const current = this.sequenceCounters.get(entity) ?? 0;
-    const next = current + 1;
-    this.sequenceCounters.set(entity, next);
-    return next;
-  }
-
-  nextId(entity: string): string {
-    const seq = this.nextSequence(entity);
-    return `${entity}-${String(seq).padStart(5, "0")}`;
   }
 
   createWorkspaceForCurrentUser(input: {
@@ -642,25 +900,290 @@ export class MockStore {
     return board;
   }
 
-  createList(boardId: string, input: { title?: string }): MockListRecord {
+  getBoardView(boardId: string): MockBoardViewRecord | undefined {
+    return this.boardViewsByBoardId.get(boardId);
+  }
+
+  saveBoardView(
+    boardId: string,
+    viewMode: string,
+    viewConfig: string,
+    filters?: string,
+  ): void {
+    if (!this.boardsById.has(boardId)) {
+      throw new MockRelationalInvariantError(
+        `Cannot save view: Board "${boardId}" does not exist.`,
+      );
+    }
+    this.boardViewsByBoardId.set(boardId, {
+      boardId,
+      viewMode,
+      viewConfig,
+      filters,
+    });
+  }
+
+  // ── Columns ──
+  getColumns(boardId: string): MockColumnRecord[] {
+    const ids = this.columnIdsByBoardId.get(boardId);
+    if (!ids) return [];
+    return Array.from(ids)
+      .map((id) => this.columnsById.get(id))
+      .filter((c): c is MockColumnRecord => c !== undefined)
+      .sort((a, b) => a.position - b.position);
+  }
+
+  getColumn(id: string): MockColumnRecord | undefined {
+    return this.columnsById.get(id);
+  }
+
+  createColumn(
+    boardId: string,
+    input: {
+      name: string;
+      fieldType: string;
+      settings?: string;
+      position?: number;
+    },
+  ): MockColumnRecord {
+    if (!this.boardsById.has(boardId)) {
+      throw new MockRelationalInvariantError(
+        `Cannot create column: Board "${boardId}" does not exist.`,
+      );
+    }
+    const existing = this.getColumns(boardId);
+    const col: MockColumnRecord = {
+      id: this.nextId("col"),
+      boardId,
+      name: input.name,
+      fieldType: input.fieldType,
+      settings: input.settings,
+      position: input.position ?? existing.length + 1,
+      isHidden: false,
+    };
+    this.insertColumn(col);
+    return col;
+  }
+
+  updateColumn(
+    columnId: string,
+    patch: {
+      name?: string;
+      fieldType?: string;
+      settings?: string;
+      isHidden?: boolean;
+    },
+  ): boolean {
+    const col = this.columnsById.get(columnId);
+    if (!col) return false;
+    const updated: MockColumnRecord = {
+      ...col,
+      name: patch.name ?? col.name,
+      fieldType: patch.fieldType ?? col.fieldType,
+      settings: patch.settings !== undefined ? patch.settings : col.settings,
+      isHidden: patch.isHidden !== undefined ? patch.isHidden : col.isHidden,
+    };
+    this.columnsById.set(columnId, updated);
+    return true;
+  }
+
+  deleteColumn(columnId: string): boolean {
+    const col = this.columnsById.get(columnId);
+    if (!col) return false;
+    this.removeIndex(this.columnIdsByBoardId, col.boardId, col.id);
+    this.columnsById.delete(columnId);
+    return true;
+  }
+
+  reorderColumns(
+    boardId: string,
+    items: { id: string; newPosition: number }[],
+  ): boolean {
+    if (!this.boardsById.has(boardId)) return false;
+    for (const item of items) {
+      const col = this.columnsById.get(item.id);
+      if (col && col.boardId === boardId) {
+        this.columnsById.set(item.id, { ...col, position: item.newPosition });
+      }
+    }
+    return true;
+  }
+
+  // ── Labels ──
+  getBoardLabels(boardId: string): MockLabelRecord[] {
+    const ids = this.labelIdsByBoardId.get(boardId);
+    if (!ids) return [];
+    return Array.from(ids)
+      .map((id) => this.labelsById.get(id))
+      .filter((l): l is MockLabelRecord => l !== undefined);
+  }
+
+  getLabel(id: string): MockLabelRecord | undefined {
+    return this.labelsById.get(id);
+  }
+
+  createLabel(
+    boardId: string,
+    input: { name?: string; color: string },
+  ): MockLabelRecord {
+    if (!this.boardsById.has(boardId)) {
+      throw new MockRelationalInvariantError(
+        `Cannot create label: Board "${boardId}" does not exist.`,
+      );
+    }
+    const lbl: MockLabelRecord = {
+      id: this.nextId("lbl"),
+      boardId,
+      name: input.name ?? "New Label",
+      color: input.color,
+    };
+    this.insertLabel(lbl);
+    return lbl;
+  }
+
+  updateLabel(
+    labelId: string,
+    patch: { name?: string; color?: string },
+  ): boolean {
+    const lbl = this.labelsById.get(labelId);
+    if (!lbl) return false;
+    const updated: MockLabelRecord = {
+      ...lbl,
+      name: patch.name ?? lbl.name,
+      color: patch.color ?? lbl.color,
+    };
+    this.labelsById.set(labelId, updated);
+    return true;
+  }
+
+  deleteLabel(labelId: string): boolean {
+    const lbl = this.labelsById.get(labelId);
+    if (!lbl) return false;
+    this.removeIndex(this.labelIdsByBoardId, lbl.boardId, lbl.id);
+    this.labelsById.delete(labelId);
+    for (const cardLabels of this.labelIdsByCardId.values()) {
+      cardLabels.delete(labelId);
+    }
+    return true;
+  }
+
+  getCardLabels(cardId: string): MockLabelRecord[] {
+    const ids = this.labelIdsByCardId.get(cardId);
+    if (!ids) return [];
+    return Array.from(ids)
+      .map((id) => this.labelsById.get(id))
+      .filter((l): l is MockLabelRecord => l !== undefined);
+  }
+
+  addLabelToCard(cardId: string, labelId: string): boolean {
+    const card = this.cardsById.get(cardId);
+    const label = this.labelsById.get(labelId);
+    if (!card || !label) return false;
+    this.addIndex(this.labelIdsByCardId, cardId, labelId);
+    return true;
+  }
+
+  removeLabelFromCard(cardId: string, labelId: string): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+    this.removeIndex(this.labelIdsByCardId, cardId, labelId);
+    return true;
+  }
+
+  // ── Lists ──
+  createList(
+    boardId: string,
+    input: { title?: string; color?: string; position?: number },
+  ): MockListRecord {
     if (!this.boardsById.has(boardId)) {
       throw new MockRelationalInvariantError(
         `Cannot create list: Board "${boardId}" does not exist.`,
       );
     }
-    const factories = this.getFactories();
-    const list = factories.list(this.getLists(boardId).length, boardId, {
+    const existing = this.getLists(boardId);
+    const list: MockListRecord = {
       id: this.nextId("list"),
+      boardId,
       title: input.title ?? "New List",
-    });
+      color: input.color,
+      position: input.position ?? existing.length,
+      isCollapsed: false,
+    };
     this.insertList(list);
     return list;
   }
 
+  updateList(
+    listId: string,
+    patch: { title?: string; color?: string; isArchived?: boolean },
+  ): boolean {
+    const list = this.listsById.get(listId);
+    if (!list) return false;
+    const updated: MockListRecord = {
+      ...list,
+      title: patch.title ?? list.title,
+      color: patch.color !== undefined ? patch.color : list.color,
+    };
+    this.listsById.set(listId, updated);
+    return true;
+  }
+
+  deleteList(listId: string): boolean {
+    const list = this.listsById.get(listId);
+    if (!list) return false;
+
+    // Delete all cards in this list
+    const cardIds = Array.from(this.cardIdsByListId.get(listId) ?? []);
+    for (const cardId of cardIds) {
+      this.deleteCard(cardId);
+    }
+
+    this.removeIndex(this.listIdsByBoardId, list.boardId, list.id);
+    this.cardIdsByListId.delete(listId);
+    this.listsById.delete(listId);
+    return true;
+  }
+
+  duplicateList(listId: string): MockListRecord | undefined {
+    const list = this.listsById.get(listId);
+    if (!list) return undefined;
+
+    const newList = this.createList(list.boardId, {
+      title: `${list.title} (Copy)`,
+      color: list.color,
+      position: list.position + 1,
+    });
+
+    const cards = this.getCards(listId);
+    for (const card of cards) {
+      this.createCard(list.boardId, newList.id, {
+        title: card.title,
+        description: card.description,
+      });
+    }
+
+    return newList;
+  }
+
+  reorderLists(
+    boardId: string,
+    items: { id: string; newPosition: number }[],
+  ): boolean {
+    if (!this.boardsById.has(boardId)) return false;
+    for (const item of items) {
+      const list = this.listsById.get(item.id);
+      if (list && list.boardId === boardId) {
+        this.listsById.set(item.id, { ...list, position: item.newPosition });
+      }
+    }
+    return true;
+  }
+
+  // ── Cards ──
   createCard(
     boardId: string,
     listId: string,
-    input: { title?: string; description?: string },
+    input: { title?: string; description?: string; position?: number },
   ): MockCardRecord {
     const list = this.listsById.get(listId);
     if (!list) {
@@ -673,14 +1196,124 @@ export class MockStore {
         `Cannot create card: List "${listId}" belongs to board "${list.boardId}", not "${boardId}".`,
       );
     }
-    const factories = this.getFactories();
-    const card = factories.card(this.getCards(listId).length, boardId, listId, {
+    const existing = this.getCards(listId);
+    const card: MockCardRecord = {
       id: this.nextId("card"),
+      boardId,
+      listId,
       title: input.title ?? "New Card",
       description: input.description,
-    });
+      position: input.position ?? existing.length,
+      createdAt: this.clock.isoNow(),
+      updatedAt: this.clock.isoNow(),
+    };
     this.insertCard(card);
     return card;
+  }
+
+  createCardByListId(
+    listId: string,
+    input: { title?: string; description?: string; position?: number },
+  ): MockCardRecord {
+    const list = this.listsById.get(listId);
+    if (!list) {
+      throw new MockRelationalInvariantError(
+        `Cannot create card: List "${listId}" does not exist.`,
+      );
+    }
+    return this.createCard(list.boardId, listId, input);
+  }
+
+  updateCard(cardId: string, patch: Partial<MockCardRecord>): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+    const updated: MockCardRecord = {
+      ...card,
+      ...patch,
+      id: card.id,
+      boardId: card.boardId,
+      listId: patch.listId ?? card.listId,
+      updatedAt: this.clock.isoNow(),
+    };
+    this.cardsById.set(cardId, updated);
+    return true;
+  }
+
+  deleteCard(cardId: string): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+
+    this.removeIndex(this.cardIdsByListId, card.listId, card.id);
+    this.cardsById.delete(cardId);
+    this.labelIdsByCardId.delete(cardId);
+    this.fieldValuesByCardId.delete(cardId);
+
+    // Delete checklists and their items
+    const chkIds = Array.from(this.checklistIdsByCardId.get(cardId) ?? []);
+    for (const chkId of chkIds) {
+      this.deleteChecklist(chkId);
+    }
+    this.checklistIdsByCardId.delete(cardId);
+
+    // Delete comments
+    const cmtIds = Array.from(this.commentIdsByCardId.get(cardId) ?? []);
+    for (const cmtId of cmtIds) {
+      this.commentsById.delete(cmtId);
+    }
+    this.commentIdsByCardId.delete(cardId);
+
+    return true;
+  }
+
+  duplicateCard(cardId: string): MockCardRecord | undefined {
+    const card = this.cardsById.get(cardId);
+    if (!card) return undefined;
+
+    const newCard = this.createCard(card.boardId, card.listId, {
+      title: `${card.title} (Copy)`,
+      description: card.description,
+      position: card.position + 1,
+    });
+
+    // Duplicate labels
+    const labels = this.labelIdsByCardId.get(cardId);
+    if (labels) {
+      for (const lblId of labels) {
+        this.addIndex(this.labelIdsByCardId, newCard.id, lblId);
+      }
+    }
+
+    return newCard;
+  }
+
+  archiveCard(cardId: string): boolean {
+    return this.cardsById.has(cardId);
+  }
+
+  updateFieldValue(
+    cardId: string,
+    fieldDefinitionId: string,
+    value: unknown,
+  ): boolean {
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+    let fieldMap = this.fieldValuesByCardId.get(cardId);
+    if (!fieldMap) {
+      fieldMap = new Map<string, unknown>();
+      this.fieldValuesByCardId.set(cardId, fieldMap);
+    }
+    fieldMap.set(fieldDefinitionId, value);
+    return true;
+  }
+
+  getFieldValues(cardId: string): Record<string, unknown> {
+    const fieldMap = this.fieldValuesByCardId.get(cardId);
+    if (!fieldMap) return {};
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of fieldMap.entries()) {
+      result[k] = v;
+    }
+    return result;
   }
 
   moveCard(cardId: string, targetListId: string, newPosition: number): boolean {
@@ -712,6 +1345,192 @@ export class MockStore {
     return true;
   }
 
+  // ── Checklists ──
+  getCardChecklists(
+    cardId: string,
+  ): (MockChecklistRecord & { items: MockChecklistItemRecord[] })[] {
+    const ids = this.checklistIdsByCardId.get(cardId);
+    if (!ids) return [];
+    return Array.from(ids)
+      .map((id) => this.checklistsById.get(id))
+      .filter((c): c is MockChecklistRecord => c !== undefined)
+      .sort((a, b) => a.position - b.position)
+      .map((chk) => {
+        const itemIds = this.checklistItemIdsByChecklistId.get(chk.id);
+        const items = itemIds
+          ? Array.from(itemIds)
+              .map((itemId) => this.checklistItemsById.get(itemId))
+              .filter((i): i is MockChecklistItemRecord => i !== undefined)
+          : [];
+        return { ...chk, items };
+      });
+  }
+
+  getChecklist(id: string): MockChecklistRecord | undefined {
+    return this.checklistsById.get(id);
+  }
+
+  createChecklist(cardId: string, title: string): MockChecklistRecord {
+    const card = this.cardsById.get(cardId);
+    if (!card) {
+      throw new MockRelationalInvariantError(
+        `Cannot create checklist: Card "${cardId}" does not exist.`,
+      );
+    }
+    const existing = this.getCardChecklists(cardId);
+    const chk: MockChecklistRecord = {
+      id: this.nextId("chk"),
+      cardId,
+      title: title || "Checklist",
+      position: existing.length + 1,
+    };
+    this.insertChecklist(chk);
+    return chk;
+  }
+
+  updateChecklist(
+    checklistId: string,
+    patch: { title?: string; position?: number },
+  ): boolean {
+    const chk = this.checklistsById.get(checklistId);
+    if (!chk) return false;
+    const updated: MockChecklistRecord = {
+      ...chk,
+      title: patch.title ?? chk.title,
+      position: patch.position !== undefined ? patch.position : chk.position,
+    };
+    this.checklistsById.set(checklistId, updated);
+    return true;
+  }
+
+  deleteChecklist(checklistId: string): boolean {
+    const chk = this.checklistsById.get(checklistId);
+    if (!chk) return false;
+
+    const itemIds = Array.from(
+      this.checklistItemIdsByChecklistId.get(checklistId) ?? [],
+    );
+    for (const itemId of itemIds) {
+      this.checklistItemsById.delete(itemId);
+    }
+    this.checklistItemIdsByChecklistId.delete(checklistId);
+
+    this.removeIndex(this.checklistIdsByCardId, chk.cardId, chk.id);
+    this.checklistsById.delete(checklistId);
+    return true;
+  }
+
+  createChecklistItem(
+    checklistId: string,
+    title: string,
+  ): MockChecklistItemRecord {
+    const chk = this.checklistsById.get(checklistId);
+    if (!chk) {
+      throw new MockRelationalInvariantError(
+        `Cannot create checklist item: Checklist "${checklistId}" does not exist.`,
+      );
+    }
+    const item: MockChecklistItemRecord = {
+      id: this.nextId("chki"),
+      checklistId,
+      title: title || "New Item",
+      isChecked: false,
+      dueDate: null,
+      assigneeId: null,
+    };
+    this.insertChecklistItem(item);
+    return item;
+  }
+
+  updateChecklistItem(
+    itemId: string,
+    patch: {
+      title?: string;
+      isChecked?: boolean;
+      dueDate?: string | null;
+      assigneeId?: string | null;
+    },
+  ): boolean {
+    const item = this.checklistItemsById.get(itemId);
+    if (!item) return false;
+    const updated: MockChecklistItemRecord = {
+      ...item,
+      title: patch.title ?? item.title,
+      isChecked:
+        patch.isChecked !== undefined ? patch.isChecked : item.isChecked,
+      dueDate: patch.dueDate !== undefined ? patch.dueDate : item.dueDate,
+      assigneeId:
+        patch.assigneeId !== undefined ? patch.assigneeId : item.assigneeId,
+    };
+    this.checklistItemsById.set(itemId, updated);
+    return true;
+  }
+
+  deleteChecklistItem(itemId: string): boolean {
+    const item = this.checklistItemsById.get(itemId);
+    if (!item) return false;
+    this.removeIndex(
+      this.checklistItemIdsByChecklistId,
+      item.checklistId,
+      item.id,
+    );
+    this.checklistItemsById.delete(itemId);
+    return true;
+  }
+
+  // ── Comments ──
+  getCardComments(cardId: string): MockCommentRecord[] {
+    const ids = this.commentIdsByCardId.get(cardId);
+    if (!ids) return [];
+    return Array.from(ids)
+      .map((id) => this.commentsById.get(id))
+      .filter((c): c is MockCommentRecord => c !== undefined)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
+  createCardComment(
+    cardId: string,
+    userId: string,
+    contentMd: string,
+  ): MockCommentRecord {
+    const card = this.cardsById.get(cardId);
+    if (!card) {
+      throw new MockRelationalInvariantError(
+        `Cannot create comment: Card "${cardId}" does not exist.`,
+      );
+    }
+    const cmt: MockCommentRecord = {
+      id: this.nextId("cmt"),
+      cardId,
+      userId,
+      contentMd,
+      createdAt: this.clock.isoNow(),
+    };
+    this.insertComment(cmt);
+    return cmt;
+  }
+
+  updateCardComment(commentId: string, contentMd: string): boolean {
+    const cmt = this.commentsById.get(commentId);
+    if (!cmt) return false;
+    const updated: MockCommentRecord = {
+      ...cmt,
+      contentMd,
+      updatedAt: this.clock.isoNow(),
+    };
+    this.commentsById.set(commentId, updated);
+    return true;
+  }
+
+  deleteCardComment(commentId: string): boolean {
+    const cmt = this.commentsById.get(commentId);
+    if (!cmt) return false;
+    this.removeIndex(this.commentIdsByCardId, cmt.cardId, cmt.id);
+    this.commentsById.delete(commentId);
+    return true;
+  }
+
+  // ── Pages ──
   createPage(
     workspaceId: string,
     input: { title?: string; icon?: string; parentId?: string },
@@ -734,6 +1553,31 @@ export class MockStore {
     );
     this.insertPage(page);
     return page;
+  }
+
+  updatePage(
+    pageId: string,
+    patch: { title?: string; icon?: string; parentId?: string },
+  ): boolean {
+    const page = this.pagesById.get(pageId);
+    if (!page) return false;
+    const updated: MockPageRecord = {
+      ...page,
+      title: patch.title ?? page.title,
+      icon: patch.icon !== undefined ? patch.icon : page.icon,
+      parentId: patch.parentId !== undefined ? patch.parentId : page.parentId,
+      updatedAt: this.clock.isoNow(),
+    };
+    this.pagesById.set(pageId, updated);
+    return true;
+  }
+
+  deletePage(pageId: string): boolean {
+    const page = this.pagesById.get(pageId);
+    if (!page) return false;
+    this.removeIndex(this.pageIdsByWorkspaceId, page.workspaceId, page.id);
+    this.pagesById.delete(pageId);
+    return true;
   }
 
   // ─── Query Accessors ──────────────────────────────────────────────────────
@@ -774,6 +1618,10 @@ export class MockStore {
       .map((id) => this.listsById.get(id))
       .filter((l): l is MockListRecord => l !== undefined)
       .sort((a, b) => a.position - b.position);
+  }
+
+  getList(id: string): MockListRecord | undefined {
+    return this.listsById.get(id);
   }
 
   getCards(listId: string): MockCardRecord[] {
@@ -822,7 +1670,7 @@ export class MockStore {
     return Array.from(ids)
       .map((id) => this.pagesById.get(id))
       .filter((p): p is MockPageRecord => p !== undefined)
-      .sort((a, b) => a.title.localeCompare(b.title));
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
   getPage(id: string): MockPageRecord | undefined {
@@ -879,7 +1727,57 @@ export class MockStore {
       }
     }
 
-    // 5. Pages point to existing workspaces
+    // 5. Columns point to existing boards
+    for (const col of this.columnsById.values()) {
+      if (!this.boardsById.has(col.boardId)) {
+        throw new MockRelationalInvariantError(
+          `Column "${col.id}" references non-existent board "${col.boardId}".`,
+        );
+      }
+    }
+
+    // 6. Labels point to existing boards
+    for (const lbl of this.labelsById.values()) {
+      if (!this.boardsById.has(lbl.boardId)) {
+        throw new MockRelationalInvariantError(
+          `Label "${lbl.id}" references non-existent board "${lbl.boardId}".`,
+        );
+      }
+    }
+
+    // 7. Checklists point to existing cards
+    for (const chk of this.checklistsById.values()) {
+      if (!this.cardsById.has(chk.cardId)) {
+        throw new MockRelationalInvariantError(
+          `Checklist "${chk.id}" references non-existent card "${chk.cardId}".`,
+        );
+      }
+    }
+
+    // 8. Checklist items point to existing checklists
+    for (const item of this.checklistItemsById.values()) {
+      if (!this.checklistsById.has(item.checklistId)) {
+        throw new MockRelationalInvariantError(
+          `ChecklistItem "${item.id}" references non-existent checklist "${item.checklistId}".`,
+        );
+      }
+    }
+
+    // 9. Comments point to existing cards and existing users
+    for (const cmt of this.commentsById.values()) {
+      if (!this.cardsById.has(cmt.cardId)) {
+        throw new MockRelationalInvariantError(
+          `Comment "${cmt.id}" references non-existent card "${cmt.cardId}".`,
+        );
+      }
+      if (!this.usersById.has(cmt.userId)) {
+        throw new MockRelationalInvariantError(
+          `Comment "${cmt.id}" references non-existent user "${cmt.userId}".`,
+        );
+      }
+    }
+
+    // 10. Pages point to existing workspaces
     for (const p of this.pagesById.values()) {
       if (!this.workspacesById.has(p.workspaceId)) {
         throw new MockRelationalInvariantError(
@@ -888,7 +1786,7 @@ export class MockStore {
       }
     }
 
-    // 6. Secondary indexes match primary records exactly
+    // 11. Secondary indexes match primary records exactly (bidirectional)
     for (const [wsId, memSet] of this.membershipIdsByWorkspaceId.entries()) {
       for (const memId of memSet) {
         const m = this.membershipsById.get(memId);
@@ -921,6 +1819,64 @@ export class MockStore {
         }
       }
     }
+
+    for (const [boardId, colSet] of this.columnIdsByBoardId.entries()) {
+      for (const colId of colSet) {
+        const col = this.columnsById.get(colId);
+        if (!col || col.boardId !== boardId) {
+          throw new MockRelationalInvariantError(
+            `Secondary index columnIdsByBoardId corrupted for board "${boardId}", column "${colId}".`,
+          );
+        }
+      }
+    }
+
+    for (const [boardId, lblSet] of this.labelIdsByBoardId.entries()) {
+      for (const lblId of lblSet) {
+        const lbl = this.labelsById.get(lblId);
+        if (!lbl || lbl.boardId !== boardId) {
+          throw new MockRelationalInvariantError(
+            `Secondary index labelIdsByBoardId corrupted for board "${boardId}", label "${lblId}".`,
+          );
+        }
+      }
+    }
+
+    for (const [cardId, chkSet] of this.checklistIdsByCardId.entries()) {
+      for (const chkId of chkSet) {
+        const chk = this.checklistsById.get(chkId);
+        if (!chk || chk.cardId !== cardId) {
+          throw new MockRelationalInvariantError(
+            `Secondary index checklistIdsByCardId corrupted for card "${cardId}", checklist "${chkId}".`,
+          );
+        }
+      }
+    }
+
+    for (const [
+      chkId,
+      itemSet,
+    ] of this.checklistItemIdsByChecklistId.entries()) {
+      for (const itemId of itemSet) {
+        const item = this.checklistItemsById.get(itemId);
+        if (!item || item.checklistId !== chkId) {
+          throw new MockRelationalInvariantError(
+            `Secondary index checklistItemIdsByChecklistId corrupted for checklist "${chkId}", item "${itemId}".`,
+          );
+        }
+      }
+    }
+
+    for (const [cardId, cmtSet] of this.commentIdsByCardId.entries()) {
+      for (const cmtId of cmtSet) {
+        const cmt = this.commentsById.get(cmtId);
+        if (!cmt || cmt.cardId !== cardId) {
+          throw new MockRelationalInvariantError(
+            `Secondary index commentIdsByCardId corrupted for card "${cardId}", comment "${cmtId}".`,
+          );
+        }
+      }
+    }
   }
 
   getSnapshot(): Record<string, unknown[]> {
@@ -930,10 +1886,17 @@ export class MockStore {
       memberships: Array.from(this.membershipsById.values()),
       views: Array.from(this.viewsById.values()),
       boards: Array.from(this.boardsById.values()),
+      boardViews: Array.from(this.boardViewsByBoardId.values()),
+      columns: Array.from(this.columnsById.values()),
+      labels: Array.from(this.labelsById.values()),
       lists: Array.from(this.listsById.values()),
       cards: Array.from(this.cardsById.values()),
+      checklists: Array.from(this.checklistsById.values()),
+      checklistItems: Array.from(this.checklistItemsById.values()),
+      comments: Array.from(this.commentsById.values()),
       notifications: Array.from(this.notificationsById.values()),
       pages: Array.from(this.pagesById.values()),
+      userPreferences: Array.from(this.userPreferencesByUserId.values()),
     };
   }
 }

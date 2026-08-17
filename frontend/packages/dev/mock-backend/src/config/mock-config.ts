@@ -29,8 +29,7 @@ export type MockBusinessState =
   | "new-user"
   | "empty-workspace"
   | "permission-limited"
-  | "expired-session"
-  | "onboarding";
+  | "expired-session";
 
 export type MockDensity = "tiny" | "normal" | "large" | "stress";
 
@@ -124,12 +123,6 @@ export const NAMED_PRESETS: Record<string, Partial<MockBackendConfig>> = {
     state: "expired-session",
     density: "tiny",
     latency: "instant",
-  },
-  "ui-onboarding": {
-    persona: "owner",
-    state: "onboarding",
-    density: "tiny",
-    latency: "fast",
   },
   "ui-all-errors": {
     persona: "owner",

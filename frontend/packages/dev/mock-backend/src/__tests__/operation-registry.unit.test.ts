@@ -72,4 +72,25 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
     expect(registry.operationIds()).toContain("resource.get");
     expect(registry.operationIds()).toContain("resource.create");
   });
+
+  it("T-MFB-023: throws MockDuplicateRouteError on parameter-equivalent route ambiguity", () => {
+    const registry = new MockOperationRegistry();
+
+    const op1 = defineMockOperation({
+      id: "boards.detail.one",
+      method: "GET",
+      route: "/boards/:id",
+      handle: async () => ok({}),
+    });
+
+    const op2 = defineMockOperation({
+      id: "boards.detail.two",
+      method: "GET",
+      route: "/boards/:boardId",
+      handle: async () => ok({}),
+    });
+
+    registry.register(op1);
+    expect(() => registry.register(op2)).toThrow(MockDuplicateRouteError);
+  });
 });

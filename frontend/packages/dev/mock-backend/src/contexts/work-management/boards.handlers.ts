@@ -6,9 +6,19 @@
  *   boards.detail          — GET /boards/:id
  *   boards.full            — GET /boards/:id/full
  *   boards.create          — POST /workspaces/:workspaceId/boards
+ *   boards.view.get        — GET /boards/:id/view
+ *   boards.view.save       — PUT /boards/:id/view
+ *   boards.columns.list    — GET /boards/:boardId/columns
+ *   boards.columns.create  — POST /boards/:boardId/columns
+ *   boards.columns.update  — PATCH /boards/:boardId/columns/:columnId
+ *   boards.columns.delete  — DELETE /boards/:boardId/columns/:columnId
+ *   boards.columns.reorder — POST /boards/:boardId/columns/reorder
+ *   boards.labels.list     — GET /boards/:boardId/labels
+ *   boards.labels.create   — POST /boards/:boardId/labels
+ *   boards.labels.update   — PATCH /boards/:boardId/labels/:labelId
+ *   boards.labels.delete   — DELETE /boards/:boardId/labels/:labelId
  *
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
- * "Do not keep growing one monolithic handler file."
  */
 
 import type {
@@ -16,6 +26,7 @@ import type {
   FullBoardDtoApi,
   CardSummaryDtoApi,
   ListDtoApi,
+  BoardViewDtoApi,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
 import { ok, created, notFound } from "../../transport/create-response";
@@ -151,6 +162,231 @@ export const boardsOperations = [
         listCount: 0,
         createdAt: newBoard.createdAt,
       });
+    },
+  }),
+
+  // ─── GET /boards/:id/view ─────────────────────────────────────────────────
+
+  defineMockOperation<{ id: string }, never, BoardViewDtoApi>({
+    id: "boards.view.get",
+    method: "GET",
+    route: "/boards/:id/view",
+    async handle({ params, store }) {
+      const b = store.getBoard(params.id);
+      if (!b) return notFound("Board not found");
+      const v = store.getBoardView(params.id);
+      return ok<BoardViewDtoApi>({
+        viewMode: v?.viewMode ?? "table",
+        config: v?.viewConfig ?? "{}",
+        filters: v?.filters ?? "{}",
+      });
+    },
+  }),
+
+  // ─── PUT /boards/:id/view ─────────────────────────────────────────────────
+
+  defineMockOperation<
+    { id: string },
+    { viewMode?: string; config?: string; filters?: string },
+    void
+  >({
+    id: "boards.view.save",
+    method: "PUT",
+    route: "/boards/:id/view",
+    async handle({ params, body, store }) {
+      const b = store.getBoard(params.id);
+      if (!b) return notFound("Board not found");
+      const data = (body ?? {}) as {
+        viewMode?: string;
+        config?: string;
+        filters?: string;
+      };
+      store.saveBoardView(
+        params.id,
+        data.viewMode ?? "table",
+        data.config ?? "{}",
+        data.filters,
+      );
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /boards/:boardId/columns ─────────────────────────────────────────
+
+  defineMockOperation<{ boardId: string }, never, unknown[]>({
+    id: "boards.columns.list",
+    method: "GET",
+    route: "/boards/:boardId/columns",
+    async handle({ params, store }) {
+      const cols = store.getColumns(params.boardId);
+      return ok(
+        cols.map((c) => ({
+          id: c.id,
+          boardId: c.boardId,
+          name: c.name,
+          fieldType: c.fieldType,
+          settings: c.settings ? JSON.parse(c.settings) : undefined,
+          position: c.position,
+          isHidden: c.isHidden ?? false,
+        })),
+      );
+    },
+  }),
+
+  // ─── POST /boards/:boardId/columns ────────────────────────────────────────
+
+  defineMockOperation<
+    { boardId: string },
+    { name: string; fieldType: string; settings?: string; position?: number },
+    string
+  >({
+    id: "boards.columns.create",
+    method: "POST",
+    route: "/boards/:boardId/columns",
+    async handle({ params, body, store }) {
+      const data = body as {
+        name: string;
+        fieldType: string;
+        settings?: string;
+        position?: number;
+      };
+      const col = store.createColumn(params.boardId, {
+        name: data.name,
+        fieldType: data.fieldType,
+        settings: data.settings,
+        position: data.position,
+      });
+      return created<string>(col.id);
+    },
+  }),
+
+  // ─── PATCH /boards/:boardId/columns/:columnId ─────────────────────────────
+
+  defineMockOperation<
+    { boardId: string; columnId: string },
+    {
+      name?: string;
+      fieldType?: string;
+      settings?: string;
+      isHidden?: boolean;
+    },
+    void
+  >({
+    id: "boards.columns.update",
+    method: "PATCH",
+    route: "/boards/:boardId/columns/:columnId",
+    async handle({ params, body, store }) {
+      const updated = store.updateColumn(params.columnId, body ?? {});
+      if (!updated) return notFound("Column not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── DELETE /boards/:boardId/columns/:columnId ────────────────────────────
+
+  defineMockOperation<{ boardId: string; columnId: string }, never, void>({
+    id: "boards.columns.delete",
+    method: "DELETE",
+    route: "/boards/:boardId/columns/:columnId",
+    async handle({ params, store }) {
+      const deleted = store.deleteColumn(params.columnId);
+      if (!deleted) return notFound("Column not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /boards/:boardId/columns/reorder ────────────────────────────────
+
+  defineMockOperation<
+    { boardId: string },
+    { items: { id: string; newPosition: number }[] },
+    void
+  >({
+    id: "boards.columns.reorder",
+    method: "POST",
+    route: "/boards/:boardId/columns/reorder",
+    async handle({ params, body, store }) {
+      const data = (body ?? { items: [] }) as {
+        items: { id: string; newPosition: number }[];
+      };
+      store.reorderColumns(params.boardId, data.items);
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /boards/:boardId/labels ──────────────────────────────────────────
+
+  defineMockOperation<
+    { boardId: string },
+    never,
+    { id: string; name: string; color: string }[]
+  >({
+    id: "boards.labels.list",
+    method: "GET",
+    route: "/boards/:boardId/labels",
+    async handle({ params, store }) {
+      const labels = store.getBoardLabels(params.boardId);
+      return ok(
+        labels.map((l) => ({
+          id: l.id,
+          name: l.name,
+          color: l.color,
+        })),
+      );
+    },
+  }),
+
+  // ─── POST /boards/:boardId/labels ─────────────────────────────────────────
+
+  defineMockOperation<
+    { boardId: string },
+    { name?: string; color: string },
+    { id: string; name: string; color: string }
+  >({
+    id: "boards.labels.create",
+    method: "POST",
+    route: "/boards/:boardId/labels",
+    async handle({ params, body, store }) {
+      const data = (body ?? { color: "#1E90FF" }) as {
+        name?: string;
+        color: string;
+      };
+      const label = store.createLabel(params.boardId, data);
+      return created<{ id: string; name: string; color: string }>({
+        id: label.id,
+        name: label.name,
+        color: label.color,
+      });
+    },
+  }),
+
+  // ─── PATCH /boards/:boardId/labels/:labelId ───────────────────────────────
+
+  defineMockOperation<
+    { boardId: string; labelId: string },
+    { name?: string; color?: string },
+    void
+  >({
+    id: "boards.labels.update",
+    method: "PATCH",
+    route: "/boards/:boardId/labels/:labelId",
+    async handle({ params, body, store }) {
+      const updated = store.updateLabel(params.labelId, body ?? {});
+      if (!updated) return notFound("Label not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── DELETE /boards/:boardId/labels/:labelId ──────────────────────────────
+
+  defineMockOperation<{ boardId: string; labelId: string }, never, void>({
+    id: "boards.labels.delete",
+    method: "DELETE",
+    route: "/boards/:boardId/labels/:labelId",
+    async handle({ params, store }) {
+      const deleted = store.deleteLabel(params.labelId);
+      if (!deleted) return notFound("Label not found");
+      return ok<void>(undefined);
     },
   }),
 ];

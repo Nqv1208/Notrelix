@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { MockStore } from "../state/mock-store";
+import { MockStore, MockRelationalInvariantError } from "../state/mock-store";
 import { mockIds } from "../state/mock-ids";
 import { createMockFetch } from "../transport/create-mock-fetch";
 import { createNotrelixClient, endpoints } from "@notrelix/contracts";
@@ -114,5 +114,67 @@ describe("MFB-FZ-05: Store Relational Invariants and Mutations", () => {
     expect(
       storeB.getWorkspaces().find((w) => w.name === "Workspace Only In A"),
     ).toBeUndefined();
+  });
+
+  it("T-MFB-028: assertInvariants detects corrupted orphan and dangling references", () => {
+    const store = new MockStore();
+
+    // 1. Orphan board corruption
+    (store as any).boardsById.set("corrupted-board", {
+      id: "corrupted-board",
+      workspaceId: "non-existent-ws",
+      title: "Corrupted Board",
+      visibility: "workspace",
+      isArchived: false,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    expect(() => store.assertInvariants()).toThrow(
+      MockRelationalInvariantError,
+    );
+    (store as any).boardsById.delete("corrupted-board");
+    expect(() => store.assertInvariants()).not.toThrow();
+
+    // 2. Orphan list corruption
+    (store as any).listsById.set("corrupted-list", {
+      id: "corrupted-list",
+      boardId: "non-existent-board",
+      title: "Corrupted List",
+      position: 0,
+      isCollapsed: false,
+    });
+    expect(() => store.assertInvariants()).toThrow(
+      MockRelationalInvariantError,
+    );
+    (store as any).listsById.delete("corrupted-list");
+    expect(() => store.assertInvariants()).not.toThrow();
+
+    // 3. Card list/board mismatch
+    (store as any).cardsById.set("corrupted-card", {
+      id: "corrupted-card",
+      boardId: "board-other",
+      listId: "list-todo", // list-todo belongs to roadmap board, not board-other
+      title: "Corrupted Card",
+      position: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    expect(() => store.assertInvariants()).toThrow(
+      MockRelationalInvariantError,
+    );
+    (store as any).cardsById.delete("corrupted-card");
+    expect(() => store.assertInvariants()).not.toThrow();
+
+    // 4. Secondary index corruption
+    (store as any).listIdsByBoardId
+      .get(mockIds.boards.roadmap)
+      ?.add("phantom-list-id");
+    expect(() => store.assertInvariants()).toThrow(
+      MockRelationalInvariantError,
+    );
+    (store as any).listIdsByBoardId
+      .get(mockIds.boards.roadmap)
+      ?.delete("phantom-list-id");
+    expect(() => store.assertInvariants()).not.toThrow();
   });
 });

@@ -106,7 +106,8 @@ describe("MFB-FZ-04: Scenario, Preset and Overlay Semantics", () => {
     }
   });
 
-  it("T-MFB-015: overlays transform deterministic output (unicode, long-titles, many-columns)", () => {
+  it("T-MFB-015: overlays transform deterministic output (unicode, long-titles, many-columns, missing-avatars, many-cards)", () => {
+    // 1. unicode
     const unicodeStore = new MockStore({
       seed: 1001,
       persona: "owner",
@@ -116,10 +117,10 @@ describe("MFB-FZ-04: Scenario, Preset and Overlay Semantics", () => {
       faultProfile: {},
       latency: "instant",
     });
-
     const board = unicodeStore.getBoard(mockIds.boards.roadmap);
     expect(board?.title).toContain("🚀");
 
+    // 2. long-titles
     const longTitleStore = new MockStore({
       seed: 1001,
       persona: "owner",
@@ -129,10 +130,10 @@ describe("MFB-FZ-04: Scenario, Preset and Overlay Semantics", () => {
       faultProfile: {},
       latency: "instant",
     });
-
     const longBoard = longTitleStore.getBoard(mockIds.boards.roadmap);
     expect(longBoard!.title.length).toBeGreaterThan(40);
 
+    // 3. many-columns
     const manyColumnsStore = new MockStore({
       seed: 1001,
       persona: "owner",
@@ -142,8 +143,33 @@ describe("MFB-FZ-04: Scenario, Preset and Overlay Semantics", () => {
       faultProfile: {},
       latency: "instant",
     });
-
     const lists = manyColumnsStore.getLists(mockIds.boards.roadmap);
     expect(lists.length).toBeGreaterThan(3);
+
+    // 4. missing-avatars
+    const missingAvatarsStore = new MockStore({
+      seed: 1001,
+      persona: "owner",
+      state: "default",
+      density: "normal",
+      overlays: ["missing-avatars"],
+      faultProfile: {},
+      latency: "instant",
+    });
+    const user = missingAvatarsStore.getCurrentUser();
+    expect(user.avatarUrl).toBeNull();
+
+    // 5. many-cards
+    const manyCardsStore = new MockStore({
+      seed: 1001,
+      persona: "owner",
+      state: "default",
+      density: "normal",
+      overlays: ["many-cards"],
+      faultProfile: {},
+      latency: "instant",
+    });
+    const cards = manyCardsStore.getCards("list-inprogress");
+    expect(cards.length).toBe(100);
   });
 });

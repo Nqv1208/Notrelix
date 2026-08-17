@@ -38,6 +38,10 @@ export class MockDuplicateRouteError extends Error {
   }
 }
 
+function normalizeRoutePattern(route: string): string {
+  return route.replace(/:[a-zA-Z0-9_]+/g, ":param");
+}
+
 export class MockOperationRegistry {
   private readonly operations = new Map<string, MockOperationDefinition>();
   private _matcher: RouteMatcher | null = null;
@@ -47,13 +51,14 @@ export class MockOperationRegistry {
       throw new MockDuplicateOperationIdError(op.id, op.route);
     }
 
-    // Check for exact method + route duplicate
+    // Check for exact method + route duplicate or parameter-equivalent ambiguity
+    const normalizedOpRoute = normalizeRoutePattern(op.route);
     for (const existing of this.operations.values()) {
       if (
         (existing.method === op.method ||
           existing.method === "*" ||
           op.method === "*") &&
-        existing.route === op.route
+        normalizeRoutePattern(existing.route) === normalizedOpRoute
       ) {
         throw new MockDuplicateRouteError(
           op.id,
