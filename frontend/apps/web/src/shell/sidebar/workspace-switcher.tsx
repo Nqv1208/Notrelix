@@ -28,7 +28,7 @@ import { ChevronsUpDown, Plus } from "lucide-react";
 
 export function WorkspaceSwitcher() {
   const navigate = useNavigate();
-  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+  const { api: runtimeClient } = useAppRuntime();
   const { workspaceId, workspace: activeWorkspace } = useWorkspaceContext();
 
   const useWorkspaceList = useMemo(
@@ -36,9 +36,8 @@ export function WorkspaceSwitcher() {
       createUseWorkspaceList({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.nodeEnv === "development" },
       }),
-    [runtimeClient, runtimeEnv.nodeEnv],
+    [runtimeClient],
   );
 
   const useCreateWorkspace = useMemo(

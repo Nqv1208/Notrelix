@@ -20,6 +20,9 @@ export { useColorTheme, COLOR_THEMES } from "./theme/use-color-theme";
 export type { ColorTheme, ColorThemeMeta } from "./theme/use-color-theme";
 export { colorThemeScript } from "./theme/color-theme-script";
 
+// ── Brand Primitives ──────────────────────────────────────────────
+export * from "./components/brand/notrelix-logo";
+
 // ── UI Primitives (shadcn) ─────────────────────────────────────────
 export * from "./components/ui/accordion";
 export * from "./components/ui/alert";

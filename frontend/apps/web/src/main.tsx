@@ -8,12 +8,28 @@ import { AppProviders } from "./providers/app-providers";
 import { router } from "./router";
 import { sanitizeInternalReturnUrl } from "./routing/sanitize-return-url";
 import "./styles/globals.css";
+import {
+  createWebMockRuntime,
+  readMockRuntimeConfig,
+} from "./dev/mock-runtime";
 
 /**
  * Composition root: read normalized runtime environment and instantiate AppRuntime.
  */
 const runtimeEnvironment = readWebRuntimeEnvironment(import.meta.env);
-const runtime = createAppRuntime(runtimeEnvironment);
+const mockRuntime = runtimeEnvironment.mockApi
+  ? createWebMockRuntime(readMockRuntimeConfig(import.meta.env))
+  : null;
+const runtime = createAppRuntime(
+  runtimeEnvironment,
+  mockRuntime
+    ? {
+        createApiClient: () => mockRuntime.api,
+        createRealtimeClient: () => mockRuntime.realtime,
+        clock: mockRuntime.clock,
+      }
+    : {},
+);
 const services = createWebApplicationServices(runtime, {
   navigateToSignedOut: () => {
     const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;

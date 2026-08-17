@@ -15,8 +15,12 @@ import {
 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { Button } from "@notrelix/ui-web";
-import { Input } from "@notrelix/ui-web";
 import { Label } from "@notrelix/ui-web";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@notrelix/ui-web";
 import {
   InputOTP,
   InputOTPGroup,
@@ -159,7 +163,7 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
             </p>
           </div>
           <Link to="/sign-in" className="w-full">
-            <Button className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/20">
+            <Button className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white border-0 shadow-md">
               Sign in
               <ArrowRight className="size-4 ml-2" />
             </Button>
@@ -230,33 +234,35 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
 
             <div className="space-y-2">
               <Label htmlFor="newPassword">New password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-                <Input
+              <InputGroup
+                className="h-10"
+                aria-invalid={!!resetForm.formState.errors.newPassword}
+              >
+                <InputGroupAddon align="inline-start">
+                  <Lock className="size-4 text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
                   id="newPassword"
                   type={showPassword ? "text" : "password"}
                   placeholder="Min. 8 characters"
                   autoComplete="new-password"
-                  className={cn(
-                    "pl-9 pr-10 h-10",
-                    resetForm.formState.errors.newPassword &&
-                      "border-destructive",
-                  )}
                   {...resetForm.register("newPassword")}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
-                </button>
-              </div>
+                <InputGroupAddon align="inline-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </InputGroupAddon>
+              </InputGroup>
               {resetForm.formState.errors.newPassword && (
                 <p className="text-xs text-destructive">
                   {resolveErrorDisplay(
@@ -269,33 +275,35 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm new password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-                <Input
+              <InputGroup
+                className="h-10"
+                aria-invalid={!!resetForm.formState.errors.confirmPassword}
+              >
+                <InputGroupAddon align="inline-start">
+                  <Lock className="size-4 text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
                   id="confirmPassword"
                   type={showConfirm ? "text" : "password"}
                   placeholder="Re-enter password"
                   autoComplete="new-password"
-                  className={cn(
-                    "pl-9 pr-10 h-10",
-                    resetForm.formState.errors.confirmPassword &&
-                      "border-destructive",
-                  )}
                   {...resetForm.register("confirmPassword")}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
-                >
-                  {showConfirm ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
-                </button>
-              </div>
+                <InputGroupAddon align="inline-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                    aria-label={showConfirm ? "Hide password" : "Show password"}
+                  >
+                    {showConfirm ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </InputGroupAddon>
+              </InputGroup>
               {resetForm.formState.errors.confirmPassword && (
                 <p className="text-xs text-destructive">
                   {resolveErrorDisplay(
@@ -309,7 +317,7 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
 
           <Button
             type="submit"
-            className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/20"
+            className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium border-0 shadow-md"
             disabled={isResetting}
           >
             {isResetting ? (
@@ -372,22 +380,22 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
+            <InputGroup
+              className="h-10"
+              aria-invalid={!!(emailForm.formState.errors.email || forgotError)}
+            >
+              <InputGroupAddon align="inline-start">
+                <Mail className="size-4 text-muted-foreground" />
+              </InputGroupAddon>
+              <InputGroupInput
                 id="email"
                 type="email"
                 placeholder="you@company.com"
                 autoComplete="email"
                 autoFocus
-                className={cn(
-                  "pl-9 h-10",
-                  (emailForm.formState.errors.email || forgotError) &&
-                    "border-destructive focus-visible:ring-destructive",
-                )}
                 {...emailForm.register("email")}
               />
-            </div>
+            </InputGroup>
             {emailForm.formState.errors.email && (
               <p className="text-xs text-destructive">
                 {resolveErrorDisplay(
@@ -401,7 +409,7 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
 
         <Button
           type="submit"
-          className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/20"
+          className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium border-0 shadow-md"
           disabled={isSending}
         >
           {isSending ? (

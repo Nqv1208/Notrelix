@@ -13,9 +13,13 @@ import {
 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { Button } from "@notrelix/ui-web";
-import { Input } from "@notrelix/ui-web";
 import { Label } from "@notrelix/ui-web";
 import { Checkbox } from "@notrelix/ui-web";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@notrelix/ui-web";
 import {
   loginSchema,
   type LoginRequest,
@@ -91,8 +95,8 @@ export function createLoginForm(deps: LoginFormDeps) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" type="button" className="h-10">
-            <svg className="size-4 mr-2" viewBox="0 0 24 24">
+          <Button variant="outline" type="button" className="h-10 text-sm font-medium">
+            <svg className="size-4 mr-2 shrink-0" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -112,9 +116,9 @@ export function createLoginForm(deps: LoginFormDeps) {
             </svg>
             Google
           </Button>
-          <Button variant="outline" type="button" className="h-10">
+          <Button variant="outline" type="button" className="h-10 text-sm font-medium">
             <svg
-              className="size-4 mr-2"
+              className="size-4 mr-2 shrink-0"
               fill="currentColor"
               viewBox="0 0 24 24"
             >
@@ -145,21 +149,18 @@ export function createLoginForm(deps: LoginFormDeps) {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
+            <InputGroup className="h-10" aria-invalid={!!errors.email}>
+              <InputGroupAddon align="inline-start">
+                <Mail className="size-4 text-muted-foreground" />
+              </InputGroupAddon>
+              <InputGroupInput
                 id="email"
                 type="email"
                 placeholder="you@company.com"
                 autoComplete="email"
-                className={cn(
-                  "pl-9 h-10",
-                  errors.email &&
-                    "border-destructive focus-visible:ring-destructive",
-                )}
                 {...register("email")}
               />
-            </div>
+            </InputGroup>
             {errors.email && (
               <p className="text-xs text-destructive">
                 {resolveErrorDisplay(errors.email.message, t)}
@@ -177,33 +178,32 @@ export function createLoginForm(deps: LoginFormDeps) {
                 Forgot password?
               </Link>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
+            <InputGroup className="h-10" aria-invalid={!!errors.password}>
+              <InputGroupAddon align="inline-start">
+                <Lock className="size-4 text-muted-foreground" />
+              </InputGroupAddon>
+              <InputGroupInput
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 autoComplete="current-password"
-                className={cn(
-                  "pl-9 pr-10 h-10",
-                  errors.password &&
-                    "border-destructive focus-visible:ring-destructive",
-                )}
                 {...register("password")}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
-              </button>
-            </div>
+              <InputGroupAddon align="inline-end">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </InputGroupAddon>
+            </InputGroup>
             {errors.password && (
               <p className="text-xs text-destructive">
                 {resolveErrorDisplay(errors.password.message, t)}
@@ -224,7 +224,7 @@ export function createLoginForm(deps: LoginFormDeps) {
 
         <Button
           type="submit"
-          className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/20"
+          className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium shadow-md shadow-red-500/10 transition-all border-0"
           disabled={loginMutation.isPending}
         >
           {loginMutation.isPending ? (

@@ -2,19 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { Search, FileText, LayoutGrid, X } from "lucide-react";
-
-type SearchResultType = "page" | "block" | "task" | "board";
-
-interface SearchResult {
-  id: string;
-  type: SearchResultType;
-  title: string;
-  excerpt: string;
-  icon: string | null;
-  pageId?: string;
-  score: number;
-  group: "Pages" | "Blocks" | "Tasks" | "Boards";
-}
+import type { SearchResult } from "@notrelix/features-search";
+import { useApplicationServices } from "@/composition/application-services-context";
 
 interface GlobalSearchProps {
   open: boolean;
@@ -23,6 +12,7 @@ interface GlobalSearchProps {
 
 export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
   const { workspaceId } = useWorkspaceContext();
+  const { searchApi } = useApplicationServices();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -47,17 +37,12 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
     const search = async () => {
       setIsLoading(true);
       try {
-        const params = new URLSearchParams({
-          q: query.trim(),
+        const data = await searchApi.search({
+          query: query.trim(),
           workspaceId,
+          types: ["page", "block", "task", "board"],
         });
-        const res = await fetch(`/api/v1/search?${params}`, {
-          signal: controller.signal,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setResults(data.results ?? data ?? []);
-        }
+        if (!controller.signal.aborted) setResults([...data]);
       } catch {
         if (!controller.signal.aborted) {
           setResults([]);
@@ -72,7 +57,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [query, workspaceId]);
+  }, [query, searchApi, workspaceId]);
 
   const handleSelect = (result: SearchResult) => {
     onClose();

@@ -303,6 +303,9 @@ importers:
       '@notrelix/ui-web':
         specifier: workspace:*
         version: link:../../packages/ui/web
+      '@notrelix/work-management-core':
+        specifier: workspace:*
+        version: link:../../packages/product/work-management/core
       '@notrelix/work-management-state':
         specifier: workspace:*
         version: link:../../packages/product/work-management/state

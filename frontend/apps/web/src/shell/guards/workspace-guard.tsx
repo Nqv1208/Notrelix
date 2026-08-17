@@ -27,7 +27,6 @@ export function WorkspaceGuard({
       createUseWorkspaceList({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: false },
       }),
     [runtimeClient],
   );

@@ -20,9 +20,9 @@ export function WorkspaceTopbar() {
       createNotificationBell({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.nodeEnv === "development" },
+        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.nodeEnv],
+    [runtimeClient, runtimeEnv.mockApi],
   );
 
   useEffect(() => {

@@ -18,6 +18,7 @@ export { createUsePendingInvitations } from "./query/hooks/use-pending-invitatio
 export { createUseWorkspaceShellData } from "./query/hooks/use-workspace-shell-data";
 
 export { WorkspaceCompactHeader } from "./components/workspace-compact-header";
+export { WorkspaceDirectory } from "./components/workspace-directory";
 export { WorkspaceViewTabs } from "./components/workspace-view-tabs";
 export { WorkspaceContextualToolbar } from "./components/workspace-contextual-toolbar";
 export { WorkspaceAddViewMenu } from "./components/workspace-add-view-menu";

@@ -36,7 +36,7 @@ export function WorkspaceProvider({
   workspaceId,
   children,
 }: WorkspaceProviderProps) {
-  const { api: runtimeClient } = useAppRuntime();
+  const { api: runtimeClient, env } = useAppRuntime();
 
   /**
    * Create the workspace shell hook using the injected API client from AppRuntime.
@@ -49,9 +49,9 @@ export function WorkspaceProvider({
       createUseWorkspaceShellData({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: false },
+        options: { mockMode: env.mockApi },
       }),
-    [runtimeClient],
+    [runtimeClient, env.mockApi],
   );
 
   const { workspace, views, isLoading, isError, refetch } =

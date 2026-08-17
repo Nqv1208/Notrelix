@@ -33,9 +33,9 @@ export function AccountNotificationsPage() {
       createUsePreferences({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.nodeEnv === "development" },
+        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.nodeEnv],
+    [runtimeClient, runtimeEnv.mockApi],
   );
 
   const useUpdatePreferences = useMemo(
@@ -43,9 +43,9 @@ export function AccountNotificationsPage() {
       createUseUpdatePreferences({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.nodeEnv === "development" },
+        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.nodeEnv],
+    [runtimeClient, runtimeEnv.mockApi],
   );
 
   const { preferences: _preferences, isLoading } = usePreferences();
