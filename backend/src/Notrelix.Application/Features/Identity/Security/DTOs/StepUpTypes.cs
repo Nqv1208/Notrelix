@@ -11,7 +11,8 @@ public enum StepUpPurpose
     LinkOAuth,
     UnlinkOAuth,
     IssueApiToken,
-    ChangeSecurityIdentity
+    ChangeSecurityIdentity,
+    ChangePassword
 }
 
 /// <summary>

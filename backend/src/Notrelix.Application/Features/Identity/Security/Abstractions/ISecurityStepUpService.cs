@@ -5,7 +5,11 @@ namespace Notrelix.Application.Features.Identity.Security.Abstractions;
 
 /// <summary>
 /// Canonical step-up verification boundary for security-sensitive operations
-/// (DisableMfa, RegenerateRecoveryCodes, OAuth link/unlink, API token issuance...).
+/// (DisableMfa, RegenerateRecoveryCodes, OAuth link/unlink, ChangePassword,
+/// API token issuance...).
+/// Complete* methods return a VERIFIED single-use proof token; ConsumeAsync
+/// accepts ONLY verified proof-store tokens. An unverified MFA challenge token
+/// can never authorize a sensitive mutation.
 /// Proofs are single-use, short-lived, and bound to user + session + purpose.
 /// Requires an authenticated session (sid claim) to bind a proof.
 /// </summary>

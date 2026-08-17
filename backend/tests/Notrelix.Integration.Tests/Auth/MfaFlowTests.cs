@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
@@ -21,6 +22,8 @@ using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Identity.Mfa;
+using Notrelix.Infrastructure.Identity.Security;
+using Notrelix.Infrastructure.RateLimiting;
 using Notrelix.Integration.Tests.Containers;
 using StackExchange.Redis;
 
@@ -206,6 +209,318 @@ public sealed class MfaFlowTests : IAsyncLifetime
         result.Succeeded.Should().BeFalse();
     }
 
+    // ---------------------------------------------------------------
+    // P11-BLK-001 — raw challenge cannot authorize a sensitive mutation
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task RawMfaChallenge_CannotAuthorize_DisableMfa()
+    {
+        await EnrollAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var requirement = await _services.SendStepUpRequirement(_user.Id, sessionId, StepUpPurpose.DisableMfa);
+        requirement.Succeeded.Should().BeTrue();
+
+        var disabled = await _services.SendDisableMfa(_user.Id, sessionId, requirement.Data!.ChallengeToken!);
+        disabled.Succeeded.Should().BeFalse();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.UserMfaMethods.Where(m => m.UserId == _user.Id)
+                .Should().OnlyContain(m => m.Status == MfaMethodStatus.Active);
+            context.MfaRecoveryBatches.Where(b => b.UserId == _user.Id)
+                .Should().OnlyContain(b => b.InvalidatedAt == null);
+            context.Sessions.Where(s => s.UserId == _user.Id && s.RevokedAt != null)
+                .Should().BeEmpty();
+        }
+    }
+
+    [Fact]
+    public async Task RawMfaChallenge_CannotAuthorize_RegenerateRecoveryCodes()
+    {
+        await EnrollAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var requirement = await _services.SendStepUpRequirement(_user.Id, sessionId, StepUpPurpose.RegenerateRecoveryCodes);
+        requirement.Succeeded.Should().BeTrue();
+
+        var regenerated = await _services.SendRegenerateRecoveryCodes(_user.Id, sessionId, requirement.Data!.ChallengeToken!);
+        regenerated.Succeeded.Should().BeFalse();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.MfaRecoveryBatches.Where(b => b.UserId == _user.Id)
+                .Should().OnlyContain(b => b.InvalidatedAt == null);
+        }
+    }
+
+    [Fact]
+    public async Task ProofForWrongPurpose_CannotAuthorize_DisableMfa()
+    {
+        await EnrollAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var proof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionId, StepUpPurpose.UnlinkOAuth,
+            ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        proof.Succeeded.Should().BeTrue($"step-up proof should be issued: {string.Join(", ", proof.Errors)}");
+
+        var disabled = await _services.SendDisableMfa(_user.Id, sessionId, proof.Data!.ProofToken);
+        disabled.Succeeded.Should().BeFalse();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.UserMfaMethods.Where(m => m.UserId == _user.Id)
+                .Should().OnlyContain(m => m.Status == MfaMethodStatus.Active);
+        }
+    }
+
+    [Fact]
+    public async Task ProofForAnotherSession_CannotAuthorizeMutation()
+    {
+        await EnrollAsync();
+        var sessionA = Guid.CreateVersion7();
+        var sessionB = Guid.CreateVersion7();
+
+        var proof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionA, StepUpPurpose.DisableMfa,
+            ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        proof.Succeeded.Should().BeTrue();
+
+        var disabled = await _services.SendDisableMfa(_user.Id, sessionB, proof.Data!.ProofToken);
+        disabled.Succeeded.Should().BeFalse();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.UserMfaMethods.Where(m => m.UserId == _user.Id)
+                .Should().OnlyContain(m => m.Status == MfaMethodStatus.Active);
+        }
+    }
+
+    [Fact]
+    public async Task ProofForAnotherUser_CannotAuthorizeMutation()
+    {
+        var other = User.Create("mfa-other@example.com", "MFA Other", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
+        await using (var seed = _fixture.CreatePostgresContext())
+        {
+            seed.Users.Add(other);
+            await seed.SaveChangesAsync();
+        }
+
+        await EnrollAsync();
+        var ownSecret = LastEnrollment.Secret;
+        await EnrollAsync(other.Id);
+
+        var sessionId = Guid.CreateVersion7();
+        var proof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionId, StepUpPurpose.DisableMfa,
+            ComputeTotpCode(ownSecret, DateTimeOffset.UtcNow));
+        proof.Succeeded.Should().BeTrue();
+
+        var disabled = await _services.SendDisableMfa(other.Id, sessionId, proof.Data!.ProofToken);
+        disabled.Succeeded.Should().BeFalse();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.UserMfaMethods.Where(m => m.UserId == other.Id)
+                .Should().OnlyContain(m => m.Status == MfaMethodStatus.Active);
+        }
+    }
+
+    [Fact]
+    public async Task VerifiedProof_SucceedsOnce_AndReplayIsRejected()
+    {
+        await EnrollAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var proof = await _services.SendStepUpMfaProof(
+            _user.Id, sessionId, StepUpPurpose.RegenerateRecoveryCodes,
+            ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        proof.Succeeded.Should().BeTrue();
+
+        var first = await _services.SendRegenerateRecoveryCodes(_user.Id, sessionId, proof.Data!.ProofToken);
+        first.Succeeded.Should().BeTrue();
+        first.Data!.RecoveryCodes.Should().HaveCount(MfaPolicy.RecoveryCodeCount);
+
+        var replay = await _services.SendRegenerateRecoveryCodes(_user.Id, sessionId, proof.Data!.ProofToken);
+        replay.Succeeded.Should().BeFalse();
+    }
+
+    // ---------------------------------------------------------------
+    // P11-BLK-002 — atomic single-use consumption under concurrency
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task AtomicConsume_UnderConcurrency_OnlyOneCallerWins()
+    {
+        var sessionId = Guid.CreateVersion7();
+        var now = DateTimeOffset.UtcNow;
+
+        var proofToken = Guid.NewGuid().ToString("N");
+        var proofPayload = new StepUpProofPayload(_user.Id, sessionId, StepUpPurpose.DisableMfa, now, now.AddMinutes(5));
+        await _services.ProofStore.StoreAsync(proofToken, proofPayload, TimeSpan.FromMinutes(5));
+
+        var proofResults = await Task.WhenAll(Enumerable.Range(0, 8)
+            .Select(_ => _services.ProofStore.ConsumeAsync(proofToken)));
+        proofResults.Count(r => r is not null).Should().Be(1);
+
+        var challengeToken = Guid.NewGuid().ToString("N");
+        var challengePayload = new MfaChallengePayload(
+            Guid.CreateVersion7(), _user.Id, MfaChallengePurpose.PasswordLogin, now, now.AddMinutes(5));
+        await _services.ChallengeStore.StoreAsync(challengeToken, challengePayload, TimeSpan.FromMinutes(5));
+
+        var challengeResults = await Task.WhenAll(Enumerable.Range(0, 8)
+            .Select(_ => _services.ChallengeStore.ConsumeAsync(challengeToken)));
+        challengeResults.Count(r => r is not null).Should().Be(1);
+    }
+
+    // ---------------------------------------------------------------
+    // P11-BLK-003 — login-vs-step-up challenge purpose isolation
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task StepUpChallenge_CannotCompleteLogin()
+    {
+        await EnrollAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var requirement = await _services.SendStepUpRequirement(_user.Id, sessionId, StepUpPurpose.DisableMfa);
+        requirement.Succeeded.Should().BeTrue();
+
+        var complete = await _services.SendCompleteChallenge(
+            requirement.Data!.ChallengeToken!, ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        complete.Succeeded.Should().BeFalse();
+        complete.Data.Should().BeNull();
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.Sessions.Where(s => s.UserId == _user.Id && s.RevokedAt == null).Should().BeEmpty();
+            context.Users.Single(u => u.Id == _user.Id).LastLoginAt.Should().BeNull();
+        }
+    }
+
+    [Fact]
+    public async Task LoginChallenge_CannotIssueStepUpProof()
+    {
+        await EnrollAsync();
+
+        var login = await _services.SendLogin(Email);
+        login.Succeeded.Should().BeTrue();
+        login.Data!.MfaRequired.Should().BeTrue();
+
+        var sessionId = Guid.CreateVersion7();
+        var proof = await _services.SendCompleteStepUpMfa(
+            _user.Id, sessionId, StepUpPurpose.DisableMfa,
+            login.Data.MfaChallengeToken!, ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+
+        proof.Succeeded.Should().BeFalse();
+
+        var mutation = await _services.SendDisableMfa(_user.Id, sessionId, "any-proof-token");
+        mutation.Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExactStepUpPurpose_IsEnforced()
+    {
+        await EnrollAsync();
+        var sessionId = Guid.CreateVersion7();
+
+        var requirement = await _services.SendStepUpRequirement(_user.Id, sessionId, StepUpPurpose.UnlinkOAuth);
+        requirement.Succeeded.Should().BeTrue();
+
+        var proof = await _services.SendCompleteStepUpMfa(
+            _user.Id, sessionId, StepUpPurpose.DisableMfa,
+            requirement.Data!.ChallengeToken!, ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+
+        proof.Succeeded.Should().BeFalse();
+    }
+
+    // ---------------------------------------------------------------
+    // P11-BLK-004 — bounded multi-attempt challenge + abuse control
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task InvalidCodeAttempts_DoNotDestroyChallenge_BeforeLimit()
+    {
+        await EnrollAsync();
+
+        var login = await _services.SendLogin(Email);
+        login.Data!.MfaRequired.Should().BeTrue();
+        var token = login.Data!.MfaChallengeToken!;
+
+        for (var i = 0; i < 4; i++)
+        {
+            var attempt = await _services.SendCompleteChallenge(token, "000000");
+            attempt.Succeeded.Should().BeFalse();
+        }
+
+        var valid = await _services.SendCompleteChallenge(
+            token, ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        valid.Succeeded.Should().BeTrue();
+
+        var replay = await _services.SendCompleteChallenge(
+            token, ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        replay.Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AttemptLimitExhausted_InvalidatesChallenge()
+    {
+        await EnrollAsync();
+
+        var login = await _services.SendLogin(Email);
+        login.Data!.MfaRequired.Should().BeTrue();
+        var token = login.Data!.MfaChallengeToken!;
+
+        for (var i = 0; i < 5; i++)
+        {
+            var attempt = await _services.SendCompleteChallenge(token, "000000");
+            attempt.Succeeded.Should().BeFalse();
+        }
+
+        var sixth = await _services.SendCompleteChallenge(
+            token, ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow));
+        sixth.Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ConcurrentValidCodes_OnlyOneSessionIsIssued()
+    {
+        await EnrollAsync();
+
+        var login = await _services.SendLogin(Email);
+        login.Data!.MfaRequired.Should().BeTrue();
+        var token = login.Data!.MfaChallengeToken!;
+        var code = ComputeTotpCode(LastEnrollment.Secret, DateTimeOffset.UtcNow);
+
+        var results = await Task.WhenAll(
+            _services.SendCompleteChallenge(token, code),
+            _services.SendCompleteChallenge(token, code));
+
+        results.Count(r => r.Succeeded).Should().Be(1);
+
+        await using (var context = _fixture.CreatePostgresContext())
+        {
+            context.Sessions.Where(s => s.UserId == _user.Id && s.RevokedAt == null).Count().Should().Be(1);
+        }
+    }
+
+    private MfaEnrollmentStartResult LastEnrollment { get; set; } = null!;
+
+    private async Task EnrollAsync(Guid? userId = null)
+    {
+        var target = userId ?? _user.Id;
+        var enrollment = await _services.SendStartEnrollment(target);
+        enrollment.Succeeded.Should().BeTrue();
+
+        var verification = await _services.SendVerifyEnrollment(
+            target, enrollment.Data!.MfaMethodId, ComputeTotpCode(enrollment.Data.Secret, DateTimeOffset.UtcNow));
+        verification.Succeeded.Should().BeTrue();
+
+        LastEnrollment = enrollment.Data;
+    }
+
     private static string ComputeTotpCode(string base32Secret, DateTimeOffset now)
     {
         var secret = Base32Decode(base32Secret);
@@ -274,6 +589,8 @@ public sealed class MfaFlowTests : IAsyncLifetime
         private readonly MfaTotpService _totp;
         private readonly MfaRecoveryCodeGenerator _recoveryGenerator;
         private readonly IMfaChallengeStore _challengeStore;
+        private readonly IStepUpProofStore _proofStore;
+        private readonly IRateLimitService _rateLimiter;
         private readonly Mock<IDateTimeProvider> _time;
         private readonly Mock<IJwtBlacklistService> _jwtBlacklist;
         private readonly Mock<IJwtService> _jwt;
@@ -296,6 +613,8 @@ public sealed class MfaFlowTests : IAsyncLifetime
                 InstanceName = "Notrelix_",
             });
             _challengeStore = new MfaChallengeStore(new RedisCacheService(distributedCache, multiplexer));
+            _proofStore = new StepUpProofStore(new RedisCacheService(distributedCache, multiplexer));
+            _rateLimiter = new RedisRateLimitService(multiplexer);
 
             _recoveryGenerator = new MfaRecoveryCodeGenerator();
 
@@ -308,6 +627,10 @@ public sealed class MfaFlowTests : IAsyncLifetime
             _jwt.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
         }
 
+        public IMfaChallengeStore ChallengeStore => _challengeStore;
+
+        public IStepUpProofStore ProofStore => _proofStore;
+
         private Mock<ICurrentRequestContext> Actor(Guid userId, Guid? sessionId = null)
         {
             var ctx = new Mock<ICurrentRequestContext>();
@@ -319,7 +642,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         private ISecurityStepUpService StepUp(ApplicationDbContext context) =>
             new SecurityStepUpService(
-                context, _challengeStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
+                context, _challengeStore, _proofStore, _rateLimiter, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
                 new Mock<IPasswordHasher>().Object, _time.Object);
 
         private IAuthSessionIssuer SessionIssuer(ApplicationDbContext context) =>
@@ -370,15 +693,25 @@ public sealed class MfaFlowTests : IAsyncLifetime
 
         public async Task<Result<StepUpProofResult>> SendStepUpMfaProof(Guid userId, Guid sessionId, StepUpPurpose purpose, string code)
         {
-            await using var context = _fixture.CreatePostgresContext();
-            var stepUpService = StepUp(context);
-            var requirement = await stepUpService.GetRequirementAsync(
-                userId, sessionId, purpose, CancellationToken.None);
+            var requirement = await SendStepUpRequirement(userId, sessionId, purpose);
             if (!requirement.Succeeded || requirement.Data?.ChallengeToken is not { } challengeToken)
             {
                 return Result<StepUpProofResult>.Failure("Step-up requirement could not be satisfied.");
             }
-            return await stepUpService.CompleteMfaAsync(
+            return await SendCompleteStepUpMfa(userId, sessionId, purpose, challengeToken, code);
+        }
+
+        public async Task<Result<StepUpRequirementResult>> SendStepUpRequirement(Guid userId, Guid sessionId, StepUpPurpose purpose)
+        {
+            await using var context = _fixture.CreatePostgresContext();
+            return await StepUp(context).GetRequirementAsync(userId, sessionId, purpose, CancellationToken.None);
+        }
+
+        public async Task<Result<StepUpProofResult>> SendCompleteStepUpMfa(
+            Guid userId, Guid sessionId, StepUpPurpose purpose, string challengeToken, string code)
+        {
+            await using var context = _fixture.CreatePostgresContext();
+            return await StepUp(context).CompleteMfaAsync(
                 userId, sessionId, purpose, challengeToken, code, CancellationToken.None);
         }
 
@@ -399,7 +732,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             await using var context = _fixture.CreatePostgresContext();
             var handler = new CompleteMfaChallengeCommandHandler(
-                context, _challengeStore, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
+                context, _challengeStore, _rateLimiter, new MfaCodeVerifier(context, _totp, _recoveryGenerator),
                 SessionIssuer(context), _time.Object,
                 NullLogger<CompleteMfaChallengeCommandHandler>.Instance);
             var result = await handler.Handle(new CompleteMfaChallengeCommand { ChallengeToken = token, Code = code }, CancellationToken.None);

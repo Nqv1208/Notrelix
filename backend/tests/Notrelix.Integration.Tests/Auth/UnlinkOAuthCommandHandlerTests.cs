@@ -48,6 +48,8 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
         var service = new SecurityStepUpService(
             context,
             new InMemoryMfaChallengeStore(clock),
+            new InMemoryStepUpProofStore(clock),
+            new InMemoryRateLimitService(),
             new Mock<IMfaCodeVerifier>().Object,
             passwordHasher.Object,
             clock);

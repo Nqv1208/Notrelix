@@ -64,4 +64,27 @@ public class RedisCacheService : IRedisCacheService
 
         return value;
     }
+
+    private const string GetDeleteScript = """
+        local value = redis.call('HGET', KEYS[1], 'data')
+        if value == false then
+            return nil
+        end
+        redis.call('DEL', KEYS[1])
+        return value
+        """;
+
+    public async Task<T?> GetDeleteAsync<T>(string key, CancellationToken cancellationToken = default)
+    {
+        // Microsoft RedisCache stores entries as hashes (absexp/sldexp/data fields), so the
+        // consume reads field 'data' then deletes the whole entry in one atomic Lua step.
+        var db = _redis.GetDatabase();
+        var result = await db.ScriptEvaluateAsync(GetDeleteScript, new RedisKey[] { $"{KeyPrefix}{key}" });
+        if (result.IsNull)
+        {
+            return default;
+        }
+
+        return JsonSerializer.Deserialize<T>((string)result!);
+    }
 }

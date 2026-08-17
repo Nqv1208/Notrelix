@@ -9,14 +9,18 @@ public enum MfaChallengePurpose
     StepUpLinkOAuth,
     StepUpUnlinkOAuth,
     StepUpIssueApiToken,
-    StepUpChangeSecurityIdentity
+    StepUpChangeSecurityIdentity,
+    StepUpChangePassword
 }
 
 /// <summary>
-/// Durable payload behind a single-use MFA challenge token.
+/// Transient Redis payload behind a single-use MFA challenge token.
 /// Stored transiently (Redis); consumed exactly once on verification.
+/// This is an UNVERIFIED challenge: it only authorizes factor verification,
+/// never a sensitive mutation. Verified proofs use <c>StepUpProofPayload</c>.
 /// </summary>
 public sealed record MfaChallengePayload(
+    Guid ChallengeId,
     Guid UserId,
     MfaChallengePurpose Purpose,
     DateTimeOffset IssuedAt,

@@ -15,7 +15,8 @@ internal static class MfaChallengeFactory
         Guid? sessionId = null)
     {
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        var payload = new MfaChallengePayload(userId, purpose, now, now.Add(MfaPolicy.ChallengeTtl), sessionId);
+        var payload = new MfaChallengePayload(
+            Guid.CreateVersion7(), userId, purpose, now, now.Add(MfaPolicy.ChallengeTtl), sessionId);
         await store.StoreAsync(token, payload, MfaPolicy.ChallengeTtl, ct);
         return (token, payload);
     }

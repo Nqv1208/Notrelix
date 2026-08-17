@@ -13,6 +13,7 @@ internal static class StepUpPurposeMapping
         StepUpPurpose.UnlinkOAuth => MfaChallengePurpose.StepUpUnlinkOAuth,
         StepUpPurpose.IssueApiToken => MfaChallengePurpose.StepUpIssueApiToken,
         StepUpPurpose.ChangeSecurityIdentity => MfaChallengePurpose.StepUpChangeSecurityIdentity,
+        StepUpPurpose.ChangePassword => MfaChallengePurpose.StepUpChangePassword,
         _ => throw new ArgumentOutOfRangeException(nameof(purpose), purpose, "Unknown step-up purpose")
     };
 
@@ -24,6 +25,7 @@ internal static class StepUpPurposeMapping
         MfaChallengePurpose.StepUpUnlinkOAuth => StepUpPurpose.UnlinkOAuth,
         MfaChallengePurpose.StepUpIssueApiToken => StepUpPurpose.IssueApiToken,
         MfaChallengePurpose.StepUpChangeSecurityIdentity => StepUpPurpose.ChangeSecurityIdentity,
+        MfaChallengePurpose.StepUpChangePassword => StepUpPurpose.ChangePassword,
         _ => throw new ArgumentOutOfRangeException(nameof(purpose), purpose, "Not a step-up purpose")
     };
 }

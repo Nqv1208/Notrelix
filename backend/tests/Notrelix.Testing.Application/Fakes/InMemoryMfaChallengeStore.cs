@@ -24,6 +24,18 @@ public sealed class InMemoryMfaChallengeStore : IMfaChallengeStore
         return Task.CompletedTask;
     }
 
+    public Task<MfaChallengePayload?> PeekAsync(string token, CancellationToken ct = default)
+    {
+        var now = _clock.UtcNow;
+
+        if (_items.TryGetValue(token, out var payload) && payload.ExpiresAt >= now)
+        {
+            return Task.FromResult<MfaChallengePayload?>(payload);
+        }
+
+        return Task.FromResult<MfaChallengePayload?>(null);
+    }
+
     public Task<MfaChallengePayload?> ConsumeAsync(string token, CancellationToken ct = default)
     {
         var now = _clock.UtcNow;

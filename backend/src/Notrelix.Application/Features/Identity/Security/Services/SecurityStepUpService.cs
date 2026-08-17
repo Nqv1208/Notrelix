@@ -1,4 +1,6 @@
+using System.Security.Cryptography;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
@@ -12,11 +14,15 @@ namespace Notrelix.Application.Features.Identity.Security.Services;
 /// <summary>
 /// Implements the canonical step-up verification boundary.
 /// Factor selection: enrolled MFA factor wins; otherwise password credential; otherwise OAuth re-authentication.
+/// An UNVERIFIED MFA challenge only authorizes factor verification; only a VERIFIED,
+/// single-use proof (stored in IStepUpProofStore) may authorize a sensitive mutation.
 /// </summary>
 public sealed class SecurityStepUpService : ISecurityStepUpService
 {
     private readonly IIdentityDbContext _context;
     private readonly IMfaChallengeStore _challengeStore;
+    private readonly IStepUpProofStore _proofStore;
+    private readonly IRateLimitService _rateLimiter;
     private readonly IMfaCodeVerifier _codeVerifier;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -26,12 +32,16 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
     public SecurityStepUpService(
         IIdentityDbContext context,
         IMfaChallengeStore challengeStore,
+        IStepUpProofStore proofStore,
+        IRateLimitService rateLimiter,
         IMfaCodeVerifier codeVerifier,
         IPasswordHasher passwordHasher,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _challengeStore = challengeStore;
+        _proofStore = proofStore;
+        _rateLimiter = rateLimiter;
         _codeVerifier = codeVerifier;
         _passwordHasher = passwordHasher;
         _dateTimeProvider = dateTimeProvider;
@@ -72,22 +82,47 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
     {
         var now = _dateTimeProvider.UtcNow;
 
-        var challenge = await _challengeStore.ConsumeAsync(challengeToken, ct);
-        if (challenge is null || !Matches(challenge, userId, sessionId, purpose, now))
+        var challenge = await _challengeStore.PeekAsync(challengeToken, ct);
+        if (challenge is null || challenge.ExpiresAt < now || !Matches(challenge, userId, sessionId, purpose))
         {
-            return Result<StepUpProofResult>.Failure(new ApplicationError(
-                "identity.security.step-up-invalid",
-                "Step-up verification is invalid or expired.",
-                ApplicationErrorType.Validation));
+            return InvalidProofResult();
+        }
+
+        var rate = await _rateLimiter.CheckAsync(
+            MfaPolicy.ChallengeVerificationRatePolicy,
+            $"{userId:N}:{challenge.ChallengeId:N}",
+            MfaPolicy.ChallengeMaxAttempts,
+            MfaPolicy.ChallengeTtl,
+            RateLimitAlgorithm.FixedWindow,
+            ct);
+
+        if (!rate.IsAllowed)
+        {
+            await _challengeStore.ConsumeAsync(challengeToken, ct);
+            return InvalidProofResult();
         }
 
         var verified = await _codeVerifier.VerifyAsync(userId, code, now, ct);
         if (!verified)
         {
+            if (rate.Remaining == 0)
+            {
+                await _challengeStore.ConsumeAsync(challengeToken, ct);
+            }
+
             return Result<StepUpProofResult>.Failure(new ApplicationError(
                 "identity.security.step-up-invalid-code",
                 "Invalid step-up verification code.",
                 ApplicationErrorType.Validation));
+        }
+
+        var consumed = await _challengeStore.ConsumeAsync(challengeToken, ct);
+        if (consumed is null
+            || consumed.ChallengeId != challenge.ChallengeId
+            || consumed.ExpiresAt < now
+            || !Matches(consumed, userId, sessionId, purpose))
+        {
+            return InvalidProofResult();
         }
 
         return await IssueProofAsync(userId, sessionId, purpose, now, ct);
@@ -101,10 +136,7 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
 
         if (user is null || !user.HasPasswordCredential)
         {
-            return Result<StepUpProofResult>.Failure(new ApplicationError(
-                "identity.security.step-up-invalid",
-                "Step-up verification is invalid or expired.",
-                ApplicationErrorType.Validation));
+            return InvalidProofResult();
         }
 
         var passwordValid = _passwordHasher.VerifyPassword(password, user.PasswordHash ?? DummyPasswordHash);
@@ -128,8 +160,12 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
     {
         var now = _dateTimeProvider.UtcNow;
 
-        var proof = await _challengeStore.ConsumeAsync(proofToken, ct);
-        if (proof is null || !Matches(proof, userId, sessionId, purpose, now))
+        var proof = await _proofStore.ConsumeAsync(proofToken, ct);
+        if (proof is null
+            || proof.UserId != userId
+            || proof.SessionId != sessionId
+            || proof.Purpose != purpose
+            || proof.ExpiresAt < now)
         {
             return Result.Failure(new ApplicationError(
                 "identity.security.step-up-invalid",
@@ -140,18 +176,23 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         return Result.Success();
     }
 
-    private bool Matches(MfaChallengePayload payload, Guid userId, Guid sessionId, StepUpPurpose purpose, DateTimeOffset now)
+    private static bool Matches(MfaChallengePayload payload, Guid userId, Guid sessionId, StepUpPurpose purpose)
         => payload.UserId == userId
            && payload.SessionId == sessionId
-           && payload.Purpose == StepUpPurposeMapping.ToChallengePurpose(purpose)
-           && payload.ExpiresAt >= now;
+           && payload.Purpose == StepUpPurposeMapping.ToChallengePurpose(purpose);
+
+    private static Result<StepUpProofResult> InvalidProofResult() => Result<StepUpProofResult>.Failure(
+        new ApplicationError(
+            "identity.security.step-up-invalid",
+            "Step-up verification is invalid or expired.",
+            ApplicationErrorType.Validation));
 
     private async Task<Result<StepUpProofResult>> IssueProofAsync(
         Guid userId, Guid sessionId, StepUpPurpose purpose, DateTimeOffset now, CancellationToken ct)
     {
-        var (token, payload) = await MfaChallengeFactory.CreateAsync(
-            _challengeStore, userId, StepUpPurposeMapping.ToChallengePurpose(purpose), now, ct, sessionId);
-
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var payload = new StepUpProofPayload(userId, sessionId, purpose, now, now.Add(SecurityStepUpPolicy.ProofTtl));
+        await _proofStore.StoreAsync(token, payload, SecurityStepUpPolicy.ProofTtl, ct);
         return Result<StepUpProofResult>.Success(new StepUpProofResult(token, payload.ExpiresAt));
     }
 }
