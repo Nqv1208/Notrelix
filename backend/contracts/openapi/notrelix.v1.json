@@ -1753,6 +1753,137 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/api-tokens": {
+      "get": {
+        "tags": [
+          "Identity.ApiTokens"
+        ],
+        "summary": "List API token metadata for a workspace",
+        "description": "Returns token metadata only. The raw secret is never returned by any read operation.",
+        "operationId": "Identity.ApiTokens.List",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Identity.ApiTokens"
+        ],
+        "summary": "Issue a new API token for a workspace",
+        "description": "Requires a single-use step-up proof for the IssueApiToken purpose. The raw secret is returned exactly once in this response.",
+        "operationId": "Identity.ApiTokens.Create",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.ApiTokens.Commands.CreateApiTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/api-tokens/{tokenId}": {
+      "delete": {
+        "tags": [
+          "Identity.ApiTokens"
+        ],
+        "summary": "Revoke an API token",
+        "description": "Revocation is effective immediately: a revoked token can no longer authenticate.",
+        "operationId": "Identity.ApiTokens.Revoke",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tokenId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/auth/register": {
       "post": {
         "tags": [
@@ -14402,6 +14533,25 @@
         "properties": {
           "isEnabled": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.ApiTokens.Commands.CreateApiTokenRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

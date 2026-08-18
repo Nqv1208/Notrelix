@@ -1,6 +1,7 @@
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Net.Http.Headers;
+using Notrelix.Application.Features.Identity.ApiTokens.Abstractions;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Identity.Services;
@@ -18,7 +19,7 @@ namespace Notrelix.Infrastructure.Auth.ApiTokens;
 public sealed class ApiTokenAuthenticationHandler : AuthenticationHandler<ApiTokenAuthenticationOptions>
 {
     private readonly DbContextOptions<ApplicationDbContext> _options;
-    private readonly ApiTokenSecretService _secretService;
+    private readonly IApiTokenSecretService _secretService;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public ApiTokenAuthenticationHandler(
@@ -27,7 +28,7 @@ public sealed class ApiTokenAuthenticationHandler : AuthenticationHandler<ApiTok
         UrlEncoder encoder,
         ISystemClock clock,
         DbContextOptions<ApplicationDbContext> optionsAccessor,
-        ApiTokenSecretService secretService,
+        IApiTokenSecretService secretService,
         IDateTimeProvider dateTimeProvider)
         : base(options, logger, encoder, clock)
     {
