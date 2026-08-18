@@ -1,10 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
-using Notrelix.Application.Common.Time;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Identity.Services;
