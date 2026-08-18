@@ -1,7 +1,10 @@
+using Notrelix.Infrastructure.Auth.ApiTokens;
 using Notrelix.Infrastructure.Auth.Cookies;
 using Notrelix.Infrastructure.Auth.Jwt;
 using Notrelix.Infrastructure.Auth.Passwords;
 using Notrelix.Infrastructure.Identity.Services;
+using Notrelix.Infrastructure.Security.ApiTokens;
+using Notrelix.Application.Features.Identity.ApiTokens.Abstractions;
 using Notrelix.Infrastructure.Services;
 
 namespace Notrelix.Infrastructure;
@@ -18,6 +21,9 @@ public static class AuthRegistration
         services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtBlacklistService, JwtBlacklistService>();
+
+        // API token secrets (single-use raw secret + persisted digest).
+        services.AddSingleton<IApiTokenSecretService, ApiTokenSecretService>();
 
         // Current-user / current-workspace / current-account context resolved from the HTTP request.
         services.AddHttpContextAccessor();
@@ -144,7 +150,9 @@ public static class AuthRegistration
                         return Task.CompletedTask;
                     }
                 };
-            });
+            })
+            .AddScheme<ApiTokenAuthenticationOptions, ApiTokenAuthenticationHandler>(
+                ApiTokenAuthenticationOptions.SchemeName, _ => { });
 
         return services;
     }

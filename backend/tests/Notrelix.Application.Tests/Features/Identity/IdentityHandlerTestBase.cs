@@ -81,6 +81,7 @@ public abstract class IdentityHandlerTestBase
         IdentityContextMock.Setup(c => c.UserMfaMethods).Returns(CreateAsyncDbSet(new List<UserMfaMethod>()));
         IdentityContextMock.Setup(c => c.UserSecuritySettings).Returns(CreateAsyncDbSet(new List<UserSecuritySettings>()));
         IdentityContextMock.Setup(c => c.MfaRecoveryBatches).Returns(CreateAsyncDbSet(new List<MfaRecoveryBatch>()));
+        IdentityContextMock.Setup(c => c.ApiTokens).Returns(CreateAsyncDbSet(new List<ApiToken>()));
 
         AccountContextMock.Setup(c => c.Accounts).Returns(CreateAsyncDbSet(new List<Account>()));
         AccountContextMock.Setup(c => c.AccountMembers).Returns(CreateAsyncDbSet(new List<AccountMember>()));
@@ -106,6 +107,9 @@ public abstract class IdentityHandlerTestBase
 
     protected void SetupMfaRecoveryBatches(params MfaRecoveryBatch[] batches) =>
         IdentityContextMock.Setup(c => c.MfaRecoveryBatches).Returns(CreateAsyncDbSet(batches.ToList()));
+
+    protected void SetupApiTokens(params ApiToken[] tokens) =>
+        IdentityContextMock.Setup(c => c.ApiTokens).Returns(CreateAsyncDbSet(tokens.ToList()));
 
     protected void SetupAccounts(params Account[] accounts) =>
         AccountContextMock.Setup(c => c.Accounts).Returns(CreateAsyncDbSet(accounts.ToList()));

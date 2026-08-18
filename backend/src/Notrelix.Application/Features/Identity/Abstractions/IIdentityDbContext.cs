@@ -13,4 +13,5 @@ public interface IIdentityDbContext
     DbSet<UserMfaMethod> UserMfaMethods { get; }
     DbSet<UserSecuritySettings> UserSecuritySettings { get; }
     DbSet<MfaRecoveryBatch> MfaRecoveryBatches { get; }
+    DbSet<ApiToken> ApiTokens { get; }
 }
