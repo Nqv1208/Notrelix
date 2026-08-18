@@ -542,6 +542,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/api-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List API token metadata for a workspace
+         * @description Returns token metadata only. The raw secret is never returned by any read operation.
+         */
+        get: operations["Identity.ApiTokens.List"];
+        put?: never;
+        /**
+         * Issue a new API token for a workspace
+         * @description Requires a single-use step-up proof for the IssueApiToken purpose. The raw secret is returned exactly once in this response.
+         */
+        post: operations["Identity.ApiTokens.Create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/api-tokens/{tokenId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an API token
+         * @description Revocation is effective immediately: a revoked token can no longer authenticate.
+         */
+        delete: operations["Identity.ApiTokens.Revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/register": {
         parameters: {
             query?: never;
@@ -3881,6 +3925,12 @@ export interface components {
         "Notrelix.API.Endpoints.Automation.Rules.Commands.SetAutomationRuleEnabledRequest": {
             isEnabled?: boolean;
         };
+        "Notrelix.API.Endpoints.Identity.ApiTokens.Commands.CreateApiTokenRequest": {
+            name?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            stepUpToken?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.ChangePasswordRequest": {
             currentPassword?: string | null;
             newPassword?: string | null;
@@ -5043,6 +5093,77 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.ApiTokens.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.ApiTokens.Create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.ApiTokens.Commands.CreateApiTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.ApiTokens.Revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                tokenId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
