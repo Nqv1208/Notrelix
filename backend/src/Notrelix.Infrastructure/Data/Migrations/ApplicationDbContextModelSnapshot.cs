@@ -4399,6 +4399,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_api_tokens");
 
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_api_tokens_token_hash");
+
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_api_tokens_user_id");
 

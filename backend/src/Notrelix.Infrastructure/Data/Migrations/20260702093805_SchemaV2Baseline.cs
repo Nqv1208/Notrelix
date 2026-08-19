@@ -366,6 +366,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     table.PrimaryKey("pk_api_tokens", x => x.id);
                 });
 
+            migrationBuilder.CreateIndex(
+                name: "ux_api_tokens_token_hash",
+                schema: "identity",
+                table: "api_tokens",
+                column: "token_hash",
+                unique: true);
+
             migrationBuilder.CreateTable(
                 name: "approval_requests",
                 schema: "work",
