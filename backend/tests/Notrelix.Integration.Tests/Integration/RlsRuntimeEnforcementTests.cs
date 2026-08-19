@@ -6,6 +6,7 @@ using Testcontainers.PostgreSql;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
@@ -439,5 +440,48 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             "SELECT NULLIF(current_setting('app.current_workspace_id', true), '') IS NULL";
         var result = (bool)(await after.ExecuteScalarAsync())!;
         result.Should().BeTrue("a rolled-back request must not leave RLS context behind on the pooled connection");
+    }
+
+    [Fact]
+    public async Task ApiTokens_NoGrant_FailsClosed()
+    {
+        await SeedApiTokensAsync();
+
+        var names = await QueryScalarsAsAppRoleAsync(
+            "SELECT name FROM identity.api_tokens ORDER BY name", userId: UserId);
+
+        names.Should().BeEmpty("an authenticated user without an access grant must see no API tokens");
+    }
+
+    [Fact]
+    public async Task ApiTokens_CrossWorkspace_GrantInOneWorkspace_DoesNotSeeOtherTokens()
+    {
+        await SeedApiTokensAsync();
+        await SeedGrantAsync(AccountA, WsA1);
+
+        var names = await QueryScalarsAsAppRoleAsync(
+            "SELECT name FROM identity.api_tokens ORDER BY name", userId: UserId);
+
+        names.Should().BeEquivalentTo(["Api Token A1"],
+            "a grant in workspace AA01 must not reach the AA02 token of the same account");
+
+        var crossAccountNames = await QueryScalarsAsAppRoleAsync(
+            "SELECT name FROM identity.api_tokens ORDER BY name", userId: UserId);
+        crossAccountNames.Should().NotContain("Api Token B1",
+            "account B tokens must be invisible to an account A grant");
+    }
+
+    private async Task SeedApiTokensAsync()
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        context.ApiTokens.AddRange(
+            ApiToken.Create(AccountA, WsA1, UserId, "Api Token A1", "hash:token-a1", scopes: null, createdBy: UserId, createdAt: FixedTime, expiresAt: null),
+            ApiToken.Create(AccountA, WsA2, UserId, "Api Token A2", "hash:token-a2", scopes: null, createdBy: UserId, createdAt: FixedTime, expiresAt: null),
+            ApiToken.Create(AccountB, WsB1, UserId, "Api Token B1", "hash:token-b1", scopes: null, createdBy: UserId, createdAt: FixedTime, expiresAt: null));
+
+        await context.SaveChangesAsync();
     }
 }

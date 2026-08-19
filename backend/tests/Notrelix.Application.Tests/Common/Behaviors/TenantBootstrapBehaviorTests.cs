@@ -143,5 +143,5 @@ public class TenantBootstrapBehaviorTests
         ICurrentTenantContext tenant,
         ITenantBootstrapStore store)
         where TRequest : notnull
-        => new(tenant, store, Mock.Of<ILogger<TenantBootstrapBehavior<TRequest, string>>>());
+        => new(tenant, Mock.Of<Notrelix.Application.Common.Context.ICurrentCredentialContext>(), store, Mock.Of<ILogger<TenantBootstrapBehavior<TRequest, string>>>());
 }

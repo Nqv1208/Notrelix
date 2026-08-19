@@ -226,4 +226,123 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         var auth = await AuthenticateAsync(secret.RawToken);
         auth.Succeeded.Should().BeFalse("an expired token must fail closed");
     }
+
+    [Fact]
+    public async Task Revoke_ExpiredToken_SetsRevokedAndFailsClosed()
+    {
+        var expired = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var secretService = new ApiTokenSecretService();
+        var secret = secretService.Generate();
+        var token = ApiToken.Create(
+            _accountId, _workspaceId, _user.Id, "Expired revoke token", secret.TokenHash,
+            scopes: null, createdBy: _user.Id, createdAt: expired, expiresAt: expired);
+        await using (var seedContext = CreateSystemContext())
+        {
+            seedContext.ApiTokens.Add(token);
+            await seedContext.SaveChangesAsync();
+        }
+
+        await SendRevoke(_user.Id, token.Id);
+
+        await using (var verifyContext = CreateSystemContext())
+        {
+            var reloaded = await verifyContext.ApiTokens.SingleAsync(t => t.Id == token.Id);
+            reloaded.Status.Should().Be(ApiTokenStatus.Revoked,
+                "an expired token can still be revoked and must end in the revoked state");
+            reloaded.RevokedAt.Should().NotBeNull();
+        }
+
+        var auth = await AuthenticateAsync(secret.RawToken);
+        auth.Succeeded.Should().BeFalse("a revoked expired token must never authenticate");
+    }
+
+    [Fact]
+    public async Task Revoke_SecondRevoke_IsSemanticNoOp_PreservesVersion()
+    {
+        var created = await SendCreateToken(_user.Id, "No-op revoke token");
+        created.Succeeded.Should().BeTrue();
+        var tokenId = created.Data!.Id;
+
+        await SendRevoke(_user.Id, tokenId);
+
+        long versionAfterFirst;
+        DateTimeOffset? revokedAtAfterFirst;
+        await using (var readContext = CreateSystemContext())
+        {
+            var first = await readContext.ApiTokens.AsNoTracking().SingleAsync(t => t.Id == tokenId);
+            versionAfterFirst = first.Version;
+            revokedAtAfterFirst = first.RevokedAt;
+        }
+
+        await SendRevoke(_user.Id, tokenId);
+
+        await using (var verifyContext = CreateSystemContext())
+        {
+            var second = await verifyContext.ApiTokens.AsNoTracking().SingleAsync(t => t.Id == tokenId);
+            second.Version.Should().Be(versionAfterFirst,
+                "a second revoke of an already-revoked token is a semantic no-op and must not bump the version");
+            second.RevokedAt.Should().Be(revokedAtAfterFirst,
+                "the original revocation timestamp must be preserved");
+        }
+    }
+
+    [Fact]
+    public async Task ConcurrentRevokes_EndStateRevoked_FailClosed()
+    {
+        var created = await SendCreateToken(_user.Id, "Race token");
+        created.Succeeded.Should().BeTrue();
+        var tokenId = created.Data!.Id;
+
+        var (firstHandler, firstContext) = CreateRevokeHandler();
+        var (secondHandler, secondContext) = CreateRevokeHandler();
+
+        var firstTask = RevokeAndSaveAsync(firstHandler, firstContext, tokenId);
+        var secondTask = RevokeAndSaveAsync(secondHandler, secondContext, tokenId);
+
+        // Only the post-commit invariant is asserted: after the concurrent
+        // revokes settle, the persisted state must be revoked and the token
+        // must never authenticate. A DbUpdateConcurrencyException on one racing
+        // revoke is a fail-closed outcome (the winner committed revoked); any
+        // other exception must propagate and fail the test.
+        foreach (var task in new[] { firstTask, secondTask })
+        {
+            try
+            {
+                (await task).Succeeded.Should().BeTrue();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+            }
+        }
+
+        await using (var verifyContext = CreateSystemContext())
+        {
+            var final = await verifyContext.ApiTokens.AsNoTracking().SingleAsync(t => t.Id == tokenId);
+            final.Status.Should().Be(ApiTokenStatus.Revoked,
+                "after concurrent revokes the persisted state must be revoked, never active");
+            final.RevokedAt.Should().NotBeNull();
+        }
+
+        var auth = await AuthenticateAsync(created.Data!.RawSecret);
+        auth.Succeeded.Should().BeFalse(
+            "post-commit invariant: once the revoke set is applied the token must never authenticate");
+    }
+
+    private (RevokeApiTokenCommandHandler Handler, ApplicationDbContext Context) CreateRevokeHandler()
+    {
+        var time = new Mock<IDateTimeProvider>();
+        time.Setup(t => t.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var context = CreateSystemContext();
+        return (new RevokeApiTokenCommandHandler(
+            context, Actor(_user.Id).Object, time.Object,
+            NullLogger<RevokeApiTokenCommandHandler>.Instance), context);
+    }
+
+    private async Task<Result> RevokeAndSaveAsync(
+        RevokeApiTokenCommandHandler handler, ApplicationDbContext context, Guid tokenId)
+    {
+        var result = await handler.Handle(new RevokeApiTokenCommand(_workspaceId, tokenId), CancellationToken.None);
+        await context.SaveChangesAsync();
+        return result;
+    }
 }

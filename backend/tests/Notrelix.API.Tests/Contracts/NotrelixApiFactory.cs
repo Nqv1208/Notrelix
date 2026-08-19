@@ -571,6 +571,17 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 
             services.AddAuthentication(defaultScheme: "Test")
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
+
+            // Production registers the composite NotrelixAuth policy scheme as
+            // the default authenticate/challenge scheme. The test host runs
+            // after that registration, so a plain AddAuthentication override
+            // does not win. PostConfigure runs after every Configure action
+            // regardless of registration order, guaranteeing the test scheme.
+            services.PostConfigure<AuthenticationOptions>(options =>
+            {
+                options.DefaultAuthenticateScheme = "Test";
+                options.DefaultChallengeScheme = "Test";
+            });
         });
     }
 

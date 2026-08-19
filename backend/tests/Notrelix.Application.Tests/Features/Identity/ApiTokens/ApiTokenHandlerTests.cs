@@ -159,6 +159,10 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("Token name"));
         IdentityContextMock.Object.ApiTokens.Should().BeEmpty();
+        StepUpServiceMock.Verify(
+            s => s.ConsumeAsync(It.IsAny<string>(), TestUserId, TestSessionId,
+                StepUpPurpose.IssueApiToken, It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -174,6 +178,10 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("expiration"));
         IdentityContextMock.Object.ApiTokens.Should().BeEmpty();
+        StepUpServiceMock.Verify(
+            s => s.ConsumeAsync(It.IsAny<string>(), TestUserId, TestSessionId,
+                StepUpPurpose.IssueApiToken, It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
