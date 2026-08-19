@@ -3990,6 +3990,31 @@ export interface components {
             name?: string | null;
             color?: string | null;
         };
+        "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            scopes?: string | null;
+            status?: string | null;
+            /** Format: date-time */
+            lastUsedAt?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            revokedAt?: string | null;
+        };
+        "Notrelix.Application.Features.Identity.ApiTokens.DTOs.CreatedApiTokenDto": {
+            /** Format: uuid */
+            id?: string;
+            rawSecret?: string | null;
+            name?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         "Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword.ForgotPasswordCommand": {
             email: string | null;
         };
@@ -5125,7 +5150,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto"][];
                 };
             };
         };
@@ -5151,7 +5176,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.ApiTokens.DTOs.CreatedApiTokenDto"];
                 };
             };
         };
@@ -5174,8 +5208,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": unknown;
                 };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
