@@ -1,19 +1,23 @@
 using Notrelix.Infrastructure.Auth.ApiTokens;
 using Notrelix.Infrastructure.Auth.Cookies;
+using Notrelix.Infrastructure.Auth.Credentials;
 using Notrelix.Infrastructure.Auth.Jwt;
 using Notrelix.Infrastructure.Auth.Passwords;
 using Notrelix.Infrastructure.Identity.Services;
 using Notrelix.Infrastructure.Security.ApiTokens;
 using Notrelix.Application.Features.Identity.ApiTokens.Abstractions;
 using Notrelix.Infrastructure.Services;
+using Microsoft.Net.Http.Headers;
 
 namespace Notrelix.Infrastructure;
 
 /// <summary>
-/// Authentication: JWT bearer, cookies, password hashing, token blacklist and current-user context.
+/// Authentication: composite policy scheme dispatching API tokens vs JWT bearer,
+/// cookies, password hashing, token blacklist and current-user context.
 /// </summary>
 public static class AuthRegistration
 {
+    private const string CompositeAuthenticationScheme = "NotrelixAuth";
     public static IServiceCollection AddAuthInfrastructure(
         this IServiceCollection services, IConfiguration configuration)
     {
@@ -32,6 +36,7 @@ public static class AuthRegistration
         services.AddScoped<ICurrentAccount, CurrentAccount>();
         services.AddScoped<ICurrentTenantContext, CurrentTenantContext>();
         services.AddScoped<ICurrentRequestContext, CurrentRequestContext>();
+        services.AddScoped<ICurrentCredentialContext, CurrentCredentialContext>();
         services.AddScoped<IClientMetadata, HttpClientMetadata>();
 
         // Correlation context for events/outbox/logs.
@@ -53,6 +58,25 @@ public static class AuthRegistration
         => long.TryParse(value, out var epochSeconds)
             ? DateTimeOffset.FromUnixTimeSeconds(epochSeconds)
             : null;
+
+    private static bool TryReadBearerToken(string authorization, out string rawToken)
+    {
+        rawToken = string.Empty;
+        if (string.IsNullOrEmpty(authorization) ||
+            !authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var token = authorization["Bearer ".Length..].Trim();
+        if (token.Length == 0)
+        {
+            return false;
+        }
+
+        rawToken = token;
+        return true;
+    }
 
     private static IServiceCollection AddJwtBearer(
         this IServiceCollection services, IConfiguration configuration)
@@ -85,7 +109,26 @@ public static class AuthRegistration
             options.AddPolicy("InternalService", policy =>
                 policy.RequireRole("InternalService"));
         });
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = CompositeAuthenticationScheme;
+                options.DefaultChallengeScheme = CompositeAuthenticationScheme;
+            })
+            .AddPolicyScheme(CompositeAuthenticationScheme, displayName: null, options =>
+            {
+                options.ForwardDefaultSelector = context =>
+                {
+                    var authorization = context.Request.Headers[HeaderNames.Authorization].ToString();
+
+                    if (TryReadBearerToken(authorization, out var rawToken) &&
+                        rawToken.StartsWith(ApiTokenSecretService.ApiTokenPrefix, StringComparison.Ordinal))
+                    {
+                        return ApiTokenAuthenticationOptions.SchemeName;
+                    }
+
+                    return JwtBearerDefaults.AuthenticationScheme;
+                };
+            })
             .AddJwtBearer(options =>
             {
                 options.MapInboundClaims = false;

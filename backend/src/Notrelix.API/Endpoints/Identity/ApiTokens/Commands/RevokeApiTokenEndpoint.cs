@@ -10,7 +10,8 @@ public static class RevokeApiTokenEndpoint
         group.MapWorkspaceDelete("/{tokenId:guid}", HandleAsync)
             .WithName("Identity.ApiTokens.Revoke")
             .WithSummary("Revoke an API token")
-            .WithDescription("Revocation is effective immediately: a revoked token can no longer authenticate.");
+            .WithDescription("Revocation is effective immediately: a revoked token can no longer authenticate.")
+            .Produces(StatusCodes.Status204NoContent);
         return group;
     }
 

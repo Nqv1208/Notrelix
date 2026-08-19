@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Net.Http.Headers;
 using Notrelix.Application.Features.Identity.ApiTokens.Abstractions;
 using Notrelix.Domain.Identity.Tokens;
+using Notrelix.Infrastructure.Auth.Credentials;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Identity.Services;
 using Notrelix.Infrastructure.Security.ApiTokens;
@@ -52,6 +53,12 @@ public sealed class ApiTokenAuthenticationHandler : AuthenticationHandler<ApiTok
             return AuthenticateResult.NoResult();
         }
 
+        if (!presented.StartsWith(ApiTokenSecretService.ApiTokenPrefix, StringComparison.Ordinal) ||
+            presented.Length == ApiTokenSecretService.ApiTokenPrefix.Length)
+        {
+            return AuthenticateResult.NoResult();
+        }
+
         var hash = _secretService.Hash(presented);
         var now = _dateTimeProvider.UtcNow;
 
@@ -70,11 +77,27 @@ public sealed class ApiTokenAuthenticationHandler : AuthenticationHandler<ApiTok
             return AuthenticateResult.NoResult();
         }
 
-        token.RecordUse(now);
-        await context.SaveChangesAsync(Context.RequestAborted);
+        try
+        {
+            token.RecordUse(now);
+            await context.SaveChangesAsync(Context.RequestAborted);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another writer (e.g. revocation) committed the token state; the
+            // credential may no longer be authoritative. Fail closed rather
+            // than authenticating against a raced read.
+            return AuthenticateResult.NoResult();
+        }
 
         var identity = new ClaimsIdentity(
-            [new Claim(JwtRegisteredClaimNames.Sub, token.UserId.Value.ToString())],
+            [
+                new Claim(JwtRegisteredClaimNames.Sub, token.UserId.Value.ToString()),
+                new Claim(CredentialClaims.Kind, CredentialClaims.ApiTokenKindValue),
+                new Claim(CredentialClaims.ApiTokenId, token.Id.ToString()),
+                new Claim(CredentialClaims.AccountId, token.AccountId.ToString()),
+                new Claim(CredentialClaims.WorkspaceId, token.WorkspaceId.ToString())
+            ],
             ApiTokenAuthenticationOptions.SchemeName);
 
         return AuthenticateResult.Success(

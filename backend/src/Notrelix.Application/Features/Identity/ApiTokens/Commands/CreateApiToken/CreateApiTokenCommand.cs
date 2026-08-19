@@ -69,13 +69,6 @@ public sealed class CreateApiTokenCommandHandler
                 ApplicationErrorType.PreconditionFailed));
         }
 
-        var stepUp = await _stepUpService.ConsumeAsync(
-            request.StepUpToken, userId, sessionId.Value, StepUpPurpose.IssueApiToken, ct);
-        if (!stepUp.Succeeded)
-        {
-            return Result<CreatedApiTokenDto>.Failure(stepUp.TypedErrors);
-        }
-
         var name = request.Name.Trim();
         if (name.Length == 0 || name.Length > MaxTokenNameLength)
         {
@@ -94,6 +87,13 @@ public sealed class CreateApiTokenCommandHandler
                 "Token expiration must be in the future.",
                 ApplicationErrorType.Validation,
                 nameof(CreateApiTokenCommand.ExpiresAt)));
+        }
+
+        var stepUp = await _stepUpService.ConsumeAsync(
+            request.StepUpToken, userId, sessionId.Value, StepUpPurpose.IssueApiToken, ct);
+        if (!stepUp.Succeeded)
+        {
+            return Result<CreatedApiTokenDto>.Failure(stepUp.TypedErrors);
         }
 
         var secret = _secretService.Generate();
