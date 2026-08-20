@@ -36,6 +36,17 @@ public sealed class OAuthStateStore : IOAuthStateStore
         return JsonSerializer.Deserialize<OAuthLoginState>(value);
     }
 
+    public async Task<OAuthLoginState?> PeekAsync(string state, CancellationToken ct)
+    {
+        var key = GetKey(state);
+        var value = await _cache.GetAsync<string>(key);
+
+        if (value is null)
+            return null;
+
+        return JsonSerializer.Deserialize<OAuthLoginState>(value);
+    }
+
     private static string GetKey(string state)
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(state));

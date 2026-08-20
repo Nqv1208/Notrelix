@@ -17,12 +17,14 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
-    public SuspendMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public SuspendMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessGrantProjectionService grantProjection)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _grantProjection = grantProjection;
     }
 
     public async Task<Result> Handle(SuspendMemberCommand request, CancellationToken ct)
@@ -43,6 +45,14 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
             .CountAsync(m => m.WorkspaceId == request.WorkspaceId && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);
 
         member.Suspend(_requestContext.UserId, _dateTimeProvider.UtcNow, activeOwnerCount);
+
+        await _grantProjection.RevokeWorkspaceMemberGrantAsync(
+            workspace.AccountId,
+            request.WorkspaceId,
+            request.UserId,
+            _dateTimeProvider.UtcNow,
+            ct);
+
         return Result.Success();
     }
 }

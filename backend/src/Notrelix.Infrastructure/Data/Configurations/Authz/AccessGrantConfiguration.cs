@@ -28,6 +28,10 @@ public sealed class AccessGrantConfiguration : IEntityTypeConfiguration<AccessGr
         builder.Property(x => x.MetadataJson).HasColumnName("metadata_json").HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
 
         builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.UserId }).IsUnique().HasDatabaseName("ux_access_grants_account_workspace_user");
+        builder.HasIndex(x => new { x.AccountId, x.UserId })
+            .IsUnique()
+            .HasFilter("\"workspace_id\" IS NULL")
+            .HasDatabaseName("ux_access_grants_account_user_account_level");
         builder.HasIndex(x => new { x.UserId, x.AccountId })
             .HasFilter("\"membership_status\" = 'Active' AND \"revoked_at\" IS NULL")
             .HasDatabaseName("ix_access_grants_user_account_active");

@@ -51,6 +51,7 @@ public class PipelineRuntimeOrderTests
         services.AddSingleton<IPermissionVersionProvider>(Mock.Of<IPermissionVersionProvider>());
         services.AddSingleton<IResourceVersionReader>(Mock.Of<IResourceVersionReader>());
         services.AddSingleton(Mock.Of<ICurrentUser>());
+        services.AddSingleton(Mock.Of<ICurrentCredentialContext>());
         services.AddSingleton(Mock.Of<IIdentityUserLookupService>());
         services.AddSingleton<ISubscriptionChecker>(Mock.Of<ISubscriptionChecker>());
         services.AddSingleton<IFeatureGateChecker>(Mock.Of<IFeatureGateChecker>());

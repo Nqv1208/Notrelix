@@ -26,6 +26,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Avatar).HasColumnName("avatar");
         builder.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();
+        builder.Property(x => x.HasPasswordCredential).HasColumnName("has_password_credential").IsRequired().HasDefaultValue(false);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.LastLoginAt).HasColumnName("last_login_at");
         builder.Property(x => x.EmailConfirmed).HasColumnName("email_confirmed").IsRequired().HasDefaultValue(false);
@@ -45,5 +46,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasMany(x => x.OAuthAccounts)
             .WithOne()
             .HasForeignKey(x => x.UserId);
+
+        builder.Navigation(x => x.OAuthAccounts)
+            .HasField("_oauthAccounts")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

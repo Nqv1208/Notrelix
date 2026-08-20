@@ -18,12 +18,14 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
-    public AddMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public AddMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessGrantProjectionService grantProjection)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _grantProjection = grantProjection;
     }
 
     public async Task<Result> Handle(AddMemberCommand request, CancellationToken ct)
@@ -57,6 +59,14 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
 
             _context.WorkspaceMembers.Add(member);
         }
+
+        await _grantProjection.SyncWorkspaceMemberGrantAsync(
+            workspace.AccountId,
+            request.WorkspaceId,
+            request.UserId,
+            request.Role,
+            _dateTimeProvider.UtcNow,
+            ct);
 
         return Result.Success();
     }

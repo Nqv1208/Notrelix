@@ -449,12 +449,23 @@ jobs:
         working-directory: backend
         env:
           DOTNET_ENVIRONMENT: Development
+          # Export must not require external services (design contract of
+          # OpenApiExportCommand): neutralize Development auto-start features.
+          # RabbitMQ/MigrateOnStartup/SeedData need containers CI does not run.
+          Messaging__Transport: InMemory
+          Database__MigrateOnStartup: "false"
+          SeedData__RunOnStartup: "false"
         shell: bash
         run: |
           set -euo pipefail
 
-          test -f contracts/openapi/notrelix.v1.json
-          git ls-files --error-unmatch contracts/openapi/notrelix.v1.json
+          # dotnet run executes the app with cwd = project directory, so
+          # relative output paths would land in src/Notrelix.API. Use
+          # absolute paths for both the committed contract and the export.
+          CONTRACT_PATH="${GITHUB_WORKSPACE}/backend/contracts/openapi/notrelix.v1.json"
+
+          test -f "$CONTRACT_PATH"
+          git ls-files --error-unmatch "$CONTRACT_PATH"
 
           dotnet run \
             --project src/Notrelix.API/Notrelix.API.csproj \
@@ -464,7 +475,7 @@ jobs:
             --export-openapi \
             /tmp/notrelix.v1.generated.json
 
-          cmp contracts/openapi/notrelix.v1.json /tmp/notrelix.v1.generated.json \
+          cmp "$CONTRACT_PATH" /tmp/notrelix.v1.generated.json \
             || {
               echo "OpenAPI spec drift detected."
               echo "Regenerate and review the public contract before committing:"
@@ -549,6 +560,8 @@ jobs:
           Notrelix.Integration.Tests.Integration.TenantIsolationTests
           Notrelix.Integration.Tests.Integration.CrossTenantIsolationTests
           Notrelix.Integration.Tests.Integration.RlsRuntimeEnforcementTests
+          Notrelix.Integration.Tests.Auth.ApiTokenFlowTests
+          Notrelix.Integration.Tests.Auth.ApiTokenHttpFlowTests
           Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterIntegrationTests
           Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests
           Notrelix.Integration.Tests.Data.OutboxDispatchContractTests

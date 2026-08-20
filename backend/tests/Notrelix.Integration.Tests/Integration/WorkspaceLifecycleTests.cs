@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -36,7 +37,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
         var requestContext = MockRequestContext(userId, Guid.NewGuid());
         var clock = MockClock(now);
 
-        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, clock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, clock.Object, new AccessGrantProjectionService(context));
         var command = new CreateWorkspaceCommand("Integration Workspace", "Phase 3 test", false);
 
         var result = await handler.Handle(command, default);
@@ -61,8 +62,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
 
         var requestContext = MockRequestContext(userId, Guid.NewGuid());
 
-        var handler = new CreateWorkspaceCommandHandler(
-            context, requestContext.Object, MockClock(now).Object);
+        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, MockClock(now).Object, new AccessGrantProjectionService(context));
         var command = new CreateWorkspaceCommand("Personal Tasks", null, true);
 
         var result = await handler.Handle(command, default);
@@ -85,8 +85,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
 
         var requestContext = MockRequestContext(userId, Guid.NewGuid());
 
-        var handler = new CreateWorkspaceCommandHandler(
-            context, requestContext.Object, MockClock(now).Object);
+        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, MockClock(now).Object, new AccessGrantProjectionService(context));
         var command = new CreateWorkspaceCommand("Team Space", null, false);
 
         var result = await handler.Handle(command, default);

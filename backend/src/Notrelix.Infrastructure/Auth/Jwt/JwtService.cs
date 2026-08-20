@@ -16,7 +16,7 @@ public class JwtService : IJwtService
 
     public JwtSettings Settings => _settings;
 
-    public string GenerateAccessToken(User user)
+    public string GenerateAccessToken(User user, Guid? sessionId = null)
     {
         var claims = new List<Claim>
         {
@@ -27,6 +27,11 @@ public class JwtService : IJwtService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
+
+        if (sessionId.HasValue)
+        {
+            claims.Add(new Claim(JwtClaimNames.SessionId, sessionId.Value.ToString()));
+        }
 
         var credentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);
 

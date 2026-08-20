@@ -2,6 +2,10 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Mfa;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Mfa.DTOs;
+using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
@@ -30,6 +34,7 @@ public sealed class CompleteOAuthLoginCommandHandler
     private readonly IIdentityDbContext _identityContext;
     private readonly IAccountProvisioningService _provisioningService;
     private readonly IAuthSessionIssuer _sessionIssuer;
+    private readonly IMfaChallengeStore _challengeStore;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IIntegrationEventCollector _integrationEventCollector;
@@ -42,6 +47,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         IIdentityDbContext identityContext,
         IAccountProvisioningService provisioningService,
         IAuthSessionIssuer sessionIssuer,
+        IMfaChallengeStore challengeStore,
         IPasswordHasher passwordHasher,
         IDateTimeProvider dateTimeProvider,
         IIntegrationEventCollector integrationEventCollector,
@@ -53,6 +59,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         _identityContext = identityContext;
         _provisioningService = provisioningService;
         _sessionIssuer = sessionIssuer;
+        _challengeStore = challengeStore;
         _passwordHasher = passwordHasher;
         _dateTimeProvider = dateTimeProvider;
         _integrationEventCollector = integrationEventCollector;
@@ -75,6 +82,12 @@ public sealed class CompleteOAuthLoginCommandHandler
         {
             _logger.LogWarning("OAuth callback with invalid or expired state: {State}", request.State);
             return Result<AuthResult>.Failure("Invalid or expired OAuth state.");
+        }
+
+        if (storedState.Flow != OAuthFlowKind.Login)
+        {
+            _logger.LogWarning("OAuth state bound to {Flow} flow cannot complete a login", storedState.Flow);
+            return Result<AuthResult>.Failure("OAuth state is not bound to a login flow.");
         }
 
         if (storedState.Provider != request.Provider)
@@ -121,11 +134,16 @@ public sealed class CompleteOAuthLoginCommandHandler
 
         var normalizedEmail = profile.Email.Trim().ToLowerInvariant();
         var existingUser = await _identityContext.Users
+            .AsNoTracking()
             .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
 
         if (existingUser is not null)
         {
-            return await LinkToExistingUser(existingUser, profile, now, cancellationToken);
+            _logger.LogWarning(
+                "OAuth login blocked: subject {Subject} unlinked but email {Email} already belongs to user {UserId}",
+                profile.Subject, normalizedEmail, existingUser.Id);
+            return Result<AuthResult>.Failure(
+                "An account with this email already exists. Sign in with your existing method, or link this provider from your signed-in account.");
         }
 
         return await CreateNewUser(profile, now, cancellationToken);
@@ -149,31 +167,29 @@ public sealed class CompleteOAuthLoginCommandHandler
             return Result<AuthResult>.Failure("Account is not active.");
         }
 
+        var mfaEnabled = await _identityContext.UserMfaMethods
+            .AnyAsync(m => m.UserId == user.Id && m.Status == MfaMethodStatus.Active, cancellationToken);
+
+        if (mfaEnabled)
+        {
+            var (token, payload) = await MfaChallengeFactory.CreateAsync(
+                _challengeStore, user.Id, MfaChallengePurpose.OAuthLogin, now, cancellationToken);
+
+            _logger.LogInformation("OAuth login requires MFA challenge for {UserId}", user.Id);
+
+            return Result<AuthResult>.Success(new AuthResult
+            {
+                MfaRequired = true,
+                MfaChallengeToken = token,
+                MfaMethod = nameof(MfaMethodType.AuthenticatorApp),
+                MfaExpiresAt = payload.ExpiresAt.UtcDateTime
+            });
+        }
+
         user.RecordLogin(now);
         var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
 
         _logger.LogInformation("OAuth login succeeded for existing account (user {UserId})", user.Id);
-        return Result<AuthResult>.Success(authResult);
-    }
-
-    private async Task<Result<AuthResult>> LinkToExistingUser(
-        User user, ExternalOAuthProfile profile, DateTimeOffset now, CancellationToken cancellationToken)
-    {
-        if (user.Status != UserStatus.Active)
-        {
-            _logger.LogWarning("OAuth link blocked: user {UserId} is {Status}", user.Id, user.Status);
-            return Result<AuthResult>.Failure("Account is not active.");
-        }
-
-        user.LinkOAuthAccount(profile.Provider, profile.Subject,
-            OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, user.Id, now);
-        var oauthAccount = user.OAuthAccounts.Last();
-        _identityContext.OAuthAccounts.Add(oauthAccount);
-        user.RecordLogin(now);
-
-        var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
-
-        _logger.LogInformation("OAuth linked to existing user {UserId} via email", user.Id);
         return Result<AuthResult>.Success(authResult);
     }
 
@@ -184,7 +200,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         var email = profile.Email!;
         var sentinelHash = _passwordHasher.HashPassword("OAUTH_ONLY_" + Guid.CreateVersion7().ToString("N"));
 
-        var user = User.Create(email, displayName, sentinelHash, now);
+        var user = User.Create(email, displayName, sentinelHash, now, hasPasswordCredential: false);
         _identityContext.Users.Add(user);
 
         var accountName = $"{displayName}'s Account";

@@ -32,7 +32,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
         var jwtService = new Mock<IJwtService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RefreshTokenCommandHandler(context, jwtService.Object, dateTimeProvider.Object);
+        var handler = new RefreshTokenCommandHandler(context, jwtService.Object, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
 
         var result = await handler.Handle(new RefreshTokenCommand
         {
@@ -48,7 +48,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
     {
         await using var context = _db.CreateContext();
 
-        var user = User.Create("refresh@example.com", "Refresh User", "hashed", DateTimeOffset.UtcNow);
+        var user = User.Create("refresh@example.com", "Refresh User", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(user);
 
         var oldRefreshToken = "old-refresh";
@@ -57,12 +57,12 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("new-access-token");
+        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("new-access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("new-refresh-token");
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RefreshTokenCommandHandler(context, jwtService.Object, dateTimeProvider.Object);
+        var handler = new RefreshTokenCommandHandler(context, jwtService.Object, dateTimeProvider.Object, new Mock<IClientMetadata>().Object);
 
         var result = await handler.Handle(new RefreshTokenCommand
         {

@@ -30,7 +30,7 @@ public class LogoutCommandHandlerTests : IAsyncLifetime
     {
         await using var context = _db.CreateContext();
 
-        var user = User.Create("logout@example.com", "Logout User", "hashed", DateTimeOffset.UtcNow);
+        var user = User.Create("logout@example.com", "Logout User", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(user);
 
         var refreshToken = "logout-token";

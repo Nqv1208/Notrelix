@@ -61,7 +61,7 @@ public sealed class AccessGrant
         UpdatedAt = revokedAt;
     }
 
-    public void Update(
+    public void Activate(
         string membershipStatus,
         string[] roleCodes,
         string[] permissionCodes,
@@ -76,6 +76,7 @@ public sealed class AccessGrant
         PermissionCodes = permissionCodes;
         IsAccountAdmin = isAccountAdmin;
         IsWorkspaceAdmin = isWorkspaceAdmin;
+        RevokedAt = null;
         UpdatedAt = updatedAt;
         SourceEventId = sourceEventId;
         SourceVersion = sourceVersion;

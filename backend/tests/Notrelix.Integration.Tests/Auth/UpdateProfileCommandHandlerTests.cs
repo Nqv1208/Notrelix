@@ -28,7 +28,7 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
     {
         await using var context = _db.CreateContext();
 
-        var user = User.Create("avatar@example.com", "Old Name", "hashed", DateTimeOffset.UtcNow);
+        var user = User.Create("avatar@example.com", "Old Name", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 

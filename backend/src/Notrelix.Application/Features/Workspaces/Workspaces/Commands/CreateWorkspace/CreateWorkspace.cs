@@ -18,12 +18,14 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
-    public CreateWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public CreateWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessGrantProjectionService grantProjection)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _grantProjection = grantProjection;
     }
 
     public async Task<Result<Guid>> Handle(CreateWorkspaceCommand request, CancellationToken ct)
@@ -53,6 +55,14 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
 
         _context.Workspaces.Add(creationResult.Workspace);
         _context.WorkspaceMembers.Add(creationResult.OwnerMember);
+
+        await _grantProjection.SyncWorkspaceMemberGrantAsync(
+            accountId,
+            creationResult.Workspace.Id,
+            _requestContext.UserId,
+            WorkspaceRole.Owner,
+            _dateTimeProvider.UtcNow,
+            ct);
 
         return Result<Guid>.Success(creationResult.Workspace.Id);
     }

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
@@ -7,6 +8,7 @@ using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Auth;
@@ -72,8 +74,9 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             providerClient.Object,
             optionsProvider.Object,
             context,
-            new AccountProvisioningService(context),
+            new AccountProvisioningService(context, new AccessGrantProjectionService(context)),
             sessionIssuer.Object,
+            Mock.Of<IMfaChallengeStore>(),
             passwordHasher.Object,
             dateTimeProvider.Object,
             eventCollector.Object,
@@ -181,7 +184,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext();
         var now = DateTimeOffset.UtcNow;
 
-        var user = User.Create("oauth-linked@example.com", "OAuth User", "hashed", now);
+        var user = User.Create("oauth-linked@example.com", "OAuth User", "hashed", now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-123",
             OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, EmptyProfile), null, user.Id, now);
         context.Users.Add(user);
@@ -224,7 +227,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext();
         var now = DateTimeOffset.UtcNow;
 
-        var user = User.Create("suspended@example.com", "Suspended User", "hashed", now);
+        var user = User.Create("suspended@example.com", "Suspended User", "hashed", now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-suspended",
             OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, EmptyProfile), null, user.Id, now);
         user.Suspend(Guid.NewGuid(), now, "Testing");
@@ -255,12 +258,12 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Handle_WhenUserExistsWithVerifiedEmail_ShouldAutoLinkAndLogin()
+    public async Task Handle_WhenUserExistsWithVerifiedEmail_ShouldRejectInsteadOfAutoLinking()
     {
         await using var context = _db.CreateContext();
         var now = DateTimeOffset.UtcNow;
 
-        var user = User.Create("existing@example.com", "Existing User", "hashed", now);
+        var user = User.Create("existing@example.com", "Existing User", "hashed", now, hasPasswordCredential: true);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
@@ -271,14 +274,6 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
                 OAuthProvider.Google, It.IsAny<OAuthCodeRedemptionRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ExternalOAuthProfile(OAuthProvider.Google, "google-sub-new",
                 "existing@example.com", true, "Existing User", null, EmptyProfile));
-        mocks.SessionIssuer.Setup(x => x.IssueAsync(user, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AuthResult
-            {
-                AccessToken = "access",
-                RefreshToken = "refresh",
-                ExpiresAt = DateTime.UtcNow.AddHours(1),
-                User = new UserDto { Id = user.Id, Email = "existing@example.com", Name = "Existing User" }
-            });
         mocks.DateTimeProvider.Setup(x => x.UtcNow).Returns(() => now);
 
         var handler = CreateHandler(mocks.StateStore, mocks.ProviderClient, mocks.OptionsProvider,
@@ -292,12 +287,14 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         }, CancellationToken.None);
         await context.SaveChangesAsync();
 
-        result.Succeeded.Should().BeTrue();
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Contains("account with this email", StringComparison.OrdinalIgnoreCase));
+        mocks.SessionIssuer.Verify(x => x.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
+            Times.Never);
 
         var linked = await context.OAuthAccounts
             .FirstOrDefaultAsync(a => a.Provider == OAuthProvider.Google && a.ProviderId == "google-sub-new");
-        linked.Should().NotBeNull();
-        linked!.UserId.Should().Be(user.Id);
+        linked.Should().BeNull();
     }
 
     [Fact]

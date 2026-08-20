@@ -9,6 +9,7 @@ using Notrelix.API.Endpoints.Documents.Pages;
 using Notrelix.API.Endpoints.Governance.ResourcePermissions;
 using Notrelix.API.Endpoints.Governance.ShareLinks;
 using Notrelix.API.Endpoints.Health;
+using Notrelix.API.Endpoints.Identity.ApiTokens;
 using Notrelix.API.Endpoints.Identity.Auth;
 using Notrelix.API.Endpoints.Identity.Profile;
 using Notrelix.API.Endpoints.WorkManagement.BoardFields;
@@ -41,6 +42,7 @@ public static class EndpointRouteBuilderExtensions
         // Auth & Identity
         app.RegisterAuthEndpoints();
         app.RegisterProfileEndpoints();
+        app.RegisterApiTokenEndpoints();
         app.MapHealthEndpoints();
 
         // Workspace

@@ -7,7 +7,7 @@ public class UserActorSemanticsTests
 {
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    private static User CreateUser() => User.Create("test@example.com", "Test User", "hash", Now);
+    private static User CreateUser() => User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
 
     [Fact]
     public void UpdateProfile_ShouldSetUpdatedByToActor()

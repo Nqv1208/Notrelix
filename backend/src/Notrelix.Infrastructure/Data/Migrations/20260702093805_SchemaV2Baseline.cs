@@ -366,6 +366,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     table.PrimaryKey("pk_api_tokens", x => x.id);
                 });
 
+            migrationBuilder.CreateIndex(
+                name: "ux_api_tokens_token_hash",
+                schema: "identity",
+                table: "api_tokens",
+                column: "token_hash",
+                unique: true);
+
             migrationBuilder.CreateTable(
                 name: "approval_requests",
                 schema: "work",
@@ -1067,7 +1074,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("pk_idempotency_records", x => x.id);
                     table.CheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
-                    table.CheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
+                    table.CheckConstraint("ck_idempotency_records_completed_result", "(\n  state = 'Processing'\n  AND result_json IS NULL\n  AND result_contract IS NULL\n  AND completed_at IS NULL\n)\nOR\n(\n  state = 'Completed'\n  AND result_json IS NOT NULL\n  AND result_contract IS NOT NULL\n  AND completed_at IS NOT NULL\n)");
                 });
 
             migrationBuilder.CreateTable(
@@ -2246,6 +2253,47 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "mfa_recovery_batches",
+                schema: "identity",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    invalidated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_mfa_recovery_batches", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "mfa_recovery_codes",
+                schema: "identity",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    batch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    code_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    consumed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_mfa_recovery_codes", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_mfa_recovery_codes_mfa_recovery_batches_batch_id",
+                        column: x => x.batch_id,
+                        principalSchema: "identity",
+                        principalTable: "mfa_recovery_batches",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "user_security_settings",
                 schema: "identity",
                 columns: table => new
@@ -2305,6 +2353,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     avatar = table.Column<string>(type: "text", nullable: true),
                     password_hash = table.Column<string>(type: "text", nullable: false),
+                    has_password_credential = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     email_confirmed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     email_confirmed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -3958,6 +4007,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ux_access_grants_account_user_account_level",
+                schema: "authz",
+                table: "access_grants",
+                columns: new[] { "account_id", "user_id" },
+                unique: true,
+                filter: "\"workspace_id\" IS NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "idx_account_domains_domain",
                 schema: "account",
                 table: "account_domains",
@@ -5487,6 +5544,30 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "identity",
                 table: "user_mfa_methods",
                 column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_batches_user_id",
+                schema: "identity",
+                table: "mfa_recovery_batches",
+                column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_batches_invalidated_at",
+                schema: "identity",
+                table: "mfa_recovery_batches",
+                column: "invalidated_at");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_codes_batch_code",
+                schema: "identity",
+                table: "mfa_recovery_codes",
+                columns: new[] { "batch_id", "code_hash" });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_codes_consumed_at",
+                schema: "identity",
+                table: "mfa_recovery_codes",
+                column: "consumed_at");
 
             migrationBuilder.CreateIndex(
                 name: "idx_user_profiles_user_id",

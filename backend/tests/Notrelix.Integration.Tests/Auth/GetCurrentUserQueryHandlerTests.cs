@@ -44,7 +44,7 @@ public class GetCurrentUserQueryHandlerTests : IAsyncLifetime
     {
         await using var context = _db.CreateContext();
 
-        var user = User.Create("me@example.com", "Me", "hashed", DateTimeOffset.UtcNow);
+        var user = User.Create("me@example.com", "Me", "hashed", DateTimeOffset.UtcNow, hasPasswordCredential: true);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 

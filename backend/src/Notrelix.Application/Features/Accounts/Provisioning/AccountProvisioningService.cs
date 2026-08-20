@@ -12,13 +12,15 @@ namespace Notrelix.Application.Features.Accounts.Provisioning;
 public sealed class AccountProvisioningService : IAccountProvisioningService
 {
     private readonly IAccountDbContext _context;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
-    public AccountProvisioningService(IAccountDbContext context)
+    public AccountProvisioningService(IAccountDbContext context, IAccessGrantProjectionService grantProjection)
     {
         _context = context;
+        _grantProjection = grantProjection;
     }
 
-    public Task<PersonalAccountProvisioningResult> ProvisionPersonalAccountAsync(
+    public async Task<PersonalAccountProvisioningResult> ProvisionPersonalAccountAsync(
         Guid userId,
         string displayName,
         DateTimeOffset occurredAt,
@@ -42,6 +44,8 @@ public sealed class AccountProvisioningService : IAccountProvisioningService
             userId,
             occurredAt));
 
-        return Task.FromResult(new PersonalAccountProvisioningResult(account.Id));
+        await _grantProjection.SyncAccountMemberGrantAsync(account.Id, userId, AccountRole.Owner, occurredAt, cancellationToken);
+
+        return new PersonalAccountProvisioningResult(account.Id);
     }
 }

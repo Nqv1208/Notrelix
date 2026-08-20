@@ -525,6 +525,16 @@ identity.user-mfa-method-verified|1|Notrelix.Domain.Identity.Mfa.Events.UserMfaM
 identity.user-mfa-method-verified|1|Notrelix.Domain.Identity.Mfa.Events.UserMfaMethodVerifiedDomainEvent|Global|Type|Notrelix.Domain.Identity.Mfa.MfaMethodType|False
 identity.user-mfa-method-verified|1|Notrelix.Domain.Identity.Mfa.Events.UserMfaMethodVerifiedDomainEvent|Global|UserId|System.Guid|False
 identity.user-mfa-method-verified|1|Notrelix.Domain.Identity.Mfa.Events.UserMfaMethodVerifiedDomainEvent|Global|VerifiedAt|System.DateTimeOffset|False
+identity.user-mfa-recovery-batch-created|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryBatchCreatedDomainEvent|Global|BatchId|System.Guid|False
+identity.user-mfa-recovery-batch-created|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryBatchCreatedDomainEvent|Global|CodeCount|System.Int32|False
+identity.user-mfa-recovery-batch-created|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryBatchCreatedDomainEvent|Global|CreatedAt|System.DateTimeOffset|False
+identity.user-mfa-recovery-batch-created|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryBatchCreatedDomainEvent|Global|UserId|System.Guid|False
+identity.user-mfa-recovery-batch-invalidated|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryBatchInvalidatedDomainEvent|Global|BatchId|System.Guid|False
+identity.user-mfa-recovery-batch-invalidated|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryBatchInvalidatedDomainEvent|Global|InvalidatedAt|System.DateTimeOffset|False
+identity.user-mfa-recovery-batch-invalidated|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryBatchInvalidatedDomainEvent|Global|UserId|System.Guid|False
+identity.user-mfa-recovery-code-consumed|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryCodeConsumedDomainEvent|Global|BatchId|System.Guid|False
+identity.user-mfa-recovery-code-consumed|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryCodeConsumedDomainEvent|Global|ConsumedAt|System.DateTimeOffset|False
+identity.user-mfa-recovery-code-consumed|1|Notrelix.Domain.Identity.Mfa.Events.MfaRecoveryCodeConsumedDomainEvent|Global|UserId|System.Guid|False
 identity.user-mfa-requirement-disabled|1|Notrelix.Domain.Identity.Security.Events.UserMfaRequirementDisabledDomainEvent|Global|DisabledAt|System.DateTimeOffset|False
 identity.user-mfa-requirement-disabled|1|Notrelix.Domain.Identity.Security.Events.UserMfaRequirementDisabledDomainEvent|Global|PreviousMethod|Notrelix.Domain.Identity.Mfa.MfaMethodType|True
 identity.user-mfa-requirement-disabled|1|Notrelix.Domain.Identity.Security.Events.UserMfaRequirementDisabledDomainEvent|Global|UserId|System.Guid|False

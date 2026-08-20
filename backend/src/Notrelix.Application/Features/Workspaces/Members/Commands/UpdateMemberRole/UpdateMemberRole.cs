@@ -18,15 +18,18 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
     public UpdateMemberRoleCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IAccessGrantProjectionService grantProjection)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _grantProjection = grantProjection;
     }
 
     public async Task<Result> Handle(UpdateMemberRoleCommand request, CancellationToken ct)
@@ -47,6 +50,15 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);
 
         member.ChangeRole(request.Role, _requestContext.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
+
+        await _grantProjection.SyncWorkspaceMemberGrantAsync(
+            workspace.AccountId,
+            workspace.Id,
+            request.UserId,
+            request.Role,
+            _dateTimeProvider.UtcNow,
+            ct);
+
         return Result.Success();
     }
 }

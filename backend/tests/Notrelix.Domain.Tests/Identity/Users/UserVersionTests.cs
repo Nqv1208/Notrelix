@@ -13,7 +13,7 @@ public class UserVersionTests
     [Fact]
     public void UpdateProfile_ShouldIncrementVersion_AndEmitEvent()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         var version = user.Version;
 
         user.UpdateProfile("New Name", null, user.Id, _now);
@@ -25,7 +25,7 @@ public class UserVersionTests
     [Fact]
     public void UpdateEmail_ShouldIncrementVersion()
     {
-        var user = User.Create("old@test.com", "Test", "hash", _now);
+        var user = User.Create("old@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         var version = user.Version;
 
         user.UpdateEmail("new@test.com", user.Id, _now);
@@ -37,7 +37,7 @@ public class UserVersionTests
     [Fact]
     public void UpdatePassword_ShouldIncrementVersion()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         var version = user.Version;
 
         user.UpdatePassword("newhash", user.Id, _now);
@@ -49,7 +49,7 @@ public class UserVersionTests
     [Fact]
     public void RecordLogin_ShouldIncrementVersion_AndSetAudit()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         var version = user.Version;
 
         user.RecordLogin(_now);
@@ -62,7 +62,7 @@ public class UserVersionTests
     [Fact]
     public void Activate_ShouldIncrementVersion()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         user.Deactivate(_actorId, _now);
         var version = user.Version;
 
@@ -75,7 +75,7 @@ public class UserVersionTests
     [Fact]
     public void Deactivate_ShouldIncrementVersion()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         var version = user.Version;
 
         user.Deactivate(_actorId, _now);
@@ -87,7 +87,7 @@ public class UserVersionTests
     [Fact]
     public void Suspend_ShouldIncrementVersion()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         var version = user.Version;
 
         user.Suspend(_actorId, _now);
@@ -99,7 +99,7 @@ public class UserVersionTests
     [Fact]
     public void LinkOAuthAccount_ShouldIncrementVersion()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         var version = user.Version;
 
         user.LinkOAuthAccount(OAuthProvider.Google, "pid123", TestSnapshot, null, user.Id, _now);
@@ -111,7 +111,7 @@ public class UserVersionTests
     [Fact]
     public void UnlinkOAuthAccount_ShouldIncrementVersion()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "pid123", TestSnapshot, null, user.Id, _now);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
@@ -125,7 +125,7 @@ public class UserVersionTests
     [Fact]
     public void RotateOAuthToken_ShouldIncrementVersion()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         var token = OAuthToken.Create(SecretRef.Create("access"), SecretRef.Create("refresh"), _now.AddHours(1));
         user.LinkOAuthAccount(OAuthProvider.Google, "pid123", TestSnapshot, token, user.Id, _now);
         ((IHasDomainEvents)user).ClearDomainEvents();
@@ -141,7 +141,7 @@ public class UserVersionTests
     [Fact]
     public void Activate_WhenAlreadyActive_ShouldNotIncrementVersion()
     {
-        var user = User.Create("test@test.com", "Test", "hash", _now);
+        var user = User.Create("test@test.com", "Test", "hash", _now, hasPasswordCredential: true);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 

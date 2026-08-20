@@ -51,7 +51,16 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
 
         var response = await _client.PostAsJsonAsync("/api/v1/auth/register", body);
 
-        // No request-level password strength validator; handler mock always succeeds.
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Register_WithMinimumLengthPassword_ReturnsSuccess()
+    {
+        var body = new { Email = "minpass@test.com", Password = "12345678", Name = "Min Pass" };
+
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register", body);
+
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -140,6 +149,16 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task ResetPassword_WithInvalidToken_ReturnsBadRequest()
     {
         var body = new { Email = "test@test.com", Token = "invalid-token", NewPassword = "NewPass@123" };
+
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/reset-password", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithWeakNewPassword_ReturnsBadRequest()
+    {
+        var body = new { Email = "test@test.com", Token = "123456", NewPassword = "123" };
 
         var response = await _client.PostAsJsonAsync("/api/v1/auth/reset-password", body);
 

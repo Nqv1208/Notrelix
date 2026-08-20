@@ -14,4 +14,12 @@ public static class MfaMethodRules
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_EmailSmsRequiresDestination, "Email or SMS MFA method requires a masked destination.");
         }
     }
+
+    public static void EnsureValidRecoveryBatch(IReadOnlyList<string> codeHashes)
+    {
+        if (codeHashes.Count == 0)
+        {
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_RecoveryBatch_RequiresCodes, "A recovery batch requires at least one code.");
+        }
+    }
 }

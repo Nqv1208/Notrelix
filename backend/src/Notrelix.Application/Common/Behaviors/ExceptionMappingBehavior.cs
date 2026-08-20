@@ -52,6 +52,16 @@ public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<T
             throw new Exceptions.ConflictException(
                 "The resource was modified by another request. Reload and retry.");
         }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            _logger.LogWarning(
+                "Unique constraint violation: {RequestType} CorrelationId={CorrelationId} Message={Message}",
+                typeof(TRequest).Name,
+                _executionContext.CorrelationId,
+                ex.Message);
+            throw new Exceptions.ConflictException(
+                "A resource with the same unique identity already exists.");
+        }
         catch (UnauthorizedAccessException)
         {
             _logger.LogWarning(
@@ -68,5 +78,12 @@ public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<T
                 _executionContext.CorrelationId);
             throw;
         }
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException ex)
+    {
+        var message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("23505");
     }
 }

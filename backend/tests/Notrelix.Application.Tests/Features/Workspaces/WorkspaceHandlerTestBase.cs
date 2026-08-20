@@ -13,6 +13,7 @@ public abstract class WorkspaceHandlerTestBase
     protected readonly Mock<IWorkspaceDbContext> DbContextMock = new();
     protected readonly Mock<ICurrentRequestContext> RequestContextMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();
+    protected readonly Mock<IAccessGrantProjectionService> GrantProjectionMock = new();
 
     protected readonly Guid TestAccountId = Guid.CreateVersion7();
     protected readonly Guid TestWorkspaceId = Guid.CreateVersion7();

@@ -144,7 +144,7 @@ internal static class InitDb
                 ? defaultEmails[i].Split('@')[0]
                 : $"User {i + 1}";
 
-            var user = User.Create(email, name, passwordHash, Epoch.AddDays(i));
+            var user = User.Create(email, name, passwordHash, Epoch.AddDays(i), hasPasswordCredential: true);
             users.Add(user);
 
             var profile = UserProfile.Create(user.Id, Epoch.AddDays(i));
@@ -219,24 +219,43 @@ internal static class InitDb
     {
         if (await context.Set<AccessGrant>().AnyAsync(ct)) return;
 
+        var grants = new List<AccessGrant>();
+
+        var accountMembers = await context.AccountMembers
+            .Where(m => m.Status == AccountMemberStatus.Active)
+            .ToListAsync(ct);
+
+        foreach (var member in accountMembers)
+        {
+            grants.Add(new AccessGrant(
+                member.AccountId,
+                null,
+                member.UserId,
+                "Account",
+                "Active",
+                AccessGrantProjectionMapping.RoleCodes(member.Role),
+                [],
+                AccessGrantProjectionMapping.IsAccountAdmin(member.Role),
+                false,
+                member.CreatedAt));
+        }
+
         var members = await context.WorkspaceMembers
             .Where(m => m.Status == WorkspaceMemberStatus.Active)
             .ToListAsync(ct);
 
-        var grants = new List<AccessGrant>(members.Count);
         foreach (var member in members)
         {
-            var isAdmin = member.Role == WorkspaceRole.Owner || member.Role == WorkspaceRole.Admin;
             grants.Add(new AccessGrant(
                 member.AccountId,
                 member.WorkspaceId,
                 member.UserId,
                 "Workspace",
                 "Active",
-                [member.Role.ToString()],
+                AccessGrantProjectionMapping.RoleCodes(member.Role),
                 [],
                 false,
-                isAdmin,
+                AccessGrantProjectionMapping.IsWorkspaceAdmin(member.Role),
                 member.CreatedAt));
         }
 

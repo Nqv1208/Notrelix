@@ -1,9 +1,8 @@
-namespace Notrelix.Application.Common.Security.Auth
+namespace Notrelix.Application.Common.Security.Auth;
+
+public interface IJwtService
 {
-    public interface IJwtService
-    {
-        string GenerateAccessToken(User user);
-        string GenerateRefreshToken();
-        Guid? ValidateAccessToken(string token);
-    }
+    string GenerateAccessToken(User user, Guid? sessionId = null);
+    string GenerateRefreshToken();
+    Guid? ValidateAccessToken(string token);
 }

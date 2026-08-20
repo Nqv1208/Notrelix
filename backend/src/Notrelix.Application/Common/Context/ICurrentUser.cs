@@ -7,4 +7,5 @@ public interface ICurrentUser
     string Name { get; }
     bool IsAuthenticated { get; }
     Guid? WorkspaceId { get; }
+    Guid? SessionId { get; }
 }

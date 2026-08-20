@@ -1,4 +1,6 @@
 
+using Notrelix.Infrastructure.Auth.Jwt;
+
 namespace Notrelix.Infrastructure.Identity.Services;
 
 public class CurrentUser : ICurrentUser
@@ -52,4 +54,15 @@ public class CurrentUser : ICurrentUser
     public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 
     public Guid? WorkspaceId => _currentWorkspace.WorkspaceId;
+
+    public Guid? SessionId
+    {
+        get
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            var sessionId = user?.FindFirstValue(JwtClaimNames.SessionId);
+
+            return Guid.TryParse(sessionId, out var id) ? id : null;
+        }
+    }
 }

@@ -6,10 +6,12 @@ namespace Notrelix.Application.Features.Accounts.Services;
 public sealed class AccountMembershipProvisioner : IAccountMembershipProvisioner
 {
     private readonly IAccountDbContext _context;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
-    public AccountMembershipProvisioner(IAccountDbContext context)
+    public AccountMembershipProvisioner(IAccountDbContext context, IAccessGrantProjectionService grantProjection)
     {
         _context = context;
+        _grantProjection = grantProjection;
     }
 
     public async Task EnsureWorkspaceInviteeAccountMembershipAsync(
@@ -35,6 +37,7 @@ public sealed class AccountMembershipProvisioner : IAccountMembershipProvisioner
                 now);
 
             _context.AccountMembers.Add(accountMember);
+            await _grantProjection.SyncAccountMemberGrantAsync(accountId, userId, AccountRole.Member, now, ct);
             return;
         }
 

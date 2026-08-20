@@ -20,12 +20,14 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
-    public TransferOwnershipCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public TransferOwnershipCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessGrantProjectionService grantProjection)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _grantProjection = grantProjection;
     }
 
     public async Task<Result> Handle(TransferOwnershipCommand request, CancellationToken ct)
@@ -60,6 +62,22 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
 
         newOwner.PromoteToOwner(currentOwnerId, now);
         currentOwner.ChangeRole(WorkspaceRole.Admin, currentOwnerId, 2, now);
+
+        await _grantProjection.SyncWorkspaceMemberGrantAsync(
+            newOwner.AccountId,
+            request.WorkspaceId,
+            request.NewOwnerId,
+            WorkspaceRole.Owner,
+            now,
+            ct);
+
+        await _grantProjection.SyncWorkspaceMemberGrantAsync(
+            currentOwner.AccountId,
+            request.WorkspaceId,
+            currentOwnerId,
+            WorkspaceRole.Admin,
+            now,
+            ct);
 
         return Result.Success();
     }

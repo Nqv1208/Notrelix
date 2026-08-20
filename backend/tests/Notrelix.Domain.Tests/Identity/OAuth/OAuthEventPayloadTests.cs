@@ -17,7 +17,7 @@ public class OAuthEventPayloadTests
     [Fact]
     public void OAuthAccountLinked_ShouldContainProviderAndProviderId()
     {
-        var user = User.Create("test@example.com", "Test User", "hash", Now);
+        var user = User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "provider-123", CreateSnapshot(), CreateToken(), ActorId, Now);
         var evt = user.DomainEvents.OfType<OAuthAccountLinkedDomainEvent>().Single();
         evt.Provider.Should().Be(OAuthProvider.Google);
@@ -27,7 +27,7 @@ public class OAuthEventPayloadTests
     [Fact]
     public void OAuthProfileUpdated_ShouldContainProvider()
     {
-        var user = User.Create("test@example.com", "Test User", "hash", Now);
+        var user = User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "id", CreateSnapshot(), null, ActorId, Now);
         var newSnapshot = OAuthProfileSnapshot.Create(OAuthProvider.Google, 2, JsonValue.EmptyObject());
         user.UpdateOAuthProfile(OAuthProvider.Google, newSnapshot, ActorId, Now);
@@ -38,7 +38,7 @@ public class OAuthEventPayloadTests
     [Fact]
     public void OAuthTokenReferenceRotated_ShouldContainProvider()
     {
-        var user = User.Create("test@example.com", "Test User", "hash", Now);
+        var user = User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "id", CreateSnapshot(), CreateToken(), ActorId, Now);
         var newToken = OAuthToken.Create(SecretRef.Create("new-access-hash"));
         user.RotateOAuthToken(OAuthProvider.Google, newToken, ActorId, Now);
@@ -49,7 +49,7 @@ public class OAuthEventPayloadTests
     [Fact]
     public void OAuthAccountUnlinked_ShouldContainProviderAndProviderId()
     {
-        var user = User.Create("test@example.com", "Test User", "hash", Now);
+        var user = User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
         user.LinkOAuthAccount(OAuthProvider.Google, "provider-123", CreateSnapshot(), null, ActorId, Now);
         user.UnlinkOAuthAccount(OAuthProvider.Google, ActorId, Now);
         var evt = user.DomainEvents.OfType<OAuthAccountUnlinkedDomainEvent>().Single();

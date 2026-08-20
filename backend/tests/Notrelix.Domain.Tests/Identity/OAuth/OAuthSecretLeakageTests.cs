@@ -11,7 +11,7 @@ public class OAuthSecretLeakageTests
     [Fact]
     public void OAuthAccountLinked_ShouldNotContainTokenInEvent()
     {
-        var user = User.Create("test@example.com", "Test User", "hash", Now);
+        var user = User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
         var snapshot = OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject());
         var token = OAuthToken.Create(
             SecretRef.Create("secret-access-token"),
@@ -26,7 +26,7 @@ public class OAuthSecretLeakageTests
     [Fact]
     public void OAuthTokenReferenceRotated_ShouldNotContainTokenInEvent()
     {
-        var user = User.Create("test@example.com", "Test User", "hash", Now);
+        var user = User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
         var snapshot = OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject());
         var token = OAuthToken.Create(SecretRef.Create("old-access"));
         user.LinkOAuthAccount(OAuthProvider.Google, "id", snapshot, token, ActorId, Now);
@@ -40,7 +40,7 @@ public class OAuthSecretLeakageTests
     [Fact]
     public void OAuthProfileUpdated_ShouldNotContainTokenInEvent()
     {
-        var user = User.Create("test@example.com", "Test User", "hash", Now);
+        var user = User.Create("test@example.com", "Test User", "hash", Now, hasPasswordCredential: true);
         var snapshot = OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject());
         user.LinkOAuthAccount(OAuthProvider.Google, "id", snapshot, null, ActorId, Now);
         var newSnapshot = OAuthProfileSnapshot.Create(OAuthProvider.Google, 2, JsonValue.EmptyObject());

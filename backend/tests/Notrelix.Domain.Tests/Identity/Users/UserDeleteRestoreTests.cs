@@ -10,7 +10,7 @@ public class UserDeleteRestoreTests
     [Fact]
     public void Delete_ShouldIncrementVersion_AndRaiseEvent()
     {
-        var user = User.Create("test@example.com", "Test", "hash", _now);
+        var user = User.Create("test@example.com", "Test", "hash", _now, hasPasswordCredential: true);
         var version = user.Version;
 
         user.Delete(_actorId, _now);
@@ -28,7 +28,7 @@ public class UserDeleteRestoreTests
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {
-        var user = User.Create("test@example.com", "Test", "hash", _now);
+        var user = User.Create("test@example.com", "Test", "hash", _now, hasPasswordCredential: true);
         user.Delete(_actorId, _now);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
@@ -47,7 +47,7 @@ public class UserDeleteRestoreTests
     [Fact]
     public void Delete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
     {
-        var user = User.Create("test@example.com", "Test", "hash", _now);
+        var user = User.Create("test@example.com", "Test", "hash", _now, hasPasswordCredential: true);
         user.Delete(_actorId, _now);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
@@ -61,7 +61,7 @@ public class UserDeleteRestoreTests
     [Fact]
     public void Restore_ShouldNotIncrementOrRaiseEvent_WhenNotDeleted()
     {
-        var user = User.Create("test@example.com", "Test", "hash", _now);
+        var user = User.Create("test@example.com", "Test", "hash", _now, hasPasswordCredential: true);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 

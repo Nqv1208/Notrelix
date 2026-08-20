@@ -40,13 +40,16 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
 {
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IDateTimeProvider _clock;
+    private readonly IAccessGrantProjectionService _grantProjection;
 
     public ProvisionPersonalWorkspaceCommandHandler(
         IWorkspaceDbContext workspaceContext,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IAccessGrantProjectionService grantProjection)
     {
         _workspaceContext = workspaceContext;
         _clock = clock;
+        _grantProjection = grantProjection;
     }
 
     public async Task<ProvisionPersonalWorkspaceResult> Handle(
@@ -75,6 +78,14 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
 
         _workspaceContext.Workspaces.Add(workspace.Workspace);
         _workspaceContext.WorkspaceMembers.Add(workspace.OwnerMember);
+
+        await _grantProjection.SyncWorkspaceMemberGrantAsync(
+            request.AccountId,
+            workspace.Workspace.Id,
+            request.UserId,
+            WorkspaceRole.Owner,
+            request.OccurredAt,
+            cancellationToken);
 
         return new ProvisionPersonalWorkspaceResult(
             workspace.Workspace.Id,

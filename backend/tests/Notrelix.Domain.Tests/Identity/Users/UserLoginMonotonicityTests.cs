@@ -6,7 +6,7 @@ public class UserLoginMonotonicityTests
 {
     private static readonly DateTimeOffset BaseTime = DateTimeOffset.UtcNow;
 
-    private static User CreateUser() => User.Create("test@example.com", "Test User", "hash", BaseTime);
+    private static User CreateUser() => User.Create("test@example.com", "Test User", "hash", BaseTime, hasPasswordCredential: true);
 
     [Fact]
     public void FirstLogin_ShouldSucceed()

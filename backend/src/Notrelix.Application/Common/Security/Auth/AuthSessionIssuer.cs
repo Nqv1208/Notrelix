@@ -7,25 +7,30 @@ public sealed class AuthSessionIssuer : IAuthSessionIssuer
     private readonly IJwtService _jwtService;
     private readonly IIdentityDbContext _identityContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IClientMetadata _clientMetadata;
 
     public AuthSessionIssuer(
         IJwtService jwtService,
         IIdentityDbContext identityContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IClientMetadata clientMetadata)
     {
         _jwtService = jwtService;
         _identityContext = identityContext;
         _dateTimeProvider = dateTimeProvider;
+        _clientMetadata = clientMetadata;
     }
 
     public Task<AuthResult> IssueAsync(User user, DateTimeOffset now, CancellationToken ct)
     {
-        var accessToken = _jwtService.GenerateAccessToken(user);
         var refreshToken = _jwtService.GenerateRefreshToken();
         var tokenHash = RefreshTokenHash.Create(refreshToken);
 
-        var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now);
+        var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now,
+            _clientMetadata.IpAddress, _clientMetadata.UserAgent);
         _identityContext.Sessions.Add(session);
+
+        var accessToken = _jwtService.GenerateAccessToken(user, session.Id);
 
         return Task.FromResult(new AuthResult
         {

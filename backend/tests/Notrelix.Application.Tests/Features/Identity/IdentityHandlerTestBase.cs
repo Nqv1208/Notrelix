@@ -15,6 +15,7 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Identity.OAuth;
+using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Identity.Users;
@@ -22,6 +23,10 @@ using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
+using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Tests.Features.Identity;
 
@@ -34,20 +39,26 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<IAuthSessionIssuer> SessionIssuerMock = new();
     protected readonly Mock<IJwtService> JwtServiceMock = new();
     protected readonly Mock<IJwtBlacklistService> JwtBlacklistMock = new();
+    protected readonly Mock<IMfaChallengeStore> ChallengeStoreMock = new();
+    protected readonly Mock<ISecurityStepUpService> StepUpServiceMock = new();
     protected readonly Mock<IOtpService> OtpServiceMock = new();
     protected readonly Mock<IRateLimitService> RateLimitServiceMock = new();
     protected readonly Mock<IEmailService> EmailServiceMock = new();
     protected readonly Mock<ICurrentRequestContext> RequestContextMock = new();
+    protected readonly Mock<IClientMetadata> ClientMetadataMock = new();
     protected readonly Mock<IEmailVerificationTokenIssuer> TokenIssuerMock = new();
     protected readonly Mock<IOneTimeTokenService> OneTimeTokenServiceMock = new();
     protected readonly Mock<IIntegrationEventCollector> IntegrationEventCollectorMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();
+    protected readonly Mock<IAccessGrantProjectionService> GrantProjectionMock = new();
     protected readonly Mock<ILogger<LoginCommandHandler>> LoginLoggerMock = new();
     protected readonly Mock<ILogger<LogoutCommandHandler>> LogoutLoggerMock = new();
     protected readonly Mock<ILogger<ForgotPasswordCommandHandler>> ForgotPasswordLoggerMock = new();
     protected readonly Mock<ILogger<ResetPasswordCommandHandler>> ResetPasswordLoggerMock = new();
+    protected readonly Mock<ILogger<ChangePasswordCommandHandler>> ChangePasswordLoggerMock = new();
 
     protected readonly Guid TestUserId = Guid.CreateVersion7();
+    protected readonly Guid TestSessionId = Guid.CreateVersion7();
     protected readonly string TestEmail = "test@example.com";
     protected readonly string TestPassword = "Password123!";
     protected readonly string TestHashedPassword = "hashed-password";
@@ -67,6 +78,10 @@ public abstract class IdentityHandlerTestBase
         IdentityContextMock.Setup(c => c.Sessions).Returns(CreateAsyncDbSet(new List<UserSession>()));
         IdentityContextMock.Setup(c => c.OAuthAccounts).Returns(CreateAsyncDbSet(new List<OAuthAccount>()));
         IdentityContextMock.Setup(c => c.EmailVerificationTokens).Returns(CreateAsyncDbSet(new List<EmailVerificationToken>()));
+        IdentityContextMock.Setup(c => c.UserMfaMethods).Returns(CreateAsyncDbSet(new List<UserMfaMethod>()));
+        IdentityContextMock.Setup(c => c.UserSecuritySettings).Returns(CreateAsyncDbSet(new List<UserSecuritySettings>()));
+        IdentityContextMock.Setup(c => c.MfaRecoveryBatches).Returns(CreateAsyncDbSet(new List<MfaRecoveryBatch>()));
+        IdentityContextMock.Setup(c => c.ApiTokens).Returns(CreateAsyncDbSet(new List<ApiToken>()));
 
         AccountContextMock.Setup(c => c.Accounts).Returns(CreateAsyncDbSet(new List<Account>()));
         AccountContextMock.Setup(c => c.AccountMembers).Returns(CreateAsyncDbSet(new List<AccountMember>()));
@@ -83,6 +98,18 @@ public abstract class IdentityHandlerTestBase
 
     protected void SetupEmailVerificationTokens(params EmailVerificationToken[] tokens) =>
         IdentityContextMock.Setup(c => c.EmailVerificationTokens).Returns(CreateAsyncDbSet(tokens.ToList()));
+
+    protected void SetupUserMfaMethods(params UserMfaMethod[] methods) =>
+        IdentityContextMock.Setup(c => c.UserMfaMethods).Returns(CreateAsyncDbSet(methods.ToList()));
+
+    protected void SetupUserSecuritySettings(params UserSecuritySettings[] settings) =>
+        IdentityContextMock.Setup(c => c.UserSecuritySettings).Returns(CreateAsyncDbSet(settings.ToList()));
+
+    protected void SetupMfaRecoveryBatches(params MfaRecoveryBatch[] batches) =>
+        IdentityContextMock.Setup(c => c.MfaRecoveryBatches).Returns(CreateAsyncDbSet(batches.ToList()));
+
+    protected void SetupApiTokens(params ApiToken[] tokens) =>
+        IdentityContextMock.Setup(c => c.ApiTokens).Returns(CreateAsyncDbSet(tokens.ToList()));
 
     protected void SetupAccounts(params Account[] accounts) =>
         AccountContextMock.Setup(c => c.Accounts).Returns(CreateAsyncDbSet(accounts.ToList()));
@@ -107,7 +134,8 @@ public abstract class IdentityHandlerTestBase
             email ?? TestEmail,
             name ?? "Test User",
             TestHashedPassword,
-            TestNow);
+            TestNow,
+            hasPasswordCredential: true);
 
         user.GetType().GetProperty(nameof(User.Id))!.SetValue(user, id ?? TestUserId);
 

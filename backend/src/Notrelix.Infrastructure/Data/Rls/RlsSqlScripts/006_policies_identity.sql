@@ -20,7 +20,10 @@ SELECT ops.apply_user_owned_policies('identity', 'user_sessions', 'user_id', tru
 SELECT ops.apply_user_owned_policies('identity', 'oauth_accounts', 'user_id', true, true);
 SELECT ops.apply_user_owned_policies('identity', 'user_security_settings', 'user_id', true, true);
 SELECT ops.apply_user_owned_policies('identity', 'user_mfa_methods', 'user_id', true, true);
-SELECT ops.apply_user_owned_policies('identity', 'user_api_tokens', 'user_id', true, true);
+-- API tokens are workspace credentials (account_id + workspace_id): workspace-scoped
+-- policies. The auth handler performs its single-row digest lookup in the system
+-- scope; every management/read path still flows through these policies.
+SELECT ops.apply_scoped_business_policies('identity', 'api_tokens', true);
 SELECT ops.apply_user_owned_policies('identity', 'user_login_attempts', 'user_id', true, false);
 SELECT ops.apply_user_owned_policies('identity', 'email_verification_tokens', 'user_id', true, false);
 SELECT ops.apply_user_owned_policies('identity', 'password_reset_tokens', 'user_id', true, false);

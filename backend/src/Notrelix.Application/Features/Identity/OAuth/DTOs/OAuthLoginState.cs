@@ -1,3 +1,5 @@
+using Notrelix.Application.Features.Identity.Mfa.DTOs;
+
 namespace Notrelix.Application.Features.Identity.OAuth.DTOs;
 
 public sealed record OAuthLoginState(
@@ -6,4 +8,8 @@ public sealed record OAuthLoginState(
     string CodeVerifier,
     OAuthProvider Provider,
     string? ReturnUrl,
-    DateTimeOffset ExpiresAt);
+    DateTimeOffset ExpiresAt,
+    OAuthFlowKind Flow = OAuthFlowKind.Login,
+    Guid? BoundUserId = null,
+    Guid? BoundSessionId = null,
+    MfaChallengePurpose? StepUpPurpose = null);
