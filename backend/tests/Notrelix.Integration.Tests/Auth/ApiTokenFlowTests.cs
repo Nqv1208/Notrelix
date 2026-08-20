@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -118,7 +119,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         await context.SaveChangesAsync();
     }
 
-    private async Task<AuthenticateResult> AuthenticateAsync(string rawToken)
+    private async Task<AuthenticateResult> AuthenticateAsync(string rawToken, BlockBeforeSaveChangesInterceptor? interceptor = null)
     {
         var options = new ApiTokenAuthenticationOptions();
         var optionsMonitor = new Mock<IOptionsMonitor<ApiTokenAuthenticationOptions>>();
@@ -133,7 +134,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
             NullLoggerFactory.Instance,
             System.Text.Encodings.Web.UrlEncoder.Default,
             new SystemClock(),
-            CreateOptions(),
+            interceptor is null ? CreateOptions() : CreateOptions(interceptor),
             new ApiTokenSecretService(),
             time.Object);
 
@@ -148,6 +149,9 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
     }
 
     private DbContextOptions<ApplicationDbContext> CreateOptions()
+        => CreateOptions(Array.Empty<IInterceptor>());
+
+    private DbContextOptions<ApplicationDbContext> CreateOptions(params IInterceptor[] interceptors)
         => new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(_fixture.PostgresConnectionString, npgOptions =>
             {
@@ -157,7 +161,41 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
             .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
             .UseSnakeCaseNamingConvention()
             .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>()
+            .AddInterceptors(interceptors)
             .Options;
+
+    /// <summary>
+    /// Test-only barrier (no production code involved): blocks the very first
+    /// SaveChanges of the authenticate path right before the UPDATE is sent,
+    /// signals that the pre-revoke read already happened, and waits for an
+    /// explicit release so revocation can deterministically commit first.
+    /// </summary>
+    private sealed class BlockBeforeSaveChangesInterceptor : SaveChangesInterceptor
+    {
+        private readonly TaskCompletionSource _entered =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly SemaphoreSlim _release = new(0, 1);
+        private bool _blocked;
+
+        public Task Entered => _entered.Task;
+
+        public void Release() => _release.Release();
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_blocked)
+            {
+                _blocked = true;
+                _entered.TrySetResult();
+                await _release.WaitAsync(cancellationToken);
+            }
+
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+    }
 
     [Fact]
     public async Task Create_ReturnsRawSecretOnce_ThenAuthenticatesRequest()
@@ -326,6 +364,50 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         var auth = await AuthenticateAsync(created.Data!.RawSecret);
         auth.Succeeded.Should().BeFalse(
             "post-commit invariant: once the revoke set is applied the token must never authenticate");
+    }
+
+    [Fact]
+    public async Task Authenticate_RacingWithRevoke_WhenRevokeCommitsFirst_FailsClosed()
+    {
+        // Deterministic interleaving: the auth read observed the token as
+        // Active and called RecordUse, then its SaveChanges is blocked right
+        // before the UPDATE is sent. Revocation commits first. When the auth
+        // save is released it runs with a stale concurrency version, must hit
+        // the handler's DbUpdateConcurrencyException branch and fail closed —
+        // no request may authenticate against the pre-revoke read.
+        var created = await SendCreateToken(_user.Id, "Race-auth token");
+        created.Succeeded.Should().BeTrue();
+        var tokenId = created.Data!.Id;
+
+        var barrier = new BlockBeforeSaveChangesInterceptor();
+        var authResultTask = Task.Run(() => AuthenticateAsync(created.Data.RawSecret, barrier));
+
+        var entered = await Task.WhenAny(barrier.Entered, Task.Delay(TimeSpan.FromSeconds(15)));
+        entered.Should().BeSameAs(barrier.Entered,
+            "authenticate must reach its blocked SaveChanges (i.e. it read Active) before revocation runs");
+
+        var (revokeHandler, revokeContext) = CreateRevokeHandler();
+        var revokeResult = await RevokeAndSaveAsync(revokeHandler, revokeContext, tokenId);
+        revokeResult.Succeeded.Should().BeTrue("the concurrent revoke must commit while auth is blocked");
+
+        barrier.Release();
+
+        var authResult = await authResultTask;
+        authResult.Succeeded.Should().BeFalse(
+            "auth that read Active but whose RecordUse save raced with revocation must fail closed");
+
+        await using (var verifyContext = CreateSystemContext())
+        {
+            var final = await verifyContext.ApiTokens.AsNoTracking().SingleAsync(t => t.Id == tokenId);
+            final.Status.Should().Be(ApiTokenStatus.Revoked,
+                "the persisted state after the race must be revoked");
+        }
+
+        var afterRace = await AuthenticateAsync(created.Data.RawSecret);
+        afterRace.Succeeded.Should().BeFalse("no new request may authenticate after the revoke committed");
+
+        var afterRaceAgain = await AuthenticateAsync(created.Data.RawSecret);
+        afterRaceAgain.Succeeded.Should().BeFalse("and still fail on every subsequent request");
     }
 
     private (RevokeApiTokenCommandHandler Handler, ApplicationDbContext Context) CreateRevokeHandler()

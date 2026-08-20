@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Notrelix.API;
 using Notrelix.Domain.Identity.Tokens;
@@ -24,7 +23,10 @@ namespace Notrelix.Integration.Tests.Auth;
 ///
 /// Bogus tokens must never fall through to the JWT handler; valid tokens must
 /// authenticate; a token bound to workspace A must never operate workspace B
-/// even when the same user has governance access to both.
+/// even when the same user has governance access to both. Governance runs
+/// real (PermissionService over the production graph): a member-scoped token
+/// that passes TenantBootstrap and ViewWorkspace is still denied
+/// ManageWorkspaceSettings — proving API Token scope ∩ Governance permission.
 /// </summary>
 [Collection("Cache")]
 public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
@@ -34,9 +36,11 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
 
     private readonly CacheTestContainer _fixture;
     private User _user = null!;
+    private User _member = null!;
     private Guid _workspaceA;
     private Guid _workspaceB;
     private string _rawSecret = string.Empty;
+    private string _memberRawSecret = string.Empty;
 
     public ApiTokenHttpFlowTests(CacheTestContainer fixture)
     {
@@ -48,10 +52,13 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         await _fixture.ResetAsync();
 
         _user = User.Create("apitoken-http@example.com", "HTTP Token User", "hashed", Now, hasPasswordCredential: true);
+        _member = User.Create("apitoken-member-http@example.com", "HTTP Token Member", "hashed", Now, hasPasswordCredential: true);
 
         var secretService = new ApiTokenSecretService();
-        var secret = secretService.Generate();
-        _rawSecret = secret.RawToken;
+        var ownerSecret = secretService.Generate();
+        var memberSecret = secretService.Generate();
+        _rawSecret = ownerSecret.RawToken;
+        _memberRawSecret = memberSecret.RawToken;
 
         await using var context = CreateSystemContext();
         var workspaceA = Workspace.Create(AccountId, _user.Id, "Workspace A", $"ws-a-{Guid.NewGuid():N}"[..16], Now);
@@ -59,32 +66,51 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         _workspaceA = workspaceA.Id;
         _workspaceB = workspaceB.Id;
 
-        context.Users.Add(_user);
+        context.Users.AddRange(_user, _member);
         context.Workspaces.AddRange(workspaceA, workspaceB);
         context.WorkspaceMembers.AddRange(
-            WorkspaceMember.Create(AccountId, _workspaceA, _user.Id, WorkspaceRole.Owner, _user.Id, Now),
-            WorkspaceMember.Create(AccountId, _workspaceB, _user.Id, WorkspaceRole.Owner, _user.Id, Now));
-        context.AccessGrants.Add(CreateGrant(_workspaceA));
-        context.AccessGrants.Add(CreateGrant(_workspaceB));
-        context.ApiTokens.Add(ApiToken.Create(
-            AccountId, _workspaceA, _user.Id, "HTTP flow token", secret.TokenHash,
-            scopes: null, createdBy: _user.Id, createdAt: Now, expiresAt: null));
+            WorkspaceMember.Create(
+                AccountId, _workspaceA, _user.Id, WorkspaceRole.Owner, _user.Id, Now),
+            WorkspaceMember.Create(
+                AccountId, _workspaceB, _user.Id, WorkspaceRole.Owner, _user.Id, Now),
+            WorkspaceMember.Create(
+                AccountId, _workspaceA, _member.Id, WorkspaceRole.Member, _user.Id, Now));
+        context.AccessGrants.AddRange(
+            CreateGrant(
+                AccountId, _workspaceA, _user.Id, WorkspaceRole.Owner, Now),
+            CreateGrant(
+                AccountId, _workspaceB, _user.Id, WorkspaceRole.Owner, Now),
+            CreateGrant(
+                AccountId, _workspaceA, _member.Id, WorkspaceRole.Member, Now));
+        context.ApiTokens.AddRange(
+            ApiToken.Create(
+                AccountId, _workspaceA, _user.Id, "HTTP flow owner token", ownerSecret.TokenHash,
+                scopes: null, createdBy: _user.Id, createdAt: Now, expiresAt: null),
+            ApiToken.Create(
+                AccountId, _workspaceA, _member.Id, "HTTP flow member token", memberSecret.TokenHash,
+                scopes: null, createdBy: _user.Id, createdAt: Now, expiresAt: null));
         await context.SaveChangesAsync();
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    private AccessGrant CreateGrant(Guid workspaceId) => new(
-        accountId: AccountId,
-        workspaceId: workspaceId,
-        userId: _user.Id,
-        sourceContext: "Workspace",
-        membershipStatus: "Active",
-        roleCodes: [WorkspaceRole.Owner.ToString()],
-        permissionCodes: [],
-        isAccountAdmin: false,
-        isWorkspaceAdmin: true,
-        grantedAt: Now);
+    private static AccessGrant CreateGrant(
+        Guid accountId,
+        Guid workspaceId,
+        Guid userId,
+        WorkspaceRole role,
+        DateTimeOffset grantedAt)
+        => new(
+            accountId: accountId,
+            workspaceId: workspaceId,
+            userId: userId,
+            sourceContext: "Workspace",
+            membershipStatus: "Active",
+            roleCodes: [role.ToString()],
+            permissionCodes: [],
+            isAccountAdmin: false,
+            isWorkspaceAdmin: role == WorkspaceRole.Owner,
+            grantedAt: grantedAt);
 
     private ApplicationDbContext CreateSystemContext()
     {
@@ -95,6 +121,9 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
 
     private static string ListTokensUrl(Guid workspaceId)
         => $"/api/v1/workspaces/{workspaceId}/api-tokens";
+
+    private static string WorkspaceUrl(Guid workspaceId)
+        => $"/api/v1/workspaces/{workspaceId}";
 
     private WebApplicationFactory<Program> CreateFactory(Action<Dictionary<string, string?>>? configure = null)
     {
@@ -142,27 +171,6 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
 
                 builder.ConfigureTestServices(services =>
                 {
-                    // Membership resolution is mid-flight WIP owned by another
-                    // worktree: IResourceAuthorizationSnapshotStore is not yet
-                    // registered and the current PermissionService cannot see
-                    // workspace members before TenantBootstrap sets the tenant
-                    // context. P12 proves the committed auth-graph layer, so
-                    // the permission evaluator is stubbed to owner-allow while
-                    // every other production capability (scheme dispatch,
-                    // token binding, TenantBootstrap enforcement, RLS session)
-                    // runs real.
-                    services.RemoveAll<Notrelix.Application.Common.Security.IPermissionEvaluator>();
-                    services.AddScoped<Notrelix.Application.Common.Security.IPermissionEvaluator>(_ =>
-                        Mock.Of<Notrelix.Application.Common.Security.IPermissionEvaluator>(e =>
-                            e.EvaluateAsync(
-                                It.IsAny<Notrelix.Application.Common.Security.PermissionContext>(),
-                                It.IsAny<CancellationToken>())
-                            == System.Threading.Tasks.Task.FromResult(
-                                new Notrelix.Application.Common.Security.PermissionDecision(
-                                    true, null, Notrelix.Domain.Governance.Permissions.PermissionLevel.Owner))));
-                    services.RemoveAll<Notrelix.Application.Common.Security.IResourceAuthorizationSnapshotStore>();
-                    services.AddScoped<Notrelix.Application.Common.Security.IResourceAuthorizationSnapshotStore>(_ =>
-                        Mock.Of<Notrelix.Application.Common.Security.IResourceAuthorizationSnapshotStore>());
                 });
 
                 foreach (var (key, value) in baseConfig)
@@ -306,6 +314,38 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden,
             $"a token bound to workspace A must never operate workspace B, even when the user can access both. Body: {body}");
+    }
+
+    [Fact]
+    public async Task MemberApiToken_SameWorkspace_PassesBootstrap_ButGovernanceDeniesManageWorkspaceSettings()
+    {
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer",
+                _memberRawSecret);
+
+        // Precondition: the exact same API token must authenticate, satisfy
+        // its workspace binding, pass TenantBootstrap, and pass ViewWorkspace.
+        var viewResponse = await client.GetAsync(WorkspaceUrl(_workspaceA));
+        var viewBody = await viewResponse.Content.ReadAsStringAsync();
+
+        viewResponse.StatusCode.Should().Be(
+            System.Net.HttpStatusCode.OK,
+            $"member token must have valid workspace access before testing " +
+            $"Governance denial. Body: {viewBody}");
+
+        // ListApiTokens requires ManageWorkspaceSettings. The Member has valid
+        // workspace access but not this Governance permission.
+        var manageResponse = await client.GetAsync(ListTokensUrl(_workspaceA));
+        var manageBody = await manageResponse.Content.ReadAsStringAsync();
+
+        manageResponse.StatusCode.Should().Be(
+            System.Net.HttpStatusCode.Forbidden,
+            $"the credential is valid and workspace-bound, but Governance must " +
+            $"deny ManageWorkspaceSettings for a normal Member. Body: {manageBody}");
     }
 
     [Fact]
