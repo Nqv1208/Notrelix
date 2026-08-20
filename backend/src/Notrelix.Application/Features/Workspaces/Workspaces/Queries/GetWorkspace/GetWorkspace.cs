@@ -24,7 +24,7 @@ public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Resul
     {
         var workspace = await _context.Workspaces
             .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

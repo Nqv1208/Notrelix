@@ -30,7 +30,12 @@ public static class CreateApiTokenEndpoint
         {
             return result.ToCreatedResult();
         }
-        return result.ToCreatedResult($"/api/v1/workspaces/{workspaceId}/api-tokens/{result.Data.Id}");
+
+        var created = result.Data
+            ?? throw new InvalidOperationException(
+                "Successful API token creation must contain response data.");
+
+        return result.ToCreatedResult($"/api/v1/workspaces/{workspaceId}/api-tokens/{created.Id}");
     }
 }
 
