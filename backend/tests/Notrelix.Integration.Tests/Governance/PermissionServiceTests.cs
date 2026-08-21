@@ -1,3 +1,5 @@
+using Notrelix.Domain.Accounts.Accounts;
+using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Workspaces.Members;
@@ -42,7 +44,7 @@ public class PermissionServiceTests : IAsyncLifetime
         clockMock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
         var snapshots = new ResourceAuthorizationSnapshotStore(
             [new BoardAuthorizationSnapshotResolver(context)]);
-        var service = new PermissionService(context, context, snapshots, clockMock.Object);
+        var service = new PermissionService(context, context, context, snapshots, clockMock.Object);
         return (context, service);
     }
 
@@ -339,5 +341,126 @@ public class PermissionServiceTests : IAsyncLifetime
         item.Rename("Renamed Item", creatorId, Now);
 
         item.Name.Should().Be("Renamed Item");
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_AccountScope_ShouldAllowOwnerForAllAccountActions()
+    {
+        var (context, service) = CreateFixture();
+        var ownerId = Guid.NewGuid();
+        var account = Account.Create("Owner Account", $"owner-{Guid.NewGuid():N}", AccountType.Personal, ownerId, Now);
+        context.Accounts.Add(account);
+        context.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, Now));
+        await context.SaveChangesAsync();
+
+        var decision = await service.EvaluateAsync(new PermissionContext(
+            ownerId,
+            account.Id,
+            null,
+            ResourceKind.Create("accounts.account"),
+            account.Id,
+            PermissionAction.CreateWorkspace,
+            AppPermissionScope.Account));
+
+        decision.IsAllowed.Should().BeTrue();
+        decision.EffectiveLevel.Should().Be(PermissionLevel.Owner);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_AccountScope_ShouldDenyNonMembers()
+    {
+        var (context, service) = CreateFixture();
+        var ownerId = Guid.NewGuid();
+        var account = Account.Create("Other Account", $"other-{Guid.NewGuid():N}", AccountType.Team, ownerId, Now);
+        context.Accounts.Add(account);
+        await context.SaveChangesAsync();
+
+        var decision = await service.EvaluateAsync(new PermissionContext(
+            Guid.NewGuid(),
+            account.Id,
+            null,
+            ResourceKind.Create("accounts.account"),
+            account.Id,
+            PermissionAction.ViewWorkspace,
+            AppPermissionScope.Account));
+
+        decision.IsAllowed.Should().BeFalse();
+        decision.ReasonCode.Should().Be("not_account_member");
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_AccountScope_ShouldAllowActiveMemberToViewWorkspaces()
+    {
+        var (context, service) = CreateFixture();
+        var ownerId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
+        var account = Account.Create("Member Account", $"member-{Guid.NewGuid():N}", AccountType.Team, ownerId, Now);
+        context.Accounts.Add(account);
+        context.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, Now));
+        context.AccountMembers.Add(AccountMember.Create(account.Id, memberId, AccountRole.Member, ownerId, Now));
+        await context.SaveChangesAsync();
+
+        var decision = await service.EvaluateAsync(new PermissionContext(
+            memberId,
+            account.Id,
+            null,
+            ResourceKind.Create("accounts.account"),
+            account.Id,
+            PermissionAction.ViewWorkspace,
+            AppPermissionScope.Account));
+
+        decision.IsAllowed.Should().BeTrue();
+        decision.EffectiveLevel.Should().Be(PermissionLevel.Viewer);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_AccountScope_ShouldDenyNonOwnerCreateWorkspaceWithoutRule()
+    {
+        var (context, service) = CreateFixture();
+        var ownerId = Guid.NewGuid();
+        var adminId = Guid.NewGuid();
+        var account = Account.Create("Admin Account", $"admin-{Guid.NewGuid():N}", AccountType.Team, ownerId, Now);
+        context.Accounts.Add(account);
+        context.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, Now));
+        context.AccountMembers.Add(AccountMember.Create(account.Id, adminId, AccountRole.Admin, ownerId, Now));
+        await context.SaveChangesAsync();
+
+        var decision = await service.EvaluateAsync(new PermissionContext(
+            adminId,
+            account.Id,
+            null,
+            ResourceKind.Create("accounts.account"),
+            account.Id,
+            PermissionAction.CreateWorkspace,
+            AppPermissionScope.Account));
+
+        decision.IsAllowed.Should().BeFalse();
+        decision.ReasonCode.Should().Be("missing_permission");
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_AccountScope_ShouldDenySuspendedMembers()
+    {
+        var (context, service) = CreateFixture();
+        var ownerId = Guid.NewGuid();
+        var suspendedId = Guid.NewGuid();
+        var account = Account.Create("Suspend Account", $"suspend-{Guid.NewGuid():N}", AccountType.Team, ownerId, Now);
+        context.Accounts.Add(account);
+        var member = AccountMember.Create(account.Id, suspendedId, AccountRole.Member, ownerId, Now);
+        member.Suspend(ownerId, Now, activeOwnerCount: 1);
+        context.AccountMembers.Add(member);
+        await context.SaveChangesAsync();
+
+        var decision = await service.EvaluateAsync(new PermissionContext(
+            suspendedId,
+            account.Id,
+            null,
+            ResourceKind.Create("accounts.account"),
+            account.Id,
+            PermissionAction.ViewWorkspace,
+            AppPermissionScope.Account));
+
+        decision.IsAllowed.Should().BeFalse();
+        decision.ReasonCode.Should().Be("not_account_member");
     }
 }

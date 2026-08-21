@@ -76,6 +76,7 @@ public sealed class RealtimeDispatchContractTests : IAsyncLifetime
         return new PermissionService(
             context,
             context,
+            context,
             snapshots,
             FakeDateTimeProvider.WithFixedTime(FixedTime));
     }

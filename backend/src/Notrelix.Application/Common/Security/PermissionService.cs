@@ -1,6 +1,8 @@
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
+using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Domain.Accounts.Members;
 
 namespace Notrelix.Application.Common.Security;
 
@@ -11,17 +13,20 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
 
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IGovernanceDbContext _governanceContext;
+    private readonly IAccountDbContext _accountContext;
     private readonly IResourceAuthorizationSnapshotStore _resourceSnapshots;
     private readonly IDateTimeProvider _clock;
 
     public PermissionService(
         IWorkspaceDbContext workspaceContext,
         IGovernanceDbContext governanceContext,
+        IAccountDbContext accountContext,
         IResourceAuthorizationSnapshotStore resourceSnapshots,
         IDateTimeProvider clock)
     {
         _workspaceContext = workspaceContext;
         _governanceContext = governanceContext;
+        _accountContext = accountContext;
         _resourceSnapshots = resourceSnapshots;
         _clock = clock;
     }
@@ -35,6 +40,11 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
             throw new SecurityMisconfigurationException(
                 $"Permission evaluation requires WorkspaceId for scope {context.Scope} " +
                 $"but WorkspaceId is null. ResourceKind={context.ResourceKind} Action={context.Action}");
+        }
+
+        if (context.Scope == PermissionScope.Account)
+        {
+            return await EvaluateAccountAsync(context, cancellationToken);
         }
 
         // Resolve AccountId from workspace if not provided
@@ -152,6 +162,40 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         {
             PermissionAction.ViewWorkspace or PermissionAction.ViewBoard or PermissionAction.ViewMembers
                 => new PermissionDecision(true, null, PermissionLevel.Viewer),
+            _ => new PermissionDecision(false, "missing_permission")
+        };
+    }
+
+    private async Task<PermissionDecision> EvaluateAccountAsync(
+        PermissionContext context,
+        CancellationToken cancellationToken)
+    {
+        var member = await _accountContext.AccountMembers
+            .FirstOrDefaultAsync(
+                m => m.AccountId == context.AccountId
+                    && m.UserId == context.UserId
+                    && m.Status == AccountMemberStatus.Active,
+                cancellationToken);
+
+        if (member is null)
+        {
+            return new PermissionDecision(false, "not_account_member");
+        }
+
+        if (member.Role == AccountRole.Owner)
+        {
+            return new PermissionDecision(true, null, PermissionLevel.Owner);
+        }
+
+        var ruleDecision = await EvaluateRulesAsync(context, cancellationToken);
+        if (ruleDecision is not null)
+        {
+            return ruleDecision;
+        }
+
+        return context.Action switch
+        {
+            PermissionAction.ViewWorkspace => new PermissionDecision(true, null, PermissionLevel.Viewer),
             _ => new PermissionDecision(false, "missing_permission")
         };
     }
