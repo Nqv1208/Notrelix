@@ -9,17 +9,13 @@ import { workspaceQueryKeys } from "../../../query/keys";
 interface UseWorkspaceInvitationsDeps {
   api: WorkspaceApiClient;
   endpoints: InvitationsEndpoints;
-  options?: {
-    mockMode?: boolean;
-  };
 }
 
 export function createUseWorkspaceInvitations({
   api,
   endpoints,
-  options,
 }: UseWorkspaceInvitationsDeps) {
-  const service = createInvitationsService(api, endpoints, options);
+  const service = createInvitationsService(api, endpoints);
 
   return function useWorkspaceInvitations(workspaceId: string) {
     return useQuery({

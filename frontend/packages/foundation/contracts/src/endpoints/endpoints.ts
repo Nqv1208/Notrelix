@@ -10,6 +10,8 @@ export const endpoints = {
   },
   users: {
     updateProfile: "/users/profile",
+    preferences: "/account/preferences",
+    security: "/users/security",
   },
   workspaces: {
     list: "/workspaces",

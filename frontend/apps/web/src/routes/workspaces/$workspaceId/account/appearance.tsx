@@ -24,16 +24,15 @@ const COLOR_THEMES = [
 ];
 
 export function AccountAppearancePage() {
-  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+  const { api: runtimeClient } = useAppRuntime();
 
   const usePreferences = useMemo(
     () =>
       createUsePreferences({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.mockApi],
+    [runtimeClient],
   );
 
   const useUpdatePreferences = useMemo(
@@ -41,9 +40,8 @@ export function AccountAppearancePage() {
       createUseUpdatePreferences({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.mockApi],
+    [runtimeClient],
   );
 
   const { preferences, isLoading } = usePreferences();

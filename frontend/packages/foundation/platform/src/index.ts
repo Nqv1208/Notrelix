@@ -23,13 +23,5 @@ export {
   type PermissionResourceContext,
 } from "./permissions/ability";
 
-// Environment-independent configuration
-export {
-  createMockModeChecker,
-  isMockModeEnabled,
-  type MockFeature,
-  type MockModeConfig,
-} from "./config";
-
 // Environment-independent form error mapping
 export { applyServerValidationErrors } from "./forms";

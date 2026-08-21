@@ -27,15 +27,14 @@ function UtilityButton({
 }
 
 export function AppHeader({ workspaceId }: { workspaceId?: string }) {
-  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+  const { api: runtimeClient } = useAppRuntime();
   const NotificationBell = useMemo(
     () =>
       createNotificationBell({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.mockApi],
+    [runtimeClient],
   );
 
   return (

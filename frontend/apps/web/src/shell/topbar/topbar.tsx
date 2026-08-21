@@ -11,7 +11,7 @@ import { GlobalSearch } from "../global-search";
 export function WorkspaceTopbar() {
   const { workspace } = useWorkspaceContext();
   const { theme, setTheme } = useTheme();
-  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+  const { api: runtimeClient } = useAppRuntime();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -20,9 +20,8 @@ export function WorkspaceTopbar() {
       createNotificationBell({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.mockApi],
+    [runtimeClient],
   );
 
   useEffect(() => {

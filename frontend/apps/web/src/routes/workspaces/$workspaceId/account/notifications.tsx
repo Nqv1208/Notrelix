@@ -26,16 +26,15 @@ const NOTIFICATION_CHANNELS = [
 ];
 
 export function AccountNotificationsPage() {
-  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+  const { api: runtimeClient } = useAppRuntime();
 
   const usePreferences = useMemo(
     () =>
       createUsePreferences({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.mockApi],
+    [runtimeClient],
   );
 
   const useUpdatePreferences = useMemo(
@@ -43,9 +42,8 @@ export function AccountNotificationsPage() {
       createUseUpdatePreferences({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: runtimeEnv.mockApi },
       }),
-    [runtimeClient, runtimeEnv.mockApi],
+    [runtimeClient],
   );
 
   const { preferences: _preferences, isLoading } = usePreferences();
