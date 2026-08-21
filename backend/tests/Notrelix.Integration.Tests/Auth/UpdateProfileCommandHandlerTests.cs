@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Auth;
 
@@ -34,11 +35,11 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new UpdateProfileCommandHandler(context, dateTimeProvider.Object);
+        var currentUser = new FakeCurrentRequestContext().AsUser(user.Id);
+        var handler = new UpdateProfileCommandHandler(context, currentUser, dateTimeProvider.Object);
 
         var result = await handler.Handle(new UpdateProfileCommand
         {
-            UserId = user.Id,
             Name = "New Name",
             Avatar = "https://example.com/avatar.png"
         }, CancellationToken.None);
@@ -58,11 +59,11 @@ public class UpdateProfileCommandHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext();
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
-        var handler = new UpdateProfileCommandHandler(context, dateTimeProvider.Object);
+        var currentUser = new FakeCurrentRequestContext().AsUser(Guid.NewGuid());
+        var handler = new UpdateProfileCommandHandler(context, currentUser, dateTimeProvider.Object);
 
         var result = await handler.Handle(new UpdateProfileCommand
         {
-            UserId = Guid.NewGuid(),
             Name = "New Name",
             Avatar = null
         }, CancellationToken.None);
