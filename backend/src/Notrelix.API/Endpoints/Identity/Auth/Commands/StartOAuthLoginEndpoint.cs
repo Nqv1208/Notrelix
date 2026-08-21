@@ -25,7 +25,7 @@ public static class StartOAuthLoginEndpoint
     {
         if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider))
         {
-            return Results.BadRequest(new { error = $"Invalid OAuth provider: {provider}" });
+            return EndpointExtensions.InvalidInput($"Invalid OAuth provider: {provider}");
         }
 
         var command = new StartOAuthLoginCommand

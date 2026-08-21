@@ -41,7 +41,7 @@ public static class SecurityStepUpEndpoints
     {
         if (!Enum.TryParse<StepUpPurpose>(request.Purpose, ignoreCase: true, out var purpose))
         {
-            return Results.BadRequest(new { error = $"Invalid step-up purpose: {request.Purpose}" });
+            return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
 
         var result = await sender.Send(new GetStepUpRequirementQuery { Purpose = purpose });
@@ -54,7 +54,7 @@ public static class SecurityStepUpEndpoints
     {
         if (!Enum.TryParse<StepUpPurpose>(request.Purpose, ignoreCase: true, out var purpose))
         {
-            return Results.BadRequest(new { error = $"Invalid step-up purpose: {request.Purpose}" });
+            return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
 
         var result = await sender.Send(new CompleteStepUpMfaCommand
@@ -73,7 +73,7 @@ public static class SecurityStepUpEndpoints
     {
         if (!Enum.TryParse<StepUpPurpose>(request.Purpose, ignoreCase: true, out var purpose))
         {
-            return Results.BadRequest(new { error = $"Invalid step-up purpose: {request.Purpose}" });
+            return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
 
         var result = await sender.Send(new CompleteStepUpPasswordCommand

@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
 using Notrelix.Domain.Identity.Mfa;
@@ -47,6 +48,8 @@ public class LoginTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("Invalid email or password"));
+        result.TypedErrors.Should().Contain(e =>
+            e.Code == "identity.auth.invalid-credentials" && e.Type == ApplicationErrorType.Authentication);
         PasswordHasherMock.Verify(h => h.VerifyPassword(TestPassword, It.IsAny<string>()), Times.Once);
     }
 
@@ -94,6 +97,8 @@ public class LoginTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("Invalid email or password"));
+        result.TypedErrors.Should().Contain(e =>
+            e.Code == "identity.auth.invalid-credentials" && e.Type == ApplicationErrorType.Authentication);
     }
 
     [Fact]

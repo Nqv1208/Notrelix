@@ -56,13 +56,13 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         if (user is null || !passwordValid)
         {
             _logger.LogInformation("Login failed: invalid credentials for {NormalizedEmail}", normalizedEmail);
-            return Result<AuthResult>.Failure("Invalid email or password");
+            return Result<AuthResult>.Failure(InvalidCredentialsError);
         }
 
         if (user.Status is not UserStatus.Active)
         {
             _logger.LogWarning("Login blocked: non-active account {UserId} (status {UserStatus})", user.Id, user.Status);
-            return Result<AuthResult>.Failure("Invalid email or password");
+            return Result<AuthResult>.Failure(InvalidCredentialsError);
         }
 
         var now = _dateTimeProvider.UtcNow;
@@ -96,4 +96,9 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     }
 
     private const string DummyPasswordHash = "$2b$12$l21rZMRnrPl/Lfm2kVzYOuxlKgQzbwMzEvK7cOBZI40eJ42/FIuh2";
+
+    private static readonly ApplicationError InvalidCredentialsError = new(
+        "identity.auth.invalid-credentials",
+        "Invalid email or password",
+        ApplicationErrorType.Authentication);
 }

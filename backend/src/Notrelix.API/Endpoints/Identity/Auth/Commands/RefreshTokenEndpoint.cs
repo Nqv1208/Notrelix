@@ -24,7 +24,7 @@ public static class RefreshTokenEndpoint
         var refreshToken = httpContext.Request.Cookies["refreshToken"];
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
-            return Results.Unauthorized();
+            return EndpointExtensions.UnauthorizedProblem("Refresh token is missing.");
         }
 
         var command = new RefreshTokenCommand { RefreshToken = refreshToken };

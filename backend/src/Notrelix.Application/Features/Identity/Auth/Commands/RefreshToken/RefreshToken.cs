@@ -42,7 +42,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         if (session is null)
         {
-            return Result<AuthResult>.Failure("Refresh token is invalid or expired");
+            return Result<AuthResult>.Failure(InvalidRefreshTokenError);
         }
 
         var user = await _context.Users
@@ -50,13 +50,13 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         if (user is null)
         {
-            return Result<AuthResult>.Failure("User not found");
+            return Result<AuthResult>.Failure(InvalidRefreshTokenError);
         }
 
         if (user.Status is not UserStatus.Active)
         {
             session.Revoke(now);
-            return Result<AuthResult>.Failure("Refresh token is invalid or expired");
+            return Result<AuthResult>.Failure(InvalidRefreshTokenError);
         }
 
         session.Revoke(now);
@@ -85,4 +85,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             }
         });
     }
+
+    private static readonly ApplicationError InvalidRefreshTokenError = new(
+        "identity.auth.invalid-refresh-token",
+        "Refresh token is invalid or expired",
+        ApplicationErrorType.Authentication);
 }

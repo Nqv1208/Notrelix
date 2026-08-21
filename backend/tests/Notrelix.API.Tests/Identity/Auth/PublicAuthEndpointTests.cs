@@ -96,7 +96,7 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
-    public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
+    public async Task Login_WithInvalidCredentials_MockedHandlerStillReturnsSuccess()
     {
         var body = new { Email = "nonexistent@test.com", Password = "WrongPassword123!" };
 
@@ -104,6 +104,7 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
 
         // Handler mock always returns success; invalid-credential detection
         // requires real handler logic tested at the Application layer.
+        // The 401 typed-error contract is proven in LoginErrorContractTests.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
