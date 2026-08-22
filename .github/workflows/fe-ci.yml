@@ -122,7 +122,7 @@ jobs:
 
       - name: Upload UI Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ui-playwright-report
           path: frontend/playwright-report-ui
@@ -148,7 +148,7 @@ jobs:
         run: pnpm --filter @notrelix/app-web build
 
       - name: Upload exact web build for E2E
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-build
           path: frontend/apps/web/dist
@@ -213,7 +213,7 @@ jobs:
 
       - name: Upload production Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: production-playwright-report
           path: frontend/playwright-report-production
@@ -315,7 +315,7 @@ jobs:
 
       - name: Upload mock Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mock-playwright-report-${{ matrix.persona }}-${{ matrix.state }}
           path: frontend/playwright-report
