@@ -26,7 +26,7 @@ test("renders a production Documents route through mock transport", async ({
   await expect(page.getByText("Product specification").first()).toBeVisible();
   await expect(
     page.getByRole("textbox", { name: "Type '/' for commands..." }).first(),
-  ).toHaveValue("Notrelix mock runtime specification.");
+  ).toHaveValue("Block 1");
   expect(
     errors.filter((message) => message.includes("MockUnhandledOperationError")),
   ).toEqual([]);
