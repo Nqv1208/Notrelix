@@ -50,9 +50,7 @@ export function createCsrfProvider(deps: CsrfProviderDeps): CsrfProvider {
     );
 
     if (!response.ok) {
-      throw new Error(
-        `CSRF bootstrap failed with status ${response.status}.`,
-      );
+      throw new Error(`CSRF bootstrap failed with status ${response.status}.`);
     }
 
     const body = (await response.json()) as Partial<CsrfBootstrapResponse>;

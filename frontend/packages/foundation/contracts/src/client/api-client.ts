@@ -1,11 +1,7 @@
 import { endpoints } from "../endpoints/endpoints";
 import { AppError } from "@notrelix/kernel";
 import { mapStatusToKind } from "@notrelix/kernel";
-import {
-  createCsrfProvider,
-  type CsrfProvider,
-  CSRF_HEADER,
-} from "./csrf";
+import { createCsrfProvider, type CsrfProvider, CSRF_HEADER } from "./csrf";
 import { generateCorrelationId } from "@notrelix/kernel";
 
 export type ApiRequestOptions = {
@@ -46,9 +42,7 @@ function isCsrfRejection(status: number, body: unknown): boolean {
   const errorCode =
     typeof problem.errorCode === "string" ? problem.errorCode : "";
 
-  return (
-    type.includes(CSRF_PROBLEM_TYPE) || errorCode === CSRF_ERROR_CODE
-  );
+  return type.includes(CSRF_PROBLEM_TYPE) || errorCode === CSRF_ERROR_CODE;
 }
 
 export function createNotrelixClient(config: NotrelixClientConfig) {
@@ -249,10 +243,7 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     // Bounded CSRF stale-token recovery (ADR-005 policy):
     // clear memory token → re-bootstrap once → retry the original unsafe
     // request exactly once. The retry flag guarantees no loop.
-    if (
-      isCsrfRejection(response.status, data) &&
-      retryAfterCsrfRecovery
-    ) {
+    if (isCsrfRejection(response.status, data) && retryAfterCsrfRecovery) {
       csrf.clearToken();
       await csrf.ensureCsrfToken();
 

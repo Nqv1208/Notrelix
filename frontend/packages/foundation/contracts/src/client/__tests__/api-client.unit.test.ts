@@ -28,20 +28,18 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
   });
 
   it("adds Idempotency-Key header when request option is provided", async () => {
-    const mockFetch = vi
-      .fn()
-      .mockImplementation((url: string) => {
-        if (url.includes("/auth/csrf")) {
-          return Promise.resolve(
-            new Response(JSON.stringify({ token: "test-csrf-token" }), {
-              status: 200,
-            }),
-          );
-        }
+    const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/auth/csrf")) {
         return Promise.resolve(
-          new Response(JSON.stringify({ data: "ok" }), { status: 200 }),
+          new Response(JSON.stringify({ token: "test-csrf-token" }), {
+            status: 200,
+          }),
         );
-      });
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify({ data: "ok" }), { status: 200 }),
+      );
+    });
 
     const client = createNotrelixClient({
       baseUrl: "http://api.test",

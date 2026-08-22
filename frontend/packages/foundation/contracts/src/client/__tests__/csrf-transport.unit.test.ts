@@ -106,26 +106,25 @@ describe("createNotrelixClient — CSRF transport", () => {
   }) {
     const calls: Array<{ url: string; init: RequestInit }> = [];
 
-    const fetchImpl = vi.fn().mockImplementation(async (
-      url: string,
-      init: RequestInit,
-    ) => {
-      calls.push({ url, init });
+    const fetchImpl = vi
+      .fn()
+      .mockImplementation(async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
 
-      if (url.endsWith(BOOTSTRAP_PATH)) {
-        return bootstrapResponse(TOKEN_A);
-      }
+        if (url.endsWith(BOOTSTRAP_PATH)) {
+          return bootstrapResponse(TOKEN_A);
+        }
 
-      if (init.method === "POST") {
-        const token =
-          new Headers(init.headers).get("X-CSRF-Token") ?? undefined;
-        return handlers.post
-          ? handlers.post(token)
-          : new Response(null, { status: 200 });
-      }
+        if (init.method === "POST") {
+          const token =
+            new Headers(init.headers).get("X-CSRF-Token") ?? undefined;
+          return handlers.post
+            ? handlers.post(token)
+            : new Response(null, { status: 200 });
+        }
 
-      return new Response(JSON.stringify({ ok: true }), { status: 200 });
-    });
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      });
 
     const client = createNotrelixClient({
       baseUrl: "http://api.test",
@@ -167,24 +166,23 @@ describe("createNotrelixClient — CSRF transport", () => {
   it("auth refresh goes through the shared CSRF-aware primitive (IA-TST-CSRF-CLIENT-005)", async () => {
     const calls: Array<{ url: string; init: RequestInit }> = [];
 
-    const fetchImpl = vi.fn().mockImplementation(async (
-      url: string,
-      init: RequestInit,
-    ) => {
-      calls.push({ url, init });
+    const fetchImpl = vi
+      .fn()
+      .mockImplementation(async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
 
-      if (url.endsWith(BOOTSTRAP_PATH)) {
-        return bootstrapResponse(TOKEN_A);
-      }
-      if (url.endsWith("/auth/refresh")) {
-        return new Response(JSON.stringify({ ok: true }), { status: 200 });
-      }
+        if (url.endsWith(BOOTSTRAP_PATH)) {
+          return bootstrapResponse(TOKEN_A);
+        }
+        if (url.endsWith("/auth/refresh")) {
+          return new Response(JSON.stringify({ ok: true }), { status: 200 });
+        }
 
-      // First resource call is unauthorized and triggers the refresh path.
-      return calls.filter((c) => c.url.endsWith("/auth/refresh")).length > 0
-        ? new Response(JSON.stringify({ success: true }), { status: 200 })
-        : new Response(null, { status: 401 });
-    });
+        // First resource call is unauthorized and triggers the refresh path.
+        return calls.filter((c) => c.url.endsWith("/auth/refresh")).length > 0
+          ? new Response(JSON.stringify({ success: true }), { status: 200 })
+          : new Response(null, { status: 401 });
+      });
 
     const client = createNotrelixClient({
       baseUrl: "http://api.test",
@@ -223,24 +221,25 @@ describe("createNotrelixClient — CSRF transport", () => {
     let postAttempts = 0;
     const seenTokens: Array<string | undefined> = [];
 
-    const fetchImpl = vi.fn().mockImplementation(async (
-      url: string,
-      init: RequestInit,
-    ) => {
-      if (url.endsWith(BOOTSTRAP_PATH)) {
-        bootstrapCount++;
-        return bootstrapResponse(bootstrapCount === 1 ? TOKEN_A : TOKEN_B);
-      }
+    const fetchImpl = vi
+      .fn()
+      .mockImplementation(async (url: string, init: RequestInit) => {
+        if (url.endsWith(BOOTSTRAP_PATH)) {
+          bootstrapCount++;
+          return bootstrapResponse(bootstrapCount === 1 ? TOKEN_A : TOKEN_B);
+        }
 
-      if (init.method === "POST") {
-        postAttempts++;
-        seenTokens.push(new Headers(init.headers).get("X-CSRF-Token") ?? undefined);
-        if (postAttempts === 1) return csrfProblem(); // stale token rejected
-        return new Response(JSON.stringify({ ok: true }), { status: 200 });
-      }
+        if (init.method === "POST") {
+          postAttempts++;
+          seenTokens.push(
+            new Headers(init.headers).get("X-CSRF-Token") ?? undefined,
+          );
+          if (postAttempts === 1) return csrfProblem(); // stale token rejected
+          return new Response(JSON.stringify({ ok: true }), { status: 200 });
+        }
 
-      return new Response(null, { status: 200 });
-    });
+        return new Response(null, { status: 200 });
+      });
 
     const client = createNotrelixClient({
       baseUrl: "http://api.test",
@@ -259,21 +258,20 @@ describe("createNotrelixClient — CSRF transport", () => {
   it("a second consecutive CSRF rejection surfaces instead of looping (bounded failure)", async () => {
     let postAttempts = 0;
 
-    const fetchImpl = vi.fn().mockImplementation(async (
-      url: string,
-      init: RequestInit,
-    ) => {
-      if (url.endsWith(BOOTSTRAP_PATH)) {
-        return bootstrapResponse(`token-${bootstrapCounter++}`);
-      }
+    const fetchImpl = vi
+      .fn()
+      .mockImplementation(async (url: string, init: RequestInit) => {
+        if (url.endsWith(BOOTSTRAP_PATH)) {
+          return bootstrapResponse(`token-${bootstrapCounter++}`);
+        }
 
-      if (init.method === "POST") {
-        postAttempts++;
-        return csrfProblem();
-      }
+        if (init.method === "POST") {
+          postAttempts++;
+          return csrfProblem();
+        }
 
-      return new Response(null, { status: 200 });
-    });
+        return new Response(null, { status: 200 });
+      });
     let bootstrapCounter = 0;
 
     const client = createNotrelixClient({
@@ -310,11 +308,7 @@ describe("CSRF source gate", () => {
     const { join, dirname } = await import("node:path");
     const dir = dirname(new URL(import.meta.url).pathname);
 
-    const sources = [
-      "../csrf.ts",
-      "../api-client.ts",
-      "../index.ts",
-    ];
+    const sources = ["../csrf.ts", "../api-client.ts", "../index.ts"];
 
     for (const file of sources) {
       const raw = await readFile(join(dir, file), "utf8");
