@@ -159,3 +159,34 @@ export interface MockUserPreferencesRecord {
   sidebarCollapsed: boolean;
   defaultView: string;
 }
+
+export interface MockBlockRecord {
+  id: string;
+  pageId: string;
+  parentBlockId?: string | null;
+  type: string;
+  properties: string;
+  position: number;
+  version: number;
+  createdByUserId: string;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export interface MockPageCommentRecord {
+  id: string;
+  pageId: string;
+  userId: string;
+  contentMd: string;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export interface MockPageHistoryRecord {
+  id: string;
+  pageId: string;
+  actorId: string;
+  action: string;
+  resourceTitle?: string | null;
+  createdAt: string;
+}

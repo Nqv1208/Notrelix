@@ -155,10 +155,17 @@ const VALID_STATES = new Set<string>([
   "empty-workspace",
   "permission-limited",
   "expired-session",
-  "onboarding",
 ]);
 const VALID_DENSITIES = new Set<string>(["tiny", "normal", "large", "stress"]);
 const VALID_LATENCIES = new Set<string>(["instant", "fast", "normal", "slow"]);
+const VALID_OVERLAYS = new Set<string>([
+  "long-titles",
+  "unicode",
+  "missing-avatars",
+  "many-columns",
+  "many-cards"
+]);
+
 
 export function parseMockConfigFromEnv(
   env: Record<string, string | undefined>,
@@ -228,6 +235,24 @@ export function parseMockConfigFromEnv(
       );
     }
     partial.latency = val as MockLatency;
+  }
+
+
+  // VITE_MOCK_OVERLAYS
+  if (
+    env["VITE_MOCK_OVERLAYS"] !== undefined &&
+    env["VITE_MOCK_OVERLAYS"] !== ""
+  ) {
+    const raw = env["VITE_MOCK_OVERLAYS"];
+    const overlays = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    for (const o of overlays) {
+      if (!VALID_OVERLAYS.has(o)) {
+        throw new MockConfigurationError(
+          `Invalid overlay "${o}" in VITE_MOCK_OVERLAYS. Must be a comma-separated list of: ${Array.from(VALID_OVERLAYS).join(", ")}`
+        );
+      }
+    }
+    partial.overlays = overlays as any;
   }
 
   // VITE_MOCK_SEED
