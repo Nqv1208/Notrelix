@@ -233,6 +233,7 @@ packages/runtimes/*
 packages/ui/*
 packages/product/*/*
 packages/features/*
+packages/dev/*
 tooling/*
 tooling/storybook/web
 ```

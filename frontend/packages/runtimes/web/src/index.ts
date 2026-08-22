@@ -8,6 +8,7 @@ export {
   useAppRuntime,
   useFeatureRuntimeDependencies,
   type AppRuntime,
+  type AppRuntimeFactories,
   type ClockPort,
   type FeatureFlagsPort,
   type SessionEventBus,

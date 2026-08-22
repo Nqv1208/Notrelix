@@ -2,12 +2,7 @@ import { useMemo } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useWorkspaceBoards } from "@notrelix/work-management-state";
-import {
-  createUsePageList,
-  createUseDocsFavorites,
-} from "@notrelix/docs-state";
-import { createUseWorkspaceMembers } from "@notrelix/features-workspace/web";
-import { useAppRuntime } from "@notrelix/runtime-web";
+import { createUsePageList } from "@notrelix/docs-state";
 import {
   WorkspaceOverview,
   ActiveBoards,
@@ -21,7 +16,6 @@ import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
 export function DashboardPage() {
   const { workspaceId } = useParams({ from: "/workspaces/$workspaceId" });
   const { api, endpoints } = useFeatureRuntimeDependencies();
-  const { api: runtimeClient } = useAppRuntime();
   const { workspace, isLoading: workspaceLoading } = useWorkspaceContext();
 
   const usePageList = useMemo(
@@ -29,24 +23,10 @@ export function DashboardPage() {
     [api, endpoints],
   );
 
-  const useDocsFavorites = useMemo(
-    () => createUseDocsFavorites(api, endpoints),
-    [api, endpoints],
-  );
-
-  const useWorkspaceMembers = useMemo(
-    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
-    [runtimeClient],
-  );
-
   const { data: boards = [], isLoading: boardsLoading } =
     useWorkspaceBoards(workspaceId);
   const { data: pages = [], isLoading: pagesLoading } =
     usePageList(workspaceId);
-  const { data: _favorites = [], isLoading: _favoritesLoading } =
-    useDocsFavorites(workspaceId);
-  const { data: members = [], isLoading: _membersLoading } =
-    useWorkspaceMembers(workspaceId);
 
   return (
     <div className="p-8 max-w-[1600px]">
@@ -55,7 +35,7 @@ export function DashboardPage() {
           workspaceName={workspace?.name ?? "Workspace"}
           pageCount={pages.length}
           boardCount={boards.length}
-          memberCount={members.length}
+          memberCount={workspace?.memberCount ?? 0}
           isLoading={workspaceLoading}
         />
 

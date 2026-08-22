@@ -5,10 +5,7 @@ import {
   createWorkManagementServices,
   type WorkManagementServices,
 } from "@notrelix/work-management-state";
-import {
-  createUnavailableSearchApi,
-  type SearchApi,
-} from "@notrelix/features-search";
+import type { SearchApi, SearchResult } from "@notrelix/features-search";
 import {
   createApplicationLifecycle,
   type ApplicationLifecycle,
@@ -43,7 +40,19 @@ export function createWebApplicationServices(
     navigateToSignedOut: options.navigateToSignedOut,
   });
 
-  const searchApi = createUnavailableSearchApi();
+  const searchApi: SearchApi = {
+    async search(input) {
+      const params = new URLSearchParams({
+        q: input.query,
+        workspaceId: input.workspaceId,
+      });
+      for (const type of input.types) params.append("type", type);
+      const response = await runtime.api.api.get<
+        readonly SearchResult[] | { readonly results: readonly SearchResult[] }
+      >(`/api/v1/search?${params}`);
+      return "results" in response ? response.results : response;
+    },
+  };
 
   return {
     runtime,

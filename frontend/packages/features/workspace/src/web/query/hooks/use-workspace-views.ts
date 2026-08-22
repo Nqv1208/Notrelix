@@ -5,16 +5,10 @@ import { workspaceQueryKeys } from "../../../query/keys";
 
 interface UseWorkspaceViewsDeps {
   api: WorkspaceApiClient;
-  options?: {
-    mockMode?: boolean;
-  };
 }
 
-export function createUseWorkspaceViews({
-  api,
-  options,
-}: UseWorkspaceViewsDeps) {
-  const service = createViewsService(api, options);
+export function createUseWorkspaceViews({ api }: UseWorkspaceViewsDeps) {
+  const service = createViewsService(api);
 
   return function useWorkspaceViews(workspaceId: string) {
     return useQuery({

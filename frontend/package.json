@@ -7,6 +7,7 @@
     "dev": "turbo dev",
     "dev:marketing": "pnpm --filter @notrelix/app-marketing dev",
     "dev:web": "pnpm --filter @notrelix/app-web dev",
+    "dev:web:mock": "pnpm --filter @notrelix/app-web dev:mock",
     "dev:mobile": "pnpm --filter @notrelix/app-mobile dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
@@ -33,6 +34,7 @@
     "test:ui:visual": "playwright test --config playwright.storybook.config.ts --grep visual",
     "test:ui:freeze": "playwright test --config playwright.storybook.config.ts",
     "e2e": "playwright test --config playwright.config.ts",
+    "e2e:mock": "playwright test --config playwright.mock.config.ts",
     "e2e:marketing": "playwright test --config playwright.marketing.config.ts",
     "e2e:report": "playwright show-report",
     "codegen": "turbo codegen",
@@ -40,22 +42,30 @@
     "check:architecture": "pnpm --filter @notrelix/dependency-rules check",
     "check:architecture-docs": "pnpm --filter @notrelix/dependency-rules docs:check",
     "check:deps": "pnpm check:architecture",
-    "validate:fast": "pnpm codegen:check && pnpm check:architecture && pnpm check:architecture-docs && pnpm check:test-taxonomy && pnpm check:lint-coverage && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:node:guarded && pnpm test:web:guarded",
+    "check:production-mock-isolation": "node ./scripts/assert-no-mock-artifact.mjs",
+    "check:mock-consumer-surface": "node ./scripts/check-mock-freeze.mjs",
+    "check:mock-conformance-coverage": "node ./scripts/check-mock-freeze.mjs",
+    "check:mock-mutation-coverage": "node ./scripts/check-mock-freeze.mjs",
+    "check:mock-public-surface": "node ./scripts/check-mock-freeze.mjs",
+    "mock:freeze:check": "node ./scripts/check-mock-freeze.mjs",
+    "mock:contract": "pnpm test:node:guarded && pnpm mock:freeze:check",
+    "e2e:mock:count": "node ./scripts/assert-playwright-mock-count.mjs test-results/mock-e2e-results.json",
+    "validate:fast": "pnpm codegen:check && pnpm check:architecture && pnpm check:architecture-docs && pnpm check:test-taxonomy && pnpm check:lint-coverage && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:node:guarded && pnpm test:web:guarded && pnpm mock:freeze:check",
     "validate": "pnpm validate:fast && pnpm test:integration:guarded && pnpm test:mobile:guarded && pnpm test:generators:guarded",
     "production:startup": "node ./scripts/check-production-startup.mjs",
     "freeze:audit": "node ./scripts/freeze-audit.mjs",
     "clean": "turbo run clean && rm -rf node_modules .turbo"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
     "@playwright/test": "^1.50.0",
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
+    "tsx": "^4.19.0",
     "turbo": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "tsx": "^4.19.0",
-    "@axe-core/playwright": "4.10.2"
+    "vitest": "catalog:"
   },
   "packageManager": "pnpm@10.0.0",
   "pnpm": {
@@ -68,5 +78,9 @@
   "engines": {
     "node": ">=22.0.0",
     "pnpm": ">=10.0.0"
+  },
+  "dependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2"
   }
 }

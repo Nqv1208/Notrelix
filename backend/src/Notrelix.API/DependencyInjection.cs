@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.Configure<CsrfOptions>(
             configuration.GetSection("Security:Csrf"));
         services.AddSingleton<CsrfProtector>();
+        services.AddSingleton<ICsrfApplicabilityClassifier, CsrfApplicabilityClassifier>();
 
         return services;
     }
@@ -93,6 +94,7 @@ public static class DependencyInjection
                             "X-Correlation-Id",
                             "X-Workspace-Id",
                             "X-Requested-With",
+                            "X-CSRF-Token",
                             "Idempotency-Key",
                             "If-Match")
                         .WithExposedHeaders(

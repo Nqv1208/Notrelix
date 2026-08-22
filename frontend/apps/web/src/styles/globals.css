@@ -7,6 +7,10 @@
 @source not "../**/*.test.{ts,tsx}";
 @source not "../**/*.spec.{ts,tsx}";
 
+@source "../../../../packages/features/auth/src";
+@source "../../../../packages/ui/web/src";
+@source "../../../../packages/ui/tokens/src";
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -103,18 +107,18 @@
   --card-foreground: oklch(0.245 0.006 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.245 0.006 260);
-  --primary: oklch(0.58 0.23 285);
+  --primary: oklch(0.62 0.2 250);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.955 0.006 260);
   --secondary-foreground: oklch(0.245 0.006 260);
   --muted: oklch(0.955 0.006 260);
   --muted-foreground: oklch(0.49 0.015 260);
-  --accent: oklch(0.935 0.02 275);
-  --accent-foreground: oklch(0.42 0.18 285);
+  --accent: oklch(0.935 0.02 250);
+  --accent-foreground: oklch(0.42 0.18 250);
   --destructive: oklch(0.58 0.22 27);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: var(--primary);
+  --ring: oklch(0.62 0.2 250);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
@@ -206,18 +210,18 @@
   --card-foreground: oklch(0.967 0.006 260);
   --popover: oklch(0.24 0.028 265);
   --popover-foreground: oklch(0.967 0.006 260);
-  --primary: oklch(0.656 0.214 286);
+  --primary: oklch(0.65 0.2 250);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.255 0.027 265);
   --secondary-foreground: oklch(0.967 0.006 260);
   --muted: oklch(0.255 0.027 265);
   --muted-foreground: oklch(0.627 0.019 265);
-  --accent: oklch(0.296 0.07 287);
+  --accent: oklch(0.296 0.07 250);
   --accent-foreground: oklch(0.97 0.006 260);
   --destructive: oklch(0.66 0.191 22.216);
   --border: oklch(0.348 0.024 265);
   --input: oklch(0.365 0.024 265);
-  --ring: var(--primary);
+  --ring: oklch(0.65 0.2 250);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);

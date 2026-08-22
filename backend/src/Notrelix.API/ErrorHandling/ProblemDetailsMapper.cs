@@ -82,6 +82,13 @@ public static class ProblemDetailsMapper
                 precondition.Message,
                 null
             ),
+            Notrelix.Application.Common.Exceptions.AccountSelectionRequiredException => (
+                StatusCodes.Status400BadRequest,
+                ErrorCodes.AccountSelectionRequired,
+                "Account selection required",
+                exception.Message,
+                null
+            ),
             Notrelix.Application.Common.Idempotency.IdempotencyIncompleteStateException => (
                 StatusCodes.Status503ServiceUnavailable,
                 ErrorCodes.IdempotencyStateIncomplete,

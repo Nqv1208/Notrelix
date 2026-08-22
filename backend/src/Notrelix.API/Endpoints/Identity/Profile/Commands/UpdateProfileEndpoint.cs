@@ -16,11 +16,9 @@ public static class UpdateProfileEndpoint
 
     private static async Task<IResult> HandleAsync(
         UpdateProfileCommand command,
-        ISender sender,
-        ICurrentUser currentUser)
+        ISender sender)
     {
-        var request = command with { UserId = currentUser.UserId };
-        var result = await sender.Send(request);
+        var result = await sender.Send(command);
         return result.ToApiResult();
     }
 }

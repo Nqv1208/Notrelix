@@ -9,17 +9,10 @@ import { notificationsQueryKeys } from "../../../query/keys";
 interface UseMarkReadDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
-  options?: {
-    mockMode?: boolean;
-  };
 }
 
-export function createUseMarkRead({
-  api,
-  endpoints,
-  options,
-}: UseMarkReadDeps) {
-  const service = createNotificationsService(api, endpoints, options);
+export function createUseMarkRead({ api, endpoints }: UseMarkReadDeps) {
+  const service = createNotificationsService(api, endpoints);
 
   return function useMarkRead() {
     const queryClient = useQueryClient();

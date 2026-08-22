@@ -106,6 +106,7 @@ const FRONTEND_WORKSPACE_FAMILIES = [
   "packages/ui/*",
   "packages/product/*/*",
   "packages/features/*",
+  "packages/dev/*",
   "tooling/*",
   "tooling/storybook/web",
 ];
@@ -158,6 +159,13 @@ const FRONTEND_OVERVIEW_FAMILY_TOKENS =
       "packages/features/*",
       [
         "packages/features",
+      ],
+    ],
+
+    [
+      "packages/dev/*",
+      [
+        "packages/dev/",
       ],
     ],
 

@@ -321,6 +321,7 @@ packages/foundation/*
 packages/runtimes/*
 packages/ui/*
 packages/product/*/*
+packages/dev/*
 packages/features/*
 tooling/*
 ```
@@ -1173,6 +1174,7 @@ packages/foundation/*
 packages/runtimes/*
 packages/ui/*
 packages/product/*/*
+packages/dev/*
 packages/features/*
 tooling/*
 tooling/storybook/web

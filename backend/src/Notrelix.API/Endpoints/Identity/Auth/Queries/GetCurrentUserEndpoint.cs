@@ -15,10 +15,9 @@ public static class GetCurrentUserEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        ISender sender,
-        ICurrentUser currentUser)
+        ISender sender)
     {
-        var query = new GetCurrentUserQuery { UserId = currentUser.UserId };
+        var query = new GetCurrentUserQuery();
         var result = await sender.Send(query);
         return result.ToApiResult();
     }

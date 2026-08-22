@@ -6,6 +6,7 @@ public class UpdateProfileTests : IdentityHandlerTestBase
 {
     private UpdateProfileCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
+        RequestContextMock.Object,
         DateTimeProviderMock.Object);
 
     [Fact]
@@ -17,7 +18,6 @@ public class UpdateProfileTests : IdentityHandlerTestBase
         var sut = CreateSut();
         var result = await sut.Handle(new UpdateProfileCommand
         {
-            UserId = TestUserId,
             Name = "Updated Name",
             Avatar = "https://example.com/avatar.png"
         }, CancellationToken.None);
@@ -35,7 +35,6 @@ public class UpdateProfileTests : IdentityHandlerTestBase
         var sut = CreateSut();
         var result = await sut.Handle(new UpdateProfileCommand
         {
-            UserId = TestUserId,
             Name = "Updated Name"
         }, CancellationToken.None);
 

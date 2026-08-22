@@ -47,8 +47,8 @@ describe("createWorkManagementServices", () => {
     expect(calls).toEqual([
       {
         method: "POST",
-        url: "/cards/card-1/move",
-        body: { listId: "group-2", position: 42 },
+        url: "/board-items/card-1/move",
+        body: { groupId: "group-2", position: 42 },
       },
     ]);
   });

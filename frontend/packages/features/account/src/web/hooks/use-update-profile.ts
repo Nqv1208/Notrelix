@@ -10,15 +10,13 @@ import type { UserProfile } from "../../core/types/account";
 interface UseUpdateProfileDeps {
   api: AccountApiClient;
   endpoints: AccountEndpoints;
-  options?: { mockMode?: boolean };
 }
 
 export function createUseUpdateProfile({
   api,
   endpoints,
-  options,
 }: UseUpdateProfileDeps) {
-  const service = createAccountService(api, endpoints, options);
+  const service = createAccountService(api, endpoints);
 
   return function useUpdateProfile() {
     const queryClient = useQueryClient();

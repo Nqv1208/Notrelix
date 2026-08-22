@@ -28,9 +28,7 @@ describe("platform boundaries", () => {
     expect(keys).toEqual(
       expect.arrayContaining([
         "applyServerValidationErrors",
-        "createMockModeChecker",
         "hasPermission",
-        "isMockModeEnabled",
         "permissions",
         "permissionValues",
       ]),

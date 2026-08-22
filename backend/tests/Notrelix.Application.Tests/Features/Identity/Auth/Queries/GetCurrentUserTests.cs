@@ -4,7 +4,7 @@ namespace Notrelix.Application.Tests.Features.Identity.Auth.Queries;
 
 public class GetCurrentUserTests : IdentityHandlerTestBase
 {
-    private GetCurrentUserQueryHandler CreateSut() => new(IdentityContextMock.Object);
+    private GetCurrentUserQueryHandler CreateSut() => new(IdentityContextMock.Object, RequestContextMock.Object);
 
     [Fact]
     public async Task Handle_WhenUserExists_ReturnsUserDto()
@@ -13,7 +13,7 @@ public class GetCurrentUserTests : IdentityHandlerTestBase
         SetupUsers(user);
 
         var sut = CreateSut();
-        var result = await sut.Handle(new GetCurrentUserQuery { UserId = TestUserId }, CancellationToken.None);
+        var result = await sut.Handle(new GetCurrentUserQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.Id.Should().Be(TestUserId);
@@ -27,7 +27,7 @@ public class GetCurrentUserTests : IdentityHandlerTestBase
         SetupUsers();
 
         var sut = CreateSut();
-        var result = await sut.Handle(new GetCurrentUserQuery { UserId = TestUserId }, CancellationToken.None);
+        var result = await sut.Handle(new GetCurrentUserQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("User not found"));

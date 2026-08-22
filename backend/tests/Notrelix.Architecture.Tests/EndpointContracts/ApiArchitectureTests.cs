@@ -270,7 +270,7 @@ public class ApiArchitectureTests
         var contractsDir = Path.Combine(apiPath, "Contracts");
         var contractBcs = Directory.GetDirectories(contractsDir)
             .Select(Path.GetFileName)
-            .Where(d => d != "Common")
+            .Where(d => d != "Common" && d != "openapi")
             .OrderBy(d => d)
             .ToArray();
 

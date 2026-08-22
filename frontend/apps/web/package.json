@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
+    "dev:mock": "VITE_MOCK_API=true vite --port 5173",
     "build": "node ./scripts/build.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -32,6 +33,7 @@
     "@notrelix/runtime-web": "workspace:*",
     "@notrelix/ui-tokens": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
+    "@notrelix/work-management-core": "workspace:*",
     "@notrelix/work-management-state": "workspace:*",
     "@notrelix/work-management-web": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
@@ -52,6 +54,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@notrelix/dev-mock-backend": "workspace:*",
     "@notrelix/eslint-config": "workspace:*",
     "@tanstack/react-router-devtools": "catalog:",
     "@types/react": "^19.0.0",

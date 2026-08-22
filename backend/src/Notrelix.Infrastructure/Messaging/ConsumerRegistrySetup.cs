@@ -11,10 +11,11 @@ public static class ConsumerRegistrySetup
             {
                 ConsumerName = "UserRegisteredConsumer",
                 EventName = "identity.user-registered",
-                EventVersion = 1,
+                EventVersion = 2,
                 EndpointName = "notrelix-identity-user-registered-v1",
                 BoundedContext = "Identity",
-                Description = "Handles user registration"
+                Description = "Handles user registration",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -23,7 +24,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-identity-registration-completed-v1",
                 BoundedContext = "Identity",
-                Description = "Provisions workspace after registration"
+                Description = "Provisions workspace after registration",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -32,7 +34,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-identity-send-welcome-email-v1",
                 BoundedContext = "Identity",
-                Description = "Sends welcome email after registration"
+                Description = "Sends welcome email after registration",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -41,7 +44,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-identity-email-verification-v1",
                 BoundedContext = "Identity",
-                Description = "Sends email verification link"
+                Description = "Sends email verification link",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -50,7 +54,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-identity-user-deactivated-v1",
                 BoundedContext = "Identity",
-                Description = "Handles user deactivation"
+                Description = "Handles user deactivation",
+                Maturity = ConsumerMaturity.Implemented
             },
 
             // ── Workspaces (4) ───────────────────────────────────────────
@@ -61,7 +66,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-workspace-created-v1",
                 BoundedContext = "Workspaces",
-                Description = "Handles workspace creation"
+                Description = "Handles workspace creation",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -70,7 +76,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-workspace-member-added-v1",
                 BoundedContext = "Workspaces",
-                Description = "Handles workspace member addition"
+                Description = "Handles workspace member addition",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -79,7 +86,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-workspace-member-removed-v1",
                 BoundedContext = "Workspaces",
-                Description = "Handles workspace member removal"
+                Description = "Handles workspace member removal",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -88,7 +96,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-workspaces-invitation-delivery-v1",
                 BoundedContext = "Workspaces",
-                Description = "Sends workspace invitation email"
+                Description = "Sends workspace invitation email",
+                Maturity = ConsumerMaturity.Implemented
             },
 
             // ── WorkManagement (3) ───────────────────────────────────────
@@ -99,7 +108,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-created-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Handles board creation"
+                Description = "Handles board creation",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -108,7 +118,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-item-created-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Handles board item creation"
+                Description = "Handles board item creation",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -117,7 +128,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-item-field-value-changed-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Handles board item field value changes"
+                Description = "Handles board item field value changes",
+                Maturity = ConsumerMaturity.Implemented
             },
 
             // ── Collaboration / Activity (4) ─────────────────────────────
@@ -128,7 +140,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-activity-board-created-v1",
                 BoundedContext = "Collaboration",
-                Description = "Records activity for board creation"
+                Description = "Records activity for board creation",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -137,7 +150,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-activity-comment-created-v1",
                 BoundedContext = "Collaboration",
-                Description = "Records activity for comment creation"
+                Description = "Records activity for comment creation",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -146,7 +160,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-activity-mention-created-v1",
                 BoundedContext = "Collaboration",
-                Description = "Records activity for mention creation"
+                Description = "Records activity for mention creation",
+                Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition
             {
@@ -155,7 +170,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-activity-member-added-v1",
                 BoundedContext = "Collaboration",
-                Description = "Records activity for member addition"
+                Description = "Records activity for member addition",
+                Maturity = ConsumerMaturity.Implemented
             },
 
             // ── Collaboration / Notifications (1) ────────────────────────
@@ -166,7 +182,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-notification-mention-created-v1",
                 BoundedContext = "Collaboration",
-                Description = "Sends notification for mention creation"
+                Description = "Sends notification for mention creation",
+                Maturity = ConsumerMaturity.Implemented
             },
 
             // ── Billing (1) ──────────────────────────────────────────────
@@ -177,7 +194,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-billing-subscription-changed-v1",
                 BoundedContext = "Billing",
-                Description = "Handles subscription change"
+                Description = "Handles subscription change",
+                Maturity = ConsumerMaturity.Implemented
             },
 
             // ══════════════════════════════════════════════════════════════
@@ -192,7 +210,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-account-created-v1",
                 BoundedContext = "Accounts",
-                Description = "Account created"
+                Description = "Account created",
+                Maturity = ConsumerMaturity.Stub
             },
 
             // Workspaces (stubs)
@@ -203,7 +222,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-workspace-archived-v1",
                 BoundedContext = "Workspaces",
-                Description = "Workspace archived"
+                Description = "Workspace archived",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -212,7 +232,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-workspace-unarchived-v1",
                 BoundedContext = "Workspaces",
-                Description = "Workspace restored"
+                Description = "Workspace restored",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -221,7 +242,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-team-created-v1",
                 BoundedContext = "Workspaces",
-                Description = "Team created"
+                Description = "Team created",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -230,7 +252,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-space-created-v1",
                 BoundedContext = "Workspaces",
-                Description = "Space created"
+                Description = "Space created",
+                Maturity = ConsumerMaturity.Stub
             },
 
             // WorkManagement (stubs)
@@ -241,7 +264,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-renamed-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board renamed"
+                Description = "Board renamed",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -250,7 +274,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-archived-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board archived"
+                Description = "Board archived",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -259,7 +284,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-unarchived-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board restored"
+                Description = "Board restored",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -268,7 +294,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-item-renamed-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board item renamed"
+                Description = "Board item renamed",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -277,7 +304,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-item-moved-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board item moved"
+                Description = "Board item moved",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -286,7 +314,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-item-archived-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board item archived"
+                Description = "Board item archived",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -295,7 +324,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-field-created-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board field created"
+                Description = "Board field created",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -304,7 +334,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-field-updated-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board field updated"
+                Description = "Board field updated",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -313,7 +344,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-field-deleted-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board field deleted"
+                Description = "Board field deleted",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -322,7 +354,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-view-created-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board view created"
+                Description = "Board view created",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -331,7 +364,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-board-view-deleted-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Board view deleted"
+                Description = "Board view deleted",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -340,7 +374,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-label-created-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Label created"
+                Description = "Label created",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -349,7 +384,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-label-updated-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Label updated"
+                Description = "Label updated",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -358,7 +394,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-checklist-created-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Checklist created"
+                Description = "Checklist created",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -367,7 +404,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-work-checklist-item-toggled-v1",
                 BoundedContext = "WorkManagement",
-                Description = "Checklist item toggled"
+                Description = "Checklist item toggled",
+                Maturity = ConsumerMaturity.Stub
             },
 
             // Documents
@@ -378,7 +416,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-doc-page-created-v1",
                 BoundedContext = "Documents",
-                Description = "Page created"
+                Description = "Page created",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -387,7 +426,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-doc-page-archived-v1",
                 BoundedContext = "Documents",
-                Description = "Page archived"
+                Description = "Page archived",
+                Maturity = ConsumerMaturity.Stub
             },
 
             // Governance
@@ -398,7 +438,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-governance-role-assigned-v1",
                 BoundedContext = "Governance",
-                Description = "Custom role assigned"
+                Description = "Custom role assigned",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -407,7 +448,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-governance-permission-granted-v1",
                 BoundedContext = "Governance",
-                Description = "Resource permission granted"
+                Description = "Resource permission granted",
+                Maturity = ConsumerMaturity.Stub
             },
             new ConsumerDefinition
             {
@@ -416,7 +458,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-governance-permission-revoked-v1",
                 BoundedContext = "Governance",
-                Description = "Resource permission revoked"
+                Description = "Resource permission revoked",
+                Maturity = ConsumerMaturity.Stub
             },
 
             // Billing (stub)
@@ -427,7 +470,8 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-billing-subscription-canceled-v1",
                 BoundedContext = "Billing",
-                Description = "Subscription canceled"
+                Description = "Subscription canceled",
+                Maturity = ConsumerMaturity.Stub
             }
         ];
     }

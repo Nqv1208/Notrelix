@@ -27,12 +27,12 @@ public static class StartOAuthStepUpEndpoint
     {
         if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider))
         {
-            return Results.BadRequest(new { error = $"Invalid OAuth provider: {provider}" });
+            return EndpointExtensions.InvalidInput($"Invalid OAuth provider: {provider}");
         }
 
         if (!Enum.TryParse<StepUpPurpose>(purpose, ignoreCase: true, out var stepUpPurpose))
         {
-            return Results.BadRequest(new { error = $"Invalid step-up purpose: {purpose}" });
+            return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {purpose}");
         }
 
         var command = new StartOAuthStepUpCommand

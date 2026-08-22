@@ -1966,6 +1966,27 @@
         ]
       }
     },
+    "/api/v1/auth/csrf": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Auth"
+        ],
+        "summary": "Issue a CSRF token for browser clients",
+        "description": "Generates a cryptographically random CSRF token, sets it as the csrf_token cookie, and returns the same value in the response body. Browser clients must echo the body value in the X-CSRF-Token header on state-changing requests (ADR-005).",
+        "operationId": "Identity.Auth.IssueCsrfToken",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/auth/forgot-password": {
       "post": {
         "tags": [
@@ -14890,10 +14911,6 @@
         ],
         "type": "object",
         "properties": {
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "name": {
             "type": "string",
             "nullable": true

@@ -2,6 +2,21 @@ using System.Collections.Concurrent;
 
 namespace Notrelix.Infrastructure.Messaging;
 
+/// <summary>
+/// Canonical source-level maturity classification for registered consumers
+/// (IAREQ133 / P13-EVT-001B). Registry presence alone does not prove an
+/// implemented downstream capability — the maturity value is explicit,
+/// reviewed metadata, never inferred from naming or runtime traffic.
+/// </summary>
+public enum ConsumerMaturity
+{
+    /// <summary>The consumer performs its owned business effect.</summary>
+    Implemented = 1,
+
+    /// <summary>The consumer exists as a placeholder (e.g. logging only) and does not yet perform its business effect.</summary>
+    Stub = 2,
+}
+
 public sealed record ConsumerDefinition
 {
     public required string ConsumerName { get; init; }
@@ -14,6 +29,9 @@ public sealed record ConsumerDefinition
     public string BoundedContext { get; init; } = string.Empty;
     public string? Description { get; init; }
     public bool Idempotent { get; init; } = true;
+
+    /// <summary>Explicit maturity classification. There is no implicit default.</summary>
+    public required ConsumerMaturity Maturity { get; init; }
 }
 
 public interface IConsumerRegistry

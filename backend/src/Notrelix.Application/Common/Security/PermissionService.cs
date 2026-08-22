@@ -1,6 +1,8 @@
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
+using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Domain.Accounts.Members;
 
 namespace Notrelix.Application.Common.Security;
 
@@ -11,17 +13,20 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
 
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IGovernanceDbContext _governanceContext;
+    private readonly IAccountDbContext _accountContext;
     private readonly IResourceAuthorizationSnapshotStore _resourceSnapshots;
     private readonly IDateTimeProvider _clock;
 
     public PermissionService(
         IWorkspaceDbContext workspaceContext,
         IGovernanceDbContext governanceContext,
+        IAccountDbContext accountContext,
         IResourceAuthorizationSnapshotStore resourceSnapshots,
         IDateTimeProvider clock)
     {
         _workspaceContext = workspaceContext;
         _governanceContext = governanceContext;
+        _accountContext = accountContext;
         _resourceSnapshots = resourceSnapshots;
         _clock = clock;
     }
@@ -35,6 +40,11 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
             throw new SecurityMisconfigurationException(
                 $"Permission evaluation requires WorkspaceId for scope {context.Scope} " +
                 $"but WorkspaceId is null. ResourceKind={context.ResourceKind} Action={context.Action}");
+        }
+
+        if (context.Scope == PermissionScope.Account)
+        {
+            return await EvaluateAccountAsync(context, cancellationToken);
         }
 
         // Resolve AccountId from workspace if not provided
@@ -154,6 +164,53 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
                 => new PermissionDecision(true, null, PermissionLevel.Viewer),
             _ => new PermissionDecision(false, "missing_permission")
         };
+    }
+
+    private async Task<PermissionDecision> EvaluateAccountAsync(
+        PermissionContext context,
+        CancellationToken cancellationToken)
+    {
+        var member = await _accountContext.AccountMembers
+            .FirstOrDefaultAsync(
+                m => m.AccountId == context.AccountId
+                    && m.UserId == context.UserId
+                    && m.Status == AccountMemberStatus.Active,
+                cancellationToken);
+
+        if (member is null)
+        {
+            return new PermissionDecision(false, "not_account_member");
+        }
+
+        if (member.Role == AccountRole.Owner)
+        {
+            return new PermissionDecision(true, null, PermissionLevel.Owner);
+        }
+
+        // 3. Applicable explicit Governance rules take precedence over the
+        //    non-owner role fallback (IAREQ138): a deny must never be converted
+        //    into an allow by the baseline below.
+        var ruleDecision = await EvaluateRulesAsync(context, cancellationToken);
+        if (ruleDecision is not null)
+        {
+            return ruleDecision;
+        }
+
+        // 4. Current AccountRole baseline fallback (IAREQ090 / Phase 13 frozen
+        //    semantics): every active member may view workspaces; only Owner
+        //    (canonical authority above) and Admin may create workspaces.
+        //    This is the single central evaluator — handlers MUST NOT duplicate it.
+        if (context.Action == PermissionAction.ViewWorkspace)
+        {
+            return new PermissionDecision(true, null, PermissionLevel.Viewer);
+        }
+
+        if (context.Action == PermissionAction.CreateWorkspace && member.Role == AccountRole.Admin)
+        {
+            return new PermissionDecision(true, null, PermissionLevel.Editor);
+        }
+
+        return new PermissionDecision(false, "missing_permission");
     }
 
     private async Task<PermissionDecision?> EvaluateRulesAsync(

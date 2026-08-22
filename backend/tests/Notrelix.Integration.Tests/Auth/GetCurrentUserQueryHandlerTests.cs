@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Auth;
 
@@ -27,13 +28,11 @@ public class GetCurrentUserQueryHandlerTests : IAsyncLifetime
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
         await using var context = _db.CreateContext();
+        var currentUser = new FakeCurrentRequestContext().AsUser(Guid.NewGuid());
 
-        var handler = new GetCurrentUserQueryHandler(context);
+        var handler = new GetCurrentUserQueryHandler(context, currentUser);
 
-        var result = await handler.Handle(new GetCurrentUserQuery
-        {
-            UserId = Guid.NewGuid()
-        }, CancellationToken.None);
+        var result = await handler.Handle(new GetCurrentUserQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain("User not found");
@@ -48,12 +47,10 @@ public class GetCurrentUserQueryHandlerTests : IAsyncLifetime
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
-        var handler = new GetCurrentUserQueryHandler(context);
+        var currentUser = new FakeCurrentRequestContext().AsUser(user.Id);
+        var handler = new GetCurrentUserQueryHandler(context, currentUser);
 
-        var result = await handler.Handle(new GetCurrentUserQuery
-        {
-            UserId = user.Id
-        }, CancellationToken.None);
+        var result = await handler.Handle(new GetCurrentUserQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.Id.Should().Be(user.Id);

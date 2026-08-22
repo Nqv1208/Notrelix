@@ -5,7 +5,6 @@ import { useAppRuntime } from "./app-runtime";
 export interface FeatureRuntimeDependencies {
   readonly api: NotrelixClient["api"];
   readonly endpoints: NotrelixClient["endpoints"];
-  readonly mockMode: boolean;
 }
 
 export function useFeatureRuntimeDependencies(): FeatureRuntimeDependencies {
@@ -15,8 +14,7 @@ export function useFeatureRuntimeDependencies(): FeatureRuntimeDependencies {
     () => ({
       api: runtime.api.api,
       endpoints: runtime.api.endpoints,
-      mockMode: runtime.env.mockApi,
     }),
-    [runtime.api, runtime.env.mockApi],
+    [runtime.api],
   );
 }

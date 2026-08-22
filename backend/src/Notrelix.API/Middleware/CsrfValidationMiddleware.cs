@@ -1,26 +1,32 @@
 using Microsoft.Extensions.Options;
+using Notrelix.API.ErrorHandling;
 using Notrelix.Infrastructure.Auth.Csrf;
 
 namespace Notrelix.API.Middleware;
 
 /// <summary>
-/// Double Submit Cookie CSRF protection.
-/// Sets CSRF cookie on GET requests, validates token on state-changing requests.
+/// Browser CSRF protection per ADR-005.
+/// Validates the Double Submit pair (csrf_token cookie + X-CSRF-Token header)
+/// on unsafe requests that rely on ambient browser credentials. Token issuance
+/// happens only through the bootstrap endpoint, never implicitly here.
 /// Feature-flagged via Security:Csrf:Enabled.
 /// </summary>
 public sealed class CsrfValidationMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly CsrfProtector _protector;
+    private readonly ICsrfApplicabilityClassifier _classifier;
     private readonly CsrfOptions _options;
 
     public CsrfValidationMiddleware(
         RequestDelegate next,
         CsrfProtector protector,
+        ICsrfApplicabilityClassifier classifier,
         IOptions<CsrfOptions> options)
     {
         _next = next;
         _protector = protector;
+        _classifier = classifier;
         _options = options.Value;
     }
 
@@ -32,32 +38,11 @@ public sealed class CsrfValidationMiddleware
             return;
         }
 
-        // Set CSRF cookie on GET requests
-        if (HttpMethods.IsGet(context.Request.Method))
+        if (_classifier.IsBrowserCsrfApplicable(context.Request)
+            && !_protector.Validate(context))
         {
-            var existingToken = context.Request.Cookies["csrf_token"];
-            if (string.IsNullOrEmpty(existingToken))
-            {
-                var token = _protector.GenerateToken();
-                _protector.SetCookie(context, token);
-            }
-        }
-
-        // Validate on state-changing requests
-        if (_protector.IsStateChangingMethod(context.Request.Method))
-        {
-            if (!_protector.Validate(context))
-            {
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                await context.Response.WriteAsJsonAsync(new
-                {
-                    type = "https://docs.notrelix.com/problems/csrf-validation-failed",
-                    title = "CSRF validation failed",
-                    status = 403,
-                    detail = "Missing or invalid CSRF token. Include X-CSRF-Token header matching the csrf_token cookie.",
-                });
-                return;
-            }
+            await ProblemDetailsWriter.WriteCsrfForbiddenAsync(context, context.RequestAborted);
+            return;
         }
 
         await _next(context);

@@ -121,7 +121,7 @@ public class WorkspacePermissionServiceTests : IAsyncLifetime
 
         var snapshots = new ResourceAuthorizationSnapshotStore(
             [new BoardAuthorizationSnapshotResolver(context)]);
-        var permissionService = new PermissionService(context, context, snapshots, clockMock.Object);
+        var permissionService = new PermissionService(context, context, context, snapshots, clockMock.Object);
         return new WorkspacePermissionService(permissionService, snapshots);
     }
 }
