@@ -1,136 +1,94 @@
 /**
- * Work Management — Lists context handlers.
- *
- * Operations:
- *   lists.byBoard   — GET /boards/:boardId/lists
- *   lists.create    — POST /boards/:boardId/lists (returns string listId)
- *   lists.update    — PATCH /lists/:listId
- *   lists.delete    — DELETE /lists/:listId
- *   lists.duplicate — POST /lists/:listId/duplicate (returns string listId)
- *   lists.reorder   — POST /boards/:boardId/lists/reorder
- *
- * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
+ * Work Management — BoardGroups context handlers (formerly Lists).
  */
 
-import type { ListDtoApi } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
 import { ok, created, notFound } from "../../transport/create-response";
 
 export const listsOperations = [
-  // ─── GET /boards/:boardId/lists ───────────────────────────────────────────
-
-  defineMockOperation<{ boardId: string }, never, ListDtoApi[]>({
-    id: "lists.byBoard",
-    method: "GET",
-    route: "/boards/:boardId/lists",
-    async handle({ params, store }) {
-      const lists = store.getLists(params.boardId);
-      return ok<ListDtoApi[]>(
-        lists.map((l) => ({
-          id: l.id,
-          title: l.title,
-          color: l.color ?? null,
-          position: l.position,
-          isArchived: false,
-          cards: store.getCards(l.id).map((c) => ({
-            id: c.id,
-            title: c.title,
-            priority: null,
-            status: "todo",
-            dueDate: null,
-            cover: null,
-            memberCount: 0,
-            members: [],
-            labels: [],
-            checklistProgress: 0,
-            checklistTotal: 0,
-            commentCount: 0,
-            attachmentCount: 0,
-            position: c.position,
-          })),
-        })),
-      );
-    },
-  }),
-
-  // ─── POST /boards/:boardId/lists ─────────────────────────────────────────
+  // ─── POST /boards/:boardId/groups ─────────────────────────────────────────
 
   defineMockOperation<
     { boardId: string },
     { title?: string; color?: string; position?: number },
-    string
+    void
   >({
-    id: "lists.create",
+    id: "wm.boardGroups.create",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Create" } as any,
     method: "POST",
-    route: "/boards/:boardId/lists",
+    route: "/boards/:boardId/groups",
     async handle({ params, body, store }) {
       const data = (body ?? {}) as {
         title?: string;
         color?: string;
         position?: number;
       };
-      const newList = store.createList(params.boardId, {
+      store.createList(params.boardId, {
         title: data.title,
         color: data.color,
         position: data.position,
       });
-      return created<string>(newList.id);
+      return ok<void>(undefined);
     },
   }),
 
-  // ─── PATCH /lists/:listId ────────────────────────────────────────────────
+  // ─── PATCH /board-groups/:groupId ────────────────────────────────────────────────
 
   defineMockOperation<
-    { listId: string },
+    { groupId: string },
     { title?: string; color?: string; isArchived?: boolean },
     void
   >({
-    id: "lists.update",
+    id: "wm.boardGroups.update",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Update" } as any,
     method: "PATCH",
-    route: "/lists/:listId",
+    route: "/board-groups/:groupId",
     async handle({ params, body, store }) {
-      const updated = store.updateList(params.listId, body ?? {});
-      if (!updated) return notFound("List not found");
+      const updated = store.updateList(params.groupId, body ?? {});
+      if (!updated) return notFound("Group not found");
       return ok<void>(undefined);
     },
   }),
 
-  // ─── DELETE /lists/:listId ───────────────────────────────────────────────
+  // ─── DELETE /board-groups/:groupId ───────────────────────────────────────────────
 
-  defineMockOperation<{ listId: string }, never, void>({
-    id: "lists.delete",
+  defineMockOperation<{ groupId: string }, never, void>({
+    id: "wm.boardGroups.delete",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Delete" } as any,
     method: "DELETE",
-    route: "/lists/:listId",
+    route: "/board-groups/:groupId",
     async handle({ params, store }) {
-      const deleted = store.deleteList(params.listId);
-      if (!deleted) return notFound("List not found");
+      const deleted = store.deleteList(params.groupId);
+      if (!deleted) return notFound("Group not found");
       return ok<void>(undefined);
     },
   }),
 
-  // ─── POST /lists/:listId/duplicate ───────────────────────────────────────
+  // ─── POST /board-groups/:groupId/duplicate ───────────────────────────────────────
 
-  defineMockOperation<{ listId: string }, never, string>({
-    id: "lists.duplicate",
+  defineMockOperation<{ groupId: string }, never, void>({
+    id: "wm.boardGroups.duplicate",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Duplicate" } as any,
     method: "POST",
-    route: "/lists/:listId/duplicate",
+    route: "/board-groups/:groupId/duplicate",
     async handle({ params, store }) {
-      const duplicated = store.duplicateList(params.listId);
-      if (!duplicated) return notFound("List not found");
-      return created<string>(duplicated.id);
+      const duplicated = store.duplicateList(params.groupId);
+      if (!duplicated) return notFound("Group not found");
+      return ok<void>(undefined);
     },
   }),
 
-  // ─── POST /boards/:boardId/lists/reorder ─────────────────────────────────
+  // ─── POST /boards/:boardId/groups/reorder ─────────────────────────────────
 
   defineMockOperation<
     { boardId: string },
     { items?: { id: string; newPosition: number }[] },
     void
   >({
-    id: "lists.reorder",
+    id: "wm.boardGroups.reorder",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Reorder" } as any,
     method: "POST",
-    route: "/boards/:boardId/lists/reorder",
+    route: "/boards/:boardId/groups/reorder",
     async handle({ params, body, store }) {
       const data = (body ?? {}) as {
         items?: { id: string; newPosition: number }[];

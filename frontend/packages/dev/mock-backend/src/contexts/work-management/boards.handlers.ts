@@ -8,11 +8,11 @@
  *   boards.create          — POST /workspaces/:workspaceId/boards
  *   boards.view.get        — GET /boards/:id/view
  *   boards.view.save       — PUT /boards/:id/view
- *   boards.columns.list    — GET /boards/:boardId/columns
- *   boards.columns.create  — POST /boards/:boardId/columns
- *   boards.columns.update  — PATCH /boards/:boardId/columns/:columnId
- *   boards.columns.delete  — DELETE /boards/:boardId/columns/:columnId
- *   boards.columns.reorder — POST /boards/:boardId/columns/reorder
+ *   boards.columns.list    — GET /boards/:boardId/fields
+ *   boards.columns.create  — POST /boards/:boardId/fields
+ *   boards.columns.update  — PATCH /boards/:boardId/fields/:columnId
+ *   boards.columns.delete  — DELETE /boards/:boardId/fields/:columnId
+ *   boards.columns.reorder — POST /boards/:boardId/fields/reorder
  *   boards.labels.list     — GET /boards/:boardId/labels
  *   boards.labels.create   — POST /boards/:boardId/labels
  *   boards.labels.update   — PATCH /boards/:boardId/labels/:labelId
@@ -58,6 +58,7 @@ export const boardsOperations = [
 
   defineMockOperation<{ workspaceId: string }, never, BoardDtoApi[]>({
     id: "boards.listByWorkspace",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/workspaces/:workspaceId/boards",
     async handle({ params, store }) {
@@ -83,6 +84,7 @@ export const boardsOperations = [
 
   defineMockOperation<{ id: string }, never, BoardDtoApi>({
     id: "boards.detail",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/boards/:id",
     async handle({ params, store }) {
@@ -107,6 +109,7 @@ export const boardsOperations = [
 
   defineMockOperation<{ id: string }, never, FullBoardDtoApi>({
     id: "boards.full",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/boards/:id/full",
     async handle({ params, store }) {
@@ -142,6 +145,7 @@ export const boardsOperations = [
     BoardDtoApi
   >({
     id: "boards.create",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/workspaces/:workspaceId/boards",
     async handle({ params, body, store }) {
@@ -169,8 +173,9 @@ export const boardsOperations = [
 
   defineMockOperation<{ id: string }, never, BoardViewDtoApi>({
     id: "boards.view.get",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardViews.Get" } as any,
     method: "GET",
-    route: "/boards/:id/view",
+    route: "/boards/:id/views",
     async handle({ params, store }) {
       const b = store.getBoard(params.id);
       if (!b) return notFound("Board not found");
@@ -191,8 +196,9 @@ export const boardsOperations = [
     void
   >({
     id: "boards.view.save",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardViews.Save" } as any,
     method: "PUT",
-    route: "/boards/:id/view",
+    route: "/boards/:id/views",
     async handle({ params, body, store }) {
       const b = store.getBoard(params.id);
       if (!b) return notFound("Board not found");
@@ -211,12 +217,13 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── GET /boards/:boardId/columns ─────────────────────────────────────────
+  // ─── GET /boards/:boardId/fields ─────────────────────────────────────────
 
   defineMockOperation<{ boardId: string }, never, unknown[]>({
     id: "boards.columns.list",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
-    route: "/boards/:boardId/columns",
+    route: "/boards/:boardId/fields",
     async handle({ params, store }) {
       const cols = store.getColumns(params.boardId);
       return ok(
@@ -233,7 +240,7 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── POST /boards/:boardId/columns ────────────────────────────────────────
+  // ─── POST /boards/:boardId/fields ────────────────────────────────────────
 
   defineMockOperation<
     { boardId: string },
@@ -241,8 +248,9 @@ export const boardsOperations = [
     string
   >({
     id: "boards.columns.create",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardFields.Create" } as any,
     method: "POST",
-    route: "/boards/:boardId/columns",
+    route: "/boards/:boardId/fields",
     async handle({ params, body, store }) {
       const data = body as {
         name: string;
@@ -260,7 +268,7 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── PATCH /boards/:boardId/columns/:columnId ─────────────────────────────
+  // ─── PATCH /boards/:boardId/fields/:columnId ─────────────────────────────
 
   defineMockOperation<
     { boardId: string; columnId: string },
@@ -273,8 +281,9 @@ export const boardsOperations = [
     void
   >({
     id: "boards.columns.update",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardFields.Update" } as any,
     method: "PATCH",
-    route: "/boards/:boardId/columns/:columnId",
+    route: "/boards/:boardId/fields/:columnId",
     async handle({ params, body, store }) {
       const updated = store.updateColumn(params.columnId, body ?? {});
       if (!updated) return notFound("Column not found");
@@ -282,12 +291,13 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── DELETE /boards/:boardId/columns/:columnId ────────────────────────────
+  // ─── DELETE /boards/:boardId/fields/:columnId ────────────────────────────
 
   defineMockOperation<{ boardId: string; columnId: string }, never, void>({
     id: "boards.columns.delete",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardFields.Delete" } as any,
     method: "DELETE",
-    route: "/boards/:boardId/columns/:columnId",
+    route: "/boards/:boardId/fields/:columnId",
     async handle({ params, store }) {
       const deleted = store.deleteColumn(params.columnId);
       if (!deleted) return notFound("Column not found");
@@ -295,7 +305,7 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── POST /boards/:boardId/columns/reorder ────────────────────────────────
+  // ─── POST /boards/:boardId/fields/reorder ────────────────────────────────
 
   defineMockOperation<
     { boardId: string },
@@ -303,8 +313,9 @@ export const boardsOperations = [
     void
   >({
     id: "boards.columns.reorder",
+    contract: { kind: "openapi", operationId: "WorkManagement.BoardFields.Reorder" } as any,
     method: "POST",
-    route: "/boards/:boardId/columns/reorder",
+    route: "/boards/:boardId/fields/reorder",
     async handle({ params, body, store }) {
       const data = (body ?? { items: [] }) as {
         items: { id: string; newPosition: number }[];
@@ -322,6 +333,7 @@ export const boardsOperations = [
     { id: string; name: string; color: string }[]
   >({
     id: "boards.labels.list",
+    contract: { kind: "openapi", operationId: "WorkManagement.Labels.List" } as any,
     method: "GET",
     route: "/boards/:boardId/labels",
     async handle({ params, store }) {
@@ -344,6 +356,7 @@ export const boardsOperations = [
     { id: string; name: string; color: string }
   >({
     id: "boards.labels.create",
+    contract: { kind: "openapi", operationId: "WorkManagement.Labels.Create" } as any,
     method: "POST",
     route: "/boards/:boardId/labels",
     async handle({ params, body, store }) {
@@ -368,6 +381,7 @@ export const boardsOperations = [
     void
   >({
     id: "boards.labels.update",
+    contract: { kind: "openapi", operationId: "WorkManagement.Labels.Update" } as any,
     method: "PATCH",
     route: "/boards/:boardId/labels/:labelId",
     async handle({ params, body, store }) {
@@ -381,6 +395,7 @@ export const boardsOperations = [
 
   defineMockOperation<{ boardId: string; labelId: string }, never, void>({
     id: "boards.labels.delete",
+    contract: { kind: "openapi", operationId: "WorkManagement.Labels.Delete" } as any,
     method: "DELETE",
     route: "/boards/:boardId/labels/:labelId",
     async handle({ params, store }) {

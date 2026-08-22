@@ -27,6 +27,7 @@ export const workspaceOperations = [
 
   defineMockOperation<Record<string, never>, never, WorkspaceSummary[]>({
     id: "workspace.list",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/workspaces",
     async handle({ store }) {
@@ -52,6 +53,7 @@ export const workspaceOperations = [
     WorkspaceSummary
   >({
     id: "workspace.create",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/workspaces",
     async handle({ body, store }) {
@@ -81,6 +83,7 @@ export const workspaceOperations = [
 
   defineMockOperation<{ id: string }, never, WorkspaceSummary>({
     id: "workspace.get",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/workspaces/:id",
     async handle({ params, store }) {
@@ -104,6 +107,7 @@ export const workspaceOperations = [
 
   defineMockOperation<{ id: string }, never, WorkspaceView[]>({
     id: "workspace.views.list",
+    contract: { kind: "gap", gapId: "CTR-GAP-WS-VIEWS" } as any,
     method: "GET",
     route: "/workspaces/:id/views",
     async handle({ params, store }) {
@@ -133,6 +137,7 @@ export const workspaceOperations = [
 
   defineMockOperation<{ id: string }, never, WorkspaceMember[]>({
     id: "workspace.members.list",
+    contract: { kind: "openapi", operationId: "Workspaces.Members.ListMembers" } as any,
     method: "GET",
     route: "/workspaces/:id/members",
     async handle({ params, store }) {
@@ -163,4 +168,25 @@ export const workspaceOperations = [
       );
     },
   }),
+
+  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+    id: "workspace.members.remove",
+    contract: { kind: "openapi", operationId: "Workspaces.Members.RemoveMember" } as any,
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/members/:userId",
+    async handle({ store }) {
+      return ok<void>(undefined);
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; userId: string }, { role: string }, void>({
+    id: "workspace.members.update",
+    contract: { kind: "openapi", operationId: "Workspaces.Members.UpdateMemberRole" } as any,
+    method: "PATCH", // the OpenAPI is PATCH for UpdateMemberRole, but the client does PUT? Wait, I will use PATCH as per OpenAPI
+    route: "/workspaces/:workspaceId/members/:userId",
+    async handle({ store }) {
+      return ok<void>(undefined);
+    },
+  }),
+
 ];

@@ -20,6 +20,7 @@ import { ok, unauthorized } from "../../transport/create-response";
 export const identityOperations = [
   defineMockOperation<Record<string, never>, never, User>({
     id: "identity.profile",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/auth/me",
     async handle({ store }) {
@@ -38,6 +39,7 @@ export const identityOperations = [
 
   defineMockOperation({
     id: "identity.login",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/auth/login",
     async handle({ store }) {
@@ -56,6 +58,7 @@ export const identityOperations = [
 
   defineMockOperation({
     id: "identity.register",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/auth/register",
     async handle({ store }) {
@@ -74,6 +77,7 @@ export const identityOperations = [
 
   defineMockOperation({
     id: "identity.refresh",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/auth/refresh",
     async handle({ store }) {
@@ -90,6 +94,7 @@ export const identityOperations = [
 
   defineMockOperation({
     id: "identity.logout",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/auth/logout",
     async handle({ store }) {
@@ -100,6 +105,7 @@ export const identityOperations = [
 
   defineMockOperation({
     id: "identity.forgotPassword",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/auth/forgot-password",
     async handle() {
@@ -109,6 +115,7 @@ export const identityOperations = [
 
   defineMockOperation({
     id: "identity.resetPassword",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/auth/reset-password",
     async handle() {

@@ -16,6 +16,7 @@ import { ok } from "../../transport/create-response";
 export const accountOperations = [
   defineMockOperation({
     id: "account.preferences.get",
+    contract: { kind: "gap", gapId: "CTR-GAP-ACC-PREFERENCES" } as any,
     method: "GET",
     route: "/account/preferences",
     async handle({ store }) {
@@ -27,6 +28,7 @@ export const accountOperations = [
 
   defineMockOperation({
     id: "account.preferences.update",
+    contract: { kind: "gap", gapId: "CTR-GAP-ACC-PREFERENCES" } as any,
     method: "PATCH",
     route: "/account/preferences",
     async handle({ body, store }) {
@@ -39,8 +41,9 @@ export const accountOperations = [
 
   defineMockOperation({
     id: "account.profile.update",
+    contract: { kind: "openapi", operationId: "Identity.Profile.UpdateProfile" } as any,
     method: "PATCH",
-    route: "/users/profile",
+    route: "/profile",
     async handle({ body, store }) {
       const user = store.getCurrentUser();
       const data = (body ?? {}) as { name?: string; email?: string };
@@ -56,6 +59,7 @@ export const accountOperations = [
 
   defineMockOperation({
     id: "account.security.get",
+    contract: { kind: "gap", gapId: "CTR-GAP-ACC-SECURITY" } as any,
     method: "GET",
     route: "/users/security",
     async handle({ store }) {

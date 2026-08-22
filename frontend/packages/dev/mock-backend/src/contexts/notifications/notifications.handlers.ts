@@ -31,6 +31,7 @@ export const notificationsOperations = [
 
   defineMockOperation<Record<string, never>, never, NotificationDtoApi[]>({
     id: "notifications.list",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/notifications",
     async handle({ store }) {
@@ -52,6 +53,7 @@ export const notificationsOperations = [
 
   defineMockOperation<{ id: string }>({
     id: "notifications.read",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/notifications/:id/read",
     async handle({ params, store }) {
@@ -65,6 +67,7 @@ export const notificationsOperations = [
 
   defineMockOperation({
     id: "notifications.readAll",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/notifications/read-all",
     async handle({ store }) {

@@ -4,7 +4,15 @@
  */
 
 import { pagesOperations } from "./pages.handlers";
+import { blocksOperations } from "./blocks.handlers";
+import { commentsOperations } from "./comments.handlers";
+import { historyOperations } from "./history.handlers";
 
-export { pagesOperations };
+export { pagesOperations, blocksOperations, commentsOperations, historyOperations };
 
-export const documentsOperations = [...pagesOperations];
+export const documentsOperations = [
+  ...pagesOperations,
+  ...blocksOperations,
+  ...commentsOperations,
+  ...historyOperations,
+];

@@ -84,6 +84,7 @@ export const pagesOperations = [
 
   defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
     id: "pages.list",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, store }) {
@@ -96,6 +97,7 @@ export const pagesOperations = [
 
   defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
     id: "pages.tree",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/workspaces/:workspaceId/pages/tree",
     async handle({ params, store }) {
@@ -108,6 +110,7 @@ export const pagesOperations = [
 
   defineMockOperation<{ id: string }, never, PageDtoApi>({
     id: "pages.detail",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/pages/:id",
     async handle({ params, store }) {
@@ -125,6 +128,7 @@ export const pagesOperations = [
     PageDtoApi
   >({
     id: "pages.create",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, body, store }) {
@@ -142,6 +146,7 @@ export const pagesOperations = [
     PageDtoApi
   >({
     id: "pages.update",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "PATCH",
     route: "/pages/:id",
     async handle({ params, body, store }) {
@@ -156,6 +161,7 @@ export const pagesOperations = [
 
   defineMockOperation<{ id: string }, never, void>({
     id: "pages.delete",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "DELETE",
     route: "/pages/:id",
     async handle({ params, store }) {
@@ -169,6 +175,7 @@ export const pagesOperations = [
 
   defineMockOperation<{ id: string }, never, BreadcrumbDtoApi[]>({
     id: "pages.breadcrumb",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/pages/:id/breadcrumb",
     async handle({ params, store }) {
@@ -185,39 +192,4 @@ export const pagesOperations = [
     },
   }),
 
-  // ─── GET /pages/:id/blocks ────────────────────────────────────────────────
-
-  defineMockOperation<{ id: string }, never, BlockDtoApi[]>({
-    id: "pages.blocks",
-    method: "GET",
-    route: "/pages/:id/blocks",
-    async handle({ params, store }) {
-      const page = store.getPage(params.id);
-      if (!page) return notFound("Page not found");
-      return ok<BlockDtoApi[]>([
-        {
-          id: `block-${page.id}-0`,
-          pageId: page.id,
-          type: "heading_1",
-          position: 0,
-          properties: {
-            text: page.title,
-          },
-          createdAt: page.createdAt,
-          updatedAt: page.updatedAt,
-        },
-        {
-          id: `block-${page.id}-1`,
-          pageId: page.id,
-          type: "paragraph",
-          position: 1,
-          properties: {
-            text: "Notrelix mock runtime specification.",
-          },
-          createdAt: page.createdAt,
-          updatedAt: page.updatedAt,
-        },
-      ]);
-    },
-  }),
 ];
