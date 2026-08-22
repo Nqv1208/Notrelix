@@ -1,6 +1,5 @@
 using System.Reflection;
 using MassTransit;
-using Notrelix.Application.Common.Events;
 using Notrelix.Architecture.Tests.Events.Support;
 using Notrelix.Domain.Common;
 using Notrelix.Infrastructure.Messaging;

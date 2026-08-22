@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Requests;
-using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Requests.Security;
 
 namespace Notrelix.Architecture.Tests;

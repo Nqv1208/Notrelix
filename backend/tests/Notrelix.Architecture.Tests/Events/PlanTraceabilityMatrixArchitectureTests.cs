@@ -1,19 +1,19 @@
-using System.Text.RegularExpressions;
-
 namespace Notrelix.Architecture.Tests.Events;
 
 /// <summary>
 /// IA-TST-TRACE-001 / IAREQ140 / IAAC017 / IAAC021.
 ///
-/// Validates the canonical PLAN's "Phase 13+ normative traceability matrix":
-/// every P13-* source/closure work unit, P13-FINAL-01 and the Phase 14–20
-/// handoffs must remain present with non-empty SPEC requirement mappings,
-/// TESTS families/IDs, implementation surface and CI/artifact evidence.
+/// Execution-plan traceability gate: the canonical workstream PLAN must keep
+/// a normative traceability matrix in which every declared source/closure
+/// work unit and every handoff phase stays present with non-empty SPEC
+/// requirement mappings, TESTS families/IDs, implementation surface and
+/// CI/artifact evidence. The matrix heading searched here is the canonical
+/// document's own literal section title.
 ///
 /// Documentation traceability only — it does not replace the executable tests
 /// mapped by the table and creates no second traceability authority.
 /// </summary>
-public class Phase13TraceabilityArchitectureTests
+public class PlanTraceabilityMatrixArchitectureTests
 {
     private const string MatrixHeading = "# Phase 13+ normative traceability matrix";
 
@@ -52,7 +52,7 @@ public class Phase13TraceabilityArchitectureTests
     ];
 
     [Fact]
-    public void PlanTraceabilityMatrix_CoversAllPhase13Units_AndHandoffPhases()
+    public void TraceabilityMatrix_CoversEveryWorkUnit_AndHandoffPhase()
     {
         var planPath = FindPlanFile();
         var table = ExtractMatrixRows(planPath);
@@ -102,7 +102,7 @@ public class Phase13TraceabilityArchitectureTests
     }
 
     [Fact]
-    public void PlanMatrix_TestIdMappings_ReferenceCanonicalTestFamilies()
+    public void TraceabilityMatrix_TestIds_MapToCanonicalTestFamilies()
     {
         var planPath = FindPlanFile();
         var table = ExtractMatrixRows(planPath);

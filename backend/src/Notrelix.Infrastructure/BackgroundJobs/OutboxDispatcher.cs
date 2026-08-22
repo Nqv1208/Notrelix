@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Application.Common.Events;
 using Notrelix.Infrastructure.Data;
 
 using Notrelix.Infrastructure.Data.Messaging;

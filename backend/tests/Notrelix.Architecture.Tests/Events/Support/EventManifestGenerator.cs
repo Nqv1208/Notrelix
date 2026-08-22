@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using Notrelix.Application.Common.Events;
 using Notrelix.Infrastructure.Messaging;
 
 namespace Notrelix.Architecture.Tests.Events.Support;

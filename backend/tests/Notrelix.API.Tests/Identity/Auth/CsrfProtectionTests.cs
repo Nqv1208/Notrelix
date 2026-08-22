@@ -1,11 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
 using Notrelix.API.Tests.Contracts;
 using Notrelix.Infrastructure.Auth.Csrf;
 

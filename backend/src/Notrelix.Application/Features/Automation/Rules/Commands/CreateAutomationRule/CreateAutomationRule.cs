@@ -1,6 +1,4 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Requests.Scoping;
-using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Domain.Automation.RulesEngine;
 
