@@ -6,6 +6,7 @@ public static class ErrorCodes
     public const string BusinessRuleViolation = "business_rule.violation";
     public const string Unauthorized = "auth.unauthorized";
     public const string Forbidden = "auth.forbidden";
+    public const string CsrfValidationFailed = "security.csrf_validation_failed";
     public const string ResourceNotFound = "resource.not_found";
     public const string Conflict = "concurrency.conflict";
     public const string TooManyRequests = "rate_limit.exceeded";

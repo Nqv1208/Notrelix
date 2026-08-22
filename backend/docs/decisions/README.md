@@ -15,6 +15,7 @@ evidence:
   - backend/docs/decisions/ADR-002-rls-bootstrap-connection-lifecycle.md
   - backend/docs/decisions/ADR-003-csrf-protection.md
   - backend/docs/decisions/ADR-004-rate-limiting-architecture.md
+  - backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md
 review_on:
   - backend-adr-added
   - backend-adr-status-change
@@ -229,16 +230,18 @@ The registry does not restate the decision body.
 |---|---|---|---|---|
 | `ADR-001` | [Pipeline Boundary Zones](ADR-001-pipeline-boundary.md) | `Accepted` | `../architecture/application-model.md` | None |
 | `ADR-002` | [RLS Bootstrap Connection Lifecycle](ADR-002-rls-bootstrap-connection-lifecycle.md) | `Accepted` | `../architecture/security-tenancy-authorization.md`, `../architecture/infrastructure-and-data.md` | None |
-| `ADR-003` | [CSRF Protection via Double Submit Cookie](ADR-003-csrf-protection.md) | `Accepted` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | None |
+| `ADR-003` | [CSRF Protection via Double Submit Cookie](ADR-003-csrf-protection.md) | `Superseded` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | [ADR-005](ADR-005-csrf-cross-origin-bootstrap.md) |
 | `ADR-004` | [5-Tier Rate Limiting Architecture](ADR-004-rate-limiting-architecture.md) | `Accepted` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | None |
+| `ADR-005` | [Cross-Origin CSRF Bootstrap Protocol](ADR-005-csrf-cross-origin-bootstrap.md) | `Accepted` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | None |
 
-No backend ADR is currently recorded here as:
+Backend ADRs currently recorded here as:
 
 ```text
-Proposed
 Superseded
-Rejected
-Deprecated
+```
+
+```text
+ADR-003 — superseded by ADR-005 (transport assumptions only; Double Submit core carried forward)
 ```
 
 ---
@@ -252,12 +255,13 @@ ADR-001
 ADR-002
 ADR-003
 ADR-004
+ADR-005
 ```
 
 Therefore the next new backend ADR would normally be:
 
 ```text
-ADR-005
+ADR-006
 ```
 
 provided no concurrent/unmerged backend ADR has already reserved that identifier.
@@ -747,18 +751,21 @@ Routine implementation fixes preserving the accepted model do not.
 
 # 41. Current ADR-003 routing
 
-`ADR-003` preserves the accepted Double Submit Cookie CSRF choice for the current cross-origin cookie-authenticated browser model.
+`ADR-003` preserves the historical rationale for the Double Submit Cookie CSRF choice under its original transport assumptions (JavaScript-readable cookie, implicit GET issuance, `SameSite=Strict`).
+
+Its transport assumptions are superseded by `ADR-005`. The Double Submit Cookie pattern itself is carried forward there.
 
 Current authority:
 
 ```text
 ../architecture/api-and-contracts.md
 ../architecture/security-tenancy-authorization.md
+ADR-005-csrf-cross-origin-bootstrap.md
 ```
 
 ---
 
-# 42. BE-DEC-017 — Credential-model change may invalidate ADR-003 assumptions
+# 42. BE-DEC-017 — Credential-model change may invalidate CSRF decision assumptions
 
 If Notrelix moves to a materially different browser credential/session model, reassess:
 
@@ -769,7 +776,9 @@ token mechanism
 frontend participation
 ```
 
-and supersede the ADR if the foundation changes.
+and supersede the governing CSRF ADR if the foundation changes.
+
+The governing CSRF decision is currently `ADR-005` (bootstrap protocol + applicability classification).
 
 ---
 
@@ -805,6 +814,27 @@ environment threshold
 does not necessarily require a new ADR if the five-tier/two-layer architecture remains unchanged.
 
 Changing the partition/ownership model can.
+
+---
+
+# 44a. Current ADR-005 routing
+
+`ADR-005` owns why browser CSRF uses a bootstrap-response token protocol with evidence-based applicability classification instead of ADR-003's JavaScript-readable cookie transport.
+
+Current authority:
+
+```text
+../architecture/api-and-contracts.md
+../architecture/security-tenancy-authorization.md
+```
+
+---
+
+# 44b. BE-DEC-021 — Token/cookie policy values are runtime policy evidence, not ADR-005 identity
+
+Changing token length, cookie lifetime, or environment cookie attribute values does not require a new ADR while the bootstrap protocol and applicability model remain unchanged.
+
+Changing how applicability is classified (e.g., moving from request-evidence classification to path allowlists) or abandoning the Double Submit pattern requires supersession.
 
 ---
 
@@ -948,13 +978,14 @@ Stop ADR creation/normalization if:
 
 # 53. Current backend decision set
 
-As of the current backend documentation migration, the backend decision set is:
+As of the Phase 13 Identity & Accounts closure, the backend decision set is:
 
 ```text
 ADR-001 — Pipeline Boundary Zones — Accepted
 ADR-002 — RLS Bootstrap Connection Lifecycle — Accepted
-ADR-003 — CSRF Protection via Double Submit Cookie — Accepted
+ADR-003 — CSRF Protection via Double Submit Cookie — Superseded (by ADR-005)
 ADR-004 — 5-Tier Rate Limiting Architecture — Accepted
+ADR-005 — Cross-Origin CSRF Bootstrap Protocol — Accepted
 ```
 
 No additional backend ADR should be invented simply to make the registry look more complete.
