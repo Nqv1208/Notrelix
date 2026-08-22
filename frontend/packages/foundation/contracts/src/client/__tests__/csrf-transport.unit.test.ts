@@ -289,7 +289,7 @@ describe("createNotrelixClient — CSRF transport", () => {
 
     const fetchImpl = vi
       .fn()
-      .mockImplementation(async (url: string, init: RequestInit) => {
+      .mockImplementation(async (url: string, _init: RequestInit) => {
         if (url.endsWith(BOOTSTRAP_PATH)) {
           if (networkDown) throw new TypeError("fetch failed");
           return bootstrapResponse(TOKEN_A);
