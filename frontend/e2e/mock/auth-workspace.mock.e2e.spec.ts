@@ -1,12 +1,10 @@
 import { expect, test } from "@playwright/test";
 
+const scenario = process.env.VITE_MOCK_STATE ?? "default";
+
 test("loads auth and workspace routes without backend network", async ({
   page,
 }) => {
-  test.skip(
-    (process.env.VITE_MOCK_STATE ?? "default") !== "default",
-    "default scenario only",
-  );
   const backendRequests: string[] = [];
   const backendSockets: string[] = [];
   page.on("request", (request) => {
@@ -19,6 +17,16 @@ test("loads auth and workspace routes without backend network", async ({
   });
 
   await page.goto("/home");
+
+  // Network isolation holds regardless of scenario — zero backend escapes is always required
+  expect(backendRequests).toEqual([]);
+  expect(backendSockets).toEqual([]);
+
+  if (scenario !== "default") {
+    // Remaining assertions require default world data
+    return;
+  }
+
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByText("Notrelix Sandbox")).toHaveCount(0);
   await expect(page.getByText("work management")).toBeVisible();
@@ -89,6 +97,7 @@ test("loads auth and workspace routes without backend network", async ({
   await page.getByRole("menuitem", { name: "Log out" }).click();
   await expect(page).toHaveURL(/\/sign-in/);
 
+  // Verify no backend escapes after full flow
   expect(backendRequests).toEqual([]);
   expect(backendSockets).toEqual([]);
 });

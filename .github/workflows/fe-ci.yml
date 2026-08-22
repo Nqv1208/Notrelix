@@ -233,6 +233,9 @@ jobs:
       - build-marketing
       - build-mobile
       - e2e-production
+      - mock-contract
+      - mock-e2e
+      - mock-artifact-isolation
     runs-on: ubuntu-latest
     timeout-minutes: 5
     defaults:
@@ -252,6 +255,9 @@ jobs:
             "${{ needs.build-marketing.result }}"
             "${{ needs.build-mobile.result }}"
             "${{ needs.e2e-production.result }}"
+            "${{ needs.mock-contract.result }}"
+            "${{ needs.mock-e2e.result }}"
+            "${{ needs.mock-artifact-isolation.result }}"
           )
 
           for result in "${results[@]}"; do
@@ -262,3 +268,76 @@ jobs:
           done
 
           echo "All required frontend CI gates passed."
+
+  mock-contract:
+    name: Mock contract
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Mock contract structural closure + conformance + freeze check
+        run: pnpm mock:contract
+
+  mock-e2e:
+    name: Mock E2E
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        persona: [owner, admin, member, viewer]
+        state: [default, new-user, empty-workspace, permission-limited, expired-session]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run mock E2E (${{ matrix.persona }}/${{ matrix.state }})
+        working-directory: frontend
+        env:
+          VITE_MOCK_PERSONA: ${{ matrix.persona }}
+          VITE_MOCK_STATE: ${{ matrix.state }}
+        run: pnpm e2e:mock
+
+      - name: Assert E2E count gate
+        working-directory: frontend
+        run: pnpm e2e:mock:count
+
+      - name: Upload mock Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mock-playwright-report-${{ matrix.persona }}-${{ matrix.state }}
+          path: frontend/playwright-report
+          if-no-files-found: ignore
+          retention-days: 3
+
+  mock-artifact-isolation:
+    name: Mock artifact isolation
+    needs: build-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Download exact web build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: frontend/apps/web/dist
+
+      - name: Assert production build contains no mock artifacts
+        working-directory: frontend
+        run: pnpm check:production-mock-isolation
+

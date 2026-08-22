@@ -1,12 +1,10 @@
 import { expect, test } from "@playwright/test";
 
+const scenario = process.env.VITE_MOCK_STATE ?? "default";
+
 test("does not escape to backend HTTP, auth refresh, or realtime", async ({
   page,
 }) => {
-  test.skip(
-    (process.env.VITE_MOCK_STATE ?? "default") !== "default",
-    "default scenario only",
-  );
   const backendTraffic: string[] = [];
   const refreshTraffic: string[] = [];
   const sockets: string[] = [];
@@ -24,12 +22,17 @@ test("does not escape to backend HTTP, auth refresh, or realtime", async ({
   });
 
   await page.goto("/home");
-  await page.goto(
-    "/workspaces/mock-workspace-primary/boards/mock-board-roadmap",
-  );
-  await page.goto(
-    "/workspaces/mock-workspace-primary/docs/mock-doc-product-spec",
-  );
+
+  if (scenario === "default") {
+    await page.goto(
+      "/workspaces/mock-workspace-primary/boards/mock-board-roadmap",
+    );
+    await page.goto(
+      "/workspaces/mock-workspace-primary/docs/mock-doc-product-spec",
+    );
+  }
+
+  // Network isolation is required across ALL scenarios
   expect(backendTraffic).toEqual([]);
   expect(refreshTraffic).toEqual([]);
   expect(
