@@ -189,12 +189,17 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     const init: RequestInit & ApiRequestOptions = { ...options };
     delete (init as { correlationId?: string }).correlationId;
 
+    // Normalize to a plain record so header merging stays type-safe
+    // regardless of the HeadersInit shape the caller provided.
+    const headers: Record<string, string> = {
+      ...(init.headers as Record<string, string> | undefined),
+    };
+
     if (options.idempotencyKey) {
-      init.headers = {
-        ...init.headers,
-        "Idempotency-Key": options.idempotencyKey,
-      };
+      headers["Idempotency-Key"] = options.idempotencyKey;
     }
+
+    init.headers = headers;
 
     let response: Response;
     try {
