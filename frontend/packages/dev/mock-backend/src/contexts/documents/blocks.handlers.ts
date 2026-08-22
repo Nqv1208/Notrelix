@@ -1,5 +1,6 @@
-import { defineMockOperation, ok, notFound, created } from "../../operations/types";
-import type { BlockDtoApi } from "../../../../product/docs/state/src/dto";
+import { defineMockOperation } from "../../operations/types";
+import { ok, created, notFound } from "../../transport/create-response";
+type BlockDtoApi = any;
 
 export const blocksOperations = [
   // ─── GET /pages/:pageId/blocks ──────────────────────────────────────────
@@ -35,7 +36,7 @@ export const blocksOperations = [
 
   defineMockOperation<
     { pageId: string },
-    { type?: string | null; properties?: string | null; parentId?: string | null; position?: number },
+    { type?: string | null; properties?: string | null; parentBlockId?: string | null; position?: number },
     BlockDtoApi
   >({
     id: "docs.blocks.create",
@@ -47,7 +48,7 @@ export const blocksOperations = [
       const block = store.createBlock(params.pageId, {
         type: data.type ?? "paragraph",
         properties: data.properties ?? "{}",
-        parentId: data.parentId ?? null,
+        parentBlockId: data.parentBlockId ?? null,
       });
       // also create history
       store.createPageHistory(params.pageId, "usr-m-00001", "created_block", block.type);
@@ -71,7 +72,7 @@ export const blocksOperations = [
 
   defineMockOperation<
     { blockId: string },
-    { type?: string | null; properties?: string | null; parentId?: string | null; position?: number },
+    { type?: string | null; properties?: string | null; parentBlockId?: string | null; position?: number },
     BlockDtoApi
   >({
     id: "docs.blocks.update",
@@ -80,7 +81,7 @@ export const blocksOperations = [
     route: "/blocks/:blockId",
     async handle({ params, body, store }) {
       const data = body ?? {};
-      const block = store.updateBlock(params.blockId, data);
+      const block = store.updateBlock(params.blockId, data as any);
       if (!block) return notFound("Block not found");
 
       return ok<BlockDtoApi>({
@@ -116,7 +117,7 @@ export const blocksOperations = [
 
   defineMockOperation<
     never,
-    { pageId?: string; items?: { blockId: string; parentId?: string | null; position?: number }[] | null },
+    { pageId?: string; items?: { blockId: string; parentBlockId?: string | null; position?: number }[] | null },
     void
   >({
     id: "docs.blocks.reorder",
@@ -126,7 +127,7 @@ export const blocksOperations = [
     async handle({ body, store }) {
       const items = body?.items ?? [];
       for (const item of items) {
-        store.updateBlock(item.blockId, { parentId: item.parentId, position: item.position });
+        store.updateBlock(item.blockId, { parentBlockId: item.parentBlockId, position: item.position });
       }
       return ok<void>(undefined);
     },
@@ -136,7 +137,7 @@ export const blocksOperations = [
 
   defineMockOperation<
     { pageId: string },
-    { blocks?: { id?: string; type?: string | null; properties?: string | null; parentId?: string | null; position?: number }[] | null },
+    { blocks?: { id?: string; type?: string | null; properties?: string | null; parentBlockId?: string | null; position?: number }[] | null },
     BlockDtoApi[]
   >({
     id: "docs.blocks.batchUpdate",
@@ -148,7 +149,7 @@ export const blocksOperations = [
       const res: BlockDtoApi[] = [];
       for (const b of reqBlocks) {
         if (!b.id) continue;
-        const updated = store.updateBlock(b.id, b);
+        const updated = store.updateBlock(b.id, b as any);
         if (updated) {
           res.push({
             id: updated.id,

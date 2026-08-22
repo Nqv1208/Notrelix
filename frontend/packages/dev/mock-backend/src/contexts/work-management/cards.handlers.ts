@@ -183,7 +183,7 @@ export const cardsOperations = [
       const updated = store.updateCard(params.id, {
         title: data.title,
         description,
-        listId: data.groupId,
+        listId: data.listId,
       });
       if (!updated) return notFound("Card not found");
       return ok<void>(undefined);

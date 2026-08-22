@@ -1,5 +1,6 @@
-import { defineMockOperation, ok, notFound, created } from "../../operations/types";
-import type { CommentDtoApi } from "../../../../product/docs/state/src/dto";
+import { defineMockOperation } from "../../operations/types";
+import { ok, created, notFound } from "../../transport/create-response";
+type CommentDtoApi = any;
 
 export const commentsOperations = [
   // ─── GET /pages/:pageId/comments ────────────────────────────────────────

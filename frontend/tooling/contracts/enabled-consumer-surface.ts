@@ -832,7 +832,6 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     pathTemplate: "endpoints.boardItems.label",
     mutation: true,
   },
-,
   {
     context: "Work Management",
     capability: "WorkManagement.BoardViews.Get",

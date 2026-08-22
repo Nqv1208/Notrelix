@@ -1546,9 +1546,9 @@ export class MockStore {
     const history: MockPageHistoryRecord = {
       id,
       pageId,
-      userId,
+      actorId: userId,
       action,
-      details,
+      resourceTitle: details,
       createdAt: this.clock.isoNow(),
     };
     this.pageHistoryById.set(id, history);

@@ -1,5 +1,6 @@
-import { defineMockOperation, ok, notFound } from "../../operations/types";
-import type { HistoryDtoApi } from "../../../../product/docs/state/src/dto";
+import { defineMockOperation } from "../../operations/types";
+import { ok, notFound, created } from "../../transport/create-response";
+type HistoryDtoApi = any;
 
 export const historyOperations = [
   // ─── GET /pages/:pageId/history ─────────────────────────────────────────
