@@ -2133,6 +2133,60 @@ Status:            CLOSED
 Decision date:     2026-08-22
 ```
 
+## 65.6 Observability / reliability / performance closure record
+
+Candidate HEAD:    fcaef3d1 + this record
+
+Safe trace correlation: CorrelationIdMiddleware assigns X-Correlation-ID
+  at the edge; the canonical ProblemDetails contract echoes traceId;
+  integration events carry EventId/CorrelationId/CausationId/ActorUserId
+  and the outbox rows persist them — the request → auth → tenant →
+  authorization → use case → persistence → outbox chain stays correlatable
+  through stable identifiers only. No raw secrets enter any hop (security
+  closure scan).
+
+Failure categories under existing conventions:
+  - csrf_validation_failed ....... security.csrf_validation_failed via the
+    canonical ProblemDetails writer; asserted in CSRF suites
+  - authorization_denied ......... auth.forbidden mapping
+  - authorization_misconfiguration NEW dedicated category
+    security.authorization_misconfiguration (500 with generic client
+    detail; internal context remains server-side logging) — previously
+    these request-contract violations surfaced as anonymous internal errors
+  - unknown_event_contract ....... dead-letter reason UnknownEventType +
+    critical log carrying name/version only
+  - unsupported_event_version .... deterministic compound-key resolution
+    failure, same diagnosable path
+  - consumer retry/poison ........ Platform runtime metrics/diagnostics and
+    per-event-name/consumer-id logs already in place
+  No new observability vendor introduced.
+
+Reliability:
+  - unknown logical event names and unsupported versions fail
+    deterministically through the catalog (no latest/v1 fallback, no
+    silent drop, no payload dump) — Infrastructure resolution suite +
+    dispatcher dead-letter behavior
+  - frontend bootstrap network failure surfaces one deterministic error,
+    releases the single-flight promise, and bounds total attempts
+    (new explicit test); stale-token recovery retries once; a second
+    consecutive rejection surfaces instead of looping; refresh failures
+    keep session-expired semantics without CSRF/refresh recursion.
+
+Performance:
+  - authorization hot path: production-graph test proves pipeline-only
+    evaluation for five roles with zero handler-level permission lookups
+    (static gate forbids service injection into handlers)
+  - CSRF client overhead: memory token reuse avoids re-bootstrap on
+    sequential unsafe requests; N concurrent unsafe requests share one
+    bootstrap (fetch call-count assertions).
+
+Frontend node suite at this HEAD: 72 files / 313 tests green (includes
+the newly adopted dev mock-backend package after workspace install).
+
+Status:            CLOSED
+Decision date:     2026-08-22
+```
+
 # Migration certification
 
 ## 66. CERT-MIG-001 — migration inventory

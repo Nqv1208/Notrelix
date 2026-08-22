@@ -283,6 +283,45 @@ describe("createNotrelixClient — CSRF transport", () => {
     await expect(client.api.post("/commands", {})).rejects.toThrow();
     expect(postAttempts).toBe(2);
   });
+
+  it("bootstrap network failure surfaces one deterministic error and releases the single-flight promise (bounded recovery)", async () => {
+    let networkDown = true;
+
+    const fetchImpl = vi
+      .fn()
+      .mockImplementation(async (url: string, init: RequestInit) => {
+        if (url.endsWith(BOOTSTRAP_PATH)) {
+          if (networkDown) throw new TypeError("fetch failed");
+          return bootstrapResponse(TOKEN_A);
+        }
+
+        return new Response(null, { status: 200 });
+      });
+
+    const provider = createCsrfProvider({
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      baseUrl: "http://api.test",
+      bootstrapPath: BOOTSTRAP_PATH,
+      createCorrelationId: () => "corr",
+    });
+
+    // Concurrent callers share the failing bootstrap — one deterministic error.
+    const [e1, e2] = await Promise.allSettled([
+      provider.ensureCsrfToken(),
+      provider.ensureCsrfToken(),
+    ]);
+
+    expect(e1.status).toBe("rejected");
+    expect(e2.status).toBe("rejected");
+
+    // The failed promise is released: a later attempt retries the bootstrap
+    // instead of caching the failure forever. Total calls stay bounded at
+    // two — one shared single-flight attempt for both concurrent callers,
+    // one successful retry.
+    networkDown = false;
+    await expect(provider.ensureCsrfToken()).resolves.toBe(TOKEN_A);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
 });
 
 /**
