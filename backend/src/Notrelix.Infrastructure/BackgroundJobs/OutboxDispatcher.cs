@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Notrelix.Application.Common.Events;
 using Notrelix.Infrastructure.Data;
 
 using Notrelix.Infrastructure.Data.Messaging;
@@ -176,7 +177,9 @@ internal sealed class OutboxDispatcher : BackgroundService
         Type integrationEventType;
         try
         {
-            integrationEventType = eventCatalog.Resolve(message.MessageName);
+            // Compound contract identity: the outbox row carries both the logical
+            // message name and its schema version (IAREQ131). No name-only fallback.
+            integrationEventType = eventCatalog.Resolve(new EventContractKey(message.MessageName, message.SchemaVersion));
         }
         catch (UnknownIntegrationEventTypeException ex)
         {

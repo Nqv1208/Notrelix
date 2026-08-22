@@ -42,17 +42,34 @@ public class ContractRegistryCompletenessTests
             $"Missing: {string.Join(", ", missing.Select(t => t.Name))}");
     }
 
+    /// <summary>
+    /// IA-TST-EVT-VER-ARCH-001 / IAREQ088 / IAREQ131 — public integration-event
+    /// uniqueness is the compound identity (Name, Version). The same logical
+    /// name MAY coexist as multiple versions during a controlled migration
+    /// window; only an exact (Name, Version) collision is a defect.
+    /// </summary>
     [Fact]
-    public void ContractRegistry_AllEventsHaveUniqueName()
+    public void ContractRegistry_AllEventsHaveUniqueCompoundContractIdentity()
     {
-        var duplicateNames = Contracts
-            .GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+        var duplicates = Contracts
+            .GroupBy(c => (c.Name.ToLowerInvariant(), c.Version))
             .Where(g => g.Count() > 1)
             .ToList();
 
-        duplicateNames.Should().BeEmpty(
-            $"event names must be unique. Duplicates: " +
-            $"{string.Join(", ", duplicateNames.Select(g => $"'{g.Key}' ({g.Count()}x)"))}");
+        duplicates.Should().BeEmpty(
+            "public integration-event contract identity is (Name, Version); the same logical name may " +
+            $"coexist across versions but an exact version collision is a defect. Duplicates: " +
+            $"{string.Join(", ", duplicates.Select(g => $"'{g.Key.Item1}' v{g.Key.Item2} ({g.Count()}x)"))}");
+    }
+
+    [Fact]
+    public void ContractRegistry_AllVersionsArePositive()
+    {
+        var invalid = Contracts.Where(c => c.Version <= 0).ToList();
+
+        invalid.Should().BeEmpty(
+            $"public event versions must be positive integers. Invalid: " +
+            $"{string.Join(", ", invalid.Select(c => $"{c.Name} v{c.Version}"))}");
     }
 }
 
