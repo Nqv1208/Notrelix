@@ -84,6 +84,20 @@ test("rejects direct environment reads inside shared packages", () => {
   expect(result.stderr).toContain("NEXT_PUBLIC_API_URL");
 });
 
+test("rejects raw fetch in governed feature source", () => {
+  const root = createFixtureRoot();
+  writePackage(
+    root,
+    "packages/features/search",
+    "@notrelix/features-search",
+    "export const search = () => fetch('/api/v1/search');\n",
+  );
+
+  const result = runChecker(root);
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("FORBIDDEN_BACKEND_FETCH");
+});
+
 test("checks apps package boundaries, not only packages directories", () => {
   const root = createFixtureRoot();
   writePackage(

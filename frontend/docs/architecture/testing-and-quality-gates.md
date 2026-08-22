@@ -18,6 +18,7 @@ evidence:
   - frontend/tooling/testing/
   - frontend/tooling/dependency-rules/
   - frontend/playwright.config.ts
+  - frontend/playwright.mock.config.ts
   - frontend/playwright.storybook.config.ts
   - .github/workflows/fe-ci.yml
 review_on:
@@ -36,6 +37,8 @@ review_on:
 > **Frontend evidence proves properties, not file existence or command names.**
 >
 > A green test command is valid evidence only for the property it actually executed. Critical suites must prove non-zero work. Architecture, generated-contract, mobile-purity, UI-accessibility, host-build, and production-E2E properties have separate gates because no single test layer proves all of them.
+
+Full-app mock-browser certification is a separate frontend integration property. It runs the Vite development server with `VITE_MOCK_API=true` and the backend intentionally absent, and proves protected-route bootstrap plus zero backend HTTP, auth-refresh, and WebSocket traffic. Its executable entrypoint is `pnpm e2e:mock`; it does not replace production-mode E2E or real-backend integration evidence.
 
 This document is the canonical frontend owner for:
 

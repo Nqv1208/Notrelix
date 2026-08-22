@@ -8,24 +8,18 @@ import type {
 interface UseWorkspaceShellDataDeps {
   api: WorkspaceApiClient;
   endpoints: WorkspaceEndpoints;
-  options?: {
-    mockMode?: boolean;
-  };
 }
 
 export function createUseWorkspaceShellData({
   api,
   endpoints,
-  options,
 }: UseWorkspaceShellDataDeps) {
   const useWorkspace = createUseWorkspace({
     api,
     endpoints,
-    ...(options ? { options } : {}),
   });
   const useWorkspaceViews = createUseWorkspaceViews({
     api,
-    ...(options ? { options } : {}),
   });
 
   return function useWorkspaceShellData(workspaceId: string) {

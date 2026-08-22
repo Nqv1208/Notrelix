@@ -25,7 +25,7 @@ export const tableSurface = {
 } as const;
 
 export const focusRing = {
-  color: brand.violet,
+  color: brand.blue,
   width: "3px",
   offset: "0px",
   opacity: 0.15,

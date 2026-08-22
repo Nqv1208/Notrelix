@@ -10,15 +10,13 @@ import type { UserPreferences } from "../../core/types/account";
 interface UseUpdatePreferencesDeps {
   api: AccountApiClient;
   endpoints: AccountEndpoints;
-  options?: { mockMode?: boolean };
 }
 
 export function createUseUpdatePreferences({
   api,
   endpoints,
-  options,
 }: UseUpdatePreferencesDeps) {
-  const service = createAccountService(api, endpoints, options);
+  const service = createAccountService(api, endpoints);
 
   return function useUpdatePreferences() {
     const queryClient = useQueryClient();

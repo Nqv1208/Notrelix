@@ -9,17 +9,10 @@ import { notificationsQueryKeys } from "../../../query/keys";
 interface UseUnreadCountDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
-  options?: {
-    mockMode?: boolean;
-  };
 }
 
-export function createUseUnreadCount({
-  api,
-  endpoints,
-  options,
-}: UseUnreadCountDeps) {
-  const service = createNotificationsService(api, endpoints, options);
+export function createUseUnreadCount({ api, endpoints }: UseUnreadCountDeps) {
+  const service = createNotificationsService(api, endpoints);
   return function useUnreadCount() {
     return useQuery({
       queryKey: notificationsQueryKeys.unreadCount,

@@ -1,0 +1,8 @@
+{
+  "extends": "@notrelix/tsconfig/base.json",
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx"
+  },
+  "include": ["src/**/*"]
+}

@@ -49,7 +49,6 @@ export function WorkspaceProvider({
       createUseWorkspaceShellData({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
-        options: { mockMode: false },
       }),
     [runtimeClient],
   );

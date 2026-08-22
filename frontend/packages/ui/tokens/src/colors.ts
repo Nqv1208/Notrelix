@@ -23,12 +23,23 @@ export const primitive = {
 // ─── Brand & Interactive ───
 
 export const brand = {
-  violet: "#6161ff",
-  indigo: "#455dd3",
-  purple: "#9450fd",
-  ocean: "#0075de",
+  red: "#FF1E56",
+  orange: "#FC744C",
+  gold: "#F9C942",
+  bridge: "#8CADA1",
+  blue: "#1E90FF",
+  // Backward compatibility aliases
+  violet: "#1E90FF",
+  indigo: "#1E90FF",
+  purple: "#FF1E56",
+  ocean: "#1E90FF",
   sky: "#3ac9ff",
   frost: "#62aef0",
+} as const;
+
+export const brandPrimary = {
+  red: brand.red,
+  blue: brand.blue,
 } as const;
 
 // ─── Semantic States ───
@@ -60,13 +71,18 @@ export const surface = {
 // ─── Gradients ───
 
 export const gradients = {
-  brandSweep: "linear-gradient(135deg, #6161ff 0%, #9450fd 100%)",
-  vibrantFlow: "linear-gradient(90deg, #fe81e4 0%, #fe81e4 31%, #fda900 88%)",
+  logoSpectrum:
+    "linear-gradient(90deg, #FF1E56 0%, #FC744C 25%, #F9C942 50%, #8CADA1 75%, #1E90FF 100%)",
+  interactiveBrand:
+    "linear-gradient(135deg, #FF1E56 0%, #FC744C 35%, #1E90FF 100%)",
+  brandSweep:
+    "linear-gradient(90deg, #FF1E56 0%, #FC744C 25%, #F9C942 50%, #8CADA1 75%, #1E90FF 100%)",
+  vibrantFlow: "linear-gradient(90deg, #FF1E56 0%, #FC744C 50%, #1E90FF 100%)",
   depthFade: "linear-gradient(180deg, #02093a 0%, #000000 100%)",
   glassLight:
     "linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))",
   spectrumRing:
-    "conic-gradient(from 270deg, #8181ff 15%, #33dbdb 40%, #33d58e 55%, #ffd633 65%, #fc527d 85%, #8181ff 100%)",
+    "conic-gradient(from 270deg, #FF1E56 15%, #FC744C 35%, #F9C942 55%, #8CADA1 75%, #1E90FF 100%)",
 } as const;
 
 // ─── Badge Semantic Colors ───

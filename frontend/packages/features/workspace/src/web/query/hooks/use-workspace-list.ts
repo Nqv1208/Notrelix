@@ -9,15 +9,11 @@ import { workspaceQueryKeys } from "../../../query/keys";
 interface UseWorkspaceListDeps {
   api: WorkspaceApiClient;
   endpoints: WorkspaceEndpoints;
-  options?: {
-    mockMode?: boolean;
-  };
 }
 
 export function createUseWorkspaceList({
   api,
   endpoints,
-  options: _options,
 }: UseWorkspaceListDeps) {
   const service = createWorkspaceService(api, endpoints);
 

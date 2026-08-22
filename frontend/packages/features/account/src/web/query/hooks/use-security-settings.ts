@@ -9,17 +9,13 @@ import { accountQueryKeys } from "../../../query/keys";
 interface UseSecuritySettingsDeps {
   api: AccountApiClient;
   endpoints: AccountEndpoints;
-  options?: {
-    mockMode?: boolean;
-  };
 }
 
 export function createUseSecuritySettings({
   api,
   endpoints,
-  options,
 }: UseSecuritySettingsDeps) {
-  const service = createAccountService(api, endpoints, options);
+  const service = createAccountService(api, endpoints);
 
   return function useSecuritySettings() {
     return useQuery({

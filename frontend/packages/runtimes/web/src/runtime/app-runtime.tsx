@@ -42,6 +42,7 @@ export interface FeatureFlagsPort {
 }
 
 export interface AppRuntimeFactories {
+  readonly fetchImpl?: typeof fetch;
   readonly createApiClient?: (config: NotrelixClientConfig) => NotrelixClient;
   readonly createRealtimeClient?: (url: string) => RealtimeTransport;
   readonly clock?: ClockPort;
@@ -90,6 +91,7 @@ export function createAppRuntime(
   const client = factories.createApiClient
     ? factories.createApiClient({
         baseUrl: resolvedEnv.apiUrl,
+        fetchImpl: factories.fetchImpl,
         clock,
         onSessionExpired: (event: SessionExpiredEvent) => {
           sessionEvents.publish(event);
@@ -97,6 +99,7 @@ export function createAppRuntime(
       })
     : createNotrelixClient({
         baseUrl: resolvedEnv.apiUrl,
+        fetchImpl: factories.fetchImpl,
         clock,
         onSessionExpired: (event: SessionExpiredEvent) => {
           sessionEvents.publish(event);

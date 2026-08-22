@@ -9,17 +9,13 @@ import { notificationsQueryKeys } from "../../../query/keys";
 interface UseArchiveNotificationDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
-  options?: {
-    mockMode?: boolean;
-  };
 }
 
 export function createUseArchiveNotification({
   api,
   endpoints,
-  options,
 }: UseArchiveNotificationDeps) {
-  const service = createNotificationsService(api, endpoints, options);
+  const service = createNotificationsService(api, endpoints);
 
   return function useArchiveNotification() {
     const queryClient = useQueryClient();

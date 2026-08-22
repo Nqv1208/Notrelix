@@ -8,7 +8,7 @@ export function useCreateColumn(boardId: string, workspaceId?: string) {
   const { columns } = useWorkManagementServices();
   const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId);
 
-  return useMutation<string, Error, Omit<CreateColumnInput, "boardId">>({
+  return useMutation<void, Error, Omit<CreateColumnInput, "boardId">>({
     mutationFn: (input) => columns.createColumn({ ...input, boardId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });

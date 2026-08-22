@@ -204,6 +204,7 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
       );
     } catch (error) {
       const isAbort = (error as { name?: string }).name === "AbortError";
+      console.log("FAILED URL:", url, options.method);
       throw new AppError({
         kind: isAbort ? "aborted" : "network",
         message: isAbort
@@ -266,6 +267,7 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
               Record<string, string[]> | undefined)
           : undefined;
 
+      console.log("FAILED URL:", url, options.method);
       throw new AppError({
         kind,
         status: response.status,

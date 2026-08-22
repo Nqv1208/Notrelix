@@ -15,6 +15,7 @@ import {
   isForbiddenStorageAccess,
   isForbiddenRouteCreation,
   isDeepSrcImport,
+  isForbiddenBackendFetch,
 } from "./forbidden-source-patterns";
 import { classifyLayer } from "./layer-classifier";
 
@@ -407,6 +408,11 @@ export function checkArchitecture(
         // Check CallExpressions (factory calls, env reads, dynamic imports, createRoute)
         if (ts.isCallExpression(node)) {
           const expressionText = node.expression.getText(sourceFile);
+          if (expressionText === "fetch" && isForbiddenBackendFetch(relPath)) {
+            violations.push(
+              `[FORBIDDEN_BACKEND_FETCH] ${pkgName} called raw fetch in ${relPath}`,
+            );
+          }
           if (
             expressionText === "createNotrelixClient" &&
             isForbiddenClientCall(relPath)

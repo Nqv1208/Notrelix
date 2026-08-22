@@ -27,7 +27,7 @@ export function createUseLogout({ api, endpoints, navigate }: UseLogoutDeps) {
       },
       onSettled: () => {
         queryClient.clear();
-        navigate({ to: "/", replace: true });
+        navigate({ to: "/sign-in", replace: true });
       },
     });
   };
