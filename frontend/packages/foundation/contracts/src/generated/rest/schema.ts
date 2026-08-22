@@ -620,6 +620,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Issue a CSRF token for browser clients
+         * @description Generates a cryptographically random CSRF token, sets it as the csrf_token cookie, and returns the same value in the response body. Browser clients must echo the body value in the X-CSRF-Token header on state-changing requests (ADR-005).
+         */
+        get: operations["Identity.Auth.IssueCsrfToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/forgot-password": {
         parameters: {
             query?: never;
@@ -4027,8 +4047,6 @@ export interface components {
             email?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile.UpdateProfileCommand": {
-            /** Format: uuid */
-            userId?: string;
             name: string | null;
             avatar?: string | null;
         };
@@ -5265,6 +5283,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+        };
+    };
+    "Identity.Auth.IssueCsrfToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

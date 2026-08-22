@@ -30,9 +30,18 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
   it("adds Idempotency-Key header when request option is provided", async () => {
     const mockFetch = vi
       .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify({ data: "ok" }), { status: 200 }),
-      );
+      .mockImplementation((url: string) => {
+        if (url.includes("/auth/csrf")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ token: "test-csrf-token" }), {
+              status: 200,
+            }),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: "ok" }), { status: 200 }),
+        );
+      });
 
     const client = createNotrelixClient({
       baseUrl: "http://api.test",
@@ -61,6 +70,13 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     let refreshCallCount = 0;
 
     const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/auth/csrf")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ token: "test-csrf-token" }), {
+            status: 200,
+          }),
+        );
+      }
       if (url.includes("/auth/refresh")) {
         refreshCallCount++;
         return Promise.resolve(
@@ -102,6 +118,13 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     const sessionExpiredSpy = vi.fn();
 
     const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/auth/csrf")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ token: "test-csrf-token" }), {
+            status: 200,
+          }),
+        );
+      }
       if (url.includes("/auth/refresh")) {
         return Promise.resolve(
           new Response(JSON.stringify({ error: "invalid_token" }), {
@@ -135,6 +158,13 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     let client2Refresh = 0;
 
     const fetch1 = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/auth/csrf")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ token: "test-csrf-token" }), {
+            status: 200,
+          }),
+        );
+      }
       if (url.includes("/auth/refresh")) {
         client1Refresh++;
         return Promise.resolve(new Response("OK", { status: 200 }));
@@ -143,6 +173,13 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     });
 
     const fetch2 = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/auth/csrf")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ token: "test-csrf-token" }), {
+            status: 200,
+          }),
+        );
+      }
       if (url.includes("/auth/refresh")) {
         client2Refresh++;
         return Promise.resolve(new Response("OK", { status: 200 }));

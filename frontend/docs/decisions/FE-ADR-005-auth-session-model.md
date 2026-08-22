@@ -175,78 +175,67 @@ Current producer evidence must be evaluated separately.
 
 # Current backend CSRF contract
 
-Current backend `CsrfProtector` defines:
+Superseded by the accepted cross-origin bootstrap protocol in backend
+[ADR-005](../../../backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md)
+(Phase 13 closure, IAREQ126–IAREQ130):
 
 ```text
-cookie:
-csrf_token
-
-header:
-X-CSRF-Token
+bootstrap:
+GET <Identity/Auth group>/csrf
+→ Set-Cookie: csrf_token=<token>   (HttpOnly, host-scoped;
+                                    Secure+SameSite=None in production,
+                                    SameSite=Lax in development)
+→ response body { token }
 
 unsafe methods:
-POST
-PUT
-PATCH
-DELETE
+POST PUT PATCH DELETE
+→ X-CSRF-Token: <memory token>
+→ credentials: include
 ```
 
-It implements a Double Submit Cookie pattern.
-
-The cookie is intentionally JavaScript-readable because the client must echo the token in the header.
+The cookie is intentionally HttpOnly: the client never reads it. The response
+body carries the client-side token value.
 
 ---
 
 # Current frontend CSRF implementation
 
-Current frontend `getCsrfToken()` reads:
+Resolved during Phase 13 closure (P13-CSRF-03). The canonical frontend
+transport is an instance-scoped provider owned by
+`@notrelix/contracts` client:
 
 ```text
-<meta name="csrf-token">
-or
-XSRF-TOKEN cookie
+ensureCsrfToken()
+  memory token → reuse
+  in-flight bootstrap → await same promise
+  otherwise GET auth/csrf (credentials: include) → store in memory only
 ```
 
-and current generic API client sends:
-
-```text
-X-XSRF-TOKEN
-```
-
-for unsafe methods when a token is present.
-
-This does not match the current backend producer contract:
-
-```text
-csrf_token
-+
-X-CSRF-Token
-```
+Every unsafe browser request — including the single-flight auth refresh —
+goes through one CSRF-aware primitive that attaches `X-CSRF-Token`.
+Legacy conventions (`getCsrfToken()` document-cookie/meta discovery,
+`XSRF-TOKEN`, `X-XSRF-TOKEN`, storage persistence) are removed and guarded
+against by source-level tests.
 
 ---
 
-# FE-ADR-005-D1 — Current CSRF implementation is SOURCE_DEBT / CONTRACT DRIFT
+# FE-ADR-005-D1 — CSRF SOURCE_DEBT / CONTRACT DRIFT — RESOLVED
 
-The accepted auth-session architecture does not require the historical `X-XSRF-TOKEN` spelling.
+The historical frontend/backend CSRF mismatch classified here was reconciled
+during Identity & Accounts Phase 13 closure through backend ADR-005
+(cross-origin bootstrap protocol), not by making the cookie JavaScript-readable.
 
-The current backend contract is authoritative for the active browser anti-forgery protocol.
-
-Therefore the current frontend mismatch is classified:
-
-```text
-SOURCE_DEBT
-+
-CONTRACT_CHANGE reconciliation required
-```
-
-Target if the backend contract remains unchanged:
+Final contract:
 
 ```text
-frontend reads csrf_token
-frontend sends X-CSRF-Token
+frontend bootstraps from response body → memory-only token
+frontend sends X-CSRF-Token on every unsafe browser request
+cookie remains HttpOnly for server-side comparison only
 ```
 
-This source debt does **not** require superseding `FE-ADR-005`.
+This source debt is closed; executable proof lives in the backend API suite
+(`CsrfProtectionTests`, `CsrfCrossStackFlowTests`) and the contracts package
+client suite (`csrf-transport.unit.test.ts`).
 
 ---
 
