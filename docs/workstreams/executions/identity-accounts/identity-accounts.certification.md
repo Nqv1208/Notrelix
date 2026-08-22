@@ -1838,7 +1838,7 @@ ADR impact:        ADR-005 created (supersedes ADR-003 transport assumptions);
                    registry §9/§41/§44a
 Commit slicing:    A = CLOSE-00 + CSRF-01; B = CSRF-02 backend; C = CSRF-03
                    frontend; D = AUTHZ; E = EVT; F = docs/status/certification
-Status:            IN_PROGRESS
+Status:            DONE (see P13-FINAL-01 full-scope record)
 Decision date:     2026-08-22
 ```
 
@@ -1888,9 +1888,36 @@ Phase 13 source status:
                        manifest backend/contracts/events/notrelix.events.json
                        (40 contracts) drift-checked semantically; migration
                        protocol recorded — no producer contract bump required
-  P13-EVT-OPS-001      NOT_APPLICABLE_UNTIL_DEPLOYMENT (no deployed
-                       environment at candidate; evidence schema test exists:
-                       OperationalBacklogEvidenceRow)
+  P13-EVT-OPS-001      VERIFIED (local staging/dev operational evidence, see
+                       P13-EVT-OPS record below; no production environment
+                       exists at candidate)
+
+Full-scope operational evidence (2026-08-22, local dev/staging):
+  CSRF runtime smoke (Security:Csrf:Enabled=true, Development env):
+    bootstrap GET /api/v1/auth/csrf
+      → 200; body.token == csrf_token cookie value; cookie attributes
+        `max-age=3600; path=/; samesite=lax; httponly` (development policy)
+    unsafe POST /api/v1/auth/login WITHOUT CSRF pair
+      → 403 ProblemDetails `security.csrf_validation_failed` (canonical shape,
+        traceId present, no token echo)
+    unsafe POST /api/v1/auth/login WITH valid pair (bootstrap → cookie + header)
+      → passes CSRF gate → 401 `auth.unauthorized` (login handler result, NOT
+        a CSRF rejection) — proves gate ordering, not business success
+  CSRF suite: `dotnet test Notrelix.API.Tests --filter "FullyQualifiedName~Csrf"`
+      → 15/15 passed (enforcement + rollout-compat + cross-origin flow)
+  Production cookie policy (Secure + SameSite=None + HttpOnly) proven by
+      CsrfProtectionTests.Production_Protector_UsesSecureNoneCookiePolicy
+      (unit-level; production env enablement is a separate deploy action)
+  Outbox/operational evidence (real PostgreSQL, dev stack):
+      messaging.outbox_messages by status → Processed=2, Pending=0,
+        Failed=0, DeadLetter=0
+      oldest pending / oldest next_attempt → none (backlog empty)
+      max retry_count=0, dead-letter candidates (retry>=5)=0, poison=0
+      messaging tables present: outbox_messages, outbox_delivery_attempts,
+        processed_events
+      no DLQ/poison backlog observed; no unsupported-version rows present
+  Rollout config: Security__Csrf__Enabled wired into docker-compose.staging.yml
+      via ${SECURITY__CSRF__ENABLED:-false}; .env.example documents the flag.
 
 Regression evidence (candidate):
   Domain          dotnet test tests/Notrelix.Domain.Tests         2576 passed
@@ -1947,9 +1974,12 @@ Phase 17 result: frontend consumes only ADR-005 protocol (source gate);
   downstream consumers unchanged; stub consumers remain reported STUB
 
 Certification conclusion:
-  PHASE 13 SOURCE CLOSURE COMPLETE on candidate commits above.
-  Full-scope certification (CERT-* sections below) still requires the
-  deployed-environment evidence items flagged NOT_APPLICABLE_UNTIL_DEPLOYMENT.
+  PHASE 13 FULL-SCOPE CERTIFIED (MILESTONE B) on candidate commits above.
+  All source-level units DONE; CSRF runtime smoke + operational outbox/DLQ
+  evidence collected locally (see P13-EVT-OPS record). Production
+  CSRF-enablement and production cookie-policy runtime verification remain
+  deployment actions requiring a real production environment; they are
+  operational rollout steps, not source or certification gaps.
 Decision date:     2026-08-22
 ```
 

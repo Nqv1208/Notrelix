@@ -35,6 +35,7 @@ services:
       Email__FromEmail: ${EMAIL_FROM:-noreply@notrelix.app}
       Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
       Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost}
+      Security__Csrf__Enabled: ${SECURITY__CSRF__ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy
