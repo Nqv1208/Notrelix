@@ -187,17 +187,30 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
             return new PermissionDecision(true, null, PermissionLevel.Owner);
         }
 
+        // 3. Applicable explicit Governance rules take precedence over the
+        //    non-owner role fallback (IAREQ138): a deny must never be converted
+        //    into an allow by the baseline below.
         var ruleDecision = await EvaluateRulesAsync(context, cancellationToken);
         if (ruleDecision is not null)
         {
             return ruleDecision;
         }
 
-        return context.Action switch
+        // 4. Current AccountRole baseline fallback (IAREQ090 / Phase 13 frozen
+        //    semantics): every active member may view workspaces; only Owner
+        //    (canonical authority above) and Admin may create workspaces.
+        //    This is the single central evaluator — handlers MUST NOT duplicate it.
+        if (context.Action == PermissionAction.ViewWorkspace)
         {
-            PermissionAction.ViewWorkspace => new PermissionDecision(true, null, PermissionLevel.Viewer),
-            _ => new PermissionDecision(false, "missing_permission")
-        };
+            return new PermissionDecision(true, null, PermissionLevel.Viewer);
+        }
+
+        if (context.Action == PermissionAction.CreateWorkspace && member.Role == AccountRole.Admin)
+        {
+            return new PermissionDecision(true, null, PermissionLevel.Editor);
+        }
+
+        return new PermissionDecision(false, "missing_permission");
     }
 
     private async Task<PermissionDecision?> EvaluateRulesAsync(

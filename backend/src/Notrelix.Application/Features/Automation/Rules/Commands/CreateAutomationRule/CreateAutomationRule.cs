@@ -1,4 +1,6 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
+using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Domain.Automation.RulesEngine;
 
@@ -9,7 +11,11 @@ public record CreateAutomationRuleCommand(
     string Name,
     string TriggerEvent,
     string ActionType,
-    string Configuration) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest;
+    string Configuration) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
+}
 
 public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomationRuleCommand, Result<Guid>>
 {
