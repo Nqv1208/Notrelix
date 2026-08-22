@@ -1983,6 +1983,97 @@ Certification conclusion:
 Decision date:     2026-08-22
 ```
 
+## 65.4 Phase 14 closure record — persistence / migration / compatibility
+
+Candidate branch:  develop
+Baseline SHA:      4efd37bdff79f93f97059586928aa94af67ba8b1
+Candidate HEAD:    8dcc8389 (PR #93 checks 39/39 PASS at close)
+
+P14-MIG-001 — candidate schema diff review
+  Method:     git diff 4efd37bd..HEAD -- backend/src/**/Migrations/**
+              + ApplicationDbContextModelSnapshot.cs
+  Result:     EMPTY diff — zero schema delta since the audited baseline
+  Migration head: 20260702093805_SchemaV2Baseline (unchanged; single
+              consolidated baseline per PR-IA-00 decision note §13)
+  Classification: no schema change (no additive/backfill/breaking/index/
+              secret-format/ownership-move delta)
+  IA-TST-MIG-DB-001: NOT_APPLICABLE — no schema delta (TESTS §189 permits
+              recording with source/model-diff evidence, which is this diff)
+  Justification for zero persisted event-contract metadata: consumer
+  maturity and contract identity live in source registries +
+  backend/contracts/events/notrelix.events.json; no DB column required.
+
+P14-MIG-002 — event registry caller compatibility
+  Inventory of former name-only resolution paths:
+    - IIntegrationEventCatalog.Resolve/TryResolve(messageName)
+        → migrated to EventContractKey(Name, Version); name-only APIs
+          removed from the interface (compiler-enforced; no silent fallback)
+    - OutboxDispatcher (production dispatch path)
+        → resolves via new EventContractKey(message.MessageName,
+          message.SchemaVersion) — version comes from the durable envelope row
+    - ContractRegistry
+        → already compound-keyed (Get(name, version)); unchanged
+    - EventTypeRegistry name→type direction
+        → proven NOT a public integration-event resolution path:
+          zero production callers (only type→name used by the domain-event
+          outbox writer)
+  Gate: Notrelix.Architecture.Tests
+        ProductionEventContractArchitectureTests.
+        ProductionResolutionPaths_UseCompoundContractIdentity
+        asserts (1) catalog surface has no string-parameter resolution API,
+        (2) dispatcher source contains the compound-key call.
+  Runtime proof: IntegrationEventCatalogResolutionTests +
+        VersionedContractMigrationFixtureTests (12 cases) incl. serializer
+        round-trip preserving envelope version for v1 and v2 fixtures.
+
+P14-MIG-003 — CSRF deployment compatibility
+  Rollout sequence (executable, staged):
+    1. deploy backend bootstrap/protocol with Security:Csrf:Enabled=false
+       (current committed appsettings state)
+    2. deploy frontend transport (@notrelix/contracts client, ADR-005)
+    3. verify integration/smoke — CsrfCrossStackFlowTests models the flow;
+       production smoke = run once after step 2 in the target environment
+    4. enable Security:Csrf:Enabled=true (config change only)
+  Compatibility evidence for step 1→2 coexistence:
+        CsrfProtectionTests.FlagDisabled_MiddlewareDoesNotInterfereWithUnsafeRequests
+        (= IA-TST-MIG-CSRF-001) — pre-enable runtime flow unaffected
+  Enabled-state evidence: CsrfCrossStackFlowTests run against a host with
+        Security:Csrf:Enabled=true (= IA-TST-MIG-CSRF-002 substance)
+  Rollback: disable the feature flag; no reintroduction of the legacy
+        XSRF convention is required or permitted. Flag-off rollback is an
+        operational action, not a revert to target architecture.
+  No atomic-deploy guarantee exists between backend and frontend hosts in
+  this repository; the staged sequence above is therefore mandatory.
+
+P14-MIG-004 — public contract compatibility review
+  OpenAPI:                +1 operation only (GET /api/v1/auth/csrf);
+                          regenerated from candidate producer; drift clean
+  CSRF bootstrap response:new endpoint {token} — additive, no existing
+                          consumer impacted
+  Event manifest:         NEW artifact v1 (40 contracts) generated from
+                          canonical registries; drift gate active
+  Consumer registry:      maturity metadata additive; one registry row
+                          corrected to match its real contract version
+                          (identity.user-registered v1 → v2) — metadata fix,
+                          no wire change
+  Public event versions:  no payload schema changes; no version bumps;
+                          "no producer contract bump required" recorded
+  Breaking consumer contracts introduced by Phase 13 closure: NONE
+  Frontend generated REST schema resynced via codegen (completes the
+  artifact sync left pending by IA-API-004's CreatedApiTokenDto change).
+
+Phase 14 exit criteria (PLAN §139):
+  - DB migration applicability explicit ........ YES (zero-delta evidence)
+  - event registry call sites version-aware .... YES (gate + runtime tests)
+  - CSRF rollout order executable .............. YES (sequence + both flag
+                                                  states under test)
+  - public contract compatibility recorded ..... YES (this record)
+  - pending EF model change .................... NONE
+
+Status:            CLOSED
+Decision date:     2026-08-22
+```
+
 # Migration certification
 
 ## 66. CERT-MIG-001 — migration inventory
