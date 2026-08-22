@@ -1,5 +1,6 @@
 import type { ApiRequestOptions, NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
+import type { OperationRequestBody, OperationResponse } from "@notrelix/contracts";
 import type {
   ActivityLogResponseApi,
   AttachmentDtoApi,
@@ -20,77 +21,93 @@ import {
   mapCardDto,
 } from "@notrelix/work-management-core";
 
+type CreateItemOp = "WorkManagement.BoardItems.Create";
+type CreateItemBody = OperationRequestBody<CreateItemOp>;
+type CreateItemResponse = OperationResponse<CreateItemOp, 200>;
+
+type UpdateItemOp = "WorkManagement.BoardItems.Update";
+type UpdateItemBody = OperationRequestBody<UpdateItemOp>;
+
+type MoveItemOp = "WorkManagement.BoardItems.Move";
+type MoveItemBody = OperationRequestBody<MoveItemOp>;
+
+type UpdateFieldValueOp = "WorkManagement.BoardItems.UpdateFieldValue";
+type UpdateFieldValueBody = OperationRequestBody<UpdateFieldValueOp>;
+
 export function createCardApi(client: NotrelixClient) {
   const api = client.api;
   return {
     async getCard(cardId: string): Promise<CardDetail> {
-      const card = await api.get<CardDtoApi>(endpoints.cards.detail(cardId));
+      const card = await api.get<CardDtoApi>(endpoints.boardItems.detail(cardId));
       return mapCardDto(card);
     },
 
     async createCard(
-      _boardId: string,
+      boardId: string,
       payload: CreateCardInput,
-    ): Promise<Card> {
-      const id = await api.post<string>(endpoints.lists.cards(payload.listId), {
+    ): Promise<void> {
+      const body: CreateItemBody = {
+        groupId: payload.listId, // canonical uses groupId!
         title: payload.title,
         position: payload.position,
+      };
+      await api.post<CreateItemResponse>(endpoints.boardItems.create(boardId), body, {
+        headers: { "Idempotency-Key": crypto.randomUUID() },
       });
-      return this.getCard(id);
+      // no longer returning getCard(id) because response is void.
     },
 
     async updateCard(cardId: string, patch: UpdateCardInput): Promise<void> {
-      await api.patch<void>(endpoints.cards.detail(cardId), patch);
+      const body: UpdateItemBody = patch; // mapping fields
+      await api.patch<void>(endpoints.boardItems.detail(cardId), body);
     },
 
     async deleteCard(cardId: string): Promise<void> {
-      await api.delete<void>(endpoints.cards.detail(cardId));
+      await api.delete<void>(endpoints.boardItems.detail(cardId));
     },
 
     async archiveCard(cardId: string): Promise<void> {
-      await api.post<void>(endpoints.cards.archive(cardId));
+      await api.post<void>(endpoints.boardItems.archive(cardId));
     },
 
-    async duplicateCard(cardId: string): Promise<string> {
-      return api.post<string>(endpoints.cards.duplicate(cardId));
+    async duplicateCard(cardId: string): Promise<void> {
+      await api.post<void>(endpoints.boardItems.duplicate(cardId));
     },
 
     async moveCard(
       payload: MoveCardInput,
       options?: ApiRequestOptions,
     ): Promise<void> {
-      const body = {
-        listId: payload.listId,
+      const body: MoveItemBody = {
+        groupId: payload.listId, // mapping listId to groupId
         position: payload.position,
       };
       if (options) {
         await api.post<void>(
-          endpoints.cards.move(payload.cardId),
+          endpoints.boardItems.move(payload.cardId),
           body,
           options,
         );
         return;
       }
-      await api.post<void>(endpoints.cards.move(payload.cardId), body);
+      await api.post<void>(endpoints.boardItems.move(payload.cardId), body);
     },
 
     async updateFieldValue(payload: UpdateFieldValueInput): Promise<void> {
-      await api.patch<void>(endpoints.cards.fieldValues(payload.cardId), {
-        fieldDefinitionId: payload.fieldDefinitionId,
-        value: payload.value,
-      });
+      const body: UpdateFieldValueBody = { value: payload.value };
+      await api.patch<void>(endpoints.boardItems.fieldValue(payload.cardId, payload.fieldDefinitionId), body);
     },
 
     async getCardFiles(cardId: string) {
       const files = await api.get<AttachmentDtoApi[]>(
-        endpoints.cards.attachments(cardId),
+        endpoints.boardItems.attachments(cardId),
       );
       return files.map((file) => mapAttachmentDtoToCardFile(file, cardId));
     },
 
     async getCardActivity(cardId: string) {
       const activity = await api.get<ActivityLogResponseApi>(
-        endpoints.cards.activity(cardId),
+        endpoints.boardItems.activity(cardId),
       );
       return mapActivityResponse(activity, cardId);
     },

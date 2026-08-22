@@ -15,7 +15,7 @@ export function useCreateKanbanColumn(boardId: string, workspaceId: string) {
   const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId);
 
   return useMutation<
-    string,
+    void,
     Error,
     { title: string; color?: string; position?: number },
     MutationContext

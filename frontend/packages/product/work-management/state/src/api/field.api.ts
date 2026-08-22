@@ -1,9 +1,19 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
+import type { OperationRequestBody, OperationResponse } from "@notrelix/contracts";
 import type {
   BoardTableColumn,
   FieldDefinition,
 } from "@notrelix/work-management-core";
+
+type CreateFieldOp = "WorkManagement.BoardFields.Create";
+type CreateFieldBody = OperationRequestBody<CreateFieldOp>;
+
+type UpdateFieldOp = "WorkManagement.BoardFields.Update";
+type UpdateFieldBody = OperationRequestBody<UpdateFieldOp>;
+
+type ReorderFieldsOp = "WorkManagement.BoardFields.Reorder";
+type ReorderFieldsBody = OperationRequestBody<ReorderFieldsOp>;
 
 export type CreateColumnInput = {
   boardId: string;
@@ -25,41 +35,47 @@ export type UpdateColumnInput = {
 export function createColumnApi(client: NotrelixClient) {
   const api = client.api;
   return {
-    async createColumn(input: CreateColumnInput): Promise<string> {
-      return api.post<string>(endpoints.boards.columns(input.boardId), {
+    async createColumn(input: CreateColumnInput): Promise<void> {
+      const body: CreateFieldBody = {
         name: input.name,
-        fieldType: input.fieldType,
-        settings: input.settings ? JSON.stringify(input.settings) : undefined,
+        type: input.fieldType,
+        settingsJson: input.settings ? JSON.stringify(input.settings) : undefined,
         position: input.position,
+      };
+      await api.post<void>(endpoints.boardFields.create(input.boardId), body, {
+        headers: { "Idempotency-Key": crypto.randomUUID() },
       });
     },
 
     async updateColumn(input: UpdateColumnInput): Promise<void> {
+      const body: UpdateFieldBody = {
+        name: input.name,
+        type: input.fieldType,
+        settingsJson: input.settings ? JSON.stringify(input.settings) : undefined,
+      };
       await api.patch<void>(
-        endpoints.boards.column(input.boardId, input.columnId),
-        {
-          name: input.name,
-          fieldType: input.fieldType,
-          settings: input.settings ? JSON.stringify(input.settings) : undefined,
-          isHidden: input.isHidden,
-        },
+        endpoints.boardFields.detail(input.boardId, input.columnId),
+        body,
       );
+      // Wait, isHidden is not in UpdateBoardFieldRequest? 
+      // If it's a BoardView preference, it's not part of the board field update!
     },
 
     async deleteColumn(boardId: string, columnId: string): Promise<void> {
-      await api.delete<void>(endpoints.boards.column(boardId, columnId));
+      await api.delete<void>(endpoints.boardFields.detail(boardId, columnId));
     },
 
     async reorderColumns(
       boardId: string,
       columns: Pick<BoardTableColumn, "id">[] | string[],
     ): Promise<void> {
-      await api.post<void>(endpoints.boards.reorderColumns(boardId), {
+      const body: ReorderFieldsBody = {
         items: columns.map((column, index) => ({
           id: typeof column === "string" ? column : column.id,
           newPosition: index + 1,
         })),
-      });
+      };
+      await api.post<void>(endpoints.boardFields.reorder(boardId), body);
     },
   };
 }

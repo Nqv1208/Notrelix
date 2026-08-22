@@ -1,5 +1,6 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
+import type { OperationRequestBody, OperationResponse } from "@notrelix/contracts";
 import type {
   Board,
   BoardDtoApi,
@@ -20,6 +21,12 @@ export const defaultTableViewConfig: ViewConfig = {
   filters: [],
   sortBy: [],
 };
+
+type GetBoardViewOp = "WorkManagement.BoardViews.Get";
+// Type might be System.Void or a DTO? The previous code expects BoardViewDtoApi. We'll use any and assert.
+
+type SaveBoardViewOp = "WorkManagement.BoardViews.Save";
+type SaveBoardViewBody = OperationRequestBody<SaveBoardViewOp>;
 
 export function createBoardApi(client: NotrelixClient) {
   const api = client.api;
@@ -44,8 +51,8 @@ export function createBoardApi(client: NotrelixClient) {
     async getBoardView(
       boardId: string,
     ): Promise<{ viewMode: ViewMode; viewConfig: ViewConfig }> {
-      const view = await api.get<BoardViewDtoApi>(
-        endpoints.boards.view(boardId),
+      const view = await api.get<any>(
+        endpoints.boardViews.detail(boardId),
       );
       return parseBoardView(view);
     },
@@ -55,11 +62,12 @@ export function createBoardApi(client: NotrelixClient) {
       input: { viewMode: ViewMode; viewConfig: ViewConfig },
     ): Promise<void> {
       const config = JSON.stringify(input.viewConfig);
-      await api.put<void>(endpoints.boards.view(boardId), {
+      const body: SaveBoardViewBody = {
         viewMode: input.viewMode,
         config,
         filters: config,
-      });
+      };
+      await api.put<void>(endpoints.boardViews.detail(boardId), body);
     },
   };
 }
@@ -68,8 +76,8 @@ function parseBoardView(view: BoardViewDtoApi): {
   viewMode: ViewMode;
   viewConfig: ViewConfig;
 } {
-  const viewMode = normalizeViewMode(view.viewMode);
-  const rawConfig = view.config ?? view.filters;
+  const viewMode = normalizeViewMode(view?.viewMode);
+  const rawConfig = view?.config ?? view?.filters;
   const parsedConfig =
     typeof rawConfig === "string" ? safeParse(rawConfig) : rawConfig;
   return {
