@@ -114,6 +114,21 @@ export class MockOperationRegistry {
     return createMockResponse(result);
   }
 
+
+  operationMetadata(): {
+    id: string;
+    contract: import("./types").CanonicalContract | import("./types").GapContract;
+    method: string;
+    route: string;
+  }[] {
+    return Array.from(this.operations.values()).map((op) => ({
+      id: op.id,
+      contract: op.contract,
+      method: op.method,
+      route: op.route,
+    }));
+  }
+
   operationIds(): string[] {
     return Array.from(this.operations.keys());
   }

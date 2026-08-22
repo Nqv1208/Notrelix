@@ -13,6 +13,7 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
 
     const op1 = defineMockOperation({
       id: "test.duplicate.id",
+      contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
       method: "GET",
       route: "/test/path/a",
       handle: async () => ok({}),
@@ -20,6 +21,7 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
 
     const op2 = defineMockOperation({
       id: "test.duplicate.id",
+      contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
       method: "GET",
       route: "/test/path/b",
       handle: async () => ok({}),
@@ -34,6 +36,7 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
 
     const op1 = defineMockOperation({
       id: "test.route.one",
+      contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
       method: "GET",
       route: "/test/shared/route",
       handle: async () => ok({}),
@@ -41,6 +44,7 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
 
     const op2 = defineMockOperation({
       id: "test.route.two",
+      contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
       method: "GET",
       route: "/test/shared/route",
       handle: async () => ok({}),
@@ -55,6 +59,7 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
 
     const getOp = defineMockOperation({
       id: "resource.get",
+      contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
       method: "GET",
       route: "/resource",
       handle: async () => ok({ id: "1" }),
@@ -62,6 +67,7 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
 
     const postOp = defineMockOperation({
       id: "resource.create",
+      contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
       method: "POST",
       route: "/resource",
       handle: async () => ok({ id: "2" }),
@@ -78,6 +84,7 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
 
     const op1 = defineMockOperation({
       id: "boards.detail.one",
+      contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
       method: "GET",
       route: "/boards/:id",
       handle: async () => ok({}),
@@ -85,6 +92,7 @@ describe("MFB-FZ-06: Operation Registry Uniqueness Hardening", () => {
 
     const op2 = defineMockOperation({
       id: "boards.detail.two",
+      contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
       method: "GET",
       route: "/boards/:boardId",
       handle: async () => ok({}),

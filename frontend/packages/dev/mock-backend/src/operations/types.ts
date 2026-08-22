@@ -23,6 +23,18 @@ export interface MockOperationContext<
   readonly request: NormalizedMockRequest;
 }
 
+import type { operations } from "@notrelix/contracts";
+
+export type CanonicalContract = {
+  kind: "openapi";
+  operationId: keyof operations;
+};
+
+export type GapContract = {
+  kind: "gap";
+  gapId: `CTR-GAP-${string}`;
+};
+
 export interface MockOperationDefinition<
   Params extends Record<string, string> = Record<string, string>,
   Body = unknown,
@@ -30,6 +42,7 @@ export interface MockOperationDefinition<
   // so notFound/unauthorized/etc. can co-exist with typed success paths.
   ResponseBody = unknown, // eslint-disable-line @typescript-eslint/no-unused-vars
 > {
+  readonly contract: CanonicalContract | GapContract;
   readonly id: string;
   readonly method: string;
   readonly route: string;
