@@ -2175,10 +2175,28 @@ Reliability:
 Performance:
   - authorization hot path: production-graph test proves pipeline-only
     evaluation for five roles with zero handler-level permission lookups
-    (static gate forbids service injection into handlers)
+    (static gate forbids service injection into handlers). Executable
+    call-count proof added: a pass-through counter decorates the REAL
+    decision store in the production composition and asserts exactly one
+    authorization evaluation per request — for allowed roles AND for
+    pipeline denials (handler never re-evaluates).
   - CSRF client overhead: memory token reuse avoids re-bootstrap on
     sequential unsafe requests; N concurrent unsafe requests share one
     bootstrap (fetch call-count assertions).
+  - correctness before caching: closure introduced no authorization,
+    session or account-context cache; the pre-existing resource snapshot
+    store remains tenant-scoped through the request context. Recorded as
+    not applicable for new cache-revocation risk.
+
+Executable observability proofs added:
+  - dispatcher diagnostics gate: dead-letter path must carry the stable
+    UnknownEventType category and identify messages only by envelope
+    identity fields; log statements are machine-checked to never reference
+    serialized payload material.
+  - correlation round-trip: the production serializer path preserves the
+    correlation identifier across publish -> durable payload ->
+    resolution -> deserialize, proving the request-to-event chain stays
+    traceable by non-secret identifiers.
 
 Frontend node suite at this HEAD: 72 files / 313 tests green (includes
 the newly adopted dev mock-backend package after workspace install).

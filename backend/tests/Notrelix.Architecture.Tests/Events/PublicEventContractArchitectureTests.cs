@@ -433,6 +433,45 @@ public class PublicEventContractArchitectureTests : ArchitectureTestBase
             "the outbox dispatch path resolves by the envelope's own (name, version)");
     }
 
+    /// <summary>
+    /// IA-TST-OBS-005 / IAREQ114 / IAREQ119 — the unsupported/unknown contract
+    /// failure path is diagnosable by stable category and message identity,
+    /// and its diagnostics never dump payload material.
+    /// </summary>
+    [Fact]
+    public void DispatcherDiagnostics_CarryStableCategories_WithoutPayloadDump()
+    {
+        var source = RemoveComments(File.ReadAllText(Path.Combine(
+            GetInfrastructurePath(), "BackgroundJobs", "OutboxDispatcher.cs")));
+
+        // Stable diagnosable category for unknown/unsupported contracts...
+        source.Should().Contain("MarkDeadLetter(\"UnknownEventType\"",
+            "unknown/unsupported (name, version) must be categorized at dead-letter time");
+
+        source.Should().Contain("UnknownIntegrationEventTypeException",
+            "resolution failures surface as the canonical exception type");
+
+        // ...identified only by envelope identity fields...
+        foreach (var identityField in new[] { "{MsgId}", "{MsgName}" })
+        {
+            source.Should().Contain(identityField,
+                $"dispatcher diagnostics identify messages by {identityField}");
+        }
+
+        // ...and never by serialized payload content.
+        var logLines = source
+            .Split('\n')
+            .Where(l => l.Contains("_logger.Log", StringComparison.Ordinal))
+            .ToList();
+
+        logLines.Should().NotBeEmpty("the dispatcher is expected to emit diagnostics");
+
+        logLines.Should().OnlyContain(
+            l => !l.Contains("PayloadJson", StringComparison.OrdinalIgnoreCase),
+            "dispatcher logs must not include serialized payloads: "
+            + string.Join(" | ", logLines.Where(l => l.Contains("PayloadJson", StringComparison.OrdinalIgnoreCase))));
+    }
+
     private static List<(string ConsumerTypeName, List<(string Name, int Version)> EventKeys)> DiscoverActualConsumers()
     {
         return typeof(ConsumerRegistry).Assembly
