@@ -80,14 +80,20 @@ describe("createWebApplicationServices", () => {
       position: 2,
     });
 
-    expect(firstClient.api.post).toHaveBeenCalledWith("/board-items/card-1/move", {
-      groupId: "group-1",
-      position: 1,
-    });
-    expect(secondClient.api.post).toHaveBeenCalledWith("/board-items/card-2/move", {
-      groupId: "group-2",
-      position: 2,
-    });
+    expect(firstClient.api.post).toHaveBeenCalledWith(
+      "/board-items/card-1/move",
+      {
+        groupId: "group-1",
+        position: 1,
+      },
+    );
+    expect(secondClient.api.post).toHaveBeenCalledWith(
+      "/board-items/card-2/move",
+      {
+        groupId: "group-2",
+        position: 2,
+      },
+    );
     expect(firstClient.api.post).not.toHaveBeenCalledWith(
       "/board-items/card-2/move",
       expect.anything(),

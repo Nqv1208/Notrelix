@@ -41,7 +41,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Account",
     capability: "endpoints.auth.profile",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/account/src/core/api/account.service.ts",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -52,7 +53,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Account",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/account/src/core/api/account.service.ts",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Profile.UpdateProfile",
     operationId: "Identity.Profile.UpdateProfile",
     mutation: true,
@@ -61,7 +63,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Account",
     capability: "endpoints.users.preferences",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/account/src/core/api/account.service.ts",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-ACC-PREFERENCES",
     method: "GET",
@@ -72,7 +75,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Account",
     capability: "endpoints.users.preferences",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/account/src/core/api/account.service.ts",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-ACC-PREFERENCES",
     method: "PATCH",
@@ -83,7 +87,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Account",
     capability: "endpoints.users.security",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/account/src/core/api/account.service.ts",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-ACC-SECURITY",
     method: "GET",
@@ -94,7 +99,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Identity",
     capability: "endpoints.auth.login",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/auth/src/core/api/auth.service.ts",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -105,7 +111,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Identity",
     capability: "endpoints.auth.register",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/auth/src/core/api/auth.service.ts",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -116,7 +123,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Identity",
     capability: "endpoints.auth.logout",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/auth/src/core/api/auth.service.ts",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -127,7 +135,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Identity",
     capability: "endpoints.auth.refresh",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/auth/src/core/api/auth.service.ts",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -138,7 +147,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Identity",
     capability: "endpoints.auth.forgotPassword",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/auth/src/core/api/auth.service.ts",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -149,7 +159,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Identity",
     capability: "endpoints.auth.resetPassword",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/auth/src/core/api/auth.service.ts",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -160,7 +171,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Collaboration",
     capability: "TODO",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/collaboration/src/core/api/comment.service.ts",
+    consumerFile:
+      "frontend/packages/features/collaboration/src/core/api/comment.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -171,7 +183,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Collaboration",
     capability: "endpoints.comments.delete",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/collaboration/src/core/api/comment.service.ts",
+    consumerFile:
+      "frontend/packages/features/collaboration/src/core/api/comment.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -182,7 +195,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Governance",
     capability: "endpoints.roles.list",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/governance/src/core/api/governance.service.ts",
+    consumerFile:
+      "frontend/packages/features/governance/src/core/api/governance.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -193,7 +207,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Governance",
     capability: "endpoints.roles.create",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/governance/src/core/api/governance.service.ts",
+    consumerFile:
+      "frontend/packages/features/governance/src/core/api/governance.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -204,7 +219,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Governance",
     capability: "endpoints.roles.update",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/governance/src/core/api/governance.service.ts",
+    consumerFile:
+      "frontend/packages/features/governance/src/core/api/governance.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PUT",
@@ -215,7 +231,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Governance",
     capability: "endpoints.roles.delete",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/governance/src/core/api/governance.service.ts",
+    consumerFile:
+      "frontend/packages/features/governance/src/core/api/governance.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -226,7 +243,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Governance",
     capability: "endpoints.auditLogs.list",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/governance/src/core/api/governance.service.ts",
+    consumerFile:
+      "frontend/packages/features/governance/src/core/api/governance.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -237,7 +255,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Integrations",
     capability: "endpoints.connections.disconnect",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/integrations/src/core/api/integrations.service.ts",
+    consumerFile:
+      "frontend/packages/features/integrations/src/core/api/integrations.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -248,7 +267,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Integrations",
     capability: "endpoints.webhooks.list",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/integrations/src/core/api/integrations.service.ts",
+    consumerFile:
+      "frontend/packages/features/integrations/src/core/api/integrations.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -259,7 +279,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Integrations",
     capability: "endpoints.webhooks.create",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/integrations/src/core/api/integrations.service.ts",
+    consumerFile:
+      "frontend/packages/features/integrations/src/core/api/integrations.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -270,7 +291,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Integrations",
     capability: "endpoints.webhooks.delete",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/integrations/src/core/api/integrations.service.ts",
+    consumerFile:
+      "frontend/packages/features/integrations/src/core/api/integrations.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -281,7 +303,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Notifications",
     capability: "endpoints.notifications.list",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
+    consumerFile:
+      "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -292,7 +315,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Notifications",
     capability: "endpoints.notifications.unreadCount",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
+    consumerFile:
+      "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -303,7 +327,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Notifications",
     capability: "endpoints.notifications.read",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
+    consumerFile:
+      "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -314,7 +339,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Notifications",
     capability: "endpoints.notifications.readAll",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
+    consumerFile:
+      "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -325,7 +351,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Notifications",
     capability: "endpoints.notifications.archive",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
+    consumerFile:
+      "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -336,7 +363,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Notifications",
     capability: "TODO",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
+    consumerFile:
+      "frontend/packages/features/notifications/src/core/api/notifications.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PATCH",
@@ -347,7 +375,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     capability: "endpoints.workspaces.acceptInvitation",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -358,7 +387,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/members.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/members.service.ts",
     capability: "Workspaces.Members.ListMembers",
     operationId: "Workspaces.Members.ListMembers",
     mutation: false,
@@ -367,7 +397,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/members.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/members.service.ts",
     capability: "Workspaces.Members.UpdateMemberRole",
     operationId: "Workspaces.Members.UpdateMemberRole",
     mutation: true,
@@ -376,7 +407,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/members.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/members.service.ts",
     capability: "Workspaces.Members.RemoveMember",
     operationId: "Workspaces.Members.RemoveMember",
     mutation: true,
@@ -385,7 +417,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     capability: "/workspaces/${workspaceId}/views",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/views.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/views.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-WS-VIEWS",
     method: "GET",
@@ -396,7 +429,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     capability: "/workspaces/${workspaceId}/views/${viewId}",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/views.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/views.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-WS-VIEWS",
     method: "DELETE",
@@ -407,7 +441,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     capability: "/workspaces/${workspaceId}/views/reorder",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/views.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/views.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-WS-VIEWS",
     method: "POST",
@@ -418,7 +453,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     capability: "endpoints.workspaces.list",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -429,7 +465,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     capability: "endpoints.workspaces.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -440,7 +477,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Workspace",
     capability: "endpoints.workspaces.list",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -528,7 +566,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardViews.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PUT",
@@ -539,7 +578,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.checklists",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -550,7 +590,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.checklists",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -561,7 +602,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.checklists.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PATCH",
@@ -572,7 +614,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.checklists.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -583,7 +626,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.checklists.items",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -594,7 +638,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.checklistItems.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PATCH",
@@ -605,7 +650,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.checklistItems.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -616,7 +662,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardFields.create",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/field.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/field.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -627,7 +674,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardFields.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/field.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/field.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -638,7 +686,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardFields.reorder",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/field.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/field.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -649,7 +698,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardGroups.create",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/group.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/group.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -660,7 +710,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardGroups.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/group.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/group.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PATCH",
@@ -671,7 +722,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardGroups.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/group.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/group.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -682,7 +734,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardGroups.duplicate",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/group.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/group.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -693,7 +746,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardGroups.reorder",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/group.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/group.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -704,7 +758,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.comments.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item-comments.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-comments.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PATCH",
@@ -715,7 +770,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "GET",
@@ -726,7 +782,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.create",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -737,7 +794,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PATCH",
@@ -748,7 +806,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.detail",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -759,7 +818,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.archive",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -770,7 +830,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.duplicate",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -781,7 +842,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.move",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -792,7 +854,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.fieldValues",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "PATCH",
@@ -803,7 +866,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boards.label",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/label.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/label.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",
@@ -814,7 +878,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.labels",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/label.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/label.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "POST",
@@ -825,7 +890,8 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     context: "Work Management",
     capability: "endpoints.boardItems.label",
     consumerSymbol: "TODO",
-    consumerFile: "frontend/packages/product/work-management/state/src/api/label.api.ts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/label.api.ts",
     classification: "COMPATIBILITY_GAP_MOCKED",
     gapId: "CTR-GAP-TODO",
     method: "DELETE",

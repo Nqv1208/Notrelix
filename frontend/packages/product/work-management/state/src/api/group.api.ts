@@ -1,6 +1,9 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
-import type { OperationRequestBody, OperationResponse } from "@notrelix/contracts";
+import type {
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import type { BoardGroup } from "@notrelix/work-management-core";
 
 type CreateGroupOp = "WorkManagement.BoardGroups.Create";
@@ -9,8 +12,6 @@ type CreateGroupResponse = OperationResponse<CreateGroupOp, 200>;
 
 type UpdateGroupOp = "WorkManagement.BoardGroups.Update";
 type UpdateGroupBody = OperationRequestBody<UpdateGroupOp>;
-
-type DeleteGroupOp = "WorkManagement.BoardGroups.Delete";
 
 type DuplicateGroupOp = "WorkManagement.BoardGroups.Duplicate";
 type DuplicateGroupResponse = OperationResponse<DuplicateGroupOp, 200>;
@@ -40,9 +41,13 @@ export function createGroupApi(client: NotrelixClient) {
         position: input.position,
         color: input.color,
       };
-      await api.post<CreateGroupResponse>(endpoints.boardGroups.create(input.boardId), body, {
-        headers: { "Idempotency-Key": crypto.randomUUID() },
-      });
+      await api.post<CreateGroupResponse>(
+        endpoints.boardGroups.create(input.boardId),
+        body,
+        {
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+        },
+      );
     },
 
     async updateGroup(input: UpdateGroupInput): Promise<void> {
@@ -59,7 +64,9 @@ export function createGroupApi(client: NotrelixClient) {
 
     async duplicateGroup(groupId: string): Promise<void> {
       // Producer returns void or a string? Let's check OpenAPI, typically void if using optimistic UI, but we'll assume void for now unless string is defined.
-      await api.post<DuplicateGroupResponse>(endpoints.boardGroups.duplicate(groupId));
+      await api.post<DuplicateGroupResponse>(
+        endpoints.boardGroups.duplicate(groupId),
+      );
     },
 
     async reorderGroups(

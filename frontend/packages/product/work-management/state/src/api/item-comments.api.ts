@@ -1,20 +1,14 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
-import type { OperationRequestBody, OperationResponse } from "@notrelix/contracts";
-import type { CommentDtoApi } from "@notrelix/work-management-core";
+import type { OperationRequestBody } from "@notrelix/contracts";
 import type { CreateCardUpdateInput } from "@notrelix/work-management-core";
 import { mapCommentDtoToCardUpdate } from "@notrelix/work-management-core";
-
-type GetCommentsOp = "Collaboration.Comments.GetBoardItemComments";
-type GetCommentsResponse = OperationResponse<GetCommentsOp, 200>;
 
 type CreateCommentOp = "Collaboration.Comments.CreateBoardItemComment";
 type CreateCommentBody = OperationRequestBody<CreateCommentOp>;
 
 type UpdateCommentOp = "Collaboration.Comments.Update";
 type UpdateCommentBody = OperationRequestBody<UpdateCommentOp>;
-
-type DeleteCommentOp = "Collaboration.Comments.Delete";
 
 export function createCommentApi(client: NotrelixClient) {
   const api = client.api;

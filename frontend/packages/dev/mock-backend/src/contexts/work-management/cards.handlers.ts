@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Work Management — Cards, Checklists, and Comments context handlers.
  *
@@ -37,7 +38,7 @@ import type {
   CommentDtoApi,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
-import { ok, created, notFound } from "../../transport/create-response";
+import { ok, notFound } from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
 
 function projectCardDto(
@@ -107,7 +108,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ listId: string }, never, CardDtoApi[]>({
     id: "wm.boardItems.byGroup",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.List" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.List",
+    } as any,
     method: "GET",
     route: "/board-groups/:listId/items",
     async handle({ params, store }) {
@@ -138,14 +142,21 @@ export const cardsOperations = [
     string
   >({
     id: "wm.boardItems.create",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.Create" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Create",
+    } as any,
     method: "POST",
     route: "/boards/:boardId/items",
-    async handle({ params, body, store }) {
-      const data = (body ?? {}) as { groupId: string; title?: string; position?: number; };
+    async handle({ params: _params, body, store }) {
+      const data = (body ?? {}) as {
+        groupId: string;
+        title?: string;
+        position?: number;
+      };
       const list = store.getList(data.groupId || "fallback");
       if (!list) return notFound("List not found");
-      const newCard = store.createCardByListId(data.groupId || "fallback", {
+      const _newCard = store.createCardByListId(data.groupId || "fallback", {
         title: data.title,
         position: data.position,
       });
@@ -166,9 +177,13 @@ export const cardsOperations = [
     void
   >({
     id: "wm.boardItems.update",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.Update" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Update",
+    } as any,
     method: "PATCH",
     route: "/board-items/:id",
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async handle({ params, body, store }) {
       const data = (body ?? {}) as {
         title?: string;
@@ -194,7 +209,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, never, void>({
     id: "wm.boardItems.delete",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.Delete" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Delete",
+    } as any,
     method: "DELETE",
     route: "/board-items/:id",
     async handle({ params, store }) {
@@ -208,7 +226,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, never, void>({
     id: "wm.boardItems.archive",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.Archive" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Archive",
+    } as any,
     method: "POST",
     route: "/board-items/:id/archive",
     async handle({ params, store }) {
@@ -222,7 +243,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, never, void>({
     id: "wm.boardItems.duplicate",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.Duplicate" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Duplicate",
+    } as any,
     method: "POST",
     route: "/board-items/:id/duplicate",
     async handle({ params, store }) {
@@ -236,7 +260,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, { listId?: string; position?: number }>({
     id: "wm.boardItems.move",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.Move" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Move",
+    } as any,
     method: "POST",
     route: "/board-items/:id/move",
     async handle({ params, body, store }) {
@@ -265,7 +292,10 @@ export const cardsOperations = [
     void
   >({
     id: "wm.boardItems.fieldValues.update",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.UpdateFieldValue" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.UpdateFieldValue",
+    } as any,
     method: "PATCH",
     route: "/board-items/:id/field-values/:fieldId",
     async handle({ params, body, store }) {
@@ -337,7 +367,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, { labelId: string }, void>({
     id: "wm.boardItems.labels.add",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.AddLabel" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.AddLabel",
+    } as any,
     method: "POST",
     route: "/board-items/:id/labels",
     async handle({ params, body, store }) {
@@ -352,7 +385,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string; labelId: string }, never, void>({
     id: "wm.boardItems.labels.remove",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardItems.RemoveLabel" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.RemoveLabel",
+    } as any,
     method: "DELETE",
     route: "/board-items/:id/labels/:labelId",
     async handle({ params, store }) {
@@ -366,7 +402,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ cardId: string }, never, ChecklistDtoApi[]>({
     id: "checklists.list",
-    contract: { kind: "openapi", operationId: "WorkManagement.Checklists.List" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.List",
+    } as any,
     method: "GET",
     route: "/board-items/:cardId/checklists",
     async handle({ params, store }) {
@@ -396,14 +435,17 @@ export const cardsOperations = [
 
   defineMockOperation<{ cardId: string }, { title: string }, void>({
     id: "checklists.create",
-    contract: { kind: "openapi", operationId: "WorkManagement.Checklists.Create" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.Create",
+    } as any,
     method: "POST",
     route: "/board-items/:cardId/checklists",
     async handle({ params, body, store }) {
       const data = body as { title: string };
       const card = store.getCard(params.cardId);
       if (!card) return notFound("Card not found");
-      const chk = store.createChecklist(params.cardId, data.title);
+      const _chk = store.createChecklist(params.cardId, data.title);
       return ok<void>(undefined);
     },
   }),
@@ -416,7 +458,10 @@ export const cardsOperations = [
     void
   >({
     id: "checklists.update",
-    contract: { kind: "openapi", operationId: "WorkManagement.Checklists.Update" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.Update",
+    } as any,
     method: "PATCH",
     route: "/checklists/:id",
     async handle({ params, body, store }) {
@@ -430,7 +475,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, never, void>({
     id: "checklists.delete",
-    contract: { kind: "openapi", operationId: "WorkManagement.Checklists.Delete" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.Delete",
+    } as any,
     method: "DELETE",
     route: "/checklists/:id",
     async handle({ params, store }) {
@@ -444,14 +492,17 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, { title: string }, void>({
     id: "checklistItems.create",
-    contract: { kind: "openapi", operationId: "WorkManagement.Checklists.CreateItemByChecklist" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.CreateItemByChecklist",
+    } as any,
     method: "POST",
     route: "/checklists/:id/items",
     async handle({ params, body, store }) {
       const data = body as { title: string };
       const chk = store.getChecklist(params.id);
       if (!chk) return notFound("Checklist not found");
-      const item = store.createChecklistItem(params.id, data.title);
+      const _item = store.createChecklistItem(params.id, data.title);
       return ok<void>(undefined);
     },
   }),
@@ -469,7 +520,10 @@ export const cardsOperations = [
     void
   >({
     id: "checklistItems.update",
-    contract: { kind: "openapi", operationId: "WorkManagement.Checklists.UpdateItem" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.UpdateItem",
+    } as any,
     method: "PATCH",
     route: "/checklist-items/:id",
     async handle({ params, body, store }) {
@@ -483,7 +537,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, never, void>({
     id: "checklistItems.delete",
-    contract: { kind: "openapi", operationId: "WorkManagement.Checklists.DeleteItem" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Checklists.DeleteItem",
+    } as any,
     method: "DELETE",
     route: "/checklist-items/:id",
     async handle({ params, store }) {
@@ -497,7 +554,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ cardId: string }, never, CommentDtoApi[]>({
     id: "comments.list",
-    contract: { kind: "openapi", operationId: "Collaboration.Comments.GetBoardItemComments" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Comments.GetBoardItemComments",
+    } as any,
     method: "GET",
     route: "/board-items/:cardId/comments",
     async handle({ params, store }) {
@@ -527,7 +587,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ cardId: string }, { contentMd: string }, void>({
     id: "comments.create",
-    contract: { kind: "openapi", operationId: "Collaboration.Comments.CreateBoardItemComment" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Comments.CreateBoardItemComment",
+    } as any,
     method: "POST",
     route: "/board-items/:cardId/comments",
     async handle({ params, body, store }) {
@@ -535,7 +598,7 @@ export const cardsOperations = [
       const card = store.getCard(params.cardId);
       if (!card) return notFound("Card not found");
       const user = store.getCurrentUser();
-      const cmt = store.createCardComment(
+      const _cmt = store.createCardComment(
         params.cardId,
         user.id,
         data.contentMd,
@@ -548,13 +611,17 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, { contentMd: string }, void>({
     id: "comments.update",
-    contract: { kind: "openapi", operationId: "Collaboration.Comments.Update" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Comments.Update",
+    } as any,
     method: "PATCH",
     route: "/comments/:id",
     async handle({ params, body, store }) {
       const data = body as { contentMd: string };
       let updated = store.updateCardComment(params.id, data.contentMd);
-      if (!updated) updated = store.updatePageComment(params.id, data.contentMd) !== null;
+      if (!updated)
+        updated = store.updatePageComment(params.id, data.contentMd) !== null;
       if (!updated) return notFound("Comment not found");
       return ok<void>(undefined);
     },
@@ -564,7 +631,10 @@ export const cardsOperations = [
 
   defineMockOperation<{ id: string }, never, void>({
     id: "comments.delete",
-    contract: { kind: "openapi", operationId: "Collaboration.Comments.Delete" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Comments.Delete",
+    } as any,
     method: "DELETE",
     route: "/comments/:id",
     async handle({ params, store }) {

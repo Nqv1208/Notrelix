@@ -1,4 +1,5 @@
 import { defineMockOperation } from "../../operations/types";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ok, notFound, created } from "../../transport/create-response";
 type HistoryDtoApi = any;
 
@@ -7,7 +8,10 @@ export const historyOperations = [
 
   defineMockOperation<{ pageId: string }, never, HistoryDtoApi[]>({
     id: "docs.history.list",
-    contract: { kind: "openapi", operationId: "Documents.Pages.GetPageHistory" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.GetPageHistory",
+    } as any,
     method: "GET",
     route: "/pages/:pageId/history",
     async handle({ params, store }) {
@@ -22,7 +26,7 @@ export const historyOperations = [
           action: h.action,
           resourceTitle: h.resourceTitle,
           createdAt: h.createdAt,
-        }))
+        })),
       );
     },
   }),

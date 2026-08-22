@@ -1,6 +1,6 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
-import type { OperationRequestBody, OperationResponse } from "@notrelix/contracts";
+import type { OperationRequestBody } from "@notrelix/contracts";
 import type {
   BoardTableColumn,
   FieldDefinition,
@@ -39,7 +39,9 @@ export function createColumnApi(client: NotrelixClient) {
       const body: CreateFieldBody = {
         name: input.name,
         type: input.fieldType,
-        settingsJson: input.settings ? JSON.stringify(input.settings) : undefined,
+        settingsJson: input.settings
+          ? JSON.stringify(input.settings)
+          : undefined,
         position: input.position,
       };
       await api.post<void>(endpoints.boardFields.create(input.boardId), body, {
@@ -51,13 +53,15 @@ export function createColumnApi(client: NotrelixClient) {
       const body: UpdateFieldBody = {
         name: input.name,
         type: input.fieldType,
-        settingsJson: input.settings ? JSON.stringify(input.settings) : undefined,
+        settingsJson: input.settings
+          ? JSON.stringify(input.settings)
+          : undefined,
       };
       await api.patch<void>(
         endpoints.boardFields.detail(input.boardId, input.columnId),
         body,
       );
-      // Wait, isHidden is not in UpdateBoardFieldRequest? 
+      // Wait, isHidden is not in UpdateBoardFieldRequest?
       // If it's a BoardView preference, it's not part of the board field update!
     },
 

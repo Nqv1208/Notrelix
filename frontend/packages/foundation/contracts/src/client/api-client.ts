@@ -134,7 +134,8 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
       });
     } catch (error) {
       const isAbort = (error as { name?: string }).name === "AbortError";
-      console.log("FAILED URL:", url, options.method); throw new AppError({
+      console.log("FAILED URL:", url, options.method);
+      throw new AppError({
         kind: isAbort ? "aborted" : "network",
         message: isAbort
           ? "Request was aborted."
@@ -175,14 +176,16 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
         data = JSON.parse(text);
       } catch (parseError) {
         if (!response.ok) {
-          console.log("FAILED URL:", url, options.method); throw new AppError({
+          console.log("FAILED URL:", url, options.method);
+          throw new AppError({
             kind: mapStatusToKind(response.status),
             status: response.status,
             message: text || "Request failed",
             correlationId,
           });
         }
-        console.log("FAILED URL:", url, options.method); throw new AppError({
+        console.log("FAILED URL:", url, options.method);
+        throw new AppError({
           kind: "server",
           status: response.status,
           code: "parse_error",
@@ -204,7 +207,8 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
               Record<string, string[]> | undefined)
           : undefined;
 
-      console.log("FAILED URL:", url, options.method); throw new AppError({
+      console.log("FAILED URL:", url, options.method);
+      throw new AppError({
         kind,
         status: response.status,
         message,

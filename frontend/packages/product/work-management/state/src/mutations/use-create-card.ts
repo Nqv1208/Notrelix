@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { wmQueryKeys } from "../queries/keys";
 import type { CreateCardInput } from "@notrelix/work-management-core";
-import type { Card, FullBoardResponse } from "@notrelix/work-management-core";
+import type { FullBoardResponse } from "@notrelix/work-management-core";
 import { createOptimisticCard } from "../cache/optimistic-card";
 import { useWorkManagementServices } from "../services";
 

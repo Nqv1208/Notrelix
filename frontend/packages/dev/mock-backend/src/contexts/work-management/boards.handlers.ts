@@ -173,7 +173,10 @@ export const boardsOperations = [
 
   defineMockOperation<{ id: string }, never, BoardViewDtoApi>({
     id: "boards.view.get",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardViews.Get" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardViews.Get",
+    } as any,
     method: "GET",
     route: "/boards/:id/views",
     async handle({ params, store }) {
@@ -196,7 +199,10 @@ export const boardsOperations = [
     void
   >({
     id: "boards.view.save",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardViews.Save" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardViews.Save",
+    } as any,
     method: "PUT",
     route: "/boards/:id/views",
     async handle({ params, body, store }) {
@@ -248,7 +254,10 @@ export const boardsOperations = [
     string
   >({
     id: "boards.columns.create",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardFields.Create" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Create",
+    } as any,
     method: "POST",
     route: "/boards/:boardId/fields",
     async handle({ params, body, store }) {
@@ -281,7 +290,10 @@ export const boardsOperations = [
     void
   >({
     id: "boards.columns.update",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardFields.Update" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Update",
+    } as any,
     method: "PATCH",
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, body, store }) {
@@ -295,7 +307,10 @@ export const boardsOperations = [
 
   defineMockOperation<{ boardId: string; columnId: string }, never, void>({
     id: "boards.columns.delete",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardFields.Delete" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Delete",
+    } as any,
     method: "DELETE",
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, store }) {
@@ -313,7 +328,10 @@ export const boardsOperations = [
     void
   >({
     id: "boards.columns.reorder",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardFields.Reorder" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Reorder",
+    } as any,
     method: "POST",
     route: "/boards/:boardId/fields/reorder",
     async handle({ params, body, store }) {
@@ -333,7 +351,10 @@ export const boardsOperations = [
     { id: string; name: string; color: string }[]
   >({
     id: "boards.labels.list",
-    contract: { kind: "openapi", operationId: "WorkManagement.Labels.List" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Labels.List",
+    } as any,
     method: "GET",
     route: "/boards/:boardId/labels",
     async handle({ params, store }) {
@@ -356,7 +377,10 @@ export const boardsOperations = [
     { id: string; name: string; color: string }
   >({
     id: "boards.labels.create",
-    contract: { kind: "openapi", operationId: "WorkManagement.Labels.Create" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Labels.Create",
+    } as any,
     method: "POST",
     route: "/boards/:boardId/labels",
     async handle({ params, body, store }) {
@@ -381,7 +405,10 @@ export const boardsOperations = [
     void
   >({
     id: "boards.labels.update",
-    contract: { kind: "openapi", operationId: "WorkManagement.Labels.Update" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Labels.Update",
+    } as any,
     method: "PATCH",
     route: "/boards/:boardId/labels/:labelId",
     async handle({ params, body, store }) {
@@ -395,7 +422,10 @@ export const boardsOperations = [
 
   defineMockOperation<{ boardId: string; labelId: string }, never, void>({
     id: "boards.labels.delete",
-    contract: { kind: "openapi", operationId: "WorkManagement.Labels.Delete" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Labels.Delete",
+    } as any,
     method: "DELETE",
     route: "/boards/:boardId/labels/:labelId",
     async handle({ params, store }) {

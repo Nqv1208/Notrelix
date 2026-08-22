@@ -106,9 +106,7 @@ if (expectedCount > 0 && counts.total !== expectedCount) {
 }
 
 if (expectedCount > 0 && counts.passed !== expectedCount) {
-  errors.push(
-    `  FAIL: expected passed=${expectedCount}, got ${counts.passed}`,
-  );
+  errors.push(`  FAIL: expected passed=${expectedCount}, got ${counts.passed}`);
 }
 
 if (errors.length > 0) {

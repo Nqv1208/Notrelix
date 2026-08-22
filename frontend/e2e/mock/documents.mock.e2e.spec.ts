@@ -13,7 +13,9 @@ test("renders a production Documents route through mock transport", async ({
     // For other scenarios, just verify home loads without mock errors.
     await page.goto("/home");
     expect(
-      errors.filter((message) => message.includes("MockUnhandledOperationError")),
+      errors.filter((message) =>
+        message.includes("MockUnhandledOperationError"),
+      ),
     ).toEqual([]);
     return;
   }

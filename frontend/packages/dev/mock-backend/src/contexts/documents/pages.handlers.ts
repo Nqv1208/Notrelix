@@ -45,20 +45,6 @@ interface BreadcrumbDtoApi {
   iconValue?: string | null;
 }
 
-interface BlockDtoApi {
-  id: string;
-  pageId: string;
-  type: string;
-  position: number;
-  properties: {
-    text?: string;
-    checked?: boolean;
-    language?: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
 function mapPageDto(p: MockPageRecord): PageDtoApi {
   return {
     id: p.id,
@@ -191,5 +177,4 @@ export const pagesOperations = [
       ]);
     },
   }),
-
 ];

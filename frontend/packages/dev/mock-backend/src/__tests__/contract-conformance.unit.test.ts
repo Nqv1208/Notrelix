@@ -46,10 +46,10 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
   it("T-MFB-023: contract catalog closure — all registered operations match the conformance catalog", () => {
     const registry = buildOperationRegistry();
     const registeredIds = new Set(registry.operationIds());
-    const catalogIds = new Set(
-      import_enabled_consumer_surface.ENABLED_CONSUMERS
-        .map(c => c.mockOperationId ?? c.operationId ?? c.gapId)
-        .filter(Boolean) as string[]
+    const _catalogIds = new Set(
+      import_enabled_consumer_surface.ENABLED_CONSUMERS.map(
+        (c) => c.mockOperationId ?? c.operationId ?? c.gapId,
+      ).filter(Boolean) as string[],
     );
 
     // This checks that we don't have stray mock operations not defined in the consumer surface.
@@ -81,7 +81,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     );
     await client.api.get(endpoints.notifications.list);
     await client.api.get(endpoints.boardViews.detail(mockIds.boards.roadmap));
-        await client.api.get(endpoints.boards.labels(mockIds.boards.roadmap));
+    await client.api.get(endpoints.boards.labels(mockIds.boards.roadmap));
     await client.api.get(endpoints.pages.list(mockIds.workspaces.primary));
 
     const snapshotAfter = JSON.stringify(store.getSnapshot());
@@ -124,8 +124,12 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       title: "QA Review",
       color: "#FF00FF",
     });
-    const afterCreateBoard = await boardApi.getFullBoard(boardId, { workspaceId: mockIds.workspaces.primary });
-    const listId = afterCreateBoard.groups.find(g => g.title === "QA Review")!.id;
+    const afterCreateBoard = await boardApi.getFullBoard(boardId, {
+      workspaceId: mockIds.workspaces.primary,
+    });
+    const listId = afterCreateBoard.groups.find(
+      (g) => g.title === "QA Review",
+    )!.id;
 
     await listApi.updateList({
       listId,
@@ -153,10 +157,9 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
 
     // Duplicate list
     await listApi.duplicateList(listId);
-    const duplicatedListId = "mock-id-ignored-since-duplicate-returns-void";
+    const _duplicatedListId = "mock-id-ignored-since-duplicate-returns-void";
 
     // Delete list
-    
 
     // 3. Card CRUD + Move + Archive + FieldValues + Labels + Checklists + Comments
     await cardApi.createCard(boardId, {
@@ -164,17 +167,24 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       title: "Automated Verification Card",
       position: 0,
     });
-    const fullBoardCards = await boardApi.getFullBoard(boardId, { workspaceId: mockIds.workspaces.primary });
-    const createdCard = fullBoardCards.groups.find(g => g.id === listId)!.cards.find(c => c.title === "Automated Verification Card")!;
+    const fullBoardCards = await boardApi.getFullBoard(boardId, {
+      workspaceId: mockIds.workspaces.primary,
+    });
+    const createdCard = fullBoardCards.groups
+      .find((g) => g.id === listId)!
+      .cards.find((c) => c.title === "Automated Verification Card")!;
 
     await cardApi.updateCard(createdCard.id, {
       title: "Updated Verification Card",
       descriptionMd: "Detailed description of verification step.",
     });
-    const fullBoardAfterUpdate = await boardApi.getFullBoard(boardId, { workspaceId: mockIds.workspaces.primary });
-    const fetchedCard = fullBoardAfterUpdate.groups.flatMap(g => g.cards).find(c => c.id === createdCard.id)!;
+    const fullBoardAfterUpdate = await boardApi.getFullBoard(boardId, {
+      workspaceId: mockIds.workspaces.primary,
+    });
+    const fetchedCard = fullBoardAfterUpdate.groups
+      .flatMap((g) => g.cards)
+      .find((c) => c.id === createdCard.id)!;
     expect(fetchedCard.title).toBe("Updated Verification Card");
-    
 
     // Move card
     await cardApi.moveCard({
@@ -182,8 +192,12 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       listId: "list-todo",
       position: 5,
     });
-    const fullBoardAfterMove = await boardApi.getFullBoard(boardId, { workspaceId: mockIds.workspaces.primary });
-    const movedCard = fullBoardAfterMove.groups.flatMap(g => g.cards).find(c => c.id === createdCard.id)!;
+    const fullBoardAfterMove = await boardApi.getFullBoard(boardId, {
+      workspaceId: mockIds.workspaces.primary,
+    });
+    const movedCard = fullBoardAfterMove.groups
+      .flatMap((g) => g.cards)
+      .find((c) => c.id === createdCard.id)!;
     expect(movedCard.listId).toBe("list-todo");
 
     // Duplicate card
@@ -196,8 +210,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       fieldType: "number",
       position: 5,
     });
-    const colId = "mock-col";
-    
+    const _colId = "mock-col";
 
     // Labels
     const newLabel = await labelApi.createLabel({
@@ -223,7 +236,8 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
       checklistId: chkId,
       title: "Verify tests",
     });
-    const itemId = (await checklistApi.getChecklists(createdCard.id))[0]!.items[0]!.id;
+    const itemId = (await checklistApi.getChecklists(createdCard.id))[0]!
+      .items[0]!.id;
     await checklistApi.updateChecklistItem({
       itemId,
       isChecked: true,

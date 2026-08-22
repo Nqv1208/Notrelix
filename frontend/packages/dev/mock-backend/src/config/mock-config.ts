@@ -163,9 +163,8 @@ const VALID_OVERLAYS = new Set<string>([
   "unicode",
   "missing-avatars",
   "many-columns",
-  "many-cards"
+  "many-cards",
 ]);
-
 
 export function parseMockConfigFromEnv(
   env: Record<string, string | undefined>,
@@ -237,18 +236,20 @@ export function parseMockConfigFromEnv(
     partial.latency = val as MockLatency;
   }
 
-
   // VITE_MOCK_OVERLAYS
   if (
     env["VITE_MOCK_OVERLAYS"] !== undefined &&
     env["VITE_MOCK_OVERLAYS"] !== ""
   ) {
     const raw = env["VITE_MOCK_OVERLAYS"];
-    const overlays = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    const overlays = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
     for (const o of overlays) {
       if (!VALID_OVERLAYS.has(o)) {
         throw new MockConfigurationError(
-          `Invalid overlay "${o}" in VITE_MOCK_OVERLAYS. Must be a comma-separated list of: ${Array.from(VALID_OVERLAYS).join(", ")}`
+          `Invalid overlay "${o}" in VITE_MOCK_OVERLAYS. Must be a comma-separated list of: ${Array.from(VALID_OVERLAYS).join(", ")}`,
         );
       }
     }

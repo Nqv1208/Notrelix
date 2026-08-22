@@ -41,7 +41,10 @@ export const accountOperations = [
 
   defineMockOperation({
     id: "account.profile.update",
-    contract: { kind: "openapi", operationId: "Identity.Profile.UpdateProfile" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Profile.UpdateProfile",
+    } as any,
     method: "PATCH",
     route: "/profile",
     async handle({ body, store }) {

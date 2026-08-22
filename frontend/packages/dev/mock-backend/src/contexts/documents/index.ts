@@ -8,7 +8,12 @@ import { blocksOperations } from "./blocks.handlers";
 import { commentsOperations } from "./comments.handlers";
 import { historyOperations } from "./history.handlers";
 
-export { pagesOperations, blocksOperations, commentsOperations, historyOperations };
+export {
+  pagesOperations,
+  blocksOperations,
+  commentsOperations,
+  historyOperations,
+};
 
 export const documentsOperations = [
   ...pagesOperations,

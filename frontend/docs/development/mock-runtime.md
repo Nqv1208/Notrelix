@@ -89,15 +89,15 @@ _Note: Any invalid environment value fails immediately at startup with `MockConf
 
 The mock backend uses Work Management operation IDs that match the OpenAPI schema (`WorkManagement.*`). Key operation families:
 
-| Family                      | Operations                                       |
-| :-------------------------- | :----------------------------------------------- |
-| `WorkManagement.BoardViews` | `Get` (GET), `Save` (PUT)                        |
-| `WorkManagement.BoardFields`| `GetSchema` (GET), `Create`, `Update`, `Delete`, `Reorder` |
-| `WorkManagement.Labels`     | `List` (GET), `Create`, `Update`, `Delete`       |
-| `WorkManagement.BoardGroups`| `Create`, `Update`, `Delete`, `Duplicate`, `Reorder` |
-| `WorkManagement.BoardItems` | `List` (GET), `Create`, `Update`, `Delete`, `Archive`, `Duplicate`, `Move`, `UpdateFieldValue`, `AddLabel`, `RemoveLabel` |
-| `WorkManagement.Checklists` | `List` (GET), `Create`, `Update`, `Delete`, `CreateItemByChecklist`, `UpdateItem`, `DeleteItem` |
-| `Collaboration.Comments`    | `GetBoardItemComments` (GET), `CreateBoardItemComment`, `Update`, `Delete` |
+| Family                       | Operations                                                                                                                |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------ |
+| `WorkManagement.BoardViews`  | `Get` (GET), `Save` (PUT)                                                                                                 |
+| `WorkManagement.BoardFields` | `GetSchema` (GET), `Create`, `Update`, `Delete`, `Reorder`                                                                |
+| `WorkManagement.Labels`      | `List` (GET), `Create`, `Update`, `Delete`                                                                                |
+| `WorkManagement.BoardGroups` | `Create`, `Update`, `Delete`, `Duplicate`, `Reorder`                                                                      |
+| `WorkManagement.BoardItems`  | `List` (GET), `Create`, `Update`, `Delete`, `Archive`, `Duplicate`, `Move`, `UpdateFieldValue`, `AddLabel`, `RemoveLabel` |
+| `WorkManagement.Checklists`  | `List` (GET), `Create`, `Update`, `Delete`, `CreateItemByChecklist`, `UpdateItem`, `DeleteItem`                           |
+| `Collaboration.Comments`     | `GetBoardItemComments` (GET), `CreateBoardItemComment`, `Update`, `Delete`                                                |
 
 ## Dataset Density Semantics
 
@@ -123,6 +123,7 @@ frontend/tooling/contracts/enabled-consumer-surface.ts
 Gap rows use `classification: "COMPATIBILITY_GAP_MOCKED"` and a `gapId: "CTR-GAP-TODO"` sentinel.
 
 Current gap status:
+
 - `CTR-GAP-TODO`: Shared sentinel for all in-progress gaps. Individual gaps will receive unique IDs when the consumer surface is fully mapped.
 
 The mock registry provides handler stubs for all gap routes (so the UI doesn't receive network errors) but no real business logic is exercised.
@@ -148,4 +149,3 @@ pnpm e2e:mock:count
 # Production artifact isolation (mock-artifact-isolation CI job)
 pnpm check:production-mock-isolation
 ```
-

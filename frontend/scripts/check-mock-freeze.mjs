@@ -6,9 +6,13 @@ import { fileURLToPath } from "url";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const tsx = resolve(__dirname, "../node_modules/.bin/tsx");
 
-const result = spawnSync(tsx, [resolve(__dirname, "check-mock-freeze-logic.ts")], {
-  stdio: "inherit",
-});
+const result = spawnSync(
+  tsx,
+  [resolve(__dirname, "check-mock-freeze-logic.ts")],
+  {
+    stdio: "inherit",
+  },
+);
 
 if (result.error) {
   console.error("Failed to run check-mock-freeze-logic.ts", result.error);

@@ -114,10 +114,10 @@ export class MockOperationRegistry {
     return createMockResponse(result);
   }
 
-
   operationMetadata(): {
     id: string;
-    contract: import("./types").CanonicalContract | import("./types").GapContract;
+    contract:
+      import("./types").CanonicalContract | import("./types").GapContract;
     method: string;
     route: string;
   }[] {

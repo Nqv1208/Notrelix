@@ -159,53 +159,75 @@ export class MockStore {
       id: mockIds.users.owner,
       email: "ui-dev@notrelix.local",
       name: isUnicode ? "UI Developer (Owner) 🚀" : "UI Developer (Owner)",
-      avatarUrl: isMissingAvatars ? null : "https://api.dicebear.com/7.x/avataaars/svg?seed=owner",
+      avatarUrl: isMissingAvatars
+        ? null
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=owner",
     });
     const admin = this.factories.user(1, {
       id: mockIds.users.admin,
       email: "admin@notrelix.local",
       name: isUnicode ? "Alex Rivera (Admin) ✨" : "Alex Rivera (Admin)",
-      avatarUrl: isMissingAvatars ? null : "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
+      avatarUrl: isMissingAvatars
+        ? null
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
     });
     const member = this.factories.user(2, {
       id: mockIds.users.member,
       email: "member@notrelix.local",
       name: isUnicode ? "Jordan Lee (Member) 💼" : "Jordan Lee (Member)",
-      avatarUrl: isMissingAvatars ? null : "https://api.dicebear.com/7.x/avataaars/svg?seed=member",
+      avatarUrl: isMissingAvatars
+        ? null
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=member",
     });
     const viewer = this.factories.user(3, {
       id: mockIds.users.viewer,
       email: "viewer@notrelix.local",
       name: isUnicode ? "Taylor Morgan (Viewer) 👀" : "Taylor Morgan (Viewer)",
-      avatarUrl: isMissingAvatars ? null : "https://api.dicebear.com/7.x/avataaars/svg?seed=viewer",
+      avatarUrl: isMissingAvatars
+        ? null
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=viewer",
     });
 
     const actors = [owner, admin, member, viewer];
-    
+
     if (this.config.state === "new-user") {
       const pMap: Record<string, any> = { owner, admin, member, viewer };
       const u = pMap[this.config.persona] || owner;
       this.insertUser(u);
-      this.userPreferencesByUserId.set(u.id, { userId: u.id, theme: "system", colorTheme: "zinc", sidebarCollapsed: false, defaultView: "board" });
+      this.userPreferencesByUserId.set(u.id, {
+        userId: u.id,
+        theme: "system",
+        colorTheme: "zinc",
+        sidebarCollapsed: false,
+        defaultView: "board",
+      });
       return;
     }
 
     for (const u of actors) {
       this.insertUser(u);
-      this.userPreferencesByUserId.set(u.id, { userId: u.id, theme: "system", colorTheme: "zinc", sidebarCollapsed: false, defaultView: "board" });
+      this.userPreferencesByUserId.set(u.id, {
+        userId: u.id,
+        theme: "system",
+        colorTheme: "zinc",
+        sidebarCollapsed: false,
+        defaultView: "board",
+      });
     }
 
     // ── Workspaces ──────────────────────────────────────────────────────────
     let primaryWsName = "Notrelix Product Lab";
     if (isUnicode) primaryWsName = "🪐 Notrelix Product Lab (プロダクト)";
-    if (isLongTitles) primaryWsName = "Notrelix Product Lab — Enterprise Digital Workspace & Engineering Innovation Hub";
+    if (isLongTitles)
+      primaryWsName =
+        "Notrelix Product Lab — Enterprise Digital Workspace & Engineering Innovation Hub";
 
     for (let w = 0; w < manifest.workspacesVisibleToOwner; w++) {
       const isPrimary = w === 0;
       const isSecondary = w === 1;
       let wName = `Workspace ${w}`;
       let id = this.factories.workspace(w).id;
-      
+
       if (isPrimary) {
         wName = primaryWsName;
         id = mockIds.workspaces.primary;
@@ -214,92 +236,209 @@ export class MockStore {
         id = mockIds.workspaces.secondary;
       }
 
-      const ws = this.factories.workspace(w, { id, name: wName, slug: id, isPersonal: false });
+      const ws = this.factories.workspace(w, {
+        id,
+        name: wName,
+        slug: id,
+        isPersonal: false,
+      });
       this.insertWorkspace(ws);
 
       if (isPrimary) {
-        this.insertMembership(this.factories.membership(0, id, owner.id, { role: "owner" }));
-        this.insertMembership(this.factories.membership(1, id, admin.id, { role: "admin" }));
-        this.insertMembership(this.factories.membership(2, id, member.id, { role: "member" }));
-        this.insertMembership(this.factories.membership(3, id, viewer.id, { role: "guest" }));
+        this.insertMembership(
+          this.factories.membership(0, id, owner.id, { role: "owner" }),
+        );
+        this.insertMembership(
+          this.factories.membership(1, id, admin.id, { role: "admin" }),
+        );
+        this.insertMembership(
+          this.factories.membership(2, id, member.id, { role: "member" }),
+        );
+        this.insertMembership(
+          this.factories.membership(3, id, viewer.id, { role: "guest" }),
+        );
       } else {
-        this.insertMembership(this.factories.membership(w * 10, id, owner.id, { role: "owner" }));
+        this.insertMembership(
+          this.factories.membership(w * 10, id, owner.id, { role: "owner" }),
+        );
       }
     }
 
     // ── Views ──────────────────────────────────────────────────────────────
     const primaryWsId = mockIds.workspaces.primary;
-    this.insertView({ id: mockIds.views.kanban, workspaceId: primaryWsId, name: "Product Roadmap", type: "kanban", icon: "Layout", description: "", visibility: "workspace", isDefault: true, position: 0, createdAt: this.clock.offsetDays(-14) });
-    this.insertView({ id: mockIds.views.table, workspaceId: primaryWsId, name: "All Tasks", type: "table", icon: "BarChart", description: "", visibility: "workspace", isDefault: false, position: 1, createdAt: this.clock.offsetDays(-10) });
+    this.insertView({
+      id: mockIds.views.kanban,
+      workspaceId: primaryWsId,
+      name: "Product Roadmap",
+      type: "kanban",
+      icon: "Layout",
+      description: "",
+      visibility: "workspace",
+      isDefault: true,
+      position: 0,
+      createdAt: this.clock.offsetDays(-14),
+    });
+    this.insertView({
+      id: mockIds.views.table,
+      workspaceId: primaryWsId,
+      name: "All Tasks",
+      type: "table",
+      icon: "BarChart",
+      description: "",
+      visibility: "workspace",
+      isDefault: false,
+      position: 1,
+      createdAt: this.clock.offsetDays(-10),
+    });
 
     if (this.config.state === "empty-workspace") return;
 
     // ── Boards ─────────────────────────────────────────────────────────────
     let primaryBoardTitle = "Product Roadmap";
     if (isUnicode) primaryBoardTitle = "🚀 Product Roadmap (日本語・Üñîçødé)";
-    if (isLongTitles) primaryBoardTitle = "Product Roadmap — Comprehensive Multi-Quarter Strategic Deliverables & Features";
+    if (isLongTitles)
+      primaryBoardTitle =
+        "Product Roadmap — Comprehensive Multi-Quarter Strategic Deliverables & Features";
 
     for (let b = 0; b < manifest.boardsInPrimaryWorkspace; b++) {
       const isPrimaryBoard = b === 0;
       let bId = this.factories.board(b, primaryWsId).id;
       let bTitle = `Board ${b}`;
-      
+
       if (isPrimaryBoard) {
         bId = "mock-board-roadmap";
         bTitle = primaryBoardTitle;
       }
-      
-      const board = this.factories.board(b, primaryWsId, { id: bId, title: bTitle });
+
+      const board = this.factories.board(b, primaryWsId, {
+        id: bId,
+        title: bTitle,
+      });
       this.insertBoard(board);
-      this.boardViewsByBoardId.set(bId, { boardId: bId, viewMode: "table", viewConfig: "{}" });
+      this.boardViewsByBoardId.set(bId, {
+        boardId: bId,
+        viewMode: "table",
+        viewConfig: "{}",
+      });
 
       if (isPrimaryBoard) {
-        this.insertColumn({ id: "col-0001", boardId: bId, name: "Status", fieldType: "status", position: 1 });
-        this.insertColumn({ id: "col-0002", boardId: bId, name: "Assignee", fieldType: "user", position: 2 });
-        this.insertColumn({ id: "col-0003", boardId: bId, name: "Due Date", fieldType: "date", position: 3 });
-        this.insertColumn({ id: "col-0004", boardId: bId, name: "Priority", fieldType: "select", position: 4 });
-        this.insertLabel({ id: "lbl-0001", boardId: bId, name: "Bug", color: "#EF4444" });
-        this.insertLabel({ id: "lbl-0002", boardId: bId, name: "Feature", color: "#1E90FF" });
-        this.insertLabel({ id: "lbl-0003", boardId: bId, name: "Design", color: "#A855F7" });
+        this.insertColumn({
+          id: "col-0001",
+          boardId: bId,
+          name: "Status",
+          fieldType: "status",
+          position: 1,
+        });
+        this.insertColumn({
+          id: "col-0002",
+          boardId: bId,
+          name: "Assignee",
+          fieldType: "user",
+          position: 2,
+        });
+        this.insertColumn({
+          id: "col-0003",
+          boardId: bId,
+          name: "Due Date",
+          fieldType: "date",
+          position: 3,
+        });
+        this.insertColumn({
+          id: "col-0004",
+          boardId: bId,
+          name: "Priority",
+          fieldType: "select",
+          position: 4,
+        });
+        this.insertLabel({
+          id: "lbl-0001",
+          boardId: bId,
+          name: "Bug",
+          color: "#EF4444",
+        });
+        this.insertLabel({
+          id: "lbl-0002",
+          boardId: bId,
+          name: "Feature",
+          color: "#1E90FF",
+        });
+        this.insertLabel({
+          id: "lbl-0003",
+          boardId: bId,
+          name: "Design",
+          color: "#A855F7",
+        });
       }
 
       // ── Lists ────────────────────────────────────────────────────────────
-      const listCount = isPrimaryBoard ? manifest.listsPerPrimaryBoard : (this.config.density === "stress" ? 8 : 4);
-      const isManyColumns = isPrimaryBoard && this.config.overlays.includes("many-columns");
-      const actualListCount = isManyColumns ? Math.max(listCount, 8) : listCount;
-      
+      const listCount = isPrimaryBoard
+        ? manifest.listsPerPrimaryBoard
+        : this.config.density === "stress"
+          ? 8
+          : 4;
+      const isManyColumns =
+        isPrimaryBoard && this.config.overlays.includes("many-columns");
+      const actualListCount = isManyColumns
+        ? Math.max(listCount, 8)
+        : listCount;
+
       for (let l = 0; l < actualListCount; l++) {
-        let lId = this.factories.list(l + (b * 100), bId).id; // Use offset so list IDs don't collide if not using board-specific padding
+        let lId = this.factories.list(l + b * 100, bId).id; // Use offset so list IDs don't collide if not using board-specific padding
         let lTitle = `List ${l}`;
-        
+
         if (isPrimaryBoard) {
-          if (l === 0) { lId = "list-todo"; lTitle = isUnicode ? "📋 To Do (準備中)" : "To Do"; }
-          if (l === 1) { lId = "list-inprogress"; lTitle = isUnicode ? "⚡ In Progress (進行中)" : "In Progress"; }
-          if (l === 2) { lId = "list-done"; lTitle = isUnicode ? "✅ Done (完了)" : "Done"; }
-          if (l >= 3 && isManyColumns && l < 8) { lId = `list-col-${l}`; lTitle = `Column ${l}`; }
+          if (l === 0) {
+            lId = "list-todo";
+            lTitle = isUnicode ? "📋 To Do (準備中)" : "To Do";
+          }
+          if (l === 1) {
+            lId = "list-inprogress";
+            lTitle = isUnicode ? "⚡ In Progress (進行中)" : "In Progress";
+          }
+          if (l === 2) {
+            lId = "list-done";
+            lTitle = isUnicode ? "✅ Done (完了)" : "Done";
+          }
+          if (l >= 3 && isManyColumns && l < 8) {
+            lId = `list-col-${l}`;
+            lTitle = `Column ${l}`;
+          }
         }
 
-        const lst = this.factories.list(l + (b * 100), bId, { id: lId, title: lTitle });
+        const lst = this.factories.list(l + b * 100, bId, {
+          id: lId,
+          title: lTitle,
+        });
         this.insertList(lst);
 
         // ── Cards ──────────────────────────────────────────────────────────
         let cardCount = manifest.cardsPerList;
-        if (isPrimaryBoard && this.config.overlays.includes("many-cards") && l === 1) {
+        if (
+          isPrimaryBoard &&
+          this.config.overlays.includes("many-cards") &&
+          l === 1
+        ) {
           cardCount = 100;
         }
 
         for (let c = 0; c < cardCount; c++) {
           let cTitle = `Task ${c}`;
-          let cId = this.factories.card(c + (l * 1000) + (b * 100000), bId, lId).id;
-          
+          let cId = this.factories.card(c + l * 1000 + b * 100000, bId, lId).id;
+
           if (isPrimaryBoard && l === 1 && c === 0) {
             cId = "card-main-0001";
             cTitle = "Ship mock runtime";
           }
           if (isUnicode) cTitle = `[🚀] ${cTitle}`;
-          if (isLongTitles) cTitle = `${cTitle} — Extended In-Depth Description`;
+          if (isLongTitles)
+            cTitle = `${cTitle} — Extended In-Depth Description`;
 
-          const card = this.factories.card(c + (l * 1000) + (b * 100000), bId, lId, { id: cId, title: cTitle });
+          const card = this.factories.card(
+            c + l * 1000 + b * 100000,
+            bId,
+            lId,
+            { id: cId, title: cTitle },
+          );
           this.insertCard(card);
         }
       }
@@ -308,29 +447,57 @@ export class MockStore {
     // Extras for card-main-0001
     if (this.cardsById.has("card-main-0001")) {
       this.addIndex(this.labelIdsByCardId, "card-main-0001", "lbl-0002");
-      this.insertChecklist({ id: "chk-0001", cardId: "card-main-0001", title: "Release Checklist", position: 1 });
-      this.insertChecklistItem({ id: "chki-0001", checklistId: "chk-0001", title: "Contract tests green", isChecked: true });
-      this.insertChecklistItem({ id: "chki-0002", checklistId: "chk-0001", title: "E2E verification complete", isChecked: false });
-      this.insertComment({ id: "cmt-0001", cardId: "card-main-0001", userId: owner.id, contentMd: "Initial spec.", createdAt: this.clock.offsetDays(-2) });
+      this.insertChecklist({
+        id: "chk-0001",
+        cardId: "card-main-0001",
+        title: "Release Checklist",
+        position: 1,
+      });
+      this.insertChecklistItem({
+        id: "chki-0001",
+        checklistId: "chk-0001",
+        title: "Contract tests green",
+        isChecked: true,
+      });
+      this.insertChecklistItem({
+        id: "chki-0002",
+        checklistId: "chk-0001",
+        title: "E2E verification complete",
+        isChecked: false,
+      });
+      this.insertComment({
+        id: "cmt-0001",
+        cardId: "card-main-0001",
+        userId: owner.id,
+        contentMd: "Initial spec.",
+        createdAt: this.clock.offsetDays(-2),
+      });
     }
 
     // ── Notifications ──────────────────────────────────────────────────────
     this.seedNotifications(owner.id, manifest.notificationsPerCurrentActor);
     if (this.config.persona !== "owner") {
       const activeUser = this.getCurrentUser();
-      this.seedNotifications(activeUser.id, manifest.notificationsPerCurrentActor);
+      this.seedNotifications(
+        activeUser.id,
+        manifest.notificationsPerCurrentActor,
+      );
     }
 
     // ── Pages ──────────────────────────────────────────────────────────────
     for (let p = 0; p < manifest.pagesInPrimaryWorkspace; p++) {
       let pTitle = p === 0 ? "Product specification" : `Page ${p}`;
       if (isUnicode) pTitle = `📑 ${pTitle} (ドキュメント)`;
-      if (isLongTitles) pTitle = `${pTitle} — Architectural Specification & Engineering Requirements`;
+      if (isLongTitles)
+        pTitle = `${pTitle} — Architectural Specification & Engineering Requirements`;
 
       let pId = this.factories.page(p, primaryWsId).id;
       if (p === 0) pId = "mock-doc-product-spec";
 
-      const page = this.factories.page(p, primaryWsId, { id: pId, title: pTitle });
+      const page = this.factories.page(p, primaryWsId, {
+        id: pId,
+        title: pTitle,
+      });
       this.insertPage(page);
 
       // Representative blocks
@@ -338,7 +505,9 @@ export class MockStore {
       for (let blk = 0; blk < blockCount; blk++) {
         this.createBlock(pId, {
           type: blk === 0 ? "heading_1" : "paragraph",
-          properties: JSON.stringify({ text: blk === 0 ? page.title : `Block ${blk}` }),
+          properties: JSON.stringify({
+            text: blk === 0 ? page.title : `Block ${blk}`,
+          }),
           position: blk * 1000,
         });
       }
@@ -382,15 +551,26 @@ export class MockStore {
       });
       this.createBlock(page.id, {
         type: "paragraph",
-        properties: JSON.stringify({ text: "This is a seeded mock document block." }),
+        properties: JSON.stringify({
+          text: "This is a seeded mock document block.",
+        }),
         position: 65536,
       });
 
       // Seed comments
-      this.createPageComment(page.id, mockIds.users.owner, "This is a seeded page comment.");
+      this.createPageComment(
+        page.id,
+        mockIds.users.owner,
+        "This is a seeded page comment.",
+      );
 
       // Seed history
-      this.createPageHistory(page.id, mockIds.users.owner, "created_page", page.title);
+      this.createPageHistory(
+        page.id,
+        mockIds.users.owner,
+        "created_page",
+        page.title,
+      );
     }
   }
   private densityCardCount(): number {
@@ -1466,7 +1646,6 @@ export class MockStore {
 
   // ─── Invariant Verification (Plan: 02-IMPLEMENTATION-PLAN.md §MFB-FZ-05) ───
 
-
   // ─── Documents Methods ──────────────────────────────────────────────────────
 
   getPageBlocks(pageId: string): MockBlockRecord[] {
@@ -1491,7 +1670,10 @@ export class MockStore {
     return block;
   }
 
-  updateBlock(id: string, data: Partial<MockBlockRecord>): MockBlockRecord | null {
+  updateBlock(
+    id: string,
+    data: Partial<MockBlockRecord>,
+  ): MockBlockRecord | null {
     const block = this.blocksById.get(id);
     if (!block) return null;
     if (data.type !== undefined) block.type = data.type;
@@ -1510,7 +1692,11 @@ export class MockStore {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
-  createPageComment(pageId: string, userId: string, contentMd: string): MockPageCommentRecord {
+  createPageComment(
+    pageId: string,
+    userId: string,
+    contentMd: string,
+  ): MockPageCommentRecord {
     const id = this.nextId("pcomment");
     const comment: MockPageCommentRecord = {
       id,
@@ -1523,7 +1709,10 @@ export class MockStore {
     return comment;
   }
 
-  updatePageComment(id: string, contentMd: string): MockPageCommentRecord | null {
+  updatePageComment(
+    id: string,
+    contentMd: string,
+  ): MockPageCommentRecord | null {
     const comment = this.pageCommentsById.get(id);
     if (!comment) return null;
     comment.contentMd = contentMd;
@@ -1541,7 +1730,12 @@ export class MockStore {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  createPageHistory(pageId: string, userId: string, action: string, details?: string): MockPageHistoryRecord {
+  createPageHistory(
+    pageId: string,
+    userId: string,
+    action: string,
+    details?: string,
+  ): MockPageHistoryRecord {
     const id = this.nextId("phist");
     const history: MockPageHistoryRecord = {
       id,
@@ -1556,7 +1750,6 @@ export class MockStore {
   }
 
   // ─── END Documents Methods ──────────────────────────────────────────────────
-
 
   getDatasetMetrics() {
     return {

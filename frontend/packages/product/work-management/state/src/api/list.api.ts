@@ -1,6 +1,9 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
-import type { OperationRequestBody, OperationResponse } from "@notrelix/contracts";
+import type {
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import type { BoardGroup } from "@notrelix/work-management-core";
 
 type CreateListOp = "WorkManagement.BoardGroups.Create";
@@ -9,8 +12,6 @@ type CreateListResponse = OperationResponse<CreateListOp, 200>;
 
 type UpdateListOp = "WorkManagement.BoardGroups.Update";
 type UpdateListBody = OperationRequestBody<UpdateListOp>;
-
-type DeleteListOp = "WorkManagement.BoardGroups.Delete";
 
 type DuplicateListOp = "WorkManagement.BoardGroups.Duplicate";
 type DuplicateListResponse = OperationResponse<DuplicateListOp, 200>;
@@ -41,9 +42,13 @@ export function createListApi(client: NotrelixClient) {
         position: input.position,
         color: input.color,
       };
-      await api.post<CreateListResponse>(endpoints.boardGroups.create(input.boardId), body, {
-        headers: { "Idempotency-Key": crypto.randomUUID() },
-      });
+      await api.post<CreateListResponse>(
+        endpoints.boardGroups.create(input.boardId),
+        body,
+        {
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+        },
+      );
     },
 
     async updateList(input: UpdateListInput): Promise<void> {
@@ -59,7 +64,9 @@ export function createListApi(client: NotrelixClient) {
     },
 
     async duplicateList(listId: string): Promise<void> {
-      await api.post<DuplicateListResponse>(endpoints.boardGroups.duplicate(listId));
+      await api.post<DuplicateListResponse>(
+        endpoints.boardGroups.duplicate(listId),
+      );
     },
 
     async reorderLists(

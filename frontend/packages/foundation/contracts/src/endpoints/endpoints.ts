@@ -79,21 +79,23 @@ export const endpoints = {
     duplicate: (itemId: string) => `/board-items/${itemId}/duplicate`,
     archive: (itemId: string) => `/board-items/${itemId}/archive`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
-    fieldValue: (itemId: string, fieldId: string) => `/board-items/${itemId}/field-values/${fieldId}`,
+    fieldValue: (itemId: string, fieldId: string) =>
+      `/board-items/${itemId}/field-values/${fieldId}`,
     comments: (itemId: string) => `/board-items/${itemId}/comments`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
     activity: (itemId: string) => `/board-items/${itemId}/activity`,
     checklists: (itemId: string) => `/board-items/${itemId}/checklists`,
     labels: (itemId: string) => `/board-items/${itemId}/labels`,
-    label: (itemId: string, labelId: string) => `/board-items/${itemId}/labels/${labelId}`,
+    label: (itemId: string, labelId: string) =>
+      `/board-items/${itemId}/labels/${labelId}`,
   },
   boardFields: {
     create: (boardId: string) => `/boards/${boardId}/fields`,
-    detail: (boardId: string, fieldId: string) => `/boards/${boardId}/fields/${fieldId}`,
+    detail: (boardId: string, fieldId: string) =>
+      `/boards/${boardId}/fields/${fieldId}`,
     reorder: (boardId: string) => `/boards/${boardId}/fields/reorder`,
   },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,
   },
-
 };

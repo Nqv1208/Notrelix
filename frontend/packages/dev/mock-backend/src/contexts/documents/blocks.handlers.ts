@@ -7,7 +7,10 @@ export const blocksOperations = [
 
   defineMockOperation<{ pageId: string }, never, BlockDtoApi[]>({
     id: "docs.blocks.list",
-    contract: { kind: "openapi", operationId: "Documents.Blocks.ListPageBlocks" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Blocks.ListPageBlocks",
+    } as any,
     method: "GET",
     route: "/pages/:pageId/blocks",
     async handle({ params, store }) {
@@ -27,7 +30,7 @@ export const blocksOperations = [
           createdByUserId: b.createdByUserId,
           createdAt: b.createdAt,
           updatedAt: b.updatedAt ?? null,
-        }))
+        })),
       );
     },
   }),
@@ -36,11 +39,19 @@ export const blocksOperations = [
 
   defineMockOperation<
     { pageId: string },
-    { type?: string | null; properties?: string | null; parentBlockId?: string | null; position?: number },
+    {
+      type?: string | null;
+      properties?: string | null;
+      parentBlockId?: string | null;
+      position?: number;
+    },
     BlockDtoApi
   >({
     id: "docs.blocks.create",
-    contract: { kind: "openapi", operationId: "Documents.Blocks.CreateBlock" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Blocks.CreateBlock",
+    } as any,
     method: "POST",
     route: "/pages/:pageId/blocks",
     async handle({ params, body, store }) {
@@ -51,7 +62,12 @@ export const blocksOperations = [
         parentBlockId: data.parentBlockId ?? null,
       });
       // also create history
-      store.createPageHistory(params.pageId, "usr-m-00001", "created_block", block.type);
+      store.createPageHistory(
+        params.pageId,
+        "usr-m-00001",
+        "created_block",
+        block.type,
+      );
 
       return created<BlockDtoApi>({
         id: block.id,
@@ -72,11 +88,19 @@ export const blocksOperations = [
 
   defineMockOperation<
     { blockId: string },
-    { type?: string | null; properties?: string | null; parentBlockId?: string | null; position?: number },
+    {
+      type?: string | null;
+      properties?: string | null;
+      parentBlockId?: string | null;
+      position?: number;
+    },
     BlockDtoApi
   >({
     id: "docs.blocks.update",
-    contract: { kind: "openapi", operationId: "Documents.Blocks.UpdateBlock" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Blocks.UpdateBlock",
+    } as any,
     method: "PATCH",
     route: "/blocks/:blockId",
     async handle({ params, body, store }) {
@@ -103,7 +127,10 @@ export const blocksOperations = [
 
   defineMockOperation<{ blockId: string }, never, void>({
     id: "docs.blocks.delete",
-    contract: { kind: "openapi", operationId: "Documents.Blocks.DeleteBlock" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Blocks.DeleteBlock",
+    } as any,
     method: "DELETE",
     route: "/blocks/:blockId",
     async handle({ params, store }) {
@@ -117,17 +144,32 @@ export const blocksOperations = [
 
   defineMockOperation<
     never,
-    { pageId?: string; items?: { blockId: string; parentBlockId?: string | null; position?: number }[] | null },
+    {
+      pageId?: string;
+      items?:
+        | {
+            blockId: string;
+            parentBlockId?: string | null;
+            position?: number;
+          }[]
+        | null;
+    },
     void
   >({
     id: "docs.blocks.reorder",
-    contract: { kind: "openapi", operationId: "Documents.Blocks.ReorderBlocks" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Blocks.ReorderBlocks",
+    } as any,
     method: "POST",
     route: "/blocks/reorder",
     async handle({ body, store }) {
       const items = body?.items ?? [];
       for (const item of items) {
-        store.updateBlock(item.blockId, { parentBlockId: item.parentBlockId, position: item.position });
+        store.updateBlock(item.blockId, {
+          parentBlockId: item.parentBlockId,
+          position: item.position,
+        });
       }
       return ok<void>(undefined);
     },
@@ -137,14 +179,27 @@ export const blocksOperations = [
 
   defineMockOperation<
     { pageId: string },
-    { blocks?: { id?: string; type?: string | null; properties?: string | null; parentBlockId?: string | null; position?: number }[] | null },
+    {
+      blocks?:
+        | {
+            id?: string;
+            type?: string | null;
+            properties?: string | null;
+            parentBlockId?: string | null;
+            position?: number;
+          }[]
+        | null;
+    },
     BlockDtoApi[]
   >({
     id: "docs.blocks.batchUpdate",
-    contract: { kind: "openapi", operationId: "Documents.Blocks.BatchUpdateBlocks" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Blocks.BatchUpdateBlocks",
+    } as any,
     method: "POST",
     route: "/pages/:pageId/blocks/batch",
-    async handle({ params, body, store }) {
+    async handle({ params: _params, body, store }) {
       const reqBlocks = body?.blocks ?? [];
       const res: BlockDtoApi[] = [];
       for (const b of reqBlocks) {

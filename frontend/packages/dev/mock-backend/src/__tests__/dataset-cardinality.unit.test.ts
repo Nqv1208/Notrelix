@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { describe, it } from "vitest";
 import { MockStore } from "../state/mock-store";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { mockIds } from "../state/mock-ids";
 import { MOCK_DATASET_CARDINALITIES } from "../state/mock-dataset.manifest";
 

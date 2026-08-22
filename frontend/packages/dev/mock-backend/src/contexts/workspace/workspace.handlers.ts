@@ -137,7 +137,10 @@ export const workspaceOperations = [
 
   defineMockOperation<{ id: string }, never, WorkspaceMember[]>({
     id: "workspace.members.list",
-    contract: { kind: "openapi", operationId: "Workspaces.Members.ListMembers" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.ListMembers",
+    } as any,
     method: "GET",
     route: "/workspaces/:id/members",
     async handle({ params, store }) {
@@ -171,22 +174,31 @@ export const workspaceOperations = [
 
   defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
     id: "workspace.members.remove",
-    contract: { kind: "openapi", operationId: "Workspaces.Members.RemoveMember" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.RemoveMember",
+    } as any,
     method: "DELETE",
     route: "/workspaces/:workspaceId/members/:userId",
-    async handle({ store }) {
+    async handle({ store: _store }) {
       return ok<void>(undefined);
     },
   }),
 
-  defineMockOperation<{ workspaceId: string; userId: string }, { role: string }, void>({
+  defineMockOperation<
+    { workspaceId: string; userId: string },
+    { role: string },
+    void
+  >({
     id: "workspace.members.update",
-    contract: { kind: "openapi", operationId: "Workspaces.Members.UpdateMemberRole" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.UpdateMemberRole",
+    } as any,
     method: "PATCH", // the OpenAPI is PATCH for UpdateMemberRole, but the client does PUT? Wait, I will use PATCH as per OpenAPI
     route: "/workspaces/:workspaceId/members/:userId",
-    async handle({ store }) {
+    async handle({ store: _store }) {
       return ok<void>(undefined);
     },
   }),
-
 ];

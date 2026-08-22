@@ -3,7 +3,7 @@
  */
 
 import { defineMockOperation } from "../../operations/types";
-import { ok, created, notFound } from "../../transport/create-response";
+import { ok, notFound } from "../../transport/create-response";
 
 export const listsOperations = [
   // ─── POST /boards/:boardId/groups ─────────────────────────────────────────
@@ -14,7 +14,10 @@ export const listsOperations = [
     void
   >({
     id: "wm.boardGroups.create",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Create" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardGroups.Create",
+    } as any,
     method: "POST",
     route: "/boards/:boardId/groups",
     async handle({ params, body, store }) {
@@ -40,7 +43,10 @@ export const listsOperations = [
     void
   >({
     id: "wm.boardGroups.update",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Update" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardGroups.Update",
+    } as any,
     method: "PATCH",
     route: "/board-groups/:groupId",
     async handle({ params, body, store }) {
@@ -54,7 +60,10 @@ export const listsOperations = [
 
   defineMockOperation<{ groupId: string }, never, void>({
     id: "wm.boardGroups.delete",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Delete" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardGroups.Delete",
+    } as any,
     method: "DELETE",
     route: "/board-groups/:groupId",
     async handle({ params, store }) {
@@ -68,7 +77,10 @@ export const listsOperations = [
 
   defineMockOperation<{ groupId: string }, never, void>({
     id: "wm.boardGroups.duplicate",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Duplicate" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardGroups.Duplicate",
+    } as any,
     method: "POST",
     route: "/board-groups/:groupId/duplicate",
     async handle({ params, store }) {
@@ -86,7 +98,10 @@ export const listsOperations = [
     void
   >({
     id: "wm.boardGroups.reorder",
-    contract: { kind: "openapi", operationId: "WorkManagement.BoardGroups.Reorder" } as any,
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardGroups.Reorder",
+    } as any,
     method: "POST",
     route: "/boards/:boardId/groups/reorder",
     async handle({ params, body, store }) {
