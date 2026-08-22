@@ -27,7 +27,6 @@ public sealed class ActiveVerificationTokenLocker : IActiveVerificationTokenLock
                 FROM identity.email_verification_tokens
                 WHERE user_id = {userId}
                   AND status = 'Active'
-                  AND deleted_at IS NULL
                 FOR UPDATE
                 """)
             .IgnoreQueryFilters()

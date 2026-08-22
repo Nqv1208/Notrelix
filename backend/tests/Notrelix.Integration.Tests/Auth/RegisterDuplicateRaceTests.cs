@@ -97,9 +97,9 @@ public class RegisterDuplicateRaceTests : IAsyncLifetime
         IDateTimeProvider dateTimeProvider)
     {
         var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
+        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider, new Mock<IClientMetadata>().Object);
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
 
         return new RegisterCommandHandler(

@@ -12,6 +12,7 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Governance.Services;
 using Notrelix.Infrastructure.Realtime;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
@@ -66,6 +67,19 @@ public sealed class RealtimeDispatchContractTests : IAsyncLifetime
 
     private ApplicationDbContext CreateContext(ICurrentTenantContext? tenant = null)
         => _db.CreateContext(tenant);
+
+    private static PermissionService CreatePermissionService(ApplicationDbContext context)
+    {
+        var snapshots = new ResourceAuthorizationSnapshotStore(
+            [new BoardAuthorizationSnapshotResolver(context)]);
+
+        return new PermissionService(
+            context,
+            context,
+            context,
+            snapshots,
+            FakeDateTimeProvider.WithFixedTime(FixedTime));
+    }
 
     /// <summary>
     /// The fake realtime request: a transactional command that publishes to a
@@ -357,8 +371,7 @@ public sealed class RealtimeDispatchContractTests : IAsyncLifetime
         await using var context = CreateContext(tenant);
         var queue = new PostCommitActionQueue(NullLogger<PostCommitActionQueue>.Instance);
         var publisher = new CapturingRealtimePublisher();
-        var permissionService = new PermissionService(
-            context, context, context, FakeDateTimeProvider.WithFixedTime(FixedTime));
+        var permissionService = CreatePermissionService(context);
         var currentUser = new FakeCurrentUser { UserId = UserA };
 
         var result = await RunAsync(
@@ -390,8 +403,7 @@ public sealed class RealtimeDispatchContractTests : IAsyncLifetime
         await using var context = CreateContext(tenant);
         var queue = new PostCommitActionQueue(NullLogger<PostCommitActionQueue>.Instance);
         var publisher = new CapturingRealtimePublisher();
-        var permissionService = new PermissionService(
-            context, context, context, FakeDateTimeProvider.WithFixedTime(FixedTime));
+        var permissionService = CreatePermissionService(context);
         var currentUser = new FakeCurrentUser { UserId = OtherUser };
 
         var handlerExecuted = false;
@@ -431,8 +443,7 @@ public sealed class RealtimeDispatchContractTests : IAsyncLifetime
         {
             var queue = new PostCommitActionQueue(NullLogger<PostCommitActionQueue>.Instance);
             var publisher = new CapturingRealtimePublisher();
-            var permissionService = new PermissionService(
-                context, context, context, FakeDateTimeProvider.WithFixedTime(FixedTime));
+            var permissionService = CreatePermissionService(context);
             var currentUser = new FakeCurrentUser { UserId = UserA };
 
             var first = await RunAsync(
@@ -462,8 +473,7 @@ public sealed class RealtimeDispatchContractTests : IAsyncLifetime
         await using var context2 = CreateContext(tenant);
         var queue2 = new PostCommitActionQueue(NullLogger<PostCommitActionQueue>.Instance);
         var publisher2 = new CapturingRealtimePublisher();
-        var permissionService2 = new PermissionService(
-            context2, context2, context2, FakeDateTimeProvider.WithFixedTime(FixedTime));
+        var permissionService2 = CreatePermissionService(context2);
         var currentUser2 = new FakeCurrentUser { UserId = UserA };
 
         var handlerExecuted = false;

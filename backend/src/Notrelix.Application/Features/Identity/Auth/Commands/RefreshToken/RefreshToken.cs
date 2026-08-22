@@ -14,15 +14,18 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     private readonly IIdentityDbContext _context;
     private readonly IJwtService _jwtService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IClientMetadata _clientMetadata;
 
     public RefreshTokenCommandHandler(
         IIdentityDbContext context,
         IJwtService jwtService,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IClientMetadata clientMetadata)
     {
         _context = context;
         _jwtService = jwtService;
         _dateTimeProvider = dateTimeProvider;
+        _clientMetadata = clientMetadata;
     }
 
     public async Task<Result<AuthResult>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
@@ -39,7 +42,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         if (session is null)
         {
-            return Result<AuthResult>.Failure("Refresh token is invalid or expired");
+            return Result<AuthResult>.Failure(InvalidRefreshTokenError);
         }
 
         var user = await _context.Users
@@ -47,23 +50,25 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         if (user is null)
         {
-            return Result<AuthResult>.Failure("User not found");
+            return Result<AuthResult>.Failure(InvalidRefreshTokenError);
         }
 
         if (user.Status is not UserStatus.Active)
         {
             session.Revoke(now);
-            return Result<AuthResult>.Failure("Refresh token is invalid or expired");
+            return Result<AuthResult>.Failure(InvalidRefreshTokenError);
         }
 
         session.Revoke(now);
 
-        var accessToken = _jwtService.GenerateAccessToken(user);
         var newRefreshToken = _jwtService.GenerateRefreshToken();
         var newTokenHash = RefreshTokenHash.Create(newRefreshToken);
 
-        var newSession = UserSession.Create(user.Id, newTokenHash, now.AddDays(30), now);
+        var newSession = UserSession.Create(user.Id, newTokenHash, now.AddDays(30), now,
+            _clientMetadata.IpAddress, _clientMetadata.UserAgent);
         _context.Sessions.Add(newSession);
+
+        var accessToken = _jwtService.GenerateAccessToken(user, newSession.Id);
 
         return Result<AuthResult>.Success(new AuthResult
         {
@@ -80,4 +85,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             }
         });
     }
+
+    private static readonly ApplicationError InvalidRefreshTokenError = new(
+        "identity.auth.invalid-refresh-token",
+        "Refresh token is invalid or expired",
+        ApplicationErrorType.Authentication);
 }

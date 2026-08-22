@@ -1,11 +1,16 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.UnlinkOAuth;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Auth;
 
@@ -31,18 +36,58 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
     private static OAuthProfileSnapshot EmptySnapshot(OAuthProvider provider) =>
         OAuthProfileSnapshot.Create(provider, 1, JsonValue.EmptyObject());
 
-    private UnlinkOAuthCommandHandler CreateHandler(ApplicationDbContext context, Guid currentUserId)
+    private sealed record StepUpHarness(
+        ISecurityStepUpService Service,
+        Mock<IPasswordHasher> PasswordHasher,
+        Guid SessionId);
+
+    private static StepUpHarness CreateStepUp(ApplicationDbContext context, DateTimeOffset now)
+    {
+        var clock = FakeDateTimeProvider.WithFixedTime(now);
+        var passwordHasher = new Mock<IPasswordHasher>();
+        var service = new SecurityStepUpService(
+            context,
+            new InMemoryMfaChallengeStore(clock),
+            new InMemoryStepUpProofStore(clock),
+            new Mock<IMfaCodeVerifier>().Object,
+            passwordHasher.Object,
+            clock);
+        return new StepUpHarness(service, passwordHasher, Guid.CreateVersion7());
+    }
+
+    private UnlinkOAuthCommandHandler CreateHandler(
+        ApplicationDbContext context, Guid currentUserId, StepUpHarness stepUp)
     {
         var currentUser = new Mock<ICurrentRequestContext>();
         currentUser.Setup(x => x.UserId).Returns(currentUserId);
+        currentUser.Setup(x => x.SessionId).Returns(stepUp.SessionId);
         currentUser.Setup(x => x.IsAuthenticated).Returns(true);
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
         return new UnlinkOAuthCommandHandler(
-            context, currentUser.Object, dateTimeProvider.Object,
+            context, currentUser.Object, stepUp.Service, dateTimeProvider.Object,
             NullLogger<UnlinkOAuthCommandHandler>.Instance);
     }
+
+    private static async Task<string> IssuePasswordProof(StepUpHarness stepUp, Guid userId, string password)
+    {
+        stepUp.PasswordHasher.Setup(x => x.VerifyPassword(password, It.IsAny<string>())).Returns(true);
+        var proof = await stepUp.Service.CompletePasswordAsync(
+            userId, stepUp.SessionId, StepUpPurpose.UnlinkOAuth, password, CancellationToken.None);
+        proof.Succeeded.Should().BeTrue($"password proof failed: {string.Join(", ", proof.Errors)}");
+        return proof.Data!.ProofToken;
+    }
+
+    private static async Task<string> IssueOAuthProof(StepUpHarness stepUp, Guid userId)
+    {
+        var proof = await stepUp.Service.GrantOAuthProofAsync(
+            userId, stepUp.SessionId, StepUpPurpose.UnlinkOAuth, CancellationToken.None);
+        proof.Succeeded.Should().BeTrue();
+        return proof.Data!.ProofToken;
+    }
+
+    private const string TestPassword = "Password123!";
 
     [Fact]
     public async Task Handle_WhenPasswordAndLinkedProvider_ShouldUnlink()
@@ -61,9 +106,15 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
         }
 
         await using var context = _db.CreateContext();
-        var handler = CreateHandler(context, userId);
+        var stepUp = CreateStepUp(context, now);
+        var stepUpToken = await IssuePasswordProof(stepUp, userId, TestPassword);
+        var handler = CreateHandler(context, userId, stepUp);
 
-        var result = await handler.Handle(new UnlinkOAuthCommand { Provider = OAuthProvider.Google }, CancellationToken.None);
+        var result = await handler.Handle(new UnlinkOAuthCommand
+        {
+            Provider = OAuthProvider.Google,
+            StepUpToken = stepUpToken
+        }, CancellationToken.None);
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
@@ -90,9 +141,15 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
         }
 
         await using var context = _db.CreateContext();
-        var handler = CreateHandler(context, userId);
+        var stepUp = CreateStepUp(context, now);
+        var stepUpToken = await IssueOAuthProof(stepUp, userId);
+        var handler = CreateHandler(context, userId, stepUp);
 
-        var result = await handler.Handle(new UnlinkOAuthCommand { Provider = OAuthProvider.Google }, CancellationToken.None);
+        var result = await handler.Handle(new UnlinkOAuthCommand
+        {
+            Provider = OAuthProvider.Google,
+            StepUpToken = stepUpToken
+        }, CancellationToken.None);
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeFalse();
@@ -113,9 +170,15 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
-        var handler = CreateHandler(context, user.Id);
+        var stepUp = CreateStepUp(context, now);
+        var stepUpToken = await IssuePasswordProof(stepUp, user.Id, TestPassword);
+        var handler = CreateHandler(context, user.Id, stepUp);
 
-        var result = await handler.Handle(new UnlinkOAuthCommand { Provider = OAuthProvider.Apple }, CancellationToken.None);
+        var result = await handler.Handle(new UnlinkOAuthCommand
+        {
+            Provider = OAuthProvider.Apple,
+            StepUpToken = stepUpToken
+        }, CancellationToken.None);
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
@@ -133,9 +196,15 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
-        var handler = CreateHandler(context, user.Id);
+        var stepUp = CreateStepUp(context, now);
+        var stepUpToken = await IssuePasswordProof(stepUp, user.Id, TestPassword);
+        var handler = CreateHandler(context, user.Id, stepUp);
 
-        var result = await handler.Handle(new UnlinkOAuthCommand { Provider = OAuthProvider.Google }, CancellationToken.None);
+        var result = await handler.Handle(new UnlinkOAuthCommand
+        {
+            Provider = OAuthProvider.Google,
+            StepUpToken = stepUpToken
+        }, CancellationToken.None);
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeFalse();

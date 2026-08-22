@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
@@ -75,6 +76,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             context,
             new AccountProvisioningService(context, new AccessGrantProjectionService(context)),
             sessionIssuer.Object,
+            Mock.Of<IMfaChallengeStore>(),
             passwordHasher.Object,
             dateTimeProvider.Object,
             eventCollector.Object,

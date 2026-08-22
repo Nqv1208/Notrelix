@@ -542,6 +542,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/api-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List API token metadata for a workspace
+         * @description Returns token metadata only. The raw secret is never returned by any read operation.
+         */
+        get: operations["Identity.ApiTokens.List"];
+        put?: never;
+        /**
+         * Issue a new API token for a workspace
+         * @description Requires a single-use step-up proof for the IssueApiToken purpose. The raw secret is returned exactly once in this response.
+         */
+        post: operations["Identity.ApiTokens.Create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/api-tokens/{tokenId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an API token
+         * @description Revocation is effective immediately: a revoked token can no longer authenticate.
+         */
+        delete: operations["Identity.ApiTokens.Revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/register": {
         parameters: {
             query?: never;
@@ -570,6 +614,26 @@ export interface paths {
         put?: never;
         /** Login with email and password */
         post: operations["Identity.Auth.Login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Issue a CSRF token for browser clients
+         * @description Generates a cryptographically random CSRF token, sets it as the csrf_token cookie, and returns the same value in the response body. Browser clients must echo the body value in the X-CSRF-Token header on state-changing requests (ADR-005).
+         */
+        get: operations["Identity.Auth.IssueCsrfToken"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -795,7 +859,7 @@ export interface paths {
         };
         /**
          * Start OAuth link flow
-         * @description Redirects an authenticated user to the OAuth provider's authorization endpoint to link a provider identity.
+         * @description Redirects an authenticated user to the OAuth provider's authorization endpoint to link a provider identity, protected by step-up verification.
          */
         get: operations["Identity.Auth.OAuth.LinkStart"];
         put?: never;
@@ -826,6 +890,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/oauth/{provider}/step-up/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Start OAuth step-up (re-authentication) flow
+         * @description Redirects the authenticated user to the OAuth provider to re-authenticate for a security purpose. Completion grants a purpose-bound step-up proof; no new session is issued.
+         */
+        get: operations["Identity.Auth.OAuth.StepUpStart"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/oauth/{provider}/step-up/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Complete OAuth step-up callback
+         * @description Handles the OAuth provider callback for an authenticated step-up (re-authentication) flow and grants a purpose-bound step-up proof.
+         */
+        get: operations["Identity.Auth.OAuth.StepUpCallback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/oauth/{provider}/unlink": {
         parameters: {
             query?: never;
@@ -837,9 +941,117 @@ export interface paths {
         put?: never;
         /**
          * Unlink an OAuth provider identity
-         * @description Removes a linked provider identity from the current user, protected by the last-primary-auth-method invariant.
+         * @description Removes a linked provider identity from the current user, protected by the last-primary-auth-method invariant and step-up verification.
          */
         post: operations["Identity.Auth.OAuth.Unlink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete an MFA challenge with a TOTP or recovery code */
+        post: operations["Identity.Mfa.VerifyChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/enrollment/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start MFA authenticator app enrollment */
+        post: operations["Identity.Mfa.StartEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/enrollment/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify MFA enrollment code and activate the authenticator */
+        post: operations["Identity.Mfa.VerifyEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get MFA status for the authenticated user */
+        get: operations["Identity.Mfa.Status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/recovery-codes/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invalidate existing recovery codes and issue a fresh batch
+         * @description Requires a single-use step-up proof for the RegenerateRecoveryCodes purpose.
+         */
+        post: operations["Identity.Mfa.RegenerateRecoveryCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable MFA and revoke all active sessions
+         * @description Requires a single-use step-up proof for the DisableMfa purpose.
+         */
+        post: operations["Identity.Mfa.Disable"];
         delete?: never;
         options?: never;
         head?: never;
@@ -874,6 +1086,120 @@ export interface paths {
         put?: never;
         /** Update the current user's email address */
         post: operations["Identity.Profile.UpdateEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/security/step-up/requirement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get the step-up factor required for a security operation
+         * @description Returns the factor (MFA challenge, password or OAuth re-authentication) the current user must satisfy before a security-sensitive operation.
+         */
+        post: operations["Identity.Security.StepUpRequirement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/security/step-up/complete-mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete step-up verification with a TOTP or recovery code
+         * @description Verifies the MFA challenge bound to the current session and issues a single-use step-up proof.
+         */
+        post: operations["Identity.Security.StepUpCompleteMfa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/security/step-up/complete-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete step-up verification with the current password
+         * @description Verifies the current password and issues a single-use step-up proof.
+         */
+        post: operations["Identity.Security.StepUpCompletePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active sessions for the authenticated user */
+        get: operations["Identity.Sessions.List"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/{sessionId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke a session */
+        post: operations["Identity.Sessions.Revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/revoke-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke all other sessions
+         * @description Revokes every active session of the current user except the session that issued the request.
+         */
+        post: operations["Identity.Sessions.RevokeOthers"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3619,21 +3945,58 @@ export interface components {
         "Notrelix.API.Endpoints.Automation.Rules.Commands.SetAutomationRuleEnabledRequest": {
             isEnabled?: boolean;
         };
+        "Notrelix.API.Endpoints.Identity.ApiTokens.Commands.CreateApiTokenRequest": {
+            name?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            stepUpToken?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.ChangePasswordRequest": {
             currentPassword?: string | null;
             newPassword?: string | null;
+            stepUpToken?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteMfaChallengeRequest": {
+            challengeToken?: string | null;
+            code?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpMfaRequest": {
+            purpose?: string | null;
+            challengeToken?: string | null;
+            code?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpPasswordRequest": {
+            purpose?: string | null;
+            password?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.DisableMfaRequest": {
+            stepUpToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.EmailVerificationEndpoints.ResendEmailVerificationRequest": {
             email?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.GetStepUpRequirementRequest": {
+            purpose?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.LoginRequest": {
             email?: string | null;
             password?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.RegenerateRecoveryCodesRequest": {
+            stepUpToken?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.RegisterRequest": {
             email?: string | null;
             password?: string | null;
             name?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
+            stepUpToken?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.VerifyMfaEnrollmentRequest": {
+            /** Format: uuid */
+            mfaMethodId?: string;
+            code?: string | null;
         };
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.AddFieldOptionRequest": {
             name?: string | null;
@@ -3647,6 +4010,31 @@ export interface components {
             name?: string | null;
             color?: string | null;
         };
+        "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            scopes?: string | null;
+            status?: string | null;
+            /** Format: date-time */
+            lastUsedAt?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            revokedAt?: string | null;
+        };
+        "Notrelix.Application.Features.Identity.ApiTokens.DTOs.CreatedApiTokenDto": {
+            /** Format: uuid */
+            id?: string;
+            rawSecret?: string | null;
+            name?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         "Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword.ForgotPasswordCommand": {
             email: string | null;
         };
@@ -3659,8 +4047,6 @@ export interface components {
             email?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile.UpdateProfileCommand": {
-            /** Format: uuid */
-            userId?: string;
             name: string | null;
             avatar?: string | null;
         };
@@ -4765,6 +5151,93 @@ export interface operations {
             };
         };
     };
+    "Identity.ApiTokens.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto"][];
+                };
+            };
+        };
+    };
+    "Identity.ApiTokens.Create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.ApiTokens.Commands.CreateApiTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.ApiTokens.DTOs.CreatedApiTokenDto"];
+                };
+            };
+        };
+    };
+    "Identity.ApiTokens.Revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                tokenId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "Identity.Auth.Register": {
         parameters: {
             query?: never;
@@ -4810,6 +5283,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+        };
+    };
+    "Identity.Auth.IssueCsrfToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5087,6 +5578,7 @@ export interface operations {
     "Identity.Auth.OAuth.LinkStart": {
         parameters: {
             query?: {
+                stepUpToken?: string;
                 returnUrl?: string;
             };
             header?: never;
@@ -5135,6 +5627,58 @@ export interface operations {
             };
         };
     };
+    "Identity.Auth.OAuth.StepUpStart": {
+        parameters: {
+            query?: {
+                purpose?: string;
+                returnUrl?: string;
+            };
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Auth.OAuth.StepUpCallback": {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                error?: string;
+                error_description?: string;
+            };
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "Identity.Auth.OAuth.Unlink": {
         parameters: {
             query?: never;
@@ -5144,7 +5688,147 @@ export interface operations {
             };
             cookie?: never;
         };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.VerifyChallenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteMfaChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.StartEnrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.VerifyEnrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.VerifyMfaEnrollmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.Status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.RegenerateRecoveryCodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.RegenerateRecoveryCodesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.Disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.DisableMfaRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -5193,6 +5877,140 @@ export interface operations {
                 "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Security.StepUpRequirement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.GetStepUpRequirementRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Security.StepUpCompleteMfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpMfaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Security.StepUpCompletePassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Sessions.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Sessions.Revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Identity.Sessions.RevokeOthers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {

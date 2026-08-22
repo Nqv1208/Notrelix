@@ -1,6 +1,9 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Domain.Identity.Mfa;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 
@@ -8,6 +11,12 @@ public record ChangePasswordCommand : ICommand<Result>, ITransactionalRequest, I
 {
     public required string CurrentPassword { get; init; }
     public required string NewPassword { get; init; }
+
+    /// <summary>
+    /// Optional single-use step-up proof (purpose ChangePassword). Required when
+    /// the user has an active MFA method; ignored otherwise.
+    /// </summary>
+    public string? StepUpToken { get; init; }
 }
 
 public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, Result>
@@ -18,6 +27,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IEmailService _emailService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ISecurityStepUpService _stepUpService;
     private readonly ILogger<ChangePasswordCommandHandler> _logger;
 
     private const string DummyPasswordHash = "$2b$12$l21rZMRnrPl/Lfm2kVzYOuxlKgQzbwMzEvK7cOBZI40eJ42/FIuh2";
@@ -30,7 +40,8 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         IJwtBlacklistService jwtBlacklist,
         IEmailService emailService,
         IDateTimeProvider dateTimeProvider,
-        ILogger<ChangePasswordCommandHandler> logger)
+        ILogger<ChangePasswordCommandHandler> logger,
+        ISecurityStepUpService stepUpService)
     {
         _context = context;
         _currentUser = currentUser;
@@ -39,6 +50,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         _emailService = emailService;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
+        _stepUpService = stepUpService;
     }
 
     public async Task<Result> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
@@ -66,6 +78,18 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
                 ApplicationErrorType.Validation));
         }
 
+        var hasActiveMfa = await _context.UserMfaMethods
+            .AnyAsync(m => m.UserId == user.Id && m.Status == MfaMethodStatus.Active, cancellationToken);
+
+        if (hasActiveMfa)
+        {
+            var stepUp = await ConsumeStepUpAsync(user.Id, request.StepUpToken, cancellationToken);
+            if (!stepUp.Succeeded)
+            {
+                return stepUp;
+            }
+        }
+
         var now = _dateTimeProvider.UtcNow;
         var hash = _passwordHasher.HashPassword(request.NewPassword);
         user.UpdatePassword(hash, user.Id, now);
@@ -76,7 +100,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
 
         foreach (var session in activeSessions)
         {
-            session.Revoke(now);
+            session.Revoke(now, SessionRevocationReasons.PasswordChanged);
         }
 
         await _jwtBlacklist.RevokeUserBeforeAsync(user.Id, now, RevocationWatermarkTtl);
@@ -92,5 +116,27 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         }
 
         return Result.Success();
+    }
+
+    private async Task<Result> ConsumeStepUpAsync(Guid userId, string? stepUpToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(stepUpToken))
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        if (_currentUser.SessionId is not { } sessionId)
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        return await _stepUpService.ConsumeAsync(
+            stepUpToken, userId, sessionId, StepUpPurpose.ChangePassword, cancellationToken);
     }
 }

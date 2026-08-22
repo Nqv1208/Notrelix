@@ -1,20 +1,48 @@
+using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLink;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
+using Notrelix.Application.Features.Identity.Mfa.Abstractions;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Domain.Identity.OAuth;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Auth;
 
 public class StartOAuthLinkCommandHandlerTests
 {
     private static readonly Guid CurrentUserId = Guid.NewGuid();
+    private static readonly Guid CurrentSessionId = Guid.CreateVersion7();
 
     private static Mock<ICurrentRequestContext> CreateCurrentUser()
     {
         var currentUser = new Mock<ICurrentRequestContext>();
         currentUser.Setup(x => x.UserId).Returns(CurrentUserId);
+        currentUser.Setup(x => x.SessionId).Returns(CurrentSessionId);
         currentUser.Setup(x => x.IsAuthenticated).Returns(true);
         return currentUser;
+    }
+
+    private static ISecurityStepUpService CreateStepUp(DateTimeOffset now)
+    {
+        var clock = FakeDateTimeProvider.WithFixedTime(now);
+        return new SecurityStepUpService(
+            new Mock<IIdentityDbContext>().Object,
+            new InMemoryMfaChallengeStore(clock),
+            new InMemoryStepUpProofStore(clock),
+            new Mock<IMfaCodeVerifier>().Object,
+            new Mock<IPasswordHasher>().Object,
+            clock);
+    }
+
+    private static async Task<string> IssueStepUpProof(ISecurityStepUpService stepUp)
+    {
+        var proof = await stepUp.GrantOAuthProofAsync(
+            CurrentUserId, CurrentSessionId, StepUpPurpose.LinkOAuth, CancellationToken.None);
+        proof.Succeeded.Should().BeTrue();
+        return proof.Data!.ProofToken;
     }
 
     [Fact]
@@ -26,14 +54,16 @@ public class StartOAuthLinkCommandHandlerTests
         var stateStore = new Mock<IOAuthStateStore>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var currentUser = CreateCurrentUser();
+        var stepUp = CreateStepUp(new DateTimeOffset(2026, 7, 7, 12, 0, 0, TimeSpan.Zero));
 
         var handler = new StartOAuthLinkCommandHandler(
             optionsProvider.Object, providerClient.Object, stateStore.Object,
-            currentUser.Object, dateTimeProvider.Object);
+            currentUser.Object, stepUp, dateTimeProvider.Object);
 
         var result = await handler.Handle(new StartOAuthLinkCommand
         {
             Provider = OAuthProvider.Google,
+            StepUpToken = string.Empty,
             ReturnUrl = null
         }, CancellationToken.None);
 
@@ -57,14 +87,17 @@ public class StartOAuthLinkCommandHandlerTests
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(new DateTimeOffset(2026, 7, 7, 12, 0, 0, TimeSpan.Zero));
         var currentUser = CreateCurrentUser();
+        var stepUp = CreateStepUp(new DateTimeOffset(2026, 7, 7, 12, 0, 0, TimeSpan.Zero));
+        var stepUpToken = await IssueStepUpProof(stepUp);
 
         var handler = new StartOAuthLinkCommandHandler(
             optionsProvider.Object, providerClient.Object, stateStore.Object,
-            currentUser.Object, dateTimeProvider.Object);
+            currentUser.Object, stepUp, dateTimeProvider.Object);
 
         var result = await handler.Handle(new StartOAuthLinkCommand
         {
             Provider = OAuthProvider.Google,
+            StepUpToken = stepUpToken,
             ReturnUrl = null
         }, CancellationToken.None);
 
@@ -91,14 +124,17 @@ public class StartOAuthLinkCommandHandlerTests
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(now);
         var currentUser = CreateCurrentUser();
+        var stepUp = CreateStepUp(now);
+        var stepUpToken = await IssueStepUpProof(stepUp);
 
         var handler = new StartOAuthLinkCommandHandler(
             optionsProvider.Object, providerClient.Object, stateStore.Object,
-            currentUser.Object, dateTimeProvider.Object);
+            currentUser.Object, stepUp, dateTimeProvider.Object);
 
         var result = await handler.Handle(new StartOAuthLinkCommand
         {
             Provider = OAuthProvider.Google,
+            StepUpToken = stepUpToken,
             ReturnUrl = "/settings/security"
         }, CancellationToken.None);
 
@@ -132,14 +168,17 @@ public class StartOAuthLinkCommandHandlerTests
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(new DateTimeOffset(2026, 7, 7, 12, 0, 0, TimeSpan.Zero));
         var currentUser = CreateCurrentUser();
+        var stepUp = CreateStepUp(new DateTimeOffset(2026, 7, 7, 12, 0, 0, TimeSpan.Zero));
+        var stepUpToken = await IssueStepUpProof(stepUp);
 
         var handler = new StartOAuthLinkCommandHandler(
             optionsProvider.Object, providerClient.Object, stateStore.Object,
-            currentUser.Object, dateTimeProvider.Object);
+            currentUser.Object, stepUp, dateTimeProvider.Object);
 
         var result = await handler.Handle(new StartOAuthLinkCommand
         {
             Provider = OAuthProvider.GitHub,
+            StepUpToken = stepUpToken,
             ReturnUrl = null
         }, CancellationToken.None);
 

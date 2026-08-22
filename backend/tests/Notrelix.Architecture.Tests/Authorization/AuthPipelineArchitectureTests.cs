@@ -203,4 +203,26 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
                 $"{fileName} implements IResourceScopedRequest but still declares WorkspaceId parameter");
         }
     }
+
+    [Fact]
+    public void AuthorizationServices_MustNotReadWorkManagementPrivatePersistence()
+    {
+        var securityPath = Path.Combine(GetApplicationPath(), "Common", "Security");
+        var files = new[]
+        {
+            Path.Combine(securityPath, "PermissionService.cs"),
+            Path.Combine(securityPath, "WorkspacePermissionService.cs")
+        };
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            content.Should().NotContain(
+                "IWorkManagementDbContext",
+                $"{Path.GetFileName(file)} must consume the resource-owner authorization snapshot contract");
+            content.Should().NotContain(
+                "Features.WorkManagement.Abstractions",
+                $"{Path.GetFileName(file)} must not couple authorization to WorkManagement persistence ports");
+        }
+    }
 }

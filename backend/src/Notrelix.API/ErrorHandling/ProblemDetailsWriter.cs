@@ -4,6 +4,30 @@ namespace Notrelix.API.ErrorHandling;
 
 public static class ProblemDetailsWriter
 {
+    public static Task WriteCsrfForbiddenAsync(HttpContext context, CancellationToken ct)
+    {
+        var problemDetails = new ProblemDetails
+        {
+            Type = "https://docs.notrelix.com/problems/csrf-validation-failed",
+            Title = "CSRF validation failed",
+            Detail = "Missing or invalid CSRF token. Call the CSRF bootstrap endpoint and send the token in the X-CSRF-Token header.",
+            Status = StatusCodes.Status403Forbidden,
+            Instance = context.Request.Path,
+        };
+
+        problemDetails.Extensions["errorCode"] = ErrorCodes.CsrfValidationFailed;
+        problemDetails.Extensions["traceId"] = Activity.Current?.Id ?? "unknown";
+
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        context.Response.ContentType = "application/problem+json";
+
+        return context.Response.WriteAsJsonAsync(
+            problemDetails,
+            options: null,
+            contentType: "application/problem+json",
+            cancellationToken: ct);
+    }
+
     public static Task WriteTooManyRequestsAsync(HttpContext context, int retryAfterSeconds, int limit, int remaining, DateTimeOffset resetAt, CancellationToken ct)
     {
         var problemDetails = new ProblemDetails

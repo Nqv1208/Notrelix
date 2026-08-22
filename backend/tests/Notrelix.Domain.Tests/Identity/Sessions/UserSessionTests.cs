@@ -50,6 +50,19 @@ public class UserSessionTests
     }
 
     [Fact]
+    public void Revoke_WithReason_PropagatesStableReasonIntoEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
+        ((IHasDomainEvents)session).ClearDomainEvents();
+
+        session.Revoke(now.AddDays(1), SessionRevocationReasons.PasswordChanged);
+
+        var evt = (UserSessionRevokedDomainEvent)session.DomainEvents.First(e => e is UserSessionRevokedDomainEvent);
+        evt.Reason.Should().Be(SessionRevocationReasons.PasswordChanged);
+    }
+
+    [Fact]
     public void Revoke_AlreadyRevoked_ShouldNotRaiseEventAgain()
     {
         var now = DateTimeOffset.UtcNow;

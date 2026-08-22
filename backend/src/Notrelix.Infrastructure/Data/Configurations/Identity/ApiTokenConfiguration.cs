@@ -30,5 +30,6 @@ public class ApiTokenConfiguration : IEntityTypeConfiguration<ApiToken>
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_api_tokens_workspace_id");
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_api_tokens_user_id");
+        builder.HasIndex(x => x.TokenHash).IsUnique().HasDatabaseName("ux_api_tokens_token_hash");
     }
 }

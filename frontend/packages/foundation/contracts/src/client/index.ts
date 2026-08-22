@@ -5,4 +5,9 @@ export {
   type NotrelixClientConfig,
   type SessionExpiredEvent,
 } from "./api-client";
-export { getCsrfToken } from "./csrf";
+export {
+  createCsrfProvider,
+  CSRF_HEADER,
+  type CsrfProvider,
+  type CsrfProviderDeps,
+} from "./csrf";

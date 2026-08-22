@@ -6,4 +6,5 @@ public interface IOAuthStateStore
 {
     Task StoreAsync(OAuthLoginState state, TimeSpan ttl, CancellationToken ct);
     Task<OAuthLoginState?> ConsumeAsync(string state, CancellationToken ct);
+    Task<OAuthLoginState?> PeekAsync(string state, CancellationToken ct);
 }

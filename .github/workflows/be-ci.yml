@@ -560,6 +560,8 @@ jobs:
           Notrelix.Integration.Tests.Integration.TenantIsolationTests
           Notrelix.Integration.Tests.Integration.CrossTenantIsolationTests
           Notrelix.Integration.Tests.Integration.RlsRuntimeEnforcementTests
+          Notrelix.Integration.Tests.Auth.ApiTokenFlowTests
+          Notrelix.Integration.Tests.Auth.ApiTokenHttpFlowTests
           Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterIntegrationTests
           Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests
           Notrelix.Integration.Tests.Data.OutboxDispatchContractTests

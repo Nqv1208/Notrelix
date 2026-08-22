@@ -341,7 +341,7 @@ Rule count: 2663
 | `BE-DEC-014` | `BE-DEC` | ADR Compatibility/Migration is durable consequence, not execution tracker | [`backend/docs/decisions/README.md`](../../backend/docs/decisions/README.md) |
 | `BE-DEC-015` | `BE-DEC` | Pipeline concrete class count is evidence, not ADR identity | [`backend/docs/decisions/README.md`](../../backend/docs/decisions/README.md) |
 | `BE-DEC-016` | `BE-DEC` | RLS bootstrap mechanism change can supersede ADR-002 | [`backend/docs/decisions/README.md`](../../backend/docs/decisions/README.md) |
-| `BE-DEC-017` | `BE-DEC` | Credential-model change may invalidate ADR-003 assumptions | [`backend/docs/decisions/README.md`](../../backend/docs/decisions/README.md) |
+| `BE-DEC-017` | `BE-DEC` | Credential-model change may invalidate CSRF decision assumptions | [`backend/docs/decisions/README.md`](../../backend/docs/decisions/README.md) |
 | `BE-DEC-018` | `BE-DEC` | Numeric rate limits are runtime policy evidence, not immutable ADR identity | [`backend/docs/decisions/README.md`](../../backend/docs/decisions/README.md) |
 | `BE-DEC-019` | `BE-DEC` | Registry is not manually duplicated elsewhere | [`backend/docs/decisions/README.md`](../../backend/docs/decisions/README.md) |
 | `BE-DEC-020` | `BE-DEC` | Do not write decision after the fact merely to justify code | [`backend/docs/decisions/README.md`](../../backend/docs/decisions/README.md) |

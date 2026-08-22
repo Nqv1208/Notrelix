@@ -70,7 +70,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
 
         foreach (var session in activeSessions)
         {
-            session.Revoke(now);
+            session.Revoke(now, SessionRevocationReasons.PasswordReset);
         }
 
         try

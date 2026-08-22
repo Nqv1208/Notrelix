@@ -3,6 +3,7 @@ namespace Notrelix.Application.Common.Models;
 public enum ApplicationErrorType
 {
     Validation,
+    Authentication,
     NotFound,
     Conflict,
     PreconditionFailed,

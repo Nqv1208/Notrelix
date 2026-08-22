@@ -2,6 +2,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Governance.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -41,9 +42,9 @@ public class WorkspacePermissionServiceTests : IAsyncLifetime
         var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", Now);
         context.Workspaces.Add(workspace);
 
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, adminId, WorkspaceRole.Admin, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, adminId, WorkspaceRole.Admin, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
         await context.SaveChangesAsync();
 
         var service = CreateService(context);
@@ -67,9 +68,9 @@ public class WorkspacePermissionServiceTests : IAsyncLifetime
         var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", Now);
         context.Workspaces.Add(workspace);
 
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, workspaceMemberId, WorkspaceRole.Member, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, boardAdminId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, workspaceMemberId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, boardAdminId, WorkspaceRole.Member, ownerId, Now));
 
         var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, Now);
         context.Boards.Add(board);
@@ -98,9 +99,9 @@ public class WorkspacePermissionServiceTests : IAsyncLifetime
         var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", Now);
         context.Workspaces.Add(workspace);
 
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, guestId, WorkspaceRole.Guest, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.AccountId, workspace.Id, guestId, WorkspaceRole.Guest, ownerId, Now));
 
         var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, Now);
         context.Boards.Add(board);
@@ -118,7 +119,9 @@ public class WorkspacePermissionServiceTests : IAsyncLifetime
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-        var permissionService = new PermissionService(context, context, context, clockMock.Object);
-        return new WorkspacePermissionService(permissionService, context);
+        var snapshots = new ResourceAuthorizationSnapshotStore(
+            [new BoardAuthorizationSnapshotResolver(context)]);
+        var permissionService = new PermissionService(context, context, context, snapshots, clockMock.Object);
+        return new WorkspacePermissionService(permissionService, snapshots);
     }
 }

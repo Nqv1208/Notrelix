@@ -5,7 +5,12 @@ using Notrelix.Application.Features.Automation.DTOs;
 
 namespace Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations;
 
-public record GetWorkspaceAutomationsQuery(Guid WorkspaceId) : IQuery<Result<IReadOnlyList<AutomationRuleDto>>>, IWorkspaceRequest;
+public record GetWorkspaceAutomationsQuery(Guid WorkspaceId)
+    : IQuery<Result<IReadOnlyList<AutomationRuleDto>>>, IWorkspaceRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ViewWorkspace;
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);
+}
 
 public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceAutomationsQuery, Result<IReadOnlyList<AutomationRuleDto>>>
 {

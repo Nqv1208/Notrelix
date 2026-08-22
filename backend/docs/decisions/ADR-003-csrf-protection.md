@@ -1,8 +1,9 @@
 ---
 document_id: ADR-003
 document_type: architecture-decision
-status: Accepted
+status: Superseded
 owner: backend-architecture
+superseded_by: ADR-005-csrf-cross-origin-bootstrap.md
 applies_to:
   - backend
   - backend-api
@@ -32,7 +33,9 @@ review_on:
 
 ## Status
 
-Accepted
+Superseded by [ADR-005 — Cross-Origin CSRF Bootstrap Protocol](ADR-005-csrf-cross-origin-bootstrap.md)
+
+This record is preserved as historical decision evidence. Its Double Submit Cookie pattern and feature-flag rollout model remain in force; its transport assumptions (JavaScript-readable cookie, implicit per-GET issuance, `SameSite=Strict` cookie behavior) are superseded by ADR-005.
 
 ## Date
 
@@ -446,15 +449,19 @@ The original ADR does not record an older backend ADR superseded by this decisio
 
 ## Superseded By
 
-`None`
+[ADR-005 — Cross-Origin CSRF Bootstrap Protocol](ADR-005-csrf-cross-origin-bootstrap.md)
 
-Current registry status remains:
+ADR-005 preserves the Double Submit Cookie pattern, fixed-time comparison, state-changing-method coverage, and feature-flag rollout model accepted here.
+
+It supersedes the transport assumptions recorded in this ADR:
 
 ```text
-Accepted
+JavaScript-readable CSRF cookie (HttpOnly = false)
+implicit per-GET token-cookie issuance by middleware
+SameSite=Strict CSRF cookie behavior
 ```
 
-No newer backend ADR currently supersedes ADR-003.
+because a cross-origin SPA cannot read the API host-scoped cookie, making those assumptions structurally incompatible with the supported deployment topology.
 
 ---
 

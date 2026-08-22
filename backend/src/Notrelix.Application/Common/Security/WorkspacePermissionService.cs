@@ -1,5 +1,3 @@
-using Notrelix.Application.Features.WorkManagement.Abstractions;
-
 namespace Notrelix.Application.Common.Security;
 
 public class WorkspacePermissionService : IWorkspacePermissionService
@@ -8,12 +6,14 @@ public class WorkspacePermissionService : IWorkspacePermissionService
     private static readonly ResourceKind BoardKind = ResourceKind.Create("work-management.board");
 
     private readonly IPermissionEvaluator _permissionEvaluator;
-    private readonly IWorkManagementDbContext _context;
+    private readonly IResourceAuthorizationSnapshotStore _resourceSnapshots;
 
-    public WorkspacePermissionService(IPermissionEvaluator permissionEvaluator, IWorkManagementDbContext context)
+    public WorkspacePermissionService(
+        IPermissionEvaluator permissionEvaluator,
+        IResourceAuthorizationSnapshotStore resourceSnapshots)
     {
         _permissionEvaluator = permissionEvaluator;
-        _context = context;
+        _resourceSnapshots = resourceSnapshots;
     }
 
     private static void GuardUserId(Guid userId)
@@ -63,7 +63,7 @@ public class WorkspacePermissionService : IWorkspacePermissionService
         GuardUserId(userId);
         if (boardId == Guid.Empty) return false;
 
-        var workspaceId = await ResolveBoardWorkspaceAsync(boardId, cancellationToken);
+        var workspaceId = await ResolveBoardWorkspaceAsync(boardId, userId, cancellationToken);
         if (workspaceId is null) return false;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
@@ -78,7 +78,7 @@ public class WorkspacePermissionService : IWorkspacePermissionService
         GuardUserId(userId);
         if (boardId == Guid.Empty) return false;
 
-        var workspaceId = await ResolveBoardWorkspaceAsync(boardId, cancellationToken);
+        var workspaceId = await ResolveBoardWorkspaceAsync(boardId, userId, cancellationToken);
         if (workspaceId is null) return false;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
@@ -112,12 +112,17 @@ public class WorkspacePermissionService : IWorkspacePermissionService
         }
     }
 
-    private async Task<Guid?> ResolveBoardWorkspaceAsync(Guid boardId, CancellationToken cancellationToken)
+    private async Task<Guid?> ResolveBoardWorkspaceAsync(
+        Guid boardId,
+        Guid actorId,
+        CancellationToken cancellationToken)
     {
-        return await _context.Boards
-            .AsNoTracking()
-            .Where(b => b.Id == boardId && !b.IsArchived)
-            .Select(b => (Guid?)b.WorkspaceId)
-            .FirstOrDefaultAsync(cancellationToken);
+        var snapshot = await _resourceSnapshots.ResolveAsync(
+            BoardKind,
+            boardId,
+            actorId,
+            cancellationToken);
+
+        return snapshot?.WorkspaceId;
     }
 }

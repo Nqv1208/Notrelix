@@ -23,7 +23,8 @@ public static class ChangePasswordEndpoint
         var command = new ChangePasswordCommand
         {
             CurrentPassword = request.CurrentPassword,
-            NewPassword = request.NewPassword
+            NewPassword = request.NewPassword,
+            StepUpToken = request.StepUpToken
         };
 
         var result = await sender.Send(command);

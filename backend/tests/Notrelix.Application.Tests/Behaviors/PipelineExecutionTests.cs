@@ -204,7 +204,7 @@ public class PipelineExecutionTests
             mockUser.Object, mockTenant.Object, mockPermissionService.Object, Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
 
         var workspaceBehavior = new TenantBootstrapBehavior<ExecutableCommand, string>(
-            Mock.Of<ICurrentTenantContext>(), Mock.Of<ITenantBootstrapStore>(), Mock.Of<ILogger<TenantBootstrapBehavior<ExecutableCommand, string>>>());
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<Notrelix.Application.Common.Context.ICurrentCredentialContext>(), Mock.Of<ITenantBootstrapStore>(), Mock.Of<ILogger<TenantBootstrapBehavior<ExecutableCommand, string>>>());
 
         var validationBehavior = new ValidationBehavior<ExecutableCommand, string>(
             Array.Empty<IValidator<ExecutableCommand>>());
@@ -785,7 +785,7 @@ public class PipelineExecutionTests
     public async Task TenantBootstrapBehavior_EmptyWorkspaceId_ThrowsForbidden()
     {
         var behavior = new TenantBootstrapBehavior<EmptyWorkspaceCommand, string>(
-            Mock.Of<ICurrentTenantContext>(), Mock.Of<ITenantBootstrapStore>(), Mock.Of<ILogger<TenantBootstrapBehavior<EmptyWorkspaceCommand, string>>>());
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<Notrelix.Application.Common.Context.ICurrentCredentialContext>(), Mock.Of<ITenantBootstrapStore>(), Mock.Of<ILogger<TenantBootstrapBehavior<EmptyWorkspaceCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 

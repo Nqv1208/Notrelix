@@ -1,7 +1,7 @@
 import { endpoints } from "../endpoints/endpoints";
 import { AppError } from "@notrelix/kernel";
 import { mapStatusToKind } from "@notrelix/kernel";
-import { getCsrfToken } from "./csrf";
+import { createCsrfProvider, type CsrfProvider, CSRF_HEADER } from "./csrf";
 import { generateCorrelationId } from "@notrelix/kernel";
 
 export type ApiRequestOptions = {
@@ -29,6 +29,22 @@ export interface NotrelixClientConfig {
   onSessionExpired?: (event: SessionExpiredEvent) => void;
 }
 
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+const CSRF_PROBLEM_TYPE = "csrf-validation-failed";
+const CSRF_ERROR_CODE = "security.csrf_validation_failed";
+
+function isCsrfRejection(status: number, body: unknown): boolean {
+  if (status !== 403 || !body || typeof body !== "object") return false;
+
+  const problem = body as Record<string, unknown>;
+  const type = typeof problem.type === "string" ? problem.type : "";
+  const errorCode =
+    typeof problem.errorCode === "string" ? problem.errorCode : "";
+
+  return type.includes(CSRF_PROBLEM_TYPE) || errorCode === CSRF_ERROR_CODE;
+}
+
 export function createNotrelixClient(config: NotrelixClientConfig) {
   const customBaseUrl = config.baseUrl;
   const fetchImpl = config.fetchImpl ?? globalThis.fetch.bind(globalThis);
@@ -36,6 +52,48 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     config.createCorrelationId ?? generateCorrelationId;
   const clock = config.clock ?? { now: () => new Date() };
   const onSessionExpired = config.onSessionExpired;
+
+  // Instance-scoped CSRF transport (ADR-005): memory-only token, single-flight
+  // bootstrap shared by every unsafe request of this client instance.
+  const csrf: CsrfProvider = createCsrfProvider({
+    fetchImpl,
+    baseUrl: customBaseUrl,
+    bootstrapPath: endpoints.auth.csrf,
+    createCorrelationId,
+  });
+
+  /**
+   * Shared CSRF-aware low-level request primitive.
+   *
+   * Every browser request path — ordinary API calls AND the single-flight
+   * auth refresh — goes through this primitive so no path can bypass the
+   * canonical CSRF transport (ADR-005 / IAREQ129).
+   */
+  async function csrfAwareFetch(
+    url: string,
+    init: RequestInit,
+    correlationId: string,
+  ): Promise<Response> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Correlation-ID": correlationId,
+      ...(init.headers as Record<string, string> | undefined),
+    };
+
+    const method = (init.method ?? "GET").toUpperCase();
+
+    if (UNSAFE_METHODS.has(method)) {
+      // Bootstrap is single-flight and memory-cached; safe GETs never trigger it.
+      const token = await csrf.ensureCsrfToken();
+      headers[CSRF_HEADER] = token;
+    }
+
+    return fetchImpl(url, {
+      credentials: "include",
+      ...init,
+      headers,
+    });
+  }
 
   // Instance-scoped single-flight refresh promise closure
   let refreshPromise: Promise<void> | null = null;
@@ -46,16 +104,10 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
         const correlationId = createCorrelationId();
         let refreshResponse: Response;
         try {
-          refreshResponse = await fetchImpl(
+          refreshResponse = await csrfAwareFetch(
             `${customBaseUrl}${endpoints.auth.refresh}`,
-            {
-              method: "POST",
-              credentials: "include",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Correlation-ID": correlationId,
-              },
-            },
+            { method: "POST" },
+            correlationId,
           );
         } catch (netErr) {
           const appErr = new AppError({
@@ -99,39 +151,57 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     return refreshPromise;
   }
 
+  async function parseBody(
+    response: Response,
+    correlationId: string,
+  ): Promise<unknown> {
+    const text = await response.text();
+    if (!text) return null;
+
+    try {
+      return JSON.parse(text);
+    } catch (parseError) {
+      throw new AppError({
+        kind: "server",
+        status: response.status,
+        code: "parse_error",
+        message: "Failed to parse server response.",
+        correlationId,
+        cause: parseError,
+      });
+    }
+  }
+
   async function apiFetch<TResponse>(
     url: string,
     options: RequestInit & ApiRequestOptions = {},
-    retry = true,
+    retryAfterRefresh = true,
+    retryAfterCsrfRecovery = true,
   ): Promise<TResponse> {
     const correlationId = options.correlationId || createCorrelationId();
 
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-      "X-Correlation-ID": correlationId,
-      ...(options.headers as Record<string, string>),
+    const init: RequestInit & ApiRequestOptions = { ...options };
+    delete (init as { correlationId?: string }).correlationId;
+
+    // Normalize to a plain record so header merging stays type-safe
+    // regardless of the HeadersInit shape the caller provided.
+    const headers: Record<string, string> = {
+      ...(init.headers as Record<string, string> | undefined),
     };
 
     if (options.idempotencyKey) {
       headers["Idempotency-Key"] = options.idempotencyKey;
     }
 
-    const csrfToken = getCsrfToken();
-    if (
-      csrfToken &&
-      options.method &&
-      ["POST", "PUT", "PATCH", "DELETE"].includes(options.method.toUpperCase())
-    ) {
-      headers["X-XSRF-TOKEN"] = csrfToken;
-    }
+    init.headers = headers;
 
     let response: Response;
     try {
-      response = await fetchImpl(`${customBaseUrl}${url}`, {
-        credentials: "include",
-        ...options,
-        headers,
-      });
+      response = await csrfAwareFetch(
+        `${customBaseUrl}${url}`,
+        init,
+        correlationId,
+      );
     } catch (error) {
       const isAbort = (error as { name?: string }).name === "AbortError";
       console.log("FAILED URL:", url, options.method);
@@ -148,7 +218,7 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     // Handle 401 Unauthorized (Single-flight auth refresh)
     if (
       response.status === 401 &&
-      retry &&
+      retryAfterRefresh &&
       !options.skipAuthRefresh &&
       url !== endpoints.auth.refresh &&
       url !== endpoints.auth.login &&
@@ -158,8 +228,9 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
       // Single retry attempt after refresh
       return await apiFetch<TResponse>(
         url,
-        { ...options, skipAuthRefresh: true, correlationId },
+        { ...options, skipAuthRefresh: true },
         false,
+        retryAfterCsrfRecovery,
       );
     }
 
@@ -168,32 +239,21 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
       return null as unknown as TResponse;
     }
 
-    // Parse JSON safely
-    const text = await response.text();
-    let data: unknown = null;
-    if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch (parseError) {
-        if (!response.ok) {
-          console.log("FAILED URL:", url, options.method);
-          throw new AppError({
-            kind: mapStatusToKind(response.status),
-            status: response.status,
-            message: text || "Request failed",
-            correlationId,
-          });
-        }
-        console.log("FAILED URL:", url, options.method);
-        throw new AppError({
-          kind: "server",
-          status: response.status,
-          code: "parse_error",
-          message: "Failed to parse server response.",
-          correlationId,
-          cause: parseError,
-        });
-      }
+    const data = await parseBody(response, correlationId);
+
+    // Bounded CSRF stale-token recovery (ADR-005 policy):
+    // clear memory token → re-bootstrap once → retry the original unsafe
+    // request exactly once. The retry flag guarantees no loop.
+    if (isCsrfRejection(response.status, data) && retryAfterCsrfRecovery) {
+      csrf.clearToken();
+      await csrf.ensureCsrfToken();
+
+      return await apiFetch<TResponse>(
+        url,
+        { ...options },
+        retryAfterRefresh,
+        false,
+      );
     }
 
     // Handle non-2xx responses

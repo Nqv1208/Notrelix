@@ -22,3 +22,7 @@ skills-lock.json
 .vite/
 
 .gstack/
+
+# macOS
+.DS_Store
+**/.DS_Store
