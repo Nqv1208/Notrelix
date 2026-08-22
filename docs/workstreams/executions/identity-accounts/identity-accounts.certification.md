@@ -2074,6 +2074,65 @@ Status:            CLOSED
 Decision date:     2026-08-22
 ```
 
+## 65.5 Security hardening closure record
+
+Candidate HEAD:    53771238 (rebased onto merged web-app line)
+
+Secret surface scan (all production Identity/Accounts security paths):
+  - CSRF protector/middleware/ProblemDetails writer: zero log statements;
+    failure response is static canonical text, never echoes token material
+    (asserted by CsrfCrossStackFlowTests negative matrix)
+  - Outbox dispatcher: logs message id/name + exception messages only;
+    dead-letter path records error text, never payload JSON
+  - Platform ConsumerHost poison/retry diagnostics: event name + consumer
+    id + exception; no envelope body dump
+  - Email dispatcher: message id + cancellation reason; rendered bodies and
+    protected links never logged
+  - Auth/JWT/token services: no secret-material logging found by scan
+  - Admin outbox diagnostics GetById exposes raw payload JSON behind the
+    SystemAdmin policy — classified as privileged operations surface
+    (gated, auditable), not ordinary logging; retained intentionally
+
+CSRF attack matrix (IA-TST-CSRF-API-*, INT-*): missing cookie, missing
+  header, mismatched pair, cross-instance/stale token after rotation,
+  unsafe request with no material, refresh without pair (new explicit
+  case: 403 canonical security.csrf_validation_failed), cross-origin
+  credential replay, explicit non-ambient Authorization credential exempt,
+  safe GET unvalidated — all green under CsrfProtectionTests +
+  CsrfCrossStackFlowTests (15 cases). CORS is not relied upon anywhere.
+
+Authorization bypass matrix: frozen role/action matrix (Owner/Admin allow
+  CreateWorkspace; Member/BillingAdmin/SecurityAdmin deny), Governance
+  deny precedence over fallback, Governance allow granting baseline-denied
+  action, suspended/absent/wrong-account denials — PermissionServiceTests
+  (33) through the real evaluator on PostgreSQL; handler-cannot-run-before-
+  pipeline-denial plus zero durable side effects proven by
+  WorkspaceCreationPipelineAuthorizationTests (5 roles) on the production
+  graph; static bypass gates (ARCH-001..005) green.
+
+Event privacy/security matrix: prohibited-secret property ban over all
+  serialized public contracts, PII fields classified with purpose +
+  consumer justification, manifest carries metadata only (no runtime
+  sample values), outbox/DLQ paths verified above not to dump payloads,
+  unsupported-version dead-letter path logs name/version only.
+
+Enumeration/replay/revocation regression: full Integration suite re-run
+  at this HEAD — 338 passed, including login/recovery flows, OAuth
+  callback/link lifecycle, MFA enrollment/challenge, session revoke and
+  API-token governance/races; Application suite 649 passed covering auth
+  pipeline behaviors. No closure change weakened these suites.
+
+Abuse controls: single Platform-owned rate-limit mechanism (ADR-004
+  provider + pre/post-auth middleware); 23 sensitive Identity endpoints
+  carry AuthStrictByIp incl. login/register/refresh/recovery/MFA/OAuth/
+  CSRF bootstrap; no parallel or local rate-limit framework introduced.
+
+Exit criterion: no material high-sensitivity path lacks a negative or
+security test — met.
+Status:            CLOSED
+Decision date:     2026-08-22
+```
+
 # Migration certification
 
 ## 66. CERT-MIG-001 — migration inventory

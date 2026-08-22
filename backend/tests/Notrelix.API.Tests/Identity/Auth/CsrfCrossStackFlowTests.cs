@@ -175,6 +175,15 @@ public class CsrfCrossStackFlowTests
             payload: new { email = "u@t.l", password = "x" }, sendHeader: false));
         missingHeader.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
+        // session-refreshing unsafe operation without any CSRF pair is rejected
+        var refreshWithoutPair = await client.SendAsync(new HttpRequestMessage(
+            HttpMethod.Post, RefreshPath));
+        refreshWithoutPair.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            "refresh relies on ambient cookie state and must not bypass the browser CSRF gate");
+        var refreshProblem = await refreshWithoutPair.Content.ReadFromJsonAsync<JsonElement>(Json);
+        refreshProblem.GetProperty("errorCode").GetString()
+            .Should().Be("security.csrf_validation_failed");
+
         // wrong header value
         var wrongHeader = await client.SendAsync(UnsafeRequest(
             HttpMethod.Post, LoginPath, browser,
