@@ -122,4 +122,14 @@ export const identityOperations = [
       return ok({ success: true });
     },
   }),
+
+  defineMockOperation({
+    id: "identity.csrf",
+    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
+    method: "GET",
+    route: "/auth/csrf",
+    async handle() {
+      return ok({ token: "mock-csrf-token" });
+    },
+  }),
 ];
