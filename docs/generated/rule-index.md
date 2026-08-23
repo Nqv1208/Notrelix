@@ -1233,7 +1233,7 @@ Rule count: 2663
 | `FE-API-027` | `FE-API` | Client does not reverse-engineer protected resource existence | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-API-028` | `FE-API` | Retry behavior follows operation/error class | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-API-029` | `FE-API` | CSRF cookie/header names are a cross-boundary contract | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
-| `FE-API-030` | `FE-API` | Current frontend/backend CSRF mismatch is SOURCEDEBT / CONTRACT DRIFT | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
+| `FE-API-030` | `FE-API` | CSRF wire contract is single-spelling, drift-guarded | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-API-031` | `FE-API` | Feature flag must not hide contract incompatibility | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-API-032` | `FE-API` | Valid CSRF token grants no resource permission | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-API-033` | `FE-API` | Browser CSRF belongs to browser transport/runtime | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |

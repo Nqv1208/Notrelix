@@ -875,20 +875,31 @@ as if they were transient network failures.
 
 # 57. Browser CSRF architecture
 
-Backend current CSRF implementation defines Double Submit Cookie:
+The accepted cross-boundary CSRF contract is the backend
+`ADR-005 — Cross-Origin CSRF Bootstrap Protocol`
+(`backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md`),
+which supersedes the historical Double Submit Cookie transport of ADR-003:
 
 ```text
-cookie:
-csrf_token
+bootstrap (safe):
+GET /api/v1/auth/csrf
+→ response body carries the token (client keeps it in memory only)
+→ Set-Cookie: csrf_token=<token> (HttpOnly, host-scoped)
 
-header:
-X-CSRF-Token
+unsafe browser mutation:
+Cookie: csrf_token=<token>   ← attached by the browser automatically
+X-CSRF-Token: <token>        ← sent by the client from memory
 
 unsafe methods:
 POST / PUT / PATCH / DELETE
+
+failure contract:
+security.csrf_validation_failed ProblemDetails
+→ client clears its in-memory token and re-bootstraps once
 ```
 
-when CSRF is enabled.
+The cookie is never JavaScript-read; the body is the only client source.
+Enablement remains environment configuration; see §61–62.
 
 Frontend browser transport must match this contract exactly.
 
@@ -910,54 +921,50 @@ This is not a cosmetic naming choice.
 
 ---
 
-# 59. Current CSRF source drift
+# 59. CSRF source alignment (closed)
 
-Current frontend `csrf.ts` reads:
+Historical drift (pre-closure): the frontend read a JavaScript-readable
+`XSRF-TOKEN` cookie and sent `X-XSRF-TOKEN`, which never matched the backend
+`csrf_token` / `X-CSRF-Token` contract.
 
-```text
-XSRF-TOKEN
-```
-
-and current generic API client sends:
-
-```text
-X-XSRF-TOKEN
-```
-
-while current backend expects:
+This drift was repaired at the Identity & Accounts Phase 13 closure. Current
+frontend source implements exactly the ADR-005 bootstrap protocol:
 
 ```text
-csrf_token
-X-CSRF-Token
+packages/foundation/contracts/src/client/csrf.ts
+→ GET auth/csrf bootstrap, in-memory token, X-CSRF-Token header
+
+packages/foundation/contracts/src/client/api-client.ts
+→ csrfAwareFetch on unsafe browser requests, single-flight bootstrap,
+  security.csrf_validation_failed → clear + re-bootstrap recovery
 ```
 
-This is not the same contract.
+The legacy spellings `XSRF-TOKEN` / `X-XSRF-TOKEN` and any cookie/meta/storage
+token discovery are forbidden; client source-scan tests guard this.
 
 ---
 
-# 60. FE-API-030 — Current frontend/backend CSRF mismatch is SOURCE_DEBT / CONTRACT DRIFT
+# 60. FE-API-030 — CSRF wire contract is single-spelling, drift-guarded
 
-Classification:
+Current classification:
 
 ```text
-SOURCE_DEBT
-+
-CONTRACT_CHANGE reconciliation required
+RESOLVED — aligned with backend ADR-005
 ```
 
-for the current frontend browser CSRF helper/client.
+The historical SOURCE_DEBT / CONTRACT_DRIFT classification applied to the
+pre-closure frontend helper only; it is retained here as decision history.
 
-Do not update architecture to bless the mismatch.
-
-Required target:
+Standing rule (unchanged by the closure):
 
 ```text
 frontend browser client
-→ read backend-issued csrf_token
-→ send X-CSRF-Token
+→ obtain token from GET /api/v1/auth/csrf response body
+→ send X-CSRF-Token on unsafe browser mutations
 ```
 
-unless a deliberate backend contract change supersedes that contract.
+Any future deviation is a deliberate cross-boundary contract change that must
+go through ADR/supersession — not silent client renaming.
 
 ---
 

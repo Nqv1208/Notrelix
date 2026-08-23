@@ -531,6 +531,27 @@ for equivalent protected operations.
 
 Use the canonical pipeline/resource contract.
 
+The canonical chain for a protected Identity/Accounts (and generally
+Workspace/Governance-consumed) operation is:
+
+```text
+protected Application use case
+→ request authorization contract (declared permission/action + scope)
+→ AuthorizationBehavior (central policy evaluation, e.g. PermissionService)
+→ handler business logic
+```
+
+Handlers MUST NOT pre-gate with their own permission-service calls or
+duplicate the pipeline decision; downstream contexts consume the shared
+central policy engine and never re-derive authorization by inspecting
+Identity handlers or role state.
+
+Target-role business invariants are distinct from current-actor
+authorization: rules about what role a target principal must hold for an
+operation to be meaningful (for example provisioning constraints) belong to
+Domain/handler business logic; whether the current actor may perform the
+operation is decided only by the pipeline chain above.
+
 ---
 
 # 27. Authorization-before-effect

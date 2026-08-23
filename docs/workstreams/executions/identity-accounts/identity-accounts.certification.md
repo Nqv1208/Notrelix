@@ -2198,11 +2198,129 @@ Executable observability proofs added:
     resolution -> deserialize, proving the request-to-event chain stays
     traceable by non-secret identifiers.
 
-Frontend node suite at this HEAD: 72 files / 313 tests green (includes
-the newly adopted dev mock-backend package after workspace install).
-
 Status:            CLOSED
 Decision date:     2026-08-22
+```
+
+## 65.7 Phase 17 record — cross-team integration hardening closure
+
+```text
+Capability:        Cross-team handoff verification (P17-X-001..005): frontend
+                   browser CSRF contract, Workspace/Governance authorization
+                   handoff, event consumer handoff, v1/v2 migration fixture,
+                   operational evidence disposition
+SPEC requirement:  IAREQ068-IAREQ078, IAREQ087, IAREQ090, IAREQ126-IAREQ135,
+                   IAREQ136-IAREQ140 as applicable to cross-team handoff
+PLAN work units:   P17-X-001, P17-X-002, P17-X-003, P17-X-004, P17-X-005
+TEST IDs:          IA-TST-CSRF-CLIENT-* (11 cases), PermissionServiceTests
+                   (33), VersionedContractMigrationFixtureTests (5 =
+                   IA-TST-X-EVT-004/IA-TST-EVT-MIG-*/IA-TST-MIG-EVT-002)
+Source baseline:   develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf
+Migration:         NOT_APPLICABLE — no persisted shape change
+P17-X-001:         VERIFIED — frontend source consumes only ADR-005 protocol
+                   (bootstrap GET auth/csrf, in-memory token, X-CSRF-Token,
+                   security.csrf_validation_failed ProblemDetails recovery);
+                   zero competing XSRF convention in any frontend package;
+                   generated schema carries bootstrap operation; two stale doc
+                   sections classified DOC_STALE and routed to Phase 19
+                   IA-DOC scope; executable proof csrf-transport.unit.test.ts
+                   11/11 passed
+P17-X-002:         VERIFIED — AccountRole confined to central
+                   PermissionService policy + grant projection writes; ZERO
+                   references in API or downstream Features; Workspace/
+                   Governance need no Identity inspection; executable proof
+                   PermissionServiceTests 33/33 on real PostgreSQL
+P17-X-003:         VERIFIED — all 44 consumers registered with explicit
+                   EventVersion + ConsumerMaturity (18 Implemented / 26 Stub,
+                   stubs recorded AS STUB); TenantContextConsumeFilter
+                   restores scope per message; no private Identity persistence
+                   access from any downstream consumer (grep-verified)
+P17-X-004:         VERIFIED — controlled test.versioned-fact v1+v2 fixture
+                   proves registry/catalog/serializer coexistence without
+                   collision; v3 lookup fails deterministically;
+                   VersionedContractMigrationFixtureTests 5/5 passed
+P17-X-005:         NOT_APPLICABLE_UNTIL_DEPLOYMENT — no production env exists
+                   at candidate; local staging/dev outbox/DLQ evidence already
+                   collected (P13-EVT-OPS); runbook trigger = first production
+                   deployment
+Architecture evidence: no new package dependency edge; frontend contract
+                   client remains the only browser transport owner
+CI evidence:       local focused suites at exact SHA 450bea97 (counts above)
+Known debt:        api-and-contracts.md §59-60 + FE-ADR-005 mismatch section
+                   DOC_STALE (Phase 19 owner); stub consumers remain STUB by
+                   design (26) until their owning contexts implement them
+Status:            CLOSED (Phase 17 exit met)
+Reviewer:          pending human sign-off
+Decision date:     2026-08-23
+```
+
+## 65.8 Phase 18 record — TESTS handoff closure
+
+```text
+Capability:        TESTS artifact sync + full regression handoff
+                   (IA-TEST-HO-001..004)
+PLAN work units:   IA-TEST-HO-001, IA-TEST-HO-002, IA-TEST-HO-003,
+                   IA-TEST-HO-004
+Source baseline:   develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf
+IA-TEST-HO-001:    VERIFIED — tests.md carries 216 concrete IA-TST-* IDs;
+                   all mandatory families present (CSRF 19, AUTHZ 13,
+                   EVT-INV 3, EVT-SEC 1, EVT-VER 5, EVT-CONTRACT 4, MIG 11,
+                   OBS 6, REL 8, X 14)
+IA-TEST-HO-002:    VERIFIED — CI mapping §235–244 + requirement coverage
+                   §259–273 map every family to suite/job; residual gates
+                   §292–294 exist as executable architecture tests
+IA-TEST-HO-003:    EXECUTED — full regression at exact SHA:
+                     Architecture      398 / Domain 2576 / Application 649 /
+                     Infrastructure    132 / Platform 147 / API 256 /
+                     Integration       338 → 4496 passed, 0 failed, 0 skipped
+                     frontend test:node 72 files / 313 passed
+                   (counts recorded fresh, not carried forward)
+IA-TEST-HO-004:    VERIFIED — all evidence suites non-zero; mis-targeted
+                   zero-match filter corrected before recording
+Generated artifacts: OpenAPI/event manifest drift gates executed inside
+                   Architecture+API suites (green)
+Known debt:        none material; operational DLQ evidence remains
+                   NOT_APPLICABLE_UNTIL_DEPLOYMENT per P17-X-005
+Status:            CLOSED (Phase 18 exit met)
+Reviewer:          pending human sign-off
+Decision date:     2026-08-23
+```
+
+## 65.9 Phase 19 record — documentation / generated-contract handoff
+
+```text
+Capability:        Canonical documentation + generated artifact alignment
+                   (IA-DOC-001..006)
+PLAN work units:   IA-DOC-001, IA-DOC-002, IA-DOC-003, IA-DOC-004,
+                   IA-DOC-005, IA-DOC-006
+Source baseline:   develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf
+                   (doc-only edits on top; no source/contract change)
+IA-DOC-001:        DONE — backend ADR-003 Superseded → ADR-005 (Accepted);
+                   frontend api-and-contracts.md §57 rewritten to accepted
+                   bootstrap protocol, §59 closed as historical drift,
+                   §60 FE-API-030 → RESOLVED; FE-ADR-005 mismatch evidence
+                   marked CLOSED; rule-index.md regenerated via producer
+                   (--check PASS)
+IA-DOC-002:        VERIFIED — fresh OpenAPI export vs committed canonical
+                   semantic compare CLEAN; no handwritten drift
+IA-DOC-003:        VERIFIED — events manifest matches generated source shape
+                   (explicit gate 1/1 + Architecture suite coverage)
+IA-DOC-004:        DONE — BE-SEC-013 extended: single authoritative chain
+                   use case → authorization contract → AuthorizationBehavior
+                   → handler logic; target-role invariants distinguished from
+                   current-actor authorization
+IA-DOC-005:        DONE — platform-and-messaging.md §106 extended with
+                   EventContractKey(Name,Version), v1/v2 coexistence, schema
+                   baseline, consumer maturity, rollout, outbox/DLQ drain
+IA-DOC-006:        DONE — execution state carried by certification records;
+                   plan remains active until Phase 20
+Docs gates:        make docs-check ALL PASS (links/metadata/authority/
+                   rule-ids/source-inventory/generated)
+Contracts:         documentation-only; no API/event/schema/persistence change
+Status:            CLOSED (Phase 19 exit met — no canonical doc contradicts
+                   implemented CSRF/authz/event closure contracts)
+Reviewer:          pending human sign-off
+Decision date:     2026-08-23
 ```
 
 # Migration certification
@@ -2966,60 +3084,135 @@ Date:
 Identity & Accounts — Full Scope Certification
 
 Candidate SHA:
+  branch develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf (HEAD).
+  All source regression/gates executed at this exact SHA.
+  Phase 17–20 closure records + Phase 19 doc alignment are documentation-only
+  working-tree edits on top (no source/contract delta vs 450bea97); they enter
+  history as the certification commit of this record.
+  Worktree otherwise as found: pre-existing dirty frontend/apps/marketing/
+  vercel.json + untracked .agents/.claude skill dirs (unrelated to scope).
 
 P1 Core:
-  Status:
+  Status: VERIFIED (D4) — Milestone A certified 2026-08-14;
+          User identity, Actor contract, Session contract (watermark
+          revocation), Account identity records §6–9
 
 Registration/Credentials:
-  Status:
+  Status: VERIFIED (D4) — §24.1/§25.1 (2026-08-14): unique-email race → 409,
+          BCrypt + policy proofs, single-use OTP reset, enumeration resistance
 
 OAuth:
-  Status:
+  Status: VERIFIED (Phase 9) — §OAuth record (df90a267): link/unlink/callback,
+          auto-link rejection, contract regen green
 
 SSO:
-  Status:
+  Status: VERIFIED (Phase 10) — §SSO record
 
 MFA:
-  Status:
+  Status: VERIFIED (Phase 11) — §MFA record
 
 Security settings:
-  Status:
+  Status: VERIFIED (Phase 12) — §Security settings record
 
 API Tokens:
-  Status:
+  Status: VERIFIED (Phase 12 review scope) — §API token record; noted as not
+          D5/STABLE pending full lifecycle hardening (non-blocking, recorded)
 
 Cross-context integration:
-  Status:
+  Status: CLOSED — §65.7 Phase 17 (frontend consumes only ADR-005 protocol;
+          AccountRole central-authority isolation proven; consumer registry
+          explicit versions+maturity 18 Implemented/26 Stub; v1/v2 fixture
+          5/5; operational evidence NOT_APPLICABLE_UNTIL_DEPLOYMENT)
 
 Migration:
-  Status:
+  Status: CLOSED — §65.4 Phase 14: zero schema delta since audited baseline;
+          migration head 20260702093805_SchemaV2Baseline unchanged;
+          name-only event resolution eliminated (compiler + architecture
+          gate); CSRF staged rollout sequence recorded
 
 Security hardening:
-  Status:
+  Status: CLOSED — §65.5 Phase 15: secret-name ban, CSRF negative matrix,
+          authz bypass gates ARCH-001..005, no CORS-as-CSRF reliance;
+          production cookie policy unit-proven (Secure+SameSite=None+HttpOnly)
 
 Reliability:
-  Status:
+  Status: CLOSED — §65.6 Phase 16: bounded bootstrap/retry, dispatcher
+          diagnostics, correlation propagation proofs at HEAD; outbox/DLQ
+          local staging evidence Processed=2/Pending=0/Failed=0/DLQ=0
 
 Observability:
-  Status:
+  Status: CLOSED — §65.6 Phase 16 (+§65.3): authorization evaluation count,
+          dispatcher diagnostics, correlation IDs; csrf error category in
+          ErrorCodes taxonomy; no secret/payload logging
 
 Performance:
-  Status:
+  Status: CLOSED — PERF-001 single pipeline authorization evaluation via
+          production-graph test; no duplicate pipeline+handler query;
+          client CSRF single-flight bounded
 
 Docs/OpenAPI:
-  Status:
+  Status: CLOSED — §65.9 Phase 19: ADR-003 Superseded→ADR-005 both sides
+          aligned; FE-API-030 RESOLVED; BE-SEC-013 chain documented;
+          platform-and-messaging §106 versioning contract defined;
+          make docs-check ALL PASS; rule-index regenerated via producer
 
 CI:
-  Status:
+  Status: LOCAL GATES GREEN AT EXACT SHA — backend 7 suites 4496 passed /
+          0 failed / 0 skipped (Architecture 398 incl. TRACE-001 + drift
+          gates; Domain 2576; Application 649; Infrastructure 132;
+          Platform 147; API 256; Integration 338 incl. PermissionServiceTests
+          33/33); frontend pnpm test:node 72 files / 313 passed (incl.
+          csrf-transport 11/11); OpenAPI export-vs-canonical CLEAN;
+          events manifest drift gate 1/1; make docs-check PASS.
+          Remote CI execution for the certification commit is a post-commit
+          action (record honestly: these counts are local executions).
 
-Blocking debt:
+Generated artifact checksums (at 450bea97):
+  sha256 backend/contracts/openapi/notrelix.v1.json
+        = f4391c799d864f6542f59e7b44290898a8cc6b1cfa67610b0e762ec6a47c9758
+  sha256 backend/contracts/events/notrelix.events.json
+        = dda01452e66927e2975fb349b953493347be3aec3e6b641e27a9a393745fa0f4
+
+Phase 13 closure table (IA-CERT-HO-002):
+  IA-API-002 DONE | IA-API-003 DONE | IA-API-004 DONE
+  IA-AUTHZ-001 DONE | IA-AUTHZ-002 DONE | IA-AUTHZ-003 DONE
+  IA-AUTHZ-004 DONE | IA-EVT-001 DONE | IA-EVT-002 DONE
+  IA-EVT-003 DONE | IA-EVT-OPS NOT_APPLICABLE_UNTIL_DEPLOYMENT
+  (permitted operational exception; runbook trigger = first prod deploy)
+  No source-level DEFERRED exists.
+
+Closure blocker rule check (IA-CERT-HO-004):
+  CSRF convention mismatch: none (single ADR-005 spelling, guarded)
+  CSRF disabled due to FE incompatibility: NO — flag off is staged-rollout
+    state only; cross-stack transport merged and smoke-proven locally
+  Handler bypass unclassified: zero unclassified hits
+  Admin/CreateWorkspace semantics: resolved (frozen central matrix)
+  Name-only event resolution: eliminated, compiler+gate enforced
+  Drift gates: present and green (OpenAPI + manifest)
+  Prohibited secrets / unclassified PII in public payloads: gated green,
+    delivery-event PII classified with purpose+consumer
+  Required suites failing/zero-executed: none (all non-zero green)
+  → NO BLOCKER REMAINS
+
+Blocking debt: none at source level.
 Non-blocking debt:
+  - CSRF production enablement + production cookie-policy runtime smoke =
+    deployment actions (staged sequence P14-MIG-003)
+  - GitGuardian CI incident: external repository-alert triage, outside this
+    workstream's source scope
+  - Human sign-off pending on all agent-executed certification records
+  - Frontend feature-auth router coupling remains SOURCE_DEBT (separate owner)
+  - MFA/step-up/API-token management UI wiring backlog (capability APIs done)
+  - 26 stub consumers remain STUB by design until owning contexts implement
 
 Decision:
-  IDENTITY & ACCOUNTS FULL SCOPE CERTIFIED | BLOCKED
+  IDENTITY & ACCOUNTS FULL SCOPE CERTIFIED
+  (source-level; operational items above remain deployment/backlog actions)
 
 Reviewer(s):
+  Execution agents (Phases 0–20); human sign-off PENDING
 Date:
+  2026-08-23 (certification executed); sign-off pending
 ```
 
 # Handoff to Workspace & Governance
