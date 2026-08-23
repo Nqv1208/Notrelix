@@ -1635,6 +1635,49 @@ contract-first
 
 Do not rely on simultaneous deployment.
 
+Public integration-event versioning contract (accepted via the Identity &
+Accounts closure, ADR-governed where noted):
+
+```text
+contract key:
+EventContractKey = (Name, Version) — the runtime resolution identity;
+  same Name with different Versions coexist in registries/catalogs;
+  duplicate (Name, Version) registration fails deterministically;
+  unknown/unregistered Version lookup fails deterministically with no
+  implicit latest/default fallback.
+
+coexistence:
+v1 and v2 of one logical event may be produced and consumed concurrently
+during migration; producers/consumers declare explicit versions; envelope
+metadata carries the version end-to-end so callers never guess.
+
+schema baseline:
+each Version pins its payload schema; changing a payload shape under the
+SAME Version is a compatibility violation rejected by gates
+(CanonicalManifest_MatchesGeneratedSourceShape /
+ManifestComparator_RejectsSameVersionSchemaChange).
+
+consumer maturity:
+every registered consumer entry declares explicit maturity
+(Implemented / Stub / None) alongside its consumed (Name, Version);
+stub consumers are recorded AS STUB until their owning context implements
+them — maturity is registry metadata, not an implicit assumption.
+
+producer/consumer rollout:
+add new Version → deploy consumers able to read it → migrate producers →
+drain old versions before retirement (below).
+
+retirement:
+an old Version may be removed only after outbox and DLQ/backlog drain is
+verified per the owning context's migration plan; queued messages are
+deployed consumers (BE-PLT-050).
+```
+
+The canonical event manifest (`backend/contracts/events/notrelix.events.json`)
+is generated from the production public registry through repository tooling
+and drift-checked by executable gates; unrelated bounded contexts' semantic
+contract data must not change silently when shared generator mechanics evolve.
+
 ---
 
 # 107. BE-PLT-050 — Old queued messages are deployed consumers

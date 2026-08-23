@@ -1094,3 +1094,292 @@ HttpValidationProblemDetails shape with errors._errors) for invalid
 provider/purpose enum binding; EndpointExtensions.UnauthorizedProblem
 (401 auth.unauthorized) for missing refresh cookie. Status codes unchanged;
 undocumented `{ error }` bodies replaced by the documented ProblemDetails shape.
+
+## 20. Phase 17 — Cross-team integration hardening closure (2026-08-23)
+
+Source baseline: develop @ `450bea973307980ce03c4bc27b5f32c1ad6c91cf` (working
+tree clean for this scope; pre-existing unrelated dirty file
+`frontend/apps/marketing/vercel.json` + untracked skills dirs remain as found).
+
+### P17-X-001 — frontend/browser contract handoff — VERIFIED
+
+Required search executed (`rg "csrf_token|X-CSRF-Token|XSRF-TOKEN|X-XSRF-TOKEN|
+getCsrfToken|Csrf|CSRF" frontend`, node_modules/dist excluded; 180 hits):
+
+```text
+SOURCE (all compliant with ADR-005, no competing convention):
+  packages/foundation/contracts/src/client/csrf.ts
+    → bootstrap GET auth/csrf + in-memory token + CSRF_HEADER=X-CSRF-Token;
+      legacy conventions documented as removed/forbidden (comment only)
+  packages/foundation/contracts/src/client/api-client.ts
+    → csrfAwareFetch on unsafe browser requests, single-flight bootstrap,
+      security.csrf_validation_failed ProblemDetails detection → clearToken +
+      re-bootstrap recovery; refresh path CSRF-aware
+  packages/foundation/contracts/src/generated/rest/schema.ts
+    → generated /api/v1/auth/csrf operation (Identity.Auth.IssueCsrfToken),
+      description references ADR-005 (regenerated artifact, not hand-written)
+  packages/foundation/contracts/src/client/index.ts → public exports only
+TESTS (negative legacy assertions):
+  __tests__/csrf-transport.unit.test.ts asserts X-XSRF-TOKEN absent,
+  no cookie/meta/storage discovery; source-scan guard over legacy strings
+DOCS:
+  docs/architecture/api-and-contracts.md §59–60 still describe the
+  pre-closure drift as "current" → DOC_STALE (fix = Phase 19 IA-DOC scope)
+  docs/decisions/FE-ADR-005-auth-session-model.md "Current CSRF mismatch
+  evidence" section same classification → DOC_STALE (Phase 19)
+MOBILE/MARKETING: zero hits — no competing transport outside contracts client.
+```
+
+Executable proof: `vitest run --config tooling/testing/vitest.node.config.ts
+packages/foundation/contracts/src/client/__tests__/csrf-transport.unit.test.ts`
+→ **11/11 passed** (frontend @ 450bea97).
+
+### P17-X-002 — Workspace/Governance authorization handoff — VERIFIED
+
+```text
+AccountRole references in Application/API (source grep):
+  Common/Security/PermissionService.cs:185,199,208 → central policy engine
+    (Owner bypass + frozen IAREQ090 baseline fallback incl.
+    CreateWorkspace→Admin) — the ONLY authorization decision site
+  Common/Tenancy/IAccessGrantProjectionService.cs +
+  Features/Accounts/{Services,Provisioning} → grant projection writes
+    (state mapping, not authorization decisions)
+  Features/Workspaces, Features/Governance: ZERO AccountRole references
+  Notrelix.API: ZERO references
+Workspace/Governance consume the shared PermissionService/pipeline contract;
+no downstream inspection of Identity handlers or AccountRole exists.
+```
+
+Executable proof: `dotnet test Notrelix.Integration.Tests --filter
+"FullyQualifiedName~PermissionServiceTests"` → **33/33 passed** on real
+PostgreSQL (frozen 5x2 role/action matrix, Governance deny precedence,
+allow-grant, suspended/absent/wrong-account denials).
+
+### P17-X-003 — event consumer handoff — VERIFIED
+
+```text
+ConsumerRegistrySetup.cs: every consumer definition carries explicit
+  EventVersion (compound identity) + ConsumerMaturity metadata:
+  18 Implemented / 26 Stub — stubs recorded AS STUB per plan §156.
+Stable IDs/scope: TenantContextConsumeFilter restores tenant context per
+  message; consumers carry stable Guid ActorUserId/AccountId facts.
+No private Identity persistence: fresh grep over Application Features finds
+  no downstream reference to UserSession/MfaMethod/OAuthAccount/password
+  state outside Identity's own features (session queries live under
+  Features/Identity/Sessions — Identity-owned self-service).
+```
+
+### P17-X-004 — v1/v2 migration fixture — VERIFIED
+
+`tests/Notrelix.Infrastructure.Tests/Messaging/
+IntegrationEventCatalogResolutionTests.cs:125` — controlled dual-version
+fixture `test.versioned-fact` v1+v2 crossing ContractRegistry →
+IntegrationEventCatalog → production serializer round-trip; v3 lookup throws;
+no registry collision; no production event bumped.
+Executable proof: filter `VersionedContractMigrationFixtureTests` →
+**5/5 passed** (maps IA-TST-X-EVT-004 / IA-TST-EVT-MIG-001..002 /
+IA-TST-MIG-EVT-002).
+
+### P17-X-005 — operational event evidence handoff — NOT_APPLICABLE_UNTIL_DEPLOYMENT
+
+No production environment exists at candidate SHA. Local staging/dev
+operational evidence was collected in the P13-EVT-OPS record (outbox
+Processed=2/Pending=0/Failed=0/DLQ=0, poison=0). Runbook trigger: first
+production deployment re-executes the outbox/DLQ inspection per
+P13-EVT-OPS-001 procedure.
+
+### Phase 17 exit — MET
+
+Cross-stack consumer (frontend) consumes only the ADR-005 protocol;
+cross-context consumers use stable IDs/scope with explicit versions and
+classified maturity; v1/v2 coexistence proven; operational evidence properly
+deferred to deployment. The two
+DOC_STALE doc sections are Phase 19 scope and do not constitute a consumer
+dependency on pre-closure ambiguity.
+
+## 21. Phase 18 — TESTS handoff closure (2026-08-23)
+
+### IA-TEST-HO-001 — TESTS synced with closure implementation — VERIFIED
+
+`identity-accounts.tests.md` contains 216 unique concrete `IA-TST-*` IDs.
+Mandatory family presence (unique-ID count):
+
+```text
+IA-TST-CSRF-*          19
+IA-TST-AUTHZ-*         13
+IA-TST-EVT-INV-*        3   (+EVT-DOM/EVT-INT/EVT-PRIV/EVT-MIG/EVT-OPS)
+IA-TST-EVT-SEC-*        1
+IA-TST-EVT-VER-*        5
+IA-TST-EVT-CONTRACT-*   4
+IA-TST-MIG-*           11
+IA-TST-OBS-*            6
+IA-TST-REL-*            8
+IA-TST-X-*             14
+```
+
+### IA-TEST-HO-002 — project/CI mapping present — VERIFIED
+
+Existing canonical mapping sections cover every required field family-wide:
+
+```text
+tests.md §235–244 CI mapping → suite/job per test family
+tests.md §259–273 requirement-by-requirement → test-family coverage
+per-test definitions carry scenario/classification in their sections
+```
+
+No closure requirement remains represented only by "architecture/source
+review": the residual gates §292–294 were implemented as executable
+architecture tests (verified green below via the Architecture suite).
+
+### IA-TEST-HO-003 — full regression at exact SHA 450bea97 — EXECUTED
+
+Actual counts recorded (not carried forward):
+
+```text
+Notrelix.Architecture.Tests      398 passed / 0 failed / 0 skipped
+Notrelix.Domain.Tests           2576 passed / 0 failed / 0 skipped
+Notrelix.Application.Tests       649 passed / 0 failed / 0 skipped
+Notrelix.Infrastructure.Tests    132 passed / 0 failed / 0 skipped
+Notrelix.Platform.Tests          147 passed / 0 failed / 0 skipped
+Notrelix.API.Tests               256 passed / 0 failed / 0 skipped
+Notrelix.Integration.Tests       338 passed / 0 failed / 0 skipped
+BACKEND TOTAL                   4496 passed
+
+frontend pnpm test:node           72 files / 313 tests passed
+  (includes contracts csrf-transport = IA-TST-CSRF-CLIENT-*/X-CSRF-001)
+```
+
+Focused Phase 17 proofs re-confirmed inside these suites:
+PermissionServiceTests 33/33 (Integration),
+VersionedContractMigrationFixtureTests 5/5 (Infrastructure),
+Architecture suite includes IA-TST-TRACE-001 / CSRF-ARCH / EVT-CONTRACT gates.
+
+### IA-TEST-HO-004 — non-zero execution — VERIFIED
+
+Every suite above matched and executed real tests; one initial mis-targeted
+filter (`PermissionServiceTests` against Application.Tests) returned zero and
+was corrected to its actual home (Integration.Tests) before recording.
+No zero-test green result is used as evidence anywhere in this handoff.
+
+### Phase 18 exit — MET
+
+TESTS has complete Phase 13–17 traceability; full regression executed at the
+exact candidate SHA with no material missing test and no failure/skip.
+
+## 22. Phase 19 — Documentation / generated-contract handoff closure (2026-08-23)
+
+### IA-DOC-001 — CSRF authority alignment — DONE
+
+```text
+backend/docs/decisions/ADR-003-csrf-protection.md
+  → status Superseded → ADR-005 (historical record preserved); no active
+    XSRF/double-submit transport remains as source truth
+backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md
+  → Accepted; canonical bootstrap protocol
+frontend/docs/architecture/api-and-contracts.md
+  → §57 rewritten to describe the full accepted protocol (bootstrap GET
+    auth/csrf, body+HttpOnly cookie, X-CSRF-Token from memory,
+    security.csrf_validation_failed recovery);
+  → §59 retitled "CSRF source alignment (closed)" — drift recorded as
+    historical, repaired at Phase 13 closure;
+  → §60 FE-API-030 reclassified RESOLVED with standing single-spelling rule
+frontend/docs/decisions/FE-ADR-005-auth-session-model.md
+  → "Current CSRF mismatch evidence" marked CLOSED with repair evidence;
+  → "Evidence interpretation": CSRF wire spelling → RESOLVED
+docs/generated/rule-index.md
+  → regenerated through producer scripts/docs/generate-rule-index.mjs
+    after §60 retitle; --check PASS (never hand-edited)
+```
+
+Both sides now describe the same ADR-005 protocol; remaining legacy-name
+mentions in frontend docs are explicitly historical/resolution context.
+
+### IA-DOC-002 — canonical OpenAPI evidence — VERIFIED
+
+Fresh producer export (`dotnet run --project src/Notrelix.API --
+--export-openapi`) compared semantically against committed
+`backend/contracts/openapi/notrelix.v1.json` → **CLEAN** (no drift; bootstrap
+operation was already part of the approved contract).
+
+### IA-DOC-003 — event contract artifact — VERIFIED
+
+`backend/contracts/events/notrelix.events.json` matches generated source
+shape: `CanonicalManifest_MatchesGeneratedSourceShape` executed explicitly
+(1/1 passed) in addition to full Architecture suite coverage.
+
+### IA-DOC-004 — authorization architecture docs — DONE
+
+`backend/docs/architecture/security-tenancy-authorization.md` BE-SEC-013
+extended with the canonical chain:
+
+```text
+protected Application use case
+→ request authorization contract
+→ AuthorizationBehavior (central policy evaluation)
+→ handler business logic
+```
+
+plus explicit statement that target-role business invariants are distinct
+from current-actor authorization and that downstream contexts consume the
+central policy engine without inspecting Identity handlers/role state.
+
+### IA-DOC-005 — event versioning architecture docs — DONE
+
+`backend/docs/architecture/platform-and-messaging.md` §106 Message evolution
+extended with the accepted versioning contract: EventContractKey(Name,
+Version) runtime identity, deterministic duplicate/unknown failure, v1/v2
+coexistence, per-version schema baseline with same-version drift rejection,
+consumer maturity metadata (Implemented/Stub/None), rollout order, and
+outbox/DLQ drain before retirement. Section numbering preserved.
+
+### IA-DOC-006 — workstream status from evidence — DONE
+
+Execution state is tracked by certification records only: Milestone B +
+Phase 13 DONE via P13-FINAL-01 (2026-08-22); Phases 14–19 records appended
+as executed. plan.md frontmatter remains `active` until Phase 20 closes.
+
+### Docs governance gates
+
+```text
+make docs-check → ALL PASS
+  links: 124 files / 2911 targets / 0 error
+  metadata: 86 canonical docs / unique ids
+  authority: 87 required paths / 0 retired link
+  rule-ids: 109 files / 2663 declarations / 2663 unique
+  source-inventory: 5 backend projects / 9 frontend families / 3 hosts
+  generated: 4 artifacts / 4 producer-owned drift checks executed
+```
+
+Note: an earlier session note mentioned "114 pre-existing violations";
+current gate output shows zero violations — the earlier number referred to a
+pre-refoundation state and is obsolete.
+
+### Phase 19 exit — MET
+
+No canonical document contradicts the implemented CSRF/authz/event closure
+contracts.
+
+## 23. Phase 20 — Final certification handoff (2026-08-23)
+
+Full Scope Certification Record filled at certification.md §150 with actual
+evidence (no prefilled PASS):
+
+```text
+Candidate:      develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf
+Migration head: 20260702093805_SchemaV2Baseline (unchanged)
+OpenAPI sha256: f4391c79…c9758   drift CLEAN
+Events  sha256: dda01452…fa0f4   drift CLEAN
+Suites:         backend 4496 passed / frontend node 313 passed (all non-zero)
+Closure table:  all P13 units DONE; EVT-OPS = NOT_APPLICABLE_UNTIL_DEPLOYMENT
+Blocker rule:   no blocker remains (IA-CERT-HO-004 checklist recorded)
+Decision:       IDENTITY & ACCOUNTS FULL SCOPE CERTIFIED (source-level);
+                human sign-off pending; CSRF production enablement remains a
+                deployment action per staged rollout P14-MIG-003
+```
+
+Honesty constraints honored: remote CI has not run on the (unpushed)
+documentation commit; the record cites local executions at the exact source
+SHA and marks remote CI as a post-commit action.
+
+Workstream serial order complete:
+P13-CLOSE-00 … P13-FINAL-01 → Phase 14 → 15 → 16 → 17 → 18 → 19 → 20.

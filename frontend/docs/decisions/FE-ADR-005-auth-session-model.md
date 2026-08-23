@@ -1108,21 +1108,39 @@ This remains aligned with the provider-composition intent.
 
 ## Current CSRF mismatch evidence
 
-Frontend:
+Historical evidence at ADR normalization time (pre-closure):
 
 ```text
+Frontend:
 XSRF-TOKEN
 X-XSRF-TOKEN
-```
 
 Backend:
-
-```text
 csrf_token
 X-CSRF-Token
 ```
 
-This is current source/contract drift.
+Resolution status — CLOSED:
+
+```text
+This drift was the accepted trigger for the cross-boundary CSRF contract
+decision and was repaired at the Identity & Accounts Phase 13 closure.
+
+Current frontend source implements exactly the accepted protocol
+(backend ADR-005 — Cross-Origin CSRF Bootstrap Protocol, which this ADR's
+historical cookie-read assumption anticipated):
+
+  contracts/client/csrf.ts      → GET auth/csrf bootstrap,
+                                  in-memory token, X-CSRF-Token header
+  contracts/client/api-client.ts → csrfAwareFetch on unsafe browser
+                                  requests + security.csrf_validation_failed
+                                  recovery (clear token, re-bootstrap)
+
+Legacy spellings XSRF-TOKEN / X-XSRF-TOKEN and cookie/meta/storage token
+discovery are forbidden and guarded by client source-scan tests.
+
+Canonical current description: frontend/docs/architecture/api-and-contracts.md §57–60.
+```
 
 ## Current router-coupling evidence
 
@@ -1164,13 +1182,15 @@ AuthProvider children-only runtime API
 → aligned
 
 CSRF wire spelling
-→ SOURCE_DEBT / CONTRACT DRIFT
+→ RESOLVED (was SOURCE_DEBT / CONTRACT DRIFT; repaired at Phase 13 closure
+  via the ADR-005 bootstrap protocol)
 
 feature-auth router independence
 → SOURCE_DEBT
 ```
 
-The decision is therefore still `Accepted`, with implementation debt that must be repaired.
+The decision is therefore still `Accepted`. The CSRF implementation debt was
+repaired; the router-coupling debt remains open.
 
 ---
 

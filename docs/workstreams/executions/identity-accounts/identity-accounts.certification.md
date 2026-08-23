@@ -1983,6 +1983,346 @@ Certification conclusion:
 Decision date:     2026-08-22
 ```
 
+## 65.4 Phase 14 closure record — persistence / migration / compatibility
+
+Candidate branch:  develop
+Baseline SHA:      4efd37bdff79f93f97059586928aa94af67ba8b1
+Candidate HEAD:    8dcc8389 (PR #93 checks 39/39 PASS at close)
+
+P14-MIG-001 — candidate schema diff review
+  Method:     git diff 4efd37bd..HEAD -- backend/src/**/Migrations/**
+              + ApplicationDbContextModelSnapshot.cs
+  Result:     EMPTY diff — zero schema delta since the audited baseline
+  Migration head: 20260702093805_SchemaV2Baseline (unchanged; single
+              consolidated baseline per PR-IA-00 decision note §13)
+  Classification: no schema change (no additive/backfill/breaking/index/
+              secret-format/ownership-move delta)
+  IA-TST-MIG-DB-001: NOT_APPLICABLE — no schema delta (TESTS §189 permits
+              recording with source/model-diff evidence, which is this diff)
+  Justification for zero persisted event-contract metadata: consumer
+  maturity and contract identity live in source registries +
+  backend/contracts/events/notrelix.events.json; no DB column required.
+
+P14-MIG-002 — event registry caller compatibility
+  Inventory of former name-only resolution paths:
+    - IIntegrationEventCatalog.Resolve/TryResolve(messageName)
+        → migrated to EventContractKey(Name, Version); name-only APIs
+          removed from the interface (compiler-enforced; no silent fallback)
+    - OutboxDispatcher (production dispatch path)
+        → resolves via new EventContractKey(message.MessageName,
+          message.SchemaVersion) — version comes from the durable envelope row
+    - ContractRegistry
+        → already compound-keyed (Get(name, version)); unchanged
+    - EventTypeRegistry name→type direction
+        → proven NOT a public integration-event resolution path:
+          zero production callers (only type→name used by the domain-event
+          outbox writer)
+  Gate: Notrelix.Architecture.Tests
+        ProductionEventContractArchitectureTests.
+        ProductionResolutionPaths_UseCompoundContractIdentity
+        asserts (1) catalog surface has no string-parameter resolution API,
+        (2) dispatcher source contains the compound-key call.
+  Runtime proof: IntegrationEventCatalogResolutionTests +
+        VersionedContractMigrationFixtureTests (12 cases) incl. serializer
+        round-trip preserving envelope version for v1 and v2 fixtures.
+
+P14-MIG-003 — CSRF deployment compatibility
+  Rollout sequence (executable, staged):
+    1. deploy backend bootstrap/protocol with Security:Csrf:Enabled=false
+       (current committed appsettings state)
+    2. deploy frontend transport (@notrelix/contracts client, ADR-005)
+    3. verify integration/smoke — CsrfCrossStackFlowTests models the flow;
+       production smoke = run once after step 2 in the target environment
+    4. enable Security:Csrf:Enabled=true (config change only)
+  Compatibility evidence for step 1→2 coexistence:
+        CsrfProtectionTests.FlagDisabled_MiddlewareDoesNotInterfereWithUnsafeRequests
+        (= IA-TST-MIG-CSRF-001) — pre-enable runtime flow unaffected
+  Enabled-state evidence: CsrfCrossStackFlowTests run against a host with
+        Security:Csrf:Enabled=true (= IA-TST-MIG-CSRF-002 substance)
+  Rollback: disable the feature flag; no reintroduction of the legacy
+        XSRF convention is required or permitted. Flag-off rollback is an
+        operational action, not a revert to target architecture.
+  No atomic-deploy guarantee exists between backend and frontend hosts in
+  this repository; the staged sequence above is therefore mandatory.
+
+P14-MIG-004 — public contract compatibility review
+  OpenAPI:                +1 operation only (GET /api/v1/auth/csrf);
+                          regenerated from candidate producer; drift clean
+  CSRF bootstrap response:new endpoint {token} — additive, no existing
+                          consumer impacted
+  Event manifest:         NEW artifact v1 (40 contracts) generated from
+                          canonical registries; drift gate active
+  Consumer registry:      maturity metadata additive; one registry row
+                          corrected to match its real contract version
+                          (identity.user-registered v1 → v2) — metadata fix,
+                          no wire change
+  Public event versions:  no payload schema changes; no version bumps;
+                          "no producer contract bump required" recorded
+  Breaking consumer contracts introduced by Phase 13 closure: NONE
+  Frontend generated REST schema resynced via codegen (completes the
+  artifact sync left pending by IA-API-004's CreatedApiTokenDto change).
+
+Phase 14 exit criteria (PLAN §139):
+  - DB migration applicability explicit ........ YES (zero-delta evidence)
+  - event registry call sites version-aware .... YES (gate + runtime tests)
+  - CSRF rollout order executable .............. YES (sequence + both flag
+                                                  states under test)
+  - public contract compatibility recorded ..... YES (this record)
+  - pending EF model change .................... NONE
+
+Status:            CLOSED
+Decision date:     2026-08-22
+```
+
+## 65.5 Security hardening closure record
+
+Candidate HEAD:    53771238 (rebased onto merged web-app line)
+
+Secret surface scan (all production Identity/Accounts security paths):
+  - CSRF protector/middleware/ProblemDetails writer: zero log statements;
+    failure response is static canonical text, never echoes token material
+    (asserted by CsrfCrossStackFlowTests negative matrix)
+  - Outbox dispatcher: logs message id/name + exception messages only;
+    dead-letter path records error text, never payload JSON
+  - Platform ConsumerHost poison/retry diagnostics: event name + consumer
+    id + exception; no envelope body dump
+  - Email dispatcher: message id + cancellation reason; rendered bodies and
+    protected links never logged
+  - Auth/JWT/token services: no secret-material logging found by scan
+  - Admin outbox diagnostics GetById exposes raw payload JSON behind the
+    SystemAdmin policy — classified as privileged operations surface
+    (gated, auditable), not ordinary logging; retained intentionally
+
+CSRF attack matrix (IA-TST-CSRF-API-*, INT-*): missing cookie, missing
+  header, mismatched pair, cross-instance/stale token after rotation,
+  unsafe request with no material, refresh without pair (new explicit
+  case: 403 canonical security.csrf_validation_failed), cross-origin
+  credential replay, explicit non-ambient Authorization credential exempt,
+  safe GET unvalidated — all green under CsrfProtectionTests +
+  CsrfCrossStackFlowTests (15 cases). CORS is not relied upon anywhere.
+
+Authorization bypass matrix: frozen role/action matrix (Owner/Admin allow
+  CreateWorkspace; Member/BillingAdmin/SecurityAdmin deny), Governance
+  deny precedence over fallback, Governance allow granting baseline-denied
+  action, suspended/absent/wrong-account denials — PermissionServiceTests
+  (33) through the real evaluator on PostgreSQL; handler-cannot-run-before-
+  pipeline-denial plus zero durable side effects proven by
+  WorkspaceCreationPipelineAuthorizationTests (5 roles) on the production
+  graph; static bypass gates (ARCH-001..005) green.
+
+Event privacy/security matrix: prohibited-secret property ban over all
+  serialized public contracts, PII fields classified with purpose +
+  consumer justification, manifest carries metadata only (no runtime
+  sample values), outbox/DLQ paths verified above not to dump payloads,
+  unsupported-version dead-letter path logs name/version only.
+
+Enumeration/replay/revocation regression: full Integration suite re-run
+  at this HEAD — 338 passed, including login/recovery flows, OAuth
+  callback/link lifecycle, MFA enrollment/challenge, session revoke and
+  API-token governance/races; Application suite 649 passed covering auth
+  pipeline behaviors. No closure change weakened these suites.
+
+Abuse controls: single Platform-owned rate-limit mechanism (ADR-004
+  provider + pre/post-auth middleware); 23 sensitive Identity endpoints
+  carry AuthStrictByIp incl. login/register/refresh/recovery/MFA/OAuth/
+  CSRF bootstrap; no parallel or local rate-limit framework introduced.
+
+Exit criterion: no material high-sensitivity path lacks a negative or
+security test — met.
+Status:            CLOSED
+Decision date:     2026-08-22
+```
+
+## 65.6 Observability / reliability / performance closure record
+
+Candidate HEAD:    fcaef3d1 + this record
+
+Safe trace correlation: CorrelationIdMiddleware assigns X-Correlation-ID
+  at the edge; the canonical ProblemDetails contract echoes traceId;
+  integration events carry EventId/CorrelationId/CausationId/ActorUserId
+  and the outbox rows persist them — the request → auth → tenant →
+  authorization → use case → persistence → outbox chain stays correlatable
+  through stable identifiers only. No raw secrets enter any hop (security
+  closure scan).
+
+Failure categories under existing conventions:
+  - csrf_validation_failed ....... security.csrf_validation_failed via the
+    canonical ProblemDetails writer; asserted in CSRF suites
+  - authorization_denied ......... auth.forbidden mapping
+  - authorization_misconfiguration NEW dedicated category
+    security.authorization_misconfiguration (500 with generic client
+    detail; internal context remains server-side logging) — previously
+    these request-contract violations surfaced as anonymous internal errors
+  - unknown_event_contract ....... dead-letter reason UnknownEventType +
+    critical log carrying name/version only
+  - unsupported_event_version .... deterministic compound-key resolution
+    failure, same diagnosable path
+  - consumer retry/poison ........ Platform runtime metrics/diagnostics and
+    per-event-name/consumer-id logs already in place
+  No new observability vendor introduced.
+
+Reliability:
+  - unknown logical event names and unsupported versions fail
+    deterministically through the catalog (no latest/v1 fallback, no
+    silent drop, no payload dump) — Infrastructure resolution suite +
+    dispatcher dead-letter behavior
+  - frontend bootstrap network failure surfaces one deterministic error,
+    releases the single-flight promise, and bounds total attempts
+    (new explicit test); stale-token recovery retries once; a second
+    consecutive rejection surfaces instead of looping; refresh failures
+    keep session-expired semantics without CSRF/refresh recursion.
+
+Performance:
+  - authorization hot path: production-graph test proves pipeline-only
+    evaluation for five roles with zero handler-level permission lookups
+    (static gate forbids service injection into handlers). Executable
+    call-count proof added: a pass-through counter decorates the REAL
+    decision store in the production composition and asserts exactly one
+    authorization evaluation per request — for allowed roles AND for
+    pipeline denials (handler never re-evaluates).
+  - CSRF client overhead: memory token reuse avoids re-bootstrap on
+    sequential unsafe requests; N concurrent unsafe requests share one
+    bootstrap (fetch call-count assertions).
+  - correctness before caching: closure introduced no authorization,
+    session or account-context cache; the pre-existing resource snapshot
+    store remains tenant-scoped through the request context. Recorded as
+    not applicable for new cache-revocation risk.
+
+Executable observability proofs added:
+  - dispatcher diagnostics gate: dead-letter path must carry the stable
+    UnknownEventType category and identify messages only by envelope
+    identity fields; log statements are machine-checked to never reference
+    serialized payload material.
+  - correlation round-trip: the production serializer path preserves the
+    correlation identifier across publish -> durable payload ->
+    resolution -> deserialize, proving the request-to-event chain stays
+    traceable by non-secret identifiers.
+
+Status:            CLOSED
+Decision date:     2026-08-22
+```
+
+## 65.7 Phase 17 record — cross-team integration hardening closure
+
+```text
+Capability:        Cross-team handoff verification (P17-X-001..005): frontend
+                   browser CSRF contract, Workspace/Governance authorization
+                   handoff, event consumer handoff, v1/v2 migration fixture,
+                   operational evidence disposition
+SPEC requirement:  IAREQ068-IAREQ078, IAREQ087, IAREQ090, IAREQ126-IAREQ135,
+                   IAREQ136-IAREQ140 as applicable to cross-team handoff
+PLAN work units:   P17-X-001, P17-X-002, P17-X-003, P17-X-004, P17-X-005
+TEST IDs:          IA-TST-CSRF-CLIENT-* (11 cases), PermissionServiceTests
+                   (33), VersionedContractMigrationFixtureTests (5 =
+                   IA-TST-X-EVT-004/IA-TST-EVT-MIG-*/IA-TST-MIG-EVT-002)
+Source baseline:   develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf
+Migration:         NOT_APPLICABLE — no persisted shape change
+P17-X-001:         VERIFIED — frontend source consumes only ADR-005 protocol
+                   (bootstrap GET auth/csrf, in-memory token, X-CSRF-Token,
+                   security.csrf_validation_failed ProblemDetails recovery);
+                   zero competing XSRF convention in any frontend package;
+                   generated schema carries bootstrap operation; two stale doc
+                   sections classified DOC_STALE and routed to Phase 19
+                   IA-DOC scope; executable proof csrf-transport.unit.test.ts
+                   11/11 passed
+P17-X-002:         VERIFIED — AccountRole confined to central
+                   PermissionService policy + grant projection writes; ZERO
+                   references in API or downstream Features; Workspace/
+                   Governance need no Identity inspection; executable proof
+                   PermissionServiceTests 33/33 on real PostgreSQL
+P17-X-003:         VERIFIED — all 44 consumers registered with explicit
+                   EventVersion + ConsumerMaturity (18 Implemented / 26 Stub,
+                   stubs recorded AS STUB); TenantContextConsumeFilter
+                   restores scope per message; no private Identity persistence
+                   access from any downstream consumer (grep-verified)
+P17-X-004:         VERIFIED — controlled test.versioned-fact v1+v2 fixture
+                   proves registry/catalog/serializer coexistence without
+                   collision; v3 lookup fails deterministically;
+                   VersionedContractMigrationFixtureTests 5/5 passed
+P17-X-005:         NOT_APPLICABLE_UNTIL_DEPLOYMENT — no production env exists
+                   at candidate; local staging/dev outbox/DLQ evidence already
+                   collected (P13-EVT-OPS); runbook trigger = first production
+                   deployment
+Architecture evidence: no new package dependency edge; frontend contract
+                   client remains the only browser transport owner
+CI evidence:       local focused suites at exact SHA 450bea97 (counts above)
+Known debt:        api-and-contracts.md §59-60 + FE-ADR-005 mismatch section
+                   DOC_STALE (Phase 19 owner); stub consumers remain STUB by
+                   design (26) until their owning contexts implement them
+Status:            CLOSED (Phase 17 exit met)
+Reviewer:          pending human sign-off
+Decision date:     2026-08-23
+```
+
+## 65.8 Phase 18 record — TESTS handoff closure
+
+```text
+Capability:        TESTS artifact sync + full regression handoff
+                   (IA-TEST-HO-001..004)
+PLAN work units:   IA-TEST-HO-001, IA-TEST-HO-002, IA-TEST-HO-003,
+                   IA-TEST-HO-004
+Source baseline:   develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf
+IA-TEST-HO-001:    VERIFIED — tests.md carries 216 concrete IA-TST-* IDs;
+                   all mandatory families present (CSRF 19, AUTHZ 13,
+                   EVT-INV 3, EVT-SEC 1, EVT-VER 5, EVT-CONTRACT 4, MIG 11,
+                   OBS 6, REL 8, X 14)
+IA-TEST-HO-002:    VERIFIED — CI mapping §235–244 + requirement coverage
+                   §259–273 map every family to suite/job; residual gates
+                   §292–294 exist as executable architecture tests
+IA-TEST-HO-003:    EXECUTED — full regression at exact SHA:
+                     Architecture      398 / Domain 2576 / Application 649 /
+                     Infrastructure    132 / Platform 147 / API 256 /
+                     Integration       338 → 4496 passed, 0 failed, 0 skipped
+                     frontend test:node 72 files / 313 passed
+                   (counts recorded fresh, not carried forward)
+IA-TEST-HO-004:    VERIFIED — all evidence suites non-zero; mis-targeted
+                   zero-match filter corrected before recording
+Generated artifacts: OpenAPI/event manifest drift gates executed inside
+                   Architecture+API suites (green)
+Known debt:        none material; operational DLQ evidence remains
+                   NOT_APPLICABLE_UNTIL_DEPLOYMENT per P17-X-005
+Status:            CLOSED (Phase 18 exit met)
+Reviewer:          pending human sign-off
+Decision date:     2026-08-23
+```
+
+## 65.9 Phase 19 record — documentation / generated-contract handoff
+
+```text
+Capability:        Canonical documentation + generated artifact alignment
+                   (IA-DOC-001..006)
+PLAN work units:   IA-DOC-001, IA-DOC-002, IA-DOC-003, IA-DOC-004,
+                   IA-DOC-005, IA-DOC-006
+Source baseline:   develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf
+                   (doc-only edits on top; no source/contract change)
+IA-DOC-001:        DONE — backend ADR-003 Superseded → ADR-005 (Accepted);
+                   frontend api-and-contracts.md §57 rewritten to accepted
+                   bootstrap protocol, §59 closed as historical drift,
+                   §60 FE-API-030 → RESOLVED; FE-ADR-005 mismatch evidence
+                   marked CLOSED; rule-index.md regenerated via producer
+                   (--check PASS)
+IA-DOC-002:        VERIFIED — fresh OpenAPI export vs committed canonical
+                   semantic compare CLEAN; no handwritten drift
+IA-DOC-003:        VERIFIED — events manifest matches generated source shape
+                   (explicit gate 1/1 + Architecture suite coverage)
+IA-DOC-004:        DONE — BE-SEC-013 extended: single authoritative chain
+                   use case → authorization contract → AuthorizationBehavior
+                   → handler logic; target-role invariants distinguished from
+                   current-actor authorization
+IA-DOC-005:        DONE — platform-and-messaging.md §106 extended with
+                   EventContractKey(Name,Version), v1/v2 coexistence, schema
+                   baseline, consumer maturity, rollout, outbox/DLQ drain
+IA-DOC-006:        DONE — execution state carried by certification records;
+                   plan remains active until Phase 20
+Docs gates:        make docs-check ALL PASS (links/metadata/authority/
+                   rule-ids/source-inventory/generated)
+Contracts:         documentation-only; no API/event/schema/persistence change
+Status:            CLOSED (Phase 19 exit met — no canonical doc contradicts
+                   implemented CSRF/authz/event closure contracts)
+Reviewer:          pending human sign-off
+Decision date:     2026-08-23
+```
+
 # Migration certification
 
 ## 66. CERT-MIG-001 — migration inventory
@@ -2744,60 +3084,135 @@ Date:
 Identity & Accounts — Full Scope Certification
 
 Candidate SHA:
+  branch develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf (HEAD).
+  All source regression/gates executed at this exact SHA.
+  Phase 17–20 closure records + Phase 19 doc alignment are documentation-only
+  working-tree edits on top (no source/contract delta vs 450bea97); they enter
+  history as the certification commit of this record.
+  Worktree otherwise as found: pre-existing dirty frontend/apps/marketing/
+  vercel.json + untracked .agents/.claude skill dirs (unrelated to scope).
 
 P1 Core:
-  Status:
+  Status: VERIFIED (D4) — Milestone A certified 2026-08-14;
+          User identity, Actor contract, Session contract (watermark
+          revocation), Account identity records §6–9
 
 Registration/Credentials:
-  Status:
+  Status: VERIFIED (D4) — §24.1/§25.1 (2026-08-14): unique-email race → 409,
+          BCrypt + policy proofs, single-use OTP reset, enumeration resistance
 
 OAuth:
-  Status:
+  Status: VERIFIED (Phase 9) — §OAuth record (df90a267): link/unlink/callback,
+          auto-link rejection, contract regen green
 
 SSO:
-  Status:
+  Status: VERIFIED (Phase 10) — §SSO record
 
 MFA:
-  Status:
+  Status: VERIFIED (Phase 11) — §MFA record
 
 Security settings:
-  Status:
+  Status: VERIFIED (Phase 12) — §Security settings record
 
 API Tokens:
-  Status:
+  Status: VERIFIED (Phase 12 review scope) — §API token record; noted as not
+          D5/STABLE pending full lifecycle hardening (non-blocking, recorded)
 
 Cross-context integration:
-  Status:
+  Status: CLOSED — §65.7 Phase 17 (frontend consumes only ADR-005 protocol;
+          AccountRole central-authority isolation proven; consumer registry
+          explicit versions+maturity 18 Implemented/26 Stub; v1/v2 fixture
+          5/5; operational evidence NOT_APPLICABLE_UNTIL_DEPLOYMENT)
 
 Migration:
-  Status:
+  Status: CLOSED — §65.4 Phase 14: zero schema delta since audited baseline;
+          migration head 20260702093805_SchemaV2Baseline unchanged;
+          name-only event resolution eliminated (compiler + architecture
+          gate); CSRF staged rollout sequence recorded
 
 Security hardening:
-  Status:
+  Status: CLOSED — §65.5 Phase 15: secret-name ban, CSRF negative matrix,
+          authz bypass gates ARCH-001..005, no CORS-as-CSRF reliance;
+          production cookie policy unit-proven (Secure+SameSite=None+HttpOnly)
 
 Reliability:
-  Status:
+  Status: CLOSED — §65.6 Phase 16: bounded bootstrap/retry, dispatcher
+          diagnostics, correlation propagation proofs at HEAD; outbox/DLQ
+          local staging evidence Processed=2/Pending=0/Failed=0/DLQ=0
 
 Observability:
-  Status:
+  Status: CLOSED — §65.6 Phase 16 (+§65.3): authorization evaluation count,
+          dispatcher diagnostics, correlation IDs; csrf error category in
+          ErrorCodes taxonomy; no secret/payload logging
 
 Performance:
-  Status:
+  Status: CLOSED — PERF-001 single pipeline authorization evaluation via
+          production-graph test; no duplicate pipeline+handler query;
+          client CSRF single-flight bounded
 
 Docs/OpenAPI:
-  Status:
+  Status: CLOSED — §65.9 Phase 19: ADR-003 Superseded→ADR-005 both sides
+          aligned; FE-API-030 RESOLVED; BE-SEC-013 chain documented;
+          platform-and-messaging §106 versioning contract defined;
+          make docs-check ALL PASS; rule-index regenerated via producer
 
 CI:
-  Status:
+  Status: LOCAL GATES GREEN AT EXACT SHA — backend 7 suites 4496 passed /
+          0 failed / 0 skipped (Architecture 398 incl. TRACE-001 + drift
+          gates; Domain 2576; Application 649; Infrastructure 132;
+          Platform 147; API 256; Integration 338 incl. PermissionServiceTests
+          33/33); frontend pnpm test:node 72 files / 313 passed (incl.
+          csrf-transport 11/11); OpenAPI export-vs-canonical CLEAN;
+          events manifest drift gate 1/1; make docs-check PASS.
+          Remote CI execution for the certification commit is a post-commit
+          action (record honestly: these counts are local executions).
 
-Blocking debt:
+Generated artifact checksums (at 450bea97):
+  sha256 backend/contracts/openapi/notrelix.v1.json
+        = f4391c799d864f6542f59e7b44290898a8cc6b1cfa67610b0e762ec6a47c9758
+  sha256 backend/contracts/events/notrelix.events.json
+        = dda01452e66927e2975fb349b953493347be3aec3e6b641e27a9a393745fa0f4
+
+Phase 13 closure table (IA-CERT-HO-002):
+  IA-API-002 DONE | IA-API-003 DONE | IA-API-004 DONE
+  IA-AUTHZ-001 DONE | IA-AUTHZ-002 DONE | IA-AUTHZ-003 DONE
+  IA-AUTHZ-004 DONE | IA-EVT-001 DONE | IA-EVT-002 DONE
+  IA-EVT-003 DONE | IA-EVT-OPS NOT_APPLICABLE_UNTIL_DEPLOYMENT
+  (permitted operational exception; runbook trigger = first prod deploy)
+  No source-level DEFERRED exists.
+
+Closure blocker rule check (IA-CERT-HO-004):
+  CSRF convention mismatch: none (single ADR-005 spelling, guarded)
+  CSRF disabled due to FE incompatibility: NO — flag off is staged-rollout
+    state only; cross-stack transport merged and smoke-proven locally
+  Handler bypass unclassified: zero unclassified hits
+  Admin/CreateWorkspace semantics: resolved (frozen central matrix)
+  Name-only event resolution: eliminated, compiler+gate enforced
+  Drift gates: present and green (OpenAPI + manifest)
+  Prohibited secrets / unclassified PII in public payloads: gated green,
+    delivery-event PII classified with purpose+consumer
+  Required suites failing/zero-executed: none (all non-zero green)
+  → NO BLOCKER REMAINS
+
+Blocking debt: none at source level.
 Non-blocking debt:
+  - CSRF production enablement + production cookie-policy runtime smoke =
+    deployment actions (staged sequence P14-MIG-003)
+  - GitGuardian CI incident: external repository-alert triage, outside this
+    workstream's source scope
+  - Human sign-off pending on all agent-executed certification records
+  - Frontend feature-auth router coupling remains SOURCE_DEBT (separate owner)
+  - MFA/step-up/API-token management UI wiring backlog (capability APIs done)
+  - 26 stub consumers remain STUB by design until owning contexts implement
 
 Decision:
-  IDENTITY & ACCOUNTS FULL SCOPE CERTIFIED | BLOCKED
+  IDENTITY & ACCOUNTS FULL SCOPE CERTIFIED
+  (source-level; operational items above remain deployment/backlog actions)
 
 Reviewer(s):
+  Execution agents (Phases 0–20); human sign-off PENDING
 Date:
+  2026-08-23 (certification executed); sign-off pending
 ```
 
 # Handoff to Workspace & Governance

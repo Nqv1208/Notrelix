@@ -216,6 +216,12 @@ public class VersionedContractMigrationFixtureTests
         deserialized.Should().NotBeNull();
         deserialized!.SchemaVersion.Should().Be(version);
         deserialized.EventId.Should().Be(eventId);
+
+        // IA-TST-OBS-001/003 — the correlation identifiers that let a security
+        // operation be traced from request through persistence to event/audit
+        // survive the production serializer round-trip.
+        deserialized.CorrelationId.Should().Be(correlationId,
+            "correlation identity is the non-secret thread across the operation chain");
     }
 
     /// <summary>IA-TST-EVT-OPS-001 — operational evidence schema fields are representable.</summary>

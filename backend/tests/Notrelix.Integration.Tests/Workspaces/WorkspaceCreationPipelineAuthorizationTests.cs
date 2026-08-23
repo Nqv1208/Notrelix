@@ -71,6 +71,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
 
         using var provider = CreatePipelineProvider(accountId, actorId);
         var sender = provider.GetRequiredService<ISender>();
+        var evaluations = provider.GetRequiredService<EvaluationCountingDecisionStore>();
         var command = new CreateWorkspaceCommand($"WS {role}", null, false);
 
         if (expectedAllowed)
@@ -79,6 +80,11 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
 
             result.Succeeded.Should().BeTrue(
                 $"frozen baseline allows {role} CreateWorkspace through pipeline authorization");
+
+            // IA-TST-PERF-001: exactly one pipeline authorization evaluation —
+            // the handler must not repeat the permission lookup.
+            evaluations.EvaluationCount.Should().Be(1,
+                "pipeline-owned authorization must be evaluated exactly once per request");
 
             await using var verify = _db.CreateContext(SystemTenant());
             var workspace = await verify.Workspaces.FirstOrDefaultAsync(w => w.Id == result.Data);
@@ -90,6 +96,10 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
 
             var assertion = await act.Should().ThrowAsync<AppForbidden>(
                 $"frozen baseline denies {role} CreateWorkspace — the pipeline must deny before handler effects");
+
+            // Denied requests are also evaluated exactly once, before the handler.
+            evaluations.EvaluationCount.Should().Be(1,
+                "a pipeline denial performs one evaluation and never reaches the handler");
 
             // No workspace may exist after the denied request.
             await using var verify = _db.CreateContext(SystemTenant());
@@ -152,18 +162,22 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
 
-        // The REAL production evaluator (same class production AuthorizationBehavior consumes).
+        // The REAL production evaluator (same class production AuthorizationBehavior consumes),
+        // wrapped in a pass-through evaluation counter so the test can observe the
+        // production composition path without altering any decision (IA-TST-PERF-001).
+        services.AddSingleton<EvaluationCountingDecisionStore>();
         services.AddSingleton<IAuthorizationDecisionStore>(sp =>
         {
             var context = _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>());
             var snapshots = new ResourceAuthorizationSnapshotStore(
                 [new BoardAuthorizationSnapshotResolver(context)]);
-            return new PermissionService(
+            var realEvaluator = new PermissionService(
                 sp.GetRequiredService<IWorkspaceDbContext>(),
                 sp.GetRequiredService<IGovernanceDbContext>(),
                 sp.GetRequiredService<IAccountDbContext>(),
                 snapshots,
                 sp.GetRequiredService<IDateTimeProvider>());
+            return sp.GetRequiredService<EvaluationCountingDecisionStore>().Wrap(realEvaluator);
         });
 
         // Production pipeline nesting: DbRequestScopeBehavior (outer) → AuthorizationBehavior (inner),
@@ -184,5 +198,39 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         return tenant;
+    }
+
+    /// <summary>
+    /// IA-TST-PERF-001 instrumentation: pass-through decorator over the REAL
+    /// production decision store. It observes how many times the pipeline
+    /// evaluated authorization for a request without changing any decision,
+    /// proving the handler performs no duplicate permission lookup.
+    /// </summary>
+    public sealed class EvaluationCountingDecisionStore
+    {
+        private int _evaluationCount;
+
+        public IAuthorizationDecisionStore Wrap(IAuthorizationDecisionStore inner) =>
+            new CountingInner(this, inner);
+
+        public int EvaluationCount => _evaluationCount;
+
+        private sealed class CountingInner : IAuthorizationDecisionStore
+        {
+            private readonly EvaluationCountingDecisionStore _owner;
+            private readonly IAuthorizationDecisionStore _inner;
+
+            public CountingInner(EvaluationCountingDecisionStore owner, IAuthorizationDecisionStore inner)
+            {
+                _owner = owner;
+                _inner = inner;
+            }
+
+            public async Task<PermissionDecision> EvaluateAsync(PermissionContext context, CancellationToken cancellationToken = default)
+            {
+                Interlocked.Increment(ref _owner._evaluationCount);
+                return await _inner.EvaluateAsync(context, cancellationToken);
+            }
+        }
     }
 }

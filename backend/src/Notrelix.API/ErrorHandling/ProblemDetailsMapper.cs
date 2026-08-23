@@ -54,6 +54,16 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            // Request-contract security violations (scoped request without an
+            // authorization declaration, tenant context gaps) get their own
+            // diagnosable category instead of a generic 500.
+            SecurityMisconfigurationException => (
+                StatusCodes.Status500InternalServerError,
+                ErrorCodes.AuthorizationMisconfiguration,
+                "Authorization misconfiguration",
+                "The request could not be authorized due to a server-side contract violation.",
+                null
+            ),
             AppNotFoundException => (
                 StatusCodes.Status404NotFound,
                 ErrorCodes.ResourceNotFound,
