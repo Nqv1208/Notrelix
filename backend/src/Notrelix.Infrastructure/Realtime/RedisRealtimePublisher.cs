@@ -1,4 +1,7 @@
+using System.Diagnostics;
 using System.Text.Json;
+
+using Notrelix.Infrastructure.Observability.Metrics;
 
 namespace Notrelix.Infrastructure.Realtime;
 
@@ -9,8 +12,9 @@ namespace Notrelix.Infrastructure.Realtime;
 /// timestamp), so a future WebSocket bridge can forward it without re-mapping.
 ///
 /// This is the production implementation of <see cref="IRealtimePublisher"/>.
-/// Failures are handled by the post-commit action queue (logged, never thrown),
-/// so a Redis outage cannot corrupt the committed request result (RULE.md §35).
+/// It runs in the broker-consumer realtime path after durable commit; failures
+/// are logged and retried by the outbox/inbox delivery, never thrown into the
+/// committed request result.
 /// </summary>
 public sealed class RedisRealtimePublisher : IRealtimePublisher
 {
@@ -23,13 +27,16 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
 
     private readonly IConnectionMultiplexer _redis;
     private readonly ILogger<RedisRealtimePublisher> _logger;
+    private readonly MetricsService _metrics;
 
     public RedisRealtimePublisher(
         IConnectionMultiplexer redis,
-        ILogger<RedisRealtimePublisher> logger)
+        ILogger<RedisRealtimePublisher> logger,
+        MetricsService metrics)
     {
         _redis = redis;
         _logger = logger;
+        _metrics = metrics;
     }
 
     public async Task PublishAsync(RealtimeResourceChangedV1 change, CancellationToken cancellationToken)
@@ -54,8 +61,11 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
             "Publishing realtime event {EventType} to channel {Channel}",
             envelope.EventType, ChannelPrefix + channel);
 
+        var stopwatch = Stopwatch.StartNew();
         await _redis.GetDatabase().PublishAsync(RedisChannel.Literal(ChannelPrefix + channel), json);
-    }
+        stopwatch.Stop();
+
+        _metrics.RealtimePublishDuration.Record(stopwatch.Elapsed.TotalMilliseconds);    }
 
     /// <summary>
     /// Channel resolution: workspace-namespace topics map to the tenant-qualified

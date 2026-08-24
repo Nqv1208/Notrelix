@@ -1,5 +1,6 @@
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
+using Notrelix.Infrastructure.Observability.Metrics;
 
 namespace Notrelix.Infrastructure.Messaging;
 
@@ -7,11 +8,16 @@ public sealed class MessageDeduplicationStore : IMessageDeduplicationStore
 {
     private readonly ApplicationDbContext _context;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly MetricsService _metrics;
 
-    public MessageDeduplicationStore(ApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+    public MessageDeduplicationStore(
+        ApplicationDbContext context,
+        IDateTimeProvider dateTimeProvider,
+        MetricsService metrics)
     {
         _context = context;
         _dateTimeProvider = dateTimeProvider;
+        _metrics = metrics;
     }
 
     public async Task<bool> IsProcessedAsync(
@@ -55,6 +61,7 @@ public sealed class MessageDeduplicationStore : IMessageDeduplicationStore
         {
             // Detach entity để tránh DbContext poisoned sau unique violation
             _context.Entry(claim).State = EntityState.Detached;
+            _metrics.InboxDuplicates.Add(1);
             return false;
         }
     }

@@ -1,6 +1,7 @@
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Messaging;
+using Notrelix.Infrastructure.Observability.Metrics;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -30,7 +31,7 @@ public class DeduplicationConsumeFilterIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         var context = _db.CreateContext(tenant);
-        var store = new MessageDeduplicationStore(context, new DateTimeProvider());
+        var store = new MessageDeduplicationStore(context, new DateTimeProvider(), new MetricsService());
         return (context, store);
     }
 
