@@ -18,8 +18,8 @@
     "@notrelix/contracts": "workspace:*",
     "@notrelix/query": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "@tanstack/react-query": "^5.0.0",
-    "@tanstack/react-table": "^8.0.0"
+    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/react-table": "^9.1.2"
   },
   "peerDependencies": {
     "react": "^19.0.0"

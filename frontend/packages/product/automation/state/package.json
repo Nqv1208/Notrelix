@@ -18,7 +18,7 @@
     "@notrelix/automation-core": "workspace:*",
     "@notrelix/query": "workspace:*",
     "@notrelix/realtime": "workspace:*",
-    "@tanstack/react-query": "^5.95.2"
+    "@tanstack/react-query": "^5.101.4"
   },
   "peerDependencies": {
     "react": "^19.0.0"

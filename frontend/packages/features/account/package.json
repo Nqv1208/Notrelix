@@ -22,7 +22,7 @@
     "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/query": "workspace:*",
-    "@tanstack/react-query": "^5.95.2"
+    "@tanstack/react-query": "^5.101.4"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
