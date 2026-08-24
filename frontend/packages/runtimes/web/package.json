@@ -26,8 +26,8 @@
   },
   "devDependencies": {
     "@tanstack/react-query": "catalog:",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

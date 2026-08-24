@@ -42,9 +42,9 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-router": "^1.120.3",
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "@types/react": "^19.2.18",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "sonner": "^2.0.0",
     "typescript": "^5.0.0",
     "@notrelix/eslint-config": "workspace:*"

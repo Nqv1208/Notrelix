@@ -22,13 +22,13 @@
     "@tanstack/react-table": "^8.0.0"
   },
   "peerDependencies": {
-    "react": "^19.0.0"
+    "react": "^19.2.8"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/react": "^19.0.0",
+    "@types/react": "^19.2.18",
     "@types/node": "^20.0.0",
-    "react": "^19.0.0",
+    "react": "^19.2.8",
     "@notrelix/eslint-config": "workspace:*"
   }
 }

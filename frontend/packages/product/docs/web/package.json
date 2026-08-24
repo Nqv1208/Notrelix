@@ -23,10 +23,10 @@
     "@notrelix/platform": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "lucide-react": "^0.562.0",
-    "react": "^19.0.0"
+    "react": "^19.2.8"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
+    "@types/react": "^19.2.18",
     "typescript": "^5.0.0",
     "@notrelix/eslint-config": "workspace:*"
   }

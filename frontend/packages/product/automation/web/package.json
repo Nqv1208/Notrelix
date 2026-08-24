@@ -17,12 +17,12 @@
     "@notrelix/automation-core": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "react": "^19.0.0",
+    "react": "^19.2.8",
     "lucide-react": "^0.562.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/react": "^19.0.0",
+    "@types/react": "^19.2.18",
     "@notrelix/eslint-config": "workspace:*"
   }
 }
