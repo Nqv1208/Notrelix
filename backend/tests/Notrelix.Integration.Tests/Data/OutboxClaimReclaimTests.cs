@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Integration.Tests.Containers;
@@ -8,9 +9,11 @@ namespace Notrelix.Integration.Tests.Data;
 
 /// <summary>
 /// FZ-INF-03 — crash-after-claim: the outbox claim query mirrors the
-/// OutboxDispatcher contract (Processing lease of 60s). A row claimed by a
-/// crashed dispatcher must be reclaimable once its lease expires, while an
-/// unexpired lease must never be stolen.
+/// OutboxDispatcher contract (Processing lease of 60s, per-stream ordering
+/// guard, bounded retry). A row claimed by a crashed dispatcher must be
+/// reclaimable once its lease expires, while an unexpired lease must never be
+/// stolen, and a later stream version must never be claimed while an earlier
+/// version of the same stream remains undispatched.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
@@ -41,29 +44,46 @@ public sealed class OutboxClaimReclaimTests : IAsyncLifetime
         Guid eventId,
         string status,
         DateTimeOffset? processingStartedAt,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        string? streamKey = null,
+        long? streamVersion = null)
     {
-        var message = new MessagingOutboxMessage(
-            eventId: eventId,
-            sourceEventId: null,
-            sourceContext: "test",
-            messageName: "test.reclaim.v1",
-            schemaVersion: 1,
-            destination: null,
-            subjectType: null,
-            subjectId: null,
-            aggregateType: null,
-            aggregateId: null,
-            workspaceId: null,
-            accountId: null,
-            actorUserId: null,
-            correlationId: Guid.NewGuid().ToString(),
-            causationId: null,
-            partitionKey: null,
-            payloadJson: JsonDocument.Parse("{}"),
-            headersJson: null,
-            metadataJson: null,
-            createdAt: now);
+        MessagingOutboxMessage message;
+        if (streamKey is not null && streamVersion.HasValue)
+        {
+            var change = new RealtimeResourceChangedV1(
+                eventId, accountId: null, workspaceId: null, actorUserId: null,
+                Guid.NewGuid(), causationId: null, now,
+                topicNamespace: "work", resourceKind: "board-item",
+                resourceId: Guid.NewGuid(), streamKey, streamVersion.Value,
+                changeKind: "updated", payloadContract: "test.v1",
+                JsonDocument.Parse("{}").RootElement);
+            message = MessagingOutboxMessage.FromIntegrationEvent(change, now);
+        }
+        else
+        {
+            message = new MessagingOutboxMessage(
+                eventId: eventId,
+                sourceEventId: null,
+                sourceContext: "test",
+                messageName: "test.reclaim.v1",
+                schemaVersion: 1,
+                destination: null,
+                subjectType: null,
+                subjectId: null,
+                aggregateType: null,
+                aggregateId: null,
+                workspaceId: null,
+                accountId: null,
+                actorUserId: null,
+                correlationId: Guid.NewGuid().ToString(),
+                causationId: null,
+                partitionKey: null,
+                payloadJson: JsonDocument.Parse("{}"),
+                headersJson: null,
+                metadataJson: null,
+                createdAt: now);
+        }
 
         switch (status)
         {
@@ -160,6 +180,72 @@ public sealed class OutboxClaimReclaimTests : IAsyncLifetime
             "a failed message whose retry window has elapsed stays retryable");
     }
 
+    [Fact]
+    public async Task Claim_FailedEarlierVersion_BlocksLaterVersionOfSameStream()
+    {
+        // Ordered-stream invariant: N+1 of a stream may only be claimed after every
+        // earlier version is Processed — a Failed (retry-exhausted or not) v1 must
+        // hold back Pending v2 of the same stream.
+        var now = new DateTimeOffset(2026, 7, 1, 12, 0, 0, TimeSpan.Zero);
+        var seededAt = now.AddMinutes(-1);
+        var streamKey = $"board-item:{Guid.NewGuid():N}";
+        var v1EventId = Guid.NewGuid();
+        var v2EventId = Guid.NewGuid();
+
+        await using (var context = CreateContext())
+        {
+            context.Set<MessagingOutboxMessage>().AddRange(
+                CreateMessage(v1EventId, "Failed", null, seededAt, streamKey, 1),
+                CreateMessage(v2EventId, "Pending", null, seededAt.AddMilliseconds(1), streamKey, 2));
+            await context.SaveChangesAsync();
+        }
+
+        var claimed = await ClaimAsync(now, Guid.NewGuid());
+
+        claimed.Should().NotContain(m => m.EventId == v2EventId,
+            "a later stream version must never be claimed while an earlier version is undispatched");
+    }
+
+    [Fact]
+    public async Task Claim_ProcessedEarlierVersion_ReleasesLaterVersion_AndUnrelatedStreams()
+    {
+        // Once v1 is Processed the stream head advances: v2 becomes claimable and an
+        // unrelated blocked stream does not prevent independent progress elsewhere.
+        var now = new DateTimeOffset(2026, 7, 1, 12, 0, 0, TimeSpan.Zero);
+        var seededAt = now.AddMinutes(-1);
+        var releasedStream = $"board-item:{Guid.NewGuid():N}";
+        var unrelatedStream = $"board-item:{Guid.NewGuid():N}";
+        var processedV1Id = Guid.NewGuid();
+        var pendingV2Id = Guid.NewGuid();
+        var unrelatedV1Id = Guid.NewGuid();
+        var unrelatedV2Id = Guid.NewGuid();
+
+        await using (var context = CreateContext())
+        {
+            context.Set<MessagingOutboxMessage>().AddRange(
+                CreateMessage(processedV1Id, "Pending", null, seededAt, releasedStream, 1),
+                CreateMessage(pendingV2Id, "Pending", null, seededAt.AddMilliseconds(1), releasedStream, 2),
+                CreateMessage(unrelatedV1Id, "Failed", null, seededAt, unrelatedStream, 1),
+                CreateMessage(unrelatedV2Id, "Pending", null, seededAt.AddMilliseconds(2), unrelatedStream, 2));
+            await context.SaveChangesAsync();
+
+            // Mark the first stream's v1 as fully dispatched.
+            var processed = await context.Set<MessagingOutboxMessage>()
+                .SingleAsync(m => m.EventId == processedV1Id);
+            processed.MarkProcessed(now);
+            await context.SaveChangesAsync();
+        }
+
+        var claimed = await ClaimAsync(now, Guid.NewGuid());
+
+        claimed.Select(m => m.EventId).Should().BeEquivalentTo(
+            [pendingV2Id, unrelatedV1Id],
+            "Processed v1 releases same-stream v2; the failed v1 of an unrelated stream stays retryable by itself while blocking only its own later version");
+
+        claimed.Should().NotContain(m => m.EventId == unrelatedV2Id,
+            "a failed earlier version blocks later versions of its own stream");
+    }
+
     private async Task<List<MessagingOutboxMessage>> ClaimAsync(DateTimeOffset now, Guid lockId)
     {
         await using var context = CreateContext();
@@ -174,7 +260,17 @@ public sealed class OutboxClaimReclaimTests : IAsyncLifetime
                     OR
                     (status = 'Processing' AND processing_started_at <= {1})
                     OR
-                    (status = 'Failed' AND next_attempt_at <= {0})
+                    (status = 'Failed' AND retry_count < max_retries AND next_attempt_at <= {0})
+                )
+                AND (
+                    stream_key IS NULL
+                    OR NOT EXISTS (
+                        SELECT 1
+                        FROM messaging.outbox_messages earlier
+                        WHERE earlier.stream_key = outbox_messages.stream_key
+                          AND earlier.stream_version < outbox_messages.stream_version
+                          AND earlier.status <> 'Processed'
+                    )
                 )
                 ORDER BY created_at
                 LIMIT 20
