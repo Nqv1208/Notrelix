@@ -46,7 +46,7 @@ public sealed class HttpRequestContextMiddleware
             && headerWorkspaceId != Guid.Empty)
         {
             // Store workspace hint in HttpContext.Items for downstream use
-            // TenantBootstrapBehavior will validate and set proper tenant context
+            // ExecutionContextBehavior will validate and set proper tenant context
             context.Items["WorkspaceHint"] = headerWorkspaceId;
         }
 

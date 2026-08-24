@@ -348,28 +348,16 @@ The durable architecture is the **dependency/order semantics**, not the exact nu
 
 # 15. Current behavior evidence
 
-Current `Common/Behaviors` contains behavior types such as:
+Current `Common/Behaviors` contains the frozen seven-behavior pipeline:
 
 ```text
 ApplicationTracingBehavior
-AuthorizationBehavior
-AuthorizedCacheBehavior
-ConcurrencyBehavior
-DbRequestScopeBehavior
-ExceptionMappingBehavior
-FeatureGateBehavior
+RequestContractBehavior
+ExecutionContextBehavior
+DataSessionBehavior
+AccessControlBehavior
 IdempotencyBehavior
-PostCommitEnqueueBehavior
-PostCommitScopeBehavior
-PublicCacheBehavior
-RequestContractGuardBehavior
-ResourceScopeBehavior
-SubscriptionGateBehavior
-SystemOperationAuditBehavior
-TenantBootstrapBehavior
-TokenValidationBehavior
 ValidationBehavior
-VerifiedEmailBehavior
 ```
 
 This is current source evidence.
@@ -404,19 +392,18 @@ Do not reorder to “group similar code” if dependency semantics change.
 
 # 17. Outer zone
 
-The pre-DB/outer portion should contain work that can be safely performed before the transactional DB scope.
+The pre-DB/outer portion contains work that can be safely performed before the transactional DB scope.
 
-Representative responsibilities:
+Representative responsibilities (owned by the frozen behaviors):
 
 ```text
 exception mapping boundary
 tracing
 request validation
 request-contract guards
-token/security preconditions
-tenant bootstrap
-system-operation auditing setup
+execution/tenant context resolution
 resource scope resolution
+access facts + policy evaluation
 ```
 
 Exact placement follows ADR/tests.
@@ -466,9 +453,9 @@ Do not perform irreversible provider/broker effects merely because a post-commit
 
 # 21. Database request scope
 
-`DbRequestScopeBehavior` is the architectural transition into the request DB connection/transaction boundary.
+`DataSessionBehavior` is the architectural transition into the request DB connection/transaction boundary.
 
-It participates in:
+It delegates to the Application-defined `IRequestDataSession` port and participates in:
 
 ```text
 connection lifecycle
@@ -476,9 +463,9 @@ full RLS session application
 transaction
 ```
 
-with Infrastructure implementation.
+with Infrastructure implementation (`EfRequestDataSession`).
 
-Application owns **when/why** the transactional boundary exists.
+Application owns **when/why** the transactional boundary exists (declared per-request via descriptor data-access kind + expected-version constraints).
 
 Infrastructure owns **how** EF/Npgsql implements it.
 
