@@ -18,12 +18,10 @@ global using Notrelix.Application.Common.Behaviors;
 global using Notrelix.Application.Common.Caching;
 global using Notrelix.Application.Common.Requests.Scoping;
 global using Notrelix.Application.Common.Requests.Execution;
-global using Notrelix.Application.Common.Entitlements;
 global using Notrelix.Application.Common.Requests.Security;
 global using Notrelix.Application.Common.Tenancy;
 global using Notrelix.Application.Common.Time;
 global using Notrelix.Domain.SharedKernel;
-global using Notrelix.Domain.Governance.Permissions;
 
 // Workspace domain types
 global using Notrelix.Domain.Workspaces.Members;

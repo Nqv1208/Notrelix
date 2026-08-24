@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
-using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;

@@ -8,7 +8,6 @@ using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Items.Events;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 

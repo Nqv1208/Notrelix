@@ -56,7 +56,6 @@ global using Notrelix.Application.Common.Requests.Security;
 global using Notrelix.Application.Common.SystemOperations;
 global using Notrelix.Application.Common.Data;
 global using Notrelix.Application.Common.Email;
-global using Notrelix.Application.Common.Entitlements;
 global using Notrelix.Application.Common.Events;
 global using Notrelix.Application.Common.Exceptions;
 global using Notrelix.Application.Common.Idempotency;

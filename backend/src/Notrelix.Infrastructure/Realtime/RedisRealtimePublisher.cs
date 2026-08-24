@@ -65,7 +65,8 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
         await _redis.GetDatabase().PublishAsync(RedisChannel.Literal(ChannelPrefix + channel), json);
         stopwatch.Stop();
 
-        _metrics.RealtimePublishDuration.Record(stopwatch.Elapsed.TotalMilliseconds);    }
+        _metrics.RealtimePublishDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
+    }
 
     /// <summary>
     /// Channel resolution: workspace-namespace topics map to the tenant-qualified
