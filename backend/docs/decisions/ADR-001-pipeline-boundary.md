@@ -1,7 +1,7 @@
 ---
 document_id: ADR-001
 document_type: architecture-decision
-status: Accepted
+status: Superseded
 owner: backend-architecture
 applies_to:
   - backend
@@ -27,7 +27,7 @@ review_on:
 
 ## Status
 
-Accepted
+Superseded by `ADR-006`
 
 ## Date
 
@@ -445,15 +445,11 @@ The original ADR does not record a prior ADR that it superseded.
 
 ## Superseded By
 
-`None`
+`ADR-006` (`docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md`)
 
-Current registry status remains:
-
-```text
-Accepted
-```
-
-No newer backend ADR is currently recorded as superseding ADR-001.
+ADR-006 freezes the pipeline to exactly seven behaviors and supersedes the
+nineteen-behavior zone inventory. The zone-ordering rationale recorded here
+survives as frozen invariants of the seven-behavior set.
 
 ---
 

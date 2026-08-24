@@ -324,7 +324,8 @@ Do not create a generic marker that silently encodes an entire feature workflow.
 
 # 14. Pipeline architecture
 
-ADR-001 defines pipeline boundary zones so behavior order is not accidental.
+ADR-006 (superseding ADR-001) freezes the pipeline to exactly seven behaviors;
+behavior order remains dependency-driven, not aesthetic.
 
 Conceptual zones:
 
@@ -2592,7 +2593,7 @@ testing-and-quality-gates.md
 Related ADRs:
 
 ```text
-../decisions/ADR-001-pipeline-boundary.md
+../decisions/ADR-006-frozen-seven-behavior-pipeline.md
 ../decisions/ADR-002-rls-bootstrap-connection-lifecycle.md
 ```
 
