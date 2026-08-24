@@ -462,6 +462,27 @@ public static class ConsumerRegistrySetup
                 Maturity = ConsumerMaturity.Stub
             },
 
+            new ConsumerDefinition
+            {
+                ConsumerName = "RealtimeResourceChangedConsumer",
+                EventName = "realtime.resource-changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-realtime-resource-changed-v1",
+                BoundedContext = "Realtime",
+                Description = "Publishes durable resource changes to the realtime gateway",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "BoardItemMemberAssignedForAutomationConsumer",
+                EventName = "automation.board-item-member-assigned",
+                EventVersion = 1,
+                EndpointName = "notrelix-automation-board-item-member-assigned-v1",
+                BoundedContext = "Automation",
+                Description = "Evaluates item-assignment automation rules after commit",
+                Maturity = ConsumerMaturity.Implemented
+            },
+
             // Billing (stub)
             new ConsumerDefinition
             {

@@ -42,9 +42,6 @@ public static class AuthRegistration
         // Correlation context for events/outbox/logs.
         services.AddScoped<ICorrelationContext, CurrentCorrelationContext>();
 
-        // Post-commit action queue for cache invalidation and realtime dispatch.
-        services.AddScoped<IPostCommitActionQueue, PostCommitActionQueue>();
-
         // Verification token locking (FOR UPDATE) — relational operation behind Application port.
         services.AddScoped<Notrelix.Application.Features.Identity.Verification.Abstractions.IActiveVerificationTokenLocker,
             ActiveVerificationTokenLocker>();

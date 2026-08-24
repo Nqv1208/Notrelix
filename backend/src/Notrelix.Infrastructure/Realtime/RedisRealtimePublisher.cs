@@ -32,17 +32,21 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
         _logger = logger;
     }
 
-    public async Task PublishAsync(RealtimeTopic topic, object payload, CancellationToken cancellationToken)
+    public async Task PublishAsync(RealtimeResourceChangedV1 change, CancellationToken cancellationToken)
     {
+        var topic = new RealtimeTopic(change.TopicNamespace, change.ResourceKind, change.ResourceId);
         var channel = ResolveChannel(topic);
         var envelope = new RealtimeEnvelopeDto(
-            EventId: Guid.NewGuid().ToString("N"),
+            EventId: change.EventId.ToString("N"),
             EventType: $"{topic.Namespace}.{topic.ResourceKind}".ToLowerInvariant(),
-            WorkspaceId: topic.Namespace == "workspace" ? topic.ResourceId.ToString() : string.Empty,
-            CorrelationId: string.Empty,
-            Timestamp: DateTimeOffset.UtcNow.ToString("O"),
+            WorkspaceId: change.WorkspaceId?.ToString() ?? string.Empty,
+            CorrelationId: change.CorrelationId.ToString("N"),
+            Timestamp: change.OccurredAt.ToString("O"),
             SchemaVersion: 1,
-            Payload: payload);
+            ResourceId: change.ResourceId,
+            StreamVersion: change.StreamVersion,
+            PayloadContract: change.PayloadContract,
+            Payload: change.Payload);
 
         var json = JsonSerializer.Serialize(envelope, JsonOptions);
 
@@ -69,5 +73,8 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
         string CorrelationId,
         string Timestamp,
         int SchemaVersion,
+        Guid ResourceId,
+        long StreamVersion,
+        string PayloadContract,
         object Payload);
 }
