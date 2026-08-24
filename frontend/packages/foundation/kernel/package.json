@@ -18,7 +18,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "typescript": "^7.0.2",
     "@types/node": "^20.0.0",
     "vitest": "^3.2.1",
     "@notrelix/eslint-config": "workspace:*"
