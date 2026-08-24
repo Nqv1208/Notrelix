@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@testing-library/react": "^16.0.0",
-    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/dom": "catalog:",
     "@tanstack/react-query": "^5.95.0"
   },
@@ -21,7 +21,7 @@
     "typescript": "^5.0.0",
     "vitest": "catalog:",
     "jsdom": "catalog:",
-    "@playwright/test": "^1.50.0",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

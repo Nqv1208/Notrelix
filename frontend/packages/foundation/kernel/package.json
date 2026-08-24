@@ -20,7 +20,7 @@
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0",
-    "vitest": "^3.2.1",
+    "vitest": "^4.1.11",
     "@notrelix/eslint-config": "workspace:*"
   }
 }
