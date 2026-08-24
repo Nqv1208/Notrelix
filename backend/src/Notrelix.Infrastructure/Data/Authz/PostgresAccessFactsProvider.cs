@@ -3,7 +3,6 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Storage;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Requests;
-using NpgsqlTypes;
 using Notrelix.Application.Common.Requests.Execution;
 
 namespace Notrelix.Infrastructure.Data.Authz;

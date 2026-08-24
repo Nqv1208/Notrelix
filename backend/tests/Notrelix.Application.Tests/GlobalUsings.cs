@@ -13,7 +13,6 @@ global using Notrelix.Application.Common.Data;
 global using Notrelix.Application.Common.Events;
 global using Notrelix.Application.Common.Exceptions;
 global using Notrelix.Application.Common.Idempotency;
-global using Notrelix.Application.Common.PostCommit;
 global using Notrelix.Application.Common.Security;
 global using Notrelix.Application.Common.Behaviors;
 global using Notrelix.Application.Common.Caching;

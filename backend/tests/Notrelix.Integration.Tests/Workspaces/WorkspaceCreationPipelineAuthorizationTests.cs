@@ -14,7 +14,6 @@ using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Rls;
-using Notrelix.Infrastructure.Governance.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;

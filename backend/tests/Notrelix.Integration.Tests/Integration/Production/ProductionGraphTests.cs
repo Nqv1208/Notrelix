@@ -20,7 +20,6 @@ using Notrelix.Infrastructure.Governance.Services;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Realtime;
-using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Storage.Providers;
 using Notrelix.Integration.Tests.Containers;
 

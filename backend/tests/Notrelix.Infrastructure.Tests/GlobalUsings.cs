@@ -9,4 +9,3 @@ global using Notrelix.Infrastructure.Data.Rls;
 global using Notrelix.Application.Common.Events;
 global using Notrelix.Application.Common.Messaging;
 global using Notrelix.Application.Common.Time;
-global using Notrelix.Application.Common.PostCommit;
