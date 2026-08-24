@@ -10,7 +10,10 @@ public enum RequestDataAccess
 public sealed record RequestDataSessionOptions(
     RequestDataAccess Access,
     bool ApplyTenantScope,
-    bool ApplyResourceScope);
+    bool ApplyResourceScope,
+    ExpectedVersionConstraint? ExpectedVersion = null);
+
+public sealed record ExpectedVersionConstraint(Guid ResourceId, long Value);
 
 /// <summary>
 /// Provider-independent data session port.

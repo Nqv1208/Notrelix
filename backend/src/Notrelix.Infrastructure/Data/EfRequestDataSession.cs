@@ -9,15 +9,18 @@ public sealed class EfRequestDataSession : IRequestDataSession
     private readonly ApplicationDbContext _dbContext;
     private readonly IRlsSessionContext _rls;
     private readonly ILogger<EfRequestDataSession> _logger;
+    private readonly IOutboxWakeSignal? _outboxWakeSignal;
 
     public EfRequestDataSession(
         ApplicationDbContext dbContext,
         IRlsSessionContext rls,
-        ILogger<EfRequestDataSession> logger)
+        ILogger<EfRequestDataSession> logger,
+        IOutboxWakeSignal? outboxWakeSignal = null)
     {
         _dbContext = dbContext;
         _rls = rls;
         _logger = logger;
+        _outboxWakeSignal = outboxWakeSignal;
     }
 
     public async Task<TResponse> ExecuteAsync<TResponse>(
@@ -50,11 +53,14 @@ public sealed class EfRequestDataSession : IRequestDataSession
 
             if (options.Access == RequestDataAccess.Transactional)
             {
+                ApplyExpectedVersion(options.ExpectedVersion);
                 _logger.LogTrace("Saving changes");
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
 
             await transaction.CommitAsync(cancellationToken);
+            if (options.Access == RequestDataAccess.Transactional)
+                _outboxWakeSignal?.TrySignal();
             _logger.LogTrace("Committed data session");
 
             return response;
@@ -65,5 +71,25 @@ public sealed class EfRequestDataSession : IRequestDataSession
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    private void ApplyExpectedVersion(ExpectedVersionConstraint? constraint)
+    {
+        if (constraint is null)
+            return;
+
+        var entry = _dbContext.ChangeTracker.Entries<AggregateRoot>()
+            .SingleOrDefault(candidate => candidate.Entity.Id == constraint.ResourceId);
+
+        if (entry is null)
+            return;
+
+        var version = entry.Property(nameof(AggregateRoot.Version));
+        version.OriginalValue = constraint.Value;
+
+        // Preserve precondition semantics for domain no-ops: issue a version-guarded
+        // update even when the aggregate did not otherwise change.
+        if (entry.State == EntityState.Unchanged)
+            version.IsModified = true;
     }
 }

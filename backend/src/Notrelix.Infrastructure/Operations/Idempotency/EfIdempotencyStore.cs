@@ -8,16 +8,16 @@ namespace Notrelix.Infrastructure.Operations.Idempotency;
 /// Participates in the current request transaction — never starts its own or calls SaveChanges.
 ///
 /// State machine (spec 3.8):
-/// - normal Processing is uncommitted in the current request transaction;
-/// - a committed active Processing row is corrupt/legacy state and is never mapped
+/// - normal Started is uncommitted in the current request transaction;
+/// - a committed active Started row is corrupt/legacy state and is never mapped
 ///   to Completed — the typed <see cref="IdempotencyIncompleteStateException"/> is thrown;
-/// - expired Processing/Completed rows are replaced atomically (FOR UPDATE, delete,
+/// - expired Started/Completed rows are replaced atomically (FOR UPDATE, delete,
 ///   retry insert, verify one row inserted);
 /// - the store owns all expiry calculations through TimeProvider + IdempotencyOptions.
 /// </summary>
 public sealed class EfIdempotencyStore : IIdempotencyStore
 {
-    private const string ProcessingState = "Processing";
+    private const string StartedState = "Started";
     private const string CompletedState = "Completed";
 
     // Bounded retry budget for expired-row replacement races: after deleting an
@@ -52,9 +52,9 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
         for (var attempt = 0; attempt < MaxAcquisitionAttempts; attempt++)
         {
             // Atomic insert — the PostgreSQL unique constraint (scope, operation, key_hash)
-            // serializes concurrent first executions. The Processing row expires according
-            // to IdempotencyOptions.ProcessingExpiry.
-            var inserted = await InsertProcessingRecordAsync(
+            // serializes concurrent first executions. The Started row expires according
+            // to IdempotencyOptions.ProcessingExpiry (retained configuration key).
+            var inserted = await InsertStartedRecordAsync(
                 connection, transaction, identity, now, _options.ProcessingExpiry, cancellationToken);
 
             if (inserted)
@@ -73,7 +73,7 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
 
             if (existing.Value.ExpiresAt <= now)
             {
-                // Expired Processing or Completed row — replace atomically.
+                // Expired Started or Completed row — replace atomically.
                 await DeleteRecordAsync(connection, transaction, identity, cancellationToken);
                 continue;
             }
@@ -96,7 +96,7 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
                     existing.Value.ResultContract);
             }
 
-            // Active committed Processing row: corrupt/legacy state. Never replay it
+            // Active committed Started row: corrupt/legacy state. Never replay it
             // as Completed — surface the typed incomplete-state failure instead.
             throw new IdempotencyIncompleteStateException(identity.Operation);
         }
@@ -125,24 +125,24 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
         if (rowsAffected == 0)
         {
             throw new InvalidOperationException(
-                $"Idempotency completion failed: no Processing record found for operation '{identity.Operation}' " +
+                $"Idempotency completion failed: no Started record found for operation '{identity.Operation}' " +
                 "with matching scope, key hash, and request hash.");
         }
     }
 
-    private static async Task<bool> InsertProcessingRecordAsync(
+    private static async Task<bool> InsertStartedRecordAsync(
         System.Data.Common.DbConnection connection,
         System.Data.Common.DbTransaction transaction,
         IdempotencyIdentity identity,
         DateTimeOffset now,
-        TimeSpan processingExpiry,
+        TimeSpan startedExpiry,
         CancellationToken cancellationToken)
     {
         await using var cmd = connection.CreateCommand();
         cmd.Transaction = transaction;
         cmd.CommandText = """
             INSERT INTO ops.idempotency_records (id, scope, operation, key_hash, request_hash, state, created_at, expires_at)
-            VALUES (@id, @scope, @operation, @keyHash, @requestHash, 'Processing', @createdAt, @expiresAt)
+            VALUES (@id, @scope, @operation, @keyHash, @requestHash, 'Started', @createdAt, @expiresAt)
             ON CONFLICT (scope, operation, key_hash) DO NOTHING
             """;
 
@@ -152,7 +152,7 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
         AddParameter(cmd, "keyHash", identity.KeyHash);
         AddParameter(cmd, "requestHash", identity.RequestHash);
         AddParameter(cmd, "createdAt", now);
-        AddParameter(cmd, "expiresAt", now.Add(processingExpiry));
+        AddParameter(cmd, "expiresAt", now.Add(startedExpiry));
 
         var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
         return rows > 0;
@@ -230,7 +230,7 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
             SET state = 'Completed', result_json = @resultJson::jsonb, result_contract = @resultContract,
                 completed_at = @completedAt, expires_at = @expiresAt
             WHERE scope = @scope AND operation = @operation AND key_hash = @keyHash
-              AND request_hash = @requestHash AND state = 'Processing'
+              AND request_hash = @requestHash AND state = 'Started'
             """;
 
         AddParameter(cmd, "resultJson", serializedResult);

@@ -26,6 +26,10 @@ public sealed class MessagingOutboxMessage
     public string? CorrelationId { get; private set; }
     public string? CausationId { get; private set; }
     public string? PartitionKey { get; private set; }
+    public string? ResourceKind { get; private set; }
+    public Guid? ResourceId { get; private set; }
+    public string? StreamKey { get; private set; }
+    public long? StreamVersion { get; private set; }
     public JsonDocument PayloadJson { get; private set; } = null!;
     public JsonDocument HeadersJson { get; private set; } = JsonDocument.Parse("{}");
     public JsonDocument MetadataJson { get; private set; } = JsonDocument.Parse("{}");
@@ -141,7 +145,7 @@ public sealed class MessagingOutboxMessage
         DateTimeOffset now)
     {
         var payloadJson = JsonSerializer.SerializeToDocument(integrationEvent, integrationEvent.GetType(), JsonOptions);
-        return new MessagingOutboxMessage(
+        var message = new MessagingOutboxMessage(
             eventId: integrationEvent.EventId,
             sourceEventId: integrationEvent.SourceEventId,
             sourceContext: sourceDomainEvent.GetType().Namespace ?? "Notrelix.Domain",
@@ -161,6 +165,8 @@ public sealed class MessagingOutboxMessage
             headersJson: null,
             metadataJson: null,
             createdAt: now);
+        message.ApplyOrderedResource(integrationEvent);
+        return message;
     }
 
     public static MessagingOutboxMessage FromIntegrationEvent(
@@ -168,7 +174,7 @@ public sealed class MessagingOutboxMessage
         DateTimeOffset now)
     {
         var payloadJson = JsonSerializer.SerializeToDocument(integrationEvent, integrationEvent.GetType(), JsonOptions);
-        return new MessagingOutboxMessage(
+        var message = new MessagingOutboxMessage(
             eventId: integrationEvent.EventId,
             sourceEventId: integrationEvent.SourceEventId,
             sourceContext: DeriveSourceContext(integrationEvent),
@@ -188,6 +194,19 @@ public sealed class MessagingOutboxMessage
             headersJson: null,
             metadataJson: null,
             createdAt: now);
+        message.ApplyOrderedResource(integrationEvent);
+        return message;
+    }
+
+    private void ApplyOrderedResource(IIntegrationEvent integrationEvent)
+    {
+        if (integrationEvent is not RealtimeResourceChangedV1 change)
+            return;
+
+        ResourceKind = change.ResourceKind;
+        ResourceId = change.ResourceId;
+        StreamKey = change.StreamKey;
+        StreamVersion = change.StreamVersion;
     }
 
     private static string ResolvePartitionKey(IIntegrationEvent integrationEvent)

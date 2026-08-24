@@ -9,13 +9,14 @@ internal sealed class OutboxDispatcher : BackgroundService
 {
     private const string DispatcherConsumerName = "OutboxDispatcher";
     private const int BatchSize = 20;
-    private const int PollIntervalMs = 5000;
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(1);
     private const int ProcessingTimeoutSeconds = 60;
     private const int MaxRetries = 5;
     private const int MaxBackoffSeconds = 60;
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<OutboxDispatcher> _logger;
+    private readonly IOutboxWakeSignal _wakeSignal;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -24,10 +25,12 @@ internal sealed class OutboxDispatcher : BackgroundService
 
     public OutboxDispatcher(
         IServiceScopeFactory scopeFactory,
-        ILogger<OutboxDispatcher> logger)
+        ILogger<OutboxDispatcher> logger,
+        IOutboxWakeSignal wakeSignal)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _wakeSignal = wakeSignal;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -38,7 +41,9 @@ internal sealed class OutboxDispatcher : BackgroundService
         {
             try
             {
-                await ProcessBatchAsync(stoppingToken);
+                while (await ProcessBatchAsync(stoppingToken))
+                {
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -49,15 +54,15 @@ internal sealed class OutboxDispatcher : BackgroundService
                 _logger.LogError(ex, "OutboxDispatcher failed");
             }
 
-            await Task.Delay(PollIntervalMs, stoppingToken);
+            await _wakeSignal.WaitAsync(PollInterval, stoppingToken);
         }
     }
 
-    private async Task ProcessBatchAsync(CancellationToken cancellationToken)
+    private async Task<bool> ProcessBatchAsync(CancellationToken cancellationToken)
     {
         // Phase 1: Short claim transaction — select + mark Processing + commit
         var (claimed, lockId) = await ClaimBatchAsync(cancellationToken);
-        if (claimed.Count == 0) return;
+        if (claimed.Count == 0) return false;
 
         // Phase 2: Publish outside database transaction
         await using var scope = _scopeFactory.CreateAsyncScope();
@@ -88,6 +93,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         // Phase 3: Short completion transaction — mark Processed/Failed + commit
         await context.SaveChangesAsync(cancellationToken);
+        return claimed.Count == BatchSize;
     }
 
     private async Task<(List<Guid> Ids, Guid LockId)> ClaimBatchAsync(CancellationToken cancellationToken)
@@ -112,7 +118,17 @@ internal sealed class OutboxDispatcher : BackgroundService
                         OR
                         (status = 'Processing' AND processing_started_at <= {1})
                         OR
-                        (status = 'Failed' AND next_attempt_at <= {0})
+                        (status = 'Failed' AND retry_count < max_retries AND next_attempt_at <= {0})
+                    )
+                    AND (
+                        stream_key IS NULL
+                        OR NOT EXISTS (
+                            SELECT 1
+                            FROM messaging.outbox_messages earlier
+                            WHERE earlier.stream_key = outbox_messages.stream_key
+                              AND earlier.stream_version < outbox_messages.stream_version
+                              AND earlier.status <> 'Processed'
+                        )
                     )
                     ORDER BY created_at
                     LIMIT {2}

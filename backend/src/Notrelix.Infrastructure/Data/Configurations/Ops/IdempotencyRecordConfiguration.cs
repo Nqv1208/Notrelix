@@ -36,12 +36,12 @@ public sealed class IdempotencyRecordConfiguration : IEntityTypeConfiguration<Id
         {
             t.HasCheckConstraint(
                 "ck_idempotency_records_state",
-                "state IN ('Processing', 'Completed')");
+                "state IN ('Started', 'Completed')");
             t.HasCheckConstraint(
                 "ck_idempotency_records_completed_result",
                 """
                 (
-                  state = 'Processing'
+                  state = 'Started'
                   AND result_json IS NULL
                   AND result_contract IS NULL
                   AND completed_at IS NULL

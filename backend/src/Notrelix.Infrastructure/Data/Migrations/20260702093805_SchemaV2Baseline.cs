@@ -1073,8 +1073,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_idempotency_records", x => x.id);
-                    table.CheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
-                    table.CheckConstraint("ck_idempotency_records_completed_result", "(\n  state = 'Processing'\n  AND result_json IS NULL\n  AND result_contract IS NULL\n  AND completed_at IS NULL\n)\nOR\n(\n  state = 'Completed'\n  AND result_json IS NOT NULL\n  AND result_contract IS NOT NULL\n  AND completed_at IS NOT NULL\n)");
+                    table.CheckConstraint("ck_idempotency_records_state", "state IN ('Started', 'Completed')");
+                    table.CheckConstraint("ck_idempotency_records_completed_result", "(\n  state = 'Started'\n  AND result_json IS NULL\n  AND result_contract IS NULL\n  AND completed_at IS NULL\n)\nOR\n(\n  state = 'Completed'\n  AND result_json IS NOT NULL\n  AND result_contract IS NOT NULL\n  AND completed_at IS NOT NULL\n)");
                 });
 
             migrationBuilder.CreateTable(
@@ -1429,7 +1429,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     payload_json = table.Column<string>(type: "jsonb", nullable: false),
                     headers_json = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
                     metadata_json = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
+                    resource_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    resource_kind = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
                     status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, defaultValue: "Pending"),
+                    stream_key = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
+                    stream_version = table.Column<long>(type: "bigint", nullable: true),
                     retry_count = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     max_retries = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
                     next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -5075,6 +5079,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 table: "outbox_messages",
                 columns: new[] { "status", "next_attempt_at", "created_at" },
                 filter: "\"status\" IN ('Pending', 'Failed')");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_outbox_messages_stream_key_stream_version",
+                schema: "messaging",
+                table: "outbox_messages",
+                columns: new[] { "stream_key", "stream_version" },
+                unique: true,
+                filter: "\"stream_key\" IS NOT NULL AND \"stream_version\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_outbox_messages_stream_key_stream_version_status",
+                schema: "messaging",
+                table: "outbox_messages",
+                columns: new[] { "stream_key", "stream_version", "status" },
+                filter: "\"stream_key\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "ix_outbox_messages_subject_type_subject_id_created_at",
