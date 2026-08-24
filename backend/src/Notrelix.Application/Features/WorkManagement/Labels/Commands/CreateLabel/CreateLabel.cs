@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.CreateLab
 
 [IdempotencyOperation("work-management.labels.create-label.v1")]
 public record CreateLabelCommand(Guid BoardId, string Color, string? Name)
-    : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

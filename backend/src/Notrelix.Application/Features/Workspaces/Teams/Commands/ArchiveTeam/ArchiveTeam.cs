@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Workspaces.Teams.Commands.ArchiveTeam;
 public record ArchiveTeamCommand(
     Guid WorkspaceId,
     Guid TeamId
-) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

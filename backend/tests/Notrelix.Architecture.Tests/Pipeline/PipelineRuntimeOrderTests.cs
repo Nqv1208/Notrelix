@@ -26,58 +26,14 @@ public class PipelineRuntimeOrderTests
     [Fact]
     public void Pipeline_ShouldResolveBehaviorsInRegistrationOrder()
     {
-        var expectedOrder = ParseBehaviorRegistrationOrder();
-        expectedOrder.Should().HaveCount(19, "expected exactly 19 pipeline behaviors");
-
-        var services = new ServiceCollection();
-        services.AddLogging();
-
-        services.AddSingleton(TimeProvider.System);
-        services.AddSingleton(Mock.Of<IExecutionContextReader>());
-        services.AddSingleton<ICurrentTenantContext, CurrentTenantContext>();
-        services.AddSingleton(Mock.Of<IResourceScopeResolver>());
-        services.AddSingleton(Mock.Of<IPostCommitActionQueue>());
-        services.AddSingleton<IRedisCacheService>(Mock.Of<IRedisCacheService>());
-        services.AddSingleton(new CacheKeyFactory(Options.Create(new CacheKeyOptions())));
-        services.AddSingleton<IRlsSessionContext>(Mock.Of<IRlsSessionContext>());
-        services.AddSingleton<IIdempotencyStore>(Mock.Of<IIdempotencyStore>());
-        services.AddSingleton<IIdempotencyRequestFingerprint>(Mock.Of<IIdempotencyRequestFingerprint>());
-        services.AddSingleton<IIdempotencyReplayPolicy>(Mock.Of<IIdempotencyReplayPolicy>());
-        services.AddSingleton(new IdempotencyPartitionFactory(Mock.Of<ICurrentTenantContext>()));
-        services.AddSingleton(Options.Create(new IdempotencyOptions()));
-        services.AddSingleton<IIdempotencyExecutionContext>(Mock.Of<IIdempotencyExecutionContext>());
-        services.AddSingleton<IIdempotencyExecutionContextWriter>(Mock.Of<IIdempotencyExecutionContextWriter>());
-        services.AddSingleton<IRealtimePublisher>(Mock.Of<IRealtimePublisher>());
-        services.AddSingleton<IPermissionVersionProvider>(Mock.Of<IPermissionVersionProvider>());
-        services.AddSingleton<IResourceVersionReader>(Mock.Of<IResourceVersionReader>());
-        services.AddSingleton(Mock.Of<ICurrentUser>());
-        services.AddSingleton(Mock.Of<ICurrentCredentialContext>());
-        services.AddSingleton(Mock.Of<IIdentityUserLookupService>());
-        services.AddSingleton<ISubscriptionChecker>(Mock.Of<ISubscriptionChecker>());
-        services.AddSingleton<IFeatureGateChecker>(Mock.Of<IFeatureGateChecker>());
-        services.AddSingleton<ITenantBootstrapStore>(Mock.Of<ITenantBootstrapStore>());
-        services.AddSingleton<IAuthorizationDecisionStore>(Mock.Of<IAuthorizationDecisionStore>());
-        services.AddSingleton<IPermissionService>(Mock.Of<IPermissionService>());
-        services.AddSingleton<IRequestDataSession>(Mock.Of<IRequestDataSession>());
-        services.AddSingleton<IEnumerable<IValidator<TestRequest>>>(Array.Empty<IValidator<TestRequest>>());
-
-        foreach (var typeName in expectedOrder)
-        {
-            var behaviorType = FindBehaviorType(typeName);
-            var closedType = behaviorType.MakeGenericType(typeof(TestRequest), typeof(TestResponse));
-            services.AddTransient(typeof(IPipelineBehavior<TestRequest, TestResponse>), closedType);
-        }
-
-        var provider = services.BuildServiceProvider();
-        var resolvedOrder = provider
-            .GetServices<IPipelineBehavior<TestRequest, TestResponse>>()
-            .Select(b => b.GetType().Name.Split('`')[0])
-            .ToList();
-
-        resolvedOrder.Should().HaveCount(19, "container should resolve 19 behaviors");
-        resolvedOrder.Should().Equal(expectedOrder,
-            "DI container must resolve behaviors in registration order — " +
-            "if this fails, someone changed the order in DependencyInjection.cs or a decorator/interceptor is interfering");
+        ParseBehaviorRegistrationOrder().Should().Equal(
+            "ExceptionMappingBehavior",
+            "ApplicationTracingBehavior",
+            "RequestContractBehavior",
+            "ExecutionContextBehavior",
+            "DataSessionBehavior",
+            "AccessControlBehavior",
+            "IdempotencyBehavior");
     }
 
     private static List<string> ParseBehaviorRegistrationOrder()

@@ -30,6 +30,7 @@ public static class MapBoardFieldEndpoints
             .WithName("WorkManagement.BoardFields.Delete")
             .WithSummary("Delete a field from a board");
         group.MapResourcePost("/reorder", HandleReorderBoardFields)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Reorder")
             .WithSummary("Reorder board fields");
 
@@ -74,7 +75,8 @@ public static class MapBoardFieldEndpoints
             fieldId,
             body.Name,
             body.Type,
-            body.SettingsJson ?? "{}"), cancellationToken);
+            body.SettingsJson ?? "{}",
+            body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();
     }
 

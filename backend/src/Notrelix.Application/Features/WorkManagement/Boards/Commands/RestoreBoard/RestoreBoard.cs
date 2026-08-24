@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.RestoreBo
 
 [IdempotencyOperation("work-management.boards.restore-board.v1")]
 public record RestoreBoardCommand(Guid BoardId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

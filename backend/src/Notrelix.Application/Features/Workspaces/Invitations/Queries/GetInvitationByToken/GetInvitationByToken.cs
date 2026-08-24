@@ -15,7 +15,7 @@ public record WorkspaceInvitationDto(
 );
 
 public record GetInvitationByTokenQuery(string Token)
-    : IQuery<Result<WorkspaceInvitationDto>>, IAnonymousTokenScopedRequest
+    : IQuery<Result<WorkspaceInvitationDto>>, IAnonymousTokenScopedRequest, IReadRequest
 {
     TokenPurpose ITokenScopedRequest.TokenPurpose => TokenPurpose.WorkspaceInvitation;
 }

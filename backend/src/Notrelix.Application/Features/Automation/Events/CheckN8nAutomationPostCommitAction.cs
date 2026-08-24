@@ -1,31 +1,29 @@
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.Jobs;
+using Notrelix.Application.Events.Automation;
 
 namespace Notrelix.Application.Features.Automation.Events;
 
-public sealed class CheckN8nAutomationPostCommitAction : IPostCommitAction
+public sealed class CheckN8nAutomationPostCommitAction
 {
-    private readonly BoardItemMemberAssignedDomainEvent _domainEvent;
     private readonly IAutomationDbContext _context;
     private readonly IResourceReferenceResolver _resourceResolver;
     private readonly IJobQueue _jobQueue;
 
     public CheckN8nAutomationPostCommitAction(
-        BoardItemMemberAssignedDomainEvent domainEvent,
         IAutomationDbContext context,
         IResourceReferenceResolver resourceResolver,
         IJobQueue jobQueue)
     {
-        _domainEvent = domainEvent;
         _context = context;
         _resourceResolver = resourceResolver;
         _jobQueue = jobQueue;
     }
 
-    public async Task ExecuteAsync(CancellationToken cancellationToken)
+    public async Task ExecuteAsync(BoardItemMemberAssignedForAutomationIntegrationEvent integrationEvent, CancellationToken cancellationToken)
     {
         var boardItemContext = await _resourceResolver.GetAccountContextAsync(
-            _domainEvent.ItemId, ResourceTypes.BoardItem, cancellationToken);
+            integrationEvent.ItemId, ResourceTypes.BoardItem, cancellationToken);
         if (boardItemContext is null) return;
 
         var rules = await _context.AutomationRules
@@ -46,7 +44,7 @@ public sealed class CheckN8nAutomationPostCommitAction : IPostCommitAction
                 .AsNoTracking()
                 .AnyAsync(execution =>
                     execution.RuleId == rule.Id &&
-                    execution.TriggerId == _domainEvent.EventId,
+                    execution.TriggerId == integrationEvent.SourceEventId,
                     cancellationToken);
 
             if (exists) continue;
@@ -55,8 +53,8 @@ public sealed class CheckN8nAutomationPostCommitAction : IPostCommitAction
                 boardItemContext.AccountId,
                 boardItemContext.WorkspaceId,
                 rule.Id,
-                _domainEvent.EventId,
-                _domainEvent.OccurredAt);
+                integrationEvent.SourceEventId ?? integrationEvent.EventId,
+                integrationEvent.OccurredAt);
 
             _context.AutomationExecutions.Add(execution);
             await _context.SaveChangesAsync(cancellationToken);

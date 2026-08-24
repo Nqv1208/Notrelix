@@ -7,7 +7,7 @@ public record UpdateMemberRoleCommand(
     Guid WorkspaceId,
     Guid UserId,
     WorkspaceRole Role
-) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ChangeMemberRole;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

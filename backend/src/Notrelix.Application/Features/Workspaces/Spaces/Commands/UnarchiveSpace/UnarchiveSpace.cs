@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Workspaces.Spaces.Commands.UnarchiveSpac
 public record UnarchiveSpaceCommand(
     Guid WorkspaceId,
     Guid SpaceId
-) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

@@ -15,7 +15,7 @@ namespace Notrelix.Architecture.Tests.PlatformMessaging;
 public class IdempotencyConsumerContractTests : ArchitectureTestBase
 {
     private static readonly Assembly ApplicationAssembly =
-        typeof(Notrelix.Application.Common.Behaviors.ValidationBehavior<,>).Assembly;
+        typeof(Notrelix.Application.Common.Behaviors.RequestContractBehavior<,>).Assembly;
 
     private static HashSet<string> GetIdempotentTypeNames()
     {

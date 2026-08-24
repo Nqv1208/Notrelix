@@ -3,12 +3,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Data;
+using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
+using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Rls;
@@ -58,13 +60,17 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         bool expectedAllowed)
     {
         // Seed account + member through the real DbContext.
-        var accountId = Guid.NewGuid();
-        var actorId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
+        var user = User.Create($"pipeline-{Guid.NewGuid():N}@example.com", "Pipeline User", "hashed", now, true);
+        user.ConfirmEmail(user.Id, now);
+        var actorId = user.Id;
+        var account = Account.Create("Pipeline Account", $"pipeline-{Guid.NewGuid():N}", AccountType.Team, actorId, now);
+        var accountId = account.Id;
 
         await using (var seed = _db.CreateContext(SystemTenant()))
         {
-            seed.Accounts.Add(Account.Create("Pipeline Account", $"pipeline-{Guid.NewGuid():N}", AccountType.Team, actorId, now));
+            seed.Users.Add(user);
+            seed.Accounts.Add(account);
             seed.AccountMembers.Add(AccountMember.Create(accountId, actorId, role, actorId, now));
             await seed.SaveChangesAsync();
         }
@@ -162,28 +168,28 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
 
-        // The REAL production evaluator (same class production AuthorizationBehavior consumes),
-        // wrapped in a pass-through evaluation counter so the test can observe the
-        // production composition path without altering any decision (IA-TST-PERF-001).
+        var descriptors = RequestDescriptorRegistry.Create(typeof(CreateWorkspaceCommand).Assembly);
+        services.AddSingleton<IRequestDescriptorRegistry>(descriptors);
+        var executionContext = new Mock<IExecutionContextReader>();
+        executionContext.SetupGet(context => context.Snapshot).Returns(new ExecutionContextSnapshot(
+            userId, accountId, null, null,
+            ApplicationPrincipalKind.Authenticated,
+            ApplicationScopeKind.Account,
+            Guid.NewGuid().ToString("D")));
+        services.AddSingleton(executionContext.Object);
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddSingleton<EvaluationCountingDecisionStore>();
-        services.AddSingleton<IAuthorizationDecisionStore>(sp =>
-        {
-            var context = _db.CreateContext(sp.GetRequiredService<ICurrentTenantContext>());
-            var snapshots = new ResourceAuthorizationSnapshotStore(
-                [new BoardAuthorizationSnapshotResolver(context)]);
-            var realEvaluator = new PermissionService(
-                sp.GetRequiredService<IWorkspaceDbContext>(),
-                sp.GetRequiredService<IGovernanceDbContext>(),
-                sp.GetRequiredService<IAccountDbContext>(),
-                snapshots,
-                sp.GetRequiredService<IDateTimeProvider>());
-            return sp.GetRequiredService<EvaluationCountingDecisionStore>().Wrap(realEvaluator);
-        });
+        services.AddScoped<IAccessFactsProvider>(sp =>
+            sp.GetRequiredService<EvaluationCountingDecisionStore>().Wrap(
+                new PostgresAccessFactsProvider(
+                    sp.GetRequiredService<ApplicationDbContext>(),
+                    sp.GetRequiredService<TimeProvider>())));
 
         // Production pipeline nesting: DbRequestScopeBehavior (outer) → AuthorizationBehavior (inner),
         // matching the canonical behavior order.
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DbRequestScopeBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DataSessionBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
 
         // The REAL production command handler.
         services.AddTransient<
@@ -210,26 +216,30 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
     {
         private int _evaluationCount;
 
-        public IAuthorizationDecisionStore Wrap(IAuthorizationDecisionStore inner) =>
+        public IAccessFactsProvider Wrap(IAccessFactsProvider inner) =>
             new CountingInner(this, inner);
 
         public int EvaluationCount => _evaluationCount;
 
-        private sealed class CountingInner : IAuthorizationDecisionStore
+        private sealed class CountingInner : IAccessFactsProvider
         {
             private readonly EvaluationCountingDecisionStore _owner;
-            private readonly IAuthorizationDecisionStore _inner;
+            private readonly IAccessFactsProvider _inner;
 
-            public CountingInner(EvaluationCountingDecisionStore owner, IAuthorizationDecisionStore inner)
+            public CountingInner(EvaluationCountingDecisionStore owner, IAccessFactsProvider inner)
             {
                 _owner = owner;
                 _inner = inner;
             }
 
-            public async Task<PermissionDecision> EvaluateAsync(PermissionContext context, CancellationToken cancellationToken = default)
+            public async Task<AccessFacts> ResolveAsync(
+                RequestDescriptor descriptor,
+                ExecutionContextSnapshot context,
+                object request,
+                CancellationToken cancellationToken)
             {
                 Interlocked.Increment(ref _owner._evaluationCount);
-                return await _inner.EvaluateAsync(context, cancellationToken);
+                return await _inner.ResolveAsync(descriptor, context, request, cancellationToken);
             }
         }
     }

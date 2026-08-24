@@ -78,38 +78,38 @@ public class CommandMarkerArchitectureTests
             "ForgotPassword is a global unauthenticated endpoint — no workspace context exists yet",
             "Keep as-is; public command does not need transactional behavior"),
         ["ToggleChecklistItemCommand"] = new("ToggleChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["DeleteBoardItemLinkCommand"] = new("DeleteBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["CreateBoardItemLinkCommand"] = new("CreateBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["HandleCalendarWebhookCommand"] = new("HandleCalendarWebhookCommand", AllowlistClassification.SystemCommand,
             "External webhook handler — transaction managed by integration adapter",
             "Keep as-is; system command with explicit transaction management"),
         ["DisconnectCalendarCommand"] = new("DisconnectCalendarCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["TriggerCalendarSyncCommand"] = new("TriggerCalendarSyncCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["MovePageCommand"] = new("MovePageCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+            "Pre-hardening command missing IWriteRequest",
+            "Add IWriteRequest"),
         ["StartOAuthLoginCommand"] = new("StartOAuthLoginCommand", AllowlistClassification.PublicCommand,
             "Non-mutating command: generates crypto + stores OAuth state in Redis, no DB mutation",
             "Keep as-is; read-only command does not need transactional behavior"),
@@ -360,7 +360,7 @@ public class CommandMarkerArchitectureTests
     // --- Marker enforcement tests ---
 
     [Fact]
-    public void MutatingCommands_ShouldImplement_ITransactionalRequest()
+    public void MutatingCommands_ShouldImplement_IWriteRequest()
     {
         var files = GetCommandFiles();
         var violations = new List<string>();
@@ -374,7 +374,7 @@ public class CommandMarkerArchitectureTests
             var name = ExtractRecordName(declaration);
             if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
 
-            if (declaration.Contains(": ICommand") && !declaration.Contains("ITransactionalRequest"))
+            if (declaration.Contains(": ICommand") && !declaration.Contains("IWriteRequest"))
             {
                 if (!KnownMissingTransactionalRequest.ContainsKey(name))
                     violations.Add($"{name}: {Path.GetFileName(file)}");
@@ -382,8 +382,8 @@ public class CommandMarkerArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            $"New mutating commands (ICommand) must implement ITransactionalRequest. " +
-            $"Fix by adding to KnownMissingTransactionalRequest with classification, or add ITransactionalRequest. " +
+            $"New mutating commands (ICommand) must implement IWriteRequest. " +
+            $"Fix by adding to KnownMissingTransactionalRequest with classification, or add IWriteRequest. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
@@ -454,7 +454,7 @@ public class CommandMarkerArchitectureTests
     }
 
     [Fact]
-    public void CommandsImplementingITransactionalRequest_WithWorkspaceId_ShouldAlsoImplement_IWorkspaceRequest()
+    public void CommandsImplementingIWriteRequest_WithWorkspaceId_ShouldAlsoImplement_IWorkspaceRequest()
     {
         var files = GetCommandFiles();
         var violations = new List<string>();
@@ -466,7 +466,7 @@ public class CommandMarkerArchitectureTests
             if (string.IsNullOrEmpty(declaration)) continue;
 
             var name = ExtractRecordName(declaration);
-            if (!declaration.Contains("ITransactionalRequest")) continue;
+            if (!declaration.Contains("IWriteRequest")) continue;
             if (declaration.Contains("IWorkspaceRequest")) continue;
 
             var hasWorkspaceId = content.Contains("Guid WorkspaceId") || content.Contains("Guid? WorkspaceId");
@@ -478,7 +478,7 @@ public class CommandMarkerArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            $"Commands with ITransactionalRequest and WorkspaceId must also implement IWorkspaceRequest. " +
+            $"Commands with IWriteRequest and WorkspaceId must also implement IWorkspaceRequest. " +
             $"Fix by adding to KnownMissingWorkspaceRequest with classification, or add IWorkspaceRequest. " +
             $"Violations: {string.Join(", ", violations)}");
     }

@@ -12,7 +12,7 @@ public sealed record RevokeApiTokenCommand(
     Guid WorkspaceId,
     Guid TokenId)
     : ICommand<Result>,
-      ITransactionalRequest,
+      IWriteRequest,
       IWorkspaceRequest,
       IAuthenticatedRequest,
       IRequirePermission

@@ -132,24 +132,6 @@ public class CommonFolderArchitectureTests
     }
 
     [Fact]
-    public void TenantBootstrapBehavior_ShouldBeInBehaviors()
-    {
-        var pipelinePath = Path.Combine(CommonPath, "Pipeline", "TenantBootstrapBehavior.cs");
-        var behaviorsPath = Path.Combine(CommonPath, "Behaviors", "TenantBootstrapBehavior.cs");
-        File.Exists(pipelinePath).Should().BeFalse("TenantBootstrapBehavior moved from Pipeline/ to Behaviors/");
-        File.Exists(behaviorsPath).Should().BeTrue("TenantBootstrapBehavior should exist in Behaviors/");
-    }
-
-    [Fact]
-    public void IPostCommitActionQueue_ShouldBeInPostCommit()
-    {
-        var contextPath = Path.Combine(CommonPath, "Context", "IPostCommitActionQueue.cs");
-        var postCommitPath = Path.Combine(CommonPath, "PostCommit", "IPostCommitActionQueue.cs");
-        File.Exists(contextPath).Should().BeFalse("IPostCommitActionQueue moved from Context/ to PostCommit/");
-        File.Exists(postCommitPath).Should().BeTrue("IPostCommitActionQueue should exist in PostCommit/");
-    }
-
-    [Fact]
     public void N8nSignatureService_ShouldBeInIntegrations()
     {
         var securityPath = Path.Combine(CommonPath, "Security", "N8nSignatureService.cs");
@@ -202,7 +184,7 @@ public class CommonFolderArchitectureTests
     }
 
     [Fact]
-    public void PipelineBehaviorCount_ShouldBeSixteen()
+    public void PipelineBehaviorCount_ShouldBeSeven()
     {
         var diFile = Path.Combine(GetApplicationPath(), "DependencyInjection.cs");
         var content = File.ReadAllText(diFile);
@@ -211,31 +193,7 @@ public class CommonFolderArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(19, "expected exactly 19 pipeline behaviors");
-    }
-
-    [Fact]
-    public void RequestContractGuardBehavior_Must_Use_RequestExecutionClassifier()
-    {
-        var file = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "RequestContractGuardBehavior.cs");
-        var content = RemoveComments(File.ReadAllText(file));
-
-        content.Should().Contain("RequestExecutionClassifier.Classify",
-            "RequestContractGuardBehavior must use RequestExecutionClassifier instead of self-classifying request markers.");
-        content.Should().NotContain("request is IGlobalRequest",
-            "RequestContractGuardBehavior must not self-check marker interfaces — delegate to RequestExecutionClassifier.");
-    }
-
-    [Fact]
-    public void DbRequestScopeBehavior_Must_Use_RequestExecutionClassifier()
-    {
-        var file = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "DbRequestScopeBehavior.cs");
-        var content = RemoveComments(File.ReadAllText(file));
-
-        content.Should().Contain("RequestExecutionClassifier.Classify",
-            "DbRequestScopeBehavior must use RequestExecutionClassifier instead of self-classifying request markers.");
-        content.Should().NotContain("request is ITransactionalRequest",
-            "DbRequestScopeBehavior must not self-check marker interfaces — delegate to RequestExecutionClassifier.");
+        lines.Should().HaveCount(7, "expected exactly seven pipeline behaviors");
     }
 
     private static string RemoveComments(string input)
@@ -247,26 +205,4 @@ public class CommonFolderArchitectureTests
         return cleaned;
     }
 
-    [Fact]
-    public void RequestContractGuardBehavior_Must_Run_Before_PublicCacheBehavior()
-    {
-        var diFile = Path.Combine(GetApplicationPath(), "DependencyInjection.cs");
-        var lines = File.ReadAllLines(diFile)
-            .Select(l => l.Trim())
-            .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
-            .Select(l => l.Contains("RequestContractGuardBehavior") ? "Guard"
-                : l.Contains("PublicCacheBehavior") ? "PublicCache"
-                : l.Contains("DbRequestScopeBehavior") ? "DbScope"
-                : l.Contains("AuthorizationBehavior") ? "Auth"
-                : null)
-            .OfType<string>()
-            .ToList();
-
-        var guardIndex = lines.IndexOf("Guard");
-        var publicCacheIndex = lines.IndexOf("PublicCache");
-
-        guardIndex.Should().BeLessThan(publicCacheIndex,
-            "RequestContractGuardBehavior must be registered BEFORE PublicCacheBehavior in the pipeline order. " +
-            "Otherwise, public cache could serve tenant-scoped data before the guard validates the contract.");
-    }
 }

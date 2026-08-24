@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
-public record UpdateProfileCommand : ICommand<Result<UserDto>>, ITransactionalRequest, IGlobalRequest, IAuthenticatedRequest
+public record UpdateProfileCommand : ICommand<Result<UserDto>>, IWriteRequest, IGlobalRequest, IAuthenticatedRequest
 {
     public required string Name { get; init; }
     public string? Avatar { get; init; }

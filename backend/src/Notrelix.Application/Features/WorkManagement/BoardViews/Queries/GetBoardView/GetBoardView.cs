@@ -3,7 +3,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Queries.GetBoardView;
 
-public record GetBoardViewQuery(Guid BoardId) : IQuery<Result<object>>, IRequirePermission, IResourceScopedRequest
+public record GetBoardViewQuery(Guid BoardId) : IQuery<Result<object>>, IRequirePermission, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

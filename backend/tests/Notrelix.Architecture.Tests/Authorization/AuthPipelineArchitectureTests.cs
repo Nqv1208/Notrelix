@@ -10,13 +10,13 @@ namespace Notrelix.Architecture.Tests;
 public class AuthPipelineArchitectureTests : ArchitectureTestBase
 {
     [Fact]
-    public void RegisterCommand_Must_Be_Anonymous_Global_Transactional()
+    public void RegisterCommand_Must_Be_Anonymous_Global_Write()
     {
         var type = typeof(RegisterCommand);
 
         typeof(IAnonymousRequest).IsAssignableFrom(type).Should().BeTrue();
         typeof(IGlobalRequest).IsAssignableFrom(type).Should().BeTrue();
-        typeof(ITransactionalRequest).IsAssignableFrom(type).Should().BeTrue();
+        typeof(IWriteRequest).IsAssignableFrom(type).Should().BeTrue();
 
         typeof(IRequirePermission).IsAssignableFrom(type).Should().BeFalse();
         typeof(IWorkspaceRequest).IsAssignableFrom(type).Should().BeFalse();
@@ -25,13 +25,13 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
     }
 
     [Fact]
-    public void LoginCommand_Must_Be_Anonymous_Global_Transactional()
+    public void LoginCommand_Must_Be_Anonymous_Global_Write()
     {
         var type = typeof(LoginCommand);
 
         typeof(IAnonymousRequest).IsAssignableFrom(type).Should().BeTrue();
         typeof(IGlobalRequest).IsAssignableFrom(type).Should().BeTrue();
-        typeof(ITransactionalRequest).IsAssignableFrom(type).Should().BeTrue();
+        typeof(IWriteRequest).IsAssignableFrom(type).Should().BeTrue();
 
         typeof(IRequirePermission).IsAssignableFrom(type).Should().BeFalse();
         typeof(IWorkspaceRequest).IsAssignableFrom(type).Should().BeFalse();
@@ -41,8 +41,8 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
     [Fact]
     public void NoGuidEmptyActorFallback()
     {
-        var content = File.ReadAllText(Path.Combine(GetApplicationPath(), "Common", "Behaviors", "ResourceScopeBehavior.cs"));
-        content.Should().NotContain("Guid.Empty", "ResourceScopeBehavior must not fallback to Guid.Empty for missing actor");
+        var content = File.ReadAllText(Path.Combine(GetApplicationPath(), "Common", "Behaviors", "ExecutionContextBehavior.cs"));
+        content.Should().Contain("RequireUser", "ExecutionContextBehavior must fail closed for a missing actor");
     }
 
     [Fact]

@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 
-public record GetCommentsQuery(ResourceKind ResourceKind, Guid ResourceId) : IQuery<Result<List<CommentDto>>>, IResourceScopedRequest, IRequirePermission
+public record GetCommentsQuery(ResourceKind ResourceKind, Guid ResourceId) : IQuery<Result<List<CommentDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public static GetCommentsQuery ForBoardItem(Guid boardItemId)
         => new(ResourceKind.Create(BoardItemKind), boardItemId);

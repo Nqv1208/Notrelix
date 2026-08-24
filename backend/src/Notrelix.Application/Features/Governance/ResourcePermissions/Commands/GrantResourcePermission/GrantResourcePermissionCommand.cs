@@ -10,7 +10,7 @@ public record GrantResourcePermissionCommand(
     string SubjectType,
     Guid SubjectId,
     string Level,
-    DateTime? ExpiresAt = null) : ICommand<Result<ResourcePermissionDto>>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
+    DateTime? ExpiresAt = null) : ICommand<Result<ResourcePermissionDto>>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IWriteRequest
 {
     internal ResourceKind Kind => ParseKind(ResourceKind);
 

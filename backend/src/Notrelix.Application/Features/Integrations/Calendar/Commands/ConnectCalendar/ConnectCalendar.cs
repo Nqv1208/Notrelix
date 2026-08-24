@@ -9,7 +9,7 @@ public record ConnectCalendarCommand(
     string? RefreshToken,
     Guid? WorkspaceId,
     string? SyncDirection
-) : ICommand<Result<Guid>>, IGlobalRequest;
+) : ICommand<Result<Guid>>, IAuthenticatedRequest, INoDataRequest, IGlobalRequest;
 
 public class ConnectCalendarCommandHandler : IRequestHandler<ConnectCalendarCommand, Result<Guid>>
 {

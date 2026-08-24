@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
-public record ResetPasswordCommand : ICommand<Result>, ITransactionalRequest, IGlobalRequest, IAnonymousRequest
+public record ResetPasswordCommand : ICommand<Result>, IWriteRequest, IGlobalRequest, IAnonymousRequest
 {
     public required string Email { get; init; }
     public required string Code { get; init; }

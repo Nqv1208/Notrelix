@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetDe
 
 [IdempotencyOperation("work-management.board-views.set-default-view.v1")]
 public record SetDefaultViewCommand(Guid BoardId, Guid ViewId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

@@ -13,7 +13,7 @@ public sealed record CompleteStepUpPasswordCommand
     : ICommand<Result<StepUpProofResult>>,
       IAuthenticatedRequest,
       IGlobalRequest,
-      ITransactionalRequest
+      IWriteRequest
 {
     public required StepUpPurpose Purpose { get; init; }
     public required string Password { get; init; }

@@ -1,0 +1,238 @@
+[
+  {
+    "kind": "authorized-cache-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema.GetBoardSchemaQuery",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema.GetBoardSchemaQueryHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/BoardSchema/Queries/GetBoardSchema/GetBoardSchemaQuery.cs",
+    "contractSource": "public sealed record GetBoardSchemaCacheIdentity(Guid BoardId); public AuthorizedCacheScope CacheScope =\u003E AuthorizedCacheScope.Workspace; public object CacheIdentity =\u003E new GetBoardSchemaCacheIdentity(BoardId); public TimeSpan? CacheTtl =\u003E TimeSpan.FromMinutes(5);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "authorized-cache-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard.GetBoardQuery",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard.GetBoardQueryHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/Boards/Queries/GetBoard/GetBoard.cs",
+    "contractSource": "public sealed record GetBoardCacheIdentity(Guid BoardId); public AuthorizedCacheScope CacheScope =\u003E AuthorizedCacheScope.Workspace; public object CacheIdentity =\u003E new GetBoardCacheIdentity(BoardId); public TimeSpan? CacheTtl =\u003E TimeSpan.FromMinutes(5);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-behavior-reference",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Common/Behaviors/PostCommitEnqueueBehavior.cs",
+    "contractSource": "PostCommitEnqueueBehavior",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-behavior-reference",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Common/Behaviors/PostCommitScopeBehavior.cs",
+    "contractSource": "PostCommitScopeBehavior",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-behavior-reference",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/DependencyInjection.cs",
+    "contractSource": "PostCommitEnqueueBehavior",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-behavior-reference",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/DependencyInjection.cs",
+    "contractSource": "PostCommitScopeBehavior",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-queue-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Common/Behaviors/PostCommitEnqueueBehavior.cs",
+    "contractSource": "IPostCommitActionQueue",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-queue-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Common/Behaviors/PostCommitScopeBehavior.cs",
+    "contractSource": "IPostCommitActionQueue",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-queue-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Common/PostCommit/IPostCommitActionQueue.cs",
+    "contractSource": "IPostCommitActionQueue",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-queue-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Features/Automation/Events/CardAssignedN8nAutomationHandler.cs",
+    "contractSource": "IPostCommitActionQueue",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-queue-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Infrastructure/DependencyInjection/AuthRegistration.cs",
+    "contractSource": "IPostCommitActionQueue",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "post-commit-queue-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Infrastructure/Services/PostCommitActionQueue.cs",
+    "contractSource": "IPostCommitActionQueue",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-publisher-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Common/Behaviors/PostCommitEnqueueBehavior.cs",
+    "contractSource": "IRealtimePublisher",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-publisher-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Common/PostCommit/IRealtimePublisher.cs",
+    "contractSource": "IRealtimePublisher",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-publisher-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Infrastructure/DependencyInjection/RealtimeRegistration.cs",
+    "contractSource": "IRealtimePublisher",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-publisher-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Infrastructure/Messaging/DevNullRealtimePublisher.cs",
+    "contractSource": "IRealtimePublisher",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-publisher-use",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Infrastructure/Realtime/RedisRealtimePublisher.cs",
+    "contractSource": "IRealtimePublisher",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember.AssignBoardItemMemberCommand",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember.AssignBoardItemMemberCommandHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/BoardItems/Commands/AssignBoardItemMember/AssignBoardItemMember.cs",
+    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022BoardItem\u0022, BoardItemId);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem.CreateBoardItemCommand",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem.CreateBoardItemCommandHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/BoardItems/Commands/CreateBoardItem/CreateBoardItem.cs",
+    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022Board\u0022, BoardId);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem.MoveBoardItemCommand",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem.MoveBoardItemCommandHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/BoardItems/Commands/MoveBoardItem/MoveBoardItem.cs",
+    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022Board\u0022, ItemId);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue.UpdateBoardItemFieldValueCommand",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue.UpdateBoardItemFieldValueCommandHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/BoardItems/Commands/UpdateBoardItemFieldValue/UpdateBoardItemFieldValue.cs",
+    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022BoardItem\u0022, ItemId);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.CreateBoardView.CreateBoardViewCommand",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.CreateBoardView.CreateBoardViewCommandHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/BoardViews/Commands/CreateBoardView/CreateBoardView.cs",
+    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022Board\u0022, BoardId);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView.SaveBoardViewCommand",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView.SaveBoardViewCommandHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/BoardViews/Commands/SaveBoardView/SaveBoardView.cs",
+    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022Board\u0022, BoardId);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig.UpdateBoardViewConfigCommand",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig.UpdateBoardViewConfigCommandHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/BoardViews/Commands/UpdateBoardViewConfig/UpdateBoardViewConfig.cs",
+    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022board\u0022, \u0022Board\u0022, BoardId);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "realtime-request",
+    "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace.CreateBoardInWorkspaceCommand",
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace.CreateBoardInWorkspaceCommandHandler"
+    ],
+    "sourceFile": "Features/WorkManagement/Boards/Commands/CreateBoardInWorkspace/CreateBoardInWorkspace.cs",
+    "contractSource": "public RealtimeTopic Topic =\u003E new(\u0022workspace\u0022, \u0022Workspace\u0022, WorkspaceId);",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "system-audit-reference",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/Common/Behaviors/SystemOperationAuditBehavior.cs",
+    "contractSource": "SystemOperationAuditBehavior",
+    "migrationStatus": "legacy"
+  },
+  {
+    "kind": "system-audit-reference",
+    "requestType": null,
+    "handlerTypes": [],
+    "sourceFile": "Notrelix.Application/DependencyInjection.cs",
+    "contractSource": "SystemOperationAuditBehavior",
+    "migrationStatus": "legacy"
+  }
+]

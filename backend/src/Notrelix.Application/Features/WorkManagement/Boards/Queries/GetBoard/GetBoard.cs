@@ -5,15 +5,10 @@ using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 
-public sealed record GetBoardCacheIdentity(Guid BoardId);
-
-public record GetBoardQuery(Guid BoardId) : IQuery<Result<BoardDto>>, IRequirePermission, IResourceScopedRequest, IRlsReadRequest, IAuthorizedCacheableRequest
+public record GetBoardQuery(Guid BoardId) : IQuery<Result<BoardDto>>, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IReadRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
-    public AuthorizedCacheScope CacheScope => AuthorizedCacheScope.Workspace;
-    public object CacheIdentity => new GetBoardCacheIdentity(BoardId);
-    public TimeSpan? CacheTtl => TimeSpan.FromMinutes(5);
 }
 
 public class GetBoardQueryHandler : IRequestHandler<GetBoardQuery, Result<BoardDto>>

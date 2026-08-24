@@ -1,3 +1,3 @@
 namespace Notrelix.Application.Common.Requests;
 
-public interface ITransactionalRequest;
+public interface IReadRequest;

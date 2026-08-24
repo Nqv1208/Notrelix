@@ -11,7 +11,7 @@ namespace Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSe
 /// </summary>
 public sealed record RevokeOtherSessionsCommand
     : ICommand<Result>,
-      ITransactionalRequest,
+      IWriteRequest,
       IGlobalRequest,
       IAuthenticatedRequest;
 

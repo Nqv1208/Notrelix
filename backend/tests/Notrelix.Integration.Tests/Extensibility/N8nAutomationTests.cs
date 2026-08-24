@@ -1,4 +1,4 @@
-using Notrelix.Application.Common.PostCommit;
+using Notrelix.Application.Events.Automation;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Features.Automation.Jobs;
@@ -38,7 +38,7 @@ public class N8nAutomationTests : IAsyncLifetime
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [Fact]
-    public async Task CardAssignedN8nAutomationHandler_ShouldCreateExecutionAndQueueDispatchJob()
+    public async Task DurableAutomationConsumerWork_ShouldCreateExecutionAndQueueDispatchJob()
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
@@ -73,21 +73,21 @@ public class N8nAutomationTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         var resourceResolver = new TestResourceReferenceResolver(context);
-        var serviceProvider = new TestServiceProvider(context, resourceResolver, queue);
-        var postCommit = new CapturingPostCommitActionQueue();
-        var handler = new CardAssignedN8nAutomationHandler(postCommit, serviceProvider);
         var domainEvent = new BoardItemMemberAssignedDomainEvent(
             Guid.NewGuid(), workspace.Id, item.Id, assignedUserId, ownerId, Now);
+        var integrationEvent = new BoardItemMemberAssignedForAutomationIntegrationEvent(
+            Guid.NewGuid(),
+            domainEvent.AccountId,
+            domainEvent.WorkspaceId,
+            domainEvent.ItemId,
+            domainEvent.UserId,
+            domainEvent.AssignedBy,
+            domainEvent.EventId,
+            domainEvent.EventId,
+            OccurredAt: domainEvent.OccurredAt);
+        var automation = new CheckN8nAutomationPostCommitAction(context, resourceResolver, queue);
 
-        await handler.Handle(
-            new DomainEventNotification<BoardItemMemberAssignedDomainEvent>(domainEvent),
-            CancellationToken.None);
-
-        // Execute the deferred post-commit action
-        foreach (var pendingAction in postCommit.Actions)
-        {
-            await pendingAction.ExecuteAsync(CancellationToken.None);
-        }
+        await automation.ExecuteAsync(integrationEvent, CancellationToken.None);
 
         var execution = await context.AutomationExecutions.SingleAsync();
         execution.WorkspaceId.Should().Be(workspace.Id);
@@ -147,41 +147,4 @@ public class N8nAutomationTests : IAsyncLifetime
         }
     }
 
-    private sealed class CapturingPostCommitActionQueue : IPostCommitActionQueue
-    {
-        private readonly List<IPostCommitAction> _actions = [];
-
-        IReadOnlyList<IPostCommitAction> IPostCommitActionQueue.Actions => _actions;
-
-        public IReadOnlyList<IPostCommitAction> Actions => _actions;
-
-        public void Enqueue(IPostCommitAction action) => _actions.Add(action);
-
-        public void BeginScope() { }
-        public Task FlushAsync(CancellationToken ct) => Task.CompletedTask;
-        public void Clear() { }
-        public void EndScope() { }
-    }
-
-    private sealed class TestServiceProvider : IServiceProvider
-    {
-        private readonly IAutomationDbContext _context;
-        private readonly IResourceReferenceResolver _resolver;
-        private readonly IJobQueue _queue;
-
-        public TestServiceProvider(IAutomationDbContext context, IResourceReferenceResolver resolver, IJobQueue queue)
-        {
-            _context = context;
-            _resolver = resolver;
-            _queue = queue;
-        }
-
-        public object? GetService(Type serviceType)
-        {
-            if (serviceType == typeof(IAutomationDbContext)) return _context;
-            if (serviceType == typeof(IResourceReferenceResolver)) return _resolver;
-            if (serviceType == typeof(IJobQueue)) return _queue;
-            return null;
-        }
-    }
 }

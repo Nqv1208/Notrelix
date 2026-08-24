@@ -173,29 +173,17 @@ public class ApplicationArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(19, "expected exactly 19 pipeline behaviors");
+        lines.Should().HaveCount(7, "expected exactly seven pipeline behaviors");
 
         var expectedOrder = new[]
         {
             "ExceptionMappingBehavior",
             "ApplicationTracingBehavior",
-            "ValidationBehavior",
-            "RequestContractGuardBehavior",
-            "TokenValidationBehavior",
-            "TenantBootstrapBehavior",
-            "SystemOperationAuditBehavior",
-            "ResourceScopeBehavior",
-            "PostCommitScopeBehavior",
-            "PublicCacheBehavior",
-            "DbRequestScopeBehavior",
-            "AuthorizationBehavior",
-            "VerifiedEmailBehavior",
-            "ConcurrencyBehavior",
-            "SubscriptionGateBehavior",
-            "FeatureGateBehavior",
+            "RequestContractBehavior",
+            "ExecutionContextBehavior",
+            "DataSessionBehavior",
+            "AccessControlBehavior",
             "IdempotencyBehavior",
-            "PostCommitEnqueueBehavior",
-            "AuthorizedCacheBehavior",
         };
 
         for (var i = 0; i < expectedOrder.Length; i++)
@@ -527,18 +515,6 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void PostCommitAction_InterfaceExists()
-    {
-        var actionPath = Path.Combine(GetApplicationPath(), "Common", "PostCommit", "IPostCommitAction.cs");
-        var content = File.ReadAllText(actionPath);
-
-        content.Should().Contain("interface IPostCommitAction",
-            "IPostCommitAction must exist for generic post-commit extensibility");
-        content.Should().Contain("ExecuteAsync",
-            "IPostCommitAction must define ExecuteAsync method");
-    }
-
-    [Fact]
     public void RateLimitMiddleware_UsesProblemDetails()
     {
         var middlewareDir = Path.GetDirectoryName(GetApplicationPath())!;
@@ -596,18 +572,6 @@ public class ApplicationArchitectureTests
         var infraPath = Path.Combine(Path.GetDirectoryName(GetApplicationPath())!, "Notrelix.Infrastructure", "Billing");
         var files = Directory.GetFiles(infraPath, "DatabaseFeatureGateChecker.cs");
         files.Should().NotBeEmpty("DatabaseFeatureGateChecker must exist for production feature gate checks");
-    }
-
-    [Fact]
-    public void PostCommitActionQueue_SupportsGenericActions()
-    {
-        var queueInterfacePath = Path.Combine(GetApplicationPath(), "Common", "PostCommit", "IPostCommitActionQueue.cs");
-        var content = File.ReadAllText(queueInterfacePath);
-
-        content.Should().Contain("Enqueue(IPostCommitAction",
-            "IPostCommitActionQueue must support generic IPostCommitAction enqueue");
-        content.Should().Contain("IReadOnlyList<IPostCommitAction> Actions",
-            "IPostCommitActionQueue must expose generic actions list");
     }
 
     [Fact]
@@ -839,58 +803,6 @@ public class ApplicationArchitectureTests
             "Every ISystemInternalRequest must also implement ISystemOperation — " +
             "system operations require structured audit metadata. Violations: " +
             string.Join(", ", violations));
-    }
-
-    [Fact]
-    public void RlsReadRequests_MustAlsoImplementTenantScoping()
-    {
-        var files = GetApplicationFeatureFiles();
-        var violations = new List<string>();
-
-        foreach (var file in files)
-        {
-            var content = RemoveComments(File.ReadAllText(file));
-            if (!content.Contains("IRlsReadRequest")) continue;
-
-            var hasTenantScoping =
-                content.Contains("IAccountRequest")
-                || content.Contains("IWorkspaceRequest")
-                || content.Contains("IResourceScopedRequest");
-
-            if (!hasTenantScoping)
-                violations.Add(Path.GetFileName(file));
-        }
-
-        violations.Should().BeEmpty(
-            "Every IRlsReadRequest must also implement a tenant-scoping interface " +
-            "(IAccountRequest, IWorkspaceRequest, or IResourceScopedRequest) — " +
-            "RlsSessionContext requires AccountId which is only resolved for tenant-scoped requests. " +
-            "Violations: " + string.Join(", ", violations));
-    }
-
-    [Fact]
-    public void CacheBehaviors_ShouldUse_CacheKeyFactory()
-    {
-        var behaviorsPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors");
-        var cacheBehaviors = new[] { "AuthorizedCacheBehavior.cs", "PublicCacheBehavior.cs" };
-
-        var violations = new List<string>();
-        foreach (var behavior in cacheBehaviors)
-        {
-            var fullPath = Path.Combine(behaviorsPath, behavior);
-            if (!File.Exists(fullPath))
-            {
-                violations.Add($"{behavior} (not found)");
-                continue;
-            }
-
-            var content = RemoveComments(File.ReadAllText(fullPath));
-            if (!content.Contains("CacheKeyFactory"))
-                violations.Add($"{behavior} (missing CacheKeyFactory dependency)");
-        }
-
-        violations.Should().BeEmpty(
-            "Cache behaviors must use CacheKeyFactory: " + string.Join(", ", violations));
     }
 
     private static bool ImplementsCommandOrQuery(Type type)

@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardsBySlug;
 
-public record GetBoardsBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<List<BoardDto>>>, IRequirePermission, IWorkspaceRequest
+public record GetBoardsBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<List<BoardDto>>>, IRequirePermission, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);

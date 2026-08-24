@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoa
 
 [IdempotencyOperation("work-management.boards.update-board-member-role.v1")]
 public record UpdateBoardMemberRoleCommand(Guid BoardId, Guid UserId, BoardRole Role)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

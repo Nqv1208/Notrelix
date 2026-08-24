@@ -7,7 +7,7 @@ public record UpdateBoardPreferenceSortsCommand(
     Guid BoardId,
     Guid ViewId,
     List<SortRule> Sorts)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

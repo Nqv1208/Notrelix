@@ -8,6 +8,7 @@ public static class ReorderBoardGroupsEndpoint
     public static IEndpointRouteBuilder MapReorderBoardGroups(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/reorder", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardGroups.Reorder")
             .WithTags("WorkManagement.BoardGroups")
             .WithSummary("Reorder groups in a board");

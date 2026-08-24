@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Views.Queries.ListSavedFilters;
 
-public record ListSavedFiltersQuery(Guid BoardId) : IQuery<Result<List<SavedFilterDto>>>, IResourceScopedRequest, IRequirePermission
+public record ListSavedFiltersQuery(Guid BoardId) : IQuery<Result<List<SavedFilterDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

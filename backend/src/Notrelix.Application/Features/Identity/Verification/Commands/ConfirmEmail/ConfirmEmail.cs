@@ -6,7 +6,7 @@ using Notrelix.Domain.Identity.Tokens;
 namespace Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail;
 
 public sealed record ConfirmEmailCommand(string Token)
-    : ICommand<Result<ConfirmEmailResultDto>>, IAnonymousTokenScopedRequest, ITransactionalRequest
+    : ICommand<Result<ConfirmEmailResultDto>>, IAnonymousTokenScopedRequest, IWriteRequest
 {
     TokenPurpose ITokenScopedRequest.TokenPurpose =>
         TokenPurpose.EmailVerification;

@@ -9,7 +9,7 @@ public sealed record ResendInvitationCommand(
     Guid WorkspaceId,
     Guid InvitationId)
     : ICommand<Result<Guid>>,
-      ITransactionalRequest,
+      IWriteRequest, IAuthenticatedRequest,
       IWorkspaceRequest,
       IRequirePermission,
       IRequireVerifiedEmail

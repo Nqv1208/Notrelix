@@ -298,6 +298,103 @@ public class PermissionServiceTests : IAsyncLifetime
         decision.ReasonCode.Should().Be("denied_by_rule");
     }
 
+    [Theory]
+    [InlineData("disabled")]
+    [InlineData("future")]
+    [InlineData("expired")]
+    public async Task EvaluateAsync_InactiveOrOutOfWindowRule_IsIgnored(string ruleState)
+    {
+        var (context, service) = CreateFixture();
+        var ownerId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Rule Window WS", $"rule-window-{Guid.NewGuid():N}", Now);
+        context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(
+            workspace.AccountId,
+            workspace.Id,
+            memberId,
+            WorkspaceRole.Member,
+            ownerId,
+            Now));
+
+        var rule = PermissionRule.Create(
+            workspace.AccountId,
+            workspace.Id,
+            PermissionScopeType.Workspace,
+            null,
+            null,
+            PermissionSubjectType.User,
+            memberId,
+            null,
+            PermissionAction.UpdateItem,
+            PermissionEffect.Allow,
+            ownerId,
+            Now,
+            startsAt: ruleState == "future" ? Now.AddHours(1) : null,
+            expiresAt: ruleState == "expired" ? Now.AddHours(-1) : null);
+
+        if (ruleState == "disabled")
+        {
+            rule.Disable(ownerId, Now);
+        }
+
+        context.PermissionRules.Add(rule);
+        await context.SaveChangesAsync();
+
+        var decision = await service.EvaluateAsync(new PermissionContext(
+            memberId,
+            workspace.AccountId,
+            workspace.Id,
+            ResourceKind.Create("work-management.board-item"),
+            Guid.NewGuid(),
+            PermissionAction.UpdateItem,
+            AppPermissionScope.Resource));
+
+        decision.IsAllowed.Should().BeFalse();
+        decision.ReasonCode.Should().Be("missing_permission");
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_BoardFromAnotherWorkspace_IsHidden()
+    {
+        var (context, service) = CreateFixture();
+        var ownerId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
+        var requestedWorkspace = Workspace.Create(Guid.NewGuid(), ownerId, "Requested WS", $"requested-{Guid.NewGuid():N}", Now);
+        var foreignWorkspace = Workspace.Create(Guid.NewGuid(), ownerId, "Foreign WS", $"foreign-{Guid.NewGuid():N}", Now);
+        context.Workspaces.AddRange(requestedWorkspace, foreignWorkspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(
+            requestedWorkspace.AccountId,
+            requestedWorkspace.Id,
+            memberId,
+            WorkspaceRole.Member,
+            ownerId,
+            Now));
+
+        var foreignBoard = Board.Create(
+            foreignWorkspace.AccountId,
+            foreignWorkspace.Id,
+            ownerId,
+            "Foreign Board",
+            null,
+            Now,
+            BoardVisibility.Workspace);
+        context.Boards.Add(foreignBoard);
+        await context.SaveChangesAsync();
+
+        var decision = await service.EvaluateAsync(new PermissionContext(
+            memberId,
+            requestedWorkspace.AccountId,
+            requestedWorkspace.Id,
+            ResourceKind.Create("work-management.board"),
+            foreignBoard.Id,
+            PermissionAction.ViewBoard,
+            AppPermissionScope.Resource));
+
+        decision.IsAllowed.Should().BeFalse();
+        decision.ReasonCode.Should().Be("resource_not_found");
+    }
+
     [Fact]
     public async Task EvaluateAsync_WrongAccountCannotUseWorkspaceMembership()
     {

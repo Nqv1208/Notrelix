@@ -8,11 +8,10 @@ public record CreateBoardViewCommand(
     Guid BoardId,
     string Name,
     string ViewMode,
-    string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    string ConfigJson) : ICommand<BoardViewDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
-    public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 
 public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewCommand, BoardViewDto>
@@ -20,12 +19,16 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IRealtimeChangeMapper<CreateBoardViewCommand, BoardViewDto>? _realtime;
+    private readonly IIntegrationEventCollector? _events;
 
-    public CreateBoardViewCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public CreateBoardViewCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IRealtimeChangeMapper<CreateBoardViewCommand, BoardViewDto>? realtime = null, IIntegrationEventCollector? events = null)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _realtime = realtime;
+        _events = events;
     }
 
     public async Task<BoardViewDto> Handle(CreateBoardViewCommand request, CancellationToken cancellationToken)
@@ -47,7 +50,7 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
 
         _context.BoardViews.Add(view);
 
-        return new BoardViewDto(
+        var response = new BoardViewDto(
             view.Id,
             view.BoardId,
             view.Name,
@@ -55,5 +58,15 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
             view.Config.Data.Value,
             view.IsDefault
         );
+        if (_realtime is not null && _events is not null)
+            _events.Add(_realtime.Map(request, response, view.Version));
+        return response;
     }
+}
+
+public sealed class CreateBoardViewRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
+    : RealtimeChangeMapper<CreateBoardViewCommand, BoardViewDto>(context, time)
+{
+    public override RealtimeResourceChangedV1 Map(CreateBoardViewCommand request, BoardViewDto response, long streamVersion) =>
+        Create("board", "Board", request.BoardId, "CreateBoardView", response, streamVersion);
 }

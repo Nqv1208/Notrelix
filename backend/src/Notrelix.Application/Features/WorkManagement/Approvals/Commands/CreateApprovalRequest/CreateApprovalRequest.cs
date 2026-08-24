@@ -11,7 +11,7 @@ public record CreateApprovalRequestCommand(
     string Title,
     string? Description,
     List<ApprovalStepDto>? Steps)
-    : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     internal const string BoardKind = "work-management.board";
 

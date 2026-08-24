@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListApprovalRequests;
 
-public record ListApprovalRequestsQuery(Guid BoardId) : IQuery<Result<List<ApprovalRequestDto>>>, IResourceScopedRequest, IRequirePermission
+public record ListApprovalRequestsQuery(Guid BoardId) : IQuery<Result<List<ApprovalRequestDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

@@ -17,7 +17,7 @@ public sealed record ProvisionPersonalWorkspaceCommand(
     DateTimeOffset OccurredAt
 ) : ICommand<ProvisionPersonalWorkspaceResult>,
     ISystemInternalRequest,
-    ITransactionalRequest,
+    IWriteRequest,
     IMessageTriggeredRequest,
     IIdempotentRequest,
     ISystemOperation,

@@ -16,7 +16,7 @@ public sealed record CompleteOAuthLoginCommand
     : ICommand<Result<AuthResult>>,
       IAnonymousRequest,
       IGlobalRequest,
-      ITransactionalRequest
+      IWriteRequest
 {
     public required OAuthProvider Provider { get; init; }
     public required string Code { get; init; }

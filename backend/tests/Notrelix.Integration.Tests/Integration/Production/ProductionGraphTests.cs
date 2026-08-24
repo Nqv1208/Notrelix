@@ -70,7 +70,7 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IRealtimePublisher>()
             .Should().BeOfType<RedisRealtimePublisher>()
             .And.NotBeOfType<DevNullRealtimePublisher>();
-        services.GetRequiredService<IPostCommitActionQueue>().Should().BeOfType<PostCommitActionQueue>();
+        services.GetRequiredService<IOutboxWakeSignal>().Should().NotBeNull();
 
         services.GetRequiredService<IMessageDeduplicationStore>().Should().BeOfType<MessageDeduplicationStore>();
         services.GetRequiredService<IEmailOutboxWriter>().Should().NotBeNull();

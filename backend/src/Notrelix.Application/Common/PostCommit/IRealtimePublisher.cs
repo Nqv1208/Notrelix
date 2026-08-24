@@ -2,5 +2,5 @@ namespace Notrelix.Application.Common.PostCommit;
 
 public interface IRealtimePublisher
 {
-    Task PublishAsync(RealtimeTopic topic, object payload, CancellationToken cancellationToken);
+    Task PublishAsync(RealtimeResourceChangedV1 change, CancellationToken cancellationToken);
 }

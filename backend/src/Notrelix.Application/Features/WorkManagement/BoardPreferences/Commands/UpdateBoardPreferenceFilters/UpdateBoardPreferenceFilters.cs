@@ -7,7 +7,7 @@ public record UpdateBoardPreferenceFiltersCommand(
     Guid BoardId,
     Guid ViewId,
     List<FilterRule> Filters)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

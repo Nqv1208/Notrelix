@@ -11,7 +11,7 @@ public sealed record UnlinkOAuthCommand
     : ICommand<Result>,
       IAuthenticatedRequest,
       IGlobalRequest,
-      ITransactionalRequest
+      IWriteRequest
 {
     public required OAuthProvider Provider { get; init; }
 

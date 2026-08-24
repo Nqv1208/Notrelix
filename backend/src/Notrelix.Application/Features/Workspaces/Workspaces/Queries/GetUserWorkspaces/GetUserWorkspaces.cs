@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWor
 
 public record GetUserWorkspacesQuery
     : IQuery<Result<List<WorkspaceDto>>>,
-      IAuthenticatedRequest,
+      IAuthenticatedRequest, IReadRequest,
       IGlobalRequest;
 
 public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>

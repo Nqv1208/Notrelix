@@ -12,11 +12,10 @@ public record CreateBoardInWorkspaceCommand(
     string Title,
     string? Description,
     string? Background,
-    BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest, IIdempotentRequest
+    BoardVisibility? Visibility) : ICommand<Result<Guid>>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IWorkspaceRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
-    public RealtimeTopic Topic => new("workspace", "Workspace", WorkspaceId);
 }
 
 public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardInWorkspaceCommand, Result<Guid>>
@@ -24,15 +23,21 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IRealtimeChangeMapper<CreateBoardInWorkspaceCommand, Result<Guid>>? _realtime;
+    private readonly IIntegrationEventCollector? _events;
 
     public CreateBoardInWorkspaceCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IRealtimeChangeMapper<CreateBoardInWorkspaceCommand, Result<Guid>>? realtime = null,
+        IIntegrationEventCollector? events = null)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _realtime = realtime;
+        _events = events;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardInWorkspaceCommand request, CancellationToken ct)
@@ -57,6 +62,16 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         };
         _context.BoardFields.AddRange(defaultFields);
 
-        return Result<Guid>.Success(board.Id);
+        var response = Result<Guid>.Success(board.Id);
+        if (_realtime is not null && _events is not null)
+            _events.Add(_realtime.Map(request, response, board.Version));
+        return response;
     }
+}
+
+public sealed class CreateBoardInWorkspaceRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
+    : RealtimeChangeMapper<CreateBoardInWorkspaceCommand, Result<Guid>>(context, time)
+{
+    public override RealtimeResourceChangedV1 Map(CreateBoardInWorkspaceCommand request, Result<Guid> response, long streamVersion) =>
+        Create("workspace", "Workspace", request.WorkspaceId, "CreateBoardInWorkspace", response, streamVersion);
 }

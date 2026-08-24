@@ -7,7 +7,7 @@ public record AddMemberCommand(
     Guid WorkspaceId,
     Guid UserId,
     WorkspaceRole Role
-) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
 {
     public PermissionAction Action => PermissionAction.InviteMember;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

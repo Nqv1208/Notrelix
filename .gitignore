@@ -7,6 +7,7 @@
 # IDE / tool environment directories
 .cursor/
 .codex/
+.commandcode/
 .gemini/
 .opencode/
 .antigravitycli/

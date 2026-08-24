@@ -15,7 +15,7 @@ public record UserPendingInvitationDto(
     DateTime ExpiresAt
 );
 
-public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>, IGlobalRequest;
+public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IGlobalRequest;
 
 public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>
 {

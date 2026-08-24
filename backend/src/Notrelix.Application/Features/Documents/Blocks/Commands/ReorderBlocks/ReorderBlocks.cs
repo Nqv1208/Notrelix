@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Documents.Blocks.Commands.ReorderBlocks;
 public record ReorderBlocksCommand(
     Guid PageId,
     List<ReorderBlockItem> Items
-) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);

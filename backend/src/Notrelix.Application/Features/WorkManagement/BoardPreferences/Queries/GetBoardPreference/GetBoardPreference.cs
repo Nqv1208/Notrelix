@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardPreferences.Queries.GetBoardPreference;
 
 public record GetBoardPreferenceQuery(Guid BoardId, Guid ViewId)
-    : IQuery<Result<BoardPreferenceDto>>, IResourceScopedRequest, IRequirePermission
+    : IQuery<Result<BoardPreferenceDto>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageTree;
 
-public record GetPageTreeQuery(Guid WorkspaceId) : IQuery<Result<List<PageTreeItemDto>>>, IWorkspaceRequest, IRequirePermission
+public record GetPageTreeQuery(Guid WorkspaceId) : IQuery<Result<List<PageTreeItemDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);

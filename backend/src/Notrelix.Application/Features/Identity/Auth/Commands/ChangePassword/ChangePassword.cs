@@ -7,7 +7,7 @@ using Notrelix.Domain.Identity.Mfa;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 
-public record ChangePasswordCommand : ICommand<Result>, ITransactionalRequest, IGlobalRequest, IAuthenticatedRequest
+public record ChangePasswordCommand : ICommand<Result>, IWriteRequest, IGlobalRequest, IAuthenticatedRequest
 {
     public required string CurrentPassword { get; init; }
     public required string NewPassword { get; init; }

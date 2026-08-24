@@ -13,7 +13,7 @@ public sealed record CompleteStepUpMfaCommand
     : ICommand<Result<StepUpProofResult>>,
       IAuthenticatedRequest,
       IGlobalRequest,
-      ITransactionalRequest
+      IWriteRequest
 {
     public required StepUpPurpose Purpose { get; init; }
     public required string ChallengeToken { get; init; }

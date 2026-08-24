@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.Views.Commands.DeleteSave
 
 [IdempotencyOperation("work-management.views.delete-saved-filter.v1")]
 public record DeleteSavedFilterCommand(Guid FilterId, long ExpectedVersion)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);

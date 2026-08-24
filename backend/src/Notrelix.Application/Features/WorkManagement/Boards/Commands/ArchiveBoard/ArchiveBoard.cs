@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBo
 [IdempotencyOperation("work-management.boards.archive-board.v1")]
 public record ArchiveBoardCommand(Guid BoardId)
     : ICommand<Result>,
-      ITransactionalRequest,
+      IWriteRequest, IAuthenticatedRequest,
       IResourceScopedRequest,
       IRequirePermission,
       IIdempotentRequest

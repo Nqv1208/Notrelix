@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Queries.ListFormSubmissions;
 
-public record ListFormSubmissionsQuery(Guid FormId) : IQuery<Result<List<FormSubmissionDto>>>, IResourceScopedRequest, IRequirePermission
+public record ListFormSubmissionsQuery(Guid FormId) : IQuery<Result<List<FormSubmissionDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);

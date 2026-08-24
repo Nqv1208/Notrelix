@@ -2,7 +2,7 @@ using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Documents.Pages.Commands.SetPageDeadline;
 
-public record SetPageDeadlineCommand(Guid PageId, DateTime? Deadline) : ICommand<Result>, IResourceScopedRequest, IRequirePermission
+public record SetPageDeadlineCommand(Guid PageId, DateTime? Deadline) : ICommand<Result>, IAuthenticatedRequest, INoDataRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);

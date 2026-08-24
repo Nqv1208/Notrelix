@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.DeleteBoa
 [IdempotencyOperation("work-management.boards.delete-board.v1")]
 public record DeleteBoardCommand(Guid BoardId)
     : ICommand<Result>,
-      ITransactionalRequest,
+      IWriteRequest, IAuthenticatedRequest,
       IResourceScopedRequest,
       IRequirePermission,
       IIdempotentRequest

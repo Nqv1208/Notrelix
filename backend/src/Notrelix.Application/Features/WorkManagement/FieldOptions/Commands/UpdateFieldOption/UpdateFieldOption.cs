@@ -7,7 +7,7 @@ public record UpdateFieldOptionCommand(
     Guid FieldId,
     Guid OptionId,
     string Name,
-    string ColorHex) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+    string ColorHex) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
     public PermissionAction Action => PermissionAction.UpdateField;

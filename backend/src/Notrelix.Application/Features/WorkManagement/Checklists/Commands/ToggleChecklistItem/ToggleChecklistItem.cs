@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
 
 [IdempotencyOperation("work-management.checklists.toggle-checklist-item.v1")]
-public record ToggleChecklistItemCommand(Guid ChecklistItemId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record ToggleChecklistItemCommand(Guid ChecklistItemId) : ICommand<Result>, IAuthenticatedRequest, IWriteRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist-item"), ChecklistItemId);

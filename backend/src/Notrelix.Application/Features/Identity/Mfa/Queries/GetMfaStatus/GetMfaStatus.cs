@@ -7,7 +7,7 @@ using Notrelix.Domain.Identity.Mfa;
 namespace Notrelix.Application.Features.Identity.Mfa.Queries.GetMfaStatus;
 
 public sealed record GetMfaStatusQuery
-    : IQuery<Result<MfaStatusDto>>,
+    : IQuery<Result<MfaStatusDto>>, IReadRequest,
       IGlobalRequest,
       IAuthenticatedRequest;
 

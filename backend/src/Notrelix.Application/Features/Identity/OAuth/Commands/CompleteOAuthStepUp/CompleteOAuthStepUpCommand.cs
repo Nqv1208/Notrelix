@@ -17,7 +17,7 @@ public sealed record CompleteOAuthStepUpCommand
     : ICommand<Result<StepUpProofResult>>,
       IAnonymousRequest,
       IGlobalRequest,
-      ITransactionalRequest
+      IWriteRequest
 {
     public required OAuthProvider Provider { get; init; }
     public required string Code { get; init; }

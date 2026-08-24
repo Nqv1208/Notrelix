@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail;
 public sealed record UpdateEmailCommand(string Email)
     : ICommand<Result<UpdateEmailResultDto>>,
       IAuthenticatedRequest,
-      ITransactionalRequest,
+      IWriteRequest,
       IGlobalRequest;
 
 public sealed record UpdateEmailResultDto(

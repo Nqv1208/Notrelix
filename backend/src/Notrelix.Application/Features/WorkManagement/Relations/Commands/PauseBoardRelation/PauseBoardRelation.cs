@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.Relations.Commands.PauseB
 
 [IdempotencyOperation("work-management.relations.pause-board-relation.v1")]
 public record PauseBoardRelationCommand(Guid RelationId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-relation"), RelationId);

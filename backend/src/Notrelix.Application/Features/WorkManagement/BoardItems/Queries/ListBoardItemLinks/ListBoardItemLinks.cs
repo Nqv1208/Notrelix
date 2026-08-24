@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBo
 
 public record BoardItemLinkDto(Guid Id, Guid SourceItemId, Guid TargetItemId, Guid TargetBoardId, string? LinkType);
 
-public record ListBoardItemLinksQuery(Guid BoardItemId) : IQuery<Result<List<BoardItemLinkDto>>>, IResourceScopedRequest, IRequirePermission
+public record ListBoardItemLinksQuery(Guid BoardItemId) : IQuery<Result<List<BoardItemLinkDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
