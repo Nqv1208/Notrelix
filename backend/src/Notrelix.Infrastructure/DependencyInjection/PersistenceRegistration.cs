@@ -99,11 +99,9 @@ public static class PersistenceRegistration
         services.AddScoped<IAccountAccessEvaluator, AccountAccessEvaluator>();
         services.AddScoped<ITenantBootstrapStore, TenantBootstrapStore>();
         services.AddScoped<IAccessGrantProjectionService, AccessGrantProjectionService>();
-        services.AddScoped<IResourceScopeResolver, ResourceScopeResolver>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
-        services.AddScoped<IResourceReferenceResolver, ResourceReferenceResolver>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();

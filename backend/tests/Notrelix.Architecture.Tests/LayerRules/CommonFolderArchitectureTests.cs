@@ -25,7 +25,7 @@ public class CommonFolderArchitectureTests
     public void PipelineFolder_ShouldNotExist()
     {
         var pipelinePath = Path.Combine(CommonPath, "Pipeline");
-        Directory.Exists(pipelinePath).Should().BeFalse("Pipeline/ folder was deleted; TenantBootstrapBehavior moved to Behaviors/");
+        Directory.Exists(pipelinePath).Should().BeFalse("Pipeline/ folder was deleted; legacy behaviors replaced by the frozen Behaviors/ pipeline");
     }
 
     [Fact]
@@ -73,12 +73,12 @@ public class CommonFolderArchitectureTests
     }
 
     [Fact]
-    public void RealtimeTopic_ShouldBeInPostCommit()
+    public void RealtimeTopic_ShouldBeInRealtime()
     {
         var cqrsPath = Path.Combine(CommonPath, "Requests", "RealtimeTopic.cs");
-        var postCommitPath = Path.Combine(CommonPath, "PostCommit", "RealtimeTopic.cs");
-        File.Exists(cqrsPath).Should().BeFalse("RealtimeTopic moved from Requests/ to PostCommit/");
-        File.Exists(postCommitPath).Should().BeTrue("RealtimeTopic should exist in PostCommit/");
+        var realtimePath = Path.Combine(CommonPath, "Realtime", "RealtimeTopic.cs");
+        File.Exists(cqrsPath).Should().BeFalse("RealtimeTopic moved from Requests/ to Realtime/");
+        File.Exists(realtimePath).Should().BeTrue("RealtimeTopic should exist in Realtime/");
     }
 
     [Fact]
