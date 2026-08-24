@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Caching;
 using Notrelix.Application.Common.Auditing;
+using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Entitlements;
@@ -82,6 +83,11 @@ public sealed class ProductionGraphTests : IAsyncLifetime
 
         // Single request-authorization authority: the pure policy engine.
         services.GetRequiredService<IAccessPolicyEvaluator>().Should().BeOfType<AccessPolicyEngine>();
+
+        // Durable automation graph: evaluator + narrow network adapter are
+        // registered for the outbox/broker consumer path.
+        services.GetRequiredService<IN8nClient>().Should().NotBeNull();
+        services.GetRequiredService<N8nAutomationRuleEvaluator>().Should().NotBeNull();
     }
 
     [Fact]

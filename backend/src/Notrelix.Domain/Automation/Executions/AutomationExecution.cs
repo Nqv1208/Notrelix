@@ -130,6 +130,21 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new AutomationExecutionFailedDomainEvent(AccountId, WorkspaceId, Id, RuleId, error, finishedAt));
     }
 
+    /// <summary>
+    /// Broker redelivery path for a previously failed dispatch: returns a failed
+    /// execution to Queued so the same durable intent can be retried without
+    /// creating a new execution identity.
+    /// </summary>
+    public void RequeueForRedelivery(DateTimeOffset requeuedAt)
+    {
+        if (Status != AutomationExecutionStatus.Failed)
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotStartUnlessQueued, "Only failed executions can be re-queued.");
+        Status = AutomationExecutionStatus.Queued;
+        FinishedAt = null;
+        ApplyAuditUpdate(PrepareAuditUpdate(null, requeuedAt));
+        IncrementVersion();
+    }
+
     public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
     {
         if (Status != AutomationExecutionStatus.Queued && Status != AutomationExecutionStatus.Running)

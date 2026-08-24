@@ -40,5 +40,12 @@ public class AutomationExecutionConfiguration : IEntityTypeConfiguration<Automat
 
         builder.HasIndex(x => x.RuleId).HasDatabaseName("idx_automation_executions_rule_id");
         builder.HasIndex(x => x.Status).HasDatabaseName("idx_automation_executions_status");
+
+        // Duplicate-trigger identity (freeze file 03 §6): one execution per
+        // (rule, source trigger) pair for event-driven triggers.
+        builder.HasIndex(x => new { x.RuleId, x.TriggerId })
+            .IsUnique()
+            .HasDatabaseName("ux_automation_executions_rule_trigger")
+            .HasFilter("trigger_id IS NOT NULL");
     }
 }

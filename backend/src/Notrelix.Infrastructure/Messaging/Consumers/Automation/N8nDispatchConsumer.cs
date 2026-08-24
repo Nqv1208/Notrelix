@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Events.Automation;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Integrations;
@@ -16,15 +17,18 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
     private readonly IAutomationDbContext _context;
     private readonly IN8nClient _n8nClient;
     private readonly ILogger<N8nDispatchConsumer> _logger;
+    private readonly PipelineMetrics _metrics;
 
     public N8nDispatchConsumer(
         IAutomationDbContext context,
         IN8nClient n8nClient,
-        ILogger<N8nDispatchConsumer> logger)
+        ILogger<N8nDispatchConsumer> logger,
+        PipelineMetrics? metrics = null)
     {
         _context = context;
         _n8nClient = n8nClient;
         _logger = logger;
+        _metrics = metrics ?? new PipelineMetrics();
     }
 
     public async Task Consume(ConsumeContext<N8nDispatchRequestedV1> context)
@@ -38,6 +42,13 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
         {
             _logger.LogWarning("Skipping n8n dispatch because execution {ExecutionId} was not found", message.ExecutionId);
             return;
+        }
+
+        // Redelivery of a previously failed attempt re-opens the SAME execution —
+        // ExecutionId stays stable across retries.
+        if (execution.Status == AutomationExecutionStatus.Failed)
+        {
+            execution.RequeueForRedelivery(message.OccurredAt);
         }
 
         var rule = await _context.AutomationRules
@@ -61,6 +72,7 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
         // The ExecutionId is the stable external idempotency/correlation identity.
         var payload = BuildPayload(message);
 
+        var dispatchStopwatch = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             var result = await _n8nClient.TriggerWebhookAsync(webhookPath, payload, context.CancellationToken);
@@ -70,15 +82,25 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
                 execution.Start(message.OccurredAt);
                 execution.Succeed(DateTimeOffset.UtcNow);
                 execution.SetPayload(payload);
+                _metrics.N8nDispatchSucceeded.Add(1);
+                _metrics.N8nDispatchDuration.Record(dispatchStopwatch.Elapsed.TotalMilliseconds);
             }
             else
             {
                 FailExecution(execution, $"n8n returned HTTP {result.StatusCode}: {result.Error}");
+                _metrics.N8nDispatchFailed.Add(1);
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             FailExecution(execution, ex.Message);
+            _metrics.N8nDispatchFailed.Add(1);
+            _metrics.N8nDispatchRetries.Add(1);
+
+            // Persist the failure state, then rethrow so the broker's retry
+            // contract redelivers this durable intent (at-least-once).
+            await _context.SaveChangesAsync(context.CancellationToken);
+            throw;
         }
 
         await _context.SaveChangesAsync(context.CancellationToken);
