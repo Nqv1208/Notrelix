@@ -9,7 +9,6 @@ using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Services;
 using Notrelix.Application.Common.Requests.Execution;
-using Notrelix.Application.Common.Realtime;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

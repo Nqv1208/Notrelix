@@ -43,70 +43,70 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
         switch (descriptor.Scope)
         {
             case ApplicationScopeKind.Workspace:
-            {
-                var workspaceRequest = (IWorkspaceRequest)request;
-                if (workspaceRequest.WorkspaceId == Guid.Empty)
                 {
-                    throw new ForbiddenException("Invalid workspace context.");
+                    var workspaceRequest = (IWorkspaceRequest)request;
+                    if (workspaceRequest.WorkspaceId == Guid.Empty)
+                    {
+                        throw new ForbiddenException("Invalid workspace context.");
+                    }
+
+                    var actorId = RequireUser(userId, "Workspace-scoped request requires authenticated user.");
+                    EnforceApiTokenWorkspaceBinding(workspaceRequest.WorkspaceId);
+
+                    // Resolve the tenant binding from the workspace itself and
+                    // enforce membership/workspace-state gates exactly as the
+                    // legacy bootstrap stage did (characterization parity).
+                    var snapshot = await _tenantBootstrapStore.ResolveWorkspaceAccessAsync(
+                        workspaceRequest.WorkspaceId, actorId, cancellationToken);
+
+                    if (_credential.Kind == CredentialKind.ApiToken
+                        && snapshot.AccountId != _credential.BoundAccountId)
+                    {
+                        throw new ForbiddenException("API token account binding mismatch.");
+                    }
+
+                    if (!snapshot.CanAccess)
+                    {
+                        throw new ForbiddenException("Access to workspace denied.");
+                    }
+
+                    accountId = snapshot.AccountId;
+                    workspaceId = workspaceRequest.WorkspaceId;
+                    _tenant.SetWorkspace(accountId.Value, workspaceId.Value, actorId);
+                    break;
                 }
-
-                var actorId = RequireUser(userId, "Workspace-scoped request requires authenticated user.");
-                EnforceApiTokenWorkspaceBinding(workspaceRequest.WorkspaceId);
-
-                // Resolve the tenant binding from the workspace itself and
-                // enforce membership/workspace-state gates exactly as the
-                // legacy bootstrap stage did (characterization parity).
-                var snapshot = await _tenantBootstrapStore.ResolveWorkspaceAccessAsync(
-                    workspaceRequest.WorkspaceId, actorId, cancellationToken);
-
-                if (_credential.Kind == CredentialKind.ApiToken
-                    && snapshot.AccountId != _credential.BoundAccountId)
-                {
-                    throw new ForbiddenException("API token account binding mismatch.");
-                }
-
-                if (!snapshot.CanAccess)
-                {
-                    throw new ForbiddenException("Access to workspace denied.");
-                }
-
-                accountId = snapshot.AccountId;
-                workspaceId = workspaceRequest.WorkspaceId;
-                _tenant.SetWorkspace(accountId.Value, workspaceId.Value, actorId);
-                break;
-            }
             case ApplicationScopeKind.Account:
-            {
-                if (_credential.Kind == CredentialKind.ApiToken)
                 {
-                    throw new ForbiddenException("API tokens are restricted to their bound workspace.");
-                }
+                    if (_credential.Kind == CredentialKind.ApiToken)
+                    {
+                        throw new ForbiddenException("API tokens are restricted to their bound workspace.");
+                    }
 
-                var actorId = RequireUser(userId, "Account-scoped request requires authenticated user.");
-                if (!accountId.HasValue)
-                {
-                    throw new AccountSelectionRequiredException(
-                        $"{typeof(TRequest).Name} is account-scoped but no AccountId is selected.");
-                }
+                    var actorId = RequireUser(userId, "Account-scoped request requires authenticated user.");
+                    if (!accountId.HasValue)
+                    {
+                        throw new AccountSelectionRequiredException(
+                            $"{typeof(TRequest).Name} is account-scoped but no AccountId is selected.");
+                    }
 
-                _tenant.SetAccount(accountId.Value, actorId);
-                break;
-            }
+                    _tenant.SetAccount(accountId.Value, actorId);
+                    break;
+                }
             case ApplicationScopeKind.Resource:
-            {
-                var actorId = RequireUser(userId, "Resource-scoped request requires authenticated user.");
-                resource = ((IResourceScopedRequest)request).Resource;
-                var location = await _resourceLocator.LocateAsync(resource, actorId, cancellationToken);
-                if (location is null)
                 {
-                    throw new AppNotFoundException(resource.Kind.ToString(), resource.ResourceId);
-                }
+                    var actorId = RequireUser(userId, "Resource-scoped request requires authenticated user.");
+                    resource = ((IResourceScopedRequest)request).Resource;
+                    var location = await _resourceLocator.LocateAsync(resource, actorId, cancellationToken);
+                    if (location is null)
+                    {
+                        throw new AppNotFoundException(resource.Kind.ToString(), resource.ResourceId);
+                    }
 
-                accountId = location.AccountId;
-                workspaceId = location.WorkspaceId;
-                _tenant.SetWorkspace(location.AccountId, location.WorkspaceId, actorId);
-                break;
-            }
+                    accountId = location.AccountId;
+                    workspaceId = location.WorkspaceId;
+                    _tenant.SetWorkspace(location.AccountId, location.WorkspaceId, actorId);
+                    break;
+                }
             default:
                 if (_credential.Kind == CredentialKind.ApiToken
                     && descriptor.Principal == ApplicationPrincipalKind.Authenticated)
