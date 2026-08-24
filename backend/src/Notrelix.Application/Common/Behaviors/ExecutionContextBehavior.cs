@@ -35,7 +35,7 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        using var stage = PipelineActivitySource.Instance.StartActivity("context.resolve");
+        using var stage = PipelineActivitySource.Instance.StartActivity("execution_context.resolve");
 
         var descriptor = _descriptors.GetRequired(typeof(TRequest));
         var userId = _executionContext.UserId ?? _tenant.UserId;

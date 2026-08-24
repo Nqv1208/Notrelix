@@ -10,17 +10,20 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
     private readonly ILogger<ApplicationTracingBehavior<TRequest, TResponse>> _logger;
     private readonly IExecutionContextReader _executionContext;
     private readonly IHostEnvironment _hostEnvironment;
+    private readonly PipelineMetrics? _metrics;
 
     public ApplicationTracingBehavior(
         IRequestDescriptorRegistry descriptors,
         ILogger<ApplicationTracingBehavior<TRequest, TResponse>> logger,
         IExecutionContextReader executionContext,
-        IHostEnvironment hostEnvironment)
+        IHostEnvironment hostEnvironment,
+        PipelineMetrics? metrics = null)
     {
         _descriptors = descriptors;
         _logger = logger;
         _executionContext = executionContext;
         _hostEnvironment = hostEnvironment;
+        _metrics = metrics ?? new PipelineMetrics();
     }
 
     public async Task<TResponse> Handle(
@@ -33,7 +36,7 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
         var workspaceId = (request as IWorkspaceRequest)?.WorkspaceId.ToString();
 
         using var activity = PipelineActivitySource.Instance.StartActivity(
-            $"App.Handler.{requestName}",
+            "pipeline.request",
             System.Diagnostics.ActivityKind.Internal)
             ?.AddTag("app.request", requestName)
             ?.AddTag("app.correlation_id", _executionContext.CorrelationId)
@@ -65,7 +68,7 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
         try
         {
             TResponse response;
-            using (PipelineActivitySource.Instance.StartActivity("handler"))
+            using (PipelineActivitySource.Instance.StartActivity("handler.execute"))
             {
                 response = await next();
             }
@@ -79,6 +82,8 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
             activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
             activity?.AddTag("pipeline.outcome", "success");
             activity?.AddTag("app.elapsed_ms", stopwatch.ElapsedMilliseconds);
+            _metrics.Requests.Add(1);
+            _metrics.RequestDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
 
             return response;
         }
@@ -92,11 +97,26 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
                 stopwatch.ElapsedMilliseconds);
 
             activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
-            activity?.AddTag("pipeline.outcome", $"failure:{ex.GetType().Name}");
+            activity?.AddTag("pipeline.outcome", $"failure:{ExceptionCategory(ex)}");
+            activity?.AddTag("error.category", ExceptionCategory(ex));
             activity?.AddTag("app.elapsed_ms", stopwatch.ElapsedMilliseconds);
-            activity?.AddTag("app.error", ex.Message);
+            _metrics.PipelineFailures.Add(1, new KeyValuePair<string, object?>("error.category", ExceptionCategory(ex)));
 
             throw;
         }
     }
+
+    private static string ExceptionCategory(Exception ex) => ex switch
+    {
+        Notrelix.Application.Common.Exceptions.ForbiddenException => "forbidden",
+        Notrelix.Application.Common.Exceptions.UnauthorizedException => "unauthorized",
+        Notrelix.Application.Common.Exceptions.NotFoundException => "not_found",
+        Notrelix.Application.Common.Exceptions.ValidationException => "validation",
+        Notrelix.Application.Common.Exceptions.PreconditionFailedException => "precondition_failed",
+        Notrelix.Application.Common.Exceptions.ConflictException => "conflict",
+        Notrelix.Domain.Common.Exceptions.BusinessRuleException => "business_rule",
+        Notrelix.Application.Common.Exceptions.SecurityMisconfigurationException => "security_misconfiguration",
+        OperationCanceledException => "cancelled",
+        _ => "internal_error",
+    };
 }

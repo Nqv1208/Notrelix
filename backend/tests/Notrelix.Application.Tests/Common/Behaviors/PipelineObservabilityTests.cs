@@ -33,7 +33,7 @@ public sealed class PipelineObservabilityTests
 
         await behavior.Handle(new ObservabilityTaggedRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
 
-        var root = recorder.Started.Single(activity => activity.OperationName == "App.Handler.ObservabilityTaggedRequest");
+        var root = recorder.Started.Single(activity => activity.OperationName == "pipeline.request");
         root.GetTagItem("request.name").Should().Be(nameof(ObservabilityTaggedRequest));
         root.GetTagItem("request.kind").Should().Be(nameof(ApplicationRequestKind.Command));
         root.GetTagItem("principal.kind").Should().Be(nameof(ApplicationPrincipalKind.Authenticated));
@@ -52,7 +52,7 @@ public sealed class PipelineObservabilityTests
         await behavior.Handle(
             new ObservabilityTaggedRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
 
-        recorder.Names.Should().ContainInOrder("App.Handler.ObservabilityTaggedRequest", "handler");
+        recorder.Names.Should().ContainInOrder("pipeline.request", "handler.execute");
     }
 
     [Fact]
@@ -68,8 +68,8 @@ public sealed class PipelineObservabilityTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
 
-        var root = recorder.Started.Single(activity => activity.OperationName == "App.Handler.ObservabilityTaggedRequest");
-        root.GetTagItem("pipeline.outcome").Should().Be("failure:InvalidOperationException");
+        var root = recorder.Started.Single(activity => activity.OperationName == "pipeline.request");
+        root.GetTagItem("pipeline.outcome").Should().Be("failure:internal_error");
     }
 
     [Fact]
@@ -86,28 +86,36 @@ public sealed class PipelineObservabilityTests
 
         await behavior.Handle(new ObservabilityVerifiedRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
 
-        recorder.Names.Should().Contain("access.facts");
-        recorder.Names.Should().Contain("access.evaluate");
+        recorder.Names.Should().Contain("access_facts.query");
+        recorder.Names.Should().Contain("policy.evaluate");
     }
 
     [Fact]
-    public async Task Data_session_behavior_emits_data_session_stage()
+    public async Task Data_session_behavior_DelegatesSpanOwnership_ToDataSession()
     {
-        using var recorder = new ActivityRecorder();
-        var session = new Mock<IRequestDataSession>();
-        session.Setup(candidate => candidate.ExecuteAsync(
-                It.IsAny<RequestDataSessionOptions>(),
-                It.IsAny<Func<CancellationToken, Task<string>>>(),
-                It.IsAny<CancellationToken>()))
-            .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
-                (_, action, cancellationToken) => action(cancellationToken));
+        // Canonical ownership: `data_session.*` spans are emitted by the
+        // Infrastructure IRequestDataSession, not by the behavior wrapper.
+        var recorder = new ActivityRecorder();
+        var descriptors = new Mock<IRequestDescriptorRegistry>();
+        descriptors.Setup(registry => registry.GetRequired(It.IsAny<Type>()))
+            .Returns(RequestDescriptorValidator.Create(typeof(ObservabilityWriteRequest)));
+        var executionContext = new Mock<IExecutionContextReader>();
+        executionContext.SetupGet(reader => reader.Snapshot)
+            .Returns(new ExecutionContextSnapshot(
+                Guid.NewGuid(), Guid.NewGuid(), null, null,
+                ApplicationPrincipalKind.Authenticated,
+                ApplicationScopeKind.Workspace,
+                Guid.NewGuid().ToString("D")));
 
-        var behavior = CreateDataSessionBehavior<ObservabilityWriteRequest>(session.Object);
-        var request = new ObservabilityWriteRequest(Guid.NewGuid());
+        var behavior = new DataSessionBehavior<ObservabilityWriteRequest, string>(
+            descriptors.Object,
+            executionContext.Object,
+            new Mock<IRequestDataSession>().Object);
 
-        await behavior.Handle(request, _ => Task.FromResult("ok"), CancellationToken.None);
+        await behavior.Handle(new ObservabilityWriteRequest(Guid.NewGuid()), _ => Task.FromResult("ok"), CancellationToken.None);
 
-        recorder.Names.Should().Contain("data_session");
+        recorder.Names.Should().NotContain(name => name.StartsWith("data_session", StringComparison.Ordinal),
+            "the behavior must not duplicate stage spans owned by the data session");
     }
 
     [Fact]
@@ -129,7 +137,7 @@ public sealed class PipelineObservabilityTests
 
         await behavior.Handle(new ObservabilityAnonymousRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
 
-        recorder.Names.Should().Contain("context.resolve");
+        recorder.Names.Should().Contain("execution_context.resolve");
     }
 
     [Fact]
@@ -166,7 +174,7 @@ public sealed class PipelineObservabilityTests
             _ => Task.FromResult("ok"),
             CancellationToken.None);
 
-        recorder.Names.Should().Contain("idempotency");
+        recorder.Names.Should().Contain("idempotency.acquire");
         recorder.Names.Should().Contain("idempotency.complete");
     }
 

@@ -13,17 +13,20 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
     private readonly IExecutionContextReader _executionContext;
     private readonly IAccessFactsProvider _factsProvider;
     private readonly IAccessPolicyEvaluator _policy;
+    private readonly PipelineMetrics _metrics;
 
     public AccessControlBehavior(
         IRequestDescriptorRegistry descriptors,
         IExecutionContextReader executionContext,
         IAccessFactsProvider factsProvider,
-        IAccessPolicyEvaluator policy)
+        IAccessPolicyEvaluator policy,
+        PipelineMetrics? metrics = null)
     {
         _descriptors = descriptors;
         _executionContext = executionContext;
         _factsProvider = factsProvider;
         _policy = policy;
+        _metrics = metrics ?? new PipelineMetrics();
     }
 
     public async Task<TResponse> Handle(
@@ -39,7 +42,7 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
             ? await ResolveFactsAsync(descriptor, context, request, cancellationToken)
             : NoFacts;
         AccessDecision decision;
-        using (PipelineActivitySource.Instance.StartActivity("access.evaluate"))
+        using (PipelineActivitySource.Instance.StartActivity("policy.evaluate"))
         {
             decision = _policy.Evaluate(descriptor, context, facts, request);
         }
@@ -71,7 +74,7 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
         TRequest request,
         CancellationToken cancellationToken)
     {
-        using var stage = PipelineActivitySource.Instance.StartActivity("access.facts");
+        using var stage = PipelineActivitySource.Instance.StartActivity("access_facts.query");
         return await _factsProvider.ResolveAsync(descriptor, context, request, cancellationToken);
     }
 }

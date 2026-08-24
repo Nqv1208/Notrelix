@@ -64,12 +64,12 @@ namespace Notrelix.Integration.Tests.Integration;
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
-public sealed class PipelineTelemetryE2ETests : IAsyncLifetime
+public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
 {
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
 
-    public PipelineTelemetryE2ETests(PostgresTestContainer db)
+    public PipelineTelemetryIntegrationTests(PostgresTestContainer db)
     {
         _db = db;
     }
@@ -100,7 +100,7 @@ public sealed class PipelineTelemetryE2ETests : IAsyncLifetime
         result.Succeeded.Should().BeTrue();
 
         var root = recorder.Started.Should()
-            .ContainSingle(a => a.OperationName == "App.Handler.CreateWorkspaceCommand").Subject;
+            .ContainSingle(a => a.OperationName == "pipeline.request").Subject;
 
         root.Tags.Should().Contain(tag => tag.Key == "app.request" && (string?)tag.Value == "CreateWorkspaceCommand");
         root.Tags.Should().Contain(tag => tag.Key == "request.kind" && (string?)tag.Value == "Command");
@@ -110,8 +110,8 @@ public sealed class PipelineTelemetryE2ETests : IAsyncLifetime
 
         foreach (var stage in new[]
                  {
-                     "request.contract", "context.resolve", "data_session",
-                     "access.facts", "access.evaluate", "handler",
+                     "request.contract", "execution_context.resolve", "data_session.open",
+                     "access_facts.query", "policy.evaluate", "handler.execute",
                  })
         {
             recorder.Started.Should().Contain(a => a.OperationName == stage,
@@ -120,8 +120,8 @@ public sealed class PipelineTelemetryE2ETests : IAsyncLifetime
                 $"every stage span must descend from the request root, but '{stage}' does not");
         }
 
-        recorder.Started.Should().ContainSingle(a => a.OperationName == "handler")
-            .Which.Parent!.OperationName.Should().Be("App.Handler.CreateWorkspaceCommand");
+        recorder.Started.Should().ContainSingle(a => a.OperationName == "handler.execute")
+            .Which.Parent!.OperationName.Should().Be("pipeline.request");
 
         await using var verify = _db.CreateContext(SystemTenant());
         (await verify.Workspaces.CountAsync(w => w.AccountId == accountId)).Should().Be(1,
@@ -143,11 +143,11 @@ public sealed class PipelineTelemetryE2ETests : IAsyncLifetime
         await act.Should().ThrowAsync<AppForbidden>();
 
         var root = recorder.Started.Should()
-            .ContainSingle(a => a.OperationName == "App.Handler.CreateWorkspaceCommand").Subject;
+            .ContainSingle(a => a.OperationName == "pipeline.request").Subject;
 
         root.Status.Should().Be(ActivityStatusCode.Error);
         root.Tags.Should().Contain(tag =>
-            tag.Key == "pipeline.outcome" && (string?)tag.Value == "failure:ForbiddenException");
+            tag.Key == "pipeline.outcome" && (string?)tag.Value == "failure:forbidden");
 
         await using var verify = _db.CreateContext(SystemTenant());
         (await verify.Workspaces.CountAsync(w => w.AccountId == accountId)).Should().Be(0,
@@ -191,12 +191,12 @@ public sealed class PipelineTelemetryE2ETests : IAsyncLifetime
             "the second send must replay the stored result instead of executing the handler again");
 
         var roots = recorder.Started
-            .Where(a => a.OperationName == "App.Handler.SetBoardItemDueDateCommand")
+            .Where(a => a.OperationName == "pipeline.request")
             .ToArray();
         roots.Should().HaveCount(2);
         roots.Should().OnlyContain(r => r.Status == ActivityStatusCode.Ok);
 
-        recorder.Started.Where(a => a.OperationName == "idempotency").Should().HaveCount(2)
+        recorder.Started.Where(a => a.OperationName == "idempotency.acquire").Should().HaveCount(2)
             .And.OnlyContain(a => RootAncestor(a) == roots[0] || RootAncestor(a) == roots[1]);
         recorder.Started.Where(a => a.OperationName == "idempotency.complete").Should().HaveCount(1,
             "only the first pass completes the idempotency record");
@@ -204,9 +204,9 @@ public sealed class PipelineTelemetryE2ETests : IAsyncLifetime
         // The 'handler' stage span wraps everything after tracing (including
         // idempotency), so it appears on both passes; the execution counter —
         // not the span — proves the business handler ran exactly once.
-        Descendants(roots[1], recorder).Should().Contain(a => a.OperationName == "handler",
+        Descendants(roots[1], recorder).Should().Contain(a => a.OperationName == "handler.execute",
             "the tracing stage span must wrap every pass");
-        Descendants(roots[0], recorder).Should().Contain(a => a.OperationName == "handler",
+        Descendants(roots[0], recorder).Should().Contain(a => a.OperationName == "handler.execute",
             "the first pass must execute the handler inside the pipeline");
     }
 

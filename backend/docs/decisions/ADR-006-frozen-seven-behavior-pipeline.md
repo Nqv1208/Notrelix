@@ -82,8 +82,8 @@ AccessControlBehavior
 IdempotencyBehavior
 ```
 
-plus the framework `ValidationBehavior` for FluentValidation. There is no
-eighth orchestration behavior.
+There is no eighth orchestration behavior: request validation executes
+inside `RequestContractBehavior`, never as a separate pipeline stage.
 
 Ownership boundaries of the frozen pipeline:
 
@@ -99,8 +99,10 @@ Idempotency outcome is atomic with the business mutation/outbox
 inside the DataSession transaction; same identity with a different
 request hash fails payload-mismatch in every prior state.
 
-Concurrency is enforced atomically at persistence through expected-version
-constraints carried by DataSession, not by a separate behavior.
+Concurrency is persistence-level optimistic concurrency inside the data
+session: every declared `IExpectedVersionRequest` constraint binds to exactly
+one tracked aggregate through an exhaustive infrastructure target map and
+fails closed as a server misconfiguration when binding is impossible.
 
 Durable async effects flow through the outbox/broker; there is no
 synchronous realtime/post-commit network work inside the pipeline and
@@ -119,16 +121,17 @@ survives as invariants of the frozen set; its component inventory does not.
 Cross-cutting concerns are added inside the seven owners or as declared
 ports — never as a new pipeline behavior without superseding this ADR.
 
-Telemetry is first-class: a root activity with descriptor/environment/
-outcome tags plus mandatory stage spans (request.contract, context.resolve,
-data_session, access.facts/evaluate, idempotency, handler) is part of the
-pipeline contract and proven by integration evidence.
+Telemetry is first-class: root activity `pipeline.request` plus canonical
+stage spans (`request.contract`, `execution_context.resolve`,
+`data_session.open|rls|save_changes|commit|rollback`, `access_facts.query`,
+`policy.evaluate`, `idempotency.acquire|replay|complete`, `handler.execute`)
+are part of the pipeline contract and proven by integration evidence.
 
 Response serialization telemetry belongs to transport observability and is
 explicitly out of scope for the application boundary.
 
-Architecture tests freeze registration: CommonFolderArchitectureTests and
-ApplicationArchitectureTests fail on any eighth orchestration behavior.
+`PipelineFreezeArchitectureTests` freezes registration and topology;
+any eighth orchestration behavior fails architecture CI.
 ```
 
 ## Frozen invariants

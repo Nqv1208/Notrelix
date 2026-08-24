@@ -15,6 +15,7 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     private readonly IIdempotencyExecutionContext _executionContext;
     private readonly IIdempotencyExecutionContextWriter _executionContextWriter;
     private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
+    private readonly PipelineMetrics _metrics;
 
     public IdempotencyBehavior(
         IIdempotencyStore idempotencyStore,
@@ -23,8 +24,10 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         IdempotencyPartitionFactory partitionFactory,
         IIdempotencyExecutionContext executionContext,
         IIdempotencyExecutionContextWriter executionContextWriter,
-        ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
+        ILogger<IdempotencyBehavior<TRequest, TResponse>> logger,
+        PipelineMetrics? metrics = null)
     {
+        _metrics = metrics ?? new PipelineMetrics();
         _idempotencyStore = idempotencyStore;
         _fingerprint = fingerprint;
         _replayPolicy = replayPolicy;
@@ -48,7 +51,7 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
         // 3. Begin.
         IdempotencyBeginResult beginResult;
-        using (PipelineActivitySource.Instance.StartActivity("idempotency"))
+        using (PipelineActivitySource.Instance.StartActivity("idempotency.acquire"))
         {
             beginResult = await _idempotencyStore.BeginAsync(identity, cancellationToken);
         }
@@ -58,8 +61,12 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         {
             case IdempotencyBeginStatus.Completed:
                 _logger.LogDebug("Idempotency replay for {Operation} scope={Scope}", identity.Operation, identity.Scope);
-                _executionContextWriter.MarkReplay();
-                return ReplayResult(beginResult);
+                using (PipelineActivitySource.Instance.StartActivity("idempotency.replay"))
+                {
+                    _metrics.IdempotencyReplays.Add(1);
+                    _executionContextWriter.MarkReplay();
+                    return ReplayResult(beginResult);
+                }
 
             case IdempotencyBeginStatus.PayloadMismatch:
                 throw new IdempotencyPayloadMismatchException(identity.Operation);

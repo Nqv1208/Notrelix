@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Requests.Execution;
 
 namespace Notrelix.Application.Common.Behaviors;
@@ -25,7 +24,6 @@ public sealed class DataSessionBehavior<TRequest, TResponse> : IPipelineBehavior
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        using var stage = PipelineActivitySource.Instance.StartActivity("data_session");
 
         var descriptor = _descriptors.GetRequired(typeof(TRequest));
         var access = descriptor.DataAccess switch

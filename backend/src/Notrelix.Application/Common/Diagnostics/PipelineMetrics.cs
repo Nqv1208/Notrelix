@@ -37,6 +37,25 @@ public sealed class PipelineMetrics : IDisposable
         N8nDispatchDuration = _meter.CreateHistogram<double>(
             "n8n_dispatch_duration",
             unit: "ms");
+
+        Requests = _meter.CreateCounter<long>(
+            "pipeline_requests",
+            unit: "{request}");
+        RequestDuration = _meter.CreateHistogram<double>(
+            "pipeline_request_duration",
+            unit: "ms");
+        StageDuration = _meter.CreateHistogram<double>(
+            "pipeline_stage_duration",
+            unit: "ms");
+        AccessFactsQueryDuration = _meter.CreateHistogram<double>(
+            "access_facts_query_duration",
+            unit: "ms");
+        IdempotencyReplays = _meter.CreateCounter<long>(
+            "idempotency_replays",
+            unit: "{replay}");
+        PipelineFailures = _meter.CreateCounter<long>(
+            "pipeline_failures",
+            unit: "{failure}");
     }
 
     public Counter<long> ExpectedVersionConflicts { get; }
@@ -50,6 +69,22 @@ public sealed class PipelineMetrics : IDisposable
     public Counter<long> N8nDispatchRetries { get; }
 
     public Histogram<double> N8nDispatchDuration { get; }
+
+    public Counter<long> Requests { get; }
+
+    public Histogram<double> RequestDuration { get; }
+
+    /// <summary>Label 'stage' uses the canonical fixed stage names only.</summary>
+    public Histogram<double> StageDuration { get; }
+
+    public Histogram<double> AccessFactsQueryDuration { get; }
+
+    public Counter<long> IdempotencyReplays { get; }
+
+    /// <summary>Label 'error.category' is a fixed code-bounded category.</summary>
+    public Counter<long> PipelineFailures { get; }
+
+    public static readonly KeyValuePair<string, object?>[] NoLabels = [];
 
     public void Dispose() => _meter.Dispose();
 }

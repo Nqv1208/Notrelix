@@ -83,3 +83,21 @@ a table above loses its covering unique/btree index
 per-request p95 attribution shows this statement above noise
 schema v3 changes tenant scoping of the probed tables
 ```
+
+
+## Large-tenant evidence (freeze file 04 §8)
+
+Captured from `PipelineFreezeEvidenceTests` on real PostgreSQL with a seeded
+representative tenant:
+
+```text
+workspace_members   : 10,000 rows (single workspace)
+permission_rules    : 10,000 rows (matching workspace)
+plan                : Result  (cost=45.85..45.87) (actual time=12.145..12.224)
+sequential scans    : none on workspace_members / permission_rules / resource_permissions
+dominant cost       : jsonb aggregation of matching permission rules (bounded by
+                      predicate selectivity, not table cardinality)
+```
+
+Conclusion: the one-command AccessFacts shape remains index-backed at 10k
+cardinality; no additional index is justified by this evidence.

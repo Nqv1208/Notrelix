@@ -41,7 +41,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
         if (options.Access == RequestDataAccess.None)
             return await action(cancellationToken);
 
-        using var sessionOpen = PipelineActivitySource.Instance.StartActivity("session.open");
+        using var sessionOpen = PipelineActivitySource.Instance.StartActivity("data_session.open");
         await using var transaction =
             await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -57,7 +57,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
             if (options.ApplyTenantScope)
             {
                 _logger.LogTrace("Applying RLS session context");
-                using var sessionRls = PipelineActivitySource.Instance.StartActivity("session.rls");
+                using var sessionRls = PipelineActivitySource.Instance.StartActivity("data_session.rls");
                 await _rls.ApplyAsync(cancellationToken);
             }
 
@@ -67,7 +67,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
             {
                 ApplyExpectedVersion(options.ExpectedVersion);
                 _logger.LogTrace("Saving changes");
-                using var saveChanges = PipelineActivitySource.Instance.StartActivity("save_changes");
+                using var saveChanges = PipelineActivitySource.Instance.StartActivity("data_session.save_changes");
                 try
                 {
                     await _dbContext.SaveChangesAsync(cancellationToken);
@@ -82,7 +82,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
                 }
             }
 
-            using var transactionCommit = PipelineActivitySource.Instance.StartActivity("transaction.commit");
+            using var transactionCommit = PipelineActivitySource.Instance.StartActivity("data_session.commit");
             await transaction.CommitAsync(cancellationToken);
             if (options.Access == RequestDataAccess.Transactional)
                 _outboxWakeSignal?.TrySignal();
