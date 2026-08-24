@@ -13,14 +13,12 @@ public record CreateBoardItemAttachmentCommand(Guid BoardItemId, string Filename
 public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoardItemAttachmentCommand, Result<AttachmentDto>>
 {
     private readonly ICollaborationDbContext _context;
-    private readonly IResourceReferenceResolver _resourceResolver;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateBoardItemAttachmentCommandHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public CreateBoardItemAttachmentCommandHandler(ICollaborationDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _resourceResolver = resourceResolver;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -30,8 +28,7 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
         if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
             return Result<AttachmentDto>.Failure("Attachment URL must be an absolute HTTP(S) URL.");
 
-        var workspaceId = await _resourceResolver.GetWorkspaceIdAsync(request.BoardItemId, ResourceTypes.BoardItem, ct)
-            ?? throw new NotFoundException("BoardItem", request.BoardItemId);
+        var workspaceId = _requestContext.RequireWorkspaceId();
 
         var now = _dateTimeProvider.UtcNow;
         var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), request.BoardItemId, workspaceId);

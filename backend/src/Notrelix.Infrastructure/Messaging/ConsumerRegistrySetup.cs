@@ -482,6 +482,16 @@ public static class ConsumerRegistrySetup
                 Description = "Evaluates item-assignment automation rules after commit",
                 Maturity = ConsumerMaturity.Implemented
             },
+            new ConsumerDefinition
+            {
+                ConsumerName = "N8nDispatchConsumer",
+                EventName = "automation.n8n-dispatch-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-automation-n8n-dispatch-v1",
+                BoundedContext = "Automation",
+                Description = "Dispatches durable automation executions to n8n",
+                Maturity = ConsumerMaturity.Implemented
+            },
 
             // Billing (stub)
             new ConsumerDefinition

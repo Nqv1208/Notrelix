@@ -14,11 +14,9 @@ public record GetWorkspacePagesQuery(Guid WorkspaceId) : IQuery<Result<List<Page
 public class GetWorkspacePagesQueryHandler : IRequestHandler<GetWorkspacePagesQuery, Result<List<PageDto>>>
 {
     private readonly IDocumentDbContext _context;
-    private readonly IResourceReferenceResolver _resourceResolver;
-    public GetWorkspacePagesQueryHandler(IDocumentDbContext context, IResourceReferenceResolver resourceResolver)
+    public GetWorkspacePagesQueryHandler(IDocumentDbContext context)
     {
         _context = context;
-        _resourceResolver = resourceResolver;
     }
 
     public async Task<Result<List<PageDto>>> Handle(GetWorkspacePagesQuery request, CancellationToken ct)

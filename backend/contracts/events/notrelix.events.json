@@ -186,6 +186,100 @@
       ]
     },
     {
+      "name": "automation.n8n-dispatch-requested",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Automation.N8nDispatchRequestedV1",
+      "producerContext": "Automation",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "carriesAccountId": false,
+        "carriesWorkspaceId": false
+      },
+      "serializedProperties": [
+        {
+          "name": "executionId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "ruleId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "accountIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "workspaceIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "N8nDispatchConsumer",
+          "context": "Automation",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
       "name": "board.archived",
       "version": 1,
       "clrType": "Notrelix.Application.Events.WorkManagement.BoardArchivedIntegrationEvent",

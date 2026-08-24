@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Common.PostCommit;
+namespace Notrelix.Application.Common.Realtime;
 
 public interface IRealtimePublisher
 {

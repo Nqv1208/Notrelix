@@ -1,7 +1,6 @@
 using System.Text.Json;
 using MassTransit;
 using Notrelix.Application.Common.Realtime;
-using Notrelix.Application.Common.PostCommit;
 using Notrelix.Infrastructure.Messaging.Consumers.Realtime;
 
 namespace Notrelix.Integration.Tests.Messaging;

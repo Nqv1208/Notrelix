@@ -13,19 +13,17 @@ public record GetBoardItemAttachmentsQuery(Guid BoardItemId) : IQuery<Result<Lis
 public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemAttachmentsQuery, Result<List<AttachmentDto>>>
 {
     private readonly ICollaborationDbContext _context;
-    private readonly IResourceReferenceResolver _resourceResolver;
     private readonly IActorLookupService _actorLookup;
-    public GetBoardItemAttachmentsQueryHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, IActorLookupService actorLookup)
+    public GetBoardItemAttachmentsQueryHandler(ICollaborationDbContext context, IActorLookupService actorLookup)
     {
         _context = context;
-        _resourceResolver = resourceResolver;
         _actorLookup = actorLookup;
     }
 
     public async Task<Result<List<AttachmentDto>>> Handle(GetBoardItemAttachmentsQuery request, CancellationToken ct)
     {
-        var boardItemExists = await _resourceResolver.ExistsAsync(request.BoardItemId, ResourceTypes.BoardItem, ct);
-        if (!boardItemExists) throw new NotFoundException("BoardItem", request.BoardItemId);
+        // Resource existence and tenant ownership are established by
+        // ExecutionContextBehavior before this handler runs.
 
         var attachments = await _context.Attachments.AsNoTracking()
             .Where(attachment => attachment.Target.Kind == ResourceKind.Create("work-management.board-item") && attachment.Target.ResourceId == request.BoardItemId)

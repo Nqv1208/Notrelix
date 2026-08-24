@@ -16,18 +16,18 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
-    private readonly IResourceReferenceResolver _resourceResolver;
+    private readonly IResourceLocator _resourceLocator;
 
     public UpdateBoardItemFieldValuesCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider timeProvider,
-        IResourceReferenceResolver resourceResolver)
+        IResourceLocator resourceLocator)
     {
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
-        _resourceResolver = resourceResolver;
+        _resourceLocator = resourceLocator;
     }
 
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
@@ -126,12 +126,15 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
 
     private async Task EnsurePageCanBeLinkedAsync(Guid pageId, Guid boardWorkspaceId, CancellationToken ct)
     {
-        var pageWorkspaceId = await _resourceResolver.GetWorkspaceIdAsync(pageId, ResourceTypes.Page, ct);
+        var page = await _resourceLocator.LocateAsync(
+            ResourceRef.Create(ResourceKind.Create("documents.page"), pageId),
+            _requestContext.UserId,
+            ct);
 
-        if (!pageWorkspaceId.HasValue)
+        if (page is null)
             throw new NotFoundException(nameof(Page), pageId);
 
-        if (pageWorkspaceId.Value != boardWorkspaceId)
+        if (page.WorkspaceId != boardWorkspaceId)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
                 "CardPageSameWorkspace",
                 "BoardItem can only be linked to a page in the same workspace.");

@@ -6,13 +6,13 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;
 public sealed class BoardItemMemberAssignedForAutomationConsumer
     : IConsumer<BoardItemMemberAssignedForAutomationIntegrationEvent>
 {
-    private readonly CheckN8nAutomationPostCommitAction _automation;
+    private readonly N8nAutomationRuleEvaluator _evaluator;
 
-    public BoardItemMemberAssignedForAutomationConsumer(CheckN8nAutomationPostCommitAction automation)
+    public BoardItemMemberAssignedForAutomationConsumer(N8nAutomationRuleEvaluator evaluator)
     {
-        _automation = automation;
+        _evaluator = evaluator;
     }
 
     public Task Consume(ConsumeContext<BoardItemMemberAssignedForAutomationIntegrationEvent> context) =>
-        _automation.ExecuteAsync(context.Message, context.CancellationToken);
+        _evaluator.ExecuteAsync(context.Message, context.CancellationToken);
 }
