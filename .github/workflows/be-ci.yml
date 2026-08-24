@@ -220,6 +220,9 @@ jobs:
           Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests
           Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests
           Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests
+          Notrelix.Architecture.Tests.Pipeline.PipelineFreezeArchitectureTests
+          Notrelix.Architecture.Tests.Pipeline.ExpectedVersionArchitectureTests
+          Notrelix.Architecture.Tests.Performance.PipelinePerformanceContractTests
 
   core-tests:
     name: Domain, Application and Infrastructure tests
@@ -566,6 +569,9 @@ jobs:
           Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests
           Notrelix.Integration.Tests.Data.OutboxDispatchContractTests
           Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests
+          Notrelix.Integration.Tests.Data.ExpectedVersionConcurrencyIntegrationTests
+          Notrelix.Integration.Tests.Automation.AutomationN8nDurabilityIntegrationTests
+          Notrelix.Integration.Tests.Integration.PipelineTelemetryIntegrationTests
           Notrelix.Integration.Tests.Data.OutboxAtomicityTests
           Notrelix.Integration.Tests.Data.MigrationSmokeTests
           Notrelix.Integration.Tests.Integration.ProductionCompositionTests
