@@ -290,17 +290,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 return mock.Object;
             });
 
-            // Mock IAuthorizationDecisionStore (used by AuthorizationBehavior)
-            services.RemoveAll<IAuthorizationDecisionStore>();
-            services.AddScoped<IAuthorizationDecisionStore>(_ =>
-            {
-                var mock = new Mock<IAuthorizationDecisionStore>();
-                mock.Setup(x => x.EvaluateAsync(
-                        It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new PermissionDecision(true, null));
-                return mock.Object;
-            });
-
             services.AddScoped<ApplicationDbContext>(sp =>
             {
                 var options = sp.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
@@ -336,31 +325,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // Remove background dispatchers that use FromSqlRaw (PostgreSQL-specific)
             // since the test host uses In-Memory provider.
             services.RemoveAll<IHostedService>();
-
-            // Remove VerifiedEmailBehavior — queries IIdentityUserLookupService
-            // against InMemory DB where no test user exists, causing 401.
-            var verifiedEmailDescriptor = services.FirstOrDefault(sd =>
-                !sd.IsKeyedService &&
-                sd.ServiceType.IsGenericType &&
-                sd.ServiceType.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>) &&
-                sd.ImplementationType is { IsGenericType: true } &&
-                sd.ImplementationType.GetGenericTypeDefinition() == typeof(VerifiedEmailBehavior<,>));
-            if (verifiedEmailDescriptor is not null)
-                services.Remove(verifiedEmailDescriptor);
-
-            // Pipeline behaviors require IPermissionEvaluator.
-            services.RemoveAll<IPermissionEvaluator>();
-            services.AddScoped<IPermissionEvaluator>(_ =>
-            {
-                var mock = new Mock<IPermissionEvaluator>();
-
-                mock.Setup(x => x.EvaluateAsync(
-                        It.IsAny<PermissionContext>(),
-                        It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new PermissionDecision(true));
-
-                return mock.Object;
-            });
 
             // Pipeline behavior dependencies.
             services.RemoveAll<IIdempotencyStore>();

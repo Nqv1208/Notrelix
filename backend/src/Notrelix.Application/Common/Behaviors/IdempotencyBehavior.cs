@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Notrelix.Application.Common.Diagnostics;
 
 namespace Notrelix.Application.Common.Behaviors;
 
@@ -46,7 +47,11 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         var identity = BuildIdentity(idempotentRequest);
 
         // 3. Begin.
-        var beginResult = await _idempotencyStore.BeginAsync(identity, cancellationToken);
+        IdempotencyBeginResult beginResult;
+        using (PipelineActivitySource.Instance.StartActivity("idempotency"))
+        {
+            beginResult = await _idempotencyStore.BeginAsync(identity, cancellationToken);
+        }
 
         // 4. Replay/mismatch handling.
         switch (beginResult.Status)
@@ -79,11 +84,14 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
         // 8. Complete. The store owns the expiry calculation.
         var resultContract = identity.Operation;
-        await _idempotencyStore.CompleteAsync(
-            identity,
-            serialized,
-            resultContract,
-            cancellationToken);
+        using (PipelineActivitySource.Instance.StartActivity("idempotency.complete"))
+        {
+            await _idempotencyStore.CompleteAsync(
+                identity,
+                serialized,
+                resultContract,
+                cancellationToken);
+        }
 
         // 9. Return.
         return response;

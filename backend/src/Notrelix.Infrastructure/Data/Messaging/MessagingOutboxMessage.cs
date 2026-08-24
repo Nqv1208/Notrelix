@@ -22,6 +22,7 @@ public sealed class MessagingOutboxMessage
     public string? AggregateType { get; private set; }
     public Guid? AggregateId { get; private set; }
     public Guid? WorkspaceId { get; private set; }
+    public Guid? AccountId { get; private set; }
     public Guid? ActorUserId { get; private set; }
     public string? CorrelationId { get; private set; }
     public string? CausationId { get; private set; }
@@ -62,6 +63,7 @@ public sealed class MessagingOutboxMessage
         string? aggregateType,
         Guid? aggregateId,
         Guid? workspaceId,
+        Guid? accountId,
         Guid? actorUserId,
         string? correlationId,
         string? causationId,
@@ -84,6 +86,7 @@ public sealed class MessagingOutboxMessage
         AggregateType = aggregateType;
         AggregateId = aggregateId;
         WorkspaceId = workspaceId;
+        AccountId = accountId;
         ActorUserId = actorUserId;
         CorrelationId = correlationId;
         CausationId = causationId;
@@ -157,6 +160,7 @@ public sealed class MessagingOutboxMessage
             aggregateType: null,
             aggregateId: null,
             workspaceId: integrationEvent.WorkspaceId,
+            accountId: integrationEvent.AccountId,
             actorUserId: integrationEvent.ActorUserId,
             correlationId: integrationEvent.CorrelationId.ToString(),
             causationId: integrationEvent.CausationId?.ToString(),
@@ -186,6 +190,7 @@ public sealed class MessagingOutboxMessage
             aggregateType: OutboxConstants.AggregateTypes.User,
             aggregateId: integrationEvent.ActorUserId,
             workspaceId: integrationEvent.WorkspaceId,
+            accountId: integrationEvent.AccountId,
             actorUserId: integrationEvent.ActorUserId,
             correlationId: integrationEvent.CorrelationId.ToString(),
             causationId: integrationEvent.CausationId?.ToString(),

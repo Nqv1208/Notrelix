@@ -59,17 +59,17 @@ public class IdempotencyEndpointContractTests : IClassFixture<NotrelixApiFactory
     /// </summary>
     private static void MockResourceScope(IServiceCollection services)
     {
-        services.RemoveAll<IResourceScopeResolver>();
-        services.AddScoped<IResourceScopeResolver>(_ =>
+        services.RemoveAll<IResourceLocator>();
+        services.AddScoped<IResourceLocator>(_ =>
         {
-            var mock = new Moq.Mock<IResourceScopeResolver>();
-            mock.Setup(x => x.ResolveAsync(
+            var mock = new Moq.Mock<IResourceLocator>();
+            mock.Setup(x => x.LocateAsync(
                     Moq.It.IsAny<ResourceRef>(), Moq.It.IsAny<Guid>(), Moq.It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ResourceScopeSnapshot(
-                    Guid.Parse("A0000000-0000-0000-0000-000000000001"),
-                    Guid.Parse("A0000000-0000-0000-0000-000000000001"),
+                .ReturnsAsync(new ResourceLocation(
                     ResourceKind.Create("work-management.checklist"),
-                    Guid.Parse("00000000-0000-0000-0000-000000000001")));
+                    Guid.Parse("00000000-0000-0000-0000-000000000001"),
+                    Guid.Parse("A0000000-0000-0000-0000-000000000001"),
+                    Guid.Parse("A0000000-0000-0000-0000-000000000001")));
             return mock.Object;
         });
     }

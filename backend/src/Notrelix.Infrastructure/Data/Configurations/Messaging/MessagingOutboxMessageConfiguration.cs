@@ -14,6 +14,7 @@ public sealed class MessagingOutboxMessageConfiguration : IEntityTypeConfigurati
         builder.HasIndex(x => x.EventId).IsUnique();
 
         builder.Property(x => x.SourceEventId);
+        builder.Property(x => x.AccountId);
         builder.Property(x => x.SourceContext).IsRequired().HasMaxLength(80);
         builder.Property(x => x.MessageName).IsRequired().HasMaxLength(240);
         builder.Property(x => x.SchemaVersion).IsRequired().HasDefaultValue(1);

@@ -1422,6 +1422,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     aggregate_type = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
                     aggregate_id = table.Column<Guid>(type: "uuid", nullable: true),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     actor_user_id = table.Column<Guid>(type: "uuid", nullable: true),
                     correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     causation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),

@@ -55,6 +55,7 @@ public sealed class OutboxClaimReclaimTests : IAsyncLifetime
             aggregateType: null,
             aggregateId: null,
             workspaceId: null,
+            accountId: null,
             actorUserId: null,
             correlationId: Guid.NewGuid().ToString(),
             causationId: null,

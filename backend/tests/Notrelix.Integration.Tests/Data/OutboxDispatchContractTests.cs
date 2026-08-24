@@ -58,6 +58,7 @@ public sealed class OutboxDispatchContractTests : IAsyncLifetime
             aggregateType: null,
             aggregateId: null,
             workspaceId: null,
+            accountId: null,
             actorUserId: ActorUserId,
             correlationId: Guid.NewGuid().ToString(),
             causationId: null,
