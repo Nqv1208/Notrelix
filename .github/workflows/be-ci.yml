@@ -570,8 +570,7 @@ jobs:
           Notrelix.Integration.Tests.Data.MigrationSmokeTests
           Notrelix.Integration.Tests.Integration.ProductionCompositionTests
           Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests
-          Notrelix.Integration.Tests.Caching.RedisCacheBehaviorTests
-          Notrelix.Integration.Tests.Integration.Realtime.RealtimeDispatchContractTests
+          Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests
 
   docker-build:
     name: Docker build
