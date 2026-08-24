@@ -8,7 +8,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Idempotency;
@@ -26,7 +25,6 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspa
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
@@ -92,7 +90,7 @@ public sealed class PipelineTelemetryE2ETests : IAsyncLifetime
         using var recorder = new ActivityRecorder();
         using var provider = CreateAccountScopedProvider(accountId, userId);
 
-       Notrelix.Application.Common.Models.Result<Guid> result;
+        Notrelix.Application.Common.Models.Result<Guid> result;
         using (var scope = provider.CreateScope())
         {
             result = await scope.ServiceProvider.GetRequiredService<ISender>()
