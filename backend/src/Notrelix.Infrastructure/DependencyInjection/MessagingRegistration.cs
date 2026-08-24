@@ -22,7 +22,7 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, CompositeIntegrationEventMapper>();
 
         // Integration event catalog (immutable, throws on unknown types).
-        services.AddSingleton<IIntegrationEventCatalog, IntegrationEventCatalog>();
+        services.AddSingleton<IIntegrationEventCatalog>(_ => IntegrationEventCatalog.FromAppDomain());
 
         // Message deduplication store (Application abstraction -> Infrastructure implementation).
         services.AddScoped<IMessageDeduplicationStore, MessageDeduplicationStore>();
