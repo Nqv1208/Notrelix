@@ -411,6 +411,37 @@ public class IdempotencyStoreIntegrationTests
     }
 
     [Fact]
+    public async Task IDEM_DB_017_ActiveStarted_WithDifferentPayload_IsPayloadMismatch()
+    {
+        // Same scope + operation + key but a different request hash must fail as
+        // PayloadMismatch even while the prior attempt is still actively Started —
+        // the handler must not run for a conflicting payload (correctness invariant).
+        var identity = CreateIdentity(
+            keyHash: Guid.NewGuid().ToString("N"),
+            requestHash: Guid.NewGuid().ToString("N"));
+
+        await using (var seedContext = _db.CreateContext())
+        {
+            var now = DateTimeOffset.UtcNow;
+            var record = IdempotencyRecord.CreateStarted(
+                identity.Scope, identity.Operation, identity.KeyHash,
+                requestHash: Guid.NewGuid().ToString("N"),
+                now, now.AddMinutes(5));
+            seedContext.Set<IdempotencyRecord>().Add(record);
+            await seedContext.SaveChangesAsync();
+        }
+
+        await using var context = _db.CreateContext();
+        await using var tx = await context.Database.BeginTransactionAsync();
+        var store = CreateStore(context);
+
+        var begin = await store.BeginAsync(identity, CancellationToken.None);
+
+        begin.Status.Should().Be(IdempotencyBeginStatus.PayloadMismatch,
+            "an active Started row with a different request hash is a conflict, not incomplete state");
+    }
+
+    [Fact]
     public async Task IDEM_DB_014_ExpiredStarted_IsReplacedAndStarts()
     {
         // Spec 3.8: expired Started rows may be replaced atomically.

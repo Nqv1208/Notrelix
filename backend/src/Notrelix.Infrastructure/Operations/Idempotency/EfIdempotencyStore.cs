@@ -96,8 +96,15 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
                     existing.Value.ResultContract);
             }
 
-            // Active committed Started row: corrupt/legacy state. Never replay it
-            // as Completed — surface the typed incomplete-state failure instead.
+            // Active committed Started row: same identity with a different request
+            // payload is a conflict and must fail as payload mismatch regardless of
+            // the prior attempt still being in flight. Matching payloads surface the
+            // typed incomplete-state failure — never replay Started as Completed.
+            if (existing.Value.RequestHash != identity.RequestHash)
+            {
+                return new IdempotencyBeginResult(IdempotencyBeginStatus.PayloadMismatch, null, null);
+            }
+
             throw new IdempotencyIncompleteStateException(identity.Operation);
         }
 
