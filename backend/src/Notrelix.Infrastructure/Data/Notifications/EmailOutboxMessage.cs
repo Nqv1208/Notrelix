@@ -182,7 +182,10 @@ public sealed class EmailOutboxMessage
 
     public void MarkDeadLetter(DateTimeOffset now)
     {
-        Status = "DeadLetter";
+        // Terminal dead-letter state: Status stays 'Failed' with an exhausted
+        // retry budget (retry_count >= max_retries) — no separate status exists.
+        Status = "Failed";
+        RetryCount = Math.Max(RetryCount, MaxRetries);
         UpdatedAt = now;
         ClearSensitivePayload(now);
     }

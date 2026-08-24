@@ -109,7 +109,11 @@ public sealed class MessagingOutboxMessage
 
     public void MarkDeadLetter(string errorCode, string errorMessage, DateTimeOffset now)
     {
-        Status = "DeadLetter";
+        // Dead-letter is not a separate status: the terminal state is
+        // Status = 'Failed' with an exhausted retry budget. The dispatcher claim
+        // guard (retry_count < max_retries) makes such rows permanently unclaimable.
+        Status = "Failed";
+        RetryCount = Math.Max(RetryCount, MaxRetries);
         LastErrorCode = errorCode;
         ErrorMessage = errorMessage;
         UpdatedAt = now;
@@ -126,20 +130,17 @@ public sealed class MessagingOutboxMessage
     public void MarkFailed(string errorCode, string errorMessage, DateTimeOffset now)
     {
         RetryCount++;
+        Status = "Failed";
         LastErrorCode = errorCode;
         ErrorMessage = errorMessage;
         UpdatedAt = now;
 
-        if (RetryCount >= MaxRetries)
-        {
-            Status = "DeadLetter";
-        }
-        else
-        {
-            Status = "Failed";
-            NextAttemptAt = now.AddSeconds(
-                Math.Min(Math.Pow(2, RetryCount), 60));
-        }
+        // Once the retry budget is exhausted the row remains 'Failed' — that is
+        // the durable dead-letter terminal state. The claim guard
+        // (retry_count < max_retries) prevents any further attempts; recovery
+        // operates on these rows directly.
+        NextAttemptAt = now.AddSeconds(
+            Math.Min(Math.Pow(2, RetryCount), 60));
     }
 
     public static MessagingOutboxMessage FromIntegrationEvent(

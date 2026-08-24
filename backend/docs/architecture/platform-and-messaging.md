@@ -810,6 +810,32 @@ correlation
 
 Do not store secrets/private raw payload unnecessarily.
 
+## Outbox terminal failure state
+
+For the durable outbox, the retry-exhausted `Failed` row **is** the
+dead-letter terminal state:
+
+```text
+status = 'Failed' with retry_count >= max_retries
++ last_error_code / error_message diagnostics
++ bounded exponential backoff history
+```
+
+No separate dead-letter queue/table infrastructure exists or is required.
+The outbox row itself preserves message identity, attempt history, and
+diagnostic metadata in place, which satisfies the recovery-input contract
+above.
+
+Invariants that remain binding:
+
+```text
+bounded retry (max_retries), no infinite hot retry
+diagnostic metadata preserved on the row
+failed event blocks later versions of the same ordered stream
+unrelated streams are never blocked
+operational recovery/re-drive path operates on these rows directly
+```
+
 ---
 
 # 48. BE-PLT-022 — Dead-letter is not deletion

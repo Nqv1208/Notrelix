@@ -118,18 +118,21 @@ internal sealed class OutboxDispatcher : BackgroundService
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            // Dead-letter is the exhausted 'Failed' terminal state, not a status of
+            // its own: retry_count >= max_retries marks rows no dispatcher will claim.
             var counts = await context.Set<MessagingOutboxMessage>()
-                .GroupBy(m => m.Status)
-                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .GroupBy(m => new { m.Status, Exhausted = m.RetryCount >= m.MaxRetries })
+                .Select(g => new { g.Key.Status, g.Key.Exhausted, Count = g.Count() })
                 .ToListAsync(cancellationToken);
             var oldestUndispatched = await context.Set<MessagingOutboxMessage>()
-                .Where(m => m.Status == "Pending" || m.Status == "Processing")
+                .Where(m => m.Status == "Pending" || m.Status == "Processing" || m.Status == "Failed")
                 .MinAsync(m => (DateTimeOffset?)m.CreatedAt, cancellationToken);
 
             _metrics.UpdateOutboxCounts(
-                counts.FirstOrDefault(c => c.Status == "Pending").Count,
-                counts.FirstOrDefault(c => c.Status == "Failed").Count,
-                counts.FirstOrDefault(c => c.Status == "DeadLetter").Count,
+                counts.Where(c => c.Status == "Pending").Sum(c => c.Count),
+                counts.Where(c => c.Status == "Failed").Sum(c => c.Count),
+                counts.Where(c => c.Status == "Failed" && c.Exhausted).Sum(c => c.Count),
                 oldestUndispatched.HasValue ? (now - oldestUndispatched.Value).TotalMilliseconds : null);
         }
         catch (Exception ex)

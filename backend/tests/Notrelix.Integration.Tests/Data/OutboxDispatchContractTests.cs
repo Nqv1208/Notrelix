@@ -102,7 +102,9 @@ public sealed class OutboxDispatchContractTests : IAsyncLifetime
                 "backoff is relative to the failure time of the fourth attempt: 8s + 2^4");
 
             message.MarkFailed("DispatchFailed", "broker unavailable", FixedTime.AddSeconds(16));
-            message.Status.Should().Be("DeadLetter", "the final retry exhausts the budget and dead-letters");
+            message.Status.Should().Be("Failed",
+                "the terminal dead-letter state is 'Failed' with an exhausted retry budget, not a separate status");
+            message.RetryCount.Should().Be(MaxRetries);
 
             await context.SaveChangesAsync();
         }
@@ -110,7 +112,7 @@ public sealed class OutboxDispatchContractTests : IAsyncLifetime
         await using (var verify = CreateContext())
         {
             var stored = await verify.Set<MessagingOutboxMessage>().SingleAsync();
-            stored.Status.Should().Be("DeadLetter");
+            stored.Status.Should().Be("Failed");
             stored.RetryCount.Should().Be(MaxRetries);
             stored.LastErrorCode.Should().Be("DispatchFailed");
         }

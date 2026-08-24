@@ -37,7 +37,9 @@ public sealed class OutboxHealthCheck : IHealthCheck
                 .CountAsync(m => m.Status == "Failed", cancellationToken);
 
             var deadLetterCount = await _context.Set<MessagingOutboxMessage>()
-                .CountAsync(m => m.Status == "DeadLetter", cancellationToken);
+                .CountAsync(
+                    m => m.Status == "Failed" && m.RetryCount >= m.MaxRetries,
+                    cancellationToken);
 
             if (deadLetterCount >= _options.UnhealthyDeadLetterCount)
                 return HealthCheckResult.Unhealthy(
