@@ -16,7 +16,6 @@ using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Email;
-using Notrelix.Infrastructure.Governance.Services;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Realtime;
@@ -80,7 +79,9 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IFeatureGateChecker>().Should().BeOfType<DatabaseFeatureGateChecker>();
 
         services.GetRequiredService<IAuditService>().Should().NotBeNull();
-        services.GetRequiredService<IPermissionVersionProvider>().Should().BeOfType<PermissionVersionProvider>();
+
+        // Single request-authorization authority: the pure policy engine.
+        services.GetRequiredService<IAccessPolicyEvaluator>().Should().BeOfType<AccessPolicyEngine>();
     }
 
     [Fact]

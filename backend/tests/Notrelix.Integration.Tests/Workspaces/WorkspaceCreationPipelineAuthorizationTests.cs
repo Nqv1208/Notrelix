@@ -24,7 +24,7 @@ namespace Notrelix.Integration.Tests.Workspaces;
 /// IA-TST-X-AUTHZ-001 / IA-TST-PERF-001 / IAREQ090 / IAREQ136 / IAREQ138.
 ///
 /// Production-graph proof that workspace creation is authorized by the canonical
-/// pipeline (real AuthorizationBehavior + real PermissionService over real
+/// pipeline (real DataSessionBehavior + real AccessControlBehavior over real
 /// PostgreSQL) BEFORE the handler executes, for representative Account roles.
 /// The handler itself contains no role branch (enforced statically by
 /// IA-TST-AUTHZ-ARCH-001..005); this test proves the runtime consequence.
@@ -114,9 +114,10 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Composes the production MediatR pipeline slice: the REAL AuthorizationBehavior
-    /// registered exactly as production does, delegating to the REAL PermissionService
-    /// evaluator over the test PostgreSQL graph, followed by the REAL command handler.
+    /// Composes the production MediatR pipeline slice: the REAL DataSessionBehavior
+    /// and REAL AccessControlBehavior registered exactly as production does, delegating to
+    /// the real PostgresAccessFactsProvider + pure policy evaluator over the test PostgreSQL
+    /// graph, followed by the REAL command handler.
     /// No authorization decision is duplicated or mocked away.
     /// </summary>
     private ServiceProvider CreatePipelineProvider(Guid accountId, Guid userId)
@@ -185,8 +186,8 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
                     sp.GetRequiredService<ApplicationDbContext>(),
                     sp.GetRequiredService<TimeProvider>())));
 
-        // Production pipeline nesting: DbRequestScopeBehavior (outer) → AuthorizationBehavior (inner),
-        // matching the canonical behavior order.
+        // Production pipeline nesting: DataSessionBehavior (outer) → AccessControlBehavior (inner),
+        // matching the canonical frozen behavior order.
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DataSessionBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
 
