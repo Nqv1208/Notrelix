@@ -57,104 +57,109 @@ public sealed class ResourceLocator : IResourceLocator
     {
         return resource.Kind.Value switch
         {
-            "work-management.board" => await _workDb.Boards
+            "work-management.board" => ToLocation(Board, await _workDb.Boards
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(Board, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "work-management.board-group" => await _workDb.BoardGroups
+            "work-management.board-group" => ToLocation(BoardGroup, await _workDb.BoardGroups
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(BoardGroup, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "work-management.board-field" => await _workDb.BoardFields
+            "work-management.board-field" => ToLocation(BoardField, await _workDb.BoardFields
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(BoardField, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "work-management.board-view" => await _workDb.BoardViews
+            "work-management.board-view" => ToLocation(BoardView, await _workDb.BoardViews
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(BoardView, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "work-management.board-item" => await _workDb.BoardItems
+            "work-management.board-item" => ToLocation(BoardItem, await _workDb.BoardItems
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(BoardItem, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "work-management.label" => await _workDb.Labels
+            "work-management.label" => ToLocation(Label, await _workDb.Labels
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(Label, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "work-management.checklist" => await _workDb.Checklists
+            "work-management.checklist" => ToLocation(Checklist, await _workDb.Checklists
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(Checklist, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "work-management.checklist-item" => await (
+            "work-management.checklist-item" => ToLocation(ChecklistItem, await (
                 from ci in _workDb.ChecklistItems.IgnoreQueryFilters()
                 join c in _workDb.Checklists.IgnoreQueryFilters() on ci.ChecklistId equals c.Id
                 where ci.Id == resource.ResourceId
-                select new ResourceLocation(ChecklistItem, ci.Id, c.AccountId, c.WorkspaceId)
-            ).FirstOrDefaultAsync(cancellationToken),
+                select new LocatedRow(ci.Id, c.AccountId, c.WorkspaceId)
+            ).FirstOrDefaultAsync(cancellationToken)),
 
-            "documents.page" => await _docDb.Pages
+            "documents.page" => ToLocation(Page, await _docDb.Pages
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(Page, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "documents.block" => await _docDb.Blocks
+            "documents.block" => ToLocation(Block, await _docDb.Blocks
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(Block, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "collaboration.comment" => await _collabDb.Comments
+            "collaboration.comment" => ToLocation(Comment, await _collabDb.Comments
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(Comment, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "collaboration.attachment" => await _collabDb.Attachments
+            "collaboration.attachment" => ToLocation(Attachment, await _collabDb.Attachments
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(Attachment, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "governance.resource-permission" => await _govDb.ResourcePermissions
+            "governance.resource-permission" => ToLocation(ResourcePermission, await _govDb.ResourcePermissions
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(ResourcePermission, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "governance.share-link" => await _govDb.ShareLinks
+            "governance.share-link" => ToLocation(ShareLink, await _govDb.ShareLinks
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(ShareLink, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "automation.rule" => await _autoDb.AutomationRules
+            "automation.rule" => ToLocation(AutomationRule, await _autoDb.AutomationRules
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(AutomationRule, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
-            "automation.execution" => await _autoDb.AutomationExecutions
+            "automation.execution" => ToLocation(AutomationExecution, await _autoDb.AutomationExecutions
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new ResourceLocation(AutomationExecution, r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken),
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
 
             _ => null
         };
     }
+
+    private static ResourceLocation? ToLocation(ResourceKind kind, LocatedRow? row) =>
+        row is null ? null : new ResourceLocation(kind, row.Id, row.AccountId, row.WorkspaceId);
+
+    private sealed record LocatedRow(Guid Id, Guid AccountId, Guid WorkspaceId);
 }
