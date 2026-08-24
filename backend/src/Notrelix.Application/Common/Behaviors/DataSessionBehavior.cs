@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Requests.Execution;
 
 namespace Notrelix.Application.Common.Behaviors;
@@ -19,11 +20,13 @@ public sealed class DataSessionBehavior<TRequest, TResponse> : IPipelineBehavior
         _dataSession = dataSession;
     }
 
-    public Task<TResponse> Handle(
+    public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
+        using var stage = PipelineActivitySource.Instance.StartActivity("data_session");
+
         var descriptor = _descriptors.GetRequired(typeof(TRequest));
         var access = descriptor.DataAccess switch
         {
@@ -35,7 +38,7 @@ public sealed class DataSessionBehavior<TRequest, TResponse> : IPipelineBehavior
 
         if (access == RequestDataAccess.None)
         {
-            return next();
+            return await next();
         }
 
         var snapshot = _executionContext.Snapshot
@@ -47,7 +50,7 @@ public sealed class DataSessionBehavior<TRequest, TResponse> : IPipelineBehavior
             ? new ExpectedVersionConstraint(versioned.Resource.ResourceId, versioned.ExpectedVersion)
             : null;
 
-        return _dataSession.ExecuteAsync(
+        return await _dataSession.ExecuteAsync(
             new RequestDataSessionOptions(
                 access,
                 ApplyTenantScope: tenantScoped,

@@ -38,12 +38,9 @@ public static class DependencyInjection
         // FluentValidation - auto register all validators
         services.AddValidatorsFromAssembly(assembly);
 
-        services.AddScoped<IWorkspacePermissionService, WorkspacePermissionService>();
-        services.AddScoped<IPermissionService, PermissionService>();
-        services.AddScoped<IPermissionEvaluator, PermissionService>();
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
-        services.AddScoped<Notrelix.Application.Features.Automation.Events.CheckN8nAutomationPostCommitAction>();
+        services.AddScoped<Notrelix.Application.Features.Automation.Events.N8nAutomationRuleEvaluator>();
 
         // Execution context (scoped per request)
         services.AddScoped<IExecutionContextAccessor, Notrelix.Application.Common.Context.ExecutionContext>();

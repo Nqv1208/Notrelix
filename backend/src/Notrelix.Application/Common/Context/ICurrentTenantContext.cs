@@ -35,15 +35,15 @@ public interface ICurrentTenantContext
 
     /// <summary>
     /// Seed user identity from JWT without setting account/workspace.
-    /// Called by HttpRequestContextMiddleware before pipeline behaviors run.
-    /// TenantBootstrapBehavior will later resolve account/workspace context.
+    /// Called by HttpRequestContextMiddleware before pipeline behaviors run;
+    /// ExecutionContextBehavior later resolves account/workspace context.
     /// </summary>
     void SetUser(Guid userId);
 
     /// <summary>
     /// Seed account context from header/route without clearing workspace.
-    /// Called by HttpRequestContextMiddleware before pipeline behaviors run.
-    /// TenantBootstrapBehavior will verify access and call SetAccount/SetWorkspace.
+    /// Called by HttpRequestContextMiddleware before pipeline behaviors run;
+    /// ExecutionContextBehavior verifies access and calls SetAccount/SetWorkspace.
     /// </summary>
     void SetAccountHint(Guid accountId);
 

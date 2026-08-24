@@ -1,4 +1,5 @@
 using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
+using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Requests.Execution;
 
 namespace Notrelix.Application.Common.Behaviors;
@@ -34,6 +35,8 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
+        using var stage = PipelineActivitySource.Instance.StartActivity("context.resolve");
+
         var descriptor = _descriptors.GetRequired(typeof(TRequest));
         var userId = _executionContext.UserId ?? _tenant.UserId;
         Guid? accountId = _tenant.AccountId;
@@ -96,6 +99,7 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
                 {
                     var actorId = RequireUser(userId, "Resource-scoped request requires authenticated user.");
                     resource = ((IResourceScopedRequest)request).Resource;
+                    using var locatorStage = PipelineActivitySource.Instance.StartActivity("resource_locator.query");
                     var location = await _resourceLocator.LocateAsync(resource, actorId, cancellationToken);
                     if (location is null)
                     {

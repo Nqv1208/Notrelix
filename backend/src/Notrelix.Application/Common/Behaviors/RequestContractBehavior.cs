@@ -1,4 +1,5 @@
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
+using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Requests.Execution;
 
 namespace Notrelix.Application.Common.Behaviors;
@@ -25,6 +26,8 @@ public sealed class RequestContractBehavior<TRequest, TResponse> : IPipelineBeha
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
+        using var stage = PipelineActivitySource.Instance.StartActivity("request.contract");
+
         var descriptor = _descriptors.GetRequired(typeof(TRequest));
 
         await ValidateRequestAsync(request, cancellationToken);

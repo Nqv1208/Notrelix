@@ -1,3 +1,5 @@
+using Notrelix.Application.Common.Diagnostics;
+
 namespace Notrelix.Infrastructure.Data;
 
 /// <summary>
@@ -31,6 +33,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
         if (options.Access == RequestDataAccess.None)
             return await action(cancellationToken);
 
+        using var sessionOpen = PipelineActivitySource.Instance.StartActivity("session.open");
         await using var transaction =
             await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -46,6 +49,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
             if (options.ApplyTenantScope)
             {
                 _logger.LogTrace("Applying RLS session context");
+                using var sessionRls = PipelineActivitySource.Instance.StartActivity("session.rls");
                 await _rls.ApplyAsync(cancellationToken);
             }
 
@@ -55,9 +59,11 @@ public sealed class EfRequestDataSession : IRequestDataSession
             {
                 ApplyExpectedVersion(options.ExpectedVersion);
                 _logger.LogTrace("Saving changes");
+                using var saveChanges = PipelineActivitySource.Instance.StartActivity("save_changes");
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
 
+            using var transactionCommit = PipelineActivitySource.Instance.StartActivity("transaction.commit");
             await transaction.CommitAsync(cancellationToken);
             if (options.Access == RequestDataAccess.Transactional)
                 _outboxWakeSignal?.TrySignal();
