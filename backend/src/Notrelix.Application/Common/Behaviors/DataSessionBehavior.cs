@@ -47,7 +47,7 @@ public sealed class DataSessionBehavior<TRequest, TResponse> : IPipelineBehavior
         var tenantScoped = snapshot.Scope is
             ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource;
         var expectedVersion = request is IExpectedVersionRequest versioned
-            ? new ExpectedVersionConstraint(versioned.Resource.ResourceId, versioned.ExpectedVersion)
+            ? new ExpectedVersionConstraint(typeof(TRequest), versioned.Resource, versioned.ExpectedVersion)
             : null;
 
         return await _dataSession.ExecuteAsync(

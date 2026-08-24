@@ -1,4 +1,6 @@
 using Notrelix.Application.Common.Diagnostics;
+using Notrelix.Application.Common.Exceptions;
+using Notrelix.Infrastructure.Data.Concurrency;
 
 namespace Notrelix.Infrastructure.Data;
 
@@ -12,17 +14,23 @@ public sealed class EfRequestDataSession : IRequestDataSession
     private readonly IRlsSessionContext _rls;
     private readonly ILogger<EfRequestDataSession> _logger;
     private readonly IOutboxWakeSignal? _outboxWakeSignal;
+    private readonly ExpectedVersionTargetMap _expectedVersionTargets;
+    private readonly PipelineMetrics _metrics;
 
     public EfRequestDataSession(
         ApplicationDbContext dbContext,
         IRlsSessionContext rls,
         ILogger<EfRequestDataSession> logger,
-        IOutboxWakeSignal? outboxWakeSignal = null)
+        IOutboxWakeSignal? outboxWakeSignal = null,
+        ExpectedVersionTargetMap? expectedVersionTargets = null,
+        PipelineMetrics? metrics = null)
     {
         _dbContext = dbContext;
         _rls = rls;
         _logger = logger;
         _outboxWakeSignal = outboxWakeSignal;
+        _expectedVersionTargets = expectedVersionTargets ?? ExpectedVersionTargetMap.Default;
+        _metrics = metrics ?? new PipelineMetrics();
     }
 
     public async Task<TResponse> ExecuteAsync<TResponse>(
@@ -60,7 +68,18 @@ public sealed class EfRequestDataSession : IRequestDataSession
                 ApplyExpectedVersion(options.ExpectedVersion);
                 _logger.LogTrace("Saving changes");
                 using var saveChanges = PipelineActivitySource.Instance.StartActivity("save_changes");
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                try
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    // Normal optimistic-concurrency precondition failure: the
+                    // declared version lost the race at the database.
+                    _metrics.ExpectedVersionConflicts.Add(1);
+                    throw new PreconditionFailedException(
+                        "The resource was modified by another request. Reload and retry.", "common.precondition-failed");
+                }
             }
 
             using var transactionCommit = PipelineActivitySource.Instance.StartActivity("transaction.commit");
@@ -84,12 +103,54 @@ public sealed class EfRequestDataSession : IRequestDataSession
         if (constraint is null)
             return;
 
-        var entry = _dbContext.ChangeTracker.Entries<AggregateRoot>()
-            .SingleOrDefault(candidate => candidate.Entity.Id == constraint.ResourceId);
+        // Fail closed: a declared expected-version constraint MUST bind to exactly
+        // one tracked aggregate of the mapped target type. Anything else is a
+        // server-side execution misconfiguration, never a silent skip and never a
+        // client-facing concurrency conflict.
+        ExpectedVersionTargetMap.TargetDefinition target;
+        try
+        {
+            target = _expectedVersionTargets.Resolve(constraint.RequestType);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _metrics.ExpectedVersionBindingMisconfigurations.Add(1);
+            throw new SecurityMisconfigurationException(
+                $"Expected-version binding failed for {constraint.RequestType.Name}: {ex.Message}", ex);
+        }
 
-        if (entry is null)
-            return;
+        if (!_expectedVersionTargets.MatchesKind(constraint.RequestType, constraint.Resource))
+        {
+            _metrics.ExpectedVersionBindingMisconfigurations.Add(1);
+            throw new SecurityMisconfigurationException(
+                $"{constraint.RequestType.Name} declares resource kind '{constraint.Resource.Kind.Value}' " +
+                $"but its expected-version target requires '{target.ExpectedResourceKind}'.");
+        }
 
+        var tracked = _dbContext.ChangeTracker.Entries()
+            .Where(candidate => target.AggregateType.IsInstanceOfType(candidate.Entity))
+            .Where(candidate => ((AggregateRoot)candidate.Entity).Id == constraint.Resource.ResourceId)
+            .ToArray();
+
+        if (tracked.Length == 0)
+        {
+            _metrics.ExpectedVersionBindingMisconfigurations.Add(1);
+            throw new SecurityMisconfigurationException(
+                $"{constraint.RequestType.Name} declared an expected version for " +
+                $"'{constraint.Resource.Kind.Value}:{constraint.Resource.ResourceId}' but no matching aggregate " +
+                "of type " + $"{target.AggregateType.Name} is tracked by the data session.");
+        }
+
+        if (tracked.Length > 1)
+        {
+            _metrics.ExpectedVersionBindingMisconfigurations.Add(1);
+            throw new SecurityMisconfigurationException(
+                $"{constraint.RequestType.Name} matched {tracked.Length} tracked " +
+                $"{target.AggregateType.Name} instances for '{constraint.Resource.ResourceId}'; the version " +
+                "guard must bind to exactly one aggregate.");
+        }
+
+        var entry = tracked[0];
         var version = entry.Property(nameof(AggregateRoot.Version));
         version.OriginalValue = constraint.Value;
 
