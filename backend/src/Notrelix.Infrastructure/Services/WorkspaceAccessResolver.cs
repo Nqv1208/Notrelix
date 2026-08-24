@@ -1,22 +1,17 @@
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
-using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Infrastructure.Services;
 
 public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
 {
-    private static readonly Notrelix.Domain.SharedKernel.ResourceKind WorkspaceKind = Notrelix.Domain.SharedKernel.ResourceKind.Create("workspaces.workspace");
     private readonly IWorkspaceDbContext _context;
-    private readonly IPermissionEvaluator _permissionEvaluator;
 
-    public WorkspaceAccessResolver(
-        IWorkspaceDbContext context,
-        IPermissionEvaluator permissionEvaluator)
+    public WorkspaceAccessResolver(IWorkspaceDbContext context)
     {
         _context = context;
-        _permissionEvaluator = permissionEvaluator;
     }
 
     public async Task<WorkspaceAccessSnapshot> ResolveAsync(
@@ -38,23 +33,22 @@ public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
 
         var isActive = workspace.Status == WorkspaceStatus.Active;
 
-        // Check if actor can access this workspace
-        var decision = await _permissionEvaluator.EvaluateAsync(
-            new PermissionContext(
-                actorUserId,
-                workspace.AccountId,
-                workspaceId,
-                WorkspaceKind,
-                null,
-                PermissionAction.ViewWorkspace,
-                Notrelix.Application.Common.Security.PermissionScope.Workspace),
-            ct);
+        // Workspace access is established by an active membership grant. The
+        // request-scoped permission/rule evaluation remains owned by
+        // AccessControlBehavior; this resolver answers only the narrower
+        // "is this actor an active member of this workspace" fact.
+        var canAccess = await _context.WorkspaceMembers
+            .IgnoreQueryFilters()
+            .AnyAsync(m => m.AccountId == workspace.AccountId
+                           && m.WorkspaceId == workspaceId
+                           && m.UserId == actorUserId
+                           && m.Status == WorkspaceMemberStatus.Active, ct);
 
         return new WorkspaceAccessSnapshot(
             workspace.AccountId,
             workspaceId,
             actorUserId,
-            CanAccess: decision.IsAllowed,
+            CanAccess: canAccess,
             IsWorkspaceActive: isActive);
     }
 

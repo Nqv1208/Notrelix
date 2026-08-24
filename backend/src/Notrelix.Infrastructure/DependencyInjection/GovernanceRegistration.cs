@@ -10,8 +10,6 @@ public static class GovernanceRegistration
     {
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IPermissionVersionProvider, PermissionVersionProvider>();
-        services.AddScoped<IResourceAuthorizationSnapshotResolver, BoardAuthorizationSnapshotResolver>();
-        services.AddScoped<IResourceAuthorizationSnapshotStore, ResourceAuthorizationSnapshotStore>();
         return services;
     }
 }

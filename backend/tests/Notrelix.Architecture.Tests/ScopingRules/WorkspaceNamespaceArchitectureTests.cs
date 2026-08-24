@@ -550,7 +550,7 @@ public class WorkspaceNamespaceArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            $"Workspace queries with Guid WorkspaceId must implement IWorkspaceRequest to trigger TenantBootstrapBehavior. " +
+            $"Workspace queries with Guid WorkspaceId must implement IWorkspaceRequest to trigger ExecutionContextBehavior. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 

@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Requests.Execution;
 
 namespace Notrelix.Application.Common.Behaviors;
@@ -35,9 +36,13 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
             ?? throw new SecurityMisconfigurationException(
                 $"Execution context is not resolved for {descriptor.RequestType.Name}.");
         var facts = descriptor.Access.RequiresDatastoreFacts
-            ? await _factsProvider.ResolveAsync(descriptor, context, request, cancellationToken)
+            ? await ResolveFactsAsync(descriptor, context, request, cancellationToken)
             : NoFacts;
-        var decision = _policy.Evaluate(descriptor, context, facts, request);
+        AccessDecision decision;
+        using (PipelineActivitySource.Instance.StartActivity("access.evaluate"))
+        {
+            decision = _policy.Evaluate(descriptor, context, facts, request);
+        }
 
         switch (decision.Kind)
         {
@@ -58,5 +63,15 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
                 throw new ForbiddenException(
                     decision.Message ?? "You do not have permission to perform this action.");
         }
+    }
+
+    private async Task<AccessFacts> ResolveFactsAsync(
+        RequestDescriptor descriptor,
+        ExecutionContextSnapshot context,
+        TRequest request,
+        CancellationToken cancellationToken)
+    {
+        using var stage = PipelineActivitySource.Instance.StartActivity("access.facts");
+        return await _factsProvider.ResolveAsync(descriptor, context, request, cancellationToken);
     }
 }
