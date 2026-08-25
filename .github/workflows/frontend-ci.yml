@@ -120,6 +120,10 @@ jobs:
     name: Resolve pinned visual renderer
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    # The workflow default working directory is frontend/; lock tooling lives at repo root.
+    defaults:
+      run:
+        working-directory: .
     outputs:
       ref: ${{ steps.lock.outputs.ref }}
       version: ${{ steps.version.outputs.value }}
