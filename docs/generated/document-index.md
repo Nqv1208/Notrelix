@@ -30,7 +30,7 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 87
+Document count: 90
 
 ## Documents by type
 
@@ -41,7 +41,7 @@ Document count: 87
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
-| `delivery-policy` | 6 |
+| `delivery-policy` | 9 |
 | `generated` | 3 |
 | `governance` | 5 |
 | `index-router` | 1 |
@@ -59,7 +59,7 @@ Document count: 87
 | Value | Count |
 |:---|---:|
 | `Accepted` | 9 |
-| `active` | 73 |
+| `active` | 76 |
 | `generated` | 3 |
 | `Superseded` | 2 |
 
@@ -88,6 +88,9 @@ Document count: 87
 | `BE-TESTING-QUALITY-GATES` | `architecture` | `active` | `backend-quality-architecture` | `backend-tests`, `backend-ci`, `backend-quality-gates`, `backend-architecture-tests`, `backend-contract-tests` | [`backend/docs/architecture/testing-and-quality-gates.md`](../../backend/docs/architecture/testing-and-quality-gates.md) |
 | `DECISIONS-INDEX` | `decision-registry` | `active` | `architecture` | `repository`, `system-architecture`, `backend`, `frontend`, `architecture-decisions` | [`docs/decisions/README.md`](../decisions/README.md) |
 | `DEL-CHANGE-CLASSIFICATION` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `contracts`, `data`, `infrastructure`, `documentation` | [`docs/delivery/change-classification.md`](../delivery/change-classification.md) |
+| `DEL-CICD-ARCHITECTURE` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `api` | [`docs/delivery/ci-cd-architecture.md`](../delivery/ci-cd-architecture.md) |
+| `DEL-CICD-EXTENSION` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend` | [`docs/delivery/ci-cd-extension-guide.md`](../delivery/ci-cd-extension-guide.md) |
+| `DEL-CICD-IMPLEMENTATION` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend` | [`docs/delivery/ci-cd-implementation-guide.md`](../delivery/ci-cd-implementation-guide.md) |
 | `DEL-CONTRACT-FIRST` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `api`, `events`, `realtime`, `generated-contracts`, `public-packages`, `integrations` | [`docs/delivery/contract-first-delivery.md`](../delivery/contract-first-delivery.md) |
 | `DEL-DEFINITION-OF-DONE` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `documentation`, `ci` | [`docs/delivery/definition-of-done.md`](../delivery/definition-of-done.md) |
 | `DEL-LOCAL-DEVELOPMENT` | `delivery-handbook` | `active` | `engineering-delivery` | `repository`, `local-development`, `onboarding`, `backend`, `frontend`, `docker`, `developer-tooling` | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
