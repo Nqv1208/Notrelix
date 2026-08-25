@@ -1,0 +1,124 @@
+name: Dependency Security CI
+
+on:
+  workflow_call:
+    inputs:
+      scan_backend:
+        description: Scan NuGet dependency graph
+        required: false
+        type: boolean
+        default: false
+      scan_frontend:
+        description: Scan pnpm dependency graph
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend-dependencies:
+    name: Backend dependency vulnerabilities
+    if: inputs.scan_backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup backend toolchain
+        uses: ./.github/actions/setup-backend
+
+      - name: Restore backend dependency graph
+        working-directory: backend
+        run: dotnet restore backend.slnx
+
+      - name: Fail on vulnerable NuGet packages
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-report.txt
+          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then
+            echo "Vulnerable NuGet packages found." >&2
+            exit 1
+          fi
+          echo "No vulnerable NuGet packages found."
+
+      - name: Upload backend vulnerability evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-vulnerability-report
+          path: backend/vulnerable-report.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Emit backend dependency-security evidence
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: security:backend
+          component_id: backend-dependencies
+
+  frontend-dependencies:
+    name: Frontend dependency vulnerabilities
+    if: inputs.scan_frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup frontend toolchain
+        uses: ./.github/actions/setup-frontend
+
+      - name: Audit pnpm dependency graph
+        working-directory: frontend
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm audit --audit-level high 2>&1 | tee pnpm-audit.txt
+
+      - name: Upload frontend vulnerability evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: frontend-vulnerability-report
+          path: frontend/pnpm-audit.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Emit frontend dependency-security evidence
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: security:frontend
+          component_id: frontend-dependencies
+
+  gate:
+    name: Dependency Security CI gate
+    if: always()
+    needs: [backend-dependencies, frontend-dependencies]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require selected dependency scans
+        env:
+          SCAN_BACKEND: ${{ inputs.scan_backend }}
+          SCAN_FRONTEND: ${{ inputs.scan_frontend }}
+          BACKEND_RESULT: ${{ needs.backend-dependencies.result }}
+          FRONTEND_RESULT: ${{ needs.frontend-dependencies.result }}
+        run: |
+          set -euo pipefail
+          check() {
+            local enabled="$1" result="$2" name="$3"
+            if [ "$enabled" = "true" ] && [ "$result" != "success" ]; then
+              echo "$name security scan was required but finished as $result" >&2
+              exit 1
+            fi
+            if [ "$enabled" != "true" ] && [ "$result" != "skipped" ] && [ "$result" != "success" ]; then
+              echo "$name security scan finished unexpectedly as $result" >&2
+              exit 1
+            fi
+          }
+          check "$SCAN_BACKEND" "$BACKEND_RESULT" backend
+          check "$SCAN_FRONTEND" "$FRONTEND_RESULT" frontend

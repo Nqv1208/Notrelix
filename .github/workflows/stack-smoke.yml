@@ -1,0 +1,124 @@
+name: Release Stack Provider
+
+on:
+  workflow_call:
+    inputs:
+      application_manifest_json: {required: true, type: string}
+    outputs:
+      release_images_json:
+        value: ${{ jobs.stack.outputs.release_images_json }}
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  prepare:
+    name: Materialize release image set
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    outputs:
+      runtime_matrix: ${{ steps.render.outputs.runtime_matrix }}
+      release_images_json: ${{ steps.render.outputs.release_images_json }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Write application manifest
+        env:
+          APPLICATION_MANIFEST: ${{ inputs.application_manifest_json }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/release
+          jq -e '.schema_version == 4 and (.artifacts | type == "array")' <<<"$APPLICATION_MANIFEST" > artifacts/release/application.json
+      - id: render
+        name: Join application subjects with runtime image locks
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/render-images-env.py --application-manifest artifacts/release/application.json --output artifacts/release/images.env --combined-manifest artifacts/release/images.json >/dev/null
+          python3 scripts/ci/render-release-compose.py --application-manifest artifacts/release/application.json --output artifacts/release/release.generated.yml
+          release="$(jq -c . artifacts/release/images.json)"
+          matrix="$(jq -c '{include:[.images[] | select(.kind == "infrastructure") | {image_id:.id,ref:.ref}]}' artifacts/release/images.json)"
+          echo "release_images_json=$release" >> "$GITHUB_OUTPUT"
+          echo "runtime_matrix=$matrix" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-image-set
+          path: artifacts/release
+          if-no-files-found: error
+          retention-days: 30
+
+  runtime-security:
+    name: Runtime image vulnerability gate (${{ matrix.image_id }})
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.runtime_matrix) }}
+    steps:
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ matrix.ref }}
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
+  stack:
+    name: Exact-digest assembled-stack proof
+    needs: [prepare, runtime-security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    outputs:
+      release_images_json: ${{ steps.output.outputs.release_images_json }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-image-set
+          path: artifacts/release
+      - name: Authenticate GHCR
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Materialize non-production CI configuration
+        run: scripts/ci/write-test-env.sh /tmp/notrelix-stack.env
+      - name: Validate release overlay has only digest-pinned subjects
+        run: |
+          set -euo pipefail
+          jq -e '.images | length > 0 and all(.[]; (.ref | contains("@sha256:")) and (.compose_service | length > 0))' artifacts/release/images.json >/dev/null
+          docker compose --env-file /tmp/notrelix-stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml config >/dev/null
+      - name: Start exact release topology and prove gateway routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          compose=(docker compose --env-file /tmp/notrelix-stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml)
+          "${compose[@]}" pull
+          "${compose[@]}" up -d --no-build postgres redis rabbitmq
+          "${compose[@]}" run --rm backend --migrate
+          "${compose[@]}" run --rm backend --rls-apply
+          "${compose[@]}" up -d --no-build --remove-orphans
+          ready=0
+          for _ in $(seq 1 75); do
+            if curl -fsS --max-time 4 http://127.0.0.1:8080/health/live >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          [[ "$ready" == 1 ]] || exit 1
+          curl -fsS http://127.0.0.1:8080/health/live >/dev/null
+          curl -fsS http://127.0.0.1:8080/sign-in >/dev/null
+          curl -fsS http://127.0.0.1:8080/ >/dev/null
+      - name: Diagnostics
+        if: failure()
+        run: |
+          docker compose --env-file /tmp/notrelix-stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml ps || true
+          docker compose --env-file /tmp/notrelix-stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml logs --tail=300 || true
+      - name: Cleanup
+        if: always()
+        run: docker compose --env-file /tmp/notrelix-stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml down -v --remove-orphans || true
+      - id: output
+        env:
+          RELEASE_IMAGES: ${{ needs.prepare.outputs.release_images_json }}
+        run: echo "release_images_json=$RELEASE_IMAGES" >> "$GITHUB_OUTPUT"
+      - name: Emit assembled-stack evidence
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: stack:release-candidate
+          component_id: release-stack

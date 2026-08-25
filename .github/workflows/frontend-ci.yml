@@ -1,0 +1,331 @@
+name: Frontend CI
+
+on:
+  workflow_call:
+    inputs:
+      host_matrix_json: {required: true, type: string}
+      host_count: {required: true, type: number}
+      mobile_matrix_json: {required: true, type: string}
+      mobile_count: {required: true, type: number}
+      filters_json: {required: true, type: string}
+      capabilities_json: {required: true, type: string}
+      mock_artifact_component: {required: false, type: string, default: ""}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: frontend
+
+env:
+  CI: "1"
+  VITE_API_URL: https://api.example.invalid/api/v1
+  VITE_WS_URL: wss://api.example.invalid/realtime
+  VITE_APP_URL: http://127.0.0.1:4173
+  VITE_RELEASE_SHA: ${{ github.sha }}
+  VITE_MOCK_API: "false"
+  EXPO_PUBLIC_API_URL: https://api.example.invalid/api/v1
+  EXPO_PUBLIC_REALTIME_URL: wss://api.example.invalid/realtime
+  EXPO_PUBLIC_APP_URL: https://app.example.invalid
+  EXPO_PUBLIC_RELEASE_SHA: ${{ github.sha }}
+  MARKETING_E2E_REUSE_BUILD: "1"
+
+jobs:
+  invariants:
+    name: Global frontend invariants
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - name: Contract codegen drift
+        run: pnpm codegen:check
+      - name: Architecture boundaries
+        run: pnpm check:architecture
+      - name: Architecture documentation drift
+        run: pnpm check:architecture-docs
+      - name: Test taxonomy
+        run: pnpm check:test-taxonomy
+      - name: Lint topology coverage
+        run: pnpm check:lint-coverage
+      - name: Format
+        run: pnpm format:check
+
+  affected-static:
+    name: Affected typecheck and lint
+    needs: invariants
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - name: Typecheck and lint selected dependency closures
+        env:
+          FILTERS_JSON: ${{ inputs.filters_json }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t selected < <(jq -r '.[]' <<<"$FILTERS_JSON")
+          [[ ${#selected[@]} -gt 0 ]] || { echo "No frontend filter selected" >&2; exit 1; }
+          filters=()
+          for item in "${selected[@]}"; do filters+=("--filter=$item"); done
+          pnpm exec turbo run typecheck lint "${filters[@]}"
+
+  node-tests:
+    name: Node unit tests
+    needs: affected-static
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm test:node:guarded
+
+  web-tests:
+    name: Web component and integration tests
+    needs: affected-static
+    if: contains(fromJSON(inputs.capabilities_json), 'web-tests')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm test:web:guarded
+      - run: pnpm test:integration:guarded
+
+  mobile-tests:
+    name: Mobile tests
+    needs: affected-static
+    if: inputs.mobile_count > 0 || contains(fromJSON(inputs.capabilities_json), 'mobile-tests')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm test:mobile:guarded
+
+  tooling-tests:
+    name: Tooling and generators
+    needs: affected-static
+    if: contains(fromJSON(inputs.capabilities_json), 'tooling-tests')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm test:generators:guarded
+
+  ui-foundation:
+    name: UI foundation accessibility / visual freeze
+    needs: affected-static
+    if: contains(fromJSON(inputs.capabilities_json), 'ui')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:ui:freeze
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-playwright-report
+          path: frontend/playwright-report-ui
+          if-no-files-found: ignore
+          retention-days: 7
+
+  host-build:
+    name: Host build (${{ matrix.component_id }})
+    if: inputs.host_count > 0
+    needs: affected-static
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.host_matrix_json) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - id: component
+        name: Load host contract from delivery catalog
+        working-directory: .
+        run: python3 scripts/ci/component-info.py --component '${{ matrix.component_id }}' --github-output
+      - name: Build registered host
+        env:
+          WORKSPACE: ${{ steps.component.outputs.workspace }}
+          BUILD_SCRIPT: ${{ steps.component.outputs.build_script }}
+        run: pnpm --filter "$WORKSPACE" run "$BUILD_SCRIPT"
+      - name: Package exact build output
+        working-directory: .
+        run: python3 scripts/ci/package-frontend-artifact.py --component '${{ matrix.component_id }}' --output 'artifacts/frontend/${{ matrix.component_id }}.tar.gz'
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: frontend-host-build-${{ matrix.component_id }}
+          path: artifacts/frontend/${{ matrix.component_id }}.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  host-e2e:
+    name: Exact-artifact E2E (${{ matrix.component_id }})
+    if: inputs.host_count > 0
+    needs: host-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.host_matrix_json) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - id: component
+        name: Load host contract
+        working-directory: .
+        run: python3 scripts/ci/component-info.py --component '${{ matrix.component_id }}' --github-output
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-host-build-${{ matrix.component_id }}
+          path: artifacts/frontend/${{ matrix.component_id }}
+      - name: Restore exact build output
+        working-directory: .
+        run: python3 scripts/ci/restore-frontend-artifact.py --archive 'artifacts/frontend/${{ matrix.component_id }}/${{ matrix.component_id }}.tar.gz'
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run host E2E contract
+        if: steps.component.outputs.e2e_script != ''
+        env:
+          E2E_SCRIPT: ${{ steps.component.outputs.e2e_script }}
+        run: pnpm run "$E2E_SCRIPT"
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: host-e2e-report-${{ matrix.component_id }}
+          path: |
+            frontend/playwright-report*
+            frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  mobile-build:
+    name: Mobile build (${{ matrix.component_id }})
+    if: inputs.mobile_count > 0
+    needs: affected-static
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.mobile_matrix_json) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - id: component
+        working-directory: .
+        run: python3 scripts/ci/component-info.py --component '${{ matrix.component_id }}' --github-output
+      - env:
+          WORKSPACE: ${{ steps.component.outputs.workspace }}
+          BUILD_SCRIPT: ${{ steps.component.outputs.build_script }}
+        run: pnpm --filter "$WORKSPACE" run "$BUILD_SCRIPT"
+
+  mock-contract:
+    name: Mock structural contract
+    needs: affected-static
+    if: contains(fromJSON(inputs.capabilities_json), 'mock')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm mock:contract
+
+  mock-e2e:
+    name: Mock E2E (${{ matrix.persona }}/${{ matrix.state }})
+    needs: affected-static
+    if: contains(fromJSON(inputs.capabilities_json), 'mock')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        persona: [owner, admin, member, viewer]
+        state: [default, new-user, empty-workspace, permission-limited, expired-session]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm exec playwright install --with-deps chromium
+      - env:
+          VITE_MOCK_PERSONA: ${{ matrix.persona }}
+          VITE_MOCK_STATE: ${{ matrix.state }}
+        run: pnpm e2e:mock
+      - run: pnpm e2e:mock:count
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mock-playwright-${{ matrix.persona }}-${{ matrix.state }}
+          path: frontend/playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
+
+  mock-artifact-isolation:
+    name: Production artifact contains no mock implementation
+    needs: host-build
+    if: contains(fromJSON(inputs.capabilities_json), 'mock')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-host-build-${{ inputs.mock_artifact_component }}
+          path: artifacts/frontend/mock-host
+      - working-directory: .
+        run: python3 scripts/ci/restore-frontend-artifact.py --archive 'artifacts/frontend/mock-host/${{ inputs.mock_artifact_component }}.tar.gz' 
+      - run: pnpm check:production-mock-isolation
+
+  frontend-gate:
+    name: Frontend gate
+    if: always()
+    needs: [invariants, affected-static, node-tests, web-tests, mobile-tests, tooling-tests, ui-foundation, host-build, host-e2e, mobile-build, mock-contract, mock-e2e, mock-artifact-isolation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    defaults: {run: {working-directory: .}}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require every routed frontend proof
+        env:
+          INVARIANTS: ${{ needs.invariants.result }}
+          STATIC: ${{ needs.affected-static.result }}
+          NODE: ${{ needs.node-tests.result }}
+          WEB: ${{ needs.web-tests.result }}
+          MOBILE_TEST: ${{ needs.mobile-tests.result }}
+          TOOLING: ${{ needs.tooling-tests.result }}
+          UI: ${{ needs.ui-foundation.result }}
+          HOST_BUILD: ${{ needs.host-build.result }}
+          HOST_E2E: ${{ needs.host-e2e.result }}
+          MOBILE_BUILD: ${{ needs.mobile-build.result }}
+          MOCK_CONTRACT: ${{ needs.mock-contract.result }}
+          MOCK_E2E: ${{ needs.mock-e2e.result }}
+          MOCK_ISOLATION: ${{ needs.mock-artifact-isolation.result }}
+          HOST_COUNT: ${{ inputs.host_count }}
+          MOBILE_COUNT: ${{ inputs.mobile_count }}
+          CAPS: ${{ inputs.capabilities_json }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          failed=0
+          require() { [[ "$2" == success ]] || { echo "::error::$1=$2"; failed=1; }; }
+          optional() { if [[ "$1" == true ]]; then require "$2" "$3"; elif [[ "$3" != skipped && "$3" != success ]]; then echo "::error::$2 unexpected=$3"; failed=1; fi; }
+          has() { jq -e --arg cap "$1" 'index($cap) != null' <<<"$CAPS" >/dev/null; }
+          require invariants "$INVARIANTS"; require affected-static "$STATIC"; require node-tests "$NODE"
+          web=false; has web-tests && web=true; optional "$web" web-tests "$WEB"
+          mobile=false; [[ "$MOBILE_COUNT" -gt 0 ]] && mobile=true; has mobile-tests && mobile=true; optional "$mobile" mobile-tests "$MOBILE_TEST"
+          tooling=false; has tooling-tests && tooling=true; optional "$tooling" tooling-tests "$TOOLING"
+          ui=false; has ui && ui=true; optional "$ui" ui-foundation "$UI"
+          hosts=false; [[ "$HOST_COUNT" -gt 0 ]] && hosts=true; optional "$hosts" host-build "$HOST_BUILD"; optional "$hosts" host-e2e "$HOST_E2E"
+          mobile_build=false; [[ "$MOBILE_COUNT" -gt 0 ]] && mobile_build=true; optional "$mobile_build" mobile-build "$MOBILE_BUILD"
+          mock=false; has mock && mock=true; optional "$mock" mock-contract "$MOCK_CONTRACT"; optional "$mock" mock-e2e "$MOCK_E2E"; optional "$mock" mock-isolation "$MOCK_ISOLATION"
+          [[ "$failed" -eq 0 ]]
+      - name: Emit frontend proof evidence
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: frontend:gate
+          component_id: frontend-workspace

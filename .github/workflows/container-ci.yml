@@ -1,0 +1,252 @@
+name: Container Provider CI
+
+on:
+  workflow_call:
+    inputs:
+      component_matrix_json: {required: true, type: string}
+      component_count: {required: true, type: number}
+      publish_candidate: {required: false, type: boolean, default: false}
+    outputs:
+      application_manifest_json:
+        value: ${{ jobs.collect.outputs.application_manifest_json }}
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-publish:
+    name: Container proof (${{ matrix.component_id }})
+    if: inputs.component_count > 0
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.component_matrix_json) }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: component
+        name: Load component/container contract
+        run: python3 scripts/ci/component-info.py --component '${{ matrix.component_id }}' --github-output
+      - id: build-args
+        name: Render immutable build arguments
+        shell: bash
+        env:
+          FILE: ${{ steps.component.outputs.build_args_file }}
+        run: |
+          set -euo pipefail
+          echo 'value<<__NOTRELIX_BUILD_ARGS__' >> "$GITHUB_OUTPUT"
+          cat "$FILE" >> "$GITHUB_OUTPUT"
+          echo '__NOTRELIX_BUILD_ARGS__' >> "$GITHUB_OUTPUT"
+      - id: names
+        name: Resolve candidate name
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.component.outputs.image_name }}
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repo="ghcr.io/$owner/$IMAGE_NAME"
+          local_tag="notrelix-ci/${{ matrix.component_id }}:${GITHUB_SHA}"
+          registry_tag="$repo:sha-$GITHUB_SHA"
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "local_tag=$local_tag" >> "$GITHUB_OUTPUT"
+          echo "registry_tag=$registry_tag" >> "$GITHUB_OUTPUT"
+      - name: Build exact image once
+        shell: bash
+        env:
+          CONTEXT: ${{ steps.component.outputs.container_context }}
+          DOCKERFILE: ${{ steps.component.outputs.dockerfile }}
+          IMAGE: ${{ steps.names.outputs.local_tag }}
+          BUILD_ARGS: ${{ steps.build-args.outputs.value }}
+        run: |
+          set -euo pipefail
+          args=()
+          while IFS= read -r line; do [[ -n "$line" ]] && args+=(--build-arg "$line"); done <<< "$BUILD_ARGS"
+          docker build --pull=false --file "$DOCKERFILE" --tag "$IMAGE" "${args[@]}" "$CONTEXT"
+      - name: Vulnerability gate on tested bytes
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.names.outputs.local_tag }}
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Runtime smoke by provider contract
+        shell: bash
+        env:
+          PROVIDER: ${{ steps.component.outputs.provider }}
+          IMAGE: ${{ steps.names.outputs.local_tag }}
+          PORT: ${{ steps.component.outputs.runtime_port }}
+          PATH_: ${{ steps.component.outputs.health_path }}
+          SCHEME: ${{ steps.component.outputs.health_scheme }}
+          COMPONENT: ${{ matrix.component_id }}
+        run: |
+          set -euo pipefail
+          network="notrelix-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${COMPONENT}"
+          name="ci-${COMPONENT//[^a-zA-Z0-9_.-]/-}"
+          cleanup() { docker rm -f "$name" ci-postgres ci-redis ci-rabbitmq >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          if [[ "$PROVIDER" == backend ]]; then
+            postgres="$(python3 scripts/ci/image-info.py --image postgres --field ref)"
+            redis="$(python3 scripts/ci/image-info.py --image redis --field ref)"
+            rabbitmq="$(python3 scripts/ci/image-info.py --image rabbitmq --field ref)"
+            docker network create "$network" >/dev/null
+            docker run -d --name ci-postgres --network "$network" -e POSTGRES_PASSWORD=${EPHEMERAL_PER_RUN} -e POSTGRES_DB=notrelix "$postgres" >/dev/null
+            docker run -d --name ci-redis --network "$network" "$redis" >/dev/null
+            docker run -d --name ci-rabbitmq --network "$network" \
+              -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=${EPHEMERAL_PER_RUN} -e RABBITMQ_DEFAULT_VHOST=/ \
+              "$rabbitmq" >/dev/null
+            for _ in $(seq 1 45); do docker exec ci-postgres pg_isready -U postgres -d notrelix >/dev/null 2>&1 && break; sleep 1; done
+            for _ in $(seq 1 60); do docker exec ci-rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1 && break; sleep 1; done
+            docker run -d --name "$name" --network "$network" -P \
+              -e ASPNETCORE_ENVIRONMENT=Production -e ASPNETCORE_URLS="http://+:$PORT" \
+              -e HttpsRedirection__Enabled=false -e ForwardedHeaders__RequireKnownProxyInProduction=false \
+              -e ConnectionStrings__NotrelixDb='Host=ci-postgres;Port=5432;Database=notrelix;Username=postgres;Password=${EPHEMERAL_PER_RUN}' \
+              -e ConnectionStrings__Redis='ci-redis:6379' \
+              -e Messaging__Transport=RabbitMQ -e Messaging__RabbitMQ__Host=ci-rabbitmq -e Messaging__RabbitMQ__Port=5672 \
+              -e Messaging__RabbitMQ__VHost=/ -e Messaging__RabbitMQ__Username=rabbitmq -e Messaging__RabbitMQ__Password=${EPHEMERAL_PER_RUN} \
+              -e JwtSettings__SecretKey='${EPHEMERAL_PER_RUN}' \
+              -e JwtSettings__Issuer='https://ci.notrelix.invalid' -e JwtSettings__Audience='https://ci.notrelix.invalid' \
+              -e Email__ApiKey='${EPHEMERAL_PER_RUN}' -e Email__FromEmail='noreply@notrelix.invalid' \
+              -e Cors__AllowedOrigins__0='https://ci.notrelix.invalid' "$IMAGE" >/dev/null
+          else
+            docker run -d --name "$name" -P "$IMAGE" >/dev/null
+          fi
+          host_port="$(docker port "$name" "$PORT/tcp" | awk -F: 'END{print $NF}')"
+          [[ -n "$host_port" ]] || { docker logs "$name" || true; exit 1; }
+          url="$SCHEME://127.0.0.1:$host_port$PATH_"
+          for _ in $(seq 1 60); do
+            if curl --fail --silent --show-error --max-time 3 "$url" >/dev/null; then exit 0; fi
+            docker inspect -f '{{.State.Running}}' "$name" | grep -q true || break
+            sleep 2
+          done
+          docker logs "$name" || true
+          exit 1
+      - name: Generate SPDX SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.names.outputs.local_tag }}
+          format: spdx-json
+          output: component.spdx.json
+          exit-code: "0"
+      - name: Publish the already-tested bytes
+        if: inputs.publish_candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOCAL: ${{ steps.names.outputs.local_tag }}
+          REMOTE: ${{ steps.names.outputs.registry_tag }}
+        run: |
+          set -euo pipefail
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker tag "$LOCAL" "$REMOTE"
+          docker push "$REMOTE"
+      - id: digest
+        name: Resolve immutable subject
+        shell: bash
+        env:
+          PUBLISH: ${{ inputs.publish_candidate }}
+          LOCAL: ${{ steps.names.outputs.local_tag }}
+          REMOTE: ${{ steps.names.outputs.registry_tag }}
+        run: |
+          set -euo pipefail
+          if [[ "$PUBLISH" == true ]]; then
+            docker pull "$REMOTE" >/dev/null
+            ref="$(docker inspect --format='{{index .RepoDigests 0}}' "$REMOTE")"
+            [[ "$ref" == *@sha256:* ]] || { echo "::error::Registry did not return a digest subject"; exit 1; }
+            echo "image=$ref" >> "$GITHUB_OUTPUT"
+            echo "digest=${ref##*@}" >> "$GITHUB_OUTPUT"
+          else
+            id="$(docker image inspect --format '{{.Id}}' "$LOCAL")"
+            echo "image=$LOCAL" >> "$GITHUB_OUTPUT"
+            echo "digest=$id" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Attest build provenance
+        if: inputs.publish_candidate
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-name: ${{ steps.names.outputs.repo }}
+          subject-digest: ${{ steps.digest.outputs.digest }}
+          push-to-registry: true
+      - name: Attest SBOM
+        if: inputs.publish_candidate
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-name: ${{ steps.names.outputs.repo }}
+          subject-digest: ${{ steps.digest.outputs.digest }}
+          sbom-path: component.spdx.json
+          push-to-registry: true
+      - name: Persist SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-${{ matrix.component_id }}
+          path: component.spdx.json
+          retention-days: 30
+      - name: Write component result
+        shell: bash
+        env:
+          COMPONENT: ${{ matrix.component_id }}
+          IMAGE: ${{ steps.digest.outputs.image }}
+          PUBLISHED: ${{ inputs.publish_candidate }}
+          DEPLOY_ENV: ${{ steps.component.outputs.deploy_env_var }}
+          REPOSITORY: ${{ steps.names.outputs.repo }}
+        run: |
+          mkdir -p artifacts/container
+          jq -n --arg component_id "$COMPONENT" --arg image "$IMAGE" --arg deploy_env_var "$DEPLOY_ENV" --arg repository "$REPOSITORY" --argjson published "$PUBLISHED" \
+            '{component_id:$component_id,image:$image,deploy_env_var:$deploy_env_var,repository:$repository,published:$published}' \
+            > "artifacts/container/container-result-$COMPONENT.json"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: container-result-${{ matrix.component_id }}
+          path: artifacts/container/container-result-${{ matrix.component_id }}.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Emit component container evidence
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: container:${{ matrix.component_id }}
+          component_id: ${{ matrix.component_id }}
+          metadata: published=${{ inputs.publish_candidate }}
+
+  collect:
+    name: Collect generic application manifest
+    if: always() && inputs.component_count > 0
+    needs: build-test-publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    outputs:
+      application_manifest_json: ${{ steps.manifest.outputs.json }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require every matrix container proof
+        env:
+          RESULT: ${{ needs.build-test-publish.result }}
+        run: '[[ "$RESULT" == success ]] || { echo "::error::container matrix=$RESULT"; exit 1; }'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: container-result-*
+          path: artifacts/container-results
+      - id: manifest
+        name: Merge results through catalog contract
+        shell: bash
+        env:
+          PUBLISH: ${{ inputs.publish_candidate }}
+        run: |
+          set -euo pipefail
+          args=(--input-dir artifacts/container-results --output artifacts/application-manifest.json)
+          [[ "$PUBLISH" == true ]] && args+=(--require-all-deployables)
+          python3 scripts/ci/merge-container-results.py "${args[@]}"
+          compact="$(jq -c . artifacts/application-manifest.json)"
+          echo "json=$compact" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: application-image-manifest
+          path: artifacts/application-manifest.json
+          if-no-files-found: error
+          retention-days: 30

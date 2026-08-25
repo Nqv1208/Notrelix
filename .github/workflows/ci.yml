@@ -1,0 +1,249 @@
+name: Notrelix CI
+
+on:
+  pull_request:
+    branches: [main, develop, foundationfreeze]
+  merge_group:
+  push:
+    branches: [main, develop, foundationfreeze]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  plan:
+    name: Delivery execution plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      backend_matrix: ${{ steps.plan.outputs.backend_matrix }}
+      backend_count: ${{ steps.plan.outputs.backend_count }}
+      frontend_host_matrix: ${{ steps.plan.outputs.frontend_host_matrix }}
+      host_count: ${{ steps.plan.outputs.host_count }}
+      mobile_matrix: ${{ steps.plan.outputs.mobile_matrix }}
+      mobile_count: ${{ steps.plan.outputs.mobile_count }}
+      frontend_required: ${{ steps.plan.outputs.frontend_required }}
+      frontend_filters_json: ${{ steps.plan.outputs.frontend_filters_json }}
+      frontend_capabilities_json: ${{ steps.plan.outputs.frontend_capabilities_json }}
+      mock_artifact_component: ${{ steps.plan.outputs.mock_artifact_component }}
+      docs_required: ${{ steps.plan.outputs.docs_required }}
+      infra_required: ${{ steps.plan.outputs.infra_required }}
+      security_backend: ${{ steps.plan.outputs.security_backend }}
+      security_frontend: ${{ steps.plan.outputs.security_frontend }}
+      container_matrix: ${{ steps.plan.outputs.container_matrix }}
+      packaging_required: ${{ steps.plan.outputs.packaging_required }}
+      container_count: ${{ steps.plan.outputs.container_count }}
+      release_required: ${{ steps.plan.outputs.release_required }}
+      release_candidate: ${{ steps.plan.outputs.release_candidate }}
+      schema_change: ${{ steps.plan.outputs.schema_change }}
+      rollback_after_schema_change: ${{ steps.plan.outputs.rollback_after_schema_change }}
+      expected_proofs_json: ${{ steps.plan.outputs.expected_proofs_json }}
+      plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: plan
+        name: Build canonical catalog-driven plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          BEFORE_SHA: ${{ github.event.before || '' }}
+        run: >-
+          python3 scripts/ci/build-plan.py
+          --event-name "$EVENT_NAME"
+          --base-sha "$BASE_SHA"
+          --head-sha "$HEAD_SHA"
+          --before-sha "$BEFORE_SHA"
+          --ref "$GITHUB_REF"
+          --output artifacts/ci/execution-plan.json
+      - name: Validate the generated plan against delivery contracts
+        run: |
+          python3 scripts/ci/validate-delivery.py
+          jq -e '.schema_version == 4 and (.expected_proofs | type == "array") and (.schema_change | type == "boolean") and (.rollback_after_schema_change == "manual") and (.plan_sha256 | length == 64)' artifacts/ci/execution-plan.json >/dev/null
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-execution-plan
+          path: artifacts/ci/execution-plan.json
+          if-no-files-found: error
+          retention-days: 30
+
+  backend:
+    name: Backend provider (${{ matrix.component_id }})
+    needs: plan
+    if: needs.plan.outputs.backend_count != '0'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.backend_matrix) }}
+    uses: ./.github/workflows/backend-ci.yml
+    with:
+      component_id: ${{ matrix.component_id }}
+
+  frontend:
+    name: Frontend provider
+    needs: plan
+    if: needs.plan.outputs.frontend_required == 'true'
+    uses: ./.github/workflows/frontend-ci.yml
+    with:
+      host_matrix_json: ${{ needs.plan.outputs.frontend_host_matrix }}
+      host_count: ${{ fromJSON(needs.plan.outputs.host_count) }}
+      mobile_matrix_json: ${{ needs.plan.outputs.mobile_matrix }}
+      mobile_count: ${{ fromJSON(needs.plan.outputs.mobile_count) }}
+      filters_json: ${{ needs.plan.outputs.frontend_filters_json }}
+      capabilities_json: ${{ needs.plan.outputs.frontend_capabilities_json }}
+      mock_artifact_component: ${{ needs.plan.outputs.mock_artifact_component }}
+
+  documentation:
+    name: Documentation provider
+    needs: plan
+    if: needs.plan.outputs.docs_required == 'true'
+    uses: ./.github/workflows/docs-ci.yml
+
+  infrastructure:
+    name: Infrastructure provider
+    needs: plan
+    if: needs.plan.outputs.infra_required == 'true'
+    uses: ./.github/workflows/infra-ci.yml
+
+  security:
+    name: Dependency-security provider
+    needs: plan
+    if: needs.plan.outputs.security_backend == 'true' || needs.plan.outputs.security_frontend == 'true'
+    uses: ./.github/workflows/security-ci.yml
+    with:
+      scan_backend: ${{ needs.plan.outputs.security_backend == 'true' }}
+      scan_frontend: ${{ needs.plan.outputs.security_frontend == 'true' }}
+
+  packaging:
+    name: Container provider
+    needs: plan
+    if: needs.plan.outputs.packaging_required == 'true'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    uses: ./.github/workflows/container-ci.yml
+    with:
+      component_matrix_json: ${{ needs.plan.outputs.container_matrix }}
+      component_count: ${{ fromJSON(needs.plan.outputs.container_count) }}
+      publish_candidate: ${{ needs.plan.outputs.release_candidate == 'true' }}
+
+  candidate-stack:
+    name: Exact release-candidate stack
+    needs: [plan, packaging]
+    if: needs.plan.outputs.release_candidate == 'true' && needs.packaging.result == 'success'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/stack-smoke.yml
+    with:
+      application_manifest_json: ${{ needs.packaging.outputs.application_manifest_json }}
+
+  proof-gate:
+    name: Evidence completeness gate
+    if: always()
+    needs: [plan, backend, frontend, documentation, infrastructure, security, packaging, candidate-stack]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ci-execution-plan
+          path: artifacts/plan
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: ci-evidence-*
+          path: artifacts/evidence
+          merge-multiple: true
+      - name: Require exactly the evidence declared by the execution plan
+        run: python3 scripts/ci/aggregate-evidence.py --plan artifacts/plan/execution-plan.json --evidence-dir artifacts/evidence --output artifacts/ci/evidence-summary.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-evidence-summary
+          path: artifacts/ci/evidence-summary.json
+          if-no-files-found: error
+          retention-days: 30
+
+  seal-candidate:
+    name: Seal immutable release candidate
+    if: always() && needs.plan.outputs.release_candidate == 'true'
+    needs: [plan, packaging, candidate-stack, proof-gate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require proof gate and exact stack
+        env:
+          PROOF: ${{ needs.proof-gate.result }}
+          PACKAGE: ${{ needs.packaging.result }}
+          STACK: ${{ needs.candidate-stack.result }}
+        run: '[[ "$PROOF" == success && "$PACKAGE" == success && "$STACK" == success ]]'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ci-evidence-summary
+          path: artifacts/evidence
+      - name: Create generic candidate manifest
+        env:
+          RELEASE_IMAGES: ${{ needs.candidate-stack.outputs.release_images_json }}
+          PLAN_SHA: ${{ needs.plan.outputs.plan_sha256 }}
+          SCHEMA_CHANGE: ${{ needs.plan.outputs.schema_change }}
+          ROLLBACK_AFTER_SCHEMA_CHANGE: ${{ needs.plan.outputs.rollback_after_schema_change }}
+        run: |
+          set -euo pipefail
+          summary_sha="$(jq -r .summary_sha256 artifacts/evidence/evidence-summary.json)"
+          jq -n \
+            --arg source_sha "$GITHUB_SHA" \
+            --argjson ci_run_id "$GITHUB_RUN_ID" \
+            --arg plan_sha256 "$PLAN_SHA" \
+            --arg evidence_summary_sha256 "$summary_sha" \
+            --argjson release_images "$RELEASE_IMAGES" \
+            --argjson schema_change "$SCHEMA_CHANGE" \
+            --arg rollback_after_schema_change "$ROLLBACK_AFTER_SCHEMA_CHANGE" \
+            '{schema_version:4,source_sha:$source_sha,ci_run_id:$ci_run_id,plan_sha256:$plan_sha256,evidence_summary_sha256:$evidence_summary_sha256,schema_change:$schema_change,rollback_after_schema_change:$rollback_after_schema_change,images:$release_images.images}' \
+            > release-candidate.json
+          jq -e '.schema_version == 4 and (.schema_change|type=="boolean") and .rollback_after_schema_change=="manual" and (.images | length > 0) and all(.images[]; .ref | contains("@sha256:"))' release-candidate.json >/dev/null
+      - name: Attest release candidate manifest
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-path: release-candidate.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-candidate
+          path: release-candidate.json
+          if-no-files-found: error
+          retention-days: 30
+
+  ci-gate:
+    name: Notrelix CI Gate
+    if: always()
+    needs: [plan, proof-gate, seal-candidate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require plan, complete evidence and candidate seal when planned
+        env:
+          PLAN: ${{ needs.plan.result }}
+          PROOF: ${{ needs.proof-gate.result }}
+          CANDIDATE_REQUIRED: ${{ needs.plan.outputs.release_candidate }}
+          CANDIDATE: ${{ needs.seal-candidate.result }}
+        run: |
+          set -euo pipefail
+          [[ "$PLAN" == success && "$PROOF" == success ]]
+          if [[ "$CANDIDATE_REQUIRED" == true ]]; then
+            [[ "$CANDIDATE" == success ]]
+          else
+            [[ "$CANDIDATE" == skipped || "$CANDIDATE" == success ]]
+          fi

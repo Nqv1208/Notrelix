@@ -1,0 +1,31 @@
+name: CI Definition Safety
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main, develop, foundationfreeze]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-definition:
+    name: Workflow definition lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: actionlint all workflows/actions
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 -color
+      - name: Validate delivery catalog / policy contracts
+        run: python3 scripts/ci/validate-delivery.py
+      - name: Notrelix CI architecture policy
+        run: python3 scripts/ci/validate-ci-layout.py
+      - name: Planner regression tests
+        run: python3 scripts/ci/test_build_plan.py
+      - name: Delivery contract regression tests
+        run: python3 scripts/ci/test_delivery_contracts.py
+      - name: Compile CI control-plane Python
+        run: python3 -m compileall -q scripts/ci

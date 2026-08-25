@@ -1,0 +1,17 @@
+name: Scheduled Dependency Security
+
+on:
+  schedule:
+    # 09:00 Asia/Ho_Chi_Minh every Monday.
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    uses: ./.github/workflows/security-ci.yml
+    with:
+      scan_backend: true
+      scan_frontend: true

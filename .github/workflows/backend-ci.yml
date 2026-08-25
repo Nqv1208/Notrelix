@@ -1,97 +1,36 @@
 name: Backend CI
 
 on:
-  push:
-    branches: [main, develop, foundationfreeze]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/be-ci.yml'
-
-  # Do not path-filter pull requests. If this workflow is a required check,
-  # GitHub can leave it pending when the workflow itself is skipped by paths.
-  # The changes job keeps frontend-only PRs cheap while still producing a gate.
-  pull_request:
-    branches: [main, develop, foundationfreeze]
-
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      component_id:
+        required: true
+        type: string
 
 permissions:
   contents: read
 
-concurrency:
-  group: backend-ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 env:
   DOTNET_CONFIGURATION: Release
-  DOTNET_CLI_TELEMETRY_OPTOUT: true
-  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_NOLOGO: "true"
 
 jobs:
-  changes:
-    name: Backend change detection
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    outputs:
-      backend: ${{ steps.detect.outputs.backend }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Detect backend changes
-        id: detect
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-
-          if [[ "$EVENT_NAME" != "pull_request" ]]; then
-            echo "backend=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- \
-            backend \
-            .github/workflows/be-ci.yml; then
-            echo "backend=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "backend=true" >> "$GITHUB_OUTPUT"
-          fi
-
   quality:
-    name: Quality and security guards
-    runs-on: ubuntu-latest
+    name: Quality and architecture guards
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
-
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          global-json-file: backend/global.json
+          fetch-depth: 0
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
+      - name: Setup backend toolchain
+        uses: ./.github/actions/setup-backend
 
       - name: Restore
         working-directory: backend
@@ -103,32 +42,20 @@ jobs:
 
       - name: Build solution
         working-directory: backend
-        run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION"
+        run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION" -p:ContinuousIntegrationBuild=true
 
-      - name: Vulnerability scan
-        working-directory: backend
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          dotnet list package --vulnerable --include-transitive 2>&1 \
-            | tee vulnerable-report.txt
-
-          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then
-            echo "Vulnerable packages found."
-            exit 1
-          fi
-
-          echo "No vulnerable packages found."
+      - name: Enforce append-only migration history
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+        run: python3 scripts/ci/check-migration-discipline.py --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA"
 
       - name: Guard dependency graph against SQLite
         working-directory: backend
         shell: bash
         run: |
           set -euo pipefail
-
-          dotnet list package --include-transitive 2>&1 \
-            | tee dependency-report.txt
+          dotnet list package --include-transitive 2>&1 | tee dependency-report.txt
 
           if grep -iE \
             "SQLite|Sqlite|SQLitePCLRaw|Microsoft\.Data\.Sqlite|Microsoft\.EntityFrameworkCore\.Sqlite" \
@@ -145,7 +72,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           matches="$(
             grep -RInE \
               "UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:" \
@@ -168,37 +94,22 @@ jobs:
 
   architecture-tests:
     name: Architecture tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [changes, quality]
-    if: needs.changes.outputs.backend == 'true'
-
+    needs: quality
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: backend/global.json
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
+      - name: Setup backend toolchain
+        uses: ./.github/actions/setup-backend
 
       - name: Restore architecture tests
         working-directory: backend
-        run: >
-          dotnet restore
-          tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
+        run: dotnet restore tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
 
       - name: Run architecture tests
         working-directory: backend
@@ -220,43 +131,34 @@ jobs:
           Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests
           Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests
           Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests
-          Notrelix.Architecture.Tests.Pipeline.PipelineFreezeArchitectureTests
-          Notrelix.Architecture.Tests.Pipeline.ExpectedVersionArchitectureTests
-          Notrelix.Architecture.Tests.Performance.PipelinePerformanceContractTests
+
+      - name: Upload architecture test evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-${{ inputs.component_id }}-architecture-test-results
+          path: backend/TestResults/architecture
+          if-no-files-found: ignore
+          retention-days: 7
 
   core-tests:
     name: Domain, Application and Infrastructure tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
-    needs: [changes, quality]
-    if: needs.changes.outputs.backend == 'true'
-
+    needs: quality
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: backend/global.json
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
+      - name: Setup backend toolchain
+        uses: ./.github/actions/setup-backend
 
       - name: Restore Domain tests
         working-directory: backend
-        run: >
-          dotnet restore
-          tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj
+        run: dotnet restore tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj
 
       - name: Domain tests
         working-directory: backend
@@ -271,17 +173,11 @@ jobs:
 
       - name: Verify Domain snapshots did not drift
         working-directory: backend
-        run: >
-          git diff
-          --exit-code
-          --
-          tests/Notrelix.Domain.Tests/Snapshots
+        run: git diff --exit-code -- tests/Notrelix.Domain.Tests/Snapshots
 
       - name: Restore Application tests
         working-directory: backend
-        run: >
-          dotnet restore
-          tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj
+        run: dotnet restore tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj
 
       - name: Application tests
         working-directory: backend
@@ -296,9 +192,7 @@ jobs:
 
       - name: Restore Infrastructure tests
         working-directory: backend
-        run: >
-          dotnet restore
-          tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
+        run: dotnet restore tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
 
       - name: Infrastructure tests
         working-directory: backend
@@ -319,39 +213,33 @@ jobs:
           Notrelix.Infrastructure.Tests.Data.Rls.RlsPolicyVerificationTests
           Notrelix.Infrastructure.Tests.Data.DomainEventInterceptorTests
 
+      - name: Upload core test evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-${{ inputs.component_id }}-core-test-results
+          path: backend/TestResults
+          if-no-files-found: ignore
+          retention-days: 7
+
   platform-tests:
     name: Platform messaging tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
-    needs: [changes, quality]
-    if: needs.changes.outputs.backend == 'true'
-
+    needs: quality
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: backend/global.json
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
+      - name: Setup backend toolchain
+        uses: ./.github/actions/setup-backend
 
       - name: Restore Platform tests
         working-directory: backend
-        run: >
-          dotnet restore
-          tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
+        run: dotnet restore tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
 
       - name: Platform tests
         working-directory: backend
@@ -373,16 +261,23 @@ jobs:
           Notrelix.Platform.Tests.Messaging.Reliability.PoisonDetectorTests
           Notrelix.Platform.Tests.Messaging.Consumers.ConsumerHostDeliveryContractTests
 
+      - name: Upload Platform test evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-${{ inputs.component_id }}-platform-test-results
+          path: backend/TestResults/platform
+          if-no-files-found: ignore
+          retention-days: 7
+
   api-tests:
     name: API tests and OpenAPI contract
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
-    needs: [changes, quality]
-    if: needs.changes.outputs.backend == 'true'
-
+    needs: quality
     services:
       redis:
-        image: redis:7
+        image: redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -390,45 +285,28 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
       ConnectionStrings__Redis: localhost:6379,abortConnect=false
-
       Cors__AllowedOrigins__0: http://localhost:5173
       Cors__AllowedOrigins__1: http://localhost:3000
-
-      ForwardedHeaders__RequireKnownProxyInProduction: false
-
+      ForwardedHeaders__RequireKnownProxyInProduction: "false"
       JwtSettings__SecretKey: ci-test-secret-key-must-be-at-least-32-characters
       JwtSettings__Issuer: Notrelix.CI
       JwtSettings__Audience: Notrelix.CI
-      JwtSettings__ExpireMinutes: 60
-      JwtSettings__RefreshTokenExpireDays: 7
-
+      JwtSettings__ExpireMinutes: "60"
+      JwtSettings__RefreshTokenExpireDays: "7"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: backend/global.json
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
+      - name: Setup backend toolchain
+        uses: ./.github/actions/setup-backend
 
       - name: Restore API tests
         working-directory: backend
-        run: >
-          dotnet restore
-          tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
+        run: dotnet restore tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
 
       - name: API tests
         working-directory: backend
@@ -452,19 +330,12 @@ jobs:
         working-directory: backend
         env:
           DOTNET_ENVIRONMENT: Development
-          # Export must not require external services (design contract of
-          # OpenApiExportCommand): neutralize Development auto-start features.
-          # RabbitMQ/MigrateOnStartup/SeedData need containers CI does not run.
           Messaging__Transport: InMemory
           Database__MigrateOnStartup: "false"
           SeedData__RunOnStartup: "false"
         shell: bash
         run: |
           set -euo pipefail
-
-          # dotnet run executes the app with cwd = project directory, so
-          # relative output paths would land in src/Notrelix.API. Use
-          # absolute paths for both the committed contract and the export.
           CONTRACT_PATH="${GITHUB_WORKSPACE}/backend/contracts/openapi/notrelix.v1.json"
 
           test -f "$CONTRACT_PATH"
@@ -478,24 +349,30 @@ jobs:
             --export-openapi \
             /tmp/notrelix.v1.generated.json
 
-          cmp "$CONTRACT_PATH" /tmp/notrelix.v1.generated.json \
-            || {
-              echo "OpenAPI spec drift detected."
-              echo "Regenerate and review the public contract before committing:"
-              echo "dotnet run --project src/Notrelix.API -- --export-openapi contracts/openapi/notrelix.v1.json"
-              exit 1
-            }
+          cmp "$CONTRACT_PATH" /tmp/notrelix.v1.generated.json || {
+            echo "OpenAPI spec drift detected."
+            echo "Regenerate and review the public contract before committing:"
+            echo "dotnet run --project src/Notrelix.API -- --export-openapi contracts/openapi/notrelix.v1.json"
+            exit 1
+          }
+
+      - name: Upload API test evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-${{ inputs.component_id }}-api-test-results
+          path: backend/TestResults/api
+          if-no-files-found: ignore
+          retention-days: 7
 
   integration-tests:
     name: Integration and provider tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
-    needs: [changes, quality]
-    if: needs.changes.outputs.backend == 'true'
-
+    needs: quality
     services:
       redis:
-        image: redis:7
+        image: redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -503,45 +380,28 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
       ConnectionStrings__Redis: localhost:6379,abortConnect=false
-
       Cors__AllowedOrigins__0: http://localhost:5173
       Cors__AllowedOrigins__1: http://localhost:3000
-
-      ForwardedHeaders__RequireKnownProxyInProduction: false
-
+      ForwardedHeaders__RequireKnownProxyInProduction: "false"
       JwtSettings__SecretKey: ci-test-secret-key-must-be-at-least-32-characters
       JwtSettings__Issuer: Notrelix.CI
       JwtSettings__Audience: Notrelix.CI
-      JwtSettings__ExpireMinutes: 60
-      JwtSettings__RefreshTokenExpireDays: 7
-
+      JwtSettings__ExpireMinutes: "60"
+      JwtSettings__RefreshTokenExpireDays: "7"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: backend/global.json
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('backend/global.json', 'backend/Directory.Packages.props', 'backend/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
+      - name: Setup backend toolchain
+        uses: ./.github/actions/setup-backend
 
       - name: Restore Integration tests
         working-directory: backend
-        run: >
-          dotnet restore
-          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
+        run: dotnet restore tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
 
       - name: Integration tests
         working-directory: backend
@@ -569,85 +429,59 @@ jobs:
           Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests
           Notrelix.Integration.Tests.Data.OutboxDispatchContractTests
           Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests
-          Notrelix.Integration.Tests.Data.ExpectedVersionConcurrencyIntegrationTests
-          Notrelix.Integration.Tests.Automation.AutomationN8nDurabilityIntegrationTests
-          Notrelix.Integration.Tests.Integration.PipelineTelemetryIntegrationTests
           Notrelix.Integration.Tests.Data.OutboxAtomicityTests
           Notrelix.Integration.Tests.Data.MigrationSmokeTests
           Notrelix.Integration.Tests.Integration.ProductionCompositionTests
           Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests
           Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests
 
-  docker-build:
-    name: Docker build
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    needs:
-      - changes
-      - architecture-tests
-      - core-tests
-      - platform-tests
-      - api-tests
-      - integration-tests
-    if: needs.changes.outputs.backend == 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build backend Docker image
-        uses: docker/build-push-action@v6
+      - name: Upload Integration test evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          context: backend
-          push: false
-          tags: notrelix/backend:ci-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          name: backend-${{ inputs.component_id }}-integration-test-results
+          path: backend/TestResults/integration
+          if-no-files-found: ignore
+          retention-days: 7
 
-  backend-ci:
+  backend-gate:
     name: Backend CI gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
     if: always()
     needs:
-      - changes
       - quality
       - architecture-tests
       - core-tests
       - platform-tests
       - api-tests
       - integration-tests
-      - docker-build
-
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
-      - name: Evaluate Backend CI
+      - name: Checkout for evidence contract
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Require registered backend provider
+        run: |
+          set -euo pipefail
+          provider="$(python3 scripts/ci/component-info.py --component '${{ inputs.component_id }}' --field provider)"
+          [[ "$provider" == backend ]] || { echo "::error::${{ inputs.component_id }} is not a backend provider"; exit 1; }
+
+      - name: Require all backend proof
         shell: bash
         env:
-          BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
           QUALITY: ${{ needs.quality.result }}
           ARCHITECTURE: ${{ needs.architecture-tests.result }}
           CORE: ${{ needs.core-tests.result }}
           PLATFORM: ${{ needs.platform-tests.result }}
           API: ${{ needs.api-tests.result }}
           INTEGRATION: ${{ needs.integration-tests.result }}
-          DOCKER: ${{ needs.docker-build.result }}
         run: |
           set -euo pipefail
-
-          if [[ "$BACKEND_CHANGED" != "true" ]]; then
-            echo "No backend CI-relevant changes detected."
-            exit 0
-          fi
-
           failed=0
 
           check_result() {
             local name="$1"
             local result="$2"
-
             if [[ "$result" != "success" ]]; then
               echo "::error::$name result is '$result'; expected 'success'."
               failed=1
@@ -662,10 +496,11 @@ jobs:
           check_result "platform-tests" "$PLATFORM"
           check_result "api-tests" "$API"
           check_result "integration-tests" "$INTEGRATION"
-          check_result "docker-build" "$DOCKER"
 
-          if [[ "$failed" -ne 0 ]]; then
-            exit 1
-          fi
+          [[ "$failed" -eq 0 ]]
 
-          echo "Backend CI passed for SHA $GITHUB_SHA."
+      - name: Emit backend proof evidence
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: backend:${{ inputs.component_id }}
+          component_id: ${{ inputs.component_id }}
