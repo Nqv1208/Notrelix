@@ -94,32 +94,34 @@ jobs:
           set -euo pipefail
           network="notrelix-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${COMPONENT}"
           name="ci-${COMPONENT//[^a-zA-Z0-9_.-]/-}"
-          # Removed by the EXIT trap below; never called directly.
-          # shellcheck disable=SC2317,SC2329
-          cleanup() { docker rm -f "$name" ci-postgres ci-redis ci-rabbitmq >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; }
-          trap cleanup EXIT
+          creds_file="$(mktemp)"
+          # Executed by the runtime on EXIT; values are final at registration.
+          # shellcheck disable=SC2064
+          trap "rm -f '$creds_file'; docker rm -f '$name' ci-postgres ci-redis ci-rabbitmq >/dev/null 2>&1 || true; docker network rm '$network' >/dev/null 2>&1 || true" EXIT
           if [[ "$PROVIDER" == backend ]]; then
             postgres="$(python3 scripts/ci/image-info.py --image postgres --field ref)"
-            redis="$(python3 scripts/ci/image-info.py --image redis --field ref)"
             rabbitmq="$(python3 scripts/ci/image-info.py --image rabbitmq --field ref)"
+            bash scripts/ci/generate-test-credentials.sh > "$creds_file"
+            # shellcheck source=/dev/null
+            source "$creds_file"
             docker network create "$network" >/dev/null
-            docker run -d --name ci-postgres --network "$network" -e POSTGRES_PASSWORD=${EPHEMERAL_PER_RUN} -e POSTGRES_DB=notrelix "$postgres" >/dev/null
-            docker run -d --name ci-redis --network "$network" "$redis" >/dev/null
+            docker run -d --name ci-postgres --network "$network" -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" -e POSTGRES_DB=notrelix "$postgres" >/dev/null
+            docker run -d --name ci-redis --network "$network" redis-server --requirepass "$REDIS_PASSWORD" >/dev/null
             docker run -d --name ci-rabbitmq --network "$network" \
-              -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=${EPHEMERAL_PER_RUN} -e RABBITMQ_DEFAULT_VHOST=/ \
+              -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS="$RABBITMQ_PASSWORD" -e RABBITMQ_DEFAULT_VHOST=/ \
               "$rabbitmq" >/dev/null
             for _ in $(seq 1 45); do docker exec ci-postgres pg_isready -U postgres -d notrelix >/dev/null 2>&1 && break; sleep 1; done
             for _ in $(seq 1 60); do docker exec ci-rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1 && break; sleep 1; done
             docker run -d --name "$name" --network "$network" -P \
               -e ASPNETCORE_ENVIRONMENT=Production -e ASPNETCORE_URLS="http://+:$PORT" \
               -e HttpsRedirection__Enabled=false -e ForwardedHeaders__RequireKnownProxyInProduction=false \
-              -e ConnectionStrings__NotrelixDb='Host=ci-postgres;Port=5432;Database=notrelix;Username=postgres;Password=${EPHEMERAL_PER_RUN}' \
-              -e ConnectionStrings__Redis='ci-redis:6379' \
+              -e ConnectionStrings__NotrelixDb="Host=ci-postgres;Port=5432;Database=notrelix;Username=postgres;Password=$POSTGRES_PASSWORD" \
+              -e ConnectionStrings__Redis="ci-redis:6379,password=$REDIS_PASSWORD" \
               -e Messaging__Transport=RabbitMQ -e Messaging__RabbitMQ__Host=ci-rabbitmq -e Messaging__RabbitMQ__Port=5672 \
-              -e Messaging__RabbitMQ__VHost=/ -e Messaging__RabbitMQ__Username=rabbitmq -e Messaging__RabbitMQ__Password=${EPHEMERAL_PER_RUN} \
-              -e JwtSettings__SecretKey='${EPHEMERAL_PER_RUN}' \
+              -e Messaging__RabbitMQ__VHost=/ -e Messaging__RabbitMQ__Username=rabbitmq -e Messaging__RabbitMQ__Password="$RABBITMQ_PASSWORD" \
+              -e JwtSettings__SecretKey="$JWT_SECRET" \
               -e JwtSettings__Issuer='https://ci.notrelix.invalid' -e JwtSettings__Audience='https://ci.notrelix.invalid' \
-              -e Email__ApiKey='${EPHEMERAL_PER_RUN}' -e Email__FromEmail='noreply@notrelix.invalid' \
+              -e Email__ApiKey="$EMAIL_API_KEY" -e Email__FromEmail='noreply@notrelix.invalid' \
               -e Cors__AllowedOrigins__0='https://ci.notrelix.invalid' "$IMAGE" >/dev/null
           else
             docker run -d --name "$name" -P "$IMAGE" >/dev/null

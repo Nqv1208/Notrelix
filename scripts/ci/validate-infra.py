@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 import subprocess
 import tempfile
 from pathlib import Path
@@ -26,23 +27,32 @@ ZERO = "0" * 64
 # merge implementation that understands the !reset tag. Deployment hosts and
 # CI runners must satisfy this floor before release rendering is trusted.
 MIN_COMPOSE_VERSION = (2, 24, 4)
-TEST_ENV = {
-    "POSTGRES_PASSWORD": "${EPHEMERAL_PER_RUN}",
-    "REDIS_PASSWORD": "${EPHEMERAL_PER_RUN}",
-    "RABBITMQ_USER": "ci-rabbit",
-    "RABBITMQ_PASSWORD": "${EPHEMERAL_PER_RUN}",
-    "RABBITMQ_VHOST": "/",
-    "JWT_SECRET": "${EPHEMERAL_PER_RUN}",
-    "JWT_ISSUER": "http://localhost",
-    "JWT_AUDIENCE": "http://localhost",
-    "CORS_ORIGIN": "http://localhost",
-    "RESEND_API_KEY": "${EPHEMERAL_PER_RUN}",
-    "CONNECTIONSTRINGS_NOTRELIXDB": "Host=postgres;Port=5432;Database=notrelix;Username=postgres;Password=${EPHEMERAL_PER_RUN}",
-    "CONNECTIONSTRINGS_REDIS": "redis:6379,password=${EPHEMERAL_PER_RUN}",
-    "BACKEND_NETWORK_SUBNET": "172.28.0.0/24",
-    "HTTPS_REDIRECTION_ENABLED": "false",
-    "HTTP_PORT": "8080",
-}
+
+
+def _ephemeral_test_environment() -> dict[str, str]:
+    """Runtime-generated non-production values; no committed credentials."""
+    postgres_password = secrets.token_hex(16)
+    redis_password = secrets.token_hex(16)
+    rabbitmq_password = secrets.token_hex(16)
+    return {
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": postgres_password,
+        "POSTGRES_DB": "notrelix",
+        "REDIS_PASSWORD": redis_password,
+        "RABBITMQ_USER": "ci-rabbit",
+        "RABBITMQ_PASSWORD": rabbitmq_password,
+        "RABBITMQ_VHOST": "/",
+        "JWT_SECRET": secrets.token_hex(32),
+        "JWT_ISSUER": "http://localhost",
+        "JWT_AUDIENCE": "http://localhost",
+        "CORS_ORIGIN": "http://localhost",
+        "RESEND_API_KEY": secrets.token_hex(16),
+        "CONNECTIONSTRINGS_NOTRELIXDB": f"Host=postgres;Port=5432;Database=notrelix;Username=postgres;Password={postgres_password}",
+        "CONNECTIONSTRINGS_REDIS": f"redis:6379,password={redis_password}",
+        "BACKEND_NETWORK_SUBNET": "172.28.0.0/24",
+        "HTTPS_REDIRECTION_ENABLED": "false",
+        "HTTP_PORT": "8080",
+    }
 
 
 def fail(msg: str) -> None:
@@ -50,7 +60,7 @@ def fail(msg: str) -> None:
 
 
 def immutable_test_environment() -> dict[str, str]:
-    env = dict(TEST_ENV)
+    env = _ephemeral_test_environment()
     catalog = load_catalog(ROOT)
     for cid in deployable_components(catalog):
         cfg = catalog["components"][cid]["container"]
