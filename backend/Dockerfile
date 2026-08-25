@@ -1,7 +1,7 @@
 # Immutable build/runtime bases. CI supplies these arguments from
 # delivery/images.lock.toml; defaults keep local builds on the same base bytes.
-ARG DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:9.0.313@sha256:0300d42309afd86168fa57d62db79020a34ee396d39c9634844b9c0ab285ea55
-ARG DOTNET_RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:9.0.18-bookworm-slim@sha256:86085bc68dde4a8cdfd8c2342acc3bf843eade855092879a85e3f3adb56e55c7
+ARG DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:9.0.317@sha256:f190d2dd9eef2899c91ac323caa0bd2b39334a5400ba93013e5199da39dad940
+ARG DOTNET_RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:9.0.19-bookworm-slim@sha256:b1201ee0ccf9a22c06844982296c1be40d5ff9c7685dc002729f204e63fb1730
 
 FROM ${DOTNET_SDK_IMAGE} AS build
 ARG BUILD_CONFIGURATION=Release

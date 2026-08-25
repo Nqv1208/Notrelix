@@ -5,14 +5,14 @@ schema_version = 4
 # the new digests before merge.
 [images.dotnet-sdk]
 class = "build"
-source = "mcr.microsoft.com/dotnet/sdk:9.0.313"
-ref = "mcr.microsoft.com/dotnet/sdk:9.0.313@sha256:0300d42309afd86168fa57d62db79020a34ee396d39c9634844b9c0ab285ea55"
+source = "mcr.microsoft.com/dotnet/sdk:9.0.317"
+ref = "mcr.microsoft.com/dotnet/sdk:9.0.317@sha256:f190d2dd9eef2899c91ac323caa0bd2b39334a5400ba93013e5199da39dad940"
 stateful = false
 
 [images.dotnet-aspnet]
 class = "build"
-source = "mcr.microsoft.com/dotnet/aspnet:9.0.18-bookworm-slim"
-ref = "mcr.microsoft.com/dotnet/aspnet:9.0.18-bookworm-slim@sha256:86085bc68dde4a8cdfd8c2342acc3bf843eade855092879a85e3f3adb56e55c7"
+source = "mcr.microsoft.com/dotnet/aspnet:9.0.19-bookworm-slim"
+ref = "mcr.microsoft.com/dotnet/aspnet:9.0.19-bookworm-slim@sha256:b1201ee0ccf9a22c06844982296c1be40d5ff9c7685dc002729f204e63fb1730"
 stateful = false
 
 [images.node-build]
