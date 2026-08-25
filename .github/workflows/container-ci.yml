@@ -134,6 +134,8 @@ jobs:
             docker run -d --name "$name" --network "$network" -P \
               -e ASPNETCORE_ENVIRONMENT=Production -e ASPNETCORE_URLS="http://+:$PORT" \
               -e HttpsRedirection__Enabled=false -e ForwardedHeaders__RequireKnownProxyInProduction=false \
+              -e Rls__Enabled=true -e Rls__SetSessionContext=true -e DataProtection__PersistKeys=true \
+              -e Frontend__AppBaseUrl='https://ci.notrelix.invalid' \
               -e ConnectionStrings__NotrelixDb="Host=ci-postgres;Port=5432;Database=notrelix;Username=postgres;Password=$POSTGRES_PASSWORD" \
               -e ConnectionStrings__Redis="ci-redis:6379,password=$REDIS_PASSWORD" \
               -e Messaging__Transport=RabbitMQ -e Messaging__RabbitMQ__Host=ci-rabbitmq -e Messaging__RabbitMQ__Port=5672 \

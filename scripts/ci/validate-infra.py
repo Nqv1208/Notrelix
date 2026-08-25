@@ -291,6 +291,15 @@ def main() -> int:
         fail("staging backend must depend on RabbitMQ")
     if env_map(staging_backend).get("Messaging__RabbitMQ__Host") != "rabbitmq":
         fail("staging backend must use RabbitMQ compose service")
+    # Non-development topologies must satisfy the application's fail-closed
+    # startup validation: tenant isolation and persistent key ring.
+    for key, expected in (
+        ("Rls__Enabled", "true"),
+        ("Rls__SetSessionContext", "true"),
+        ("DataProtection__PersistKeys", "true"),
+    ):
+        if env_map(staging_backend).get(key) != expected:
+            fail(f"staging backend {key} must be {expected!r}")
 
     release_services = release["services"]
     for name in ("postgres", "redis", "rabbitmq", "backend", "frontend-web", "frontend-marketing", "nginx"):

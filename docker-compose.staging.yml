@@ -29,6 +29,11 @@ services:
       Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost}
       Security__Csrf__Enabled: ${SECURITY__CSRF__ENABLED:-false}
       HttpsRedirection__Enabled: ${HTTPS_REDIRECTION_ENABLED:-true}
+      # Fail-closed application contracts for non-development environments.
+      Rls__Enabled: "true"
+      Rls__SetSessionContext: "true"
+      DataProtection__PersistKeys: "true"
+      Frontend__AppBaseUrl: ${FRONTEND_APP_BASE_URL:-http://localhost}
       Messaging__Transport: RabbitMQ
       Messaging__RabbitMQ__Host: rabbitmq
       Messaging__RabbitMQ__Port: "5672"
