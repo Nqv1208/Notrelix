@@ -1,3 +1,27 @@
+---
+document_id: DEL-CICD-ARCHITECTURE
+document_type: delivery-policy
+status: active
+owner: engineering-delivery
+applies_to:
+  - repository
+  - backend
+  - frontend
+  - api
+evidence:
+  - RULE.md
+  - AGENTS.md
+  - .github/workflows/ci.yml
+  - delivery/catalog.toml
+  - delivery/policy.toml
+  - delivery/images.lock.toml
+  - scripts/ci/
+review_on:
+  - ci-cd-architecture-change
+  - provider-lane-change
+  - evidence-contract-change
+---
+
 # Notrelix CI/CD V4 Architecture
 
 ## 1. Goal

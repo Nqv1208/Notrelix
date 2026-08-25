@@ -1,3 +1,21 @@
+---
+document_id: DEL-CICD-IMPLEMENTATION
+document_type: delivery-policy
+status: active
+owner: engineering-delivery
+applies_to:
+  - repository
+  - backend
+  - frontend
+evidence:
+  - docs/delivery/ci-cd-architecture.md
+  - .github/workflows/
+  - scripts/ci/
+review_on:
+  - ci-cd-architecture-change
+  - release-process-change
+---
+
 # Notrelix CI/CD V4 — Implementation and Operations Guide
 
 ## 1. Canonical files

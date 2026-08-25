@@ -1,3 +1,21 @@
+---
+document_id: DEL-CICD-EXTENSION
+document_type: delivery-policy
+status: active
+owner: engineering-delivery
+applies_to:
+  - repository
+  - backend
+  - frontend
+evidence:
+  - docs/delivery/ci-cd-architecture.md
+  - delivery/catalog.toml
+  - delivery/policy.toml
+review_on:
+  - ci-cd-architecture-change
+  - new-component-registration
+---
+
 # Notrelix CI/CD V4 — Extension Guide
 
 This guide defines whether a future change is a registration, a provider extension, or a genuine architecture change.
