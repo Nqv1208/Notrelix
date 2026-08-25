@@ -40,9 +40,11 @@ jobs:
           FILE: ${{ steps.component.outputs.build_args_file }}
         run: |
           set -euo pipefail
-          echo 'value<<__NOTRELIX_BUILD_ARGS__' >> "$GITHUB_OUTPUT"
-          cat "$FILE" >> "$GITHUB_OUTPUT"
-          echo '__NOTRELIX_BUILD_ARGS__' >> "$GITHUB_OUTPUT"
+          {
+            echo 'value<<__NOTRELIX_BUILD_ARGS__'
+            cat "$FILE"
+            echo '__NOTRELIX_BUILD_ARGS__'
+          } >> "$GITHUB_OUTPUT"
       - id: names
         name: Resolve candidate name
         shell: bash
@@ -54,9 +56,11 @@ jobs:
           repo="ghcr.io/$owner/$IMAGE_NAME"
           local_tag="notrelix-ci/${{ matrix.component_id }}:${GITHUB_SHA}"
           registry_tag="$repo:sha-$GITHUB_SHA"
-          echo "repo=$repo" >> "$GITHUB_OUTPUT"
-          echo "local_tag=$local_tag" >> "$GITHUB_OUTPUT"
-          echo "registry_tag=$registry_tag" >> "$GITHUB_OUTPUT"
+          {
+            echo "repo=$repo"
+            echo "local_tag=$local_tag"
+            echo "registry_tag=$registry_tag"
+          } >> "$GITHUB_OUTPUT"
       - name: Build exact image once
         shell: bash
         env:
@@ -90,6 +94,8 @@ jobs:
           set -euo pipefail
           network="notrelix-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${COMPONENT}"
           name="ci-${COMPONENT//[^a-zA-Z0-9_.-]/-}"
+          # Removed by the EXIT trap below; never called directly.
+          # shellcheck disable=SC2317,SC2329
           cleanup() { docker rm -f "$name" ci-postgres ci-redis ci-rabbitmq >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; }
           trap cleanup EXIT
           if [[ "$PROVIDER" == backend ]]; then

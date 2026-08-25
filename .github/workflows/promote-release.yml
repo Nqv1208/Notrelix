@@ -47,9 +47,11 @@ jobs:
           ci="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ci_run")"
           [[ "$(jq -r .name <<<"$ci")" == 'Notrelix CI' && "$(jq -r .conclusion <<<"$ci")" == success && "$(jq -r .event <<<"$ci")" == push && "$(jq -r .head_branch <<<"$ci")" == main && "$(jq -r .head_sha <<<"$ci")" == "$sha" ]]
           gh attestation verify "$m" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
-          echo "release_id=$RELEASE_RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "release_sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "manifest_json=$(jq -c . "$m")" >> "$GITHUB_OUTPUT"
+          {
+            echo "release_id=$RELEASE_RUN_ID"
+            echo "release_sha=$sha"
+            echo "manifest_json=$(jq -c . "$m")"
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ steps.load.outputs.release_sha }}

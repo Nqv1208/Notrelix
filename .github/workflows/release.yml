@@ -61,10 +61,12 @@ jobs:
           m=candidate/release-candidate.json
           jq -e --arg sha "$sha" --argjson run "$run_id" '.schema_version==4 and .source_sha==$sha and .ci_run_id==$run and (.schema_change|type=="boolean") and .rollback_after_schema_change=="manual" and (.images|length>0) and all(.images[]; .ref|contains("@sha256:"))' "$m" >/dev/null
           gh attestation verify "$m" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml" --source-digest "$sha" --source-ref refs/heads/main
-          echo 'should_release=true' >> "$GITHUB_OUTPUT"
-          echo "ci_run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "release_sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "manifest_json=$(jq -c . "$m")" >> "$GITHUB_OUTPUT"
+          {
+            echo 'should_release=true'
+            echo "ci_run_id=$run_id"
+            echo "release_sha=$sha"
+            echo "manifest_json=$(jq -c . "$m")"
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.load.outputs.should_release == 'true'
         with:

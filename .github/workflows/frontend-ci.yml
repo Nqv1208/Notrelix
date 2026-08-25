@@ -318,10 +318,10 @@ jobs:
           require invariants "$INVARIANTS"; require affected-static "$STATIC"; require node-tests "$NODE"
           web=false; has web-tests && web=true; optional "$web" web-tests "$WEB"
           mobile=false; [[ "$MOBILE_COUNT" -gt 0 ]] && mobile=true; has mobile-tests && mobile=true; optional "$mobile" mobile-tests "$MOBILE_TEST"
-          tooling=false; has tooling-tests && tooling=true; optional "$tooling" tooling-tests "$TOOLING"
+          want_tooling=false; has tooling-tests && want_tooling=true; optional "$want_tooling" tooling-tests "$TOOLING"
           ui=false; has ui && ui=true; optional "$ui" ui-foundation "$UI"
           hosts=false; [[ "$HOST_COUNT" -gt 0 ]] && hosts=true; optional "$hosts" host-build "$HOST_BUILD"; optional "$hosts" host-e2e "$HOST_E2E"
-          mobile_build=false; [[ "$MOBILE_COUNT" -gt 0 ]] && mobile_build=true; optional "$mobile_build" mobile-build "$MOBILE_BUILD"
+          want_mobile_build=false; [[ "$MOBILE_COUNT" -gt 0 ]] && want_mobile_build=true; optional "$want_mobile_build" mobile-build "$MOBILE_BUILD"
           mock=false; has mock && mock=true; optional "$mock" mock-contract "$MOCK_CONTRACT"; optional "$mock" mock-e2e "$MOCK_E2E"; optional "$mock" mock-isolation "$MOCK_ISOLATION"
           [[ "$failed" -eq 0 ]]
       - name: Emit frontend proof evidence
