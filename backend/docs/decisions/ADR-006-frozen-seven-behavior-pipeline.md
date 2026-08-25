@@ -137,7 +137,7 @@ any eighth orchestration behavior fails architecture CI.
 ## Frozen invariants
 
 ```text
-exactly seven pipeline behaviors (+ ValidationBehavior)
+exactly seven production pipeline behaviors; validation executes inside RequestContractBehavior (no eighth validation stage)
 DataSession owns DB/RLS/transaction boundary
 AccessControl owns access facts + policy evaluation
 no generic response-cache behavior

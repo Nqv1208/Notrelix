@@ -223,6 +223,7 @@ jobs:
           Notrelix.Architecture.Tests.Pipeline.PipelineFreezeArchitectureTests
           Notrelix.Architecture.Tests.Pipeline.ExpectedVersionArchitectureTests
           Notrelix.Architecture.Tests.Performance.PipelinePerformanceContractTests
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests
 
   core-tests:
     name: Domain, Application and Infrastructure tests

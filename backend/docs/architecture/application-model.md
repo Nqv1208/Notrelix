@@ -352,14 +352,17 @@ The durable architecture is the **dependency/order semantics**, not the exact nu
 Current `Common/Behaviors` contains the frozen seven-behavior pipeline:
 
 ```text
+ExceptionMappingBehavior
 ApplicationTracingBehavior
 RequestContractBehavior
 ExecutionContextBehavior
 DataSessionBehavior
 AccessControlBehavior
 IdempotencyBehavior
-ValidationBehavior
 ```
+
+Validation executes inside `RequestContractBehavior`; there is no separate
+production `ValidationBehavior`.
 
 This is current source evidence.
 
