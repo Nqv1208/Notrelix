@@ -93,6 +93,9 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:uid=101,gid=101,mode=1777
     security_opt:
       - no-new-privileges:true
     cap_drop:

@@ -126,6 +126,12 @@ jobs:
           else
             docker run -d --name "$name" -P "$IMAGE" >/dev/null
           fi
+          # Rootless proof: the container's main process must not run as root.
+          if [[ "$(docker exec "$name" id -u 2>/dev/null || echo 0)" == "0" ]]; then
+            docker logs "$name" || true
+            echo "::error::$COMPONENT must not run as root"
+            exit 1
+          fi
           host_port="$(docker port "$name" "$PORT/tcp" | awk -F: 'END{print $NF}')"
           [[ -n "$host_port" ]] || { docker logs "$name" || true; exit 1; }
           url="$SCHEME://127.0.0.1:$host_port$PATH_"

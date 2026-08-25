@@ -261,6 +261,14 @@ def main() -> int:
         fail("frontend web image must run as nginx user")
     if not re.search(r"\blisten\s+8080;", web_conf):
         fail("frontend web nginx must listen on unprivileged port 8080")
+    # The web image runs fully unprivileged: pid and writable temp paths must
+    # live under /tmp, and the config must be mounted as the main nginx.conf.
+    if not re.search(r"^pid\s+/tmp/nginx\.pid;", web_conf, re.MULTILINE):
+        fail("frontend web nginx must write its pid under /tmp for rootless runtime")
+    if not re.search(r"client_body_temp_path\s+/tmp/", web_conf):
+        fail("frontend web nginx must redirect writable temp paths to /tmp")
+    if "/etc/nginx/nginx.conf" not in web_dockerfile:
+        fail("frontend web image must install the full nginx configuration authority")
 
     backend_dockerfile = (ROOT / "backend/Dockerfile").read_text(encoding="utf-8")
     if "--locked-mode ||" in backend_dockerfile:

@@ -24,10 +24,10 @@ COPY --from=pruner /repo/frontend/out/full/ ./
 RUN pnpm --filter @notrelix/app-web build
 
 FROM ${NGINX_BASE_IMAGE} AS production
-RUN rm -f /etc/nginx/conf.d/default.conf \
-    && mkdir -p /var/cache/nginx /var/run \
-    && chown -R nginx:nginx /var/cache/nginx /var/run /usr/share/nginx/html
-COPY --chown=nginx:nginx frontend/apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+# Full nginx configuration authority: pid and all writable temp paths live in
+# tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
+# user without relying on upstream internal directory ownership.
+COPY frontend/apps/web/nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder --chown=nginx:nginx /app/apps/web/dist /usr/share/nginx/html
 USER nginx
 EXPOSE 8080
