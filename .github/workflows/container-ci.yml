@@ -118,13 +118,14 @@ jobs:
           trap "rm -f '$creds_file'; docker rm -f '$name' ci-postgres ci-redis ci-rabbitmq >/dev/null 2>&1 || true; docker network rm '$network' >/dev/null 2>&1 || true" EXIT
           if [[ "$PROVIDER" == backend ]]; then
             postgres="$(python3 scripts/ci/image-info.py --image postgres --field ref)"
+            redis="$(python3 scripts/ci/image-info.py --image redis --field ref)"
             rabbitmq="$(python3 scripts/ci/image-info.py --image rabbitmq --field ref)"
             bash scripts/ci/generate-test-credentials.sh > "$creds_file"
             # shellcheck source=/dev/null
             source "$creds_file"
             docker network create "$network" >/dev/null
             docker run -d --name ci-postgres --network "$network" -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" -e POSTGRES_DB=notrelix "$postgres" >/dev/null
-            docker run -d --name ci-redis --network "$network" redis-server --requirepass "$REDIS_PASSWORD" >/dev/null
+            docker run -d --name ci-redis --network "$network" "$redis" redis-server --requirepass "$REDIS_PASSWORD" >/dev/null
             docker run -d --name ci-rabbitmq --network "$network" \
               -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS="$RABBITMQ_PASSWORD" -e RABBITMQ_DEFAULT_VHOST=/ \
               "$rabbitmq" >/dev/null
