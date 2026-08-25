@@ -6,6 +6,12 @@ package manager is installed. Python 3.11+ is required for tomllib.
 """
 from __future__ import annotations
 
+import sys
+
+MIN_PYTHON: tuple[int, ...] = (3, 11)
+if sys.version_info < MIN_PYTHON:
+    raise SystemExit(f"CI delivery tooling requires Python >={MIN_PYTHON[0]}.{MIN_PYTHON[1]}")
+
 import fnmatch
 import json
 import os

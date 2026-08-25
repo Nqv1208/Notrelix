@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import secrets
@@ -11,6 +12,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# Import image-info.py (hyphenated name requires importlib).
+_spec = importlib.util.spec_from_file_location("image_info", str(HERE / "image-info.py"))
+assert _spec is not None and _spec.loader is not None
+_image_info = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_image_info)
 
 
 def ephemeral_compose_env() -> dict[str, str]:
@@ -170,6 +177,50 @@ class DeliveryContractTests(unittest.TestCase):
             "python3", str(HERE / "environment-info.py"),
             "--environment", "production", "--require-promotion-mode", "manual-promotion",
         ], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
+
+
+class RendererParserTests(unittest.TestCase):
+    """Regression tests for renderer version/variant extraction."""
+
+    def test_parse_playwright_tag_jammy(self) -> None:
+        fields = _image_info._derive_tag_fields("mcr.microsoft.com/playwright:v1.61.1-jammy")
+        self.assertEqual(fields["version"], "1.61.1")
+        self.assertEqual(fields["variant"], "jammy")
+
+    def test_parse_playwright_tag_noble(self) -> None:
+        fields = _image_info._derive_tag_fields("mcr.microsoft.com/playwright:v1.61.1-noble")
+        self.assertEqual(fields["version"], "1.61.1")
+        self.assertEqual(fields["variant"], "noble")
+
+    def test_parse_plain_version_no_variant(self) -> None:
+        fields = _image_info._derive_tag_fields("ghcr.io/example/image:v2.0.0")
+        self.assertEqual(fields["version"], "2.0.0")
+        self.assertNotIn("variant", fields)
+
+    def test_parse_non_version_tag_yields_empty(self) -> None:
+        fields = _image_info._derive_tag_fields("nginx:alpine")
+        self.assertEqual(fields, {})
+
+    def test_production_lock_playwright_version_is_parseable(self) -> None:
+        import tomllib
+        lock = tomllib.loads((ROOT / "delivery" / "images.lock.toml").read_text())
+        source = lock["images"]["playwright-ci"]["source"]
+        fields = _image_info._derive_tag_fields(source)
+        self.assertIn("version", fields, f"playwright-ci source {source!r} has no parseable version")
+        self.assertEqual(fields["version"], "1.61.1")
+
+
+class RuntimeAuthorityTests(unittest.TestCase):
+    """Ensure .python-version and delivery_model.MIN_PYTHON are consistent."""
+
+    def test_python_version_at_least_3_11(self) -> None:
+        raw = (ROOT / ".python-version").read_text().strip()
+        parts = [int(x) for x in raw.split(".")[:3]]
+        self.assertGreaterEqual(tuple(parts[:2]), (3, 11), f".python-version {raw!r} below 3.11")
+
+    def test_delivery_model_min_python_matches(self) -> None:
+        from delivery_model import MIN_PYTHON
+        self.assertGreaterEqual(MIN_PYTHON, (3, 11))
 
 
 if __name__ == "__main__":

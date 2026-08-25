@@ -16,6 +16,7 @@ permissions:
 
 defaults:
   run:
+    shell: bash
     working-directory: frontend
 
 env:
@@ -123,25 +124,17 @@ jobs:
     # The workflow default working directory is frontend/; lock tooling lives at repo root.
     defaults:
       run:
+        shell: bash
         working-directory: .
     outputs:
       ref: ${{ steps.lock.outputs.ref }}
-      version: ${{ steps.version.outputs.value }}
+      version: ${{ steps.lock.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-ci-python
       - id: lock
         name: Read renderer authority from the image lock
-        # No --field here: field mode prints and returns before the
-        # github-output export, which would leave every output empty.
         run: python3 scripts/ci/image-info.py --image playwright-ci --github-output
-      - id: version
-        name: Parse locked Playwright version from image tag
-        env:
-          SOURCE: ${{ steps.lock.outputs.source }}
-        run: |
-          set -euo pipefail
-          tag="${SOURCE##*:}"
-          echo "value=${tag#v}" | sed 's/-jammy$//' >> "$GITHUB_OUTPUT"
 
   ui-foundation:
     name: UI foundation accessibility / visual freeze
@@ -181,6 +174,7 @@ jobs:
       matrix: ${{ fromJSON(inputs.host_matrix_json) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-ci-python
       - uses: ./.github/actions/setup-frontend
       - id: component
         name: Load host contract from delivery catalog
@@ -216,6 +210,7 @@ jobs:
         PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-ci-python
       - uses: ./.github/actions/setup-frontend
       - id: component
         name: Load host contract
@@ -259,6 +254,7 @@ jobs:
       matrix: ${{ fromJSON(inputs.mobile_matrix_json) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-ci-python
       - uses: ./.github/actions/setup-frontend
       - id: component
         working-directory: .
@@ -315,6 +311,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-ci-python
       - uses: ./.github/actions/setup-frontend
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -330,7 +327,7 @@ jobs:
     needs: [invariants, affected-static, node-tests, web-tests, mobile-tests, tooling-tests, ui-foundation, host-build, host-e2e, mobile-build, mock-contract, mock-e2e, mock-artifact-isolation]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    defaults: {run: {working-directory: .}}
+    defaults: {run: {shell: bash, working-directory: .}}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require every routed frontend proof
