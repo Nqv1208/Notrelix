@@ -116,16 +116,45 @@ jobs:
       - uses: ./.github/actions/setup-frontend
       - run: pnpm test:generators:guarded
 
+  renderer:
+    name: Resolve pinned visual renderer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      ref: ${{ steps.lock.outputs.ref }}
+      version: ${{ steps.version.outputs.value }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: lock
+        name: Read renderer authority from the image lock
+        run: python3 scripts/ci/image-info.py --image playwright-ci --field ref --github-output
+      - id: version
+        name: Parse locked Playwright version from image tag
+        env:
+          SOURCE: ${{ steps.lock.outputs.source }}
+        run: |
+          set -euo pipefail
+          tag="${SOURCE##*:}"
+          echo "value=${tag#v}" | sed 's/-jammy$//' >> "$GITHUB_OUTPUT"
+
   ui-foundation:
     name: UI foundation accessibility / visual freeze
-    needs: affected-static
+    needs: [affected-static, renderer]
     if: contains(fromJSON(inputs.capabilities_json), 'ui')
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    container:
+      image: ${{ needs.renderer.outputs.ref }}
+      env:
+        PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Guard pinned renderer matches Playwright package
+        run: |
+          set -euo pipefail
+          actual="$(pnpm exec playwright --version | awk '{print $2}')"
+          [[ "$actual" == "${{ needs.renderer.outputs.version }}" ]] || { echo "::error::playwright $actual does not match locked renderer ${{ needs.renderer.outputs.version }}"; exit 1; }
       - run: pnpm test:ui:freeze
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -169,12 +198,16 @@ jobs:
   host-e2e:
     name: Exact-artifact E2E (${{ matrix.component_id }})
     if: inputs.host_count > 0
-    needs: host-build
+    needs: [host-build, renderer]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(inputs.host_matrix_json) }}
+    container:
+      image: ${{ needs.renderer.outputs.ref }}
+      env:
+        PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
@@ -189,7 +222,11 @@ jobs:
       - name: Restore exact build output
         working-directory: .
         run: python3 scripts/ci/restore-frontend-artifact.py --archive 'artifacts/frontend/${{ matrix.component_id }}/${{ matrix.component_id }}.tar.gz'
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Guard pinned renderer matches Playwright package
+        run: |
+          set -euo pipefail
+          actual="$(pnpm exec playwright --version | awk '{print $2}')"
+          [[ "$actual" == "${{ needs.renderer.outputs.version }}" ]] || { echo "::error::playwright $actual does not match locked renderer ${{ needs.renderer.outputs.version }}"; exit 1; }
       - name: Run host E2E contract
         if: steps.component.outputs.e2e_script != ''
         env:
