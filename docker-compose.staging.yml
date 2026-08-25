@@ -33,6 +33,7 @@ services:
       Rls__Enabled: "true"
       Rls__SetSessionContext: "true"
       DataProtection__PersistKeys: "true"
+      DataProtection__KeysPath: /tmp/dataprotection-keys
       Frontend__AppBaseUrl: ${FRONTEND_APP_BASE_URL:-http://localhost}
       Messaging__Transport: RabbitMQ
       Messaging__RabbitMQ__Host: rabbitmq

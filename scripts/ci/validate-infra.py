@@ -300,6 +300,9 @@ def main() -> int:
     ):
         if env_map(staging_backend).get(key) != expected:
             fail(f"staging backend {key} must be {expected!r}")
+    keys_path = env_map(staging_backend).get("DataProtection__KeysPath", "")
+    if not keys_path or keys_path.startswith("/root"):
+        fail("staging backend must persist DataProtection keys under a writable non-root path")
 
     release_services = release["services"]
     for name in ("postgres", "redis", "rabbitmq", "backend", "frontend-web", "frontend-marketing", "nginx"):
