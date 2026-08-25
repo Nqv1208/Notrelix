@@ -150,3 +150,13 @@ Notrelix CI Gate contract
 ```
 
 If a routine new app requires edits to several of those files, treat that as an architecture regression and fix the abstraction rather than accepting permanent special cases.
+
+## 10. CI runtime when adding a new job
+
+Any workflow job that invokes `scripts/ci/*.py` must:
+
+1. use `actions/checkout` (full SHA);
+2. include `uses: ./.github/actions/setup-ci-python` immediately after checkout;
+3. then proceed with other setup and logic.
+
+Do not rely on the host runner's system Python. The CI Python authority is `.python-version` at repository root, consumed by `setup-ci-python`.

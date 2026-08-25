@@ -313,3 +313,19 @@ Moving from Compose to Kubernetes/ECS/Nomad replaces the deployment adapter and 
 `validate-ci-layout.py` validates required workflow inventory, removal of legacy workflows, explicit permissions, pinned runners, full-SHA Actions, no workflow-level paths on the required orchestrator, closed-core component independence, no CD rebuilds and CODEOWNERS coverage.
 
 `test_build_plan.py` is the regression suite for routing and extension behavior.
+
+## 17. CI Runtime Authorities
+
+Every repository CI job runs under explicitly declared runtime authorities:
+
+| Authority | Location | Consumed by |
+|---|---|---|
+| Shell | Workflow-level `defaults.run.shell: bash` | All `run:` steps |
+| Python | `.python-version` (root) | `setup-ci-python` action |
+| Node | `frontend/.node-version` | `setup-frontend` action |
+| pnpm | `frontend/package.json` `packageManager` | `setup-frontend` action |
+| Visual renderer | `delivery/images.lock.toml` | `image-info.py` + renderer job |
+
+New CI jobs that call `scripts/ci/*.py` must include the `setup-ci-python` step immediately after checkout. No other job-local Python version selection is permitted.
+
+The Python minimum (`delivery_model.MIN_PYTHON`) is checked at module import time. The workflow-level `shell: bash` contract applies to all steps unless a job explicitly declares its own `defaults.run.shell` (renderer job).
