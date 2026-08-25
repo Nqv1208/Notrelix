@@ -140,8 +140,12 @@ def main() -> int:
         ref = str(lock.get("ref", ""))
         if not DIGEST_REF.fullmatch(ref):
             fail(f"image lock {name} is not immutable: {ref}", errors)
-        if lock.get("class") not in {"build", "runtime"}:
+        if lock.get("class") not in {"build", "runtime", "tooling"}:
             fail(f"image lock {name} has invalid class {lock.get('class')}", errors)
+        if lock.get("class") == "tooling" and "mcr.microsoft.com" not in ref and "docker.io" not in ref:
+            # Tooling locks are CI renderer/runtime authorities; keep them on
+            # first-party registries so provenance stays auditable.
+            fail(f"tooling image {name} must reference an approved registry", errors)
         if lock.get("class") == "runtime":
             var = str(lock.get("deploy_env_var", ""))
             if not ENV_NAME.fullmatch(var): fail(f"runtime image {name} invalid deploy_env_var {var}", errors)

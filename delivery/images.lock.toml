@@ -58,3 +58,11 @@ ref = "nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f
 compose_service = "nginx"
 deploy_env_var = "NOTRELIX_NGINX_IMAGE"
 stateful = false
+
+# CI renderer authority for visual E2E lanes. Browser build and font stack are
+# pinned together so snapshot baselines stay valid across runner updates.
+# The tag must match @playwright/test in frontend/package.json.
+[images.playwright-ci]
+class = "tooling"
+source = "mcr.microsoft.com/playwright:v1.61.1-jammy"
+ref = "mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e"
