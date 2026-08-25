@@ -18,13 +18,20 @@ function serve() {
   const standaloneRoot = path.join(appDir, ".next", "standalone");
   const standaloneApp = path.join(standaloneRoot, "apps", "marketing");
   if (!existsSync(path.join(standaloneApp, "server.js"))) {
-    console.error("[marketing-e2e-server] standalone app output missing:", standaloneApp);
+    console.error(
+      "[marketing-e2e-server] standalone app output missing:",
+      standaloneApp,
+    );
     process.exit(1);
   }
 
-  cpSync(path.join(appDir, ".next", "static"), path.join(standaloneApp, ".next", "static"), {
-    recursive: true,
-  });
+  cpSync(
+    path.join(appDir, ".next", "static"),
+    path.join(standaloneApp, ".next", "static"),
+    {
+      recursive: true,
+    },
+  );
   if (existsSync(path.join(appDir, "public"))) {
     cpSync(path.join(appDir, "public"), path.join(standaloneApp, "public"), {
       recursive: true,
@@ -47,10 +54,14 @@ if (reuseBuild) {
   console.log("[marketing-e2e-server] reusing exact CI build artifact");
   serve();
 } else {
-  const build = spawn("pnpm", ["--filter", "@notrelix/app-marketing", "build"], {
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
+  const build = spawn(
+    "pnpm",
+    ["--filter", "@notrelix/app-marketing", "build"],
+    {
+      stdio: "inherit",
+      shell: process.platform === "win32",
+    },
+  );
   build.on("exit", (code) => {
     if (code !== 0) process.exit(code ?? 1);
     serve();
