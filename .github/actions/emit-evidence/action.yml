@@ -1,0 +1,35 @@
+name: Emit CI evidence
+description: Write one machine-readable Notrelix proof record and persist it as a workflow artifact.
+inputs:
+  proof_id:
+    required: true
+    description: Canonical proof identifier expected by the execution plan.
+  component_id:
+    required: false
+    default: repository
+    description: Component or repository scope for the proof.
+  metadata:
+    required: false
+    default: ""
+    description: Optional single key=value metadata item.
+runs:
+  using: composite
+  steps:
+    - id: record
+      shell: bash
+      env:
+        PROOF_ID: ${{ inputs.proof_id }}
+        COMPONENT_ID: ${{ inputs.component_id }}
+        METADATA: ${{ inputs.metadata }}
+      run: |
+        set -euo pipefail
+        args=(--proof-id "$PROOF_ID" --component-id "$COMPONENT_ID")
+        if [[ -n "$METADATA" ]]; then args+=(--metadata "$METADATA"); fi
+        python3 scripts/ci/write-evidence.py "${args[@]}"
+    - name: Upload evidence record
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ steps.record.outputs.artifact_name }}
+        path: ${{ steps.record.outputs.path }}
+        if-no-files-found: error
+        retention-days: 30

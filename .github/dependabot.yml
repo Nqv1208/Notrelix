@@ -7,89 +7,50 @@ updates:
       day: monday
       time: "09:00"
       timezone: Asia/Ho_Chi_Minh
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - nuget
+    open-pull-requests-limit: 10
     groups:
-      aspnetcore:
-        patterns:
-          - "Microsoft.AspNetCore.*"
-          - "Microsoft.Extensions.*"
-      efcore:
-        patterns:
-          - "Microsoft.EntityFrameworkCore*"
-      testing:
-        patterns:
-          - "xunit*"
-          - "FluentAssertions*"
-          - "NSubstitute*"
-          - "Testcontainers*"
-      mass transit:
-        patterns:
-          - "MassTransit*"
+      dotnet-minor-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
       day: monday
-      time: "09:00"
+      time: "09:20"
       timezone: Asia/Ho_Chi_Minh
     open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - npm
     groups:
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-      nextjs:
-        patterns:
-          - "next"
-      vite:
-        patterns:
-          - "vite"
-          - "@vitejs/plugin-react"
-      tanstack:
-        patterns:
-          - "@tanstack/*"
-      ui:
-        patterns:
-          - "@radix-ui/*"
-          - "shadcn"
-          - "tailwindcss"
-          - "class-variance-authority"
-          - "tailwind-merge"
-          - "clsx"
-      testing:
-        patterns:
-          - "vitest"
-          - "@playwright/test"
-          - "@testing-library/*"
-      tooling:
-        patterns:
-          - "typescript"
-          - "eslint"
-          - "prettier"
-          - "turbo"
+      frontend-minor-patch:
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: docker
     directory: /backend
     schedule:
       interval: weekly
       day: monday
-    labels:
-      - dependencies
-      - docker
+      time: "09:40"
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:00"
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 5
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: monthly
-    labels:
-      - dependencies
-      - ci
+      interval: weekly
+      day: monday
+      time: "10:20"
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 10

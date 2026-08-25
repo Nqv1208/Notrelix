@@ -1,0 +1,10 @@
+# CI/CD control plane requires trusted review because changing a workflow can
+# change the meaning of every required status check and release authority.
+/.github/workflows/ @Nqv1208
+/.github/actions/ @Nqv1208
+/scripts/ci/ @Nqv1208
+/delivery/ @Nqv1208
+/docker-compose*.yml @Nqv1208
+/infra/ @Nqv1208
+/backend/Dockerfile @Nqv1208
+/frontend/Dockerfile* @Nqv1208
