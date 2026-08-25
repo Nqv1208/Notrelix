@@ -73,6 +73,24 @@ jobs:
           args=()
           while IFS= read -r line; do [[ -n "$line" ]] && args+=(--build-arg "$line"); done <<< "$BUILD_ARGS"
           docker build --pull=false --file "$DOCKERFILE" --tag "$IMAGE" "${args[@]}" "$CONTEXT"
+      - name: Persist vulnerability report for the tested bytes
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.names.outputs.local_tag }}
+          format: json
+          output: vulnerabilities-${{ matrix.component_id }}.json
+          exit-code: "0"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Upload vulnerability report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vulnerability-report-${{ matrix.component_id }}
+          path: vulnerabilities-${{ matrix.component_id }}.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Vulnerability gate on tested bytes
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
