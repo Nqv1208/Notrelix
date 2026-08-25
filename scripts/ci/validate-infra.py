@@ -304,6 +304,20 @@ def main() -> int:
     if not keys_path or keys_path.startswith("/root"):
         fail("staging backend must persist DataProtection keys under a writable non-root path")
 
+    # Staging origin gateway mirrors the production rootless pattern.
+    staging_nginx = staging["services"]["nginx"]
+    if str(staging_nginx.get("user", "")) != "nginx":
+        fail("staging nginx must run as the nginx user")
+    if staging_nginx.get("read_only") is not True:
+        fail("staging nginx must be read_only")
+    if ports(staging_nginx) != {8080}:
+        fail(f"staging nginx must publish container port 8080 only, got {sorted(ports(staging_nginx))}")
+    staging_conf = (ROOT / "infra/nginx/nginx.conf").read_text(encoding="utf-8")
+    if not re.search(r"^pid\s+/tmp/nginx\.pid;", staging_conf, re.MULTILINE):
+        fail("staging nginx config must write its pid under /tmp for rootless runtime")
+    if not re.search(r"\blisten\s+8080;", staging_conf):
+        fail("staging nginx config must listen on unprivileged port 8080")
+
     release_services = release["services"]
     for name in ("postgres", "redis", "rabbitmq", "backend", "frontend-web", "frontend-marketing", "nginx"):
         image = release_services[name].get("image", "")

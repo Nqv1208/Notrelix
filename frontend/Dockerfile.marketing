@@ -22,9 +22,12 @@ RUN pnpm --filter @notrelix/app-marketing build
 
 FROM ${NODE_BASE_IMAGE} AS runner
 WORKDIR /app
+# Next standalone binds to $HOSTNAME when present; Docker injects the
+# container id, which breaks loopback health probes. Pin the wildcard.
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 --ingroup nodejs nextjs
 # The Node base ships a vendored npm CLI whose bundled dependencies have carried
