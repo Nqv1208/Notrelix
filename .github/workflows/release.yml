@@ -1,0 +1,121 @@
+name: Release Candidate
+
+on:
+  workflow_run:
+    workflows: ["Notrelix CI"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful Notrelix CI push run on main containing a sealed release-candidate artifact
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  attestations: read
+
+concurrency:
+  group: notrelix-release-staging
+  cancel-in-progress: false
+
+jobs:
+  candidate:
+    name: Load CI-sealed generic release candidate
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    outputs:
+      should_release: ${{ steps.load.outputs.should_release }}
+      ci_run_id: ${{ steps.load.outputs.ci_run_id }}
+      release_sha: ${{ steps.load.outputs.release_sha }}
+      manifest_json: ${{ steps.load.outputs.manifest_json }}
+    steps:
+      - id: load
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTO_RUN_ID: ${{ github.event.workflow_run.id || '' }}
+          MANUAL_RUN_ID: ${{ inputs.ci_run_id || '' }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id="$AUTO_RUN_ID"; [[ "$EVENT_NAME" == workflow_dispatch ]] && run_id="$MANUAL_RUN_ID"
+          [[ "$run_id" =~ ^[0-9]+$ ]] || { echo 'invalid CI run id' >&2; exit 1; }
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id")"
+          [[ "$(jq -r .name <<<"$run_json")" == 'Notrelix CI' ]]
+          [[ "$(jq -r .conclusion <<<"$run_json")" == success ]]
+          [[ "$(jq -r .event <<<"$run_json")" == push ]]
+          [[ "$(jq -r .head_branch <<<"$run_json")" == main ]]
+          sha="$(jq -r .head_sha <<<"$run_json")"
+          artifacts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100")"
+          count="$(jq '[.artifacts[] | select(.name=="release-candidate" and .expired==false)] | length' <<<"$artifacts")"
+          if [[ "$count" -eq 0 ]]; then
+            if [[ "$EVENT_NAME" == workflow_run ]]; then echo 'should_release=false' >> "$GITHUB_OUTPUT"; exit 0; fi
+            echo 'Selected CI run has no release candidate; manual release cannot bypass CI routing.' >&2; exit 1
+          fi
+          mkdir -p candidate
+          gh run download "$run_id" -n release-candidate -D candidate
+          m=candidate/release-candidate.json
+          jq -e --arg sha "$sha" --argjson run "$run_id" '.schema_version==4 and .source_sha==$sha and .ci_run_id==$run and (.schema_change|type=="boolean") and .rollback_after_schema_change=="manual" and (.images|length>0) and all(.images[]; .ref|contains("@sha256:"))' "$m" >/dev/null
+          gh attestation verify "$m" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml" --source-digest "$sha" --source-ref refs/heads/main
+          echo 'should_release=true' >> "$GITHUB_OUTPUT"
+          echo "ci_run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "release_sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "manifest_json=$(jq -c . "$m")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.load.outputs.should_release == 'true'
+        with:
+          ref: ${{ steps.load.outputs.release_sha }}
+          fetch-depth: 1
+      - name: Require source-owned staging promotion policy
+        if: steps.load.outputs.should_release == 'true'
+        run: |
+          python3 scripts/ci/validate-delivery.py
+          python3 scripts/ci/environment-info.py --environment staging --require-promotion-mode automatic-after-main-ci
+
+  staging:
+    name: Deploy the exact CI candidate to staging
+    needs: candidate
+    if: needs.candidate.outputs.should_release == 'true'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment_name: staging
+      release_id: candidate-${{ needs.candidate.outputs.ci_run_id }}
+      release_manifest_json: ${{ needs.candidate.outputs.manifest_json }}
+    secrets: inherit
+
+  seal:
+    name: Seal staging-verified release manifest
+    needs: [candidate, staging]
+    if: needs.candidate.outputs.should_release == 'true' && needs.staging.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Create promotion manifest without changing image subjects
+        env:
+          CANDIDATE: ${{ needs.candidate.outputs.manifest_json }}
+          CI_RUN_ID: ${{ needs.candidate.outputs.ci_run_id }}
+        run: |
+          set -euo pipefail
+          jq -e . <<<"$CANDIDATE" > candidate.json
+          jq --argjson release_run_id "$GITHUB_RUN_ID" --argjson ci_run_id "$CI_RUN_ID" \
+            '. + {release_run_id:$release_run_id,ci_run_id:$ci_run_id,staging_verified:true,staging_verified_at:(now|todateiso8601)}' \
+            candidate.json > release-manifest.json
+          jq -e '.schema_version==4 and .staging_verified==true and (.schema_change|type=="boolean") and .rollback_after_schema_change=="manual" and all(.images[]; .ref|contains("@sha256:"))' release-manifest.json >/dev/null
+      - name: Attest staged release manifest
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-path: release-manifest.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-manifest
+          path: release-manifest.json
+          if-no-files-found: error
+          retention-days: 90

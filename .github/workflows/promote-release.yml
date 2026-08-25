@@ -1,0 +1,70 @@
+name: Promote Staging-Verified Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: Successful Release Candidate run id whose exact generic manifest passed staging
+        required: true
+        type: string
+      environment_name:
+        description: Manual-promotion delivery environment (for example production)
+        required: true
+        type: string
+        default: production
+
+permissions:
+  contents: read
+  actions: read
+  attestations: read
+
+jobs:
+  manifest:
+    name: Verify staged release authority
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    outputs:
+      release_id: ${{ steps.load.outputs.release_id }}
+      release_sha: ${{ steps.load.outputs.release_sha }}
+      manifest_json: ${{ steps.load.outputs.manifest_json }}
+    steps:
+      - id: load
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_RUN_ID" =~ ^[0-9]+$ ]]
+          release_run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN_ID")"
+          [[ "$(jq -r .name <<<"$release_run")" == 'Release Candidate' ]]
+          [[ "$(jq -r .conclusion <<<"$release_run")" == success ]]
+          mkdir -p release
+          gh run download "$RELEASE_RUN_ID" -n release-manifest -D release
+          m=release/release-manifest.json
+          jq -e --argjson run "$RELEASE_RUN_ID" '.schema_version==4 and .staging_verified==true and .release_run_id==$run and (.schema_change|type=="boolean") and .rollback_after_schema_change=="manual" and (.images|length>0) and all(.images[]; .ref|contains("@sha256:"))' "$m" >/dev/null
+          sha="$(jq -r .source_sha "$m")"; ci_run="$(jq -r .ci_run_id "$m")"
+          ci="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ci_run")"
+          [[ "$(jq -r .name <<<"$ci")" == 'Notrelix CI' && "$(jq -r .conclusion <<<"$ci")" == success && "$(jq -r .event <<<"$ci")" == push && "$(jq -r .head_branch <<<"$ci")" == main && "$(jq -r .head_sha <<<"$ci")" == "$sha" ]]
+          gh attestation verify "$m" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
+          echo "release_id=$RELEASE_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "release_sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "manifest_json=$(jq -c . "$m")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.load.outputs.release_sha }}
+          fetch-depth: 1
+      - name: Require source-owned target promotion policy
+        run: |
+          python3 scripts/ci/validate-delivery.py
+          python3 scripts/ci/environment-info.py --environment "${{ inputs.environment_name }}" --require-promotion-mode manual-promotion
+
+  promotion:
+    name: Promote the same staging-verified digest set to ${{ inputs.environment_name }}
+    needs: manifest
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment_name: ${{ inputs.environment_name }}
+      release_id: ${{ needs.manifest.outputs.release_id }}
+      release_manifest_json: ${{ needs.manifest.outputs.manifest_json }}
+    secrets: inherit
