@@ -131,7 +131,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: lock
         name: Read renderer authority from the image lock
-        run: python3 scripts/ci/image-info.py --image playwright-ci --field ref --github-output
+        # No --field here: field mode prints and returns before the
+        # github-output export, which would leave every output empty.
+        run: python3 scripts/ci/image-info.py --image playwright-ci --github-output
       - id: version
         name: Parse locked Playwright version from image tag
         env:
