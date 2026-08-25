@@ -39,7 +39,7 @@ def _ephemeral_test_environment() -> dict[str, str]:
         "POSTGRES_PASSWORD": postgres_password,
         "POSTGRES_DB": "notrelix",
         "REDIS_PASSWORD": redis_password,
-        "RABBITMQ_USER": "ci-rabbit",
+        "RABBITMQ_USER": "rabbitmq",
         "RABBITMQ_PASSWORD": rabbitmq_password,
         "RABBITMQ_VHOST": "/",
         "JWT_SECRET": secrets.token_hex(32),
