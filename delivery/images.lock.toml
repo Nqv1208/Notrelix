@@ -1,0 +1,60 @@
+schema_version = 4
+
+# Build-image locks make a source SHA reproducible across reruns. Update these
+# deliberately in a dedicated dependency PR and let container/security CI prove
+# the new digests before merge.
+[images.dotnet-sdk]
+class = "build"
+source = "mcr.microsoft.com/dotnet/sdk:9.0.313"
+ref = "mcr.microsoft.com/dotnet/sdk:9.0.313@sha256:0300d42309afd86168fa57d62db79020a34ee396d39c9634844b9c0ab285ea55"
+stateful = false
+
+[images.dotnet-aspnet]
+class = "build"
+source = "mcr.microsoft.com/dotnet/aspnet:9.0.18-bookworm-slim"
+ref = "mcr.microsoft.com/dotnet/aspnet:9.0.18-bookworm-slim@sha256:86085bc68dde4a8cdfd8c2342acc3bf843eade855092879a85e3f3adb56e55c7"
+stateful = false
+
+[images.node-build]
+class = "build"
+source = "node:22-alpine"
+ref = "node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32"
+stateful = false
+
+[images.nginx-build]
+class = "build"
+source = "nginx:alpine"
+ref = "nginx:alpine@sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913"
+stateful = false
+
+[images.postgres]
+class = "runtime"
+source = "postgres:16-alpine"
+ref = "postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685"
+compose_service = "postgres"
+deploy_env_var = "NOTRELIX_POSTGRES_IMAGE"
+stateful = true
+
+[images.redis]
+class = "runtime"
+source = "redis:7-alpine"
+ref = "redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf"
+compose_service = "redis"
+deploy_env_var = "NOTRELIX_REDIS_IMAGE"
+stateful = true
+
+[images.rabbitmq]
+class = "runtime"
+source = "rabbitmq:3.13-management-alpine"
+ref = "rabbitmq@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281"
+compose_service = "rabbitmq"
+deploy_env_var = "NOTRELIX_RABBITMQ_IMAGE"
+stateful = true
+
+[images.nginx]
+class = "runtime"
+source = "nginx:1.27-alpine"
+ref = "nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10"
+compose_service = "nginx"
+deploy_env_var = "NOTRELIX_NGINX_IMAGE"
+stateful = false

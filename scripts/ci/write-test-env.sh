@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+output="${1:-/tmp/notrelix-ci.env}"
+cat > "$output" <<'ENV'
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=${EPHEMERAL_PER_RUN}
+POSTGRES_DB=notrelix_ci
+REDIS_PASSWORD=${EPHEMERAL_PER_RUN}
+RABBITMQ_USER=rabbitmq
+RABBITMQ_PASSWORD=${EPHEMERAL_PER_RUN}
+RABBITMQ_VHOST=/
+JWT_SECRET=${EPHEMERAL_PER_RUN}
+JWT_ISSUER=http://localhost
+JWT_AUDIENCE=http://localhost
+CORS_ORIGIN=http://localhost
+RESEND_API_KEY=${EPHEMERAL_PER_RUN}
+CONNECTIONSTRINGS_NOTRELIXDB=Host=postgres;Port=5432;Database=notrelix_ci;Username=postgres;Password=${EPHEMERAL_PER_RUN}
+CONNECTIONSTRINGS_REDIS=redis:6379,password=${EPHEMERAL_PER_RUN}
+SECURITY__CSRF__ENABLED=false
+HTTPS_REDIRECTION_ENABLED=false
+BACKEND_NETWORK_SUBNET=172.28.0.0/24
+HTTP_PORT=8080
+ENV
+printf '%s\n' "$output"

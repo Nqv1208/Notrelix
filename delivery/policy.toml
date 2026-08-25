@@ -1,0 +1,172 @@
+schema_version = 4
+
+[defaults]
+unknown_change = "full-ci"
+frontend_default_capabilities = ["node-tests"]
+release_candidate_mode = "complete-deployable-set"
+container_scan_on_build = true
+
+# Ordered rules. Exclusive rules suppress normal component-root inference for a
+# matching file; augmenting rules add effects on top of dependency routing.
+[[change_rules]]
+id = "documentation"
+patterns = ["docs/**", "backend/docs/**", "frontend/docs/**", "README.md", "PRODUCT.md", "DESIGN.md", "RULE.md", "CONTEXT.md", "CONTEXT-MAP.md", "AGENTS.md", "**/*.md"]
+exclusive = true
+planes = ["docs"]
+release = false
+
+[[change_rules]]
+id = "ci-control-plane"
+patterns = [".github/workflows/**", ".github/actions/**", ".github/dependabot.yml", ".github/CODEOWNERS", "scripts/ci/**", "delivery/**"]
+exclusive = true
+full_ci = true
+release = false
+
+[[change_rules]]
+id = "backend-public-contract"
+patterns = ["backend/contracts/openapi/**", "artifacts/contracts/**"]
+exclusive = false
+components = ["backend-api", "web", "marketing", "mobile"]
+capabilities = ["contract", "web-tests"]
+release = true
+
+[[change_rules]]
+id = "backend-container-definition"
+patterns = ["backend/Dockerfile", ".dockerignore"]
+exclusive = false
+components = ["backend-api"]
+planes = ["infra"]
+package_components = ["backend-api"]
+security_domains = ["backend"]
+release = true
+
+[[change_rules]]
+id = "web-container-definition"
+patterns = ["frontend/Dockerfile", "frontend/apps/web/nginx.conf"]
+exclusive = true
+components = ["web"]
+planes = ["infra"]
+package_components = ["web"]
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "marketing-container-definition"
+patterns = ["frontend/Dockerfile.marketing"]
+exclusive = true
+components = ["marketing"]
+planes = ["infra"]
+package_components = ["marketing"]
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "frontend-root-runtime"
+patterns = ["frontend/package.json", "frontend/pnpm-lock.yaml", "frontend/pnpm-workspace.yaml", "frontend/turbo.json", "frontend/.npmrc", "frontend/.node-version"]
+exclusive = true
+full_frontend = true
+package_all_frontend_deployables = true
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "frontend-tooling"
+patterns = ["frontend/tooling/**", "frontend/scripts/**", "frontend/playwright*.ts", "frontend/eslint.config.*", "frontend/tsconfig*.json"]
+exclusive = true
+full_frontend = true
+capabilities = ["tooling-tests", "ui"]
+package_all_frontend_deployables = true
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "frontend-ui-foundation"
+patterns = ["frontend/packages/ui/**", "frontend/packages/foundation/design-system/**", "frontend/tooling/storybook/**"]
+exclusive = false
+capabilities = ["ui", "web-tests"]
+
+[[change_rules]]
+id = "frontend-mock-system"
+patterns = ["frontend/packages/dev/mock*/**", "frontend/packages/features/**/mock*/**", "frontend/apps/web/**/mock*/**", "frontend/scripts/*mock*"]
+exclusive = false
+components = ["web"]
+capabilities = ["mock", "web-tests"]
+
+[[change_rules]]
+id = "runtime-infrastructure"
+patterns = ["docker-compose.yml", "docker-compose.prod.yml", "docker-compose.staging.yml", "infra/nginx/**", "infra/postgres/**", "delivery/images.lock.toml"]
+exclusive = true
+planes = ["infra"]
+package_all_deployables = true
+security_domains = ["backend", "frontend"]
+release = true
+
+[[change_rules]]
+id = "dependency-security-backend"
+patterns = ["backend/Directory.Packages.props", "backend/**/*.csproj", "backend/global.json"]
+exclusive = false
+security_domains = ["backend"]
+
+[[change_rules]]
+id = "dependency-security-frontend"
+patterns = ["frontend/package.json", "frontend/pnpm-lock.yaml", "frontend/**/package.json"]
+exclusive = false
+security_domains = ["frontend"]
+
+# Proof profiles are the only authority for proof IDs. The planner resolves
+# these templates; it must not construct product proof IDs itself.
+[proof_profiles.backend-monolith]
+providers = ["backend"]
+required = ["backend:{component_id}"]
+
+[proof_profiles.frontend-host]
+providers = ["frontend-host"]
+required = ["frontend:gate"]
+
+[proof_profiles.mobile]
+providers = ["mobile"]
+required = ["frontend:gate"]
+
+[proof_profiles.docs]
+required = ["docs:gate"]
+
+[proof_profiles.infra]
+required = ["infra:gate"]
+
+[proof_profiles.security-backend]
+required = ["security:backend"]
+
+[proof_profiles.security-frontend]
+required = ["security:frontend"]
+
+[proof_profiles.container]
+required = ["container:{component_id}"]
+
+[proof_profiles.release-stack]
+required = ["stack:release-candidate"]
+
+# Non-component plan dimensions bind to proof profiles here. Adding a new
+# plane/security domain is therefore a model change, not a planner code branch.
+[proof_bindings.planes]
+docs = "docs"
+infra = "infra"
+
+[proof_bindings.security_domains]
+backend = "security-backend"
+frontend = "security-frontend"
+
+[proof_bindings.packaging]
+profile = "container"
+
+[proof_bindings.release]
+profile = "release-stack"
+
+[mock]
+artifact_component = "web"
+
+[deployment]
+migration_component = "backend-api"
+migration_commands = ["--migrate", "--rls-apply"]
+migration_paths = ["backend/**/Migrations/**", "backend/**/migrations/**"]
+schema_change_policy = "expand-contract"
+rollback_after_schema_change = "manual"
