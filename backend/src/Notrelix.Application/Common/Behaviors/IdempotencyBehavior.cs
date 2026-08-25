@@ -25,9 +25,9 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         IIdempotencyExecutionContext executionContext,
         IIdempotencyExecutionContextWriter executionContextWriter,
         ILogger<IdempotencyBehavior<TRequest, TResponse>> logger,
-        PipelineMetrics? metrics = null)
+        PipelineMetrics metrics)
     {
-        _metrics = metrics ?? new PipelineMetrics();
+        _metrics = metrics;
         _idempotencyStore = idempotencyStore;
         _fingerprint = fingerprint;
         _replayPolicy = replayPolicy;
@@ -40,7 +40,15 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         if (request is not IIdempotentRequest idempotentRequest)
-            return await next();
+        {
+            // Non-idempotent requests still execute the handler inside this
+            // innermost behavior — handler.execute ownership lives HERE.
+            using (PipelineActivitySource.Instance.StartActivity("handler.execute"))
+            {
+                _metrics.HandlerExecutions.Add(1);
+                return await next();
+            }
+        }
 
         // 1. Response-type eligibility fails before Begin — no row is created for
         //    sensitive response types (e.g. token/auth responses).
@@ -79,7 +87,12 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         }
 
         // 5. Execute handler.
-        var response = await next();
+        TResponse response;
+        using (PipelineActivitySource.Instance.StartActivity("handler.execute"))
+        {
+            _metrics.HandlerExecutions.Add(1);
+            response = await next();
+        }
 
         // 6. Serialize with the replay contract options (Result envelopes and
         // enums must round-trip, spec 3.7).

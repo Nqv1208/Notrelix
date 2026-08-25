@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Diagnostics;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -178,6 +179,7 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
             Guid.NewGuid().ToString("D")));
         services.AddSingleton(executionContext.Object);
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<PipelineMetrics>();
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddSingleton<EvaluationCountingDecisionStore>();
         services.AddScoped<IAccessFactsProvider>(sp =>

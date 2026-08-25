@@ -121,7 +121,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         }
 
         recorder.Started.Should().ContainSingle(a => a.OperationName == "handler.execute")
-            .Which.Parent!.OperationName.Should().Be("pipeline.request");
+            .Which.Parent!.OperationName.Should().Be("data_session.open");
 
         await using var verify = _db.CreateContext(SystemTenant());
         (await verify.Workspaces.CountAsync(w => w.AccountId == accountId)).Should().Be(1,
@@ -201,13 +201,11 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         recorder.Started.Where(a => a.OperationName == "idempotency.complete").Should().HaveCount(1,
             "only the first pass completes the idempotency record");
 
-        // The 'handler' stage span wraps everything after tracing (including
-        // idempotency), so it appears on both passes; the execution counter —
-        // not the span — proves the business handler ran exactly once.
-        Descendants(roots[1], recorder).Should().Contain(a => a.OperationName == "handler.execute",
-            "the tracing stage span must wrap every pass");
+        // handler.execute is emitted ONLY on the actual invocation pass.
         Descendants(roots[0], recorder).Should().Contain(a => a.OperationName == "handler.execute",
-            "the first pass must execute the handler inside the pipeline");
+            "the first pass must execute the handler");
+        Descendants(roots[1], recorder).Should().NotContain(a => a.OperationName == "handler.execute",
+            "a replayed request must not emit a handler span");
     }
 
     [Fact]
@@ -421,6 +419,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
 
+        services.AddSingleton<PipelineMetrics>();
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddScoped<IAccessFactsProvider>(sp =>
             new PostgresAccessFactsProvider(

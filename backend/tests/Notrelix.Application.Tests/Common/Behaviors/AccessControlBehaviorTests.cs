@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Diagnostics;
 namespace Notrelix.Application.Tests.Common.Behaviors;
 
 public sealed class AccessControlBehaviorTests
@@ -68,7 +69,7 @@ public sealed class AccessControlBehaviorTests
 
         return new Fixture<TRequest>(
             new AccessControlBehavior<TRequest, string>(
-                descriptors.Object, context.Object, provider.Object, new AccessPolicyEngine()),
+                descriptors.Object, context.Object, provider.Object, new AccessPolicyEngine(), new PipelineMetrics()),
             provider);
     }
 

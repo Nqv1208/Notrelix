@@ -1,5 +1,7 @@
 using Npgsql;
+using System.Text.Json;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Infrastructure.Data.Authz;
 
 namespace Notrelix.Integration.Tests.Performance;
 
@@ -24,6 +26,7 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
     private DatabaseReset _reset = null!;
     private Guid _accountId;
     private Guid _workspaceId;
+    private Guid _userId;
 
     public PipelineFreezeEvidenceTests(PostgresTestContainer db)
     {
@@ -55,53 +58,83 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
             return; // Evidence run is gated; see class doc.
         }
 
-        // Canonical facts subselects over the seeded large tenant.
-        var sql = """
-            EXPLAIN (ANALYZE, BUFFERS)
-            SELECT
-              EXISTS (SELECT 1 FROM identity.users u WHERE u.id = @user_id AND u.deleted_at IS NULL),
-              (SELECT am.role FROM account.account_members am
-                 WHERE am.account_id = @account_id AND am.user_id = @user_id
-                   AND am.status = 'Active' AND am.deleted_at IS NULL LIMIT 1),
-              (SELECT wm.role FROM workspace.workspace_members wm
-                 WHERE wm.account_id = @account_id AND wm.workspace_id = @workspace_id
-                   AND wm.user_id = @user_id AND wm.status = 'Active' LIMIT 1),
-              EXISTS (
-                SELECT 1 FROM governance.resource_permissions rp
-                 WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
-                   AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
-                   AND rp.subject_type = 'User' AND rp.subject_id = @user_id
-                   AND rp.deleted_at IS NULL),
-              COALESCE((
-                SELECT jsonb_agg(jsonb_build_object('priority', pr.priority, 'effect', pr.effect) ORDER BY pr.priority)
-                  FROM governance.permission_rules pr
-                 WHERE pr.account_id = @account_id AND pr.workspace_id = @workspace_id
-                   AND pr.status = 'Active'
-                   AND pr.action = @action LIMIT 1000
-              ), '[]'::jsonb)::text AS rules_text
-            """;
+        var actingUser = _userId;
+
+        // Canonical production SQL verbatim (AccessFactsQuery.Sql) under FORMAT
+        // JSON so the FULL node tree is captured in one row/column.
+        var explainSql = "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + AccessFactsQuery.Sql;
 
         await using var conn = new NpgsqlConnection(_db.ConnectionString);
         await conn.OpenAsync();
-        await using var cmd = new NpgsqlCommand(sql, conn);
-        cmd.Parameters.AddWithValue("user_id", Guid.NewGuid());
+        await using var cmd = new NpgsqlCommand(explainSql, conn);
+        cmd.Parameters.AddWithValue("user_id", actingUser);
         cmd.Parameters.AddWithValue("account_id", _accountId);
         cmd.Parameters.AddWithValue("workspace_id", _workspaceId);
         cmd.Parameters.AddWithValue("resource_type", "work-management.board-item");
         cmd.Parameters.AddWithValue("resource_id", Guid.NewGuid());
+        cmd.Parameters.AddWithValue("resource_was_located", true);
         cmd.Parameters.AddWithValue("action", "UpdateBoardItem");
+        cmd.Parameters.Add(new NpgsqlParameter("feature_code", NpgsqlTypes.NpgsqlDbType.Text) { Value = DBNull.Value });
+        cmd.Parameters.AddWithValue("feature_amount", 0);
+        cmd.Parameters.AddWithValue("now", DateTimeOffset.UtcNow);
 
-        var plan = (await cmd.ExecuteScalarAsync())?.ToString() ?? string.Empty;
+        string jsonText;
+        try
+        {
+            jsonText = (await cmd.ExecuteScalarAsync())?.ToString()
+                ?? throw new InvalidOperationException("EXPLAIN returned no plan");
+        }
+        catch (Exception)
+        {
+            await File.WriteAllTextAsync(Path.Combine(AppContext.BaseDirectory, "access-facts-failing-sql.txt"), explainSql);
+            throw;
+        }
+
+        using var planDoc = JsonDocument.Parse(jsonText);
+        var rootPlan = planDoc.RootElement[0].GetProperty("Plan");
         var reportPath = Path.Combine(AppContext.BaseDirectory, "access-facts-large-explain.txt");
-        await File.WriteAllTextAsync(reportPath,
-            $"seeded workspace_members={SeededMembers} permission_rules={SeededRules}\n{plan}");
 
-        plan.Should().NotBeNullOrWhiteSpace();
-        File.Exists(reportPath).Should().BeTrue($"evidence file written to {{reportPath}}; enabled={{IsEnabled}}");
-        plan.Should().NotContain("Seq Scan on workspace.workspace_members",
-            "member lookup must stay index-backed at 10k cardinality");
-        plan.Should().NotContain("Seq Scan on governance.permission_rules",
-            "rule lookup must stay index-backed at 10k cardinality");
+        var lines = new List<string>
+        {
+            $"seeded workspace_members={SeededMembers} permission_rules={SeededRules} sqlLen={explainSql.Length}",
+            explainSql,
+            JsonSerializer.Serialize(rootPlan, new JsonSerializerOptions { WriteIndented = true }),
+        };
+        await File.WriteAllLinesAsync(reportPath, lines);
+
+        var violations = new List<string>();
+        var totalActualTime = 0.0;
+        Traverse(rootPlan, node =>
+        {
+            var nodeType = node.GetProperty("Node Type").GetString();
+            totalActualTime += node.TryGetProperty("Actual Total Time", out var t) ? t.GetDouble() : 0;
+
+            var relation = node.TryGetProperty("Relation Name", out var r) ? r.GetString() : null;
+            if (nodeType == "Seq Scan" && relation is not null &&
+                relation is "workspace_members" or "permission_rules" or "resource_permissions" or "users" or "accounts" or "workspaces")
+            {
+                violations.Add($"Seq Scan on {relation}");
+            }
+        });
+
+        violations.Should().BeEmpty(
+            "hot facts predicates must stay index-backed at 10k cardinality; violations: {0}",
+            string.Join("; ", violations));
+
+        File.Exists(reportPath).Should().BeTrue();
+        totalActualTime.Should().BeGreaterThan(0);
+
+        static void Traverse(JsonElement node, Action<JsonElement> visit)
+        {
+            visit(node);
+            if (node.TryGetProperty("Plans", out var children))
+            {
+                foreach (var child in children.EnumerateArray())
+                {
+                    Traverse(child, visit);
+                }
+            }
+        }
     }
 
     private async Task SeedLargeTenantAsync()
@@ -113,7 +146,7 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
         await conn.OpenAsync();
 
         // One account + one workspace skeleton.
-        var userId = Guid.NewGuid();
+        var userId = Guid.NewGuid(); _userId = userId;
         await Exec(conn, """
             INSERT INTO identity.users (id, email, normalized_email, name, password_hash, has_password_credential, status, email_confirmed, created_at)
             VALUES (@u, 'perf@example.com', 'PERF@EXAMPLE.COM', 'Perf User', 'x', true, 'Active', true, now())
@@ -178,12 +211,11 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
         {
             var values = string.Join(",",
                 chunk.Select(i => $"""
-                    ('{Guid.NewGuid()}'::uuid, '{_accountId}'::uuid, '{_workspaceId}'::uuid, 'Active', {i % 5}, 'Allow', 'UpdateBoardItem', 'Workspace', 'User', '[]'::jsonb, now())
+                    ('{Guid.NewGuid()}', '{_accountId}', '{_workspaceId}', 'Active', {i % 5}, 'Allow', 'UpdateBoardItem', 'Workspace', 'User', '{_userId}', '[]'::jsonb, now())
                     """));
             await Exec(conn, $"""
-                INSERT INTO governance.permission_rules (id, account_id, workspace_id, status, priority, effect, action, scope_type, subject_type, condition_json, created_at)
-                SELECT id, account_id, workspace_id, status, priority, effect, action, scope_type, subject_type, condition_json, created_at
-                FROM (VALUES {values}) t(id, account_id, workspace_id, status, priority, effect, action, scope_type, subject_type, condition_json, created_at);
+                INSERT INTO governance.permission_rules (id, account_id, workspace_id, status, priority, effect, action, scope_type, subject_type, subject_id, condition_json, created_at)
+                VALUES {values};
                 """);
         }
 
@@ -214,7 +246,16 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
                 cmd.Parameters.AddWithValue(name, value ?? DBNull.Value);
             }
 
-            await cmd.ExecuteNonQueryAsync();
+            try
+            {
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (PostgresException)
+            {
+                await File.WriteAllTextAsync(
+                    Path.Combine(AppContext.BaseDirectory, "access-facts-failing-sql.txt"), sql);
+                throw;
+            }
         }
     }
 }

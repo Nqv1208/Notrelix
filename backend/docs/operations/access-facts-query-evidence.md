@@ -101,3 +101,42 @@ dominant cost       : jsonb aggregation of matching permission rules (bounded by
 
 Conclusion: the one-command AccessFacts shape remains index-backed at 10k
 cardinality; no additional index is justified by this evidence.
+
+
+## Corrected methodology (freeze review round 2)
+
+Earlier evidence used a simplified query plus `ExecuteScalarAsync`, which reads
+only the FIRST line of a text EXPLAIN. That methodology was invalid.
+
+Current evidence (`PipelineFreezeEvidenceTests`) executes:
+
+```text
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) AccessFactsQuery.Sql
+```
+
+— the verbatim production SQL from the canonical authority
+(`AccessFactsQuery.Sql`, shared by provider and harness), fully parameter-bound,
+over a tenant seeded with 10,000 workspace_members and 10,000 subject-scoped
+permission_rules. The JSON plan tree is traversed in full.
+
+Findings on that tenant:
+
+```text
+root Result actual time        : 12.894 ms (dominated by permission-rule jsonb
+                                  aggregation over 10k matching rules: 11.297 ms)
+users / accounts / workspaces  : Index Scan (pk_users, pk_accounts,
+                                  ux_workspaces_account_slug_active)
+account_members                : Index Scan idx_account_members_account_user
+workspace_members              : Index Scan idx_workspace_members_workspace_user
+resource_permissions           : Index Scan (resource / subject indexes)
+permission_rules               : Index Scan idx_permission_rules_workspace_id +
+                                  idx_permission_rules_status
+billing.subscriptions          : Seq Scan x2 (empty at seed time; cost-correct and
+                                  non-harmful — one row per account in production)
+sequential scans on hot tables : none
+indexes added                  : none
+```
+
+Conclusion unchanged and now methodologically valid: no additional index is
+justified; the rule-aggregation branch is the only measurable cost and is
+bounded by rule selectivity, not by member/rule cardinality scans.

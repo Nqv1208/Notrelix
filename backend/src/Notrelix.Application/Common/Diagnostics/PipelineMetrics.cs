@@ -56,6 +56,37 @@ public sealed class PipelineMetrics : IDisposable
         PipelineFailures = _meter.CreateCounter<long>(
             "pipeline_failures",
             unit: "{failure}");
+        HandlerExecutions = _meter.CreateCounter<long>(
+            "handler_executions",
+            unit: "{execution}");
+        DbOperationsPerRequest = _meter.CreateHistogram<long>(
+            "db_operations_per_request",
+            unit: "{operation}");
+    }
+
+    /// <summary>Times a canonical stage and records pipeline_stage_duration{stage}.</summary>
+    public StageTimer Stage(string stage) => new(this, stage);
+
+    public readonly struct StageTimer : IDisposable
+    {
+        private readonly PipelineMetrics _metrics;
+        private readonly string _stage;
+        private readonly System.Diagnostics.Stopwatch _stopwatch;
+
+        public StageTimer(PipelineMetrics metrics, string stage)
+        {
+            _metrics = metrics;
+            _stage = stage;
+            _stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        }
+
+        public void Dispose()
+        {
+            _stopwatch.Stop();
+            _metrics.StageDuration.Record(
+                _stopwatch.Elapsed.TotalMilliseconds,
+                new KeyValuePair<string, object?>("stage", _stage));
+        }
     }
 
     public Counter<long> ExpectedVersionConflicts { get; }
@@ -83,6 +114,10 @@ public sealed class PipelineMetrics : IDisposable
 
     /// <summary>Label 'error.category' is a fixed code-bounded category.</summary>
     public Counter<long> PipelineFailures { get; }
+
+    public Counter<long> HandlerExecutions { get; }
+
+    public Histogram<long> DbOperationsPerRequest { get; }
 
     public static readonly KeyValuePair<string, object?>[] NoLabels = [];
 
