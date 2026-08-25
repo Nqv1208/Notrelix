@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import subprocess
 import tempfile
 import unittest
@@ -10,6 +11,29 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+
+def ephemeral_compose_env() -> dict[str, str]:
+    """Runtime-generated non-production values for Compose contract checks."""
+    return {
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": secrets.token_hex(16),
+        "POSTGRES_DB": "contract_check",
+        "REDIS_PASSWORD": secrets.token_hex(16),
+        "RABBITMQ_USER": "rabbitmq",
+        "RABBITMQ_PASSWORD": secrets.token_hex(16),
+        "RABBITMQ_VHOST": "/",
+        "JWT_SECRET": secrets.token_hex(32),
+        "JWT_ISSUER": "http://localhost",
+        "JWT_AUDIENCE": "http://localhost",
+        "CORS_ORIGIN": "http://localhost",
+        "RESEND_API_KEY": secrets.token_hex(16),
+        "CONNECTIONSTRINGS_NOTRELIXDB": f"Host=postgres;Port=5432;Database=contract_check;Username=postgres;Password={secrets.token_hex(16)}",
+        "CONNECTIONSTRINGS_REDIS": f"redis:6379,password={secrets.token_hex(16)}",
+        "BACKEND_NETWORK_SUBNET": "172.28.0.0/24",
+        "HTTPS_REDIRECTION_ENABLED": "false",
+        "HTTP_PORT": "8080",
+    }
 
 
 class DeliveryContractTests(unittest.TestCase):
@@ -91,6 +115,51 @@ class DeliveryContractTests(unittest.TestCase):
             ], cwd=ROOT, text=True, capture_output=True)
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn("rollback policy drift", proc.stderr + proc.stdout)
+
+    def test_release_overlay_removes_build_definitions_after_compose_merge(self) -> None:
+        """Regression: application services must have no usable build path after merge.
+
+        A plain `build: null` override survives Compose merging; only the
+        `!reset null` tag deletes the inherited key. This test fails if any
+        deployable application service still declares a build definition once
+        base + prod + release overlay are merged.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            manifest = tmp / "application-manifest.json"
+            digest = "a" * 64
+            manifest.write_text(json.dumps({
+                "schema_version": 4,
+                "artifacts": [
+                    {"component_id": "backend-api", "image": f"ghcr.io/example/backend@sha256:{digest}"},
+                    {"component_id": "web", "image": f"ghcr.io/example/web@sha256:{digest}"},
+                    {"component_id": "marketing", "image": f"ghcr.io/example/marketing@sha256:{digest}"},
+                ],
+            }), encoding="utf-8")
+            overlay = tmp / "release.generated.yml"
+            subprocess.run([
+                "python3", str(HERE / "render-release-compose.py"),
+                "--application-manifest", str(manifest), "--output", str(overlay),
+            ], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
+            merged = subprocess.run(
+                [
+                    "docker", "compose",
+                    "-f", "docker-compose.yml",
+                    "-f", "docker-compose.prod.yml",
+                    "-f", str(overlay),
+                    "config", "--format", "json",
+                ],
+                cwd=ROOT, text=True, capture_output=True, check=True,
+                env={**os.environ, **ephemeral_compose_env()},
+            ).stdout
+            services = json.loads(merged)["services"]
+            for service in ("backend", "frontend-web", "frontend-marketing"):
+                self.assertNotIn(
+                    "build", services[service],
+                    f"{service}: build definition survived Compose merge; "
+                    "release overlay must use !reset semantics",
+                )
+                self.assertIn("@sha256:", services[service]["image"])
 
     def test_environment_promotion_modes_match_orchestration(self) -> None:
         subprocess.run([

@@ -64,7 +64,10 @@ def main() -> int:
             stateful.append(f"{var}={ref}")
         compose += [f"  {service}:", f"    image: {json.dumps(ref)}"]
         if item.get("kind") == "application":
-            compose.append("    build: null")
+            # Compose reset semantics: a plain `build: null` override does not
+            # remove the inherited build definition; `!reset null` deletes the
+            # key during merge so the rendered stack has no usable build path.
+            compose.append("    build: !reset null")
 
     env_cfg = environments[args.environment]
     overlay = str(env_cfg.get("compose_overlay", ""))

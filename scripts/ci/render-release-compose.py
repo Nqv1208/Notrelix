@@ -39,8 +39,10 @@ def main() -> int:
         if svc in seen: raise SystemExit(f'duplicate compose service: {svc}')
         if '@sha256:' not in ref: raise SystemExit(f'mutable release image for {svc}: {ref}')
         seen.add(svc); lines += [f'  {svc}:',f'    image: {q(ref)}']
-        # Application build definitions in the base file must never survive a release override.
-        if svc not in {'postgres','redis','rabbitmq','nginx'}: lines.append('    build: null')
+        # Application build definitions in the base file must never survive a
+        # release override. Compose reset semantics (`!reset null`) delete the
+        # inherited key during merge; a plain `build: null` does not.
+        if svc not in {'postgres','redis','rabbitmq','nginx'}: lines.append('    build: !reset null')
     args.output.parent.mkdir(parents=True,exist_ok=True); args.output.write_text('\n'.join(lines)+'\n')
     return 0
 if __name__=='__main__': raise SystemExit(main())

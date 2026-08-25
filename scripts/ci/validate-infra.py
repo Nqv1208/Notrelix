@@ -22,6 +22,10 @@ from pathlib import Path
 from delivery_model import ROOT, deployable_components, load_catalog, load_images
 
 ZERO = "0" * 64
+# `build: !reset null` in the generated release overlay requires the Compose
+# merge implementation that understands the !reset tag. Deployment hosts and
+# CI runners must satisfy this floor before release rendering is trusted.
+MIN_COMPOSE_VERSION = (2, 24, 4)
 TEST_ENV = {
     "POSTGRES_PASSWORD": "${EPHEMERAL_PER_RUN}",
     "REDIS_PASSWORD": "${EPHEMERAL_PER_RUN}",
@@ -129,7 +133,28 @@ def network_names(service: dict) -> set[str]:
     return {str(item) for item in value}
 
 
+def compose_version() -> tuple[int, ...]:
+    out = subprocess.run(
+        ["docker", "compose", "version", "--short"],
+        check=True, text=True, capture_output=True,
+    ).stdout.strip()
+    numbers: list[int] = []
+    for part in out.split("-")[0].split("."):
+        if not part.isdigit():
+            break
+        numbers.append(int(part))
+    while len(numbers) < 3:
+        numbers.append(0)
+    return tuple(numbers)
+
+
 def main() -> int:
+    version = compose_version()
+    if version < MIN_COMPOSE_VERSION:
+        fail(
+            f"docker compose {version} is too old; release rendering requires "
+            f">= {'.'.join(map(str, MIN_COMPOSE_VERSION))} for !reset merge semantics"
+        )
     env = immutable_test_environment()
     with tempfile.TemporaryDirectory(prefix="notrelix-infra-") as temp:
         generated = render_release_overlay(Path(temp), env)
@@ -255,8 +280,12 @@ def main() -> int:
         if "@sha256:" not in image:
             fail(f"release service {name} is not digest-pinned")
     for name in ("backend", "frontend-web", "frontend-marketing"):
+        # The merged Compose output must not carry a usable build definition at
+        # all — a falsy-but-present `build` key would still be a build path.
         if release_services[name].get("build"):
             fail(f"release service {name} still contains a build definition")
+        if "build" in release_services[name]:
+            fail(f"release service {name} still declares a build key after merge")
 
     print("Notrelix infrastructure semantics: OK")
     return 0
