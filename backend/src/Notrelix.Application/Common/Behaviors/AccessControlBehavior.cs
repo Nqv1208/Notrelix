@@ -20,13 +20,13 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
         IExecutionContextReader executionContext,
         IAccessFactsProvider factsProvider,
         IAccessPolicyEvaluator policy,
-        PipelineMetrics? metrics = null)
+        PipelineMetrics metrics)
     {
         _descriptors = descriptors;
         _executionContext = executionContext;
         _factsProvider = factsProvider;
         _policy = policy;
-        _metrics = metrics ?? new PipelineMetrics();
+        _metrics = metrics;
     }
 
     public async Task<TResponse> Handle(

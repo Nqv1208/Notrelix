@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Diagnostics;
 using Microsoft.Extensions.Hosting;
 
 namespace Notrelix.Application.Tests.Behaviors;
@@ -38,7 +39,7 @@ public class ApplicationTracingBehaviorTests
         var logger = new Mock<ILogger<ApplicationTracingBehavior<TestRequest, TestResponse>>>();
         var executionContext = CreateMockExecutionContext();
         var behavior = new ApplicationTracingBehavior<TestRequest, TestResponse>(
-            CreateMockDescriptors().Object, logger.Object, executionContext, new Mock<IHostEnvironment>().Object);
+            CreateMockDescriptors().Object, logger.Object, executionContext, new Mock<IHostEnvironment>().Object, new PipelineMetrics());
 
         var response = await behavior.Handle(
             new TestRequest(), ct => Task.FromResult(new TestResponse("ok")), default);
@@ -62,7 +63,7 @@ public class ApplicationTracingBehaviorTests
         var logger = new Mock<ILogger<ApplicationTracingBehavior<TestRequest, TestResponse>>>();
         var executionContext = CreateMockExecutionContext();
         var behavior = new ApplicationTracingBehavior<TestRequest, TestResponse>(
-            CreateMockDescriptors().Object, logger.Object, executionContext, new Mock<IHostEnvironment>().Object);
+            CreateMockDescriptors().Object, logger.Object, executionContext, new Mock<IHostEnvironment>().Object, new PipelineMetrics());
 
         Func<Task> act = () => behavior.Handle(
             new TestRequest(),

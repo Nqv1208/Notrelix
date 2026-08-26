@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Diagnostics;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -425,6 +426,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
 
+        services.AddSingleton<PipelineMetrics>();
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddScoped<IAccessFactsProvider>(sp =>
             new PostgresAccessFactsProvider(

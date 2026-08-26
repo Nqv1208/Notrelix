@@ -44,15 +44,18 @@ public sealed class PipelineObservabilityTests
     }
 
     [Fact]
-    public async Task Tracing_behavior_emits_handler_span_around_next()
+    public async Task Tracing_behavior_does_not_emit_handler_span()
     {
-        using var recorder = new ActivityRecorder();
-        var behavior = CreateTracingBehavior<ObservabilityTaggedRequest>();
+        // Canonical ownership moved: handler.execute is emitted by the innermost
+        // IdempotencyBehavior around the actual invocation only.
+        var recorder = new ActivityRecorder();
+        var behavior = CreateTracingBehavior<ObservabilityWriteRequest>();
 
-        await behavior.Handle(
-            new ObservabilityTaggedRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
+        await behavior.Handle(new ObservabilityWriteRequest(Guid.NewGuid()),
+            _ => Task.FromResult("ok"), CancellationToken.None);
 
-        recorder.Names.Should().ContainInOrder("pipeline.request", "handler.execute");
+        recorder.Names.Should().NotContain("handler.execute");
+        recorder.Names.Should().Contain("pipeline.request");
     }
 
     [Fact]
@@ -167,7 +170,8 @@ public sealed class PipelineObservabilityTests
             new IdempotencyPartitionFactory(tenant.Object),
             executionContext.Object,
             new Mock<IIdempotencyExecutionContextWriter>().Object,
-            new Mock<ILogger<IdempotencyBehavior<ObservabilityIdempotentWriteRequest, string>>>().Object);
+            new Mock<ILogger<IdempotencyBehavior<ObservabilityIdempotentWriteRequest, string>>>().Object,
+            new PipelineMetrics());
 
         await behavior.Handle(
             new ObservabilityIdempotentWriteRequest(Guid.NewGuid()),
@@ -193,7 +197,8 @@ public sealed class PipelineObservabilityTests
             descriptors.Object,
             new Mock<ILogger<ApplicationTracingBehavior<TRequest, string>>>().Object,
             executionContext.Object,
-            hostEnvironment.Object);
+            hostEnvironment.Object,
+            new PipelineMetrics());
     }
 
     private static AccessControlBehavior<TRequest, string> CreateAccessBehavior<TRequest>(
@@ -211,7 +216,7 @@ public sealed class PipelineObservabilityTests
             Guid.NewGuid().ToString("D")));
 
         return new AccessControlBehavior<TRequest, string>(
-            descriptors.Object, executionContext.Object, provider, new AccessPolicyEngine());
+            descriptors.Object, executionContext.Object, provider, new AccessPolicyEngine(), new PipelineMetrics());
     }
 
     private static DataSessionBehavior<TRequest, string> CreateDataSessionBehavior<TRequest>(

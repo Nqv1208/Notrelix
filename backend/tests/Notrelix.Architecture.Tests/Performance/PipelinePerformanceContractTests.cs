@@ -39,8 +39,11 @@ public sealed class PipelinePerformanceContractTests
         Count(source, "ExecuteSqlRaw").Should().Be(0);
         Count(source, "CommandText ==").Should().Be(0, "no branching into additional commands");
 
-        var constCount = Count(source, "\"\"\"");
-        constCount.Should().BeGreaterThanOrEqualTo(2, "the facts query stays one verbatim SQL block");
+        var providerSource = SourceOf("Notrelix.Infrastructure.Data.Authz.AccessFactsQuery")
+            + "\n" + source;
+        var tripleQuotes = Count(providerSource, "\"\"\"");
+        tripleQuotes.Should().BeGreaterThanOrEqualTo(2,
+            "the facts query stays one verbatim SQL block in its canonical authority");
     }
 
     [Fact]

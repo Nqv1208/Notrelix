@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Services;
@@ -38,6 +39,7 @@ public static class DependencyInjection
         // FluentValidation - auto register all validators
         services.AddValidatorsFromAssembly(assembly);
 
+        services.AddSingleton<PipelineMetrics>();
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
         services.AddScoped<Notrelix.Application.Features.Automation.Events.N8nAutomationRuleEvaluator>();

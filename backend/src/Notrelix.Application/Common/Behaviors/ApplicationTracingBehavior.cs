@@ -17,13 +17,13 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
         ILogger<ApplicationTracingBehavior<TRequest, TResponse>> logger,
         IExecutionContextReader executionContext,
         IHostEnvironment hostEnvironment,
-        PipelineMetrics? metrics = null)
+        PipelineMetrics metrics)
     {
         _descriptors = descriptors;
         _logger = logger;
         _executionContext = executionContext;
         _hostEnvironment = hostEnvironment;
-        _metrics = metrics ?? new PipelineMetrics();
+        _metrics = metrics;
     }
 
     public async Task<TResponse> Handle(
@@ -58,7 +58,7 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
             ["UserId"] = _executionContext.UserId?.ToString() ?? "",
             ["AccountId"] = _executionContext.AccountId?.ToString() ?? "",
             ["WorkspaceId"] = workspaceId ?? _executionContext.WorkspaceId?.ToString() ?? "",
-            ["RequestType"] = request is ICommand ? "Command" : request is IQuery<object> ? "Query" : "Other",
+            ["RequestType"] = descriptor.Kind.ToString(),
         });
 
         _logger.LogInformation("Handling {RequestName}", requestName);
@@ -68,10 +68,7 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
         try
         {
             TResponse response;
-            using (PipelineActivitySource.Instance.StartActivity("handler.execute"))
-            {
-                response = await next();
-            }
+            response = await next();
 
             stopwatch.Stop();
             _logger.LogInformation(

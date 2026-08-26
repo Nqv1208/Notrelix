@@ -324,26 +324,29 @@ Do not create a generic marker that silently encodes an entire feature workflow.
 
 # 14. Pipeline architecture
 
-ADR-006 (superseding ADR-001) freezes the pipeline to exactly seven behaviors;
-behavior order remains dependency-driven, not aesthetic.
-
-Conceptual zones:
+ADR-006 freezes the production request pipeline to exactly seven behaviors in a
+fixed order:
 
 ```text
-OUTER / pre-DB
-        ↓
-POST-COMMIT SCOPE BOUNDARY
-        ↓
-INNER / DB request + transaction
-        ↓
-POST-COMMIT
-        ↓
-CACHE / final response cache
+ExceptionMappingBehavior
+ApplicationTracingBehavior
+RequestContractBehavior
+ExecutionContextBehavior
+DataSessionBehavior
+AccessControlBehavior
+IdempotencyBehavior
 ```
 
-The ADR describes six pipeline zones/boundaries in the current implementation.
+Validation executes inside `RequestContractBehavior` — there is no separate
+production validation stage. Transaction/RLS boundaries belong to the data
+session owned by `DataSessionBehavior` + Infrastructure `IRequestDataSession`.
+Authorization is `AccessFacts` + pure policy evaluation inside
+`AccessControlBehavior`. Durable side effects flow through the transactional
+outbox and broker consumers after commit; there is no generic post-commit or
+response-cache pipeline stage.
 
-The durable architecture is the **dependency/order semantics**, not the exact number of behavior classes forever.
+The earlier six-zone / nineteen-behavior model (ADR-001) is superseded and is
+described only as historical context in ADR-001 itself.
 
 ---
 
@@ -352,14 +355,17 @@ The durable architecture is the **dependency/order semantics**, not the exact nu
 Current `Common/Behaviors` contains the frozen seven-behavior pipeline:
 
 ```text
+ExceptionMappingBehavior
 ApplicationTracingBehavior
 RequestContractBehavior
 ExecutionContextBehavior
 DataSessionBehavior
 AccessControlBehavior
 IdempotencyBehavior
-ValidationBehavior
 ```
+
+Validation executes inside `RequestContractBehavior`; there is no separate
+production `ValidationBehavior`.
 
 This is current source evidence.
 

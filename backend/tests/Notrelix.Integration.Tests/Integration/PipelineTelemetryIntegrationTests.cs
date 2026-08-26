@@ -100,7 +100,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         result.Succeeded.Should().BeTrue();
 
         var root = recorder.Started.Should()
-            .ContainSingle(a => a.OperationName == "pipeline.request").Subject;
+            .ContainSingle(a => IsRootFor(a, "CreateWorkspaceCommand")).Subject;
 
         root.Tags.Should().Contain(tag => tag.Key == "app.request" && (string?)tag.Value == "CreateWorkspaceCommand");
         root.Tags.Should().Contain(tag => tag.Key == "request.kind" && (string?)tag.Value == "Command");
@@ -121,7 +121,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         }
 
         recorder.Started.Should().ContainSingle(a => a.OperationName == "handler.execute")
-            .Which.Parent!.OperationName.Should().Be("pipeline.request");
+            .Which.Parent!.OperationName.Should().Be("data_session.open");
 
         await using var verify = _db.CreateContext(SystemTenant());
         (await verify.Workspaces.CountAsync(w => w.AccountId == accountId)).Should().Be(1,
@@ -143,7 +143,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppForbidden>();
 
         var root = recorder.Started.Should()
-            .ContainSingle(a => a.OperationName == "pipeline.request").Subject;
+            .ContainSingle(a => IsRootFor(a, "CreateWorkspaceCommand")).Subject;
 
         root.Status.Should().Be(ActivityStatusCode.Error);
         root.Tags.Should().Contain(tag =>
@@ -191,7 +191,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             "the second send must replay the stored result instead of executing the handler again");
 
         var roots = recorder.Started
-            .Where(a => a.OperationName == "pipeline.request")
+            .Where(a => IsRootFor(a, "SetBoardItemDueDateCommand"))
             .ToArray();
         roots.Should().HaveCount(2);
         roots.Should().OnlyContain(r => r.Status == ActivityStatusCode.Ok);
@@ -201,13 +201,11 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         recorder.Started.Where(a => a.OperationName == "idempotency.complete").Should().HaveCount(1,
             "only the first pass completes the idempotency record");
 
-        // The 'handler' stage span wraps everything after tracing (including
-        // idempotency), so it appears on both passes; the execution counter —
-        // not the span — proves the business handler ran exactly once.
-        Descendants(roots[1], recorder).Should().Contain(a => a.OperationName == "handler.execute",
-            "the tracing stage span must wrap every pass");
+        // handler.execute is emitted ONLY on the actual invocation pass.
         Descendants(roots[0], recorder).Should().Contain(a => a.OperationName == "handler.execute",
-            "the first pass must execute the handler inside the pipeline");
+            "the first pass must execute the handler");
+        Descendants(roots[1], recorder).Should().NotContain(a => a.OperationName == "handler.execute",
+            "a replayed request must not emit a handler span");
     }
 
     [Fact]
@@ -421,6 +419,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
 
+        services.AddSingleton<PipelineMetrics>();
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
         services.AddScoped<IAccessFactsProvider>(sp =>
             new PostgresAccessFactsProvider(
@@ -556,6 +555,10 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             resourceId: Guid.NewGuid(), streamKey: $"telemetry:{Guid.NewGuid():N}", streamVersion: 1,
             changeKind: "updated", payloadContract: "test.v1",
             System.Text.Json.JsonDocument.Parse("{}").RootElement);
+
+    private static bool IsRootFor(Activity activity, string requestName) =>
+        activity.OperationName == "pipeline.request"
+        && activity.Tags.Any(tag => tag.Key == "app.request" && Equals(tag.Value, requestName));
 
     private static Activity? RootAncestor(Activity activity)
     {
