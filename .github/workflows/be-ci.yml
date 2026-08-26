@@ -223,7 +223,11 @@ jobs:
           Notrelix.Architecture.Tests.Pipeline.PipelineFreezeArchitectureTests
           Notrelix.Architecture.Tests.Pipeline.ExpectedVersionArchitectureTests
           Notrelix.Architecture.Tests.Performance.PipelinePerformanceContractTests
-          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_CanonicalDocs_MatchFrozenSevenStageTopology
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_LegacyGapCount_IsZero
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.IntentionalAllowlistEntries_MustDescribePermanentArchitectureExceptions
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllowlistEntries_AreNotStale
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllProductionRequests_HaveValidDescriptors
 
   core-tests:
     name: Domain, Application and Infrastructure tests
