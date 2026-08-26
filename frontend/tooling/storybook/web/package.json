@@ -14,7 +14,7 @@
     "@notrelix/ui-web": "workspace:*"
   },
   "devDependencies": {
-    "@storybook/addon-a11y": "8.6.17",
+    "@storybook/addon-a11y": "10.5.10",
     "@storybook/react-vite": "8.6.17",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
