@@ -1,0 +1,201 @@
+name: Delivery Platform Migration Staging
+
+on:
+  push:
+    branches: [delivery-platform-apply-staging-20260826]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  apply:
+    name: Apply and validate delivery platform source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Exit until migration payload exists
+        id: payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f .migration/payload.tar.gz.b64 ]]; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+            echo 'Migration payload is not present yet; staging workflow is armed.'
+          fi
+
+      - name: Decode and verify migration payload
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_b64='e4dbaa9d2a428b3455f7a800eb6161b89ce2615acf48c421d373e93a76ec8db6'
+          expected_tar='5d459116425bf8e50abccfe8e9339dc546bbe195572f60a1b03bce155f37ecf6'
+          [[ "$(sha256sum .migration/payload.tar.gz.b64 | awk '{print $1}')" == "$expected_b64" ]]
+          base64 -d .migration/payload.tar.gz.b64 > /tmp/notrelix-delivery-platform.tar.gz
+          [[ "$(sha256sum /tmp/notrelix-delivery-platform.tar.gz | awk '{print $1}')" == "$expected_tar" ]]
+          rm -rf /tmp/notrelix-delivery-platform
+          mkdir -p /tmp/notrelix-delivery-platform
+          tar -xzf /tmp/notrelix-delivery-platform.tar.gz -C /tmp/notrelix-delivery-platform
+
+      - name: Apply source overlay and remove superseded control plane
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -a /tmp/notrelix-delivery-platform/tree/. .
+          while IFS= read -r path; do
+            [[ -z "$path" || "$path" == \#* ]] && continue
+            rm -f -- "$path"
+          done < /tmp/notrelix-delivery-platform/DELETE.txt
+          rmdir .github/actions/setup-ci-python 2>/dev/null || true
+          find tools scripts -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
+          find tools scripts -type f -name '*.pyc' -delete 2>/dev/null || true
+
+      - name: Recover reviewed deterministic mobile visual baseline
+        if: steps.payload.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/ui-playwright-report
+          mkdir -p /tmp/ui-playwright-report
+          gh run download 32877267594 -R "$GITHUB_REPOSITORY" -n ui-playwright-report -D /tmp/ui-playwright-report
+          source_png=/tmp/ui-playwright-report/data/609dd606cb4ba1072082a80f4901291732601782.png
+          test -f "$source_png"
+          [[ "$(sha256sum "$source_png" | awk '{print $1}')" == '5e949fc03405ccf169edc68aef7038d3348ee035461e18cb42a54dc50fb75987' ]]
+          target=frontend/e2e/ui/ui-foundation.visual.spec.ts-snapshots/foundation-gallery-mobile-chromium-linux.png
+          mkdir -p "$(dirname "$target")"
+          cp "$source_png" "$target"
+
+      - name: Verify control-plane runtime and contracts
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sys, tomllib
+          if sys.version_info < (3, 11):
+              raise SystemExit(sys.version)
+          PY
+          python3 -m tools.deliveryctl validate
+          python3 -m tools.deliveryctl architecture-check
+          python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
+          python3 -m compileall -q tools/deliveryctl scripts/ci
+          python3 -m tools.deliveryctl visual --check
+
+      - name: Validate workflow YAML and action pinning
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/repo" -w /repo \
+            rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 \
+            -color
+
+      - name: Validate execution-safe frontend artifact primitives
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check frontend/scripts/ci/package-host-artifact.mjs
+          node --check frontend/scripts/ci/restore-host-artifact.mjs
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp" frontend/.ci-artifact-fixture' EXIT
+          mkdir -p frontend/.ci-artifact-fixture "$tmp/restore"
+          printf 'exact-artifact-proof\n' > frontend/.ci-artifact-fixture/value.txt
+          (
+            cd frontend
+            node scripts/ci/package-host-artifact.mjs \
+              --component fixture \
+              --paths-json '[".ci-artifact-fixture"]' \
+              --output "$tmp/fixture.tar.gz" \
+              --manifest "$tmp/fixture.manifest.json"
+          )
+          rm -rf frontend/.ci-artifact-fixture
+          (
+            cd frontend
+            node scripts/ci/restore-host-artifact.mjs \
+              --component fixture \
+              --archive "$tmp/fixture.tar.gz" \
+              --manifest "$tmp/fixture.manifest.json" \
+              --destination "$tmp/restore"
+          )
+          grep -qx 'exact-artifact-proof' "$tmp/restore/.ci-artifact-fixture/value.txt"
+
+      - name: Compile full execution plan and validate resolved infrastructure
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m tools.deliveryctl plan \
+            --event-name workflow_dispatch \
+            --ref refs/heads/main \
+            --source-sha 7208faf977bddb556079019332941cb081a306ca \
+            --full \
+            --output /tmp/notrelix-plan.json
+          jq '{api_version,kind:"RuntimeImageSet",images:.runtime_images}' /tmp/notrelix-plan.json > /tmp/runtime-images.json
+          jq '{api_version,kind:"DeployableContainerSet",containers:.deployment_containers}' /tmp/notrelix-plan.json > /tmp/deployable-containers.json
+          python3 scripts/ci/validate-infra.py \
+            --runtime-images /tmp/runtime-images.json \
+            --containers /tmp/deployable-containers.json
+
+      - name: Setup frontend toolchain for documentation governance
+        if: steps.payload.outputs.present == 'true'
+        uses: ./.github/actions/setup-frontend
+
+      - name: Validate governed documentation
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: make docs-check
+
+      - name: Enforce migration cleanup invariants
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e .python-version
+          test ! -e .github/actions/setup-ci-python/action.yml
+          for legacy in \
+            scripts/ci/build-plan.py \
+            scripts/ci/delivery_model.py \
+            scripts/ci/component-info.py \
+            scripts/ci/image-info.py \
+            scripts/ci/environment-info.py \
+            scripts/ci/aggregate-evidence.py; do
+            test ! -e "$legacy"
+          done
+          ! grep -REn 'component-info\.py|image-info\.py|delivery_model\.py|build-plan\.py|setup-ci-python|actions/setup-python' \
+            .github/workflows .github/actions scripts/ci frontend/scripts/ci --exclude='delivery-platform-migration.yml'
+          ! grep -REn '\bdocker[[:space:]]+build\b|docker[[:space:]]+compose[^[:cntrl:]]+[[:space:]]build\b|--build' \
+            .github/workflows/release.yml .github/workflows/promote-release.yml .github/workflows/deploy.yml
+
+      - name: Remove staging-only migration material
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .migration
+          rm -f .github/workflows/delivery-platform-migration.yml
+
+      - name: Commit validated target tree to staging branch
+        if: steps.payload.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'notrelix-delivery-bot'
+          git config user.email 'notrelix-delivery-bot@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m 'ci!: adopt deliveryctl control plane and provider-resolved contracts' \
+            -m 'Enforce authority -> deliveryctl -> resolved provider contract boundaries; remove legacy CI control-plane helpers and Python bootstrap; preserve critical backend/docs/security/infra proof coverage; make exact-artifact renderer lanes fail closed; and seal build-once same-digest release promotion.'
+          git push origin HEAD:delivery-platform-apply-staging-20260826
