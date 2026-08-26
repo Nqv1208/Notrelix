@@ -1,0 +1,28 @@
+name: Emit CI evidence
+description: Emit one execution-plane proof record without invoking the delivery control plane.
+inputs:
+  proof_id: {required: true, description: Canonical proof identifier}
+  component_id: {required: false, default: repository}
+  metadata: {required: false, default: ""}
+runs:
+  using: composite
+  steps:
+    - id: record
+      shell: bash
+      env:
+        PROOF_ID: ${{ inputs.proof_id }}
+        COMPONENT_ID: ${{ inputs.component_id }}
+        METADATA: ${{ inputs.metadata }}
+      run: |
+        set -euo pipefail
+        node "$GITHUB_ACTION_PATH/emit.mjs" \
+          --proof-id "$PROOF_ID" \
+          --component-id "$COMPONENT_ID" \
+          ${METADATA:+--metadata "$METADATA"} \
+          --out "$GITHUB_WORKSPACE/artifacts/ci/evidence"
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ steps.record.outputs.artifact_name }}
+        path: ${{ steps.record.outputs.path }}
+        if-no-files-found: error
+        retention-days: 30

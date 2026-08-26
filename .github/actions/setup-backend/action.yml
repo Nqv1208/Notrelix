@@ -1,0 +1,9 @@
+name: Setup Notrelix backend
+description: Install repository-pinned .NET SDK; restore stays explicit in each proof job.
+runs:
+  using: composite
+  steps:
+    - name: Setup .NET from global.json
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      with:
+        global-json-file: backend/global.json

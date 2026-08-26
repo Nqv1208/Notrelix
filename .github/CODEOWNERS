@@ -1,0 +1,9 @@
+/delivery/ @Nqv1208
+/tools/deliveryctl/ @Nqv1208
+/.github/workflows/ @Nqv1208
+/.github/actions/ @Nqv1208
+/docker-compose*.yml @Nqv1208
+/Makefile @Nqv1208
+/backend/Dockerfile @Nqv1208
+/frontend/Dockerfile* @Nqv1208
+/infra/ @Nqv1208

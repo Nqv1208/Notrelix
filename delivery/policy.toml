@@ -1,0 +1,195 @@
+schema_version = 5
+
+[platform]
+control_plane_python_min = "3.11"
+provider_authority_reads = false
+build_once_promote_same_bytes = true
+cache_is_evidence = false
+unknown_change = "full-ci"
+
+[source_control]
+trunk_branch = "main"
+release_branch = "main"
+accepted_pr_bases = ["main", "develop"]
+transitional_branches = ["develop"]
+
+[defaults]
+frontend_default_capabilities = ["node-tests"]
+full_frontend_capabilities = ["node-tests", "web-tests", "mobile-tests", "tooling-tests", "ui", "mock", "contract"]
+release_candidate_mode = "complete-deployable-set"
+
+[[change_rules]]
+id = "docs"
+patterns = ["docs/**", "backend/docs/**", "frontend/docs/**", "**/*.md", "*.md"]
+exclusive = true
+planes = ["docs"]
+release = false
+
+[[change_rules]]
+id = "delivery-platform"
+patterns = [".github/workflows/**", ".github/actions/**", ".github/CODEOWNERS", ".github/dependabot.yml", ".github/*.yml", "tools/**", "scripts/ci/**", "delivery/**", "Makefile", ".python-version", ".node-version"]
+exclusive = true
+full_ci = true
+release = false
+
+[[change_rules]]
+id = "backend-contract"
+patterns = ["backend/contracts/openapi/**", "artifacts/contracts/**"]
+components = ["backend-api", "web", "marketing", "mobile"]
+capabilities = ["contract", "web-tests"]
+release = true
+
+[[change_rules]]
+id = "backend-container"
+patterns = ["backend/Dockerfile", ".dockerignore"]
+components = ["backend-api"]
+planes = ["infra"]
+package_components = ["backend-api"]
+security_domains = ["backend"]
+release = true
+
+[[change_rules]]
+id = "web-container"
+patterns = ["frontend/Dockerfile", "frontend/apps/web/nginx.conf"]
+exclusive = true
+components = ["web"]
+planes = ["infra"]
+package_components = ["web"]
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "marketing-container"
+patterns = ["frontend/Dockerfile.marketing"]
+exclusive = true
+components = ["marketing"]
+planes = ["infra"]
+package_components = ["marketing"]
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "frontend-root"
+patterns = ["frontend/package.json", "frontend/pnpm-lock.yaml", "frontend/pnpm-workspace.yaml", "frontend/turbo.json", "frontend/.npmrc", "frontend/.node-version"]
+exclusive = true
+full_frontend = true
+package_all_frontend_deployables = true
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "frontend-shared"
+patterns = ["frontend/packages/**"]
+exclusive = true
+full_frontend = true
+package_all_frontend_deployables = true
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "frontend-tooling"
+patterns = ["frontend/tooling/**", "frontend/scripts/**", "frontend/playwright*.ts", "frontend/eslint.config.*", "frontend/tsconfig*.json"]
+exclusive = true
+full_frontend = true
+capabilities = ["tooling-tests", "ui"]
+package_all_frontend_deployables = true
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "ui-foundation"
+patterns = ["frontend/packages/ui/**", "frontend/packages/foundation/design-system/**", "frontend/tooling/storybook/**", "frontend/e2e/ui/**"]
+capabilities = ["ui", "web-tests"]
+
+[[change_rules]]
+id = "web-production-e2e"
+patterns = ["frontend/e2e/production/**"]
+components = ["web"]
+capabilities = ["web-tests"]
+
+[[change_rules]]
+id = "web-mock-e2e"
+patterns = ["frontend/e2e/mock/**"]
+components = ["web"]
+capabilities = ["mock", "web-tests"]
+
+[[change_rules]]
+id = "mock-system"
+patterns = ["frontend/packages/dev/mock*/**", "frontend/packages/features/**/mock*/**", "frontend/apps/web/**/mock*/**", "frontend/scripts/*mock*"]
+components = ["web"]
+capabilities = ["mock", "web-tests"]
+
+[[change_rules]]
+id = "runtime-infra"
+patterns = ["docker-compose.yml", "docker-compose.prod.yml", "docker-compose.staging.yml", "infra/nginx/**", "infra/postgres/**", "delivery/images.lock.toml"]
+exclusive = true
+planes = ["infra"]
+package_all_deployables = true
+security_domains = ["backend", "frontend"]
+release = true
+
+[[change_rules]]
+id = "backend-dependencies"
+patterns = ["backend/Directory.Packages.props", "backend/**/*.csproj", "backend/global.json"]
+security_domains = ["backend"]
+
+[[change_rules]]
+id = "frontend-dependencies"
+patterns = ["frontend/package.json", "frontend/pnpm-lock.yaml", "frontend/**/package.json"]
+security_domains = ["frontend"]
+
+[proof_profiles.backend]
+required = ["backend:{component_id}"]
+
+[proof_profiles.frontend]
+required = ["frontend:gate"]
+
+[proof_profiles.docs]
+required = ["docs:gate"]
+
+[proof_profiles.infra]
+required = ["infra:gate"]
+
+[proof_profiles.security-backend]
+required = ["security:backend"]
+
+[proof_profiles.security-frontend]
+required = ["security:frontend"]
+
+[proof_profiles.container]
+required = ["container:{component_id}"]
+
+[proof_profiles.release-stack]
+required = ["stack:release-candidate"]
+
+[proof_profiles.ui]
+required = ["ui:foundation"]
+
+[proof_bindings.planes]
+docs = "docs"
+infra = "infra"
+
+[proof_bindings.security_domains]
+backend = "security-backend"
+frontend = "security-frontend"
+
+[proof_bindings.capabilities]
+ui = "ui"
+
+[proof_bindings.packaging]
+profile = "container"
+
+[proof_bindings.release]
+profile = "release-stack"
+
+[mock]
+artifact_component = "web"
+
+[deployment]
+migration_component = "backend-api"
+migration_commands = ["--migrate", "--rls-apply"]
+migration_paths = ["backend/**/Migrations/**", "backend/**/migrations/**"]
+schema_change_policy = "expand-contract"
+rollback_after_schema_change = "manual"
+stack_health_url = "http://127.0.0.1:8080/health/live"
+stack_smoke_urls = ["http://127.0.0.1:8080/health/live", "http://127.0.0.1:8080/sign-in", "http://127.0.0.1:8080/"]

@@ -1,0 +1,21 @@
+schema_version = 5
+
+[defaults]
+deployment_adapter = "compose-ssh"
+rollback_after_schema_change = "manual"
+stateful_image_change_policy = "explicit-override"
+smoke_profile = "critical"
+
+[environments.staging]
+compose_overlay = "docker-compose.staging.yml"
+promotion_mode = "automatic-after-main-ci"
+run_migrations = true
+rollout_strategy = "rolling"
+concurrency_group = "notrelix-deploy-staging"
+
+[environments.production]
+compose_overlay = "docker-compose.prod.yml"
+promotion_mode = "manual-promotion"
+run_migrations = true
+rollout_strategy = "rolling"
+concurrency_group = "notrelix-deploy-production"

@@ -1,0 +1,33 @@
+name: Documentation Governance
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  governance:
+    name: Documentation governance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - name: Validate governed documentation
+        run: make docs-check
+  gate:
+    name: Documentation Governance gate
+    if: always()
+    needs: [governance]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require documentation governance success
+        env:
+          GOVERNANCE_RESULT: ${{ needs.governance.result }}
+        run: |
+          set -euo pipefail
+          [[ "$GOVERNANCE_RESULT" == success ]] || { echo "Documentation governance failed: $GOVERNANCE_RESULT" >&2; exit 1; }
+      - uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: docs:gate
+          component_id: documentation

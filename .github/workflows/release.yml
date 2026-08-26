@@ -1,0 +1,73 @@
+name: Release Candidate
+on:
+  workflow_run:
+    workflows: ["Notrelix CI"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      ci_run_id: {description: Successful main-push Notrelix CI run containing release-candidate, required: true, type: string}
+permissions: {contents: read, actions: read, attestations: read}
+concurrency: {group: notrelix-release-staging, cancel-in-progress: false}
+jobs:
+  candidate:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    outputs:
+      should_release: ${{ steps.load.outputs.should_release }}
+      ci_run_id: ${{ steps.load.outputs.ci_run_id }}
+      release_sha: ${{ steps.load.outputs.release_sha }}
+      manifest_json: ${{ steps.load.outputs.manifest_json }}
+      environment_json: ${{ steps.environment.outputs.contract_json }}
+    steps:
+      - id: load
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTO_RUN: ${{ github.event.workflow_run.id || '' }}
+          MANUAL_RUN: ${{ inputs.ci_run_id || '' }}
+        run: |
+          set -euo pipefail
+          run_id="$AUTO_RUN"; [[ "${{ github.event_name }}" == workflow_dispatch ]] && run_id="$MANUAL_RUN"; [[ "$run_id" =~ ^[0-9]+$ ]]
+          run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id")"
+          [[ "$(jq -r .name <<<"$run")" == "Notrelix CI" && "$(jq -r .conclusion <<<"$run")" == success && "$(jq -r .event <<<"$run")" == push && "$(jq -r .head_branch <<<"$run")" == main ]]
+          sha="$(jq -r .head_sha <<<"$run")"; artifacts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100")"; count="$(jq '[.artifacts[]|select(.name=="release-candidate" and .expired==false)]|length' <<<"$artifacts")"
+          if [[ "$count" -eq 0 ]]; then
+            if [[ "${{ github.event_name }}" == workflow_run ]]; then echo 'should_release=false' >> "$GITHUB_OUTPUT"; exit 0; fi
+            echo 'selected CI run contains no release candidate' >&2; exit 1
+          fi
+          mkdir candidate; gh run download "$run_id" -n release-candidate -D candidate; m=candidate/release-candidate.json
+          jq -e --arg sha "$sha" --arg run "$run_id" '.api_version=="delivery.notrelix.dev/v1" and .kind=="ReleaseCandidate" and .source_sha==$sha and (.ci_run_id|tostring)==$run and all(.images[];.ref|contains("@sha256:"))' "$m" >/dev/null
+          gh attestation verify "$m" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml" --source-digest "$sha" --source-ref refs/heads/main
+          { echo 'should_release=true'; echo "ci_run_id=$run_id"; echo "release_sha=$sha"; echo "manifest_json=$(jq -c . "$m")"; } >> "$GITHUB_OUTPUT"
+      - if: steps.load.outputs.should_release == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {ref: '${{ steps.load.outputs.release_sha }}', fetch-depth: 1}
+      - id: environment
+        if: steps.load.outputs.should_release == 'true'
+        run: python3 -m tools.deliveryctl environment --name staging --require-promotion-mode automatic-after-main-ci --github-output
+  staging:
+    needs: candidate
+    if: needs.candidate.outputs.should_release == 'true'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment_name: staging
+      release_id: candidate-${{ needs.candidate.outputs.ci_run_id }}
+      release_manifest_json: ${{ needs.candidate.outputs.manifest_json }}
+      environment_contract_json: ${{ needs.candidate.outputs.environment_json }}
+    secrets: inherit
+  seal:
+    needs: [candidate, staging]
+    if: needs.staging.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions: {contents: read, id-token: write, attestations: write}
+    steps:
+      - env: {CANDIDATE: '${{ needs.candidate.outputs.manifest_json }}'}
+        run: |
+          jq -e . <<<"$CANDIDATE" > candidate.json
+          jq --arg run "$GITHUB_RUN_ID" '.kind="StagingVerifiedRelease"|.release_run_id=$run|.staging_verified=true|.staging_verified_at=(now|todateiso8601)' candidate.json > release-manifest.json
+      - uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with: {subject-path: release-manifest.json}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with: {name: release-manifest, path: release-manifest.json, if-no-files-found: error, retention-days: 90}

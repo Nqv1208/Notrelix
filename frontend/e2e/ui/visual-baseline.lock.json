@@ -1,0 +1,17 @@
+{
+  "api_version": "delivery.notrelix.dev/v1",
+  "config": "frontend/playwright.storybook.config.ts",
+  "kind": "VisualBaselineToolchain",
+  "playwright": "^1.50.0",
+  "renderer_ref": "mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e",
+  "renderer_source": "mcr.microsoft.com/playwright:v1.61.1-jammy",
+  "renderer_variant": "jammy",
+  "renderer_version": "1.61.1",
+  "snapshots": "frontend/e2e/ui/ui-foundation.visual.spec.ts-snapshots",
+  "storybook": {
+    "@storybook/addon-a11y": "8.6.17",
+    "@storybook/react": "8.6.17",
+    "@storybook/react-vite": "8.6.17",
+    "storybook": "8.6.17"
+  }
+}

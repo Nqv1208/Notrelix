@@ -47,7 +47,7 @@ test.describe("Marketing Smoke", () => {
 
     await expect(page).toHaveTitle(/Notrelix/);
     await expect(
-      page.getByRole("heading", { level: 1, name: /From idea to/ }),
+      page.getByRole("heading", { level: 1, name: /Work Management Made/ }),
     ).toBeVisible();
     expect(appErrors).toHaveLength(0);
   });
