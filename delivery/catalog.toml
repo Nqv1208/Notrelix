@@ -1,8 +1,8 @@
-schema_version = 4
+schema_version = 5
 
 [repository]
+trunk_branch = "main"
 release_branch = "main"
-protected_branches = ["main", "develop", "foundationfreeze"]
 frontend_root = "frontend"
 
 [components.backend-api]
@@ -10,7 +10,7 @@ provider = "backend"
 roots = ["backend/**"]
 deployable = true
 security_domain = "backend"
-proof_profile = "backend-monolith"
+proof_profile = "backend"
 release_on_runtime_change = true
 
 [components.backend-api.container]
@@ -23,6 +23,7 @@ runtime_port = 8000
 health_path = "/health/live"
 health_scheme = "http"
 build_arg_locks = { DOTNET_SDK_IMAGE = "dotnet-sdk", DOTNET_RUNTIME_IMAGE = "dotnet-aspnet" }
+smoke_dependency_locks = { postgres = "postgres", redis = "redis", rabbitmq = "rabbitmq" }
 
 [components.web]
 provider = "frontend-host"
@@ -30,7 +31,7 @@ roots = ["frontend/apps/web/**"]
 workspace = "@notrelix/app-web"
 deployable = true
 security_domain = "frontend"
-proof_profile = "frontend-host"
+proof_profile = "frontend"
 release_on_runtime_change = true
 
 [components.web.frontend]
@@ -57,7 +58,7 @@ roots = ["frontend/apps/marketing/**"]
 workspace = "@notrelix/app-marketing"
 deployable = true
 security_domain = "frontend"
-proof_profile = "frontend-host"
+proof_profile = "frontend"
 release_on_runtime_change = true
 
 [components.marketing.frontend]
@@ -84,10 +85,9 @@ roots = ["frontend/apps/mobile/**"]
 workspace = "@notrelix/app-mobile"
 deployable = false
 security_domain = "frontend"
-proof_profile = "mobile"
+proof_profile = "frontend"
 release_on_runtime_change = false
 
 [components.mobile.frontend]
 build_script = "build"
 capabilities = ["mobile-tests"]
-

@@ -1,178 +1,67 @@
-name: Deploy Immutable Release Provider
-
+name: Deploy Immutable Release
 on:
   workflow_call:
     inputs:
       environment_name: {required: true, type: string}
       release_id: {required: true, type: string}
       release_manifest_json: {required: true, type: string}
-
-permissions:
-  contents: read
-  packages: read
-  attestations: read
-
+      environment_contract_json: {required: true, type: string}
+permissions: {contents: read, packages: read, attestations: read}
 jobs:
   deploy:
-    name: Deploy ${{ inputs.environment_name }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: ${{ inputs.environment_name }}
-    concurrency:
-      group: notrelix-deploy-${{ inputs.environment_name }}
-      cancel-in-progress: false
+    concurrency: {group: 'notrelix-deploy-${{ inputs.environment_name }}', cancel-in-progress: false}
     steps:
-      - name: Extract immutable source SHA from manifest
-        id: manifest
-        env:
-          MANIFEST: ${{ inputs.release_manifest_json }}
+      - id: identity
+        env: {MANIFEST: '${{ inputs.release_manifest_json }}', ENVIRONMENT: '${{ inputs.environment_contract_json }}'}
         run: |
-          set -euo pipefail
-          sha="$(jq -er '.source_sha | select(test("^[0-9a-fA-F]{40}$"))' <<<"$MANIFEST")"
-          echo "release_sha=$sha" >> "$GITHUB_OUTPUT"
+          sha="$(jq -er '.source_sha|select(test("^[0-9a-f]{40}$"))' <<<"$MANIFEST")"; [[ "$(jq -r .name <<<"$ENVIRONMENT")" == "${{ inputs.environment_name }}" ]]; jq -e 'all(.images[];.ref|contains("@sha256:"))' <<<"$MANIFEST" >/dev/null; echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ steps.manifest.outputs.release_sha }}
-          fetch-depth: 1
-      - name: Materialize and validate generic deployment bundle
-        env:
-          MANIFEST: ${{ inputs.release_manifest_json }}
-          ENVIRONMENT_NAME: ${{ inputs.environment_name }}
-          RELEASE_ID: ${{ inputs.release_id }}
+        with: {ref: '${{ steps.identity.outputs.sha }}', fetch-depth: 1}
+      - name: Materialize deployment bundle
+        env: {MANIFEST: '${{ inputs.release_manifest_json }}', ENVIRONMENT: '${{ inputs.environment_contract_json }}', RELEASE_ID: '${{ inputs.release_id }}'}
         run: |
-          set -euo pipefail
-          mkdir -p artifacts/deploy
-          jq -e '.schema_version == 4 and (.schema_change|type=="boolean") and .rollback_after_schema_change=="manual" and (.images|type=="array") and (.images|length>0)' <<<"$MANIFEST" > artifacts/deploy-input.json
-          python3 scripts/ci/prepare-deployment-bundle.py --manifest artifacts/deploy-input.json --environment "$ENVIRONMENT_NAME" --output-dir artifacts/deploy
-          printf 'RELEASE_ID=%s\n' "$RELEASE_ID" >> artifacts/deploy/metadata.env
-          scripts/ci/write-test-env.sh /tmp/notrelix-deploy-validation.env
-          docker compose --env-file /tmp/notrelix-deploy-validation.env -f docker-compose.yml -f "$(awk -F= '$1=="COMPOSE_OVERLAY"{print $2}' artifacts/deploy/metadata.env)" -f artifacts/deploy/release.generated.yml config >/dev/null
-      - name: Verify application image provenance against this repository/source
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_SHA: ${{ steps.manifest.outputs.release_sha }}
-        shell: bash
+          mkdir -p artifacts/input artifacts/deploy; jq . <<<"$MANIFEST" > artifacts/input/release.json; jq . <<<"$ENVIRONMENT" > artifacts/input/environment.json
+          python3 -m tools.deliveryctl bundle --manifest artifacts/input/release.json --environment artifacts/input/environment.json --output-dir artifacts/deploy
+          echo "RELEASE_ID=$RELEASE_ID" >> artifacts/deploy/metadata.env
+      - name: Verify application provenance
+        env: {GH_TOKEN: '${{ github.token }}', SHA: '${{ steps.identity.outputs.sha }}'}
         run: |
-          set -euo pipefail
-          signer="$GITHUB_REPOSITORY/.github/workflows/container-ci.yml"
-          jq -r '.images[] | select(.kind=="application") | .ref' artifacts/deploy-input.json | while IFS= read -r image; do
-            [[ "$image" == *@sha256:* ]] || exit 1
-            gh attestation verify "oci://$image" -R "$GITHUB_REPOSITORY" --signer-workflow "$signer" --source-digest "$RELEASE_SHA" --source-ref refs/heads/main
-          done
-      - name: Configure pinned SSH host trust
-        env:
-          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
-          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+          jq -r '.images[]|select(.kind=="application")|.ref' artifacts/input/release.json | while read -r image; do gh attestation verify "oci://$image" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/container-ci.yml" --source-digest "$SHA" --source-ref refs/heads/main; done
+      - name: Configure SSH trust
+        env: {HOST: '${{ vars.DEPLOY_HOST }}', KEY: '${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}', KNOWN: '${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}'}
         run: |
-          set -euo pipefail
-          test -n "$DEPLOY_HOST"; test -n "$DEPLOY_SSH_PRIVATE_KEY"; test -n "$DEPLOY_SSH_KNOWN_HOSTS"
-          mkdir -p ~/.ssh; chmod 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519; chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts; chmod 600 ~/.ssh/known_hosts
-      - name: Authenticate deployment host to GHCR when configured
-        env:
-          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-          DEPLOY_SSH_PORT: ${{ vars.DEPLOY_SSH_PORT }}
-          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
-          DEPLOY_GHCR_USER: ${{ vars.DEPLOY_GHCR_USER }}
-          DEPLOY_GHCR_TOKEN: ${{ secrets.DEPLOY_GHCR_TOKEN }}
+          test -n "$HOST"; test -n "$KEY"; test -n "$KNOWN"; mkdir -p ~/.ssh; chmod 700 ~/.ssh; printf '%s\n' "$KEY" > ~/.ssh/id_ed25519; chmod 600 ~/.ssh/id_ed25519; printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts; chmod 600 ~/.ssh/known_hosts
+      - name: Transfer immutable bundle
+        env: {HOST: '${{ vars.DEPLOY_HOST }}', PORT: '${{ vars.DEPLOY_SSH_PORT }}', USER: '${{ secrets.DEPLOY_SSH_USER }}', RID: '${{ inputs.release_id }}'}
         run: |
-          set -euo pipefail
-          if [[ -n "$DEPLOY_GHCR_TOKEN" ]]; then
-            test -n "$DEPLOY_GHCR_USER"
-            printf '%s' "$DEPLOY_GHCR_TOKEN" | ssh -p "${DEPLOY_SSH_PORT:-22}" "$DEPLOY_SSH_USER@$DEPLOY_HOST" "docker login ghcr.io -u '$DEPLOY_GHCR_USER' --password-stdin"
-          fi
-      - name: Transfer immutable release bundle
+          remote="/tmp/notrelix-release-${RID//[^A-Za-z0-9_.-]/-}"; tar -C artifacts/deploy -czf - . | ssh -p "${PORT:-22}" "$USER@$HOST" "rm -rf '$remote' && mkdir -p '$remote' && tar -xzf - -C '$remote'"; echo "REMOTE_BUNDLE=$remote" >> "$GITHUB_ENV"
+      - name: Promote same bytes and verify
         env:
-          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-          DEPLOY_SSH_PORT: ${{ vars.DEPLOY_SSH_PORT }}
-          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
-          RELEASE_ID: ${{ inputs.release_id }}
-        run: |
-          set -euo pipefail
-          remote="/tmp/notrelix-release-${RELEASE_ID//[^A-Za-z0-9_.-]/-}"
-          tar -C artifacts/deploy -czf - . | ssh -p "${DEPLOY_SSH_PORT:-22}" "$DEPLOY_SSH_USER@$DEPLOY_HOST" "rm -rf '$remote' && mkdir -p '$remote' && tar -xzf - -C '$remote'"
-          echo "REMOTE_BUNDLE=$remote" >> "$GITHUB_ENV"
-      - name: Deploy, verify and rollback atomically for stateless releases
-        env:
-          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-          DEPLOY_SSH_PORT: ${{ vars.DEPLOY_SSH_PORT }}
-          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          PORT: ${{ vars.DEPLOY_SSH_PORT }}
+          USER: ${{ secrets.DEPLOY_SSH_USER }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          DEPLOY_ENV_FILE: ${{ vars.DEPLOY_ENV_FILE }}
-          DEPLOY_HEALTH_URL: ${{ vars.DEPLOY_HEALTH_URL }}
-          DEPLOY_SMOKE_URL: ${{ vars.DEPLOY_SMOKE_URL }}
-          DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE: ${{ vars.DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE }}
-        shell: bash
+          ENV_FILE: ${{ vars.DEPLOY_ENV_FILE }}
+          HEALTH: ${{ vars.DEPLOY_HEALTH_URL }}
+          SMOKE: ${{ vars.DEPLOY_SMOKE_URL }}
+          ALLOW_STATEFUL: ${{ vars.DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE }}
         run: |
+          ssh -p "${PORT:-22}" "$USER@$HOST" bash -s -- "$DEPLOY_PATH" "$ENV_FILE" "$HEALTH" "$SMOKE" "${ALLOW_STATEFUL:-false}" "$REMOTE_BUNDLE" <<'REMOTE'
           set -euo pipefail
-          ssh -p "${DEPLOY_SSH_PORT:-22}" "$DEPLOY_SSH_USER@$DEPLOY_HOST" bash -s -- \
-            "$DEPLOY_PATH" "$DEPLOY_ENV_FILE" "$DEPLOY_HEALTH_URL" "$DEPLOY_SMOKE_URL" "${DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE:-false}" "$REMOTE_BUNDLE" <<'REMOTE'
-          set -euo pipefail
-          deploy_path="$1"; env_file="$2"; health_url="$3"; smoke_url="$4"; allow_stateful_change="$5"; incoming="$6"
-          cd "$deploy_path"; test -f "$env_file"; test -f "$incoming/manifest.json"
-          # shellcheck disable=SC1091
-          source "$incoming/metadata.env"
-          test -f "$COMPOSE_OVERLAY"
-          [[ "${ROLLBACK_AFTER_SCHEMA_CHANGE:-}" == manual ]] || { echo 'Unsupported schema rollback policy.' >&2; exit 1; }
-          [[ "${STATEFUL_IMAGE_CHANGE_POLICY:-}" == explicit-override ]] || { echo 'Unsupported stateful image policy.' >&2; exit 1; }
-          [[ "${SMOKE_PROFILE:-}" == critical ]] || { echo 'Unsupported deployment smoke profile.' >&2; exit 1; }
-          if [[ "${SCHEMA_CHANGE:-false}" == true && "${RUN_MIGRATIONS:-false}" != true ]]; then
-            echo 'Schema-changing release requires migrations in this environment.' >&2; exit 1
-          fi
-          schema_change="${SCHEMA_CHANGE:-false}"
-          run_migrations="${RUN_MIGRATIONS:-false}"
-          current=.notrelix-release-current; previous=.notrelix-release-previous
-          rm -rf "$previous"; [[ -d "$current" ]] && cp -a "$current" "$previous"
-          stateful_changed=false
-          migration_started=false
-          if [[ -f "$current/stateful.env" ]] && ! cmp -s "$current/stateful.env" "$incoming/stateful.env"; then stateful_changed=true; fi
-          if [[ "$stateful_changed" == true && "$allow_stateful_change" != true ]]; then
-            echo 'Stateful runtime digest change requires explicit environment approval.' >&2; exit 1
-          fi
-          rm -rf "$current"; cp -a "$incoming" "$current"
-          compose() { docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" "$@"; }
-          rollback() {
-            status=$?; trap - ERR
-            if [[ "$stateful_changed" == true ]]; then
-              echo 'Stateful image changed: automatic downgrade is intentionally disabled; manual rehearsed recovery is required.' >&2
-              exit "$status"
-            fi
-            if [[ "$schema_change" == true && "$migration_started" == true ]]; then
-              echo 'Schema-changing migration started: automatic application rollback is disabled because the previous application/schema compatibility is not proven.' >&2
-              exit "$status"
-            fi
-            if [[ -d "$previous" ]]; then
-              # shellcheck disable=SC1091
-              source "$previous/metadata.env"
-              git fetch --quiet origin "$RELEASE_SHA" || true
-              git checkout --quiet --detach "$RELEASE_SHA" || true
-              rm -rf "$current"; cp -a "$previous" "$current"
-              docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" pull || true
-              docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" up -d --no-build --remove-orphans || true
-            else
-              echo 'No previous release bundle exists; manual recovery is required.' >&2
-            fi
-            exit "$status"
-          }
-          trap rollback ERR
-          git fetch --quiet origin "$RELEASE_SHA"
-          git checkout --quiet --detach "$RELEASE_SHA"
-          compose config >/dev/null
-          compose pull
-          mapfile -t stateful_services < <(grep -v '^$' "$current/stateful.services" || true)
-          if [[ ${#stateful_services[@]} -gt 0 ]]; then compose up -d --no-build "${stateful_services[@]}"; fi
-          if [[ "$run_migrations" == true && -n "${MIGRATION_SERVICE:-}" ]]; then
-            [[ "$schema_change" == true ]] && migration_started=true
-            while IFS= read -r command; do [[ -n "$command" ]] && compose run --rm "$MIGRATION_SERVICE" "$command"; done < "$current/migration.commands"
-          fi
-          compose up -d --no-build --remove-orphans
-          healthy=false
-          for _ in $(seq 1 75); do if curl -fsS --max-time 5 "$health_url" >/dev/null; then healthy=true; break; fi; sleep 2; done
-          [[ "$healthy" == true ]] || { compose ps; compose logs --tail=300 || true; false; }
-          curl -fsS --max-time 10 "$smoke_url" >/dev/null
-          chmod 600 "$current"/*.env "$current"/manifest.json 2>/dev/null || true
-          rm -rf "$previous" "$incoming"
-          trap - ERR
+          path="$1"; env_file="$2"; health="$3"; smoke="$4"; allow_stateful="$5"; incoming="$6"; cd "$path"; source "$incoming/metadata.env"
+          [[ "$ROLLBACK_AFTER_SCHEMA_CHANGE" == manual && "$STATEFUL_IMAGE_CHANGE_POLICY" == explicit-override && "$ROLLOUT_STRATEGY" == rolling ]]
+          git fetch --quiet origin "$RELEASE_SHA"; git checkout --quiet --detach "$RELEASE_SHA"; test -f "$COMPOSE_OVERLAY"
+          current=.notrelix-release-current; previous=.notrelix-release-previous; rm -rf "$previous"; [[ -d "$current" ]] && cp -a "$current" "$previous"
+          stateful_changed=false; [[ -f "$current/stateful.env" ]] && ! cmp -s "$current/stateful.env" "$incoming/stateful.env" && stateful_changed=true
+          [[ "$stateful_changed" == false || "$allow_stateful" == true ]] || { echo 'stateful image change requires explicit approval' >&2; exit 1; }
+          rm -rf "$current"; cp -a "$incoming" "$current"; migration_started=false
+          compose(){ docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" "$@"; }
+          rollback(){ rc=$?; trap - ERR; if [[ "$stateful_changed" == true || ( "$SCHEMA_CHANGE" == true && "$migration_started" == true ) ]]; then echo 'automatic rollback blocked by stateful/schema transition' >&2; exit "$rc"; fi; if [[ -d "$previous" ]]; then source "$previous/metadata.env"; git checkout --quiet --detach "$RELEASE_SHA" || true; rm -rf "$current"; cp -a "$previous" "$current"; docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" pull || true; docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" up -d --no-build --remove-orphans || true; fi; exit "$rc"; }
+          trap rollback ERR; compose config >/dev/null; compose pull
+          mapfile -t stateful < <(grep -v '^$' "$current/stateful.services" || true); [[ ${#stateful[@]} -eq 0 ]] || compose up -d --no-build "${stateful[@]}"
+          if [[ "$RUN_MIGRATIONS" == true && -n "$MIGRATION_SERVICE" ]]; then [[ "$SCHEMA_CHANGE" == true ]] && migration_started=true; while read -r cmd; do [[ -n "$cmd" ]] && compose run --rm "$MIGRATION_SERVICE" "$cmd"; done < "$current/migration.commands"; fi
+          compose up -d --no-build --remove-orphans; ok=false; for _ in $(seq 1 75); do curl -fsS --max-time 5 "$health" >/dev/null && { ok=true; break; }; sleep 2; done; [[ "$ok" == true ]]; curl -fsS --max-time 10 "$smoke" >/dev/null; rm -rf "$previous" "$incoming"; trap - ERR
           REMOTE

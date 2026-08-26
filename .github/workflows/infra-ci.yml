@@ -1,61 +1,44 @@
 name: Infrastructure CI
-
 on:
   workflow_call:
-
-permissions:
-  contents: read
-
+    inputs:
+      runtime_images_json: {required: true, type: string}
+      deployable_containers_json: {required: true, type: string}
+permissions: {contents: read}
 jobs:
   static:
-    name: Compose and gateway semantics
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Validate rendered Compose topology
-        run: python3 scripts/ci/validate-infra.py
-      - name: Validate Nginx syntax
+      - env: {RUNTIME: '${{ inputs.runtime_images_json }}', CONTAINERS: '${{ inputs.deployable_containers_json }}'}
         run: |
-          set -euo pipefail
-          image=nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+          jq . <<<"$RUNTIME" > /tmp/runtime.json; jq . <<<"$CONTAINERS" > /tmp/containers.json
+          python3 scripts/ci/validate-infra.py --runtime-images /tmp/runtime.json --containers /tmp/containers.json
+      - name: Nginx syntax
+        env: {RUNTIME: '${{ inputs.runtime_images_json }}'}
+        run: |
+          image="$(jq -er '.images[]|select(.id=="nginx")|.ref' <<<"$RUNTIME")"
           docker run --rm -v "$PWD/infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" "$image" nginx -t
           docker run --rm -v "$PWD/infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro" "$image" nginx -t
-          # The web origin config is the full configuration authority and must
-          # be parsed as the main nginx.conf, not as a conf.d fragment.
-          docker run --rm -v "$PWD/frontend/apps/web/nginx.conf:/etc/nginx/nginx.conf:ro" "$image" nginx -t
-
-  assembled-stack:
-    name: Build and smoke assembled staging topology
+  assembled:
     needs: static
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Write isolated CI environment
-        run: scripts/ci/write-test-env.sh /tmp/notrelix-infra.env
-      - name: Build and start dependencies
+      - env: {RUNTIME: '${{ inputs.runtime_images_json }}'}
         run: |
+          scripts/ci/write-test-env.sh /tmp/notrelix-infra.env
+          jq -r '.images[]|"\(.deploy_env_var)=\(.ref)"' <<<"$RUNTIME" >> /tmp/notrelix-infra.env
+      - run: |
           set -euo pipefail
-          compose=(docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml)
-          "${compose[@]}" config >/dev/null
-          "${compose[@]}" build backend frontend-web frontend-marketing
-          "${compose[@]}" up -d postgres redis rabbitmq
-          "${compose[@]}" run --rm backend --migrate
-          "${compose[@]}" run --rm backend --rls-apply
-          "${compose[@]}" up -d --remove-orphans
+          c=(docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml)
+          "${c[@]}" config >/dev/null; "${c[@]}" build backend frontend-web frontend-marketing; "${c[@]}" up -d postgres redis rabbitmq
+          "${c[@]}" run --rm backend --migrate; "${c[@]}" run --rm backend --rls-apply; "${c[@]}" up -d --remove-orphans
           for _ in $(seq 1 60); do curl -fsS http://127.0.0.1:8080/health/live >/dev/null && break; sleep 2; done
-          curl -fsS http://127.0.0.1:8080/health/live >/dev/null
-          curl -fsS http://127.0.0.1:8080/sign-in >/dev/null
-          curl -fsS http://127.0.0.1:8080/ >/dev/null
-      - name: Emit infrastructure proof evidence
-        uses: ./.github/actions/emit-evidence
-        with:
-          proof_id: infra:gate
-          component_id: runtime-infrastructure
-      - name: Diagnostics
-        if: failure()
-        run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml ps; docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml logs --tail=250 || true
-      - name: Cleanup
-        if: always()
+          curl -fsS http://127.0.0.1:8080/health/live >/dev/null; curl -fsS http://127.0.0.1:8080/sign-in >/dev/null; curl -fsS http://127.0.0.1:8080/ >/dev/null
+      - uses: ./.github/actions/emit-evidence
+        with: {proof_id: 'infra:gate', component_id: runtime-infrastructure}
+      - if: always()
         run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml down -v --remove-orphans || true

@@ -1,8 +1,5 @@
-schema_version = 4
+schema_version = 5
 
-# Build-image locks make a source SHA reproducible across reruns. Update these
-# deliberately in a dedicated dependency PR and let container/security CI prove
-# the new digests before merge.
 [images.dotnet-sdk]
 class = "build"
 source = "mcr.microsoft.com/dotnet/sdk:9.0.317"
@@ -59,10 +56,8 @@ compose_service = "nginx"
 deploy_env_var = "NOTRELIX_NGINX_IMAGE"
 stateful = false
 
-# CI renderer authority for visual E2E lanes. Browser build and font stack are
-# pinned together so snapshot baselines stay valid across runner updates.
-# The tag must match @playwright/test in frontend/package.json.
 [images.playwright-ci]
 class = "tooling"
 source = "mcr.microsoft.com/playwright:v1.61.1-jammy"
 ref = "mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e"
+stateful = false

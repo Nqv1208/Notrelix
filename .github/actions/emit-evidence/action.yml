@@ -1,17 +1,9 @@
 name: Emit CI evidence
-description: Write one machine-readable Notrelix proof record and persist it as a workflow artifact.
+description: Emit one execution-plane proof record without invoking the delivery control plane.
 inputs:
-  proof_id:
-    required: true
-    description: Canonical proof identifier expected by the execution plan.
-  component_id:
-    required: false
-    default: repository
-    description: Component or repository scope for the proof.
-  metadata:
-    required: false
-    default: ""
-    description: Optional single key=value metadata item.
+  proof_id: {required: true, description: Canonical proof identifier}
+  component_id: {required: false, default: repository}
+  metadata: {required: false, default: ""}
 runs:
   using: composite
   steps:
@@ -23,11 +15,21 @@ runs:
         METADATA: ${{ inputs.metadata }}
       run: |
         set -euo pipefail
-        args=(--proof-id "$PROOF_ID" --component-id "$COMPONENT_ID")
-        if [[ -n "$METADATA" ]]; then args+=(--metadata "$METADATA"); fi
-        python3 scripts/ci/write-evidence.py "${args[@]}"
-    - name: Upload evidence record
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        slug(){ sed -E 's/[^A-Za-z0-9._-]+/-/g;s/^-+|-+$//g' <<<"$1" | tr '[:upper:]' '[:lower:]'; }
+        out="$GITHUB_WORKSPACE/artifacts/ci/evidence"; mkdir -p "$out"
+        path="$out/$(slug "$PROOF_ID")--$(slug "$COMPONENT_ID").json"
+        metadata='{}'
+        if [[ -n "$METADATA" ]]; then
+          [[ "$METADATA" == *=* ]]
+          key="${METADATA%%=*}"; value="${METADATA#*=}"
+          metadata="$(jq -cn --arg k "$key" --arg v "$value" '{($k):$v}')"
+        fi
+        body="$(jq -cS -n --arg proof "$PROOF_ID" --arg component "$COMPONENT_ID" --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" --arg workflow "$GITHUB_WORKFLOW" --arg job "$GITHUB_JOB" --arg time "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" --argjson metadata "$metadata" '{api_version:"delivery.notrelix.dev/v1",kind:"EvidenceRecord",proof_id:$proof,component_id:$component,status:"passed",source_sha:$sha,run_id:$run,run_attempt:$attempt,workflow:$workflow,job:$job,created_at:$time,metadata:$metadata}')"
+        digest="$(printf '%s' "$body" | sha256sum | awk '{print $1}')"
+        jq -S --arg digest "$digest" '.+{record_sha256:$digest}' <<<"$body" > "$path"
+        echo "path=$path" >> "$GITHUB_OUTPUT"
+        echo "artifact_name=ci-evidence-$(slug "$PROOF_ID")-$(slug "$COMPONENT_ID")" >> "$GITHUB_OUTPUT"
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: ${{ steps.record.outputs.artifact_name }}
         path: ${{ steps.record.outputs.path }}

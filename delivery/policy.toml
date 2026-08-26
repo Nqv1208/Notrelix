@@ -1,39 +1,47 @@
-schema_version = 4
+schema_version = 5
+
+[platform]
+control_plane_python_min = "3.11"
+provider_authority_reads = false
+build_once_promote_same_bytes = true
+cache_is_evidence = false
+unknown_change = "full-ci"
+
+[source_control]
+trunk_branch = "main"
+release_branch = "main"
+accepted_pr_bases = ["main", "develop"]
+transitional_branches = ["develop"]
 
 [defaults]
-unknown_change = "full-ci"
 frontend_default_capabilities = ["node-tests"]
+full_frontend_capabilities = ["node-tests", "web-tests", "mobile-tests", "tooling-tests", "ui", "mock", "contract"]
 release_candidate_mode = "complete-deployable-set"
-container_scan_on_build = true
 
-# Ordered rules. Exclusive rules suppress normal component-root inference for a
-# matching file; augmenting rules add effects on top of dependency routing.
 [[change_rules]]
-id = "documentation"
-patterns = ["docs/**", "backend/docs/**", "frontend/docs/**", "README.md", "PRODUCT.md", "DESIGN.md", "RULE.md", "CONTEXT.md", "CONTEXT-MAP.md", "AGENTS.md", "**/*.md"]
+id = "docs"
+patterns = ["docs/**", "backend/docs/**", "frontend/docs/**", "**/*.md"]
 exclusive = true
 planes = ["docs"]
 release = false
 
 [[change_rules]]
-id = "ci-control-plane"
-patterns = [".github/workflows/**", ".github/actions/**", ".github/dependabot.yml", ".github/CODEOWNERS", "scripts/ci/**", "delivery/**"]
+id = "delivery-platform"
+patterns = [".github/workflows/**", ".github/actions/**", ".github/CODEOWNERS", "tools/deliveryctl/**", "delivery/**"]
 exclusive = true
 full_ci = true
 release = false
 
 [[change_rules]]
-id = "backend-public-contract"
+id = "backend-contract"
 patterns = ["backend/contracts/openapi/**", "artifacts/contracts/**"]
-exclusive = false
 components = ["backend-api", "web", "marketing", "mobile"]
 capabilities = ["contract", "web-tests"]
 release = true
 
 [[change_rules]]
-id = "backend-container-definition"
+id = "backend-container"
 patterns = ["backend/Dockerfile", ".dockerignore"]
-exclusive = false
 components = ["backend-api"]
 planes = ["infra"]
 package_components = ["backend-api"]
@@ -41,7 +49,7 @@ security_domains = ["backend"]
 release = true
 
 [[change_rules]]
-id = "web-container-definition"
+id = "web-container"
 patterns = ["frontend/Dockerfile", "frontend/apps/web/nginx.conf"]
 exclusive = true
 components = ["web"]
@@ -51,7 +59,7 @@ security_domains = ["frontend"]
 release = true
 
 [[change_rules]]
-id = "marketing-container-definition"
+id = "marketing-container"
 patterns = ["frontend/Dockerfile.marketing"]
 exclusive = true
 components = ["marketing"]
@@ -61,8 +69,17 @@ security_domains = ["frontend"]
 release = true
 
 [[change_rules]]
-id = "frontend-root-runtime"
+id = "frontend-root"
 patterns = ["frontend/package.json", "frontend/pnpm-lock.yaml", "frontend/pnpm-workspace.yaml", "frontend/turbo.json", "frontend/.npmrc", "frontend/.node-version"]
+exclusive = true
+full_frontend = true
+package_all_frontend_deployables = true
+security_domains = ["frontend"]
+release = true
+
+[[change_rules]]
+id = "frontend-shared"
+patterns = ["frontend/packages/**"]
 exclusive = true
 full_frontend = true
 package_all_frontend_deployables = true
@@ -80,20 +97,18 @@ security_domains = ["frontend"]
 release = true
 
 [[change_rules]]
-id = "frontend-ui-foundation"
-patterns = ["frontend/packages/ui/**", "frontend/packages/foundation/design-system/**", "frontend/tooling/storybook/**"]
-exclusive = false
+id = "ui-foundation"
+patterns = ["frontend/packages/ui/**", "frontend/packages/foundation/design-system/**", "frontend/tooling/storybook/**", "frontend/e2e/ui/**"]
 capabilities = ["ui", "web-tests"]
 
 [[change_rules]]
-id = "frontend-mock-system"
+id = "mock-system"
 patterns = ["frontend/packages/dev/mock*/**", "frontend/packages/features/**/mock*/**", "frontend/apps/web/**/mock*/**", "frontend/scripts/*mock*"]
-exclusive = false
 components = ["web"]
 capabilities = ["mock", "web-tests"]
 
 [[change_rules]]
-id = "runtime-infrastructure"
+id = "runtime-infra"
 patterns = ["docker-compose.yml", "docker-compose.prod.yml", "docker-compose.staging.yml", "infra/nginx/**", "infra/postgres/**", "delivery/images.lock.toml"]
 exclusive = true
 planes = ["infra"]
@@ -102,29 +117,19 @@ security_domains = ["backend", "frontend"]
 release = true
 
 [[change_rules]]
-id = "dependency-security-backend"
+id = "backend-dependencies"
 patterns = ["backend/Directory.Packages.props", "backend/**/*.csproj", "backend/global.json"]
-exclusive = false
 security_domains = ["backend"]
 
 [[change_rules]]
-id = "dependency-security-frontend"
+id = "frontend-dependencies"
 patterns = ["frontend/package.json", "frontend/pnpm-lock.yaml", "frontend/**/package.json"]
-exclusive = false
 security_domains = ["frontend"]
 
-# Proof profiles are the only authority for proof IDs. The planner resolves
-# these templates; it must not construct product proof IDs itself.
-[proof_profiles.backend-monolith]
-providers = ["backend"]
+[proof_profiles.backend]
 required = ["backend:{component_id}"]
 
-[proof_profiles.frontend-host]
-providers = ["frontend-host"]
-required = ["frontend:gate"]
-
-[proof_profiles.mobile]
-providers = ["mobile"]
+[proof_profiles.frontend]
 required = ["frontend:gate"]
 
 [proof_profiles.docs]
@@ -145,8 +150,9 @@ required = ["container:{component_id}"]
 [proof_profiles.release-stack]
 required = ["stack:release-candidate"]
 
-# Non-component plan dimensions bind to proof profiles here. Adding a new
-# plane/security domain is therefore a model change, not a planner code branch.
+[proof_profiles.ui]
+required = ["ui:foundation"]
+
 [proof_bindings.planes]
 docs = "docs"
 infra = "infra"
@@ -154,6 +160,9 @@ infra = "infra"
 [proof_bindings.security_domains]
 backend = "security-backend"
 frontend = "security-frontend"
+
+[proof_bindings.capabilities]
+ui = "ui"
 
 [proof_bindings.packaging]
 profile = "container"
@@ -170,3 +179,5 @@ migration_commands = ["--migrate", "--rls-apply"]
 migration_paths = ["backend/**/Migrations/**", "backend/**/migrations/**"]
 schema_change_policy = "expand-contract"
 rollback_after_schema_change = "manual"
+stack_health_url = "http://127.0.0.1:8080/health/live"
+stack_smoke_urls = ["http://127.0.0.1:8080/health/live", "http://127.0.0.1:8080/sign-in", "http://127.0.0.1:8080/"]

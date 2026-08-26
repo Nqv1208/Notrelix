@@ -1,5 +1,5 @@
 name: Setup Notrelix backend
-description: Install the repository-pinned .NET SDK. Restore remains explicit in each proof job.
+description: Install repository-pinned .NET SDK; restore stays explicit in each proof job.
 runs:
   using: composite
   steps:

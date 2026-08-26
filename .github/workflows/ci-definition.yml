@@ -1,32 +1,28 @@
 name: CI Definition Safety
-
 on:
-  pull_request:
+  pull_request: {branches: [main, develop]}
   merge_group:
-  push:
-    branches: [main, develop, foundationfreeze]
+  push: {branches: [main, develop]}
   workflow_dispatch:
-
-permissions:
-  contents: read
-
+permissions: {contents: read}
 jobs:
-  workflow-definition:
+  definition:
     name: Workflow definition lint
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: actionlint all workflows/actions
-        # v1.7.12 — first line with GitHub artifact-metadata permission scope support.
-        run: docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
-      - name: Validate delivery catalog / policy contracts
-        run: python3 scripts/ci/validate-delivery.py
-      - name: Notrelix CI architecture policy
-        run: python3 scripts/ci/validate-ci-layout.py
-      - name: Planner regression tests
-        run: python3 scripts/ci/test_build_plan.py
-      - name: Delivery contract regression tests
-        run: python3 scripts/ci/test_delivery_contracts.py
-      - name: Compile CI control-plane Python
-        run: python3 -m compileall -q scripts/ci
+        with: {fetch-depth: 0}
+      - run: python3 -c 'import sys,tomllib; assert sys.version_info >= (3,11)'
+      - run: python3 -m tools.deliveryctl validate
+      - run: python3 -m tools.deliveryctl architecture-check
+      - run: python3 -m tools.deliveryctl visual --check
+      - run: python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
+      - run: python3 -m compileall -q tools/deliveryctl scripts/ci
+      - run: |
+          node --check frontend/scripts/ci/package-host-artifact.mjs
+          node --check frontend/scripts/ci/restore-host-artifact.mjs
+      - name: actionlint
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo \
+            rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color

@@ -15,317 +15,215 @@ evidence:
   - delivery/catalog.toml
   - delivery/policy.toml
   - delivery/images.lock.toml
-  - scripts/ci/
+  - tools/deliveryctl/
 review_on:
   - ci-cd-architecture-change
   - provider-lane-change
   - evidence-contract-change
 ---
 
-# Notrelix CI/CD V4 Architecture
+# Notrelix CI/CD — Delivery Platform Architecture
 
 ## 1. Goal
 
-V4 makes CI/CD a stable delivery platform rather than a collection of application-specific workflow files. The core is closed to normal product growth: existing provider lanes accept new catalog components through matrices, while routing, proof completeness, packaging and deployment are generated from machine-readable contracts.
+Notrelix CI/CD is a delivery platform, not a set of independent workflow scripts. Product topology and release policy are declarative; GitHub Actions executes resolved contracts.
 
-The design follows four rules:
-
-1. **One planning authority** — Git changes are translated into one execution plan.
-2. **Proof before promotion** — the plan declares proof obligations; providers emit evidence; the final gate checks exact completeness.
-3. **Build once** — deployable bytes are built, scanned and smoked before publication; later environments consume those same digests.
-4. **Additive extension** — normal new components change the catalog/policy, not `ci.yml`, the final gate or the release engine.
-
-## 2. Control-plane files
+The dependency direction is fixed:
 
 ```text
-delivery/catalog.toml       component/provider/artifact/deploy contracts
-delivery/policy.toml        change routing, proof profiles, migration authority
-delivery/environments.toml  enforceable deployment-adapter policy (overlay, promotion mode, migrations, smoke, stateful-image policy)
-delivery/images.lock.toml   immutable build/runtime dependency images
-scripts/ci/build-plan.py    canonical planner
-scripts/ci/delivery_model.py shared parser/model
-scripts/ci/aggregate-evidence.py proof completeness authority
+delivery authorities
+  -> tools/deliveryctl
+  -> ExecutionPlan / environment / release contracts
+  -> reusable execution providers
+  -> evidence
+  -> Notrelix CI Gate
+  -> ReleaseCandidate
+  -> staging verification
+  -> production promotion
 ```
 
-No reusable provider workflow owns independent `paths` routing rules.
+The reverse direction is forbidden. Execution providers do not parse `delivery/*.toml` and do not rediscover component/image/environment policy.
 
-## 3. CI topology
+## 2. Canonical authorities
 
 ```text
-PR / merge_group / protected push / manual full proof
-                         |
-             +-----------+-----------+
-             |                       |
-             v                       v
-    CI Definition Safety          Notrelix CI
- actionlint + model guards             |
-                                       v
-                              Canonical Execution Plan
-                         catalog + policy + dependency graph
-                                       |
-            +------------+-------------+--------------+-------------+
-            |            |             |              |             |
-            v            v             v              v             v
-         backend      frontend        docs           infra       security
-        provider      provider       provider       provider      provider
-            |            |             |              |             |
-            +------------+-------------+--------------+-------------+
-                                       |
-                                       v
-                               container provider
-                         affected PR / complete main set
-                                       |
-                          main deployable change only
-                                       v
-                              exact release stack
-                                       |
-                                       v
-                              evidence aggregation
-                                       |
-                               release candidate seal
-                                       |
-                                       v
-                               Notrelix CI Gate
+delivery/catalog.toml       component/provider/build/deploy contracts
+delivery/policy.toml        routing, proof, source-control and migration policy
+delivery/environments.toml  deployment/promotion policy
+delivery/images.lock.toml   immutable build/runtime/tooling image authority
 ```
 
-The orchestrator is intentionally generic. Component names are forbidden in `ci.yml` by `validate-ci-layout.py`.
+Only `tools/deliveryctl` interprets these files.
 
-Concrete proof IDs are also closed out of the planner. Components select a `proof_profile` from `catalog.toml`; planes/security/package/release dimensions select profiles through `policy.toml` proof bindings. `build-plan.py` resolves those profiles and is forbidden from synthesizing provider proof strings. This makes proof vocabulary a policy contract rather than Python branching.
+## 3. Control plane
 
-## 4. Planning semantics
+`tools/deliveryctl` is the repository-local delivery compiler. It owns:
 
-### Pull requests and merge queue
+- authority validation;
+- change detection and affected planning;
+- fully resolved provider matrices;
+- immutable image resolution;
+- expected proof calculation;
+- environment contract resolution;
+- evidence completeness validation;
+- release-manifest validation;
+- deployment bundle materialization;
+- architecture regression guards.
 
-The planner uses the Git merge-base and head. It asks “what did this change introduce?” rather than comparing the moving base tip with the feature head. Base-branch commits therefore cannot accidentally trigger unrelated proof.
+The control plane uses system Python >=3.11 and Python stdlib only. There is no repository `.python-version`, `actions/setup-python`, `setup-ci-python`, pip bootstrap, virtualenv or Poetry dependency for CI planning.
 
-### Push
+## 4. Execution providers
 
-The event `before -> head` range is used when trustworthy. Missing/zero/unavailable ranges fail safe to full CI; the planner never falls back to only `HEAD^` for a multi-commit push.
+Provider workflows are deterministic execution lanes. They receive resolved values as typed reusable-workflow inputs.
 
-### Unknown paths and workspaces
+Current lanes:
 
-Unknown delivery-relevant surfaces fail safe to broad proof. New work can temporarily cost more runner time, but it cannot silently disappear from CI.
+- backend — .NET quality/architecture/domain/application/infrastructure/platform/API/integration proof;
+- frontend — repository invariants, affected tests, exact-artifact host E2E, mock and UI proof;
+- container — build/test/scan/SBOM/publish/attest exact application image bytes;
+- infra — resolved Compose/gateway/runtime topology proof;
+- security — dependency vulnerability proof;
+- docs — governed documentation proof;
+- stack — exact-digest release topology proof.
 
-### Documentation
+Adding a component that fits an existing provider changes catalog/policy registration, not `ci.yml`.
 
-Known documentation paths are exclusive documentation changes and do not invoke application proof.
+## 5. Frontend and renderer boundary
 
-### Contracts
+Playwright renderer jobs are execution environments, not control-plane environments. They may run Node/pnpm/Playwright but may not run delivery Python or parse delivery authority.
 
-Public backend contract changes explicitly fan out to frontend consumers even when frontend source was not directly edited.
+Host E2E flow:
 
-### Main release candidates
+```text
+build resolved workspace
+ -> package declared output
+ -> SHA-256 manifest
+ -> upload exact artifact
+ -> renderer job downloads artifact
+ -> verify SHA-256 and archive members
+ -> restore exact artifact
+ -> verify installed Playwright version == resolved renderer version
+ -> run resolved E2E command
+```
 
-A deployable `main` change seals a coherent candidate from the complete deployable application set. This is deliberate delivery composition: production receives one known set of mutually compatible digests.
+The E2E lane does not rebuild the host artifact.
 
-## 5. Provider model
-
-GitHub Actions does not support dynamically selecting a reusable workflow from an arbitrary expression. V4 therefore has stable provider lanes and dynamic matrices inside those lanes.
-
-Current providers:
-
-- `backend` — .NET modular-monolith proof.
-- `frontend-host` — web/marketing-style host applications.
-- `mobile` — mobile application proof without server deployment.
-- `docs` — documentation governance.
-- `infra` — Compose/gateway topology proof.
-- `security` — dependency/security proof.
-- `container` — generic container build/scan/smoke/publish.
-- `stack` — exact-digest assembled release topology.
-
-Adding another component using an existing provider does not require a new branch in the orchestrator.
+Visual baselines are bound to the renderer digest, Playwright declaration/runtime version, Storybook versions and Playwright configuration through `frontend/e2e/ui/visual-baseline.lock.json`.
 
 ## 6. Backend proof contract
 
-`backend-ci.yml` preserves deep application/architecture guarantees:
+Backend CI preserves explicit critical-test execution guards in addition to running the full test projects. This includes architecture boundaries, RLS/data-event infrastructure guards, platform reliability, API idempotency and critical integration/production-composition tests.
 
-- deterministic restore and Release build;
-- format enforcement;
-- architectural no-SQLite invariant;
-- append-only applied migration discipline;
-- architecture tests and required-test execution verification;
-- Domain/Application/Infrastructure suites;
-- platform/messaging reliability;
-- API/idempotency proof;
-- OpenAPI generation/drift check;
-- PostgreSQL/Redis integration;
-- tenant isolation/RLS;
-- outbox, deduplication and realtime behavior;
-- migration/production-composition smoke.
+Runtime dependency images such as Redis are resolved by the planner and passed as provider input. Backend CI does not own a parallel runtime image authority.
 
-The provider emits one canonical `backend:gate` evidence record only after all required jobs succeed.
+## 7. Evidence model
 
-## 7. Frontend proof contract
+The ExecutionPlan declares the exact `expected_proofs`. Provider-level evidence records bind proof ID to source SHA and workflow run identity and carry an integrity hash.
 
-`frontend-ci.yml` separates global invariants from affected application proof.
+Evidence aggregation fails closed on:
 
-Global invariants include generated-contract drift, architecture, architecture documentation, test taxonomy, lint coverage and formatting.
-
-Affected work then controls:
-
-- dependency-closure typecheck/lint;
-- node/web/mobile/tooling/UI/mock tests;
-- host builds;
-- exact-build host E2E;
-- mock artifact isolation.
-
-Frontend host E2E consumes the artifact generated by the corresponding build job. It may not rebuild an independent artifact.
-
-Frontend Dockerfiles use Turbo prune so the image build closure follows the package dependency graph instead of copying the entire monorepo indiscriminately. The authenticated web image runs Nginx as a non-root user on unprivileged port 8080; the marketing image already runs as its dedicated non-root Node user.
-
-## 8. Evidence model
-
-The execution plan contains `expected_proofs` and a plan digest. Each provider writes a proof record containing the proof ID and run/source context. `aggregate-evidence.py` rejects:
-
-- missing expected proof;
+- missing proof;
 - failed proof;
-- duplicate/conflicting proof;
-- any unexpected proof;
-- stale or foreign-run evidence.
+- duplicate proof;
+- unexpected proof;
+- stale source SHA;
+- foreign workflow run;
+- tampered evidence record.
 
-The final gate therefore does not need one hard-coded `needs` branch for every future component.
+`Notrelix CI Gate` depends on successful exact proof completeness rather than hard-coding every component job.
 
-## 9. Container/artifact model
+## 8. Build and supply-chain model
 
-For every selected deployable component, `container-ci.yml` performs:
+Releaseable application bytes follow:
 
 ```text
-catalog lookup
- -> build one local image
+build once
+ -> runtime smoke exact image
  -> HIGH/CRITICAL vulnerability gate
- -> runtime smoke against provider health contract
  -> SPDX SBOM
- -> for CI release candidates: publish those tested bytes
- -> resolve immutable registry digest
+ -> publish same tested bytes
+ -> resolve registry digest
  -> provenance attestation
  -> SBOM attestation
- -> generic component result/evidence
 ```
 
-Build-image inputs are digest locked through `delivery/images.lock.toml` and Docker build arguments. The backend Dockerfile uses one NuGet restore mode; it intentionally does not hide a failed locked restore behind an unlocked fallback. Repo-wide NuGet lockfiles may be introduced separately as a dependency-governance change.
+Release identity is an immutable digest, never a mutable tag.
 
-## 10. Exact release stack
+## 9. Release state machine
 
-`stack-smoke.yml` merges the application digest set with immutable runtime infrastructure locks. It scans runtime subjects and boots the exact release topology through generated image overrides.
-
-The base/staging/production Compose files and Nginx integration configs are part of the delivery overlay because runtime topology is itself a release contract. RabbitMQ is mandatory for Staging/Production, backend proxy trust uses the same isolated CIDR declared by Compose IPAM, and backend external egress is separated from frontend peer connectivity.
-
-The stack proof exists to catch failures that isolated images cannot prove:
-
-- wrong Compose service wiring;
-- invalid networks/upstreams;
-- incompatible application set;
-- gateway routing errors;
-- migration/RLS startup failure;
-- runtime dependency failure.
-
-Only a successful exact-stack proof may contribute `stack:release-candidate` evidence.
-
-## 11. Release and promotion
+PR CI proves mergeability. Production release subjects are created only from trusted `main` CI.
 
 ```text
-successful Notrelix CI on main
-  + sealed release-candidate.json
-              |
-              v
-       Release Candidate
- verify CI workflow/event/ref/SHA
-              |
-              v
-       deploy same digests to staging
-              |
-              v
-   staging-verified release-manifest.json
-              |
-      production environment approval
-              |
-              v
-   Promote Staging-Verified Release
-       (production today; any manual-promotion environment)
-              |
-              v
-      deploy same SHA + same digests
+VERIFIED_CHANGE
+ -> RELEASE_CANDIDATE
+ -> STAGING_DEPLOYED
+ -> STAGING_VERIFIED
+ -> PRODUCTION_PROMOTED
+ -> PRODUCTION_STABLE
 ```
 
-`release.yml`, `deploy.yml` and `promote-release.yml` are forbidden from running Docker builds. The deployment engine renders generic overrides from the manifest; it does not contain fixed backend/web/marketing image variables.
+A ReleaseCandidate binds source SHA, execution-plan hash, evidence-summary hash, schema-change state, release contract and exact application/runtime image digests.
 
-Environment names are themselves the GitHub Environment identities. Job-level GitHub Environment/concurrency expressions are generic functions of the selected environment name because those expressions cannot truthfully be sourced from a TOML file at step runtime. `environments.toml` therefore models only values the deployment adapter actually consumes. Automatic staging and manual-promotion modes are checked against the source-owned environment contract before deployment.
+Staging consumes that candidate without rebuilding and seals a `StagingVerifiedRelease`. Production promotion accepts only that staging-verified manifest and promotes the same digest set.
 
-## 12. Stateful dependencies
+## 10. Deployment adapter
 
-PostgreSQL, Redis and RabbitMQ runtime images are digest locked and marked stateful. A normal application release cannot silently adopt a newer upstream tag.
+The current adapter is Docker Compose over SSH. Compose is a replaceable runtime adapter, not the CI/CD architecture.
 
-A stateful image change requires an explicit deployment override and automatic rollback never downgrades database/cache/broker subjects. Schema changes follow expand/migrate/contract. The planner detects migration-file changes and seals `schema_change=true` into the release manifest. If a schema-changing migration has started, automatic application rollback is disabled because previous-app compatibility with the mutated schema is not assumed.
+`release.yml`, `promote-release.yml` and `deploy.yml` may verify, pull, migrate, deploy, health-check, smoke and roll back compatible stateless releases. They may not build application images.
 
-## 13. Rollback
+The Makefile intentionally exposes development lifecycle only; staging/production build/deploy targets fail rather than bypass the release-manifest authority.
 
-The deployment host records the last successful release marker containing source/config SHA plus the immutable image set.
+## 11. Stateful changes and database migrations
 
-For a failure where no stateful image changed and no schema-changing migration started, rollback restores:
+Schema evolution follows expand/migrate/contract. Migration execution is an explicit deployment phase.
 
-- previous Git source/config SHA;
-- previous application images;
-- previous approved stateless runtime images;
-- Compose deployment with `--no-build`;
-- post-rollback health verification.
+If a schema-changing migration starts, automatic application downgrade is disabled because previous-application compatibility with the mutated schema is not assumed. Stateful runtime image changes similarly require explicit environment authorization and are never automatically downgraded.
 
-Database schema rollback is deliberately outside automatic rollback. A schema-changing release that has begun migrations enters manual-recovery semantics even if the application health check later fails.
+## 12. Infrastructure proof
 
-## 14. Security/governance
+Infrastructure validation consumes planner-resolved runtime/application contracts and preserves semantic checks for:
 
-- external Actions use full immutable commit SHAs;
-- runner OS is pinned;
-- `CI Definition Safety` actionlints workflows before trusting application CI changes;
-- CODEOWNERS protects workflows/actions/planner/delivery contracts/infra packaging files;
-- CodeQL reuses planner semantics so languages are affected-aware;
-- dependency scanning runs change-driven and scheduled;
-- deployment verifies OCI attestations before mutation;
-- pinned SSH known-host material prevents trust-on-first-use.
+- immutable release subjects;
+- removal of application `build` definitions in the release overlay;
+- mandatory PostgreSQL/Redis/RabbitMQ topology;
+- backend internal/egress network isolation;
+- restricted forwarded-header trust;
+- rootless/read-only gateway and application containers;
+- staging RLS and DataProtection fail-closed settings;
+- gateway upstream wiring;
+- no sensitive environment variables on public frontend/gateway services.
 
-Repository rulesets must additionally enforce CODEOWNER review, required checks and code-scanning severity policy.
+The helper is execution-only and does not import the delivery control plane.
 
-## 15. Extension boundary
+## 13. Source-control topology
 
-### No core refactor expected
+`main` is the canonical trunk and release branch. `develop` remains an accepted PR base only during the current migration and is not an architectural dependency.
 
-Normal additions using an existing provider:
+## 14. Architectural invariants
 
-- new frontend host;
-- new mobile app;
-- another backend component using the current backend provider contract;
-- another containerized deployable using an existing container contract;
-- another `manual-promotion` environment using the generic deployment adapter (registration + GitHub Environment only).
+`python3 -m tools.deliveryctl architecture-check` rejects, among other regressions:
 
-These should be catalog/policy/config registrations plus their source/test definitions.
+- `.python-version` / setup-ci-python / setup-python in CI;
+- provider reads of delivery authority/control plane;
+- duplicated runtime image digests in providers;
+- component IDs hard-coded into the orchestrator;
+- fail-open frontend final-gate patterns;
+- dropped backend critical-test guards;
+- weakened docs governance;
+- control-plane imports from infra execution helpers;
+- staging/production Makefile build bypasses;
+- Docker builds in release/promotion/deploy workflows;
+- mutable external Action references or `*-latest` runners.
 
-### New provider extension
+## 15. Runtime authorities
 
-A fundamentally new runtime/proof type may require a new reusable provider workflow and one provider lane. That is an extension point, not a rewrite of planning/evidence/release semantics.
-
-### Deployment-platform replacement
-
-Moving from Compose to Kubernetes/ECS/Nomad replaces the deployment adapter and environment-specific stack proof. Catalog, plan, evidence, immutable manifests and promotion authority remain valid.
-
-## 16. Architectural invariants enforced in code
-
-`validate-delivery.py` validates component uniqueness, workspace IDs, deploy env vars, Compose services, lock references, image immutability, migration owner and environment policy.
-
-`validate-ci-layout.py` validates required workflow inventory, removal of legacy workflows, explicit permissions, pinned runners, full-SHA Actions, no workflow-level paths on the required orchestrator, closed-core component independence, no CD rebuilds and CODEOWNERS coverage.
-
-`test_build_plan.py` is the regression suite for routing and extension behavior.
-
-## 17. CI Runtime Authorities
-
-Every repository CI job runs under explicitly declared runtime authorities:
-
-| Authority | Location | Consumed by |
+| Runtime | Authority | Scope |
 |---|---|---|
-| Shell | Workflow-level `defaults.run.shell: bash` | All `run:` steps |
-| Python | `.python-version` (root) | `setup-ci-python` action |
-| Node | `frontend/.node-version` | `setup-frontend` action |
-| pnpm | `frontend/package.json` `packageManager` | `setup-frontend` action |
-| Visual renderer | `delivery/images.lock.toml` | `image-info.py` + renderer job |
+| Control-plane Python | system Python >=3.11 on pinned `ubuntu-24.04` | `tools/deliveryctl` control jobs only |
+| Node | `frontend/.node-version` | frontend execution providers |
+| pnpm | `frontend/package.json` `packageManager` | frontend execution providers |
+| .NET SDK | `backend/global.json` | backend execution provider |
+| Playwright renderer | `delivery/images.lock.toml` resolved into ExecutionPlan | UI/host-E2E containers |
 
-New CI jobs that call `scripts/ci/*.py` must include the `setup-ci-python` step immediately after checkout. No other job-local Python version selection is permitted.
-
-The Python minimum (`delivery_model.MIN_PYTHON`) is checked at module import time. The workflow-level `shell: bash` contract applies to all steps unless a job explicitly declares its own `defaults.run.shell` (renderer job).
+New provider jobs should consume already-resolved contracts. A new job needing authority interpretation belongs in the control plane instead of adding another parser/bootstrap path.

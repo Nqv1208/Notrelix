@@ -1,56 +1,28 @@
 version: 2
 updates:
-  - package-ecosystem: nuget
-    directory: /backend
-    schedule:
-      interval: weekly
-      day: monday
-      time: "09:00"
-      timezone: Asia/Ho_Chi_Minh
-    open-pull-requests-limit: 10
-    groups:
-      dotnet-minor-patch:
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /frontend
-    schedule:
-      interval: weekly
-      day: monday
-      time: "09:20"
-      timezone: Asia/Ho_Chi_Minh
-    open-pull-requests-limit: 10
-    groups:
-      frontend-minor-patch:
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: docker
-    directory: /backend
-    schedule:
-      interval: weekly
-      day: monday
-      time: "09:40"
-      timezone: Asia/Ho_Chi_Minh
-    open-pull-requests-limit: 5
-
-  - package-ecosystem: docker
-    directory: /frontend
-    schedule:
-      interval: weekly
-      day: monday
-      time: "10:00"
-      timezone: Asia/Ho_Chi_Minh
-    open-pull-requests-limit: 5
-
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "10:20"
-      timezone: Asia/Ho_Chi_Minh
-    open-pull-requests-limit: 10
+    schedule: {interval: weekly, day: monday, time: "02:00"}
+    target-branch: main
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: {interval: weekly, day: monday, time: "02:30"}
+    target-branch: main
+    versioning-strategy: increase-if-necessary
+    groups:
+      frontend-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule: {interval: weekly, day: monday, time: "03:00"}
+    target-branch: main
+    groups:
+      backend-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directory: /backend
+    schedule: {interval: weekly, day: monday, time: "03:30"}
+    target-branch: main

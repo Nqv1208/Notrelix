@@ -6,6 +6,9 @@ on:
       component_id:
         required: true
         type: string
+      redis_image:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -19,119 +22,73 @@ jobs:
   quality:
     name: Quality and architecture guards
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-
-      - name: Setup backend toolchain
-        uses: ./.github/actions/setup-backend
-
+      - uses: ./.github/actions/setup-backend
       - name: Restore
         working-directory: backend
         run: dotnet restore backend.slnx
-
       - name: Format check
         working-directory: backend
         run: dotnet format backend.slnx --verify-no-changes --no-restore
-
       - name: Build solution
         working-directory: backend
         run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION" -p:ContinuousIntegrationBuild=true
-
       - name: Enforce append-only migration history
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
         run: python3 scripts/ci/check-migration-discipline.py --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA"
-
       - name: Guard dependency graph against SQLite
         working-directory: backend
-        shell: bash
         run: |
           set -euo pipefail
           dotnet list package --include-transitive 2>&1 | tee dependency-report.txt
-
-          if grep -iE \
-            "SQLite|Sqlite|SQLitePCLRaw|Microsoft\.Data\.Sqlite|Microsoft\.EntityFrameworkCore\.Sqlite" \
-            dependency-report.txt; then
-            echo "SQLite dependency detected in the Notrelix backend dependency graph."
-            echo "Use PostgreSQL/Testcontainers instead of SQLite."
+          if grep -iE 'SQLite|Sqlite|SQLitePCLRaw|Microsoft\.Data\.Sqlite|Microsoft\.EntityFrameworkCore\.Sqlite' dependency-report.txt; then
+            echo "SQLite dependency detected; use PostgreSQL/Testcontainers." >&2
             exit 1
           fi
-
-          echo "No SQLite dependencies found."
-
       - name: Guard source against SQLite usage
         working-directory: backend
-        shell: bash
         run: |
           set -euo pipefail
-          matches="$(
-            grep -RInE \
-              "UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:" \
-              src tests Directory.Packages.props \
-              --include="*.cs" \
-              --include="*.csproj" \
-              --include="*.props" \
-              --exclude="DatabaseProviderArchitectureTests.cs" \
-              || true
-          )"
-
-          if [[ -n "$matches" ]]; then
-            echo "$matches"
-            echo "SQLite usage detected in Notrelix backend source."
-            echo "Use PostgreSQL/Testcontainers instead."
-            exit 1
-          fi
-
-          echo "No SQLite source references found."
+          matches="$(grep -RInE 'UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:' src tests Directory.Packages.props --include='*.cs' --include='*.csproj' --include='*.props' --exclude='DatabaseProviderArchitectureTests.cs' || true)"
+          [[ -z "$matches" ]] || { printf '%s\n' "$matches"; exit 1; }
 
   architecture-tests:
     name: Architecture tests
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
     needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup backend toolchain
-        uses: ./.github/actions/setup-backend
-
-      - name: Restore architecture tests
-        working-directory: backend
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+      - working-directory: backend
         run: dotnet restore tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
-
-      - name: Run architecture tests
-        working-directory: backend
+      - working-directory: backend
         run: >
-          dotnet test
-          tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
-          --no-restore
-          --configuration "$DOTNET_CONFIGURATION"
+          dotnet test tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
+          --no-restore --configuration "$DOTNET_CONFIGURATION"
           --logger "trx;LogFileName=architecture.trx"
-          --results-directory TestResults/architecture
-          --blame-hang-timeout 5m
-
+          --results-directory TestResults/architecture --blame-hang-timeout 5m
       - name: Verify foundation architecture gates executed
         working-directory: backend
         run: >
-          python3 scripts/ci/verify-required-tests-trx.py
+          python3 ../scripts/ci/verify-required-tests-trx.py
           TestResults/architecture/architecture.trx
           Notrelix.Architecture.Tests.DomainPurity.DomainBoundedContextSignatureTests
           Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests
           Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests
           Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests
-
       - name: Upload architecture test evidence on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -143,76 +100,41 @@ jobs:
 
   core-tests:
     name: Domain, Application and Infrastructure tests
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
     needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup backend toolchain
-        uses: ./.github/actions/setup-backend
-
-      - name: Restore Domain tests
-        working-directory: backend
-        run: dotnet restore tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj
-
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
       - name: Domain tests
         working-directory: backend
-        run: >
-          dotnet test
-          tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj
-          --no-restore
-          --configuration "$DOTNET_CONFIGURATION"
-          --logger "trx;LogFileName=domain.trx"
-          --results-directory TestResults/domain
-          --blame-hang-timeout 5m
-
-      - name: Verify Domain snapshots did not drift
-        working-directory: backend
-        run: git diff --exit-code -- tests/Notrelix.Domain.Tests/Snapshots
-
-      - name: Restore Application tests
-        working-directory: backend
-        run: dotnet restore tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj
-
+        run: |
+          set -euo pipefail
+          dotnet restore tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj
+          dotnet test tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=domain.trx" --results-directory TestResults/domain --blame-hang-timeout 5m
+          git diff --exit-code -- tests/Notrelix.Domain.Tests/Snapshots
       - name: Application tests
         working-directory: backend
-        run: >
-          dotnet test
-          tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj
-          --no-restore
-          --configuration "$DOTNET_CONFIGURATION"
-          --logger "trx;LogFileName=application.trx"
-          --results-directory TestResults/application
-          --blame-hang-timeout 5m
-
-      - name: Restore Infrastructure tests
-        working-directory: backend
-        run: dotnet restore tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
-
+        run: |
+          set -euo pipefail
+          dotnet restore tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj
+          dotnet test tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=application.trx" --results-directory TestResults/application --blame-hang-timeout 5m
       - name: Infrastructure tests
         working-directory: backend
-        run: >
-          dotnet test
-          tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
-          --no-restore
-          --configuration "$DOTNET_CONFIGURATION"
-          --logger "trx;LogFileName=infrastructure.trx"
-          --results-directory TestResults/infrastructure
-          --blame-hang-timeout 5m
-
+        run: |
+          set -euo pipefail
+          dotnet restore tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
+          dotnet test tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=infrastructure.trx" --results-directory TestResults/infrastructure --blame-hang-timeout 5m
       - name: Verify critical Infrastructure guards executed
         working-directory: backend
         run: >
-          python3 scripts/ci/verify-required-tests-trx.py
+          python3 ../scripts/ci/verify-required-tests-trx.py
           TestResults/infrastructure/infrastructure.trx
           Notrelix.Infrastructure.Tests.Data.Rls.RlsPolicyVerificationTests
           Notrelix.Infrastructure.Tests.Data.DomainEventInterceptorTests
-
       - name: Upload core test evidence on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -224,43 +146,31 @@ jobs:
 
   platform-tests:
     name: Platform messaging tests
+    needs: quality
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    needs: quality
     env:
       ASPNETCORE_ENVIRONMENT: CI
       DOTNET_ENVIRONMENT: CI
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup backend toolchain
-        uses: ./.github/actions/setup-backend
-
-      - name: Restore Platform tests
-        working-directory: backend
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+      - working-directory: backend
         run: dotnet restore tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
-
-      - name: Platform tests
-        working-directory: backend
+      - working-directory: backend
         run: >
-          dotnet test
-          tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
-          --no-restore
-          --configuration "$DOTNET_CONFIGURATION"
+          dotnet test tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
+          --no-restore --configuration "$DOTNET_CONFIGURATION"
           --logger "trx;LogFileName=platform.trx"
-          --results-directory TestResults/platform
-          --blame-hang-timeout 5m
-
+          --results-directory TestResults/platform --blame-hang-timeout 5m
       - name: Verify critical Platform reliability tests executed
         working-directory: backend
         run: >
-          python3 scripts/ci/verify-required-tests-trx.py
+          python3 ../scripts/ci/verify-required-tests-trx.py
           TestResults/platform/platform.trx
           Notrelix.Platform.Tests.Messaging.Reliability.OrderingEnforcerTests
           Notrelix.Platform.Tests.Messaging.Reliability.PoisonDetectorTests
           Notrelix.Platform.Tests.Messaging.Consumers.ConsumerHostDeliveryContractTests
-
       - name: Upload Platform test evidence on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -272,17 +182,15 @@ jobs:
 
   api-tests:
     name: API tests and OpenAPI contract
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
     needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     services:
       redis:
-        image: redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
+        image: ${{ inputs.redis_image }}
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 10s --health-timeout 5s --health-retries 5
         ports:
           - 6379:6379
     env:
@@ -298,34 +206,18 @@ jobs:
       JwtSettings__ExpireMinutes: "60"
       JwtSettings__RefreshTokenExpireDays: "7"
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup backend toolchain
-        uses: ./.github/actions/setup-backend
-
-      - name: Restore API tests
-        working-directory: backend
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+      - working-directory: backend
         run: dotnet restore tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
-
-      - name: API tests
-        working-directory: backend
-        run: >
-          dotnet test
-          tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
-          --no-restore
-          --configuration "$DOTNET_CONFIGURATION"
-          --logger "trx;LogFileName=api.trx"
-          --results-directory TestResults/api
-          --blame-hang-timeout 5m
-
+      - working-directory: backend
+        run: dotnet test tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=api.trx" --results-directory TestResults/api --blame-hang-timeout 5m
       - name: Verify API idempotency contract tests executed
         working-directory: backend
         run: >
-          python3 scripts/ci/verify-required-tests-trx.py
+          python3 ../scripts/ci/verify-required-tests-trx.py
           TestResults/api/api.trx
           Notrelix.API.Tests.Idempotency.IdempotencyEndpointContractTests
-
       - name: Export OpenAPI spec and verify no drift
         working-directory: backend
         env:
@@ -333,29 +225,13 @@ jobs:
           Messaging__Transport: InMemory
           Database__MigrateOnStartup: "false"
           SeedData__RunOnStartup: "false"
-        shell: bash
         run: |
           set -euo pipefail
-          CONTRACT_PATH="${GITHUB_WORKSPACE}/backend/contracts/openapi/notrelix.v1.json"
-
-          test -f "$CONTRACT_PATH"
-          git ls-files --error-unmatch "$CONTRACT_PATH"
-
-          dotnet run \
-            --project src/Notrelix.API/Notrelix.API.csproj \
-            --configuration "$DOTNET_CONFIGURATION" \
-            --no-build \
-            -- \
-            --export-openapi \
-            /tmp/notrelix.v1.generated.json
-
-          cmp "$CONTRACT_PATH" /tmp/notrelix.v1.generated.json || {
-            echo "OpenAPI spec drift detected."
-            echo "Regenerate and review the public contract before committing:"
-            echo "dotnet run --project src/Notrelix.API -- --export-openapi contracts/openapi/notrelix.v1.json"
-            exit 1
-          }
-
+          contract="$GITHUB_WORKSPACE/backend/contracts/openapi/notrelix.v1.json"
+          test -f "$contract"
+          git ls-files --error-unmatch "$contract"
+          dotnet run --project src/Notrelix.API/Notrelix.API.csproj --configuration "$DOTNET_CONFIGURATION" --no-build -- --export-openapi /tmp/notrelix.v1.generated.json
+          cmp "$contract" /tmp/notrelix.v1.generated.json
       - name: Upload API test evidence on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -367,17 +243,15 @@ jobs:
 
   integration-tests:
     name: Integration and provider tests
-    runs-on: ubuntu-24.04
-    timeout-minutes: 35
     needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
     services:
       redis:
-        image: redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
+        image: ${{ inputs.redis_image }}
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 10s --health-timeout 5s --health-retries 5
         ports:
           - 6379:6379
     env:
@@ -393,31 +267,16 @@ jobs:
       JwtSettings__ExpireMinutes: "60"
       JwtSettings__RefreshTokenExpireDays: "7"
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup backend toolchain
-        uses: ./.github/actions/setup-backend
-
-      - name: Restore Integration tests
-        working-directory: backend
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+      - working-directory: backend
         run: dotnet restore tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
-
-      - name: Integration tests
-        working-directory: backend
-        run: >
-          dotnet test
-          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
-          --no-restore
-          --configuration "$DOTNET_CONFIGURATION"
-          --logger "trx;LogFileName=integration.trx"
-          --results-directory TestResults/integration
-          --blame-hang-timeout 5m
-
+      - working-directory: backend
+        run: dotnet test tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration --blame-hang-timeout 5m
       - name: Verify critical foundation provider tests executed
         working-directory: backend
         run: >
-          python3 scripts/ci/verify-required-tests-trx.py
+          python3 ../scripts/ci/verify-required-tests-trx.py
           TestResults/integration/integration.trx
           Notrelix.Integration.Tests.Data.Ops.IdempotencyStoreIntegrationTests
           Notrelix.Integration.Tests.Integration.TenantIsolationTests
@@ -434,7 +293,6 @@ jobs:
           Notrelix.Integration.Tests.Integration.ProductionCompositionTests
           Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests
           Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests
-
       - name: Upload Integration test evidence on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -447,58 +305,15 @@ jobs:
   backend-gate:
     name: Backend CI gate
     if: always()
-    needs:
-      - quality
-      - architecture-tests
-      - core-tests
-      - platform-tests
-      - api-tests
-      - integration-tests
+    needs: [quality, architecture-tests, core-tests, platform-tests, api-tests, integration-tests]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Checkout for evidence contract
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Require registered backend provider
-        run: |
-          set -euo pipefail
-          provider="$(python3 scripts/ci/component-info.py --component '${{ inputs.component_id }}' --field provider)"
-          [[ "$provider" == backend ]] || { echo "::error::${{ inputs.component_id }} is not a backend provider"; exit 1; }
-
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require all backend proof
-        shell: bash
         env:
-          QUALITY: ${{ needs.quality.result }}
-          ARCHITECTURE: ${{ needs.architecture-tests.result }}
-          CORE: ${{ needs.core-tests.result }}
-          PLATFORM: ${{ needs.platform-tests.result }}
-          API: ${{ needs.api-tests.result }}
-          INTEGRATION: ${{ needs.integration-tests.result }}
-        run: |
-          set -euo pipefail
-          failed=0
-
-          check_result() {
-            local name="$1"
-            local result="$2"
-            if [[ "$result" != "success" ]]; then
-              echo "::error::$name result is '$result'; expected 'success'."
-              failed=1
-            else
-              echo "$name: success"
-            fi
-          }
-
-          check_result "quality" "$QUALITY"
-          check_result "architecture-tests" "$ARCHITECTURE"
-          check_result "core-tests" "$CORE"
-          check_result "platform-tests" "$PLATFORM"
-          check_result "api-tests" "$API"
-          check_result "integration-tests" "$INTEGRATION"
-
-          [[ "$failed" -eq 0 ]]
-
+          RESULTS: ${{ toJSON(needs) }}
+        run: jq -e 'all(.[]; .result == "success")' <<<"$RESULTS" >/dev/null
       - name: Emit backend proof evidence
         uses: ./.github/actions/emit-evidence
         with:

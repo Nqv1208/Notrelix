@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# Single authority for non-production CI/test credentials.
-#
-# Emits KEY=VALUE lines with cryptographically random values that live only in
-# the consuming process/job. Never commit generated values and never log them.
 set -euo pipefail
-
-echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
-echo "REDIS_PASSWORD=$(openssl rand -hex 16)"
-echo "RABBITMQ_PASSWORD=$(openssl rand -hex 16)"
-echo "JWT_SECRET=$(openssl rand -hex 32)"
-echo "EMAIL_API_KEY=$(openssl rand -hex 16)"
+hex(){ openssl rand -hex "$1"; }
+printf 'POSTGRES_PASSWORD=%s\n' "$(hex 18)"
+printf 'REDIS_PASSWORD=%s\n' "$(hex 18)"
+printf 'RABBITMQ_PASSWORD=%s\n' "$(hex 18)"
+printf 'JWT_SECRET=%s\n' "$(hex 32)"
+printf 'EMAIL_API_KEY=ci_%s\n' "$(hex 16)"

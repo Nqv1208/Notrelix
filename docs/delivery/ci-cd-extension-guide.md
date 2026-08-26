@@ -11,152 +11,93 @@ evidence:
   - docs/delivery/ci-cd-architecture.md
   - delivery/catalog.toml
   - delivery/policy.toml
+  - tools/deliveryctl/
 review_on:
   - ci-cd-architecture-change
   - new-component-registration
 ---
 
-# Notrelix CI/CD V4 — Extension Guide
+# Notrelix CI/CD — Extension Guide
 
-This guide defines whether a future change is a registration, a provider extension, or a genuine architecture change.
+## 1. Registration versus architecture change
 
-## 1. Add a frontend host using the existing provider
+A normal product addition should be a registration in `delivery/catalog.toml` and, only when routing/proof semantics differ, `delivery/policy.toml`.
 
-Expected changes:
-
-```text
-frontend/apps/<host>/...
-delivery/catalog.toml
-(optional) delivery/policy.toml for special routing semantics
-(optional) Dockerfile / Compose service when deployable
-planner regression test when semantics are new
-```
-
-Do **not** edit `ci.yml` or the final gate.
-
-Register:
-
-- component ID;
-- provider = `frontend-host`;
-- root/workspace;
-- proof profile;
-- build/E2E artifact metadata;
-- container/deployment metadata if deployable.
-
-The planner adds it to the host/container matrices and resolves its proof set from the registered `proof_profile`; no planner proof-ID branch is added.
-
-## 2. Add a mobile app
-
-Use provider `mobile` when the current mobile proof contract is sufficient. Mark `deployable = false` until a real mobile delivery provider (EAS/App Store/Play Store/OTA) exists.
-
-Adding mobile CD later should add an artifact/delivery provider rather than pretending an IPA/AAB is a Docker image.
-
-## 3. Add a containerized backend/worker
-
-If it shares the current backend proof model, register it under that provider and give it a container contract. If it has a fundamentally different build/runtime/test stack, add a new reusable provider lane and a new proof profile.
-
-The release manifest remains generic either way.
-
-## 4. Add a new CI proof
-
-Examples: mutation tests, license policy, performance budget, accessibility, IaC scanner.
-
-The proof vocabulary belongs in `delivery/policy.toml`:
+The normal extension path is:
 
 ```text
-proof profile/binding
- -> provider implementation emits that exact proof ID
- -> planner resolves the profile
- -> exact evidence gate
+catalog/policy registration
+ -> deliveryctl compiles resolved contract
+ -> existing provider executes contract
+ -> existing evidence/release machinery remains unchanged
 ```
 
-Do not construct the new proof ID in `build-plan.py` and do not teach the final gate about it. Add a planner/contract regression test proving the profile/binding selects the proof.
+Do not add component-specific branches to `.github/workflows/ci.yml`.
 
-## 5. Add a deployment environment
+## 2. Add a frontend host
 
-For another environment using the same Compose adapter and **manual-promotion** topology:
+Register provider `frontend-host`, source roots, workspace, build/E2E scripts, artifact paths and container/deployment metadata when deployable. The planner creates host/container matrix entries automatically.
 
-1. add one `delivery/environments.toml` entry;
-2. create the GitHub Environment with the same name and its secrets/variables/protection;
-3. use the existing generic `promote-release.yml` workflow with that environment name.
+E2E must consume the exact build artifact through the generic Node package/restore primitives.
 
-No environment-specific promotion workflow is added.
+## 3. Add a mobile app
 
-Adding another automatic stage to the release train (for example staging → QA → production) changes promotion topology and therefore requires an explicit release-workflow change. That is not misrepresented as data-only registration.
+Use provider `mobile` when the current proof contract fits. Keep `deployable = false` until an actual mobile artifact/delivery provider exists; do not model app-store artifacts as Docker images.
 
-If an environment uses a different deployment platform, create another deployment adapter while preserving the same sealed manifest/evidence authority.
+## 4. Add backend/worker runtime
 
-## 6. Move from Docker Compose to Kubernetes/ECS
+If the current backend proof contract applies, register it. If runtime/build/test semantics genuinely differ, add one reusable provider type and corresponding resolved-plan serialization/proof profile. Do not duplicate delivery authority parsing in the new provider.
 
-This is an adapter change, not a CI rewrite.
+## 5. Add a proof
 
-Keep:
+Proof vocabulary belongs in `delivery/policy.toml` proof profiles/bindings. The provider emits exactly that proof ID; the planner resolves expectations; the evidence aggregator remains generic.
 
-- catalog/component identities;
-- affected plan;
-- proof/evidence semantics;
-- immutable image digests;
-- release candidate manifest;
-- staging-verification/promotion authority.
+Do not hard-code the proof into the final CI gate.
 
-Replace:
+## 6. Add an environment
 
-- release overlay renderer;
-- environment mutation adapter;
-- platform-specific stack/health proof.
+For the current Compose adapter, register the environment in `delivery/environments.toml` and create a matching GitHub Environment with its protection/secrets/variables. Manual-promotion environments reuse `promote-release.yml`.
 
-## 7. Add a new provider type
+A new deployment platform is an adapter extension, not a CI rewrite.
 
-A new provider is justified only when the current provider contracts cannot represent the runtime/build/proof semantics cleanly.
+## 7. Open/closed boundary
 
-Required work:
-
-1. reusable workflow with typed `workflow_call` inputs;
-2. stable proof IDs;
-3. planner matrix serialization for the provider lane;
-4. policy proof profile (proof IDs stay out of planner code);
-5. evidence emission;
-6. tests proving affected routing and unknown fail-safe behavior;
-7. CI-layout rule if a new architectural invariant is introduced.
-
-This is extension of a stable core, not a rewrite of the core planner or release manifest.
-
-## 8. Catalog review checklist
-
-Every registered deployable must answer:
-
-- Who owns its source root?
-- Which provider proves it?
-- Which dependency/security domain owns it?
-- What artifact is produced?
-- How is it runtime-smoked?
-- What immutable image/build dependency inputs exist?
-- Which Compose/platform service consumes it?
-- What health endpoint proves startup?
-- Does changing it create release intent?
-
-`validate-delivery.py` should reject missing or conflicting answers whenever they can be mechanically checked.
-
-## 9. Open/closed rule
-
-A normal product addition should be **open for extension** through catalog/policy/provider data while the following remain **closed for modification**:
+Routine product growth should leave these contracts closed:
 
 ```text
 .github/workflows/ci.yml
-scripts/ci/aggregate-evidence.py
-release-manifest schema semantics
-generic deployment authority
-Notrelix CI Gate contract
+tools/deliveryctl/evidence.py
+release manifest semantics
+generic deployment adapter contract
+Notrelix CI Gate
 ```
 
-If a routine new app requires edits to several of those files, treat that as an architecture regression and fix the abstraction rather than accepting permanent special cases.
+A new capability may extend `tools/deliveryctl/planner.py` only when the canonical execution-plan schema genuinely needs a new provider contract. It must not create a parallel planner/parser.
 
-## 10. CI runtime when adding a new job
+## 8. Runtime rule for new jobs
 
-Any workflow job that invokes `scripts/ci/*.py` must:
+There is no repository CI Python bootstrap.
 
-1. use `actions/checkout` (full SHA);
-2. include `uses: ./.github/actions/setup-ci-python` immediately after checkout;
-3. then proceed with other setup and logic.
+- Control-plane jobs use system Python >=3.11 and invoke `python3 -m tools.deliveryctl ...`.
+- Backend jobs use the backend toolchain.
+- Frontend/renderer jobs use Node/pnpm/Playwright.
+- Execution providers do not invoke deliveryctl or parse `delivery/*.toml`.
 
-Do not rely on the host runner's system Python. The CI Python authority is `.python-version` at repository root, consumed by `setup-ci-python`.
+If a new execution helper needs to decide *what* should run, move that decision into deliveryctl and pass the result as provider input.
+
+## 9. Review checklist
+
+Before registering a deployable, confirm:
+
+- source ownership/root;
+- provider and proof profile;
+- security domain;
+- build artifact;
+- container context/Dockerfile/image identity;
+- immutable build-image locks;
+- Compose/deployment service and env var;
+- health contract;
+- release intent;
+- migration/stateful implications.
+
+`python3 -m tools.deliveryctl validate` must reject invalid or conflicting registration.
