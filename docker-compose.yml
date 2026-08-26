@@ -1,20 +1,16 @@
 # =============================================================================
-# Base Infrastructure — shared by staging & production overlays.
-# Do NOT use standalone; pair with an overlay:
+# Base infrastructure — shared by staging and production overlays.
 #
-#   Dev:     docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
-#   Staging: docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml up -d --build
-#   Prod:    docker compose --env-file .env.prod    -f docker-compose.yml -f docker-compose.prod.yml   up -d --build
-#
-# RabbitMQ: add --profile messaging
+# Application services are defined by the environment overlays. Stateful
+# infrastructure lives here so all environments share one topology contract.
+# Automated releases override every runtime image with digest-pinned subjects
+# from delivery/images.lock.toml via release.generated.yml.
 # =============================================================================
-
 name: notrelix
 
 services:
-
   postgres:
-    image: postgres:16-alpine
+    image: ${NOTRELIX_POSTGRES_IMAGE:-postgres:16-alpine}
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -38,7 +34,7 @@ services:
         max-file: "3"
 
   redis:
-    image: redis:7-alpine
+    image: ${NOTRELIX_REDIS_IMAGE:-redis:7-alpine}
     restart: unless-stopped
     command: >
       redis-server
@@ -59,13 +55,15 @@ services:
       - backend-network
     logging: *default-logging
 
+  # RabbitMQ is not optional for Staging/Production: both API environment
+  # contracts select Messaging:Transport=RabbitMQ. Keeping it outside a Compose
+  # profile prevents a release from becoming healthy without its broker.
   rabbitmq:
-    profiles: ["messaging"]
-    image: rabbitmq:3.13-management-alpine
+    image: ${NOTRELIX_RABBITMQ_IMAGE:-rabbitmq:3.13-management-alpine}
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rabbitmq}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -85,8 +83,23 @@ volumes:
   rabbitmq_data:
 
 networks:
+  # Stable CIDR lets ASP.NET trust exactly the isolated reverse-proxy network
+  # instead of trusting arbitrary X-Forwarded-* senders. Override only when the
+  # host already uses this CIDR.
   backend-network:
     driver: bridge
     internal: true
+    ipam:
+      config:
+        - subnet: ${BACKEND_NETWORK_SUBNET:-172.28.0.0/24}
+
+  # Public-facing application containers and the gateway live here. It also
+  # supplies normal outbound connectivity to marketing/web where required.
   frontend-network:
+    driver: bridge
+
+  # Backend needs outbound access for approved integrations (email, N8n, etc.)
+  # but does not need peer connectivity to frontend containers. A dedicated
+  # egress network preserves that boundary.
+  backend-egress-network:
     driver: bridge

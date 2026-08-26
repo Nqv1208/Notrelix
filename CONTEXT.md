@@ -213,7 +213,7 @@ backend/Directory.Build.props
 The backend SDK pin is currently:
 
 ```text
-9.0.313
+9.0.317
 ```
 
 with:

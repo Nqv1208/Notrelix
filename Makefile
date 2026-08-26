@@ -1,22 +1,14 @@
-# Notrelix — Docker Compose
-
+# Notrelix — local development commands.
+# Staging and production lifecycle is exclusively owned by the Delivery Platform.
 .DEFAULT_GOAL := help
-
 SHELL := /bin/bash
-
 COMPOSE_STACK := docker compose -f docker-compose.yml
 COMPOSE_DEV := docker compose -f docker-compose.dev.yml
-
 ENV_DEV ?= --env-file .env.dev
-ENV_STAGING ?= --env-file .env.staging
-ENV_PROD ?= --env-file .env.prod
-
 BACKEND_PROJECT := src/Notrelix.API/Notrelix.API.csproj
 BACKEND_SOLUTION := backend.slnx
-
 BACKEND_RUN := $(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend
 BACKEND_EXEC := $(COMPOSE_DEV) $(ENV_DEV) exec backend
-
 DOTNET_RESTORE_API := dotnet restore $(BACKEND_PROJECT)
 DOTNET_RESTORE_API_FORCE := dotnet restore $(BACKEND_PROJECT) --force --no-cache
 DOTNET_RUN_API := dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore
@@ -26,51 +18,17 @@ DOTNET_RUN_API := dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --
 	messaging-up messaging-down \
 	db-up db-restore db-restore-force be-restore be-restore-force db-migrate db-seed db-init db-rls db-psql \
 	be-build be-test be-clean-nuget be-shell backend-image-build \
-	staging staging-up staging-down staging-logs \
-	prod prod-up prod-down prod-logs \
-	build build-staging ps config-dev docs-generate docs-check clean
+	staging staging-up staging-down staging-logs prod prod-up prod-down prod-logs \
+	build build-staging ps config-dev docs-generate docs-check ci-validate clean
 
 help:
-	@echo "Notrelix — Docker"
+	@echo "Notrelix — local development"
+	@echo "  make dev-up/dev-down/dev-logs"
+	@echo "  make db-* / be-*"
+	@echo "  make ci-validate"
 	@echo ""
-	@echo "Development:"
-	@echo "  make dev-up              Start dev stack"
-	@echo "  make dev-logs            Follow dev logs"
-	@echo "  make backend-logs        Follow backend logs"
-	@echo "  make dev-down            Stop dev stack"
-	@echo "  make dev-restart         Restart dev stack"
-	@echo "  make dev-clean           Stop dev stack and delete volumes"
-	@echo "  make dev-reset           Delete dev volumes, restore, migrate, seed, start"
-	@echo "  make dev-reset-full      Delete dev volumes, force restore, migrate, seed, start"
-	@echo "  make dev-tools           Start tools profile, including pgAdmin"
-	@echo "  make messaging-up        Start RabbitMQ (messaging profile)"
-	@echo "  make messaging-down      Stop RabbitMQ"
-	@echo ""
-	@echo "Database:"
-	@echo "  make db-up               Start postgres/redis only"
-	@echo "  make db-restore          Restore backend dependencies inside container"
-	@echo "  make db-restore-force    Force restore backend dependencies inside container"
-	@echo "  make db-migrate          Run EF migrations"
-	@echo "  make db-seed             Run seed data"
-	@echo "  make db-init             Run migrations + seed"
-	@echo "  make db-rls              Apply RLS policies"
-	@echo "  make db-psql             Open psql"
-	@echo ""
-	@echo "Backend:"
-	@echo "  make be-build            Build backend inside container"
-	@echo "  make be-test             Run backend tests inside container"
-	@echo "  make be-clean-nuget      Clear NuGet caches inside container"
-	@echo "  make be-shell            Open shell inside backend container"
-	@echo "  make backend-image-build Rebuild backend Docker image"
-	@echo ""
-	@echo "Config:"
-	@echo "  make config-dev          Print resolved dev compose config"
-	@echo "  make docs-generate       Regenerate governed documentation artifacts"
-	@echo "  make docs-check          Run repository documentation governance gates"
-
-# ---------------------------------------------------------------------
-# Development stack
-# ---------------------------------------------------------------------
+	@echo "Staging/production deploy is intentionally unavailable from Make."
+	@echo "Use GitHub Actions: Release Candidate / Promote Staging-Verified Release."
 
 dev: dev-up
 
@@ -117,10 +75,6 @@ dev-reset-full:
 	$(MAKE) db-rls
 	$(COMPOSE_DEV) $(ENV_DEV) up -d
 
-# ---------------------------------------------------------------------
-# Database commands
-# ---------------------------------------------------------------------
-
 db-up:
 	$(COMPOSE_DEV) $(ENV_DEV) up -d postgres redis
 
@@ -147,12 +101,7 @@ db-rls: db-restore
 	$(BACKEND_RUN) $(DOTNET_RUN_API) -- --rls-apply
 
 db-psql:
-	$(COMPOSE_DEV) $(ENV_DEV) exec postgres \
-		psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-notrelix_dev}
-
-# ---------------------------------------------------------------------
-# Backend utilities
-# ---------------------------------------------------------------------
+	$(COMPOSE_DEV) $(ENV_DEV) exec postgres psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-notrelix_dev}
 
 be-build: db-restore
 	$(BACKEND_RUN) dotnet build $(BACKEND_PROJECT) --no-restore
@@ -169,45 +118,16 @@ be-shell:
 backend-image-build:
 	$(COMPOSE_DEV) $(ENV_DEV) build backend
 
-# ---------------------------------------------------------------------
-# Staging
-# ---------------------------------------------------------------------
+# Delivery Platform owns all non-development environments. These targets intentionally
+# fail rather than rebuilding or deploying bytes that bypass the release manifest.
+staging staging-up prod prod-up build build-staging:
+	@echo "ERROR: staging/production build/deploy is owned by the Notrelix Delivery Platform." >&2
+	@echo "Use GitHub Actions Release Candidate / Promote Staging-Verified Release." >&2
+	@exit 2
 
-staging: staging-up
-
-staging-up:
-	$(COMPOSE_STACK) $(ENV_STAGING) -f docker-compose.staging.yml up -d --build
-
-staging-down:
-	$(COMPOSE_STACK) $(ENV_STAGING) -f docker-compose.staging.yml down
-
-staging-logs:
-	$(COMPOSE_STACK) $(ENV_STAGING) -f docker-compose.staging.yml logs -f
-
-# ---------------------------------------------------------------------
-# Production
-# ---------------------------------------------------------------------
-
-prod: prod-up
-
-prod-up:
-	$(COMPOSE_STACK) $(ENV_PROD) -f docker-compose.prod.yml up -d --build
-
-prod-down:
-	$(COMPOSE_STACK) $(ENV_PROD) -f docker-compose.prod.yml down
-
-prod-logs:
-	$(COMPOSE_STACK) $(ENV_PROD) -f docker-compose.prod.yml logs -f
-
-# ---------------------------------------------------------------------
-# Build / config / cleanup
-# ---------------------------------------------------------------------
-
-build:
-	$(COMPOSE_STACK) $(ENV_PROD) -f docker-compose.prod.yml build
-
-build-staging:
-	$(COMPOSE_STACK) $(ENV_STAGING) -f docker-compose.staging.yml build
+staging-down staging-logs prod-down prod-logs:
+	@echo "ERROR: non-development environment lifecycle is an operator/CD action." >&2
+	@exit 2
 
 ps:
 	docker compose -f docker-compose.yml ps -a 2>/dev/null || true
@@ -230,7 +150,10 @@ docs-check:
 	node scripts/docs/check-source-inventory.mjs
 	node scripts/docs/check-generated.mjs
 
+ci-validate:
+	python3 -m tools.deliveryctl validate
+	python3 -m tools.deliveryctl architecture-check
+	python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
+
 clean:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v
-	$(COMPOSE_STACK) $(ENV_STAGING) -f docker-compose.staging.yml down -v 2>/dev/null || true
-	$(COMPOSE_STACK) $(ENV_PROD) -f docker-compose.prod.yml down -v 2>/dev/null || true

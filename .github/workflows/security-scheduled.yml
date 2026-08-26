@@ -1,0 +1,9 @@
+name: Scheduled Dependency Security
+on:
+  schedule: [{cron: '15 3 * * 3'}]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  security:
+    uses: ./.github/workflows/security-ci.yml
+    with: {scan_backend: true, scan_frontend: true}

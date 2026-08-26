@@ -1,0 +1,39 @@
+name: Promote Staging-Verified Release
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id: {description: Release Candidate run containing staging-verified manifest, required: true, type: string}
+      environment_name: {description: Manual-promotion environment, required: true, type: string, default: production}
+permissions: {contents: read, actions: read, attestations: read}
+jobs:
+  manifest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    outputs:
+      release_id: ${{ steps.load.outputs.release_id }}
+      release_sha: ${{ steps.load.outputs.release_sha }}
+      manifest_json: ${{ steps.load.outputs.manifest_json }}
+      environment_json: ${{ steps.environment.outputs.contract_json }}
+    steps:
+      - id: load
+        env: {GH_TOKEN: '${{ github.token }}', RELEASE_RUN_ID: '${{ inputs.release_run_id }}'}
+        run: |
+          [[ "$RELEASE_RUN_ID" =~ ^[0-9]+$ ]]; run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN_ID")"; [[ "$(jq -r .name <<<"$run")" == 'Release Candidate' && "$(jq -r .conclusion <<<"$run")" == success ]]
+          mkdir release; gh run download "$RELEASE_RUN_ID" -n release-manifest -D release; m=release/release-manifest.json
+          jq -e --arg run "$RELEASE_RUN_ID" '.kind=="StagingVerifiedRelease" and .staging_verified==true and (.release_run_id|tostring)==$run and all(.images[];.ref|contains("@sha256:"))' "$m" >/dev/null
+          gh attestation verify "$m" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
+          sha="$(jq -r .source_sha "$m")"; ci="$(jq -r .ci_run_id "$m")"; ci_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ci")"; [[ "$(jq -r .head_sha <<<"$ci_json")" == "$sha" && "$(jq -r .head_branch <<<"$ci_json")" == main && "$(jq -r .conclusion <<<"$ci_json")" == success ]]
+          { echo "release_id=$RELEASE_RUN_ID"; echo "release_sha=$sha"; echo "manifest_json=$(jq -c . "$m")"; } >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {ref: '${{ steps.load.outputs.release_sha }}', fetch-depth: 1}
+      - id: environment
+        run: python3 -m tools.deliveryctl environment --name "${{ inputs.environment_name }}" --require-promotion-mode manual-promotion --github-output
+  deploy:
+    needs: manifest
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment_name: ${{ inputs.environment_name }}
+      release_id: ${{ needs.manifest.outputs.release_id }}
+      release_manifest_json: ${{ needs.manifest.outputs.manifest_json }}
+      environment_contract_json: ${{ needs.manifest.outputs.environment_json }}
+    secrets: inherit

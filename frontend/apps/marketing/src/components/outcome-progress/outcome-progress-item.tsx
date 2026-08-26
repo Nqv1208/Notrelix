@@ -33,7 +33,7 @@ export function OutcomeProgressItem({ item, index }: OutcomeProgressItemProps) {
         <span className="outcome-progress-item__value text-xl font-bold tracking-tight text-[var(--mkt-text)] sm:text-2xl lg:text-3xl">
           {item.value}
         </span>
-        <span className="outcome-progress-item__label mt-1.5 max-w-[200px] text-xs font-medium text-[var(--mkt-text-muted)] sm:text-sm">
+        <span className="outcome-progress-item__label mt-1.5 max-w-[200px] text-xs font-medium text-[var(--mkt-text)] sm:text-sm">
           {item.label}
         </span>
       </div>

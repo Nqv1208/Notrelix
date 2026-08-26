@@ -140,7 +140,7 @@ backend/global.json
 declares:
 
 ```text
-SDK 9.0.313
+SDK 9.0.317
 rollForward latestPatch
 allowPrerelease false
 ```

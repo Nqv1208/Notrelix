@@ -1,32 +1,54 @@
-# Multi-stage Dockerfile for Notrelix Marketing
+# Notrelix marketing container with a pruned dependency closure and
+# digest-pinned build/runtime base.
+ARG NODE_BASE_IMAGE=node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
 
-FROM node:22-alpine AS base
-RUN corepack enable
-WORKDIR /app
+FROM ${NODE_BASE_IMAGE} AS base
+RUN corepack enable && corepack prepare pnpm@10.0.0 --activate
+WORKDIR /repo
+
+FROM base AS pruner
+COPY frontend ./frontend
+WORKDIR /repo/frontend
+RUN pnpm dlx turbo@2.10.5 prune @notrelix/app-marketing --docker
 
 FROM base AS builder
-
-COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml frontend/.npmrc ./
-COPY frontend/turbo.json ./
-COPY frontend/tooling ./tooling
-COPY frontend/packages/ui ./packages/ui
-COPY frontend/apps/marketing ./apps/marketing
-
+WORKDIR /app
+COPY --from=pruner /repo/frontend/out/json/ ./
+COPY --from=pruner /repo/frontend/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY frontend/.npmrc ./.npmrc
 RUN pnpm install --frozen-lockfile
+COPY --from=pruner /repo/frontend/out/full/ ./
 RUN pnpm --filter @notrelix/app-marketing build
 
-FROM node:22-alpine AS runner
+FROM ${NODE_BASE_IMAGE} AS runner
 WORKDIR /app
-
-ENV NODE_ENV=production
-RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/apps/marketing/.next/standalone ./
-COPY --from=builder /app/apps/marketing/.next/static ./apps/marketing/.next/static
-COPY --from=builder /app/apps/marketing/public ./apps/marketing/public
-
+# Explicit, version-pinned remediation for CVE-2026-14456 (HIGH): the locked
+# node:22-alpine digest still ships libcrypto3/libssl3 3.5.7-r0 while the
+# alpine v3.24 repository already publishes the fixed 3.5.8-r0 and no upstream
+# image rebuild exists yet. Exact-version pinning keeps builds reproducible;
+# remove this layer once the base-image lock advances past the fixed revision.
+RUN apk add --no-cache \
+    libcrypto3=3.5.8-r0 \
+    libssl3=3.5.8-r0
+# Next standalone binds to $HOSTNAME when present; Docker injects the
+# container id, which breaks loopback health probes. Pin the wildcard.
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 --ingroup nodejs nextjs
+# The Node base ships a vendored npm CLI whose bundled dependencies have carried
+# HIGH/CRITICAL advisories while no clean node:22 base exists. The standalone
+# Next.js server never invokes npm, so the unused vendored CLI is removed from
+# the published bytes instead of weakening the vulnerability gate.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
+COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/static ./apps/marketing/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/public ./apps/marketing/public
 USER nextjs
 EXPOSE 3000
-ENV PORT=3000
-
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1
 CMD ["node", "apps/marketing/server.js"]

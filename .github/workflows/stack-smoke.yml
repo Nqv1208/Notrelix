@@ -1,0 +1,53 @@
+name: Release Stack CI
+on:
+  workflow_call:
+    inputs:
+      release_images_json: {required: true, type: string}
+      release_contract_json: {required: true, type: string}
+permissions: {contents: read, packages: read}
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      runtime_matrix: ${{ steps.matrix.outputs.runtime_matrix }}
+    steps:
+      - id: matrix
+        env: {IMAGES: '${{ inputs.release_images_json }}'}
+        run: |
+          jq -e '.images|length>0 and all(.[];.ref|contains("@sha256:"))' <<<"$IMAGES" >/dev/null
+          echo "runtime_matrix=$(jq -c '{include:[.images[]|select(.kind=="infrastructure")|{id:.id,ref:.ref}]}' <<<"$IMAGES")" >> "$GITHUB_OUTPUT"
+  runtime-security:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.runtime_matrix) }}
+    steps:
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with: {image-ref: '${{ matrix.ref }}', exit-code: '1', ignore-unfixed: true, vuln-type: 'os,library', severity: 'HIGH,CRITICAL'}
+  stack:
+    needs: [prepare, runtime-security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - env: {TOKEN: '${{ github.token }}'}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - env: {IMAGES: '${{ inputs.release_images_json }}', CONTRACT: '${{ inputs.release_contract_json }}'}
+        run: |
+          mkdir -p artifacts/release
+          jq -e '.images|length>0 and all(.[];.ref|contains("@sha256:"))' <<<"$IMAGES" >/dev/null
+          { echo services:; jq -r '.images[]|"  \(.compose_service):\n    image: \(.ref)"' <<<"$IMAGES"; } > artifacts/release/release.generated.yml
+          scripts/ci/write-test-env.sh /tmp/stack.env
+          c=(docker compose --env-file /tmp/stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml)
+          "${c[@]}" config >/dev/null; "${c[@]}" pull; "${c[@]}" up -d --no-build postgres redis rabbitmq
+          service="$(jq -er .migration_service <<<"$CONTRACT")"; while IFS= read -r cmd; do "${c[@]}" run --rm "$service" "$cmd"; done < <(jq -r '.migration_commands[]' <<<"$CONTRACT")
+          "${c[@]}" up -d --no-build --remove-orphans
+          health="$(jq -er .stack_health_url <<<"$CONTRACT")"; for _ in $(seq 1 75); do curl -fsS "$health" >/dev/null && break; sleep 2; done
+          while IFS= read -r url; do curl -fsS --max-time 10 "$url" >/dev/null; done < <(jq -r '.stack_smoke_urls[]' <<<"$CONTRACT")
+      - uses: ./.github/actions/emit-evidence
+        with: {proof_id: 'stack:release-candidate', component_id: release-stack}
+      - if: always()
+        run: docker compose --env-file /tmp/stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml down -v --remove-orphans || true

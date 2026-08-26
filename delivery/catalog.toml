@@ -1,0 +1,93 @@
+schema_version = 5
+
+[repository]
+trunk_branch = "main"
+release_branch = "main"
+frontend_root = "frontend"
+
+[components.backend-api]
+provider = "backend"
+roots = ["backend/**"]
+deployable = true
+security_domain = "backend"
+proof_profile = "backend"
+release_on_runtime_change = true
+
+[components.backend-api.container]
+context = "backend"
+dockerfile = "backend/Dockerfile"
+image_name = "notrelix-backend"
+compose_service = "backend"
+deploy_env_var = "NOTRELIX_BACKEND_IMAGE"
+runtime_port = 8000
+health_path = "/health/live"
+health_scheme = "http"
+build_arg_locks = { DOTNET_SDK_IMAGE = "dotnet-sdk", DOTNET_RUNTIME_IMAGE = "dotnet-aspnet" }
+smoke_dependency_locks = { postgres = "postgres", redis = "redis", rabbitmq = "rabbitmq" }
+
+[components.web]
+provider = "frontend-host"
+roots = ["frontend/apps/web/**", "frontend/e2e/production/**"]
+workspace = "@notrelix/app-web"
+deployable = true
+security_domain = "frontend"
+proof_profile = "frontend"
+release_on_runtime_change = true
+
+[components.web.frontend]
+runtime = "vite-static"
+build_script = "build"
+e2e_script = "e2e"
+artifact_paths = ["apps/web/dist"]
+capabilities = ["web-tests"]
+
+[components.web.container]
+context = "."
+dockerfile = "frontend/Dockerfile"
+image_name = "notrelix-web"
+compose_service = "frontend-web"
+deploy_env_var = "NOTRELIX_WEB_IMAGE"
+runtime_port = 8080
+health_path = "/"
+health_scheme = "http"
+build_arg_locks = { NODE_BASE_IMAGE = "node-build", NGINX_BASE_IMAGE = "nginx-build" }
+
+[components.marketing]
+provider = "frontend-host"
+roots = ["frontend/apps/marketing/**", "frontend/e2e/marketing/**"]
+workspace = "@notrelix/app-marketing"
+deployable = true
+security_domain = "frontend"
+proof_profile = "frontend"
+release_on_runtime_change = true
+
+[components.marketing.frontend]
+runtime = "next-standalone"
+build_script = "build"
+e2e_script = "e2e:marketing"
+artifact_paths = ["apps/marketing/.next/standalone", "apps/marketing/.next/static", "apps/marketing/public"]
+capabilities = []
+
+[components.marketing.container]
+context = "."
+dockerfile = "frontend/Dockerfile.marketing"
+image_name = "notrelix-marketing"
+compose_service = "frontend-marketing"
+deploy_env_var = "NOTRELIX_MARKETING_IMAGE"
+runtime_port = 3000
+health_path = "/"
+health_scheme = "http"
+build_arg_locks = { NODE_BASE_IMAGE = "node-build" }
+
+[components.mobile]
+provider = "mobile"
+roots = ["frontend/apps/mobile/**"]
+workspace = "@notrelix/app-mobile"
+deployable = false
+security_domain = "frontend"
+proof_profile = "frontend"
+release_on_runtime_change = false
+
+[components.mobile.frontend]
+build_script = "build"
+capabilities = ["mobile-tests"]

@@ -8,7 +8,9 @@ import {
   BookOpen,
   ChevronDown,
   LayoutGrid,
+  Menu,
   Workflow,
+  X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Messages } from "../messages/en";
@@ -27,20 +29,25 @@ export function MarketingHeader() {
   ) as Messages["header"]["productLinks"];
 
   const [productOpen, setProductOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
   const [scrolled, setScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setProductOpen(false);
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   React.useEffect(() => {
     const sentinel = document.getElementById("header-scroll-sentinel");
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setProductOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-
     if (!sentinel) {
-      return () => window.removeEventListener("keydown", onKeyDown);
+      return;
     }
 
     const observer = new IntersectionObserver(
@@ -56,7 +63,6 @@ export function MarketingHeader() {
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("keydown", onKeyDown);
     };
   }, []);
 
@@ -150,6 +156,61 @@ export function MarketingHeader() {
             size="sm"
             href={`${env.webAppUrl}/sign-up`}
             className="header-action-link"
+          >
+            {t("tryFree")}
+            <ArrowUpRight className="size-3.5" />
+          </MarketingButton>
+          <button
+            type="button"
+            className="mobile-menu-toggle"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-menu"
+            aria-label={mobileOpen ? t("closeMenu") : t("openMenu")}
+            onClick={() => setMobileOpen((open) => !open)}
+          >
+            {mobileOpen ? (
+              <X className="size-5" aria-hidden="true" />
+            ) : (
+              <Menu className="size-5" aria-hidden="true" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="mobile-menu"
+        role="dialog"
+        aria-modal={mobileOpen ? true : undefined}
+        aria-label={t("menuAria")}
+        className={`mobile-menu ${mobileOpen ? "is-open" : ""}`}
+        hidden={!mobileOpen}
+      >
+        <nav aria-label={t("mobileNavAria")} className="mobile-menu-nav">
+          {navLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="mobile-menu-link"
+              onClick={() => setMobileOpen(false)}
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+        <div className="mobile-menu-actions">
+          <MarketingButton
+            variant="ghost"
+            size="md"
+            href={`${env.webAppUrl}/sign-in`}
+            onClick={() => setMobileOpen(false)}
+          >
+            {t("signIn")}
+          </MarketingButton>
+          <MarketingButton
+            variant="primary"
+            size="md"
+            href={`${env.webAppUrl}/sign-up`}
+            onClick={() => setMobileOpen(false)}
           >
             {t("tryFree")}
             <ArrowUpRight className="size-3.5" />

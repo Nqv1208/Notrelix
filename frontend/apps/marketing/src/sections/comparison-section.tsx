@@ -47,10 +47,10 @@ export function ComparisonSection() {
 
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
           {/* Traditional Card */}
-          <div className="relative rounded-2xl border border-[color-mix(in_srgb,var(--mkt-border)_60%,transparent)] bg-[color-mix(in_srgb,var(--mkt-surface)_60%,transparent)] p-6 sm:p-8 opacity-85 shadow-sm">
+          <div className="relative rounded-2xl border border-[color-mix(in_srgb,var(--mkt-border)_60%,transparent)] bg-[color-mix(in_srgb,var(--mkt-surface)_96%,transparent)] p-6 sm:p-8 shadow-sm">
             <div className="mb-6 flex items-center justify-between border-b border-[color-mix(in_srgb,var(--mkt-border)_40%,transparent)] pb-4">
               <div>
-                <span className="text-xs font-semibold tracking-wider uppercase text-[var(--mkt-text-muted)]">
+                <span className="text-xs font-semibold tracking-wider uppercase text-[var(--mkt-text)]">
                   Traditional Approach
                 </span>
                 <h3 className="mt-1 text-xl font-bold text-[var(--mkt-text-muted)]">
@@ -95,7 +95,7 @@ export function ComparisonSection() {
 
             <div className="mb-6 flex items-center justify-between border-b border-[color-mix(in_srgb,var(--mkt-border)_80%,transparent)] pb-4">
               <div>
-                <span className="text-xs font-semibold tracking-wider uppercase text-[var(--mkt-brand-blue-600)] dark:text-[var(--mkt-brand-blue-400)]">
+                <span className="text-xs font-semibold tracking-wider uppercase text-[var(--mkt-brand-blue-700)] dark:text-[var(--mkt-brand-blue-400)]">
                   Unified Work OS
                 </span>
                 <h3 className="mt-1 text-xl font-bold text-[var(--mkt-text)]">
