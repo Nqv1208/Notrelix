@@ -28,7 +28,7 @@
     <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="MassTransit" Version="8.3.6" />
+    <PackageVersion Include="MassTransit" Version="9.2.0" />
     <PackageVersion Include="MassTransit.RabbitMQ" Version="8.3.6" />
     <!-- Production: API -->
     <PackageVersion Include="Asp.Versioning.Mvc" Version="8.1.1" />
