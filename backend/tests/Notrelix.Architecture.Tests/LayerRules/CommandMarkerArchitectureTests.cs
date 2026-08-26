@@ -104,9 +104,10 @@ public class CommandMarkerArchitectureTests
         ["StartOAuthLoginCommand"] = new("StartOAuthLoginCommand", AllowlistClassification.PublicCommand,
             "Non-mutating command: generates crypto + stores OAuth state in Redis, no DB mutation",
             "Keep as-is; read-only command does not need transactional behavior"),
-        ["StartOAuthLinkCommand"] = new("StartOAuthLinkCommand", AllowlistClassification.MigrationPending,
-            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
-            "Implement the bounded feature with IWriteRequest when product work resumes"),
+        ["StartOAuthLinkCommand"] = new("StartOAuthLinkCommand", AllowlistClassification.Intentional,
+            "OAuth link initialization is a non-relational orchestration command; it generates authorization state "
+            + "and stores short-lived OAuth state, but does not mutate application relational aggregates.",
+            "Keep as-is; IWriteRequest is not required."),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingWorkspaceRequest = new()
