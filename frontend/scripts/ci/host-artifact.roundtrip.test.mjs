@@ -10,6 +10,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -19,9 +20,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const scriptDir = new URL(".", import.meta.url).pathname;
-const work = join(tmpdir(), `host-artifact-rt-${process.pid}-${Date.now()}`);
-rmSync(work, { recursive: true, force: true });
-mkdirSync(work, { recursive: true });
+// mkdtempSync creates an unpredictably-named directory (CodeQL
+// js/insecure-temporary-file); hand-rolled pid/time names are not.
+const work = mkdtempSync(join(tmpdir(), "host-artifact-rt-"));
 
 // pnpm/Next standalone-shaped fixture: app resolves @swc/helpers through
 // relative symlink chains into a content-addressed store.
