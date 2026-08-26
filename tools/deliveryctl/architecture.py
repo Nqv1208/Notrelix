@@ -107,6 +107,26 @@ def check(root: Path = ROOT) -> None:
     if "image: ${{ inputs.redis_image }}" not in backend:
         errors.append("backend Redis runtime image must come from resolved input")
 
+    # Startup-critical smoke environment: dropping any of these silently breaks
+    # the backend container at Production startup validation (observed with
+    # Cors:AllowedOrigins and Frontend:AppBaseUrl). Keep this list in sync with
+    # the backend options validators.
+    container_text = (workflows / "container-ci.yml").read_text(encoding="utf-8")
+    for required_env in (
+        "Cors__AllowedOrigins__0=",
+        "Frontend__AppBaseUrl=",
+        "Rls__Enabled=true",
+        "Rls__SetSessionContext=true",
+        "DataProtection__PersistKeys=true",
+        "DataProtection__KeysPath=",
+        "Messaging__Transport=RabbitMQ",
+        "ConnectionStrings__NotrelixDb=",
+        "ConnectionStrings__Redis=",
+        "JwtSettings__SecretKey=",
+    ):
+        if required_env not in container_text:
+            errors.append(f"backend runtime smoke lost startup-critical env: {required_env.rstrip('=')}")
+
     docs = (workflows / "docs-ci.yml").read_text(encoding="utf-8")
     if "make docs-check" not in docs:
         errors.append("docs provider must execute repository documentation governance")

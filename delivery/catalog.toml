@@ -27,7 +27,7 @@ smoke_dependency_locks = { postgres = "postgres", redis = "redis", rabbitmq = "r
 
 [components.web]
 provider = "frontend-host"
-roots = ["frontend/apps/web/**"]
+roots = ["frontend/apps/web/**", "frontend/e2e/production/**"]
 workspace = "@notrelix/app-web"
 deployable = true
 security_domain = "frontend"
@@ -54,7 +54,7 @@ build_arg_locks = { NODE_BASE_IMAGE = "node-build", NGINX_BASE_IMAGE = "nginx-bu
 
 [components.marketing]
 provider = "frontend-host"
-roots = ["frontend/apps/marketing/**"]
+roots = ["frontend/apps/marketing/**", "frontend/e2e/marketing/**"]
 workspace = "@notrelix/app-marketing"
 deployable = true
 security_domain = "frontend"

@@ -20,14 +20,14 @@ release_candidate_mode = "complete-deployable-set"
 
 [[change_rules]]
 id = "docs"
-patterns = ["docs/**", "backend/docs/**", "frontend/docs/**", "**/*.md"]
+patterns = ["docs/**", "backend/docs/**", "frontend/docs/**", "**/*.md", "*.md"]
 exclusive = true
 planes = ["docs"]
 release = false
 
 [[change_rules]]
 id = "delivery-platform"
-patterns = [".github/workflows/**", ".github/actions/**", ".github/CODEOWNERS", "tools/deliveryctl/**", "delivery/**"]
+patterns = [".github/workflows/**", ".github/actions/**", ".github/CODEOWNERS", ".github/dependabot.yml", ".github/*.yml", "tools/**", "scripts/ci/**", "delivery/**", "Makefile", ".python-version", ".node-version"]
 exclusive = true
 full_ci = true
 release = false
@@ -100,6 +100,18 @@ release = true
 id = "ui-foundation"
 patterns = ["frontend/packages/ui/**", "frontend/packages/foundation/design-system/**", "frontend/tooling/storybook/**", "frontend/e2e/ui/**"]
 capabilities = ["ui", "web-tests"]
+
+[[change_rules]]
+id = "web-production-e2e"
+patterns = ["frontend/e2e/production/**"]
+components = ["web"]
+capabilities = ["web-tests"]
+
+[[change_rules]]
+id = "web-mock-e2e"
+patterns = ["frontend/e2e/mock/**"]
+components = ["web"]
+capabilities = ["mock", "web-tests"]
 
 [[change_rules]]
 id = "mock-system"

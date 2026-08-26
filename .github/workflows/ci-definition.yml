@@ -22,6 +22,10 @@ jobs:
       - run: |
           node --check frontend/scripts/ci/package-host-artifact.mjs
           node --check frontend/scripts/ci/restore-host-artifact.mjs
+      - name: Execution primitive contracts
+        run: |
+          node .github/actions/emit-evidence/contract.test.mjs
+          node frontend/scripts/ci/host-artifact.roundtrip.test.mjs
       - name: actionlint
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo \

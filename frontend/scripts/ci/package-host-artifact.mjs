@@ -37,11 +37,10 @@ for (const item of paths) {
 }
 mkdirSync(dirname(output), { recursive: true });
 mkdirSync(dirname(manifestPath), { recursive: true });
-const tar = spawnSync(
-  "tar",
-  ["--dereference", "-czf", output, "--", ...paths],
-  { cwd: root, stdio: "inherit" },
-);
+const tar = spawnSync("tar", ["-czf", output, "--", ...paths], {
+  cwd: root,
+  stdio: "inherit",
+});
 if (tar.status !== 0) process.exit(tar.status ?? 1);
 const sha256 = createHash("sha256").update(readFileSync(output)).digest("hex");
 const manifest = {

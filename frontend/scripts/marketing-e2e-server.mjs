@@ -43,8 +43,10 @@ function serve() {
     cwd: appDir,
     env: {
       ...process.env,
-      PORT: process.env.PORT ?? "3100",
-      HOSTNAME: process.env.HOSTNAME ?? "127.0.0.1",
+      PORT: process.env.MARKETING_E2E_PORT ?? "3100",
+      // Docker containers always set ambient HOSTNAME=<container-id>; the
+      // E2E bind address must be deterministic loopback instead.
+      HOSTNAME: process.env.MARKETING_E2E_HOST ?? "127.0.0.1",
     },
   });
   server.on("exit", (code) => process.exit(code ?? 0));

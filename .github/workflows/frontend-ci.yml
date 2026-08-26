@@ -162,7 +162,13 @@ jobs:
         run: pnpm run "$E2E_SCRIPT"
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with: {name: 'host-e2e-${{ matrix.component_id }}', path: 'frontend/playwright-report*\nfrontend/test-results', if-no-files-found: ignore, retention-days: 7}
+        with:
+          name: host-e2e-${{ matrix.component_id }}
+          path: |
+            frontend/playwright-report*
+            frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
   mobile-build:
     if: inputs.mobile_count > 0
     needs: affected-static

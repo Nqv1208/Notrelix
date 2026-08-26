@@ -13,7 +13,9 @@ def load_authorities(root:Path=ROOT):
     d=root/'delivery'; return {k:load_toml(d/f) for k,f in {
       'catalog':'catalog.toml','policy':'policy.toml','environments':'environments.toml','images':'images.lock.toml'}.items()}
 def normalize_path(p:str)->str:
-    p=p.replace('\\','/').lstrip('./')
+    p=p.replace('\\','/')
+    # Strip only literal './' prefixes; never consume dotfiles like '.github/…'.
+    while p.startswith('./'): p=p[2:]
     while '//' in p:p=p.replace('//','/')
     return p
 def matches(path:str,pattern:str)->bool:
