@@ -4,50 +4,50 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Production: Application -->
-    <PackageVersion Include="MediatR" Version="14.0.0" />
+    <PackageVersion Include="MediatR" Version="14.2.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageVersion Include="AutoMapper" Version="16.1.1" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageVersion Include="AutoMapper" Version="16.2.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
     <!-- Production: Infrastructure -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0" />
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.19" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageVersion Include="EFCore.NamingConventions" Version="9.0.0" />
-    <PackageVersion Include="Resend" Version="0.4.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.0" />
-    <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageVersion Include="Resend" Version="0.13.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.19" />
+    <PackageVersion Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.0" />
-    <PackageVersion Include="StackExchange.Redis" Version="2.10.14" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.19" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.13.17" />
     <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="MassTransit" Version="8.3.6" />
-    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.3.6" />
+    <PackageVersion Include="MassTransit" Version="8.5.10" />
+    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.10" />
     <!-- Production: API -->
     <PackageVersion Include="Asp.Versioning.Mvc" Version="8.1.1" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="7.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.19" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="7.3.2" />
     <!-- Test: common -->
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
-    <PackageVersion Include="FluentAssertions" Version="8.8.0" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.0" />
+    <PackageVersion Include="FluentAssertions" Version="8.10.0" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <!-- Source-analysis gates (FZ-IDEM-05 endpoint contract, FZ-APP-04 invocation gate) -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
     <!-- Test: integration/infra -->
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
-    <PackageVersion Include="Testcontainers" Version="4.13.0" />
-    <PackageVersion Include="Testcontainers.PostgreSQL" Version="4.13.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.19" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.19" />
+    <PackageVersion Include="Testcontainers" Version="4.14.0" />
+    <PackageVersion Include="Testcontainers.PostgreSQL" Version="4.14.0" />
     <PackageVersion Include="SSH.NET" Version="2026.0.0" />
     <!-- Optional mocking framework (available but not forced) -->
     <PackageVersion Include="NSubstitute" Version="5.1.0" />
