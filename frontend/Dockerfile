@@ -24,6 +24,14 @@ COPY --from=pruner /repo/frontend/out/full/ ./
 RUN pnpm --filter @notrelix/app-web build
 
 FROM ${NGINX_BASE_IMAGE} AS production
+# Explicit, version-pinned remediation for CVE-2026-14456 (HIGH): the locked
+# nginx:alpine digest still ships libcrypto3/libssl3 3.5.7-r0 while the alpine
+# v3.24 repository already publishes the fixed 3.5.8-r0 and no upstream image
+# rebuild exists yet. Exact-version pinning keeps builds reproducible; remove
+# this layer once the base-image lock advances past the fixed revision.
+RUN apk add --no-cache \
+    libcrypto3=3.5.8-r0 \
+    libssl3=3.5.8-r0
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.
