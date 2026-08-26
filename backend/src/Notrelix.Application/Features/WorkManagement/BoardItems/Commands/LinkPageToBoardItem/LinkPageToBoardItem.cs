@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem;
 
 [IdempotencyOperation("work-management.board-items.link-page-to-board-item.v1")]
-public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
@@ -15,18 +15,18 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
-    private readonly IResourceReferenceResolver _resourceResolver;
+    private readonly IResourceLocator _resourceLocator;
 
     public LinkPageToBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider timeProvider,
-        IResourceReferenceResolver resourceResolver)
+        IResourceLocator resourceLocator)
     {
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
-        _resourceResolver = resourceResolver;
+        _resourceLocator = resourceLocator;
     }
 
     public async Task<Result> Handle(LinkPageToBoardItemCommand request, CancellationToken cancellationToken)
@@ -37,11 +37,14 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         if (card == null)
             throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var pageWorkspaceId = await _resourceResolver.GetWorkspaceIdAsync(request.PageId, ResourceTypes.Page, cancellationToken);
-        if (!pageWorkspaceId.HasValue)
+        var page = await _resourceLocator.LocateAsync(
+            ResourceRef.Create(ResourceKind.Create("documents.page"), request.PageId),
+            _requestContext.UserId,
+            cancellationToken);
+        if (page is null)
             throw new NotFoundException(nameof(Page), request.PageId);
 
-        if (card.WorkspaceId != pageWorkspaceId.Value)
+        if (card.WorkspaceId != page.WorkspaceId)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
 
         var now = _timeProvider.UtcNow;

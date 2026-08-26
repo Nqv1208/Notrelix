@@ -3,7 +3,7 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
-public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public static CreateCommentCommand ForBoardItem(Guid boardItemId, string contentMd, Guid? parentCommentId)
         => new(ResourceKind.Create(BoardItemKind), boardItemId, contentMd, parentCommentId);
@@ -21,22 +21,19 @@ public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, s
 public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand, Result<Guid>>
 {
     private readonly ICollaborationDbContext _context;
-    private readonly IResourceReferenceResolver _resourceResolver;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateCommentCommandHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public CreateCommentCommandHandler(ICollaborationDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _resourceResolver = resourceResolver;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken ct)
     {
-        var workspaceId = await _resourceResolver.GetWorkspaceIdAsync(request.ResourceId, request.ResourceKind.ToString(), ct)
-            ?? throw new NotFoundException(request.ResourceKind.ToString(), request.ResourceId);
+        var workspaceId = _requestContext.RequireWorkspaceId();
 
         var target = ResourceRef.Create(request.ResourceKind, request.ResourceId, workspaceId);
         var now = _dateTimeProvider.UtcNow;

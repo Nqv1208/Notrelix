@@ -18,7 +18,7 @@ public sealed record CreateApiTokenCommand(
     DateTimeOffset? ExpiresAt,
     string StepUpToken)
     : ICommand<Result<CreatedApiTokenDto>>,
-      ITransactionalRequest,
+      IWriteRequest,
       IWorkspaceRequest,
       IAuthenticatedRequest,
       IRequirePermission

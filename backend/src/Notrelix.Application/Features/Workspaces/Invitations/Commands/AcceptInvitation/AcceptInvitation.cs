@@ -13,7 +13,7 @@ public record AcceptInvitationCommand(string Token)
     : ICommand<Result<AcceptInvitationResultDto>>,
       IAuthenticatedTokenScopedRequest,
       IRequireVerifiedEmail,
-      ITransactionalRequest
+      IWriteRequest
 {
     TokenPurpose ITokenScopedRequest.TokenPurpose =>
         TokenPurpose.WorkspaceInvitation;

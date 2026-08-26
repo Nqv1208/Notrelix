@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineI
 
 public record DeclineInvitationCommand(
     Guid InvitationId
-) : ICommand<Result>, ITransactionalRequest, IAuthenticatedRequest, IGlobalRequest
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IGlobalRequest
 {
 }
 

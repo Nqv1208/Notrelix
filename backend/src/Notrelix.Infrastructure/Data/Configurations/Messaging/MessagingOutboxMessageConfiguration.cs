@@ -14,6 +14,7 @@ public sealed class MessagingOutboxMessageConfiguration : IEntityTypeConfigurati
         builder.HasIndex(x => x.EventId).IsUnique();
 
         builder.Property(x => x.SourceEventId);
+        builder.Property(x => x.AccountId);
         builder.Property(x => x.SourceContext).IsRequired().HasMaxLength(80);
         builder.Property(x => x.MessageName).IsRequired().HasMaxLength(240);
         builder.Property(x => x.SchemaVersion).IsRequired().HasDefaultValue(1);
@@ -24,6 +25,8 @@ public sealed class MessagingOutboxMessageConfiguration : IEntityTypeConfigurati
         builder.Property(x => x.CorrelationId).HasMaxLength(100);
         builder.Property(x => x.CausationId).HasMaxLength(100);
         builder.Property(x => x.PartitionKey).HasMaxLength(240);
+        builder.Property(x => x.ResourceKind).HasMaxLength(160);
+        builder.Property(x => x.StreamKey).HasMaxLength(320);
         builder.Property(x => x.PayloadJson).HasColumnType("jsonb").HasConversion<string>().IsRequired();
         builder.Property(x => x.HeadersJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.MetadataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
@@ -53,5 +56,10 @@ public sealed class MessagingOutboxMessageConfiguration : IEntityTypeConfigurati
         builder.HasIndex(x => new { x.PartitionKey, x.CreatedAt })
             .HasFilter("\"partition_key\" IS NOT NULL")
             .IsDescending(false, true);
+        builder.HasIndex(x => new { x.StreamKey, x.StreamVersion })
+            .IsUnique()
+            .HasFilter("\"stream_key\" IS NOT NULL AND \"stream_version\" IS NOT NULL");
+        builder.HasIndex(x => new { x.StreamKey, x.StreamVersion, x.Status })
+            .HasFilter("\"stream_key\" IS NOT NULL");
     }
 }

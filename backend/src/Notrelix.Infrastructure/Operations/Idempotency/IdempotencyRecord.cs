@@ -3,7 +3,7 @@ namespace Notrelix.Infrastructure.Operations.Idempotency;
 /// <summary>
 /// Durable idempotency record. Stores SHA-256 key hash, not the raw client key.
 /// Unique constraint: Scope + Operation + KeyHash.
-/// States: Processing | Completed. No lease model — same-transaction semantics.
+/// States: Started | Completed. No lease model — same-transaction semantics.
 /// </summary>
 public sealed class IdempotencyRecord
 {
@@ -25,7 +25,7 @@ public sealed class IdempotencyRecord
 
     private IdempotencyRecord() { }
 
-    public static IdempotencyRecord CreateProcessing(
+    public static IdempotencyRecord CreateStarted(
         string scope,
         string operation,
         string keyHash,
@@ -40,7 +40,7 @@ public sealed class IdempotencyRecord
             Operation = operation,
             KeyHash = keyHash,
             RequestHash = requestHash,
-            State = "Processing",
+            State = "Started",
             CreatedAt = createdAt,
             ExpiresAt = expiresAt,
         };

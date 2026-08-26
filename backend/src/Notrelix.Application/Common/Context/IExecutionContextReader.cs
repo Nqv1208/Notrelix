@@ -2,6 +2,7 @@ namespace Notrelix.Application.Common.Context;
 
 public interface IExecutionContextReader
 {
+    ExecutionContextSnapshot? Snapshot => null;
     Guid? UserId { get; }
     string? Email { get; }
     string? Name { get; }

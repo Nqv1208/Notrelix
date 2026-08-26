@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Identity.ApiTokens.Queries.ListApiTokens
 /// it exists exactly once at issuance and cannot be recovered from the digest.
 /// </summary>
 public sealed record ListApiTokensQuery(Guid WorkspaceId)
-    : IQuery<Result<IReadOnlyList<ApiTokenSummaryDto>>>, IWorkspaceRequest, IAuthenticatedRequest, IRequirePermission
+    : IQuery<Result<IReadOnlyList<ApiTokenSummaryDto>>>, IReadRequest, IWorkspaceRequest, IAuthenticatedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
     public ResourceRef? Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

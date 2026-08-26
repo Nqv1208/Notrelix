@@ -8,7 +8,7 @@ public record CreateBoardRelationCommand(
     Guid SourceBoardId,
     Guid TargetBoardId,
     string RelationType)
-    : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), SourceBoardId);

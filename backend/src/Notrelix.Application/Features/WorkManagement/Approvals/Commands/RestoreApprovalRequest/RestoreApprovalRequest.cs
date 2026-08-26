@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.Restor
 [IdempotencyOperation("work-management.approvals.restore-approval-request.v1")]
 public record RestoreApprovalRequestCommand(
     Guid RequestId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.approval-request"), RequestId);

@@ -1239,6 +1239,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("idx_automation_executions_status");
 
+                    b.HasIndex("RuleId", "TriggerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_automation_executions_rule_trigger")
+                        .HasFilter("trigger_id IS NOT NULL");
+
                     b.ToTable("automation_executions", "automation");
                 });
 
@@ -8690,6 +8695,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
                     b.Property<Guid?>("ActorUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("actor_user_id");
@@ -8808,6 +8817,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at");
 
+                    b.Property<Guid?>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceKind")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("resource_kind");
+
                     b.Property<int>("RetryCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -8837,6 +8855,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(40)")
                         .HasDefaultValue("Pending")
                         .HasColumnName("status");
+
+                    b.Property<string>("StreamKey")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("stream_key");
+
+                    b.Property<long?>("StreamVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("stream_version");
 
                     b.Property<Guid?>("SubjectId")
                         .HasColumnType("uuid")
@@ -8871,6 +8898,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_outbox_messages_partition_key_created_at")
                         .HasFilter("\"partition_key\" IS NOT NULL");
 
+                    b.HasIndex("StreamKey", "StreamVersion")
+                        .IsUnique()
+                        .HasDatabaseName("ix_outbox_messages_stream_key_stream_version")
+                        .HasFilter("\"stream_key\" IS NOT NULL AND \"stream_version\" IS NOT NULL");
+
                     b.HasIndex("WorkspaceId", "CreatedAt")
                         .IsDescending(false, true)
                         .HasDatabaseName("ix_outbox_messages_workspace_id_created_at")
@@ -8887,6 +8919,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("Status", "NextAttemptAt", "CreatedAt")
                         .HasDatabaseName("ix_outbox_messages_status_next_attempt_at_created_at")
                         .HasFilter("\"status\" IN ('Pending', 'Failed')");
+
+                    b.HasIndex("StreamKey", "StreamVersion", "Status")
+                        .HasDatabaseName("ix_outbox_messages_stream_key_stream_version_status")
+                        .HasFilter("\"stream_key\" IS NOT NULL");
 
                     b.HasIndex("SubjectType", "SubjectId", "CreatedAt")
                         .IsDescending(false, false, true)
@@ -10533,9 +10569,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.ToTable("idempotency_records", "ops", t =>
                         {
-                            t.HasCheckConstraint("ck_idempotency_records_completed_result", "(\n  state = 'Processing'\n  AND result_json IS NULL\n  AND result_contract IS NULL\n  AND completed_at IS NULL\n)\nOR\n(\n  state = 'Completed'\n  AND result_json IS NOT NULL\n  AND result_contract IS NOT NULL\n  AND completed_at IS NOT NULL\n)");
+                            t.HasCheckConstraint("ck_idempotency_records_completed_result", "(\n  state = 'Started'\n  AND result_json IS NULL\n  AND result_contract IS NULL\n  AND completed_at IS NULL\n)\nOR\n(\n  state = 'Completed'\n  AND result_json IS NOT NULL\n  AND result_contract IS NOT NULL\n  AND completed_at IS NOT NULL\n)");
 
-                            t.HasCheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
+                            t.HasCheckConstraint("ck_idempotency_records_state", "state IN ('Started', 'Completed')");
                         });
                 });
 

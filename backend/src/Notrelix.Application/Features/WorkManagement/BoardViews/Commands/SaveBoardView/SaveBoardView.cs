@@ -8,11 +8,10 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveB
 public record SaveBoardViewCommand(
     Guid BoardId,
     ViewMode ViewMode,
-    string? Filters) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    string? Filters) : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
-    public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 
 public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand, Result>
@@ -20,15 +19,21 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IRealtimeChangeMapper<SaveBoardViewCommand, Result>? _realtime;
+    private readonly IIntegrationEventCollector? _events;
 
     public SaveBoardViewCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IRealtimeChangeMapper<SaveBoardViewCommand, Result>? realtime = null,
+        IIntegrationEventCollector? events = null)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _realtime = realtime;
+        _events = events;
     }
 
     private static ViewType MapViewModeToViewType(ViewMode viewMode) => viewMode switch
@@ -72,6 +77,16 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
             _context.BoardViews.Add(view);
         }
 
-        return Result.Success();
+        var response = Result.Success();
+        if (_realtime is not null && _events is not null)
+            _events.Add(_realtime.Map(request, response, view.Version));
+        return response;
     }
+}
+
+public sealed class SaveBoardViewRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
+    : RealtimeChangeMapper<SaveBoardViewCommand, Result>(context, time)
+{
+    public override RealtimeResourceChangedV1 Map(SaveBoardViewCommand request, Result response, long streamVersion) =>
+        Create("board", "Board", request.BoardId, "SaveBoardView", response, streamVersion);
 }

@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
-public record RefreshTokenCommand : ICommand<Result<AuthResult>>, ITransactionalRequest, IGlobalRequest, IAnonymousRequest
+public record RefreshTokenCommand : ICommand<Result<AuthResult>>, IWriteRequest, IGlobalRequest, IAnonymousRequest
 {
     public required string RefreshToken { get; init; }
 }

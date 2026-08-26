@@ -6,7 +6,7 @@ using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups;
 
 [IdempotencyOperation("work-management.board-groups.reorder-board-groups.v1")]
-public record ReorderBoardGroupsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record ReorderBoardGroupsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

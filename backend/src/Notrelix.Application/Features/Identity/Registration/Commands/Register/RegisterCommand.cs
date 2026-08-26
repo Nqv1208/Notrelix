@@ -7,7 +7,7 @@ public sealed record RegisterCommand
     : ICommand<Result<AuthResult>>,
       IAnonymousRequest,
       IGlobalRequest,
-      ITransactionalRequest
+      IWriteRequest
 {
     public required string Email { get; init; }
     public required string Password { get; init; }

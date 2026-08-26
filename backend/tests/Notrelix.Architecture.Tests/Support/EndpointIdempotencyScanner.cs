@@ -133,6 +133,26 @@ internal static class EndpointIdempotencyScanner
             }
         }
 
+        // `record with { ... }` reuses the incoming command parameter instead of
+        // an object creation — resolve the parameter's declared type.
+        foreach (var withExpression in scope.DescendantNodes().OfType<WithExpressionSyntax>())
+        {
+            if (withExpression.Expression is not IdentifierNameSyntax baseIdentifier)
+            {
+                continue;
+            }
+
+            var enclosing = withExpression.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault();
+            var parameterType = enclosing?.ParameterList.Parameters
+                .FirstOrDefault(p => p.Identifier.ValueText == baseIdentifier.Identifier.ValueText)
+                ?.Type?.ToString();
+
+            if (parameterType is not null && idempotentTypeNames.Contains(parameterType))
+            {
+                sink.Add(parameterType);
+            }
+        }
+
         foreach (var callee in EnumerateCalleeCandidates(scope))
         {
             if (!visitedMethods.Add(callee))

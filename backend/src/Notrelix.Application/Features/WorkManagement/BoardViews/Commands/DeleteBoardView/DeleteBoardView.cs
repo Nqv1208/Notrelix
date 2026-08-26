@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.Delet
 
 [IdempotencyOperation("work-management.board-views.delete-board-view.v1")]
 public record DeleteBoardViewCommand(Guid BoardId, Guid ViewId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);

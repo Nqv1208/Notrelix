@@ -22,10 +22,15 @@ public sealed class MessagingOutboxMessage
     public string? AggregateType { get; private set; }
     public Guid? AggregateId { get; private set; }
     public Guid? WorkspaceId { get; private set; }
+    public Guid? AccountId { get; private set; }
     public Guid? ActorUserId { get; private set; }
     public string? CorrelationId { get; private set; }
     public string? CausationId { get; private set; }
     public string? PartitionKey { get; private set; }
+    public string? ResourceKind { get; private set; }
+    public Guid? ResourceId { get; private set; }
+    public string? StreamKey { get; private set; }
+    public long? StreamVersion { get; private set; }
     public JsonDocument PayloadJson { get; private set; } = null!;
     public JsonDocument HeadersJson { get; private set; } = JsonDocument.Parse("{}");
     public JsonDocument MetadataJson { get; private set; } = JsonDocument.Parse("{}");
@@ -58,6 +63,7 @@ public sealed class MessagingOutboxMessage
         string? aggregateType,
         Guid? aggregateId,
         Guid? workspaceId,
+        Guid? accountId,
         Guid? actorUserId,
         string? correlationId,
         string? causationId,
@@ -80,6 +86,7 @@ public sealed class MessagingOutboxMessage
         AggregateType = aggregateType;
         AggregateId = aggregateId;
         WorkspaceId = workspaceId;
+        AccountId = accountId;
         ActorUserId = actorUserId;
         CorrelationId = correlationId;
         CausationId = causationId;
@@ -102,7 +109,11 @@ public sealed class MessagingOutboxMessage
 
     public void MarkDeadLetter(string errorCode, string errorMessage, DateTimeOffset now)
     {
-        Status = "DeadLetter";
+        // Dead-letter is not a separate status: the terminal state is
+        // Status = 'Failed' with an exhausted retry budget. The dispatcher claim
+        // guard (retry_count < max_retries) makes such rows permanently unclaimable.
+        Status = "Failed";
+        RetryCount = Math.Max(RetryCount, MaxRetries);
         LastErrorCode = errorCode;
         ErrorMessage = errorMessage;
         UpdatedAt = now;
@@ -119,20 +130,17 @@ public sealed class MessagingOutboxMessage
     public void MarkFailed(string errorCode, string errorMessage, DateTimeOffset now)
     {
         RetryCount++;
+        Status = "Failed";
         LastErrorCode = errorCode;
         ErrorMessage = errorMessage;
         UpdatedAt = now;
 
-        if (RetryCount >= MaxRetries)
-        {
-            Status = "DeadLetter";
-        }
-        else
-        {
-            Status = "Failed";
-            NextAttemptAt = now.AddSeconds(
-                Math.Min(Math.Pow(2, RetryCount), 60));
-        }
+        // Once the retry budget is exhausted the row remains 'Failed' — that is
+        // the durable dead-letter terminal state. The claim guard
+        // (retry_count < max_retries) prevents any further attempts; recovery
+        // operates on these rows directly.
+        NextAttemptAt = now.AddSeconds(
+            Math.Min(Math.Pow(2, RetryCount), 60));
     }
 
     public static MessagingOutboxMessage FromIntegrationEvent(
@@ -141,7 +149,7 @@ public sealed class MessagingOutboxMessage
         DateTimeOffset now)
     {
         var payloadJson = JsonSerializer.SerializeToDocument(integrationEvent, integrationEvent.GetType(), JsonOptions);
-        return new MessagingOutboxMessage(
+        var message = new MessagingOutboxMessage(
             eventId: integrationEvent.EventId,
             sourceEventId: integrationEvent.SourceEventId,
             sourceContext: sourceDomainEvent.GetType().Namespace ?? "Notrelix.Domain",
@@ -153,6 +161,7 @@ public sealed class MessagingOutboxMessage
             aggregateType: null,
             aggregateId: null,
             workspaceId: integrationEvent.WorkspaceId,
+            accountId: integrationEvent.AccountId,
             actorUserId: integrationEvent.ActorUserId,
             correlationId: integrationEvent.CorrelationId.ToString(),
             causationId: integrationEvent.CausationId?.ToString(),
@@ -161,6 +170,8 @@ public sealed class MessagingOutboxMessage
             headersJson: null,
             metadataJson: null,
             createdAt: now);
+        message.ApplyOrderedResource(integrationEvent);
+        return message;
     }
 
     public static MessagingOutboxMessage FromIntegrationEvent(
@@ -168,7 +179,7 @@ public sealed class MessagingOutboxMessage
         DateTimeOffset now)
     {
         var payloadJson = JsonSerializer.SerializeToDocument(integrationEvent, integrationEvent.GetType(), JsonOptions);
-        return new MessagingOutboxMessage(
+        var message = new MessagingOutboxMessage(
             eventId: integrationEvent.EventId,
             sourceEventId: integrationEvent.SourceEventId,
             sourceContext: DeriveSourceContext(integrationEvent),
@@ -180,6 +191,7 @@ public sealed class MessagingOutboxMessage
             aggregateType: OutboxConstants.AggregateTypes.User,
             aggregateId: integrationEvent.ActorUserId,
             workspaceId: integrationEvent.WorkspaceId,
+            accountId: integrationEvent.AccountId,
             actorUserId: integrationEvent.ActorUserId,
             correlationId: integrationEvent.CorrelationId.ToString(),
             causationId: integrationEvent.CausationId?.ToString(),
@@ -188,6 +200,19 @@ public sealed class MessagingOutboxMessage
             headersJson: null,
             metadataJson: null,
             createdAt: now);
+        message.ApplyOrderedResource(integrationEvent);
+        return message;
+    }
+
+    private void ApplyOrderedResource(IIntegrationEvent integrationEvent)
+    {
+        if (integrationEvent is not RealtimeResourceChangedV1 change)
+            return;
+
+        ResourceKind = change.ResourceKind;
+        ResourceId = change.ResourceId;
+        StreamKey = change.StreamKey;
+        StreamVersion = change.StreamVersion;
     }
 
     private static string ResolvePartitionKey(IIntegrationEvent integrationEvent)

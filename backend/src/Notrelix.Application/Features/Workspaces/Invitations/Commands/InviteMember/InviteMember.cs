@@ -9,7 +9,7 @@ public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
     WorkspaceRole Role
-) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
 {
     PermissionAction IRequirePermission.Action => PermissionAction.InviteMember;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

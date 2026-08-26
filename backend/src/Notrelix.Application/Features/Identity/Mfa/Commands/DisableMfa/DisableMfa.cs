@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Identity.Mfa.Commands.DisableMfa;
 
 public sealed record DisableMfaCommand
     : ICommand<Result>,
-      ITransactionalRequest,
+      IWriteRequest,
       IGlobalRequest,
       IAuthenticatedRequest
 {

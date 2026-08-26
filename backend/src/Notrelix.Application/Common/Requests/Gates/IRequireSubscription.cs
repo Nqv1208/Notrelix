@@ -2,7 +2,8 @@ namespace Notrelix.Application.Common.Requests;
 
 /// <summary>
 /// Marker for requests that require an active subscription.
-/// SubscriptionGateBehavior checks subscription status before handler executes.
+/// AccessControlBehavior resolves subscription facts and the policy engine
+/// evaluates this requirement before handler execution.
 /// </summary>
 public interface IRequireSubscription
 {

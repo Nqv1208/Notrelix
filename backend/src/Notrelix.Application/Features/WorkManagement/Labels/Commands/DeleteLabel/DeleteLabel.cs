@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.DeleteLab
 
 [IdempotencyOperation("work-management.labels.delete-label.v1")]
 public record DeleteLabelCommand(Guid LabelId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.label"), LabelId);

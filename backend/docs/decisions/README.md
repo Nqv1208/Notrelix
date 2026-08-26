@@ -16,6 +16,7 @@ evidence:
   - backend/docs/decisions/ADR-003-csrf-protection.md
   - backend/docs/decisions/ADR-004-rate-limiting-architecture.md
   - backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md
+  - backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md
 review_on:
   - backend-adr-added
   - backend-adr-status-change

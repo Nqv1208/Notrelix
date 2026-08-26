@@ -3,7 +3,7 @@ using Notrelix.Application.Features.Automation.Abstractions;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 
-public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnabled) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnabled) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;

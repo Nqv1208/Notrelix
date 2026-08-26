@@ -6,7 +6,7 @@ using Notrelix.Application.Features.Identity.Verification.Abstractions;
 namespace Notrelix.Application.Features.Identity.Verification.Commands.ResendEmailVerification;
 
 public sealed record ResendEmailVerificationCommand(string Email)
-    : ICommand<Result>, IAnonymousRequest, IGlobalRequest, ITransactionalRequest;
+    : ICommand<Result>, IAnonymousRequest, IGlobalRequest, IWriteRequest;
 
 public sealed class ResendEmailVerificationCommandHandler
     : IRequestHandler<ResendEmailVerificationCommand, Result>

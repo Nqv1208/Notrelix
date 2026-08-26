@@ -16,7 +16,7 @@ namespace Notrelix.Architecture.Tests.Freeze;
 public class FreezeResidualBlockerTests : ArchitectureTestBase
 {
     private static readonly Assembly ApplicationAssembly =
-        typeof(Notrelix.Application.Common.Behaviors.ValidationBehavior<,>).Assembly;
+        typeof(Notrelix.Application.Common.Behaviors.RequestContractBehavior<,>).Assembly;
 
     private static readonly Assembly DomainAssembly =
         typeof(Notrelix.Domain.Common.Guard).Assembly;

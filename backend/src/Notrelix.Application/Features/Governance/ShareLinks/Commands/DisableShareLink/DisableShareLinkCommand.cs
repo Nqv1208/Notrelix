@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Governance.Abstractions;
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
 
 public record DisableShareLinkCommand(
-    Guid ShareLinkId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
+    Guid ShareLinkId) : ICommand<Result>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IWriteRequest
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ManageWorkspace;
     ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceKind.Create("governance.share-link"), ShareLinkId);

@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLink;
 
 public sealed record StartOAuthLinkCommand
     : ICommand<Result<OAuthLoginStartResult>>,
-      IAuthenticatedRequest,
+      IAuthenticatedRequest, INoDataRequest,
       IGlobalRequest
 {
     public required OAuthProvider Provider { get; init; }

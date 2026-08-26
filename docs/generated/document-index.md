@@ -30,14 +30,14 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 85
+Document count: 87
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
 | `architecture` | 22 |
-| `architecture-decision` | 10 |
+| `architecture-decision` | 11 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
@@ -46,7 +46,7 @@ Document count: 85
 | `governance` | 5 |
 | `index-router` | 1 |
 | `infrastructure-standard` | 3 |
-| `operations` | 2 |
+| `operations` | 3 |
 | `operations-standard` | 4 |
 | `product-context` | 12 |
 | `product-experience` | 1 |
@@ -59,19 +59,21 @@ Document count: 85
 | Value | Count |
 |:---|---:|
 | `Accepted` | 9 |
-| `active` | 72 |
+| `active` | 73 |
 | `generated` | 3 |
-| `Superseded` | 1 |
+| `Superseded` | 2 |
 
 ## Document inventory
 
 | Document ID | Type | Status | Owner | Applies to | Source |
 |:---|:---|:---|:---|:---|:---|
-| `ADR-001` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline` | [`backend/docs/decisions/ADR-001-pipeline-boundary.md`](../../backend/docs/decisions/ADR-001-pipeline-boundary.md) |
+| `ADR-001` | `architecture-decision` | `Superseded` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline` | [`backend/docs/decisions/ADR-001-pipeline-boundary.md`](../../backend/docs/decisions/ADR-001-pipeline-boundary.md) |
 | `ADR-002` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-security`, `backend-tenancy`, `backend-rls`, `backend-application`, `backend-infrastructure` | [`backend/docs/decisions/ADR-002-rls-bootstrap-connection-lifecycle.md`](../../backend/docs/decisions/ADR-002-rls-bootstrap-connection-lifecycle.md) |
 | `ADR-003` | `architecture-decision` | `Superseded` | `backend-architecture` | `backend`, `backend-api`, `backend-security`, `browser-authentication`, `csrf` | [`backend/docs/decisions/ADR-003-csrf-protection.md`](../../backend/docs/decisions/ADR-003-csrf-protection.md) |
 | `ADR-004` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-api`, `backend-application`, `backend-security`, `rate-limiting`, `abuse-protection` | [`backend/docs/decisions/ADR-004-rate-limiting-architecture.md`](../../backend/docs/decisions/ADR-004-rate-limiting-architecture.md) |
 | `ADR-005` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-api`, `backend-security`, `browser-authentication`, `csrf` | [`backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md`](../../backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md) |
+| `ADR-006` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline` | [`backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md`](../../backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md) |
+| `BE-ACCESS-FACTS-EVIDENCE` | `operations` | `active` | `backend-runtime-operations` | `backend`, `backend-access-control`, `backend-performance` | [`backend/docs/operations/access-facts-query-evidence.md`](../../backend/docs/operations/access-facts-query-evidence.md) |
 | `BE-API-CONTRACTS` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.API`, `backend/tests/Notrelix.API.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/api-and-contracts.md`](../../backend/docs/architecture/api-and-contracts.md) |
 | `BE-APPLICATION-MODEL` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.Application`, `backend/tests/Notrelix.Application.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/application-model.md`](../../backend/docs/architecture/application-model.md) |
 | `BE-BACKEND-OVERVIEW` | `architecture` | `active` | `backend-architecture` | `backend`, `backend-production-projects`, `backend-project-boundaries` | [`backend/docs/architecture/backend-overview.md`](../../backend/docs/architecture/backend-overview.md) |

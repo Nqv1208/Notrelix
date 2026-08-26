@@ -86,8 +86,8 @@ public class IgnoreQueryFiltersArchitectureTests
             "Tenant bootstrap store bypasses EF query filter to resolve workspace before RLS context is set",
             "Keep as InfrastructureBootstrap — store runs before RLS session is established"),
 
-        ["ResourceScopeResolver.cs"] = new("ResourceScopeResolver.cs", AllowlistClassification.InfrastructureBootstrap,
-            "Resource scope resolver bypasses EF query filter to resolve resource tenant context before RLS is set",
+        ["ResourceLocator.cs"] = new("ResourceLocator.cs", AllowlistClassification.InfrastructureBootstrap,
+            "Resource locator bypasses EF query filter to resolve resource tenant context before RLS is set",
             "Keep as InfrastructureBootstrap — resolver runs before RLS session is established"),
         ["EmailTemplateMaterialization.cs"] = new("EmailTemplateMaterialization.cs", AllowlistClassification.Intentional,
             "Email template materialization bypasses EF query filter to resolve templates across tenant boundaries",

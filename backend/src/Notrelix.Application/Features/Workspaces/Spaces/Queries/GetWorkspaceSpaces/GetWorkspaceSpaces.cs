@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Workspaces.Spaces.Queries.GetWorkspaceSp
 
 public record GetWorkspaceSpacesQuery(
     Guid WorkspaceId
-) : IQuery<Result<List<SpaceDto>>>, IWorkspaceRequest, IRequirePermission
+) : IQuery<Result<List<SpaceDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

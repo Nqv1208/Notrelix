@@ -27,7 +27,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateField_WithValidData_ReturnsOk()
     {
-        var body = new { Name = "Updated Field", Type = "Text" };
+        var body = new { Name = "Updated Field", Type = "Text", ExpectedVersion = 1 };
         var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}/fields/{FieldId}")
         {
             Content = JsonContent(body)

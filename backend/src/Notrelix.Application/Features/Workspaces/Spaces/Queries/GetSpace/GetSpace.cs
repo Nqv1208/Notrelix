@@ -16,7 +16,7 @@ public record SpaceDto(
 public record GetSpaceQuery(
     Guid WorkspaceId,
     Guid SpaceId
-) : IQuery<Result<SpaceDto>>, IWorkspaceRequest, IRequirePermission
+) : IQuery<Result<SpaceDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

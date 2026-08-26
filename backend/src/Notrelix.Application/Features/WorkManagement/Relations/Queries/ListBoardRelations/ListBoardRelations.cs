@@ -5,7 +5,7 @@ using Notrelix.Application.Features.WorkManagement.Relations.DTOs;
 namespace Notrelix.Application.Features.WorkManagement.Relations.Queries.ListBoardRelations;
 
 public record ListBoardRelationsQuery(Guid BoardId)
-    : IQuery<Result<List<BoardRelationDto>>>, IResourceScopedRequest, IRequirePermission
+    : IQuery<Result<List<BoardRelationDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

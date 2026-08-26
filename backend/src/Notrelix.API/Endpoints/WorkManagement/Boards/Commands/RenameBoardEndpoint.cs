@@ -8,6 +8,7 @@ public static class RenameBoardEndpoint
     public static IEndpointRouteBuilder MapRenameBoard(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.Rename")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Update board settings");

@@ -2,6 +2,7 @@ using System.Text.Json;
 using Notrelix.Infrastructure.Data;
 
 using Notrelix.Infrastructure.Data.Messaging;
+using Notrelix.Infrastructure.Observability.Metrics;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
 
@@ -9,25 +10,33 @@ internal sealed class OutboxDispatcher : BackgroundService
 {
     private const string DispatcherConsumerName = "OutboxDispatcher";
     private const int BatchSize = 20;
-    private const int PollIntervalMs = 5000;
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(1);
     private const int ProcessingTimeoutSeconds = 60;
     private const int MaxRetries = 5;
     private const int MaxBackoffSeconds = 60;
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<OutboxDispatcher> _logger;
+    private readonly IOutboxWakeSignal _wakeSignal;
+    private readonly MetricsService _metrics;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
+    private DateTimeOffset _lastCountRefresh;
+
     public OutboxDispatcher(
         IServiceScopeFactory scopeFactory,
-        ILogger<OutboxDispatcher> logger)
+        ILogger<OutboxDispatcher> logger,
+        IOutboxWakeSignal wakeSignal,
+        MetricsService metrics)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _wakeSignal = wakeSignal;
+        _metrics = metrics;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -38,7 +47,9 @@ internal sealed class OutboxDispatcher : BackgroundService
         {
             try
             {
-                await ProcessBatchAsync(stoppingToken);
+                while (await ProcessBatchAsync(stoppingToken))
+                {
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -49,15 +60,17 @@ internal sealed class OutboxDispatcher : BackgroundService
                 _logger.LogError(ex, "OutboxDispatcher failed");
             }
 
-            await Task.Delay(PollIntervalMs, stoppingToken);
+            await _wakeSignal.WaitAsync(PollInterval, stoppingToken);
         }
     }
 
-    private async Task ProcessBatchAsync(CancellationToken cancellationToken)
+    private async Task<bool> ProcessBatchAsync(CancellationToken cancellationToken)
     {
+        await RefreshOutboxCountsIfDueAsync(cancellationToken);
+
         // Phase 1: Short claim transaction — select + mark Processing + commit
         var (claimed, lockId) = await ClaimBatchAsync(cancellationToken);
-        if (claimed.Count == 0) return;
+        if (claimed.Count == 0) return false;
 
         // Phase 2: Publish outside database transaction
         await using var scope = _scopeFactory.CreateAsyncScope();
@@ -88,6 +101,44 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         // Phase 3: Short completion transaction — mark Processed/Failed + commit
         await context.SaveChangesAsync(cancellationToken);
+        return claimed.Count == BatchSize;
+    }
+
+    private async Task RefreshOutboxCountsIfDueAsync(CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastCountRefresh < TimeSpan.FromSeconds(30))
+        {
+            return;
+        }
+
+        _lastCountRefresh = now;
+
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            // Dead-letter is the exhausted 'Failed' terminal state, not a status of
+            // its own: retry_count >= max_retries marks rows no dispatcher will claim.
+            var counts = await context.Set<MessagingOutboxMessage>()
+                .GroupBy(m => new { m.Status, Exhausted = m.RetryCount >= m.MaxRetries })
+                .Select(g => new { g.Key.Status, g.Key.Exhausted, Count = g.Count() })
+                .ToListAsync(cancellationToken);
+            var oldestUndispatched = await context.Set<MessagingOutboxMessage>()
+                .Where(m => m.Status == "Pending" || m.Status == "Processing" || m.Status == "Failed")
+                .MinAsync(m => (DateTimeOffset?)m.CreatedAt, cancellationToken);
+
+            _metrics.UpdateOutboxCounts(
+                counts.Where(c => c.Status == "Pending").Sum(c => c.Count),
+                counts.Where(c => c.Status == "Failed").Sum(c => c.Count),
+                counts.Where(c => c.Status == "Failed" && c.Exhausted).Sum(c => c.Count),
+                oldestUndispatched.HasValue ? (now - oldestUndispatched.Value).TotalMilliseconds : null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to refresh outbox gauge counts");
+        }
     }
 
     private async Task<(List<Guid> Ids, Guid LockId)> ClaimBatchAsync(CancellationToken cancellationToken)
@@ -112,7 +163,17 @@ internal sealed class OutboxDispatcher : BackgroundService
                         OR
                         (status = 'Processing' AND processing_started_at <= {1})
                         OR
-                        (status = 'Failed' AND next_attempt_at <= {0})
+                        (status = 'Failed' AND retry_count < max_retries AND next_attempt_at <= {0})
+                    )
+                    AND (
+                        stream_key IS NULL
+                        OR NOT EXISTS (
+                            SELECT 1
+                            FROM messaging.outbox_messages earlier
+                            WHERE earlier.stream_key = outbox_messages.stream_key
+                              AND earlier.stream_version < outbox_messages.stream_version
+                              AND earlier.status <> 'Processed'
+                        )
                     )
                     ORDER BY created_at
                     LIMIT {2}
@@ -133,6 +194,11 @@ internal sealed class OutboxDispatcher : BackgroundService
 
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+
+            foreach (var message in messages)
+            {
+                _metrics.CommitToClaim.Record((now - message.CreatedAt).TotalMilliseconds);
+            }
 
             _logger.LogDebug("Claimed {Count} outbox messages for dispatch (lock={LockId})", messages.Count, lockId);
             return (messages.Select(m => m.Id).ToList(), lockId);
@@ -210,7 +276,14 @@ internal sealed class OutboxDispatcher : BackgroundService
             }
 
             // Publish OUTSIDE database transaction — broker latency does not hold DB locks
+            var publishStopwatch = System.Diagnostics.Stopwatch.StartNew();
             await integrationEventBus.PublishAsync(integrationEvent, cancellationToken);
+            publishStopwatch.Stop();
+
+            var publishedAt = dateTimeProvider.UtcNow;
+            _metrics.OutboxPublishDuration.Record(publishStopwatch.Elapsed.TotalMilliseconds);
+            _metrics.CommitToPublish.Record((publishedAt - message.CreatedAt).TotalMilliseconds);
+            _metrics.OutboxDispatchedCount.Add(1);
 
             message.MarkProcessed(now);
             attempt.MarkSucceeded(now);
@@ -231,6 +304,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         {
             _logger.LogError(ex, "V5 outbox {MsgId}: {MsgName} failed (attempt {Retry})",
                 message.Id, message.MessageName, message.RetryCount + 1);
+            _metrics.PublishFailures.Add(1);
             FailMessage(message, attempt, "DispatchFailed", ex.ToString(), dateTimeProvider);
         }
     }

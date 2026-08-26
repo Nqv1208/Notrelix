@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Notrelix.Application.Common.Diagnostics;
 
 namespace Notrelix.Application.Common.Behaviors;
 
@@ -14,6 +15,7 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     private readonly IIdempotencyExecutionContext _executionContext;
     private readonly IIdempotencyExecutionContextWriter _executionContextWriter;
     private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
+    private readonly PipelineMetrics _metrics;
 
     public IdempotencyBehavior(
         IIdempotencyStore idempotencyStore,
@@ -22,8 +24,10 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         IdempotencyPartitionFactory partitionFactory,
         IIdempotencyExecutionContext executionContext,
         IIdempotencyExecutionContextWriter executionContextWriter,
-        ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
+        ILogger<IdempotencyBehavior<TRequest, TResponse>> logger,
+        PipelineMetrics metrics)
     {
+        _metrics = metrics;
         _idempotencyStore = idempotencyStore;
         _fingerprint = fingerprint;
         _replayPolicy = replayPolicy;
@@ -36,7 +40,15 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         if (request is not IIdempotentRequest idempotentRequest)
-            return await next();
+        {
+            // Non-idempotent requests still execute the handler inside this
+            // innermost behavior — handler.execute ownership lives HERE.
+            using (PipelineActivitySource.Instance.StartActivity("handler.execute"))
+            {
+                _metrics.HandlerExecutions.Add(1);
+                return await next();
+            }
+        }
 
         // 1. Response-type eligibility fails before Begin — no row is created for
         //    sensitive response types (e.g. token/auth responses).
@@ -46,15 +58,23 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         var identity = BuildIdentity(idempotentRequest);
 
         // 3. Begin.
-        var beginResult = await _idempotencyStore.BeginAsync(identity, cancellationToken);
+        IdempotencyBeginResult beginResult;
+        using (PipelineActivitySource.Instance.StartActivity("idempotency.acquire"))
+        {
+            beginResult = await _idempotencyStore.BeginAsync(identity, cancellationToken);
+        }
 
         // 4. Replay/mismatch handling.
         switch (beginResult.Status)
         {
             case IdempotencyBeginStatus.Completed:
                 _logger.LogDebug("Idempotency replay for {Operation} scope={Scope}", identity.Operation, identity.Scope);
-                _executionContextWriter.MarkReplay();
-                return ReplayResult(beginResult);
+                using (PipelineActivitySource.Instance.StartActivity("idempotency.replay"))
+                {
+                    _metrics.IdempotencyReplays.Add(1);
+                    _executionContextWriter.MarkReplay();
+                    return ReplayResult(beginResult);
+                }
 
             case IdempotencyBeginStatus.PayloadMismatch:
                 throw new IdempotencyPayloadMismatchException(identity.Operation);
@@ -67,7 +87,12 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         }
 
         // 5. Execute handler.
-        var response = await next();
+        TResponse response;
+        using (PipelineActivitySource.Instance.StartActivity("handler.execute"))
+        {
+            _metrics.HandlerExecutions.Add(1);
+            response = await next();
+        }
 
         // 6. Serialize with the replay contract options (Result envelopes and
         // enums must round-trip, spec 3.7).
@@ -79,11 +104,14 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
         // 8. Complete. The store owns the expiry calculation.
         var resultContract = identity.Operation;
-        await _idempotencyStore.CompleteAsync(
-            identity,
-            serialized,
-            resultContract,
-            cancellationToken);
+        using (PipelineActivitySource.Instance.StartActivity("idempotency.complete"))
+        {
+            await _idempotencyStore.CompleteAsync(
+                identity,
+                serialized,
+                resultContract,
+                cancellationToken);
+        }
 
         // 9. Return.
         return response;

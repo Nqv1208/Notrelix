@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlo
 public record BatchUpdateBlocksCommand(
     Guid PageId,
     List<BatchUpdateBlockItem> Blocks
-) : ICommand<Result<List<Guid>>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+) : ICommand<Result<List<Guid>>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);

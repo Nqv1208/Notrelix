@@ -4,11 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Caching;
 using Notrelix.Application.Common.Auditing;
+using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Entitlements;
 using Notrelix.Application.Common.Idempotency;
-using Notrelix.Application.Common.PostCommit;
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Storage;
 using Notrelix.API;
 using Notrelix.Infrastructure.Billing;
@@ -16,11 +17,9 @@ using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Email;
-using Notrelix.Infrastructure.Governance.Services;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Realtime;
-using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Storage.Providers;
 using Notrelix.Integration.Tests.Containers;
 
@@ -70,7 +69,7 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IRealtimePublisher>()
             .Should().BeOfType<RedisRealtimePublisher>()
             .And.NotBeOfType<DevNullRealtimePublisher>();
-        services.GetRequiredService<IPostCommitActionQueue>().Should().BeOfType<PostCommitActionQueue>();
+        services.GetRequiredService<IOutboxWakeSignal>().Should().NotBeNull();
 
         services.GetRequiredService<IMessageDeduplicationStore>().Should().BeOfType<MessageDeduplicationStore>();
         services.GetRequiredService<IEmailOutboxWriter>().Should().NotBeNull();
@@ -81,7 +80,14 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IFeatureGateChecker>().Should().BeOfType<DatabaseFeatureGateChecker>();
 
         services.GetRequiredService<IAuditService>().Should().NotBeNull();
-        services.GetRequiredService<IPermissionVersionProvider>().Should().BeOfType<PermissionVersionProvider>();
+
+        // Single request-authorization authority: the pure policy engine.
+        services.GetRequiredService<IAccessPolicyEvaluator>().Should().BeOfType<AccessPolicyEngine>();
+
+        // Durable automation graph: evaluator + narrow network adapter are
+        // registered for the outbox/broker consumer path.
+        services.GetRequiredService<IN8nClient>().Should().NotBeNull();
+        services.GetRequiredService<N8nAutomationRuleEvaluator>().Should().NotBeNull();
     }
 
     [Fact]

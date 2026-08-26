@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.ResolveSlu
 public record ResolveSlugQuery(
     Guid AccountId,
     string Slug
-) : IQuery<Result<WorkspaceDto>>, IAnonymousRequest, IGlobalRequest;
+) : IQuery<Result<WorkspaceDto>>, IAnonymousRequest, IReadRequest, IGlobalRequest;
 
 public class ResolveSlugQueryHandler : IRequestHandler<ResolveSlugQuery, Result<WorkspaceDto>>
 {

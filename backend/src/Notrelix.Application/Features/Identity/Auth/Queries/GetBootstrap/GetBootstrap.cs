@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
-public record GetBootstrapQuery : IQuery<Result<BootstrapResult>>, IGlobalRequest, IAuthenticatedRequest;
+public record GetBootstrapQuery : IQuery<Result<BootstrapResult>>, IReadRequest, IGlobalRequest, IAuthenticatedRequest;
 
 public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Result<BootstrapResult>>
 {

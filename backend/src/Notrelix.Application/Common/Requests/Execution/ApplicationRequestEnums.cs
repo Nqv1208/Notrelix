@@ -25,8 +25,8 @@ public enum ApplicationScopeKind
 public enum ApplicationDataAccessKind
 {
     None,
-    ReadOnly,
-    Transactional
+    Read,
+    Write
 }
 
 public enum ApplicationCacheKind

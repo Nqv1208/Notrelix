@@ -93,6 +93,6 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-        return new UpdateBoardItemFieldValuesCommandHandler(context, requestContext.Object, timeProvider.Object, Mock.Of<IResourceReferenceResolver>());
+        return new UpdateBoardItemFieldValuesCommandHandler(context, requestContext.Object, timeProvider.Object, Mock.Of<IResourceLocator>());
     }
 }

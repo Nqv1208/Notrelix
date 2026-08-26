@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.Delete
 public record DeleteApprovalRequestCommand(
     Guid RequestId,
     long ExpectedVersion)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.approval-request"), RequestId);

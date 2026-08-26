@@ -7,11 +7,10 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Updat
 public record UpdateBoardItemFieldValueCommand(
     Guid ItemId,
     Guid FieldId,
-    object? Value) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    object? Value) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);
-    public RealtimeTopic Topic => new("board", "BoardItem", ItemId);
 }
 
 public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>
@@ -19,12 +18,16 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IRealtimeChangeMapper<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>? _realtime;
+    private readonly IIntegrationEventCollector? _events;
 
-    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IRealtimeChangeMapper<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>? realtime = null, IIntegrationEventCollector? events = null)
     {
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
+        _realtime = realtime;
+        _events = events;
     }
 
     public async Task<BoardItemSlimDto> Handle(UpdateBoardItemFieldValueCommand request, CancellationToken cancellationToken)
@@ -57,7 +60,7 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
             .Select(l => l.LabelId)
             .ToListAsync(cancellationToken);
 
-        return new BoardItemSlimDto(
+        var response = new BoardItemSlimDto(
             item.Id,
             item.GroupId,
             item.Name,
@@ -65,5 +68,15 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
             memberIds,
             labelIds
         );
+        if (_realtime is not null && _events is not null)
+            _events.Add(_realtime.Map(request, response, item.Version));
+        return response;
     }
+}
+
+public sealed class UpdateBoardItemFieldValueRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
+    : RealtimeChangeMapper<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>(context, time)
+{
+    public override RealtimeResourceChangedV1 Map(UpdateBoardItemFieldValueCommand request, BoardItemSlimDto response, long streamVersion) =>
+        Create("board", "BoardItem", request.ItemId, "UpdateBoardItemFieldValue", response, streamVersion);
 }

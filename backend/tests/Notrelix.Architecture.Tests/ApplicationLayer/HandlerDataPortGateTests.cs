@@ -17,7 +17,7 @@ namespace Notrelix.Architecture.Tests.ApplicationLayer;
 public class HandlerDataPortGateTests : ArchitectureTestBase
 {
     private static readonly Assembly ApplicationAssembly =
-        typeof(Notrelix.Application.Common.Behaviors.ValidationBehavior<,>).Assembly;
+        typeof(Notrelix.Application.Common.Behaviors.RequestContractBehavior<,>).Assembly;
 
     private static readonly HashSet<string> DbContextPortNames = new(StringComparer.Ordinal)
     {

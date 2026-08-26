@@ -1,3 +1,6 @@
+using Notrelix.Application.Common.Diagnostics;
+using Microsoft.Extensions.Hosting;
+
 namespace Notrelix.Application.Tests.Behaviors;
 
 public class ApplicationTracingBehaviorTests
@@ -13,12 +16,30 @@ public class ApplicationTracingBehaviorTests
         return ctx;
     }
 
+    private static Mock<IRequestDescriptorRegistry> CreateMockDescriptors()
+    {
+        var descriptors = new Mock<IRequestDescriptorRegistry>();
+        descriptors
+            .Setup(d => d.GetRequired(typeof(TestRequest)))
+            .Returns(new RequestDescriptor(
+                typeof(TestRequest),
+                ApplicationRequestKind.Command,
+                ApplicationPrincipalKind.Authenticated,
+                ApplicationScopeKind.Workspace,
+                ApplicationDataAccessKind.Read,
+                new AccessRequirements(false, false, false, false),
+                IsIdempotent: false,
+                RequiresExpectedVersion: false));
+        return descriptors;
+    }
+
     [Fact]
     public async Task Handle_WhenExecuted_LogsAtEntryAndExit()
     {
         var logger = new Mock<ILogger<ApplicationTracingBehavior<TestRequest, TestResponse>>>();
         var executionContext = CreateMockExecutionContext();
-        var behavior = new ApplicationTracingBehavior<TestRequest, TestResponse>(logger.Object, executionContext);
+        var behavior = new ApplicationTracingBehavior<TestRequest, TestResponse>(
+            CreateMockDescriptors().Object, logger.Object, executionContext, new Mock<IHostEnvironment>().Object, new PipelineMetrics());
 
         var response = await behavior.Handle(
             new TestRequest(), ct => Task.FromResult(new TestResponse("ok")), default);
@@ -41,7 +62,8 @@ public class ApplicationTracingBehaviorTests
     {
         var logger = new Mock<ILogger<ApplicationTracingBehavior<TestRequest, TestResponse>>>();
         var executionContext = CreateMockExecutionContext();
-        var behavior = new ApplicationTracingBehavior<TestRequest, TestResponse>(logger.Object, executionContext);
+        var behavior = new ApplicationTracingBehavior<TestRequest, TestResponse>(
+            CreateMockDescriptors().Object, logger.Object, executionContext, new Mock<IHostEnvironment>().Object, new PipelineMetrics());
 
         Func<Task> act = () => behavior.Handle(
             new TestRequest(),

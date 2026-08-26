@@ -11,7 +11,7 @@ namespace Notrelix.Application.Features.Identity.Mfa.Commands.RegenerateRecovery
 
 public sealed record RegenerateRecoveryCodesCommand
     : ICommand<Result<MfaEnrollmentVerifyResult>>,
-      ITransactionalRequest,
+      IWriteRequest,
       IGlobalRequest,
       IAuthenticatedRequest
 {

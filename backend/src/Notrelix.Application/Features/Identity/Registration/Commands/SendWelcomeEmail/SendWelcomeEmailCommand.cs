@@ -13,7 +13,7 @@ public sealed record SendWelcomeEmailCommand(
     string? CorrelationId,
     string? CausationId,
     DateTimeOffset OccurredAt
-) : ICommand<SendWelcomeEmailResult>, ISystemInternalRequest, ITransactionalRequest, IMessageTriggeredRequest, ISystemOperation, IGlobalRequest
+) : ICommand<SendWelcomeEmailResult>, ISystemInternalRequest, IWriteRequest, IMessageTriggeredRequest, ISystemOperation, IGlobalRequest
 {
     public string ConsumerName => ConsumerNames.WelcomeEmailSending;
     public Guid? WorkspaceId => null;

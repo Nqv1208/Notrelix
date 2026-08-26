@@ -45,7 +45,7 @@ public class IdempotencyStoreIntegrationTests
     }
 
     [Fact]
-    public async Task IDEM_DB_001_FirstExecution_InsertsProcessingAndCompletes()
+    public async Task IDEM_DB_001_FirstExecution_InsertsStartedAndCompletes()
     {
         await using var context = _db.CreateContext();
         await using var tx = await context.Database.BeginTransactionAsync();
@@ -151,7 +151,7 @@ public class IdempotencyStoreIntegrationTests
         var record = await verifyContext.Set<IdempotencyRecord>()
             .FirstOrDefaultAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
 
-        record.Should().BeNull("rollback must remove the Processing record");
+        record.Should().BeNull("rollback must remove the Started record");
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public class IdempotencyStoreIntegrationTests
         // Force a SaveChanges failure: an entity duplicating the idempotency
         // unique key (scope, operation, key_hash) inserted by the store above.
         var now = DateTimeOffset.UtcNow;
-        var duplicate = IdempotencyRecord.CreateProcessing(
+        var duplicate = IdempotencyRecord.CreateStarted(
             identity.Scope, identity.Operation, identity.KeyHash, "other-request-hash",
             now, now.AddMinutes(5));
         context.Set<IdempotencyRecord>().Add(duplicate);
@@ -224,7 +224,7 @@ public class IdempotencyStoreIntegrationTests
     public async Task IDEM_DB_007_ConcurrentFirstCommit_WaiterReplaysResult()
     {
         // Two transactions race for the same identity. The waiter's INSERT blocks on
-        // the holder's uncommitted Processing row; after the holder completes and
+        // the holder's uncommitted Started row; after the holder completes and
         // commits, the waiter must replay the stored result — never double-execute.
         var identity = CreateIdentity(
             keyHash: Guid.NewGuid().ToString("N"),
@@ -379,9 +379,9 @@ public class IdempotencyStoreIntegrationTests
     }
 
     [Fact]
-    public async Task IDEM_DB_012_CommittedActiveProcessing_IsNeverReturnedAsCompleted()
+    public async Task IDEM_DB_012_CommittedActiveStarted_IsNeverReturnedAsCompleted()
     {
-        // FZ-IDEM-03 (spec 3.8): a committed active Processing row is corrupt/legacy
+        // FZ-IDEM-03 (spec 3.8): a committed active Started row is corrupt/legacy
         // state. BeginAsync must never map it to Completed — it must surface the typed
         // IdempotencyIncompleteStateException so the caller rolls back and the API can
         // answer 503 + Retry-After.
@@ -389,11 +389,11 @@ public class IdempotencyStoreIntegrationTests
             keyHash: Guid.NewGuid().ToString("N"),
             requestHash: Guid.NewGuid().ToString("N"));
 
-        // Simulate a committed Processing row left behind by a crashed/partial writer.
+        // Simulate a committed Started row left behind by a crashed/partial writer.
         await using (var seedContext = _db.CreateContext())
         {
             var now = DateTimeOffset.UtcNow;
-            var record = IdempotencyRecord.CreateProcessing(
+            var record = IdempotencyRecord.CreateStarted(
                 identity.Scope, identity.Operation, identity.KeyHash, identity.RequestHash,
                 now, now.AddMinutes(5));
             seedContext.Set<IdempotencyRecord>().Add(record);
@@ -407,13 +407,15 @@ public class IdempotencyStoreIntegrationTests
         var act = () => store.BeginAsync(identity, CancellationToken.None);
 
         await act.Should().ThrowAsync<IdempotencyIncompleteStateException>(
-            "an active committed Processing row must never be replayed as Completed");
+            "an active committed Started row must never be replayed as Completed");
     }
 
     [Fact]
-    public async Task IDEM_DB_014_ExpiredProcessing_IsReplacedAndStarts()
+    public async Task IDEM_DB_017_ActiveStarted_WithDifferentPayload_IsPayloadMismatch()
     {
-        // Spec 3.8: expired Processing rows may be replaced atomically.
+        // Same scope + operation + key but a different request hash must fail as
+        // PayloadMismatch even while the prior attempt is still actively Started —
+        // the handler must not run for a conflicting payload (correctness invariant).
         var identity = CreateIdentity(
             keyHash: Guid.NewGuid().ToString("N"),
             requestHash: Guid.NewGuid().ToString("N"));
@@ -421,7 +423,36 @@ public class IdempotencyStoreIntegrationTests
         await using (var seedContext = _db.CreateContext())
         {
             var now = DateTimeOffset.UtcNow;
-            var record = IdempotencyRecord.CreateProcessing(
+            var record = IdempotencyRecord.CreateStarted(
+                identity.Scope, identity.Operation, identity.KeyHash,
+                requestHash: Guid.NewGuid().ToString("N"),
+                now, now.AddMinutes(5));
+            seedContext.Set<IdempotencyRecord>().Add(record);
+            await seedContext.SaveChangesAsync();
+        }
+
+        await using var context = _db.CreateContext();
+        await using var tx = await context.Database.BeginTransactionAsync();
+        var store = CreateStore(context);
+
+        var begin = await store.BeginAsync(identity, CancellationToken.None);
+
+        begin.Status.Should().Be(IdempotencyBeginStatus.PayloadMismatch,
+            "an active Started row with a different request hash is a conflict, not incomplete state");
+    }
+
+    [Fact]
+    public async Task IDEM_DB_014_ExpiredStarted_IsReplacedAndStarts()
+    {
+        // Spec 3.8: expired Started rows may be replaced atomically.
+        var identity = CreateIdentity(
+            keyHash: Guid.NewGuid().ToString("N"),
+            requestHash: Guid.NewGuid().ToString("N"));
+
+        await using (var seedContext = _db.CreateContext())
+        {
+            var now = DateTimeOffset.UtcNow;
+            var record = IdempotencyRecord.CreateStarted(
                 identity.Scope, identity.Operation, identity.KeyHash, identity.RequestHash,
                 now.AddMinutes(-10), now.AddMinutes(-5));
             seedContext.Set<IdempotencyRecord>().Add(record);
@@ -435,7 +466,7 @@ public class IdempotencyStoreIntegrationTests
         var begin = await store.BeginAsync(identity, CancellationToken.None);
 
         begin.Status.Should().Be(IdempotencyBeginStatus.Started,
-            "an expired Processing row must be replaced by a fresh execution");
+            "an expired Started row must be replaced by a fresh execution");
 
         await store.CompleteAsync(identity, "{\"retry\":true}", identity.Operation, CancellationToken.None);
         await context.SaveChangesAsync();
@@ -458,7 +489,7 @@ public class IdempotencyStoreIntegrationTests
         await using (var seedContext = _db.CreateContext())
         {
             var now = DateTimeOffset.UtcNow;
-            var record = IdempotencyRecord.CreateProcessing(
+            var record = IdempotencyRecord.CreateStarted(
                 identity.Scope, identity.Operation, identity.KeyHash, identity.RequestHash,
                 now.AddDays(-2), now.AddDays(-1));
             record.MarkCompleted("{\"old\":true}", identity.Operation, now.AddDays(-2), now.AddDays(-1));
@@ -494,7 +525,7 @@ public class IdempotencyStoreIntegrationTests
         var begin = await store.BeginAsync(identity, CancellationToken.None);
         begin.Status.Should().Be(IdempotencyBeginStatus.Started);
 
-        // The Processing row is uncommitted; read it inside the same transaction.
+        // The Started row is uncommitted; read it inside the same transaction.
         await using var cmd = context.Database.GetDbConnection().CreateCommand();
         cmd.Transaction = context.Database.CurrentTransaction!.GetDbTransaction();
         cmd.CommandText = """
@@ -521,7 +552,7 @@ public class IdempotencyStoreIntegrationTests
     public async Task IDEM_SCHEMA_003_CheckConstraints_EnforceStateContract()
     {
         // Spec 3.8 + FZ-IDEM-03 + FZ-INF-IDEM-SCHEMA-01: the database enforces
-        // the idempotency state/payload contract — only the Processing-empty and
+        // the idempotency state/payload contract — only the Started-empty and
         // Completed-populated row shapes are accepted.
         await using var conn = _db.CreateConnection();
         await conn.OpenAsync();
@@ -539,17 +570,17 @@ public class IdempotencyStoreIntegrationTests
 
             var act = () => cmd.ExecuteNonQueryAsync();
             await act.Should().ThrowAsync<PostgresException>(
-                    "state must be restricted to Processing/Completed by a CHECK constraint")
+                    "state must be restricted to Started/Completed by a CHECK constraint")
                 .Where(e => e.SqlState == "23514", "a state violation must surface as a check-constraint violation");
         }
 
-        // 2. Processing with all payload columns null is a valid row shape
+        // 2. Started with all payload columns null is a valid row shape
         await using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = """
                 INSERT INTO ops.idempotency_records
                     (id, scope, operation, key_hash, request_hash, state, created_at, expires_at)
-                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.processing-empty.v1', @keyHash, 'r', 'Processing', now(), now() + interval '1 hour')
+                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.started-empty.v1', @keyHash, 'r', 'Started', now(), now() + interval '1 hour')
                 """;
             AddParameter(cmd, "id", Guid.NewGuid());
             AddParameter(cmd, "keyHash", Guid.NewGuid().ToString("N"));
@@ -557,20 +588,20 @@ public class IdempotencyStoreIntegrationTests
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // 3. Processing carrying payload columns must be rejected
+        // 3. Started carrying payload columns must be rejected
         await using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = """
                 INSERT INTO ops.idempotency_records
                     (id, scope, operation, key_hash, request_hash, state, result_json, result_contract, completed_at, created_at, expires_at)
-                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.processing-populated.v1', @keyHash, 'r', 'Processing', '{}', 'op', now(), now(), now() + interval '1 hour')
+                VALUES (@id, 'account:00000000000000000000000000000098', 'test.schema.started-populated.v1', @keyHash, 'r', 'Started', '{}', 'op', now(), now(), now() + interval '1 hour')
                 """;
             AddParameter(cmd, "id", Guid.NewGuid());
             AddParameter(cmd, "keyHash", Guid.NewGuid().ToString("N"));
 
             var act = () => cmd.ExecuteNonQueryAsync();
             await act.Should().ThrowAsync<PostgresException>(
-                    "a Processing row with result_json/result_contract/completed_at must violate a CHECK constraint")
+                    "a Started row with result_json/result_contract/completed_at must violate a CHECK constraint")
                 .Where(e => e.SqlState == "23514", "a state violation must surface as a check-constraint violation");
         }
 

@@ -5,7 +5,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 
-public record LogoutCommand : ICommand<Result>, ITransactionalRequest, IGlobalRequest, IAuthenticatedRequest
+public record LogoutCommand : ICommand<Result>, IWriteRequest, IGlobalRequest, IAuthenticatedRequest
 {
     public required string RefreshToken { get; init; }
     public string? AccessToken { get; init; }

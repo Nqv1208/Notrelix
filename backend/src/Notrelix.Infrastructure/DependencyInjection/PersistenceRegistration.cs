@@ -14,7 +14,6 @@ using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
-using Notrelix.Infrastructure.Data.Services;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Interceptors;
@@ -100,10 +99,9 @@ public static class PersistenceRegistration
         services.AddScoped<IAccountAccessEvaluator, AccountAccessEvaluator>();
         services.AddScoped<ITenantBootstrapStore, TenantBootstrapStore>();
         services.AddScoped<IAccessGrantProjectionService, AccessGrantProjectionService>();
-        services.AddScoped<IResourceScopeResolver, ResourceScopeResolver>();
+        services.AddScoped<IResourceLocator, ResourceLocator>();
+        services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
-        services.AddScoped<IResourceReferenceResolver, ResourceReferenceResolver>();
-        services.AddScoped<IResourceVersionReader, ResourceVersionReader>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();
@@ -121,6 +119,7 @@ public static class PersistenceRegistration
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, Notrelix.Infrastructure.Messaging.EventTypeRegistry>();
+        services.AddSingleton<IOutboxWakeSignal, Notrelix.Infrastructure.Messaging.OutboxWakeSignal>();
         services.AddSingleton<IClassificationPolicy>(_ =>
             ClassificationPolicy.CreateBuilder()
                 .Build());

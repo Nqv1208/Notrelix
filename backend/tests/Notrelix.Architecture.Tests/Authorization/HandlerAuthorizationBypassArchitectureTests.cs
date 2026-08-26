@@ -6,8 +6,8 @@ namespace Notrelix.Architecture.Tests;
 /// IA-TST-AUTHZ-ARCH-001..005 / IAREQ136 / IAREQ137 / IAAC017.
 ///
 /// Executable authorization-bypass gate: protected Application handlers must not
-/// re-authorize the current actor outside the canonical AuthorizationBehavior
-/// pipeline. Current-actor role checks are forbidden; target-entity/member role
+/// re-authorize the current actor outside the canonical AccessControlBehavior
+/// pipeline (AccessFacts + pure policy evaluation). Current-actor role checks are forbidden; target-entity/member role
 /// invariants require an exact, semantic exception registry.
 /// </summary>
 public class HandlerAuthorizationBypassArchitectureTests : ArchitectureTestBase
@@ -15,7 +15,7 @@ public class HandlerAuthorizationBypassArchitectureTests : ArchitectureTestBase
     private const string GateId = "IA-TST-AUTHZ-ARCH";
 
     /// <summary>
-    /// Canonical authorization services owned by the pipeline (AuthorizationBehavior).
+    /// Canonical authorization services owned by the pipeline (AccessControlBehavior).
     /// Handlers MUST NOT inject/use them — authorization belongs to the pipeline.
     /// </summary>
     private static readonly string[] PipelineAuthorizationServices =
@@ -116,7 +116,7 @@ public class HandlerAuthorizationBypassArchitectureTests : ArchitectureTestBase
 
         violations.Should().BeEmpty(
             $"{GateId}-001 (IAREQ136): protected handlers MUST NOT directly inject or use canonical " +
-            "authorization services — AuthorizationBehavior owns evaluation. If a handler needs a " +
+            "authorization services — AccessControlBehavior owns evaluation via AccessFacts + IAccessPolicyEvaluator. If a handler needs a " +
             "decision, extend the request contract/pipeline instead. Violations: " +
             string.Join("; ", violations));
     }

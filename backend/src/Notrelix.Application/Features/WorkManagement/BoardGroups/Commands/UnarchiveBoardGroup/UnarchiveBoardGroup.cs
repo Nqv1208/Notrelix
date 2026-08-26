@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 
 [IdempotencyOperation("work-management.board-groups.unarchive-board-group.v1")]
-public record UnarchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UnarchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);

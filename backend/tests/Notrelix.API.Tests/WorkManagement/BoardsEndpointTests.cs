@@ -41,7 +41,7 @@ public class BoardsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateBoard_WithValidData_ReturnsOk()
     {
-        var body = new { Title = "Updated Board" };
+        var body = new { Title = "Updated Board", ExpectedVersion = 1 };
         var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}")
         {
             Content = JsonContent(body)

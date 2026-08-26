@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.Create
 public record CreateBoardItemLinkCommand(
     Guid SourceBoardItemId,
     Guid TargetBoardItemId,
-    string LinkType) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    string LinkType) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), SourceBoardItemId);
     public PermissionAction Action => PermissionAction.UpdateItem;

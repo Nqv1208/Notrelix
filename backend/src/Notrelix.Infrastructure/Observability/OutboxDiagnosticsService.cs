@@ -53,8 +53,10 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
 
     public async Task<List<OutboxMessageResult>> GetFailedAsync(int limit = 50, CancellationToken cancellationToken = default)
     {
+        // 'Failed' covers both retryable rows and exhausted (dead-letter) terminal
+        // rows; RetryCount >= MaxRetries distinguishes the dead-letter state.
         return await _context.Set<MessagingOutboxMessage>()
-            .Where(m => m.Status == "Failed" || m.Status == "DeadLetter")
+            .Where(m => m.Status == "Failed")
             .OrderByDescending(m => m.CreatedAt)
             .Take(Math.Min(limit, 200))
             .Select(m => new OutboxMessageResult(

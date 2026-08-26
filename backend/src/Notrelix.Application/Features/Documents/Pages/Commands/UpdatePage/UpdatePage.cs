@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 public record UpdatePageCommand(
     Guid PageId,
     string? Title
-) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);

@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.Identity.Mfa.Commands.CompleteMfaChallen
 
 public sealed record CompleteMfaChallengeCommand
     : ICommand<Result<AuthResult>>,
-      ITransactionalRequest,
+      IWriteRequest,
       IGlobalRequest,
       IAnonymousRequest
 {

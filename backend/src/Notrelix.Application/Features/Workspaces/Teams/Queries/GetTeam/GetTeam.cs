@@ -15,7 +15,7 @@ public record TeamDto(
 public record GetTeamQuery(
     Guid WorkspaceId,
     Guid TeamId
-) : IQuery<Result<TeamDto>>, IWorkspaceRequest, IRequirePermission
+) : IQuery<Result<TeamDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

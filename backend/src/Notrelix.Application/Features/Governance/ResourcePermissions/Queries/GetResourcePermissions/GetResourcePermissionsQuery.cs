@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Governance.ResourcePermissions.Queries.G
 
 public record GetResourcePermissionsQuery(
     string ResourceKind,
-    Guid ResourceId) : IQuery<Result<List<ResourcePermissionDto>>>, IResourceScopedRequest, IRequirePermission
+    Guid ResourceId) : IQuery<Result<List<ResourcePermissionDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     internal ResourceKind Kind => ParseKind(ResourceKind);
 

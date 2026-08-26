@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Queries.GetChecklists;
 
-public record GetChecklistsQuery(Guid BoardItemId) : IQuery<Result<List<ChecklistDto>>>, IResourceScopedRequest, IRequirePermission
+public record GetChecklistsQuery(Guid BoardItemId) : IQuery<Result<List<ChecklistDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);

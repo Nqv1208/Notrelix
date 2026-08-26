@@ -10,13 +10,13 @@ namespace Notrelix.Architecture.Tests;
 public class AuthPipelineArchitectureTests : ArchitectureTestBase
 {
     [Fact]
-    public void RegisterCommand_Must_Be_Anonymous_Global_Transactional()
+    public void RegisterCommand_Must_Be_Anonymous_Global_Write()
     {
         var type = typeof(RegisterCommand);
 
         typeof(IAnonymousRequest).IsAssignableFrom(type).Should().BeTrue();
         typeof(IGlobalRequest).IsAssignableFrom(type).Should().BeTrue();
-        typeof(ITransactionalRequest).IsAssignableFrom(type).Should().BeTrue();
+        typeof(IWriteRequest).IsAssignableFrom(type).Should().BeTrue();
 
         typeof(IRequirePermission).IsAssignableFrom(type).Should().BeFalse();
         typeof(IWorkspaceRequest).IsAssignableFrom(type).Should().BeFalse();
@@ -25,13 +25,13 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
     }
 
     [Fact]
-    public void LoginCommand_Must_Be_Anonymous_Global_Transactional()
+    public void LoginCommand_Must_Be_Anonymous_Global_Write()
     {
         var type = typeof(LoginCommand);
 
         typeof(IAnonymousRequest).IsAssignableFrom(type).Should().BeTrue();
         typeof(IGlobalRequest).IsAssignableFrom(type).Should().BeTrue();
-        typeof(ITransactionalRequest).IsAssignableFrom(type).Should().BeTrue();
+        typeof(IWriteRequest).IsAssignableFrom(type).Should().BeTrue();
 
         typeof(IRequirePermission).IsAssignableFrom(type).Should().BeFalse();
         typeof(IWorkspaceRequest).IsAssignableFrom(type).Should().BeFalse();
@@ -41,8 +41,8 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
     [Fact]
     public void NoGuidEmptyActorFallback()
     {
-        var content = File.ReadAllText(Path.Combine(GetApplicationPath(), "Common", "Behaviors", "ResourceScopeBehavior.cs"));
-        content.Should().NotContain("Guid.Empty", "ResourceScopeBehavior must not fallback to Guid.Empty for missing actor");
+        var content = File.ReadAllText(Path.Combine(GetApplicationPath(), "Common", "Behaviors", "ExecutionContextBehavior.cs"));
+        content.Should().Contain("RequireUser", "ExecutionContextBehavior must fail closed for a missing actor");
     }
 
     [Fact]
@@ -205,24 +205,16 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
     }
 
     [Fact]
-    public void AuthorizationServices_MustNotReadWorkManagementPrivatePersistence()
+    public void AuthorizationPolicyEngine_MustNotReadPersistence()
     {
-        var securityPath = Path.Combine(GetApplicationPath(), "Common", "Security");
-        var files = new[]
-        {
-            Path.Combine(securityPath, "PermissionService.cs"),
-            Path.Combine(securityPath, "WorkspacePermissionService.cs")
-        };
+        // The pure AccessPolicyEngine owns authorization decisions. It must not
+        // depend on any DbContext/persistence port — access facts are resolved
+        // separately by IAccessFactsProvider, then evaluated with zero I/O.
+        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var content = RemoveComments(File.ReadAllText(policyPath));
 
-        foreach (var file in files)
-        {
-            var content = RemoveComments(File.ReadAllText(file));
-            content.Should().NotContain(
-                "IWorkManagementDbContext",
-                $"{Path.GetFileName(file)} must consume the resource-owner authorization snapshot contract");
-            content.Should().NotContain(
-                "Features.WorkManagement.Abstractions",
-                $"{Path.GetFileName(file)} must not couple authorization to WorkManagement persistence ports");
-        }
+        content.Should().NotContain("DbContext", "AccessPolicyEngine must be pure — no persistence access");
+        content.Should().NotContain("IWorkManagementDbContext", "AccessPolicyEngine must not couple to persistence ports");
+        content.Should().NotContain("IAccessFactsProvider", "AccessPolicyEngine consumes AccessFacts, never the facts provider");
     }
 }

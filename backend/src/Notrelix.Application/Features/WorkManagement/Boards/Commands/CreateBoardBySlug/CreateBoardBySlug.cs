@@ -8,7 +8,7 @@ using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
 
 [IdempotencyOperation("work-management.boards.create-board-by-slug.v1")]
-public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IIdempotentRequest, IGlobalRequest
+public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, BoardVisibility? Visibility) : ICommand<Result<Guid>>, IWriteRequest, IIdempotentRequest, IAuthenticatedRequest, IGlobalRequest
 {
 }
 

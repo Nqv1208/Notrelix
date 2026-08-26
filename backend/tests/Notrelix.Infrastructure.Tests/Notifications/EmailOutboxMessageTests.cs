@@ -138,7 +138,9 @@ public sealed class EmailOutboxMessageTests
 
         message.MarkDeadLetter(Now);
 
-        message.Status.Should().Be("DeadLetter");
+        message.Status.Should().Be("Failed",
+            "dead-letter is the exhausted-retry 'Failed' terminal state, not a separate status");
+        message.RetryCount.Should().Be(message.MaxRetries);
         message.ContentMode.Should().Be(EmailContentMode.Purged);
         message.TemplateDataJson.Should().BeNull();
         message.SensitivePayloadClearedAt.Should().NotBeNull();

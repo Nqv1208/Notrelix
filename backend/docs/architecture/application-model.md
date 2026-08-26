@@ -324,53 +324,48 @@ Do not create a generic marker that silently encodes an entire feature workflow.
 
 # 14. Pipeline architecture
 
-ADR-001 defines pipeline boundary zones so behavior order is not accidental.
-
-Conceptual zones:
+ADR-006 freezes the production request pipeline to exactly seven behaviors in a
+fixed order:
 
 ```text
-OUTER / pre-DB
-        ↓
-POST-COMMIT SCOPE BOUNDARY
-        ↓
-INNER / DB request + transaction
-        ↓
-POST-COMMIT
-        ↓
-CACHE / final response cache
+ExceptionMappingBehavior
+ApplicationTracingBehavior
+RequestContractBehavior
+ExecutionContextBehavior
+DataSessionBehavior
+AccessControlBehavior
+IdempotencyBehavior
 ```
 
-The ADR describes six pipeline zones/boundaries in the current implementation.
+Validation executes inside `RequestContractBehavior` — there is no separate
+production validation stage. Transaction/RLS boundaries belong to the data
+session owned by `DataSessionBehavior` + Infrastructure `IRequestDataSession`.
+Authorization is `AccessFacts` + pure policy evaluation inside
+`AccessControlBehavior`. Durable side effects flow through the transactional
+outbox and broker consumers after commit; there is no generic post-commit or
+response-cache pipeline stage.
 
-The durable architecture is the **dependency/order semantics**, not the exact number of behavior classes forever.
+The earlier six-zone / nineteen-behavior model (ADR-001) is superseded and is
+described only as historical context in ADR-001 itself.
 
 ---
 
 # 15. Current behavior evidence
 
-Current `Common/Behaviors` contains behavior types such as:
+Current `Common/Behaviors` contains the frozen seven-behavior pipeline:
 
 ```text
-ApplicationTracingBehavior
-AuthorizationBehavior
-AuthorizedCacheBehavior
-ConcurrencyBehavior
-DbRequestScopeBehavior
 ExceptionMappingBehavior
-FeatureGateBehavior
+ApplicationTracingBehavior
+RequestContractBehavior
+ExecutionContextBehavior
+DataSessionBehavior
+AccessControlBehavior
 IdempotencyBehavior
-PostCommitEnqueueBehavior
-PostCommitScopeBehavior
-PublicCacheBehavior
-RequestContractGuardBehavior
-ResourceScopeBehavior
-SubscriptionGateBehavior
-SystemOperationAuditBehavior
-TenantBootstrapBehavior
-TokenValidationBehavior
-ValidationBehavior
-VerifiedEmailBehavior
 ```
+
+Validation executes inside `RequestContractBehavior`; there is no separate
+production `ValidationBehavior`.
 
 This is current source evidence.
 
@@ -404,19 +399,18 @@ Do not reorder to “group similar code” if dependency semantics change.
 
 # 17. Outer zone
 
-The pre-DB/outer portion should contain work that can be safely performed before the transactional DB scope.
+The pre-DB/outer portion contains work that can be safely performed before the transactional DB scope.
 
-Representative responsibilities:
+Representative responsibilities (owned by the frozen behaviors):
 
 ```text
 exception mapping boundary
 tracing
 request validation
 request-contract guards
-token/security preconditions
-tenant bootstrap
-system-operation auditing setup
+execution/tenant context resolution
 resource scope resolution
+access facts + policy evaluation
 ```
 
 Exact placement follows ADR/tests.
@@ -466,9 +460,9 @@ Do not perform irreversible provider/broker effects merely because a post-commit
 
 # 21. Database request scope
 
-`DbRequestScopeBehavior` is the architectural transition into the request DB connection/transaction boundary.
+`DataSessionBehavior` is the architectural transition into the request DB connection/transaction boundary.
 
-It participates in:
+It delegates to the Application-defined `IRequestDataSession` port and participates in:
 
 ```text
 connection lifecycle
@@ -476,9 +470,9 @@ full RLS session application
 transaction
 ```
 
-with Infrastructure implementation.
+with Infrastructure implementation (`EfRequestDataSession`).
 
-Application owns **when/why** the transactional boundary exists.
+Application owns **when/why** the transactional boundary exists (declared per-request via descriptor data-access kind + expected-version constraints).
 
 Infrastructure owns **how** EF/Npgsql implements it.
 
@@ -2605,7 +2599,7 @@ testing-and-quality-gates.md
 Related ADRs:
 
 ```text
-../decisions/ADR-001-pipeline-boundary.md
+../decisions/ADR-006-frozen-seven-behavior-pipeline.md
 ../decisions/ADR-002-rls-bootstrap-connection-lifecycle.md
 ```
 

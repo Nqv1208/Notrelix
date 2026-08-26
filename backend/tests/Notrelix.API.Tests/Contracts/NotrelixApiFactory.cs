@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
-using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Common.Data;
+using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
@@ -237,6 +238,43 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 return tenant;
             });
 
+            // The In-Memory provider cannot execute relational-only session
+            // mechanics (transactions, RLS set_config, raw expected-version
+            // SQL). API.Tests prove HTTP binding/error contracts, so swap in a
+            // session that runs the handler and persists transactional effects.
+            services.RemoveAll<IRequestDataSession>();
+            services.AddScoped<IRequestDataSession, InMemoryRequestDataSession>();
+
+            // Access facts resolve through PostgreSQL-specific SQL; provide
+            // owner-level facts so the pure policy engine mirrors the legacy
+            // always-allow decision store mock used by these tests.
+            services.RemoveAll<IAccessFactsProvider>();
+            services.AddSingleton<IAccessFactsProvider>(_ =>
+            {
+                var mock = new Mock<IAccessFactsProvider>();
+                mock.Setup(x => x.ResolveAsync(
+                        It.IsAny<RequestDescriptor>(),
+                        It.IsAny<ExecutionContextSnapshot>(),
+                        It.IsAny<object>(),
+                        It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AccessFacts(
+                        UserExists: true,
+                        EmailVerified: true,
+                        AccountExists: true,
+                        AccountMemberRole: "Owner",
+                        WorkspaceExists: true,
+                        WorkspaceMemberRole: "Owner",
+                        ResourceExists: true,
+                        ResourceAudience: "Workspace",
+                        ResourceMemberRole: "Manager",
+                        HasExplicitResourcePermission: true,
+                        PermissionRules: Array.Empty<AccessPermissionRule>(),
+                        HasActiveSubscription: true,
+                        SubscriptionTier: "Test",
+                        FeatureEnabled: true));
+                return mock.Object;
+            });
+
             // Mock ITenantBootstrapStore to allow access for all account/workspace operations
             services.RemoveAll<ITenantBootstrapStore>();
             services.AddScoped<ITenantBootstrapStore>(_ =>
@@ -248,17 +286,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 mock.Setup(x => x.ResolveWorkspaceAccessAsync(
                         It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new WorkspaceAccessSnapshot(testAccountId, testWorkspaceId, testUserId, true, true));
-                return mock.Object;
-            });
-
-            // Mock IAuthorizationDecisionStore (used by AuthorizationBehavior)
-            services.RemoveAll<IAuthorizationDecisionStore>();
-            services.AddScoped<IAuthorizationDecisionStore>(_ =>
-            {
-                var mock = new Mock<IAuthorizationDecisionStore>();
-                mock.Setup(x => x.EvaluateAsync(
-                        It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new PermissionDecision(true, null));
                 return mock.Object;
             });
 
@@ -297,55 +324,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // Remove background dispatchers that use FromSqlRaw (PostgreSQL-specific)
             // since the test host uses In-Memory provider.
             services.RemoveAll<IHostedService>();
-
-            // Remove DbRequestScopeBehavior — requires relational provider for
-            // BeginTransactionAsync / ExecuteSqlRawAsync / ExecuteSqlInterpolatedAsync.
-            // The In-Memory test provider does not support these.
-            var dbScopeDescriptor = services.FirstOrDefault(sd =>
-                !sd.IsKeyedService &&
-                sd.ServiceType.IsGenericType &&
-                sd.ServiceType.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>) &&
-                sd.ImplementationType is { IsGenericType: true } &&
-                sd.ImplementationType.GetGenericTypeDefinition() == typeof(DbRequestScopeBehavior<,>));
-            if (dbScopeDescriptor is not null)
-                services.Remove(dbScopeDescriptor);
-
-            // Remove ConcurrencyBehavior — uses ResourceVersionReader which
-            // calls DatabaseFacade.GetDbConnection() (relational-only). The
-            // In-Memory test provider does not support this.
-            var concurrencyDescriptor = services.FirstOrDefault(sd =>
-                !sd.IsKeyedService &&
-                sd.ServiceType.IsGenericType &&
-                sd.ServiceType.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>) &&
-                sd.ImplementationType is { IsGenericType: true } &&
-                sd.ImplementationType.GetGenericTypeDefinition() == typeof(ConcurrencyBehavior<,>));
-            if (concurrencyDescriptor is not null)
-                services.Remove(concurrencyDescriptor);
-
-            // Remove VerifiedEmailBehavior — queries IIdentityUserLookupService
-            // against InMemory DB where no test user exists, causing 401.
-            var verifiedEmailDescriptor = services.FirstOrDefault(sd =>
-                !sd.IsKeyedService &&
-                sd.ServiceType.IsGenericType &&
-                sd.ServiceType.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>) &&
-                sd.ImplementationType is { IsGenericType: true } &&
-                sd.ImplementationType.GetGenericTypeDefinition() == typeof(VerifiedEmailBehavior<,>));
-            if (verifiedEmailDescriptor is not null)
-                services.Remove(verifiedEmailDescriptor);
-
-            // Pipeline behaviors require IPermissionEvaluator.
-            services.RemoveAll<IPermissionEvaluator>();
-            services.AddScoped<IPermissionEvaluator>(_ =>
-            {
-                var mock = new Mock<IPermissionEvaluator>();
-
-                mock.Setup(x => x.EvaluateAsync(
-                        It.IsAny<PermissionContext>(),
-                        It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new PermissionDecision(true));
-
-                return mock.Object;
-            });
 
             // Pipeline behavior dependencies.
             services.RemoveAll<IIdempotencyStore>();

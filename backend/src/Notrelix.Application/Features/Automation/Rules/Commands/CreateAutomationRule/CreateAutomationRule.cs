@@ -9,7 +9,7 @@ public record CreateAutomationRuleCommand(
     string Name,
     string TriggerEvent,
     string ActionType,
-    string Configuration) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+    string Configuration) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);

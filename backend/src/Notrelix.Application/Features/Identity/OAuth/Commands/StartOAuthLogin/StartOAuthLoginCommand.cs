@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLogin;
 
 public sealed record StartOAuthLoginCommand
     : ICommand<Result<OAuthLoginStartResult>>,
-      IAnonymousRequest,
+      IAnonymousRequest, INoDataRequest,
       IGlobalRequest
 {
     public required OAuthProvider Provider { get; init; }

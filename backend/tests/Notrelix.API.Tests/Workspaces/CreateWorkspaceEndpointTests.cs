@@ -92,7 +92,7 @@ public class CreateWorkspaceEndpointTests : IClassFixture<NotrelixApiFactory>
         var response = await _client.PostAsync("/api/v1/accounts/00000000-0000-0000-0000-000000000000/workspaces", JsonContent(body));
 
         // Handler mock always returns success; Guid.Empty is rejected by
-        // AuthorizationBehavior → 500 (SecurityMisconfigurationException).
+        // AccessControlBehavior → 500 (SecurityMisconfigurationException).
         response.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError);
     }
 

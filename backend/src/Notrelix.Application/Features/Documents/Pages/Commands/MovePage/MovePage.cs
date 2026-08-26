@@ -6,7 +6,7 @@ public record MovePageCommand(
     Guid PageId,
     Guid? NewParentId,
     double NewPosition
-) : ICommand<Result>, IResourceScopedRequest, IRequirePermission
+) : ICommand<Result>, IAuthenticatedRequest, INoDataRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);

@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Compl
 public record CompleteBoardItemCommand(
     Guid BoardItemId,
     DateTimeOffset? CompletedAt)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);

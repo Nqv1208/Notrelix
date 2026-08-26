@@ -15,7 +15,7 @@ public record WorkspaceDashboardDto(
 
 public record GetWorkspaceDashboardQuery(
     Guid WorkspaceId
-) : IQuery<Result<WorkspaceDashboardDto>>, IWorkspaceRequest, IRequirePermission
+) : IQuery<Result<WorkspaceDashboardDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

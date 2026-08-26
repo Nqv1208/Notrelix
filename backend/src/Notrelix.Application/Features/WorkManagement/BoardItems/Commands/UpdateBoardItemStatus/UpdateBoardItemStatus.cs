@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 
 [IdempotencyOperation("work-management.board-items.update-board-item-status.v1")]
-public record UpdateBoardItemStatusCommand(Guid BoardItemId, string Status) : ICommand<Result>, ITransactionalRequest, IIdempotentRequest, IResourceScopedRequest, IRequirePermission
+public record UpdateBoardItemStatusCommand(Guid BoardItemId, string Status) : ICommand<Result>, IWriteRequest, IIdempotentRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);

@@ -7,7 +7,7 @@ public record CreateTeamCommand(
     Guid WorkspaceId,
     string Name,
     string? Description
-) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

@@ -5,7 +5,7 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Queries.GetPageBlocks;
 
-public record GetPageBlocksQuery(Guid PageId) : IQuery<Result<List<BlockDto>>>, IResourceScopedRequest, IRequirePermission
+public record GetPageBlocksQuery(Guid PageId) : IQuery<Result<List<BlockDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewPage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);

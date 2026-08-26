@@ -5,7 +5,7 @@ using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 
-public record GetBoardItemQuery(Guid BoardItemId) : IQuery<Result<BoardItemDto>>, IResourceScopedRequest, IRequirePermission
+public record GetBoardItemQuery(Guid BoardItemId) : IQuery<Result<BoardItemDto>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);

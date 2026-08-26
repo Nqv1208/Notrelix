@@ -7,7 +7,7 @@ public record UpdateBlockCommand(
     Guid BlockId,
     string? Type,
     string? Properties
-) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.block"), BlockId);

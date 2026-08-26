@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.
 public record RevokeResourcePermissionCommand(
     string ResourceKind,
     Guid ResourceId,
-    Guid PermissionId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
+    Guid PermissionId) : ICommand<Result>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IWriteRequest
 {
     internal ResourceKind Kind => ParseKind(ResourceKind);
 

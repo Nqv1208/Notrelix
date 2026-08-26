@@ -220,6 +220,14 @@ jobs:
           Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests
           Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests
           Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests
+          Notrelix.Architecture.Tests.Pipeline.PipelineFreezeArchitectureTests
+          Notrelix.Architecture.Tests.Pipeline.ExpectedVersionArchitectureTests
+          Notrelix.Architecture.Tests.Performance.PipelinePerformanceContractTests
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_CanonicalDocs_MatchFrozenSevenStageTopology
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_LegacyGapCount_IsZero
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.IntentionalAllowlistEntries_MustDescribePermanentArchitectureExceptions
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllowlistEntries_AreNotStale
+          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllProductionRequests_HaveValidDescriptors
 
   core-tests:
     name: Domain, Application and Infrastructure tests
@@ -566,12 +574,14 @@ jobs:
           Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests
           Notrelix.Integration.Tests.Data.OutboxDispatchContractTests
           Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests
+          Notrelix.Integration.Tests.Data.ExpectedVersionConcurrencyIntegrationTests
+          Notrelix.Integration.Tests.Automation.AutomationN8nDurabilityIntegrationTests
+          Notrelix.Integration.Tests.Integration.PipelineTelemetryIntegrationTests
           Notrelix.Integration.Tests.Data.OutboxAtomicityTests
           Notrelix.Integration.Tests.Data.MigrationSmokeTests
           Notrelix.Integration.Tests.Integration.ProductionCompositionTests
           Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests
-          Notrelix.Integration.Tests.Caching.RedisCacheBehaviorTests
-          Notrelix.Integration.Tests.Integration.Realtime.RealtimeDispatchContractTests
+          Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests
 
   docker-build:
     name: Docker build

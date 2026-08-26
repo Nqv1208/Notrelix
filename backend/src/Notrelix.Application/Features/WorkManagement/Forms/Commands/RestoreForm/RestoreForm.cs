@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RestoreFor
 [IdempotencyOperation("work-management.forms.restore-form.v1")]
 public record RestoreFormCommand(
     Guid FormId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);

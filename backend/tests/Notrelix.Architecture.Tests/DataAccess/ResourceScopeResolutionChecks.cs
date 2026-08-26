@@ -3,7 +3,7 @@ namespace Notrelix.Architecture.Tests;
 public class ResourceScopeResolutionChecks : ArchitectureTestBase
 {
     private static string ResolverPath =>
-        Path.Combine(GetInfrastructurePath(), "Services", "ResourceScopeResolver.cs");
+        Path.Combine(GetInfrastructurePath(), "Services", "ResourceLocator.cs");
 
     [Fact]
     public void ResolverCoversAllResourceKindsUsedByEndpoints()
@@ -47,7 +47,7 @@ public class ResourceScopeResolutionChecks : ArchitectureTestBase
         foreach (var kind in kindsFromEndpoints)
         {
             resolverContent.Should().Contain($"\"{kind}\"",
-                $"ResourceScopeResolver must handle the resource kind '{kind}' used by MapResource* endpoints");
+                $"ResourceLocator must handle the resource kind '{kind}' used by MapResource* endpoints");
         }
     }
 
@@ -55,11 +55,11 @@ public class ResourceScopeResolutionChecks : ArchitectureTestBase
     public void ResolverHandlesKnownResourceKinds()
     {
         var content = File.ReadAllText(ResolverPath);
-        content.Should().Contain("\"work-management.label\"", "ResourceScopeResolver must handle work-management.label");
-        content.Should().Contain("\"governance.share-link\"", "ResourceScopeResolver must handle governance.share-link");
-        content.Should().Contain("\"work-management.checklist-item\"", "ResourceScopeResolver must handle work-management.checklist-item");
-        content.Should().Contain("\"governance.resource-permission\"", "ResourceScopeResolver must handle governance.resource-permission");
-        content.Should().Contain("\"automation.rule\"", "ResourceScopeResolver must handle automation.rule");
-        content.Should().Contain("\"automation.execution\"", "ResourceScopeResolver must handle automation.execution");
+        content.Should().Contain("\"work-management.label\"", "ResourceLocator must handle work-management.label");
+        content.Should().Contain("\"governance.share-link\"", "ResourceLocator must handle governance.share-link");
+        content.Should().Contain("\"work-management.checklist-item\"", "ResourceLocator must handle work-management.checklist-item");
+        content.Should().Contain("\"governance.resource-permission\"", "ResourceLocator must handle governance.resource-permission");
+        content.Should().Contain("\"automation.rule\"", "ResourceLocator must handle automation.rule");
+        content.Should().Contain("\"automation.execution\"", "ResourceLocator must handle automation.execution");
     }
 }

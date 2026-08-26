@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
-public record ForgotPasswordCommand : ICommand<Result>, IGlobalRequest, IAnonymousRequest
+public record ForgotPasswordCommand : ICommand<Result>, IReadRequest, IGlobalRequest, IAnonymousRequest
 {
     public required string Email { get; init; }
 }

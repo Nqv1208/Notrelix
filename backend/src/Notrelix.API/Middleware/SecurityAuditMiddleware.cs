@@ -6,7 +6,8 @@ namespace Notrelix.API.Middleware;
 
 /// <summary>
 /// Logs security-relevant events: auth failures, rate limits, CSRF rejects.
-/// Writes to SecurityEvent table. Persisted by DbRequestScopeBehavior's SaveChangesAsync.
+/// Writes to SecurityEvent table. Persisted by the request data session's
+/// SaveChangesAsync when the pipeline opens a transactional session.
 /// </summary>
 public sealed class SecurityAuditMiddleware
 {

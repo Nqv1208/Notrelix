@@ -5,7 +5,7 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
 
-public record GetPageQuery(Guid PageId) : IQuery<Result<PageDto>>, IResourceScopedRequest, IRequirePermission
+public record GetPageQuery(Guid PageId) : IQuery<Result<PageDto>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);

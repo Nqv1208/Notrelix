@@ -16,7 +16,7 @@ public sealed record StartOAuthStepUpCommand
     : ICommand<Result<OAuthLoginStartResult>>,
       IAuthenticatedRequest,
       IGlobalRequest,
-      ITransactionalRequest
+      IWriteRequest
 {
     public required OAuthProvider Provider { get; init; }
     public required StepUpPurpose Purpose { get; init; }

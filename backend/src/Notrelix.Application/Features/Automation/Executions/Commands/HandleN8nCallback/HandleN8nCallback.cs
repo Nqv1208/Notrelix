@@ -8,7 +8,7 @@ public record HandleN8nCallbackCommand(
     Guid ExecutionId,
     string Status,
     string? Response,
-    string? Error) : ICommand<Result>, ITransactionalRequest, IGlobalRequest;
+    string? Error) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IGlobalRequest;
 
 public class HandleN8nCallbackCommandHandler : IRequestHandler<HandleN8nCallbackCommand, Result>
 {

@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.Reor
 public record ReorderFieldOptionsCommand(
     Guid BoardId,
     Guid FieldId,
-    List<Guid> OrderedOptionIds) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    List<Guid> OrderedOptionIds) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);

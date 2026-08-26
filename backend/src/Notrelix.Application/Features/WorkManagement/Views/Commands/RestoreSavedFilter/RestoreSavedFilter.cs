@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.Views.Commands.RestoreSav
 
 [IdempotencyOperation("work-management.views.restore-saved-filter.v1")]
 public record RestoreSavedFilterCommand(Guid FilterId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);

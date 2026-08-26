@@ -6,7 +6,7 @@ using Notrelix.Application.Features.Identity.Verification.Abstractions;
 namespace Notrelix.Application.Features.Identity.Verification.Commands.RequestEmailVerification;
 
 public sealed record RequestEmailVerificationCommand()
-    : ICommand<Result>, IAuthenticatedRequest, ITransactionalRequest, IGlobalRequest;
+    : ICommand<Result>, IAuthenticatedRequest, IWriteRequest, IGlobalRequest;
 
 public sealed record RequestEmailVerificationResult(
     Guid TokenId,

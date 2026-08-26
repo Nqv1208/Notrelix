@@ -6,11 +6,10 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Assig
 [IdempotencyOperation("work-management.board-items.assign-board-item-member.v1")]
 public record AssignBoardItemMemberCommand(
     Guid BoardItemId,
-    Guid UserId) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    Guid UserId) : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.AssignItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
-    public RealtimeTopic Topic => new("board", "BoardItem", BoardItemId);
 }
 
 public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardItemMemberCommand, Result>
@@ -19,17 +18,23 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
+    private readonly IRealtimeChangeMapper<AssignBoardItemMemberCommand, Result>? _realtime;
+    private readonly IIntegrationEventCollector? _events;
 
     public AssignBoardItemMemberCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IWorkspaceAccessResolver workspaceAccess)
+        IWorkspaceAccessResolver workspaceAccess,
+        IRealtimeChangeMapper<AssignBoardItemMemberCommand, Result>? realtime = null,
+        IIntegrationEventCollector? events = null)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _workspaceAccess = workspaceAccess;
+        _realtime = realtime;
+        _events = events;
     }
 
     public async Task<Result> Handle(AssignBoardItemMemberCommand request, CancellationToken ct)
@@ -56,6 +61,16 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
             _dateTimeProvider.UtcNow);
 
         _context.BoardItemMembers.Add(member);
-        return Result.Success();
+        var response = Result.Success();
+        if (_realtime is not null && _events is not null)
+            _events.Add(_realtime.Map(request, response, card.Version));
+        return response;
     }
+}
+
+public sealed class AssignBoardItemMemberRealtimeMapper(IExecutionContextReader context, IDateTimeProvider time)
+    : RealtimeChangeMapper<AssignBoardItemMemberCommand, Result>(context, time)
+{
+    public override RealtimeResourceChangedV1 Map(AssignBoardItemMemberCommand request, Result response, long streamVersion) =>
+        Create("board", "BoardItem", request.BoardItemId, "AssignBoardItemMember", response, streamVersion);
 }

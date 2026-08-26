@@ -9,7 +9,7 @@ public record CreateOrUpdateBoardPreferenceCommand(
     List<FilterRule>? Filters = null,
     List<SortRule>? Sorts = null,
     GroupRule? Group = null)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);

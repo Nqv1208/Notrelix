@@ -5,6 +5,7 @@ using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Messaging;
+using Notrelix.Infrastructure.Observability.Metrics;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -37,7 +38,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         var context = _db.CreateContext(tenant);
-        var store = new MessageDeduplicationStore(context, new DateTimeProvider());
+        var store = new MessageDeduplicationStore(context, new DateTimeProvider(), new MetricsService());
         var rls = new RlsSessionContext(
             context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
@@ -296,7 +297,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
 
         var context = _db.CreateContext(tenant);
         var dateTimeProvider = new DateTimeProvider();
-        var store = new MessageDeduplicationStore(context, dateTimeProvider);
+        var store = new MessageDeduplicationStore(context, dateTimeProvider, new MetricsService());
         var rls = new RlsSessionContext(
             context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
@@ -364,7 +365,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
 
         var context = _db.CreateContext(tenant);
         var dateTimeProvider = new DateTimeProvider();
-        var store = new MessageDeduplicationStore(context, dateTimeProvider);
+        var store = new MessageDeduplicationStore(context, dateTimeProvider, new MetricsService());
         var rls = new RlsSessionContext(
             context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),

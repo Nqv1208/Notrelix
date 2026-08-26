@@ -6,7 +6,7 @@ using Notrelix.Application.Features.Identity.Sessions.DTOs;
 namespace Notrelix.Application.Features.Identity.Sessions.Queries.GetUserSessions;
 
 public sealed record GetUserSessionsQuery
-    : IQuery<Result<IReadOnlyList<SessionInfoDto>>>,
+    : IQuery<Result<IReadOnlyList<SessionInfoDto>>>, IReadRequest,
       IGlobalRequest,
       IAuthenticatedRequest;
 

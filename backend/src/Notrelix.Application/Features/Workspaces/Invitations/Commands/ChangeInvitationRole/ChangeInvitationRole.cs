@@ -7,7 +7,7 @@ public record ChangeInvitationRoleCommand(
     Guid WorkspaceId,
     Guid InvitationId,
     WorkspaceRole NewRole
-) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.InviteMember;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

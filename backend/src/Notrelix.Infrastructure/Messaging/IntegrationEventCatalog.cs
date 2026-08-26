@@ -55,6 +55,14 @@ public sealed class IntegrationEventCatalog : IIntegrationEventCatalog
             .Distinct();
     }
 
+    /// <summary>
+    /// Factory for DI registration. Required because the container would
+    /// otherwise prefer the <c>IEnumerable&lt;Type&gt;</c> constructor and bind it
+    /// to an empty sequence, yielding a catalog that resolves nothing.
+    /// </summary>
+    public static IntegrationEventCatalog FromAppDomain() =>
+        new(DiscoverIntegrationEventTypes());
+
     public Type Resolve(EventContractKey key)
     {
         if (_contractsByKey.TryGetValue(key, out var type))

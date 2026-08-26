@@ -74,86 +74,48 @@ public class CommandMarkerArchitectureTests
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingTransactionalRequest = new()
     {
+        ["HandleCalendarWebhookCommand"] = new("HandleCalendarWebhookCommand", AllowlistClassification.MigrationPending,
+            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
+            "Implement the bounded feature with IWriteRequest when product work resumes"),
         ["ForgotPasswordCommand"] = new("ForgotPasswordCommand", AllowlistClassification.PublicCommand,
             "ForgotPassword is a global unauthenticated endpoint — no workspace context exists yet",
             "Keep as-is; public command does not need transactional behavior"),
-        ["ToggleChecklistItemCommand"] = new("ToggleChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["DeleteBoardItemLinkCommand"] = new("DeleteBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["CreateBoardItemLinkCommand"] = new("CreateBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["HandleCalendarWebhookCommand"] = new("HandleCalendarWebhookCommand", AllowlistClassification.SystemCommand,
-            "External webhook handler — transaction managed by integration adapter",
-            "Keep as-is; system command with explicit transaction management"),
-        ["DisconnectCalendarCommand"] = new("DisconnectCalendarCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["TriggerCalendarSyncCommand"] = new("TriggerCalendarSyncCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["MovePageCommand"] = new("MovePageCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
-        ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
-            "Pre-hardening command missing ITransactionalRequest",
-            "Add ITransactionalRequest"),
+        ["DisconnectCalendarCommand"] = new("DisconnectCalendarCommand", AllowlistClassification.MigrationPending,
+            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
+            "Implement the bounded feature with IWriteRequest when product work resumes"),
+        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.MigrationPending,
+            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
+            "Implement the bounded feature with IWriteRequest when product work resumes"),
+        ["TriggerCalendarSyncCommand"] = new("TriggerCalendarSyncCommand", AllowlistClassification.MigrationPending,
+            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
+            "Implement the bounded feature with IWriteRequest when product work resumes"),
+        ["MovePageCommand"] = new("MovePageCommand", AllowlistClassification.MigrationPending,
+            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
+            "Implement the bounded feature with IWriteRequest when product work resumes"),
+        ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.MigrationPending,
+            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
+            "Implement the bounded feature with IWriteRequest when product work resumes"),
+        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.MigrationPending,
+            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
+            "Implement the bounded feature with IWriteRequest when product work resumes"),
+        ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.MigrationPending,
+            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
+            "Implement the bounded feature with IWriteRequest when product work resumes"),
         ["StartOAuthLoginCommand"] = new("StartOAuthLoginCommand", AllowlistClassification.PublicCommand,
             "Non-mutating command: generates crypto + stores OAuth state in Redis, no DB mutation",
             "Keep as-is; read-only command does not need transactional behavior"),
         ["StartOAuthLinkCommand"] = new("StartOAuthLinkCommand", AllowlistClassification.Intentional,
-            "Non-mutating authenticated command: generates crypto + stores OAuth link state in Redis, no DB mutation",
-            "Keep as-is; read-only command does not need transactional behavior"),
+            "OAuth link initialization is a non-relational orchestration command; it generates authorization state "
+            + "and stores short-lived OAuth state, but does not mutate application relational aggregates.",
+            "Keep as-is; IWriteRequest is not required."),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingWorkspaceRequest = new()
     {
-        ["UpdateWorkspaceCommand"] = new("UpdateWorkspaceCommand", AllowlistClassification.LegacyGap,
-            "Workspace command uses workspace ID from route, not IWorkspaceRequest marker",
-            "Add IWorkspaceRequest for consistency with pipeline"),
-        ["ArchiveWorkspaceCommand"] = new("ArchiveWorkspaceCommand", AllowlistClassification.LegacyGap,
-            "Workspace command uses workspace ID from route",
-            "Add IWorkspaceRequest"),
-        ["RemoveMemberCommand"] = new("RemoveMemberCommand", AllowlistClassification.LegacyGap,
-            "Workspace member command uses workspace ID from route",
-            "Add IWorkspaceRequest"),
-        ["UpdateMemberRoleCommand"] = new("UpdateMemberRoleCommand", AllowlistClassification.LegacyGap,
-            "Workspace member command uses workspace ID from route",
-            "Add IWorkspaceRequest"),
-        ["CancelInvitationCommand"] = new("CancelInvitationCommand", AllowlistClassification.LegacyGap,
-            "Workspace invitation command uses workspace ID from route",
-            "Add IWorkspaceRequest"),
 
-        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.LegacyGap,
-            "Integration command missing workspace marker",
-            "Add IWorkspaceRequest"),
-        ["DisableShareLinkCommand"] = new("DisableShareLinkCommand", AllowlistClassification.LegacyGap,
-            "Governance command missing workspace marker",
-            "Add IWorkspaceRequest"),
-        ["GrantResourcePermissionCommand"] = new("GrantResourcePermissionCommand", AllowlistClassification.LegacyGap,
-            "Governance command missing workspace marker",
-            "Add IWorkspaceRequest"),
-        ["RevokeResourcePermissionCommand"] = new("RevokeResourcePermissionCommand", AllowlistClassification.LegacyGap,
-            "Governance command missing workspace marker",
-            "Add IWorkspaceRequest"),
-        ["CreateAutomationRuleCommand"] = new("CreateAutomationRuleCommand", AllowlistClassification.LegacyGap,
-            "Automation command missing workspace marker",
-            "Add IWorkspaceRequest"),
-        ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
-            "Document command missing workspace marker",
-            "Add IWorkspaceRequest"),
+        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.MigrationPending,
+            "Calendar feature stub declared IGlobalRequest/INoDataRequest; no workspace authority exists yet",
+            "Re-scope to workspace authority and add IWorkspaceRequest together with the implementation"),
 
         ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
             "System command triggered by user registration — no workspace context exists yet (WorkspaceId => null)",
@@ -161,116 +123,24 @@ public class CommandMarkerArchitectureTests
         ["SendWelcomeEmailCommand"] = new("SendWelcomeEmailCommand", AllowlistClassification.SystemCommand,
             "System command triggered by user registration — no workspace context exists yet (WorkspaceId => null)",
             "Keep as-is; system command with null workspace scope"),
-        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingRequirePermission = new()
     {
-        ["CreateCommentCommand"] = new("CreateCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["UpdateCommentCommand"] = new("UpdateCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["DeleteCommentCommand"] = new("DeleteCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["CreateBoardItemAttachmentCommand"] = new("CreateBoardItemAttachmentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
         ["UpdateProfileCommand"] = new("UpdateProfileCommand", AllowlistClassification.Intentional,
             "User updates own profile — permission is identity-based, not resource-based", "Keep as-is"),
         ["UpdateEmailCommand"] = new("UpdateEmailCommand", AllowlistClassification.Intentional,
             "User updates own email — permission is identity-based, not resource-based", "Keep as-is"),
-        ["UpdateBoardGroupCommand"] = new("UpdateBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateBoardGroupCommand"] = new("CreateBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ArchiveBoardGroupCommand"] = new("ArchiveBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateChecklistItemCommand"] = new("UpdateChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateChecklistItemCommand"] = new("CreateChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateChecklistCommand"] = new("UpdateChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteChecklistCommand"] = new("DeleteChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteChecklistItemCommand"] = new("DeleteChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateChecklistCommand"] = new("CreateChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateLabelCommand"] = new("CreateLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateLabelCommand"] = new("UpdateLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteLabelCommand"] = new("DeleteLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["RemoveLabelFromBoardItemCommand"] = new("RemoveLabelFromBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteBoardItemLinkCommand"] = new("DeleteBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateBoardItemLinkCommand"] = new("CreateBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateCardCommand"] = new("CreateCardCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBoardItemCommand"] = new("UpdateBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ArchiveBoardItemCommand"] = new("ArchiveBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBoardItemStatusCommand"] = new("UpdateBoardItemStatusCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBoardItemFieldValuesCommand"] = new("UpdateBoardItemFieldValuesCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateBoardBySlugCommand"] = new("CreateBoardBySlugCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ArchiveBoardCommand"] = new("ArchiveBoardCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["RemoveBoardMemberCommand"] = new("RemoveBoardMemberCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteBoardFieldCommand"] = new("DeleteBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBoardFieldCommand"] = new("UpdateBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateBoardFieldCommand"] = new("CreateBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateWorkspaceCommand"] = new("UpdateWorkspaceCommand", AllowlistClassification.LegacyGap,
-            "Workspace command missing permission marker", "Add IRequirePermission"),
-        ["CreateWorkspaceCommand"] = new("CreateWorkspaceCommand", AllowlistClassification.Intentional,
-            "Global command — user creates their own workspace, no pre-existing permission context", "Keep as-is"),
-        ["ArchiveWorkspaceBySlugCommand"] = new("ArchiveWorkspaceBySlugCommand", AllowlistClassification.LegacyGap,
-            "Workspace command missing permission marker", "Add IRequirePermission"),
-        ["ArchiveWorkspaceCommand"] = new("ArchiveWorkspaceCommand", AllowlistClassification.LegacyGap,
-            "Workspace command missing permission marker", "Add IRequirePermission"),
-        ["RemoveMemberCommand"] = new("RemoveMemberCommand", AllowlistClassification.LegacyGap,
-            "Workspace member command missing permission marker", "Add IRequirePermission"),
-        ["RemoveMemberBySlugCommand"] = new("RemoveMemberBySlugCommand", AllowlistClassification.LegacyGap,
-            "Workspace member command missing permission marker", "Add IRequirePermission"),
-        ["UpdateMemberRoleCommand"] = new("UpdateMemberRoleCommand", AllowlistClassification.LegacyGap,
-            "Workspace member command missing permission marker", "Add IRequirePermission"),
-        ["UpdateMemberRoleBySlugCommand"] = new("UpdateMemberRoleBySlugCommand", AllowlistClassification.LegacyGap,
-            "Workspace member command missing permission marker", "Add IRequirePermission"),
-        ["InviteMemberBySlugCommand"] = new("InviteMemberBySlugCommand", AllowlistClassification.LegacyGap,
-            "Workspace invitation command missing permission marker", "Add IRequirePermission"),
+        ["CreateBoardBySlugCommand"] = new("CreateBoardBySlugCommand", AllowlistClassification.Intentional,
+            "Module authorized via workspace-role policy (AccessControlBehavior); no fine-grained PermissionAction exists.", "Keep as-is; intentional non-fine-grained authorization"),
+        ["ArchiveWorkspaceBySlugCommand"] = new("ArchiveWorkspaceBySlugCommand", AllowlistClassification.Intentional,
+            "Module authorized via workspace-role policy (AccessControlBehavior); no fine-grained PermissionAction exists.", "Keep as-is; intentional non-fine-grained authorization"),
+        ["RemoveMemberBySlugCommand"] = new("RemoveMemberBySlugCommand", AllowlistClassification.Intentional,
+            "Module authorized via workspace-role policy (AccessControlBehavior); no fine-grained PermissionAction exists.", "Keep as-is; intentional non-fine-grained authorization"),
+        ["InviteMemberBySlugCommand"] = new("InviteMemberBySlugCommand", AllowlistClassification.Intentional,
+            "Module authorized via workspace-role policy (AccessControlBehavior); no fine-grained PermissionAction exists.", "Keep as-is; intentional non-fine-grained authorization"),
 
-        ["CreateAutomationRuleCommand"] = new("CreateAutomationRuleCommand", AllowlistClassification.LegacyGap,
-            "Automation command missing permission marker", "Add IRequirePermission"),
-        ["DeleteBlockCommand"] = new("DeleteBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["CreateBlockCommand"] = new("CreateBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBlockCommand"] = new("UpdateBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["UpdatePageCommand"] = new("UpdatePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["DeletePageCommand"] = new("DeletePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
 
-        ["DeleteAttachmentCommand"] = new("DeleteAttachmentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
     };
 
     // --- Validation tests ---
@@ -360,8 +230,9 @@ public class CommandMarkerArchitectureTests
     // --- Marker enforcement tests ---
 
     [Fact]
-    public void MutatingCommands_ShouldImplement_ITransactionalRequest()
+    public void MutatingCommands_ShouldImplement_IWriteRequest()
     {
+        var staleViolations = new List<string>();
         var files = GetCommandFiles();
         var violations = new List<string>();
 
@@ -374,22 +245,36 @@ public class CommandMarkerArchitectureTests
             var name = ExtractRecordName(declaration);
             if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
 
-            if (declaration.Contains(": ICommand") && !declaration.Contains("ITransactionalRequest"))
+            if (declaration.Contains(": ICommand"))
             {
-                if (!KnownMissingTransactionalRequest.ContainsKey(name))
-                    violations.Add($"{name}: {Path.GetFileName(file)}");
+                if (!declaration.Contains("IWriteRequest"))
+                {
+                    if (!KnownMissingTransactionalRequest.ContainsKey(name))
+                        violations.Add(
+                            $"rule=IWriteRequest; request={name}; category=UNCLASSIFIED; " +
+                            $"current={Path.GetFileName(file)} lacks IWriteRequest; action=add marker or allowlist entry");
+                }
+                else if (KnownMissingTransactionalRequest.TryGetValue(name, out var staleEntry))
+                {
+                    staleViolations.Add(
+                        $"rule=IWriteRequest; request={name}; category={staleEntry.Classification}; " +
+                        $"reason='{staleEntry.Reason}'; current=marker now present; action=DELETE stale allowlist entry");
+                }
             }
         }
 
         violations.Should().BeEmpty(
-            $"New mutating commands (ICommand) must implement ITransactionalRequest. " +
-            $"Fix by adding to KnownMissingTransactionalRequest with classification, or add ITransactionalRequest. " +
+            $"New mutating commands (ICommand) must implement IWriteRequest. " +
             $"Violations: {string.Join(", ", violations)}");
+        staleViolations.Should().BeEmpty(
+            "STALE ALLOWLIST ENTRIES DETECTED — the underlying condition no longer holds. " +
+            string.Join(" | ", staleViolations));
     }
 
     [Fact]
     public void MutatingCommands_WithWorkspaceId_ShouldImplement_IWorkspaceRequest()
     {
+        var staleViolations = new List<string>();
         var files = GetCommandFiles();
         var violations = new List<string>();
 
@@ -408,19 +293,31 @@ public class CommandMarkerArchitectureTests
             if (!declaration.Contains("IWorkspaceRequest"))
             {
                 if (!KnownMissingWorkspaceRequest.ContainsKey(name))
-                    violations.Add($"{name}: {Path.GetFileName(file)}");
+                    violations.Add(
+                        $"rule=IWorkspaceRequest; request={name}; category=UNCLASSIFIED; " +
+                        $"current={Path.GetFileName(file)} has WorkspaceId but no IWorkspaceRequest; " +
+                        "action=add marker or allowlist entry");
+            }
+            else if (KnownMissingWorkspaceRequest.TryGetValue(name, out var staleWs))
+            {
+                staleViolations.Add(
+                    $"rule=IWorkspaceRequest; request={name}; category={staleWs.Classification}; " +
+                    $"reason='{staleWs.Reason}'; current=marker now present; action=DELETE stale allowlist entry");
             }
         }
 
         violations.Should().BeEmpty(
             $"New commands with WorkspaceId must implement IWorkspaceRequest. " +
-            $"Fix by adding to KnownMissingWorkspaceRequest with classification, or add IWorkspaceRequest. " +
             $"Violations: {string.Join(", ", violations)}");
+        staleViolations.Should().BeEmpty(
+            "STALE ALLOWLIST ENTRIES DETECTED — the underlying condition no longer holds. " +
+            string.Join(" | ", staleViolations));
     }
 
     [Fact]
     public void CreateUpdateDeleteCommands_ShouldImplement_IRequirePermission()
     {
+        var staleViolations = new List<string>();
         var files = GetCommandFiles();
         var violations = new List<string>();
 
@@ -443,18 +340,28 @@ public class CommandMarkerArchitectureTests
             if (!declaration.Contains("IRequirePermission"))
             {
                 if (!KnownMissingRequirePermission.ContainsKey(name))
-                    violations.Add($"{name}: {Path.GetFileName(file)}");
+                    violations.Add(
+                        $"rule=IRequirePermission; request={name}; category=UNCLASSIFIED; " +
+                        $"current={Path.GetFileName(file)} lacks IRequirePermission; action=add marker or allowlist entry");
+            }
+            else if (KnownMissingRequirePermission.TryGetValue(name, out var stalePerm))
+            {
+                staleViolations.Add(
+                    $"rule=IRequirePermission; request={name}; category={stalePerm.Classification}; " +
+                    $"reason='{stalePerm.Reason}'; current=marker now present; action=DELETE stale allowlist entry");
             }
         }
 
         violations.Should().BeEmpty(
             $"New Create/Update/Delete/Archive/Restore/Invite/Remove/Assign commands must implement IRequirePermission. " +
-            $"Fix by adding to KnownMissingRequirePermission with classification, or add IRequirePermission. " +
             $"Violations: {string.Join(", ", violations)}");
+        staleViolations.Should().BeEmpty(
+            "STALE ALLOWLIST ENTRIES DETECTED — the underlying condition no longer holds. " +
+            string.Join(" | ", staleViolations));
     }
 
     [Fact]
-    public void CommandsImplementingITransactionalRequest_WithWorkspaceId_ShouldAlsoImplement_IWorkspaceRequest()
+    public void CommandsImplementingIWriteRequest_WithWorkspaceId_ShouldAlsoImplement_IWorkspaceRequest()
     {
         var files = GetCommandFiles();
         var violations = new List<string>();
@@ -466,7 +373,7 @@ public class CommandMarkerArchitectureTests
             if (string.IsNullOrEmpty(declaration)) continue;
 
             var name = ExtractRecordName(declaration);
-            if (!declaration.Contains("ITransactionalRequest")) continue;
+            if (!declaration.Contains("IWriteRequest")) continue;
             if (declaration.Contains("IWorkspaceRequest")) continue;
 
             var hasWorkspaceId = content.Contains("Guid WorkspaceId") || content.Contains("Guid? WorkspaceId");
@@ -478,7 +385,7 @@ public class CommandMarkerArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            $"Commands with ITransactionalRequest and WorkspaceId must also implement IWorkspaceRequest. " +
+            $"Commands with IWriteRequest and WorkspaceId must also implement IWorkspaceRequest. " +
             $"Fix by adding to KnownMissingWorkspaceRequest with classification, or add IWorkspaceRequest. " +
             $"Violations: {string.Join(", ", violations)}");
     }

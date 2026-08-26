@@ -10,7 +10,7 @@ namespace Notrelix.Application.Features.Identity.Mfa.Commands.VerifyMfaEnrollmen
 
 public sealed record VerifyMfaEnrollmentCommand
     : ICommand<Result<MfaEnrollmentVerifyResult>>,
-      ITransactionalRequest,
+      IWriteRequest,
       IGlobalRequest,
       IAuthenticatedRequest
 {

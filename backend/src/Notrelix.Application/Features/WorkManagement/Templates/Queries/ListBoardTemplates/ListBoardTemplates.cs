@@ -5,7 +5,7 @@ using Notrelix.Application.Features.WorkManagement.Templates.DTOs;
 namespace Notrelix.Application.Features.WorkManagement.Templates.Queries.ListBoardTemplates;
 
 public record ListBoardTemplatesQuery(Guid WorkspaceId)
-    : IQuery<Result<List<BoardTemplateDto>>>, IWorkspaceRequest, IRequirePermission
+    : IQuery<Result<List<BoardTemplateDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);

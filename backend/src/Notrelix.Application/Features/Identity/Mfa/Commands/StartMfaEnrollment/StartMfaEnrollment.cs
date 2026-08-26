@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Identity.Mfa.Commands.StartMfaEnrollment
 
 public sealed record StartMfaEnrollmentCommand
     : ICommand<Result<MfaEnrollmentStartResult>>,
-      ITransactionalRequest,
+      IWriteRequest,
       IGlobalRequest,
       IAuthenticatedRequest;
 

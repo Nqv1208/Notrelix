@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
 
-public record GetWorkspaceQuery(Guid WorkspaceId) : IQuery<Result<WorkspaceDto>>, IWorkspaceRequest, IRequirePermission
+public record GetWorkspaceQuery(Guid WorkspaceId) : IQuery<Result<WorkspaceDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     Guid IWorkspaceRequest.WorkspaceId => WorkspaceId;
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;

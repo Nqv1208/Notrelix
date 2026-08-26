@@ -11,7 +11,7 @@ namespace Notrelix.Application.Features.Identity.Security.Queries.GetStepUpRequi
 /// </summary>
 public sealed record GetStepUpRequirementQuery
     : IQuery<Result<StepUpRequirementResult>>,
-      IAuthenticatedRequest,
+      IAuthenticatedRequest, IReadRequest,
       IGlobalRequest
 {
     public required StepUpPurpose Purpose { get; init; }

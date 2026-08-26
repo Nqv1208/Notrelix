@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSave
 
 [IdempotencyOperation("work-management.views.update-saved-filter-filters.v1")]
 public record UpdateSavedFilterFiltersCommand(Guid FilterId, List<FilterRule> Rules, long ExpectedVersion)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);

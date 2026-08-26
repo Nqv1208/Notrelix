@@ -2,7 +2,7 @@ namespace Notrelix.Application.Common.Requests;
 
 /// <summary>
 /// Marker for requests that require a specific feature to be enabled.
-/// FeatureGateBehavior checks feature entitlement before handler executes.
+/// The AccessPolicyEngine evaluates feature entitlement from AccessFacts.
 /// </summary>
 public interface IRequireFeature
 {

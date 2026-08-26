@@ -7,7 +7,7 @@ public record CreateWorkspaceCommand(
     string Name,
     string? Description,
     bool IsPersonal
-) : ICommand<Result<Guid>>, IAccountRequest, IRequirePermission, IRequireVerifiedEmail, ITransactionalRequest
+) : ICommand<Result<Guid>>, IAuthenticatedRequest, IAccountRequest, IRequirePermission, IRequireVerifiedEmail, IWriteRequest
 {
     public PermissionAction Action => PermissionAction.CreateWorkspace;
     public ResourceRef? Resource => null;

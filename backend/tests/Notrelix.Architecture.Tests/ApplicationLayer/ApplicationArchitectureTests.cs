@@ -173,29 +173,17 @@ public class ApplicationArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(19, "expected exactly 19 pipeline behaviors");
+        lines.Should().HaveCount(7, "expected exactly seven pipeline behaviors");
 
         var expectedOrder = new[]
         {
             "ExceptionMappingBehavior",
             "ApplicationTracingBehavior",
-            "ValidationBehavior",
-            "RequestContractGuardBehavior",
-            "TokenValidationBehavior",
-            "TenantBootstrapBehavior",
-            "SystemOperationAuditBehavior",
-            "ResourceScopeBehavior",
-            "PostCommitScopeBehavior",
-            "PublicCacheBehavior",
-            "DbRequestScopeBehavior",
-            "AuthorizationBehavior",
-            "VerifiedEmailBehavior",
-            "ConcurrencyBehavior",
-            "SubscriptionGateBehavior",
-            "FeatureGateBehavior",
+            "RequestContractBehavior",
+            "ExecutionContextBehavior",
+            "DataSessionBehavior",
+            "AccessControlBehavior",
             "IdempotencyBehavior",
-            "PostCommitEnqueueBehavior",
-            "AuthorizedCacheBehavior",
         };
 
         for (var i = 0; i < expectedOrder.Length; i++)
@@ -347,8 +335,12 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void CommandHandlers_ShouldNotInjectWorkspacePermissionService()
+    public void CommandHandlers_ShouldNotInjectLegacyPermissionService()
     {
+        // The duplicate authorization decision stack (IPermissionService,
+        // IWorkspacePermissionService, IPermissionEvaluator, IAuthorizationDecisionStore)
+        // is deleted. Handlers express permission through request markers; the
+        // AccessControlBehavior owns the decision.
         var appPath = GetApplicationPath();
         var handlerFiles = Directory.GetFiles(Path.Combine(appPath, "Features"), "*.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
@@ -361,31 +353,32 @@ public class ApplicationArchitectureTests
             var fileName = Path.GetFileName(file);
 
             var content = RemoveComments(File.ReadAllText(file));
-            if (content.Contains("WorkspacePermissionService") || content.Contains("IWorkspacePermissionService"))
+            if (content.Contains("WorkspacePermissionService") || content.Contains("IWorkspacePermissionService")
+                || content.Contains("IPermissionService") || content.Contains("IPermissionEvaluator"))
                 violations.Add(fileName);
         }
 
-        violations.Should().BeEmpty("No handlers should inject IWorkspacePermissionService. Use pipeline authorization (IRequirePermission) instead. Violations: " + string.Join(", ", violations));
+        violations.Should().BeEmpty("No handlers should inject the legacy permission decision stack. Use pipeline authorization (IRequirePermission) instead. Violations: " + string.Join(", ", violations));
     }
 
     [Fact]
-    public void SubscriptionGateBehavior_UsesAccountId()
+    public void AccessPolicyEngine_Subscription_UsesAccountScope()
     {
-        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "SubscriptionGateBehavior.cs");
-        var content = File.ReadAllText(behaviorPath);
+        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var content = File.ReadAllText(policyPath);
 
-        content.Should().Contain("ISubscriptionChecker", "SubscriptionGateBehavior must use ISubscriptionChecker");
-        content.Should().Contain("AccountId", "SubscriptionGateBehavior must use AccountId, not WorkspaceId");
+        content.Should().Contain("RequiresSubscription", "AccessPolicyEngine must enforce subscription requirements");
+        content.Should().Contain("AccountId", "subscription entitlement is account-scoped");
     }
 
     [Fact]
-    public void FeatureGateBehavior_UsesAccountId()
+    public void AccessPolicyEngine_Feature_UsesAccountScope()
     {
-        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "FeatureGateBehavior.cs");
-        var content = File.ReadAllText(behaviorPath);
+        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var content = File.ReadAllText(policyPath);
 
-        content.Should().Contain("IFeatureGateChecker", "FeatureGateBehavior must use IFeatureGateChecker");
-        content.Should().Contain("AccountId", "FeatureGateBehavior must use AccountId, not WorkspaceId");
+        content.Should().Contain("RequiresFeature", "AccessPolicyEngine must enforce feature requirements");
+        content.Should().Contain("FeatureEnabled", "feature entitlement is evaluated from access facts");
     }
 
     [Fact]
@@ -452,15 +445,13 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void SubscriptionGateBehavior_ThrowsOnMissingAccountId()
+    public void AccessPolicyEngine_Subscription_FailsClosed()
     {
-        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "SubscriptionGateBehavior.cs");
-        var content = File.ReadAllText(behaviorPath);
+        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var content = File.ReadAllText(policyPath);
 
-        content.Should().Contain("SecurityMisconfigurationException",
-            "SubscriptionGateBehavior must throw on missing AccountId, not skip (fail-closed)");
-        content.Should().NotContain("gate skipped",
-            "SubscriptionGateBehavior must not use 'skipped' wording (fail-closed)");
+        content.Should().Contain("Forbidden",
+            "AccessPolicyEngine must deny (fail closed) when subscription entitlement is missing");
     }
 
     [Fact]
@@ -515,27 +506,13 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void FeatureGateBehavior_ThrowsOnMissingAccountId()
+    public void AccessPolicyEngine_Feature_FailsClosed()
     {
-        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "FeatureGateBehavior.cs");
-        var content = File.ReadAllText(behaviorPath);
+        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var content = File.ReadAllText(policyPath);
 
-        content.Should().Contain("SecurityMisconfigurationException",
-            "FeatureGateBehavior must throw on missing AccountId, not skip (fail-closed)");
-        content.Should().NotContain("gate skipped",
-            "FeatureGateBehavior must not use 'skipped' wording (fail-closed)");
-    }
-
-    [Fact]
-    public void PostCommitAction_InterfaceExists()
-    {
-        var actionPath = Path.Combine(GetApplicationPath(), "Common", "PostCommit", "IPostCommitAction.cs");
-        var content = File.ReadAllText(actionPath);
-
-        content.Should().Contain("interface IPostCommitAction",
-            "IPostCommitAction must exist for generic post-commit extensibility");
-        content.Should().Contain("ExecuteAsync",
-            "IPostCommitAction must define ExecuteAsync method");
+        content.Should().Contain("Forbidden",
+            "AccessPolicyEngine must deny (fail closed) when feature entitlement is missing");
     }
 
     [Fact]
@@ -596,18 +573,6 @@ public class ApplicationArchitectureTests
         var infraPath = Path.Combine(Path.GetDirectoryName(GetApplicationPath())!, "Notrelix.Infrastructure", "Billing");
         var files = Directory.GetFiles(infraPath, "DatabaseFeatureGateChecker.cs");
         files.Should().NotBeEmpty("DatabaseFeatureGateChecker must exist for production feature gate checks");
-    }
-
-    [Fact]
-    public void PostCommitActionQueue_SupportsGenericActions()
-    {
-        var queueInterfacePath = Path.Combine(GetApplicationPath(), "Common", "PostCommit", "IPostCommitActionQueue.cs");
-        var content = File.ReadAllText(queueInterfacePath);
-
-        content.Should().Contain("Enqueue(IPostCommitAction",
-            "IPostCommitActionQueue must support generic IPostCommitAction enqueue");
-        content.Should().Contain("IReadOnlyList<IPostCommitAction> Actions",
-            "IPostCommitActionQueue must expose generic actions list");
     }
 
     [Fact]
@@ -839,58 +804,6 @@ public class ApplicationArchitectureTests
             "Every ISystemInternalRequest must also implement ISystemOperation — " +
             "system operations require structured audit metadata. Violations: " +
             string.Join(", ", violations));
-    }
-
-    [Fact]
-    public void RlsReadRequests_MustAlsoImplementTenantScoping()
-    {
-        var files = GetApplicationFeatureFiles();
-        var violations = new List<string>();
-
-        foreach (var file in files)
-        {
-            var content = RemoveComments(File.ReadAllText(file));
-            if (!content.Contains("IRlsReadRequest")) continue;
-
-            var hasTenantScoping =
-                content.Contains("IAccountRequest")
-                || content.Contains("IWorkspaceRequest")
-                || content.Contains("IResourceScopedRequest");
-
-            if (!hasTenantScoping)
-                violations.Add(Path.GetFileName(file));
-        }
-
-        violations.Should().BeEmpty(
-            "Every IRlsReadRequest must also implement a tenant-scoping interface " +
-            "(IAccountRequest, IWorkspaceRequest, or IResourceScopedRequest) — " +
-            "RlsSessionContext requires AccountId which is only resolved for tenant-scoped requests. " +
-            "Violations: " + string.Join(", ", violations));
-    }
-
-    [Fact]
-    public void CacheBehaviors_ShouldUse_CacheKeyFactory()
-    {
-        var behaviorsPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors");
-        var cacheBehaviors = new[] { "AuthorizedCacheBehavior.cs", "PublicCacheBehavior.cs" };
-
-        var violations = new List<string>();
-        foreach (var behavior in cacheBehaviors)
-        {
-            var fullPath = Path.Combine(behaviorsPath, behavior);
-            if (!File.Exists(fullPath))
-            {
-                violations.Add($"{behavior} (not found)");
-                continue;
-            }
-
-            var content = RemoveComments(File.ReadAllText(fullPath));
-            if (!content.Contains("CacheKeyFactory"))
-                violations.Add($"{behavior} (missing CacheKeyFactory dependency)");
-        }
-
-        violations.Should().BeEmpty(
-            "Cache behaviors must use CacheKeyFactory: " + string.Join(", ", violations));
     }
 
     private static bool ImplementsCommandOrQuery(Type type)

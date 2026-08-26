@@ -13,7 +13,7 @@ public record CreateShareLinkCommand(
     string ResourceKind,
     Guid ResourceId,
     string Level,
-    DateTime? ExpiresAt = null) : ICommand<Result<CreateShareLinkResponse>>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
+    DateTime? ExpiresAt = null) : ICommand<Result<CreateShareLinkResponse>>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IWriteRequest
 {
     internal ResourceKind Kind => ParseKind(ResourceKind);
 

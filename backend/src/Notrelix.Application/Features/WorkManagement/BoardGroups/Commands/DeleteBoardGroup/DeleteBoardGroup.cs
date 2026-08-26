@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Dele
 
 [IdempotencyOperation("work-management.board-groups.delete-board-group.v1")]
 public record DeleteBoardGroupCommand(Guid GroupId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
