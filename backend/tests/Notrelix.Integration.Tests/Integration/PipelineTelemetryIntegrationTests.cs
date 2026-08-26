@@ -100,7 +100,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         result.Succeeded.Should().BeTrue();
 
         var root = recorder.Started.Should()
-            .ContainSingle(a => a.OperationName == "pipeline.request").Subject;
+            .ContainSingle(a => IsRootFor(a, "CreateWorkspaceCommand")).Subject;
 
         root.Tags.Should().Contain(tag => tag.Key == "app.request" && (string?)tag.Value == "CreateWorkspaceCommand");
         root.Tags.Should().Contain(tag => tag.Key == "request.kind" && (string?)tag.Value == "Command");
@@ -143,7 +143,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         await act.Should().ThrowAsync<AppForbidden>();
 
         var root = recorder.Started.Should()
-            .ContainSingle(a => a.OperationName == "pipeline.request").Subject;
+            .ContainSingle(a => IsRootFor(a, "CreateWorkspaceCommand")).Subject;
 
         root.Status.Should().Be(ActivityStatusCode.Error);
         root.Tags.Should().Contain(tag =>
@@ -191,7 +191,7 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             "the second send must replay the stored result instead of executing the handler again");
 
         var roots = recorder.Started
-            .Where(a => a.OperationName == "pipeline.request")
+            .Where(a => IsRootFor(a, "SetBoardItemDueDateCommand"))
             .ToArray();
         roots.Should().HaveCount(2);
         roots.Should().OnlyContain(r => r.Status == ActivityStatusCode.Ok);
@@ -555,6 +555,10 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             resourceId: Guid.NewGuid(), streamKey: $"telemetry:{Guid.NewGuid():N}", streamVersion: 1,
             changeKind: "updated", payloadContract: "test.v1",
             System.Text.Json.JsonDocument.Parse("{}").RootElement);
+
+    private static bool IsRootFor(Activity activity, string requestName) =>
+        activity.OperationName == "pipeline.request"
+        && activity.Tags.Any(tag => tag.Key == "app.request" && Equals(tag.Value, requestName));
 
     private static Activity? RootAncestor(Activity activity)
     {
