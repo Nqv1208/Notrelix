@@ -1,33 +1,101 @@
-name: Documentation Governance
+name: Documentation CI
+
 on:
-  workflow_call:
+  pull_request:
+    branches: [main, develop]
+  merge_group:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
+  changes:
+    name: Change detection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      documentation: ${{ steps.detect.outputs.documentation }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          BEFORE_SHA: ${{ github.event.before || '' }}
+        run: |
+          set -euo pipefail
+          selected=false
+          base="$BASE_SHA"; head="$HEAD_SHA"
+          case "$EVENT_NAME" in
+            pull_request|merge_group)
+              if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
+                base="$merge_base"
+              else
+                selected=true
+              fi
+              ;;
+            push)
+              head="$GITHUB_SHA"; base="$BEFORE_SHA"
+              if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == "0000000000000000000000000000000000000000" ]]; then selected=true; fi
+              ;;
+            *)
+              selected=true
+              ;;
+          esac
+          if [[ "$selected" == true ]] || ! files="$(git diff --name-only --diff-filter=ACMRDTUXB "$base" "$head" 2>/dev/null)"; then
+            echo "documentation=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          while IFS= read -r file; do
+            [[ -n "$file" ]] || continue
+            case "$file" in
+              docs/**|backend/docs/**|frontend/docs/**|*.md|Makefile|.github/workflows/docs-ci.yml)
+                selected=true
+                ;;
+            esac
+            [[ "$selected" == true ]] && break
+          done <<< "$files"
+          echo "documentation=$selected" >> "$GITHUB_OUTPUT"
+
   governance:
     name: Documentation governance
+    needs: changes
+    if: needs.changes.outputs.documentation == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/setup-frontend
-      - name: Validate governed documentation
+      - name: Run documentation governance
         run: make docs-check
-  gate:
+
+  docs-gate:
     name: Documentation Governance gate
     if: always()
-    needs: [governance]
+    needs: [changes, governance]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Require documentation governance success
+      - name: Require documentation proof when selected
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          SELECTED: ${{ needs.changes.outputs.documentation }}
           GOVERNANCE_RESULT: ${{ needs.governance.result }}
         run: |
           set -euo pipefail
-          [[ "$GOVERNANCE_RESULT" == success ]] || { echo "Documentation governance failed: $GOVERNANCE_RESULT" >&2; exit 1; }
-      - uses: ./.github/actions/emit-evidence
-        with:
-          proof_id: docs:gate
-          component_id: documentation
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          require changes "$CHANGES_RESULT"
+          if [[ "$SELECTED" == true ]]; then
+            require governance "$GOVERNANCE_RESULT"
+          elif [[ "$GOVERNANCE_RESULT" != skipped ]]; then
+            echo "::error::expected governance to be skipped when unselected"
+            exit 1
+          fi

@@ -1,44 +1,164 @@
 name: Infrastructure CI
+
 on:
-  workflow_call:
-    inputs:
-      runtime_images_json: {required: true, type: string}
-      deployable_containers_json: {required: true, type: string}
-permissions: {contents: read}
+  pull_request:
+    branches: [main, develop]
+  merge_group:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
+  changes:
+    name: Change detection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      infra: ${{ steps.detect.outputs.infra }}
+      backend_selected: ${{ steps.detect.outputs.backend_selected }}
+      selected: ${{ steps.detect.outputs.selected }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          BEFORE_SHA: ${{ github.event.before || '' }}
+        run: |
+          set -euo pipefail
+          infra=false; backend_selected=false; forced_all=false
+          base="$BASE_SHA"; head="$HEAD_SHA"
+          case "$EVENT_NAME" in
+            pull_request|merge_group)
+              if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
+                base="$merge_base"
+              else
+                forced_all=true
+              fi
+              ;;
+            push)
+              head="$GITHUB_SHA"; base="$BEFORE_SHA"
+              if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == "0000000000000000000000000000000000000000" ]]; then
+                forced_all=true
+              fi
+              ;;
+            *)
+              forced_all=true
+              ;;
+          esac
+          if [[ "$forced_all" == true ]]; then
+            infra=true; backend_selected=true
+          elif files="$(git diff --name-only --diff-filter=ACMRDTUXB "$base" "$head" 2>/dev/null)"; then
+            while IFS= read -r file; do
+              [[ -n "$file" ]] || continue
+              case "$file" in
+                docker-compose.yml|docker-compose.prod.yml|docker-compose.staging.yml) infra=true ;;
+                infra/**) infra=true ;;
+                scripts/ci/validate-infra.py) infra=true ;;
+                scripts/ci/write-test-env.sh) infra=true ;;
+                .github/workflows/infra-ci.yml) infra=true ;;
+                .dockerignore) infra=true ;;
+                frontend/apps/web/nginx.conf) infra=true ;;
+                frontend/Dockerfile|frontend/Dockerfile.marketing|backend/Dockerfile) backend_selected=true ;;
+              esac
+              [[ "$infra:$backend_selected" == "true:true" ]] && break
+            done <<< "$files"
+          else
+            infra=true; backend_selected=true
+          fi
+          echo "infra=$infra" >> "$GITHUB_OUTPUT"
+          echo "backend_selected=$backend_selected" >> "$GITHUB_OUTPUT"
+          [[ "$infra" == true || "$backend_selected" == true ]] && selected=true || selected=false
+          echo "selected=$selected" >> "$GITHUB_OUTPUT"
+
   static:
+    name: Static topology validation
+    needs: changes
+    if: needs.changes.outputs.selected == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - env: {RUNTIME: '${{ inputs.runtime_images_json }}', CONTAINERS: '${{ inputs.deployable_containers_json }}'}
-        run: |
-          jq . <<<"$RUNTIME" > /tmp/runtime.json; jq . <<<"$CONTAINERS" > /tmp/containers.json
-          python3 scripts/ci/validate-infra.py --runtime-images /tmp/runtime.json --containers /tmp/containers.json
-      - name: Nginx syntax
-        env: {RUNTIME: '${{ inputs.runtime_images_json }}'}
-        run: |
-          image="$(jq -er '.images[]|select(.id=="nginx")|.ref' <<<"$RUNTIME")"
-          docker run --rm -v "$PWD/infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" "$image" nginx -t
-          docker run --rm -v "$PWD/infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro" "$image" nginx -t
+      - name: Validate Compose topology and rootless invariants
+        run: python3 scripts/ci/validate-infra.py
+      - name: Validate staging nginx syntax
+        run: docker run --rm -v "$PWD/infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" nginx:1.27-alpine nginx -t
+      - name: Validate production nginx syntax
+        run: docker run --rm -v "$PWD/infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro" nginx:1.27-alpine nginx -t
+
   assembled:
-    needs: static
+    name: Assembled stack health
+    needs: changes
+    if: needs.changes.outputs.selected == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
+    env:
+      HTTP_PORT: "8080"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - env: {RUNTIME: '${{ inputs.runtime_images_json }}'}
+      - name: Generate ephemeral environment
+        run: bash scripts/ci/write-test-env.sh /tmp/notrelix-infra.env
+      - name: Compose config
+        run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml config --quiet
+      - name: Build backend, web and marketing images
         run: |
-          scripts/ci/write-test-env.sh /tmp/notrelix-infra.env
-          jq -r '.images[]|"\(.deploy_env_var)=\(.ref)"' <<<"$RUNTIME" >> /tmp/notrelix-infra.env
-      - run: |
-          set -euo pipefail
-          c=(docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml)
-          "${c[@]}" config >/dev/null; "${c[@]}" build backend frontend-web frontend-marketing; "${c[@]}" up -d postgres redis rabbitmq
-          "${c[@]}" run --rm backend --migrate; "${c[@]}" run --rm backend --rls-apply; "${c[@]}" up -d --remove-orphans
-          for _ in $(seq 1 60); do curl -fsS http://127.0.0.1:8080/health/live >/dev/null && break; sleep 2; done
-          curl -fsS http://127.0.0.1:8080/health/live >/dev/null; curl -fsS http://127.0.0.1:8080/sign-in >/dev/null; curl -fsS http://127.0.0.1:8080/ >/dev/null
-      - uses: ./.github/actions/emit-evidence
-        with: {proof_id: 'infra:gate', component_id: runtime-infrastructure}
-      - if: always()
+          docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml build backend frontend-web frontend-marketing
+      - name: Start dependency services
+        run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml up -d postgres redis rabbitmq
+      - name: Apply migrations
+        run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml run --rm backend --migrate
+      - name: Apply RLS policies
+        run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml run --rm backend --rls-apply
+      - name: Start full stack
+        run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml up -d --remove-orphans
+      - name: Wait for health endpoints
+        timeout-minutes: 10
+        run: |
+          for url in "http://127.0.0.1:8080/health/live" "http://127.0.0.1:8080/sign-in" "http://127.0.0.1:8080/"; do
+            code=000; attempts=0
+            while [[ "$code" != 200 && "$attempts" -lt 60 ]]; do
+              code="$(curl -s -o /dev/null -w '%{http_code}' "$url" || true)"
+              attempts=$((attempts + 1))
+              [[ "$code" != 200 ]] && sleep 5
+            done
+            if [[ "$code" != 200 ]]; then
+              echo "health probe failed for $url (HTTP $code)"
+              docker compose -f docker-compose.yml -f docker-compose.staging.yml ps
+              exit 1
+            fi
+          done
+      - name: Tear down stack
+        if: always()
         run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml down -v --remove-orphans || true
+
+  infra-gate:
+    name: Infrastructure CI gate
+    if: always()
+    needs: [changes, static, assembled]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require infrastructure proof when selected
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          SELECTED: ${{ needs.changes.outputs.selected }}
+          STATIC_RESULT: ${{ needs.static.result }}
+          ASSEMBLED_RESULT: ${{ needs.assembled.result }}
+        run: |
+          set -euo pipefail
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          require changes "$CHANGES_RESULT"
+          if [[ "$SELECTED" == true ]]; then
+            require static "$STATIC_RESULT"
+            require assembled "$ASSEMBLED_RESULT"
+          elif [[ "$STATIC_RESULT" != skipped || "$ASSEMBLED_RESULT" != skipped ]]; then
+            echo "::error::expected static and assembled to be skipped when unselected"
+            exit 1
+          fi

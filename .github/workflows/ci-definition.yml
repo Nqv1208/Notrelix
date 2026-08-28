@@ -1,32 +1,233 @@
-name: CI Definition Safety
+name: CI Definition
+
 on:
-  pull_request: {branches: [main, develop]}
+  pull_request:
+    branches: [main, develop]
   merge_group:
-  push: {branches: [main, develop]}
+  push:
+    branches: [main, develop]
   workflow_dispatch:
-permissions: {contents: read}
+
+permissions:
+  contents: read
+
+env:
+  TRIVY_SEVERITY: CRITICAL,HIGH
+
 jobs:
-  definition:
+  changes:
+    name: Change detection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      delivery_tool: ${{ steps.detect.outputs.delivery_tool }}
+      evidence_action: ${{ steps.detect.outputs.evidence_action }}
+      runtime_lock: ${{ steps.detect.outputs.runtime_lock }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          BEFORE_SHA: ${{ github.event.before || '' }}
+        run: |
+          set -euo pipefail
+          delivery_tool=false; evidence_action=false; runtime_lock=false; forced_all=false
+          base="$BASE_SHA"; head="$HEAD_SHA"
+          case "$EVENT_NAME" in
+            pull_request|merge_group)
+              if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
+                base="$merge_base"
+              else
+                forced_all=true
+              fi
+              ;;
+            push)
+              head="$GITHUB_SHA"; base="$BEFORE_SHA"
+              if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == "0000000000000000000000000000000000000000" ]]; then
+                forced_all=true
+              fi
+              ;;
+            *)
+              forced_all=true
+              ;;
+          esac
+          if [[ "$forced_all" == true ]]; then
+            delivery_tool=true; evidence_action=true; runtime_lock=true
+          elif files="$(git diff --name-only --diff-filter=ACMRDTUXB "$base" "$head" 2>/dev/null)"; then
+            while IFS= read -r file; do
+              [[ -n "$file" ]] || continue
+              case "$file" in
+                tools/deliveryctl/**|delivery/**) delivery_tool=true ;;
+                .github/actions/emit-evidence/**) evidence_action=true ;;
+                *.md) ;;
+              esac
+              case "$file" in
+                delivery/images.lock.toml) runtime_lock=true ;;
+              esac
+            done <<< "$files"
+          else
+            delivery_tool=true; evidence_action=true; runtime_lock=true
+          fi
+          {
+            echo "delivery_tool=$delivery_tool"
+            echo "evidence_action=$evidence_action"
+            echo "runtime_lock=$runtime_lock"
+          } >> "$GITHUB_OUTPUT"
+
+  workflow-lint:
     name: Workflow definition lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify runtime prerequisite
+        run: |
+          python3 - <<'EOF'
+          import sys
+          import tomllib  # noqa: F401
+          assert sys.version_info >= (3, 11), f"python3 {sys.version_info} too old"
+          EOF
+      - name: Lint GitHub Actions workflows
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+
+  script-syntax:
+    name: Script syntax and roundtrip checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Compile CI scripts
+        run: python3 -m compileall -q scripts/ci
+      - name: Syntax-check host artifact helpers
+        run: |
+          cd frontend
+          node --check scripts/ci/package-host-artifact.mjs
+          node --check scripts/ci/restore-host-artifact.mjs
+      - name: Run host artifact roundtrip test
+        run: |
+          cd frontend
+          node scripts/ci/host-artifact.roundtrip.test.mjs
+
+  delivery-tool-validation:
+    name: Deliveryctl validation
+    needs: changes
+    if: needs.changes.outputs.delivery_tool == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: {fetch-depth: 0}
-      - run: python3 -c 'import sys,tomllib; assert sys.version_info >= (3,11)'
-      - run: python3 -m tools.deliveryctl validate
-      - run: python3 -m tools.deliveryctl architecture-check
-      - run: python3 -m tools.deliveryctl visual --check
-      - run: python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
-      - run: python3 -m compileall -q tools/deliveryctl scripts/ci
-      - run: |
-          node --check frontend/scripts/ci/package-host-artifact.mjs
-          node --check frontend/scripts/ci/restore-host-artifact.mjs
-      - name: Execution primitive contracts
+      - name: Compile deliveryctl and CI scripts
+        run: python3 -m compileall -q tools/deliveryctl scripts/ci
+      - name: Validate delivery definition
+        run: python3 -m tools.deliveryctl validate
+      - name: Run architecture checks
+        run: python3 -m tools.deliveryctl architecture-check
+      - name: Check visual documentation
+        run: python3 -m tools.deliveryctl visual --check
+      - name: Run deliveryctl unit tests
+        run: python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
+
+  evidence-action-validation:
+    name: Emit evidence contract test
+    needs: changes
+    if: needs.changes.outputs.evidence_action == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: frontend/.node-version
+      - name: Run emit-evidence contract test
+        working-directory: .github/actions/emit-evidence
+        run: node contract.test.mjs
+
+  runtime-lock-security:
+    name: Runtime image lock security
+    needs: changes
+    if: needs.changes.outputs.runtime_lock == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Extract pinned runtime image refs
         run: |
-          node .github/actions/emit-evidence/contract.test.mjs
-          node frontend/scripts/ci/host-artifact.roundtrip.test.mjs
-      - name: actionlint
+          python3 - <<'EOF'
+          import os, sys
+          import tomllib
+          with open("delivery/images.lock.toml", "rb") as handle:
+              data = tomllib.load(handle)
+          images = data.get("images", {})
+          required = {"postgres", "redis", "rabbitmq", "nginx"}
+          found: set[str] = set()
+          for name, item in images.items():
+              if item.get("class") != "runtime":
+                  continue
+              if str(item.get("ref", "")) and "@sha256:" not in str(item["ref"]):
+                  print(f"{name} runtime ref is not content-addressed: {item['ref']!r}", file=sys.stderr)
+                  sys.exit(1)
+              found.add(name)
+              with open(os.environ["GITHUB_ENV"], "a") as handle:
+                  handle.write(f"RUNTIME_REF_{name.upper()}={item['ref']}\n")
+          missing = sorted(required - found)
+          if missing:
+              print(f"runtime lock missing: {missing}", file=sys.stderr)
+              sys.exit(1)
+          EOF
+      - name: Scan postgres
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.RUNTIME_REF_POSTGRES }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Scan redis
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.RUNTIME_REF_REDIS }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Scan rabbitmq
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.RUNTIME_REF_RABBITMQ }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Scan nginx
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.RUNTIME_REF_NGINX }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+
+  ci-definition-gate:
+    name: CI Definition Safety gate
+    if: always()
+    needs: [changes, workflow-lint, script-syntax, delivery-tool-validation, evidence-action-validation, runtime-lock-security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require CI definition proof when selected
+        env:
+          DELIVERY_TOOL: ${{ needs.changes.outputs.delivery_tool }}
+          EVIDENCE_ACTION: ${{ needs.changes.outputs.evidence_action }}
+          RUNTIME_LOCK: ${{ needs.changes.outputs.runtime_lock }}
+          RESULTS: ${{ toJSON(needs) }}
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo \
-            rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+          set -euo pipefail
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
+          require changes "$(result changes)"
+          require workflow-lint "$(result workflow-lint)"
+          require script-syntax "$(result script-syntax)"
+          if [[ "$DELIVERY_TOOL" == true ]]; then require delivery-tool-validation "$(result delivery-tool-validation)"; fi
+          if [[ "$EVIDENCE_ACTION" == true ]]; then require evidence-action-validation "$(result evidence-action-validation)"; fi
+          if [[ "$RUNTIME_LOCK" == true ]]; then require runtime-lock-security "$(result runtime-lock-security)"; fi

@@ -74,23 +74,30 @@ def check(root: Path = ROOT) -> None:
                 if ref in text:
                     errors.append(f"{path.name}: duplicated runtime image authority {image_id}")
 
-    ci = (workflows / "ci.yml").read_text(encoding="utf-8")
-    for component_id in authorities["catalog"]["components"]:
-        if re.search(
-            rf"(?<![A-Za-z0-9_.-]){re.escape(component_id)}(?![A-Za-z0-9_.-])",
-            ci,
-        ):
-            errors.append(f"ci.yml hardcodes component {component_id}")
-    if "Notrelix CI Gate" not in ci:
-        errors.append("final CI gate missing")
-    if "python3 -m tools.deliveryctl plan" not in ci:
-        errors.append("canonical deliveryctl planner missing")
+    for forbidden_ci in ("ci.yml", "ci-v2.yml", "ci-orchestrator.yml", "ci-gate.yml"):
+        if (workflows / forbidden_ci).exists():
+            errors.append(f"central CI orchestrator {forbidden_ci} forbidden")
+
+    developer_workflows = (
+        "backend-ci.yml",
+        "frontend-ci.yml",
+        "docs-ci.yml",
+        "infra-ci.yml",
+        "container-ci.yml",
+    )
+    domain_workflows = developer_workflows + ("ci-definition.yml",)
+    for name in developer_workflows:
+        if "python3 -m tools.deliveryctl plan" in (workflows / name).read_text(encoding="utf-8"):
+            errors.append(f"{name}: canonical deliveryctl planner forbidden in domain workflow")
+    for name in domain_workflows:
+        if "uses: ./.github/actions/emit-evidence" in (workflows / name).read_text(encoding="utf-8"):
+            errors.append(f"{name}: domain workflow must not emit evidence")
 
     frontend = (workflows / "frontend-ci.yml").read_text(encoding="utf-8")
     if re.search(r"has [^\n]+&&\s*require [^\n]+\|\|\s*true", frontend):
         errors.append("frontend gate contains fail-open require/|| true pattern")
-    if "Renderer/package version contract" not in frontend:
-        errors.append("frontend renderer/package version contract missing")
+    if "check:production-mock-isolation" not in frontend:
+        errors.append("frontend must verify production/mock artifact isolation")
     if "restore-host-artifact.mjs" not in frontend:
         errors.append("frontend exact-artifact restore contract missing")
 
@@ -104,8 +111,8 @@ def check(root: Path = ROOT) -> None:
     ):
         if required not in backend:
             errors.append(f"backend critical-test execution guard missing: {required}")
-    if "image: ${{ inputs.redis_image }}" not in backend:
-        errors.append("backend Redis runtime image must come from resolved input")
+    if "has the following vulnerable packages" not in backend:
+        errors.append("backend must fail on vulnerable NuGet packages")
 
     # Startup-critical smoke environment: dropping any of these silently breaks
     # the backend container at Production startup validation (observed with
@@ -127,9 +134,19 @@ def check(root: Path = ROOT) -> None:
         if required_env not in container_text:
             errors.append(f"backend runtime smoke lost startup-critical env: {required_env.rstrip('=')}")
 
+    for forbidden in ("publish_candidate", "docker push", "attest"):
+        if forbidden in container_text:
+            errors.append(f"container provider must not publish/attest images ({forbidden})")
+
     docs = (workflows / "docs-ci.yml").read_text(encoding="utf-8")
     if "make docs-check" not in docs:
         errors.append("docs provider must execute repository documentation governance")
+
+    infra_workflow = (workflows / "infra-ci.yml").read_text(encoding="utf-8")
+    if "python3 scripts/ci/validate-infra.py" not in infra_workflow:
+        errors.append("infra provider must execute validate-infra.py")
+    if "--runtime-images" in infra_workflow:
+        errors.append("infra provider must not consume planner runtime contract")
 
     infra_helper = (root / "scripts/ci/validate-infra.py").read_text(encoding="utf-8")
     if (
@@ -139,8 +156,8 @@ def check(root: Path = ROOT) -> None:
         or "from tomllib" in infra_helper
     ):
         errors.append("validate-infra.py must consume resolved contracts, not delivery authority")
-    if "!reset null" not in infra_helper:
-        errors.append("infra release overlay must erase application build definitions")
+    if "--runtime-images" in infra_helper:
+        errors.append("validate-infra.py must be standalone and must not accept planner runtime contract")
 
     makefile = root / "Makefile"
     if makefile.exists():

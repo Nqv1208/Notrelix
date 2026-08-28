@@ -22,68 +22,74 @@ review_on:
 
 | Decision | Canonical source |
 |---|---|
-| components/providers/build/deploy metadata | `delivery/catalog.toml` |
-| routing/proofs/release/migration policy | `delivery/policy.toml` |
+| components/build/deploy metadata | `delivery/catalog.toml` |
+| routing/release/migration policy | `delivery/policy.toml` |
 | environment promotion/deployment behavior | `delivery/environments.toml` |
 | immutable build/runtime/tooling images | `delivery/images.lock.toml` |
 | authority model and validation | `tools/deliveryctl/model.py` |
-| execution plan | `tools/deliveryctl/planner.py` |
-| evidence completeness | `tools/deliveryctl/evidence.py` |
+| architecture regression policy | `tools/deliveryctl/architecture.py` |
 | release validation | `tools/deliveryctl/release.py` |
 | deployment bundle materialization | `tools/deliveryctl/bundle.py` |
-| architecture regression policy | `tools/deliveryctl/architecture.py` |
+| CI domain proofs | `.github/workflows/*-ci.yml` |
+| infra topology proof | `scripts/ci/validate-infra.py` |
 
-Providers consume resolved contracts; they do not own parallel authorities.
+Workflows are standalone domain owners; they consume no delivery authority and do not receive planner-resolved contracts.
 
 ## 2. Required repository checks
 
-Protected trunk should require the stable top-level checks:
+Protected trunk should require the six stable domain gates plus the security checks GitHub actually emits on each workflow run (CodeQL):
 
 ```text
-Workflow definition lint
-Notrelix CI Gate
+Backend CI gate
+Frontend gate
+Documentation Governance gate
+Infrastructure CI gate
+Container CI gate
+CI Definition Safety gate
+CodeQL (repository security; exact check names per workflow run)
 ```
 
-CodeQL/code-scanning enforcement is configured as repository governance. Do not require affected-dependent matrix job names as branch-protection authorities.
+Do not require per-job names as branch-protection authorities; the fail-closed domain gates are the stable check names. There is no separate `Security CI` required check.
 
 ## 3. Local validation
 
 ```bash
 python3 -m tools.deliveryctl validate
 python3 -m tools.deliveryctl architecture-check
+python3 -m tools.deliveryctl visual --check
 python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
 python3 -m compileall -q tools/deliveryctl scripts/ci
-python3 -m tools.deliveryctl visual --check
 node --check frontend/scripts/ci/package-host-artifact.mjs
 node --check frontend/scripts/ci/restore-host-artifact.mjs
+node frontend/scripts/ci/host-artifact.roundtrip.test.mjs
 make docs-check
 ```
 
-A Docker-capable environment additionally runs the resolved infrastructure validation and actionlint through `CI Definition Safety`.
+A Docker-capable environment additionally runs pinned actionlint and `python3 scripts/ci/validate-infra.py`.
 
-## 4. Provider maintenance
+## 4. Domain maintenance
 
 ### Backend
 
-Keep explicit critical-test execution verification. Broad project execution is not a replacement for proving critical named tests were discovered and executed. Runtime image dependencies such as Redis are planner inputs.
+Keep explicit critical-test execution verification. Broad project execution is not a replacement for proving critical named tests were discovered and executed. Runtime service images (Redis) are declared locally by the workflow; image digests still live only in `delivery/images.lock.toml`. The NuGet vulnerability guard must fail on vulnerable packages, not merely report.
 
 ### Frontend
 
-Keep repository invariants separate from affected proof. Host E2E restores the exact artifact produced by host-build and verifies the renderer/package Playwright version contract before executing E2E.
+Keep repository invariants separate from affected proof. Host E2E restores the exact artifact produced by host-build and does not rebuild it. Verify production/mock artifact isolation with the restored production artifact.
 
-Final provider gates are fail closed. Never hide `require` failures behind `|| true`.
+Final domain gates are fail closed. Never hide `require` failures behind `|| true`.
 
 ### Container
 
-The provider receives build context, Dockerfile, build args, health contract and smoke dependencies from the ExecutionPlan. Sequence is build once -> smoke/scan -> SBOM -> publish same bytes -> digest -> attest.
+CI is validation-only: build once -> runtime smoke exact image -> HIGH/CRITICAL gate -> SPDX SBOM. Publish and attestation belong to the release path; CI must not push images or create attestations.
 
 ### Infrastructure
 
-`validate-infra.py` consumes resolved runtime/application JSON. It must not import deliveryctl or parse TOML, while retaining topology/rootless/RLS/staging/release-no-build semantic checks.
+`validate-infra.py` renders Compose directly and must not import deliveryctl or parse `delivery/*.toml`, while retaining topology/rootless/RLS/staging semantic checks. The assembled job validates the full staging stack (migrations, RLS, HTTP probes) with ephemeral credentials.
 
 ### Documentation/security
 
-Documentation executes repository `make docs-check`. Dependency security keeps diagnostic artifacts and fails the selected scan contract.
+Documentation executes repository `make docs-check`. Dependency security keeps diagnostic artifacts and fails the scan contract. Security and release workflows are outside the domain-owned migration and remain untouched.
 
 ## 5. GitHub Environments
 
@@ -96,15 +102,12 @@ Current Compose/SSH adapter expects values such as deployment host/user/key/know
 For a releaseable `main` push:
 
 ```text
-Notrelix CI
- -> exact application image proof
- -> complete application + runtime digest set
- -> exact assembled-stack proof
- -> exact evidence completeness
- -> ReleaseCandidate attestation
- -> staging deploy without rebuild
- -> StagingVerifiedRelease attestation
- -> protected production promotion
+domain CI gates
+  -> merge to main
+  -> ReleaseCandidate attestation
+  -> staging deploy without rebuild
+  -> StagingVerifiedRelease attestation
+  -> protected production promotion
 ```
 
 Manual release/promotion inputs identify successful workflow runs, not arbitrary image/tag/SHA combinations.
@@ -117,7 +120,7 @@ If a schema-changing migration has begun, automatic application downgrade is dis
 
 ## 8. Image-lock updates
 
-`delivery/images.lock.toml` is the only immutable image authority. Update source version intentionally, resolve/commit digest, run delivery validation, and allow security/container/stack proof to exercise the new subject.
+`delivery/images.lock.toml` is the only immutable image authority. Update source version intentionally, resolve/commit digest, run delivery validation. The CI Definition runtime-lock security job scans the pinned runtime digests when the lock changes.
 
 Do not create another committed lock/env file as a parallel authority.
 
@@ -132,11 +135,14 @@ Development builds remain available through Make. Staging/production build/deplo
 Do not:
 
 - reintroduce `.python-version`, setup-ci-python or `actions/setup-python` into delivery execution;
-- call deliveryctl/TOML authority from reusable providers;
-- create component-specific `ci.yml` branches;
+- reintroduce a central orchestrator (`ci.yml`, `ci-v2.yml`, `ci-orchestrator.yml`, `ci-gate.yml`);
+- call `tools.deliveryctl plan` or read delivery authority from a workflow;
+- emit evidence from a domain workflow;
 - duplicate runtime image digests in providers;
 - weaken named critical-test execution guards;
-- use fail-open final-gate shell constructs;
+- use fail-open final-gate shell constructs or `|| true` on gate checks;
+- reuse exact host artifacts between transient and production profiles (verify isolation);
+- build container images for publish/attestation in CI (release path only);
 - rebuild between CI, staging and production;
 - replace digests with tags;
 - bypass deployment manifests through Make/Compose;
