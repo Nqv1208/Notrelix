@@ -1,127 +1,262 @@
 name: Container CI
+
 on:
-  workflow_call:
-    inputs:
-      component_matrix_json: {required: true, type: string}
-      component_count: {required: true, type: number}
-      publish_candidate: {required: false, type: boolean, default: false}
-    outputs:
-      application_manifest_json:
-        value: ${{ jobs.collect.outputs.application_manifest_json }}
-permissions: {contents: read}
+  pull_request:
+    branches: [main, develop]
+  merge_group:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TRIVY_SEVERITY: CRITICAL,HIGH
+
 jobs:
-  build:
-    if: inputs.component_count > 0
+  changes:
+    name: Change detection
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    permissions: {contents: read, packages: write, id-token: write, attestations: write, artifact-metadata: write}
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(inputs.component_matrix_json) }}
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+      web: ${{ steps.detect.outputs.web }}
+      marketing: ${{ steps.detect.outputs.marketing }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - id: names
-        env: {IMAGE_NAME: '${{ matrix.image_name }}', COMPONENT: '${{ matrix.component_id }}'}
-        run: |
-          owner="${GITHUB_REPOSITORY_OWNER,,}"; repo="ghcr.io/$owner/$IMAGE_NAME"; local="notrelix-ci/$COMPONENT:$GITHUB_SHA"; remote="$repo:sha-$GITHUB_SHA"
-          { echo "repo=$repo"; echo "local=$local"; echo "remote=$remote"; } >> "$GITHUB_OUTPUT"
-      - name: Build once
+        with:
+          fetch-depth: 0
+      - id: detect
         env:
-          CONTEXT: ${{ matrix.container_context }}
-          DOCKERFILE: ${{ matrix.dockerfile }}
-          IMAGE: ${{ steps.names.outputs.local }}
-          BUILD_ARGS: ${{ toJSON(matrix.build_args) }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          BEFORE_SHA: ${{ github.event.before || '' }}
         run: |
           set -euo pipefail
-          args=(); while IFS= read -r line; do [[ -n "$line" ]] && args+=(--build-arg "$line"); done < <(jq -r 'to_entries[]?|"\(.key)=\(.value)"' <<<"$BUILD_ARGS")
-          docker build --pull=false -f "$DOCKERFILE" -t "$IMAGE" "${args[@]}" "$CONTEXT"
-      - name: Vulnerability gate
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with: {image-ref: '${{ steps.names.outputs.local }}', exit-code: '1', ignore-unfixed: true, vuln-type: 'os,library', severity: 'HIGH,CRITICAL'}
-      - name: Runtime smoke
-        env:
-          PROVIDER: ${{ matrix.provider }}
-          IMAGE: ${{ steps.names.outputs.local }}
-          PORT: ${{ matrix.runtime_port }}
-          HEALTH: ${{ matrix.health_path }}
-          SCHEME: ${{ matrix.health_scheme }}
-          COMPONENT: ${{ matrix.component_id }}
-          DEPS: ${{ toJSON(matrix.smoke_dependencies) }}
-        run: |
-          set -euo pipefail
-          net="ci-${GITHUB_RUN_ID}-${COMPONENT}"; name="app-${COMPONENT}"; creds="$(mktemp)"
-          trap 'rm -f "$creds"; docker rm -f "$name" ci-postgres ci-redis ci-rabbitmq >/dev/null 2>&1 || true; docker network rm "$net" >/dev/null 2>&1 || true' EXIT
-          if [[ "$PROVIDER" == backend ]]; then
-            postgres="$(jq -er .postgres <<<"$DEPS")"; redis="$(jq -er .redis <<<"$DEPS")"; rabbit="$(jq -er .rabbitmq <<<"$DEPS")"
-            [[ "$postgres" == *@sha256:* && "$redis" == *@sha256:* && "$rabbit" == *@sha256:* ]]
-            scripts/ci/generate-test-credentials.sh > "$creds"
-            # shellcheck source=/dev/null
-            source "$creds"; docker network create "$net" >/dev/null
-            docker run -d --name ci-postgres --network "$net" -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" -e POSTGRES_DB=notrelix "$postgres" >/dev/null
-            docker run -d --name ci-redis --network "$net" "$redis" redis-server --requirepass "$REDIS_PASSWORD" >/dev/null
-            docker run -d --name ci-rabbitmq --network "$net" -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS="$RABBITMQ_PASSWORD" "$rabbit" >/dev/null
-            for _ in $(seq 1 45); do docker exec ci-postgres pg_isready -U postgres -d notrelix >/dev/null 2>&1 && break; sleep 1; done
-            for _ in $(seq 1 60); do docker exec ci-rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1 && break; sleep 1; done
-            docker run -d --name "$name" --network "$net" -P -e ASPNETCORE_ENVIRONMENT=Production -e ASPNETCORE_URLS="http://+:$PORT" -e HttpsRedirection__Enabled=false -e ForwardedHeaders__RequireKnownProxyInProduction=false -e Rls__Enabled=true -e Rls__SetSessionContext=true -e DataProtection__PersistKeys=true -e DataProtection__KeysPath=/tmp/dataprotection-keys -e ConnectionStrings__NotrelixDb="Host=ci-postgres;Database=notrelix;Username=postgres;Password=$POSTGRES_PASSWORD" -e ConnectionStrings__Redis="ci-redis:6379,password=$REDIS_PASSWORD" -e Messaging__Transport=RabbitMQ -e Messaging__RabbitMQ__Host=ci-rabbitmq -e Messaging__RabbitMQ__Port=5672 -e Messaging__RabbitMQ__VHost=/ -e Messaging__RabbitMQ__Username=rabbitmq -e Messaging__RabbitMQ__Password="$RABBITMQ_PASSWORD" -e JwtSettings__SecretKey="$JWT_SECRET" -e JwtSettings__Issuer='https://ci.notrelix.invalid' -e JwtSettings__Audience='https://ci.notrelix.invalid' -e Email__ApiKey="$EMAIL_API_KEY" -e Email__FromEmail='noreply@notrelix.invalid' -e Cors__AllowedOrigins__0='https://ci.notrelix.invalid' -e Frontend__AppBaseUrl='https://ci.notrelix.invalid' "$IMAGE" >/dev/null
-          else
-            docker run -d --name "$name" -P "$IMAGE" >/dev/null
+          backend=false; web=false; marketing=false; forced_all=false
+          base="$BASE_SHA"; head="$HEAD_SHA"
+          case "$EVENT_NAME" in
+            pull_request|merge_group)
+              if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
+                base="$merge_base"
+              fi
+              ;;
+            push)
+              head="$GITHUB_SHA"; base="$BEFORE_SHA"
+              ;;
+            *)
+              forced_all=true
+              ;;
+          esac
+          if [[ "$forced_all" == true ]]; then
+            backend=true; web=true; marketing=true
+          elif files="$(git diff --name-only --diff-filter=ACMRDTUXB "$base" "$head" 2>/dev/null)"; then
+            while IFS= read -r file; do
+              [[ -n "$file" ]] || continue
+              case "$file" in
+                *.md) ;;
+                backend/*) backend=true ;;
+                frontend/Dockerfile|frontend/Dockerfile.marketing) web=true; marketing=true ;;
+                frontend/apps/web/**) web=true ;;
+                frontend/packages/**|frontend/tooling/**) web=true; marketing=true ;;
+                frontend/package.json|frontend/pnpm-lock.yaml|frontend/pnpm-workspace.yaml|frontend/.npmrc|frontend/turbo.json) web=true; marketing=true ;;
+                .dockerignore|.github/workflows/container-ci.yml) backend=true; web=true; marketing=true ;;
+              esac
+            done <<< "$files"
           fi
-          uid="$(docker exec "$name" id -u 2>/dev/null || echo 0)"; [[ "$uid" != 0 ]]
-          hp="$(docker port "$name" "$PORT/tcp" | awk -F: 'END{print $NF}')"; [[ -n "$hp" ]]
-          for _ in $(seq 1 60); do curl -fsS --max-time 3 "$SCHEME://127.0.0.1:$hp$HEALTH" >/dev/null && exit 0; sleep 2; done
-          docker logs "$name"; exit 1
-      - name: Generate SPDX SBOM
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with: {image-ref: '${{ steps.names.outputs.local }}', format: spdx-json, output: component.spdx.json, exit-code: '0'}
-      - name: Publish proven bytes
-        if: inputs.publish_candidate
-        env: {GH_TOKEN: '${{ github.token }}', LOCAL: '${{ steps.names.outputs.local }}', REMOTE: '${{ steps.names.outputs.remote }}'}
-        run: |
-          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          docker tag "$LOCAL" "$REMOTE"; docker push "$REMOTE"
-      - id: subject
-        env: {PUBLISH: '${{ inputs.publish_candidate }}', LOCAL: '${{ steps.names.outputs.local }}', REMOTE: '${{ steps.names.outputs.remote }}'}
-        run: |
-          if [[ "$PUBLISH" == true ]]; then docker pull "$REMOTE" >/dev/null; ref="$(docker inspect --format='{{index .RepoDigests 0}}' "$REMOTE")"; [[ "$ref" == *@sha256:* ]]; digest="${ref##*@}"; else ref="$LOCAL"; digest="$(docker image inspect --format '{{.Id}}' "$LOCAL")"; fi
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"; echo "digest=$digest" >> "$GITHUB_OUTPUT"
-      - if: inputs.publish_candidate
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
-        with: {subject-name: '${{ steps.names.outputs.repo }}', subject-digest: '${{ steps.subject.outputs.digest }}', push-to-registry: true}
-      - if: inputs.publish_candidate
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
-        with: {subject-name: '${{ steps.names.outputs.repo }}', subject-digest: '${{ steps.subject.outputs.digest }}', sbom-path: component.spdx.json, push-to-registry: true}
-      - name: Write result
-        env:
-          ID: ${{ matrix.component_id }}
-          REF: ${{ steps.subject.outputs.ref }}
-          SERVICE: ${{ matrix.compose_service }}
-          ENVVAR: ${{ matrix.deploy_env_var }}
-          PUBLISHED: ${{ inputs.publish_candidate }}
-        run: |
-          mkdir -p artifacts/container
-          jq -n --arg id "$ID" --arg ref "$REF" --arg service "$SERVICE" --arg env "$ENVVAR" --argjson published "$PUBLISHED" '{id:$id,kind:"application",ref:$ref,compose_service:$service,deploy_env_var:$env,stateful:false,published:$published}' > "artifacts/container/$ID.json"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with: {name: 'container-result-${{ matrix.component_id }}', path: 'artifacts/container/${{ matrix.component_id }}.json', if-no-files-found: error, retention-days: 30}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with: {name: 'sbom-${{ matrix.component_id }}', path: component.spdx.json, if-no-files-found: error, retention-days: 30}
-      - uses: ./.github/actions/emit-evidence
-        with: {proof_id: 'container:${{ matrix.component_id }}', component_id: '${{ matrix.component_id }}', metadata: 'published=${{ inputs.publish_candidate }}'}
-  collect:
-    if: always() && inputs.component_count > 0
-    needs: build
+          {
+            echo "backend=$backend"
+            echo "web=$web"
+            echo "marketing=$marketing"
+          } >> "$GITHUB_OUTPUT"
+
+  backend-image:
+    name: Backend image validation
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
-    outputs:
-      application_manifest_json: ${{ steps.collect.outputs.application_manifest_json }}
+    timeout-minutes: 45
     steps:
-      - run: '[[ "${{ needs.build.result }}" == success ]]'
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with: {pattern: 'container-result-*', path: artifacts/results, merge-multiple: true}
-      - id: collect
-        env: {MATRIX: '${{ inputs.component_matrix_json }}', PUBLISH: '${{ inputs.publish_candidate }}'}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build backend image
+        run: docker build --pull=false -f backend/Dockerfile -t notrelix-ci/backend:${{ github.sha }} backend
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: notrelix-ci/backend:${{ github.sha }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Export SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: notrelix-ci/backend:${{ github.sha }}
+          format: spdx-json
+          output: backend.sbom.spdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: container-backend-sbom
+          path: backend.sbom.spdx.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Verify runtime health with publish dependencies
         run: |
-          mapfile -t files < <(find artifacts/results -type f -name '*.json' | sort); [[ ${#files[@]} -gt 0 ]]
-          expected="$(jq -c '[.include[].component_id]|sort' <<<"$MATRIX")"; actual="$(jq -s -c '[.[].id]|sort' "${files[@]}")"; [[ "$expected" == "$actual" ]]
-          if [[ "$PUBLISH" == true ]]; then jq -e -s 'all(.[];.published==true and (.ref|contains("@sha256:")))' "${files[@]}" >/dev/null; fi
-          jq -s '{api_version:"delivery.notrelix.dev/v1",kind:"ApplicationImageSet",images:(sort_by(.compose_service))}' "${files[@]}" > application-images.json
-          echo "application_manifest_json=$(jq -c . application-images.json)" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          network="notrelix-ci-backend-${{ github.run_id }}"
+          docker network create "$network"
+          cleanup(){ docker rm -f notrelix-ci-backend-http notrelix-ci-rabbitmq notrelix-ci-redis notrelix-ci-postgres >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          docker run -d --name notrelix-ci-postgres --network "$network" -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=ci postgres:16-alpine >/dev/null
+          docker run -d --name notrelix-ci-redis --network "$network" -e REDIS_PASSWORD=ci redis:7-alpine >/dev/null
+          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=ci -e RABBITMQ_DEFAULT_PASS=ci rabbitmq:3.13-management-alpine >/dev/null
+          docker run -d --name notrelix-ci-backend-http -p 8080:8080 --network "$network" \
+            -e ASPNETCORE_ENVIRONMENT=Production \
+            -e ASPNETCORE_URLS=http://+:8080 \
+            -e Cors__AllowedOrigins__0=http://localhost:5173 \
+            -e Cors__AllowedOrigins__1=http://localhost:3000 \
+            -e Frontend__AppBaseUrl=http://localhost \
+            -e Rls__Enabled=true \
+            -e Rls__SetSessionContext=true \
+            -e DataProtection__PersistKeys=true \
+            -e DataProtection__KeysPath=/tmp/dataprotection-keys \
+            -e Messaging__Transport=RabbitMQ \
+            -e Messaging__RabbitMQ__Host=notrelix-ci-rabbitmq \
+            -e Messaging__RabbitMQ__Port=5672 \
+            -e Messaging__RabbitMQ__VHost=/ \
+            -e Messaging__RabbitMQ__Username=ci \
+            -e Messaging__RabbitMQ__Password=ci \
+            -e ConnectionStrings__NotrelixDb="Host=notrelix-ci-postgres;Port=5432;Database=ci;Username=postgres;Password=ci" \
+            -e ConnectionStrings__Redis="notrelix-ci-redis:6379,password=ci" \
+            -e JwtSettings__SecretKey=ci-test-secret-key-must-be-at-least-32-characters \
+            -e JwtSettings__Issuer=Notrelix.CI \
+            -e JwtSettings__Audience=Notrelix.CI \
+            -e Email__Provider=InMemory \
+            -e HttpsRedirection__Enabled=false \
+            -e ForwardedHeaders__UseForwardedHeaders=false \
+            notrelix-ci/backend:${{ github.sha }}
+          code=000; attempts=0
+          while [[ "$code" != 200 && "$attempts" -lt 60 ]]; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/health/live || true)"
+            attempts=$((attempts + 1))
+            [[ "$code" != 200 ]] && sleep 3
+          done
+          if [[ "$code" != 200 ]]; then
+            docker logs notrelix-ci-backend-http
+            exit 1
+          fi
+
+  web-image:
+    name: Web image validation
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build web image
+        run: docker build --pull=false -f frontend/Dockerfile -t notrelix-ci/web:${{ github.sha }} .
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: notrelix-ci/web:${{ github.sha }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Export SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: notrelix-ci/web:${{ github.sha }}
+          format: spdx-json
+          output: web.sbom.spdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: container-web-sbom
+          path: web.sbom.spdx.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Verify non-root and runtime health
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint sh notrelix-ci/web:${{ github.sha }} -c 'test "$(id -u)" != 0'
+          container="notrelix-ci-web-${{ github.run_id }}"
+          docker run -d --name "$container" -p 8080:8080 notrelix-ci/web:${{ github.sha }} >/dev/null
+          trap 'docker rm -f "$container" >/dev/null 2>&1 || true' EXIT
+          code=000; attempts=0
+          while [[ "$code" != 200 && "$attempts" -lt 60 ]]; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/ || true)"
+            attempts=$((attempts + 1))
+            [[ "$code" != 200 ]] && sleep 3
+          done
+          [[ "$code" == 200 ]] || { docker logs "$container"; exit 1; }
+
+  marketing-image:
+    name: Marketing image validation
+    needs: changes
+    if: needs.changes.outputs.marketing == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build marketing image
+        run: docker build --pull=false -f frontend/Dockerfile.marketing -t notrelix-ci/marketing:${{ github.sha }} .
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: notrelix-ci/marketing:${{ github.sha }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Export SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: notrelix-ci/marketing:${{ github.sha }}
+          format: spdx-json
+          output: marketing.sbom.spdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: container-marketing-sbom
+          path: marketing.sbom.spdx.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Verify non-root and runtime health
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint sh notrelix-ci/marketing:${{ github.sha }} -c 'test "$(id -u)" != 0'
+          container="notrelix-ci-marketing-${{ github.run_id }}"
+          docker run -d --name "$container" -p 3000:3000 notrelix-ci/marketing:${{ github.sha }} >/dev/null
+          trap 'docker rm -f "$container" >/dev/null 2>&1 || true' EXIT
+          code=000; attempts=0
+          while [[ "$code" != 200 && "$attempts" -lt 60 ]]; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ || true)"
+            attempts=$((attempts + 1))
+            [[ "$code" != 200 ]] && sleep 3
+          done
+          [[ "$code" == 200 ]] || { docker logs "$container"; exit 1; }
+
+  container-gate:
+    name: Container CI gate
+    if: always()
+    needs: [changes, backend-image, web-image, marketing-image]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require container proof when selected
+        env:
+          BACKEND_SELECTED: ${{ needs.changes.outputs.backend }}
+          WEB_SELECTED: ${{ needs.changes.outputs.web }}
+          MARKETING_SELECTED: ${{ needs.changes.outputs.marketing }}
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
+          require changes "$(result changes)"
+          if [[ "$BACKEND_SELECTED" == true ]]; then require backend-image "$(result backend-image)"; fi
+          if [[ "$WEB_SELECTED" == true ]]; then require web-image "$(result web-image)"; fi
+          if [[ "$MARKETING_SELECTED" == true ]]; then require marketing-image "$(result marketing-image)"; fi

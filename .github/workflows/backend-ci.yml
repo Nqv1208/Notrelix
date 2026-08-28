@@ -1,14 +1,12 @@
 name: Backend CI
 
 on:
-  workflow_call:
-    inputs:
-      component_id:
-        required: true
-        type: string
-      redis_image:
-        required: true
-        type: string
+  pull_request:
+    branches: [main, develop]
+  merge_group:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,8 +17,64 @@ env:
   DOTNET_NOLOGO: "true"
 
 jobs:
+  changes:
+    name: Change detection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          BEFORE_SHA: ${{ github.event.before || '' }}
+        run: |
+          set -euo pipefail
+          selected=false
+          base="$BASE_SHA"; head="$HEAD_SHA"
+          case "$EVENT_NAME" in
+            pull_request|merge_group)
+              if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
+                base="$merge_base"
+              else
+                selected=true
+              fi
+              ;;
+            push)
+              head="$GITHUB_SHA"; base="$BEFORE_SHA"
+              if [[ ! "$base" =~ ^[0-9a-f]{40}$ ]]; then selected=true; fi
+              ;;
+            *)
+              selected=true
+              ;;
+          esac
+          if [[ "$selected" == true ]] || ! files="$(git diff --name-only --diff-filter=ACMRDTUXB "$base" "$head" 2>/dev/null)"; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          while IFS= read -r file; do
+            [[ -n "$file" ]] || continue
+            case "$file" in
+              *.md) ;;
+              backend/*) selected=true ;;
+              .github/workflows/backend-ci.yml) selected=true ;;
+              .github/actions/setup-backend/*) selected=true ;;
+              scripts/ci/check-migration-discipline.py) selected=true ;;
+              scripts/ci/verify-required-tests-trx.py) selected=true ;;
+            esac
+            [[ "$selected" == true ]] && break
+          done <<< "$files"
+          echo "backend=$selected" >> "$GITHUB_OUTPUT"
+
   quality:
     name: Quality and architecture guards
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -60,10 +114,25 @@ jobs:
           set -euo pipefail
           matches="$(grep -RInE 'UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:' src tests Directory.Packages.props --include='*.cs' --include='*.csproj' --include='*.props' --exclude='DatabaseProviderArchitectureTests.cs' || true)"
           [[ -z "$matches" ]] || { printf '%s\n' "$matches"; exit 1; }
+      - name: Fail on vulnerable NuGet packages
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-report.txt
+          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then exit 1; fi
+      - name: Upload dependency vulnerability report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-vulnerability-report
+          path: backend/vulnerable-report.txt
+          if-no-files-found: ignore
+          retention-days: 14
 
   architecture-tests:
     name: Architecture tests
-    needs: quality
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -98,14 +167,15 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: backend-${{ inputs.component_id }}-architecture-test-results
+          name: backend-architecture-test-results
           path: backend/TestResults/architecture
           if-no-files-found: ignore
           retention-days: 7
 
   core-tests:
     name: Domain, Application and Infrastructure tests
-    needs: quality
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -144,14 +214,15 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: backend-${{ inputs.component_id }}-core-test-results
+          name: backend-core-test-results
           path: backend/TestResults
           if-no-files-found: ignore
           retention-days: 7
 
   platform-tests:
     name: Platform messaging tests
-    needs: quality
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -180,19 +251,20 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: backend-${{ inputs.component_id }}-platform-test-results
+          name: backend-platform-test-results
           path: backend/TestResults/platform
           if-no-files-found: ignore
           retention-days: 7
 
   api-tests:
     name: API tests and OpenAPI contract
-    needs: quality
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       redis:
-        image: ${{ inputs.redis_image }}
+        image: redis:7-alpine
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s --health-timeout 5s --health-retries 5
@@ -241,19 +313,20 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: backend-${{ inputs.component_id }}-api-test-results
+          name: backend-api-test-results
           path: backend/TestResults/api
           if-no-files-found: ignore
           retention-days: 7
 
   integration-tests:
     name: Integration and provider tests
-    needs: quality
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     services:
       redis:
-        image: ${{ inputs.redis_image }}
+        image: redis:7-alpine
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s --health-timeout 5s --health-retries 5
@@ -302,7 +375,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: backend-${{ inputs.component_id }}-integration-test-results
+          name: backend-integration-test-results
           path: backend/TestResults/integration
           if-no-files-found: ignore
           retention-days: 7
@@ -310,17 +383,25 @@ jobs:
   backend-gate:
     name: Backend CI gate
     if: always()
-    needs: [quality, architecture-tests, core-tests, platform-tests, api-tests, integration-tests]
+    needs: [changes, quality, architecture-tests, core-tests, platform-tests, api-tests, integration-tests]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Require all backend proof
+      - name: Require backend proof when selected
         env:
+          SELECTED: ${{ needs.changes.outputs.backend }}
           RESULTS: ${{ toJSON(needs) }}
-        run: jq -e 'all(.[]; .result == "success")' <<<"$RESULTS" >/dev/null
-      - name: Emit backend proof evidence
-        uses: ./.github/actions/emit-evidence
-        with:
-          proof_id: backend:${{ inputs.component_id }}
-          component_id: ${{ inputs.component_id }}
+        run: |
+          set -euo pipefail
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
+          require changes "$(result changes)"
+          if [[ "$SELECTED" == true ]]; then
+            require quality "$(result quality)"
+            require architecture-tests "$(result architecture-tests)"
+            require core-tests "$(result core-tests)"
+            require platform-tests "$(result platform-tests)"
+            require api-tests "$(result api-tests)"
+            require integration-tests "$(result integration-tests)"
+          fi
