@@ -33,6 +33,8 @@ review_on:
 
 Notrelix CI/CD is split into independently-owned continuous-integration workflows (one per domain) plus a frozen release path. Each domain owns its complete proof chain locally; no central orchestrator plans execution.
 
+Continuous delivery (CD) is frozen/dormant. The CI migration deliberately does not reactivate or redesign CD. Existing release/promotion/deployment workflows remain frozen. CD reactivation is a separate future workstream after CI stabilization.
+
 The dependency direction is fixed:
 
 ```text
@@ -130,7 +132,7 @@ The NuGet vulnerability gate fails on any project reporting vulnerable package d
 
 ## 7. Gate aggregation
 
-Each domain terminates in a named final gate job (`Backend CI gate`, `Frontend gate`, `Documentation Governance gate`, `Infrastructure CI gate`, `Container CI gate`, `CI Definition Safety gate`). Gates run `if: always()` and require the change-detection job plus every domain job to have succeeded when selected. GitHub branch protection lists these gates (and the security workflow checks) as required checks; there is no evidence aggregation step and no single orchestrator check name.
+Each domain terminates in a named final gate job (`Backend CI gate`, `Frontend gate`, `Documentation Governance gate`, `Infrastructure CI gate`, `Container CI gate`, `CI Definition Safety gate`). Gates run `if: always()` and require the change-detection job plus every domain job to have succeeded when selected. GitHub branch protection lists these six gates as required checks, plus the exact CodeQL security checks that GitHub actually emits for the repository on each workflow run. There is no evidence aggregation step and no single orchestrator check name, and there is no separate `Security CI` required check.
 
 ## 8. Build and supply-chain model
 

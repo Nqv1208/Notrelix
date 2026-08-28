@@ -38,10 +38,15 @@ jobs:
             pull_request|merge_group)
               if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
                 base="$merge_base"
+              else
+                forced_all=true
               fi
               ;;
             push)
               head="$GITHUB_SHA"; base="$BEFORE_SHA"
+              if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == "0000000000000000000000000000000000000000" ]]; then
+                forced_all=true
+              fi
               ;;
             *)
               forced_all=true
@@ -62,7 +67,10 @@ jobs:
                 frontend/apps/web/nginx.conf) infra=true ;;
                 frontend/Dockerfile|frontend/Dockerfile.marketing|backend/Dockerfile) backend_selected=true ;;
               esac
+              [[ "$infra:$backend_selected" == "true:true" ]] && break
             done <<< "$files"
+          else
+            infra=true; backend_selected=true
           fi
           echo "infra=$infra" >> "$GITHUB_OUTPUT"
           echo "backend_selected=$backend_selected" >> "$GITHUB_OUTPUT"
@@ -139,13 +147,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require infrastructure proof when selected
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
           SELECTED: ${{ needs.changes.outputs.selected }}
           STATIC_RESULT: ${{ needs.static.result }}
           ASSEMBLED_RESULT: ${{ needs.assembled.result }}
         run: |
           set -euo pipefail
           require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          require changes "$CHANGES_RESULT"
           if [[ "$SELECTED" == true ]]; then
             require static "$STATIC_RESULT"
             require assembled "$ASSEMBLED_RESULT"
+          elif [[ "$STATIC_RESULT" != skipped || "$ASSEMBLED_RESULT" != skipped ]]; then
+            echo "::error::expected static and assembled to be skipped when unselected"
+            exit 1
           fi

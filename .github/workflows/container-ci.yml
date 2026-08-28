@@ -41,10 +41,15 @@ jobs:
             pull_request|merge_group)
               if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
                 base="$merge_base"
+              else
+                forced_all=true
               fi
               ;;
             push)
               head="$GITHUB_SHA"; base="$BEFORE_SHA"
+              if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == "0000000000000000000000000000000000000000" ]]; then
+                forced_all=true
+              fi
               ;;
             *)
               forced_all=true
@@ -60,11 +65,15 @@ jobs:
                 backend/*) backend=true ;;
                 frontend/Dockerfile|frontend/Dockerfile.marketing) web=true; marketing=true ;;
                 frontend/apps/web/**) web=true ;;
+                frontend/apps/marketing/**) marketing=true ;;
                 frontend/packages/**|frontend/tooling/**) web=true; marketing=true ;;
                 frontend/package.json|frontend/pnpm-lock.yaml|frontend/pnpm-workspace.yaml|frontend/.npmrc|frontend/turbo.json) web=true; marketing=true ;;
                 .dockerignore|.github/workflows/container-ci.yml) backend=true; web=true; marketing=true ;;
               esac
+              [[ "$backend:$web:$marketing" == "true:true:true" ]] && break
             done <<< "$files"
+          else
+            backend=true; web=true; marketing=true
           fi
           {
             echo "backend=$backend"

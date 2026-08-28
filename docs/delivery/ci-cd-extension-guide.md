@@ -19,85 +19,112 @@ review_on:
 
 # Notrelix CI/CD — Extension Guide
 
-## 1. Registration versus architecture change
+## 1. Extension model
 
-A normal product addition should be a registration in `delivery/catalog.toml` and, only when routing/proof semantics differ, `delivery/policy.toml`.
+CI is split into independently-owned domain workflows. Each domain owns its change detection, its proof jobs and its final gate. There is no central `ci.yml`, no execution planner, no provider matrix and no shared evidence aggregator.
+
+Adding CI coverage for new behavior is therefore a **domain-local** change: decide which domain owns the change, extend that domain's ownership patterns, prove the behavior in that domain's explicit jobs, and keep the existing stable domain gate.
 
 The normal extension path is:
 
 ```text
-catalog/policy registration
- -> deliveryctl compiles resolved contract
- -> existing provider executes contract
- -> existing evidence/release machinery remains unchanged
+identify the owning domain
+ -> update the domain-local ownership patterns
+ -> extend/add the explicit domain proof jobs (when needed)
+ -> the stable domain final gate still aggregates
+ -> branch protection still requires the same gate name
 ```
 
-Do not add component-specific branches to `.github/workflows/ci.yml`.
+## 2. Which domain owns a change
 
-## 2. Add a frontend host
+Current domains and their ownership:
 
-Register provider `frontend-host`, source roots, workspace, build/E2E scripts, artifact paths and container/deployment metadata when deployable. The planner creates host/container matrix entries automatically.
+- **Backend CI** — backend sources, the backend Dockerfile and repository-wide .NET proof (quality, architecture, domain, application, infrastructure, platform, API and integration tests; migration append-only discipline; dependency-graph and NuGet vulnerability guards; OpenAPI contract drift). Final gate: `Backend CI gate`.
+- **Frontend CI** — frontend host/apps/packages/tooling proof (repository invariants, affected tests, exact-artifact host E2E, mock persona/state E2E, production/mock artifact isolation, pnpm dependency audit). Final gate: `Frontend gate`.
+- **Documentation CI** — `docs/**`, `backend/docs/**`, `frontend/docs/**`, `*.md`, `Makefile` and the Documentation workflow itself; runs `make docs-check`. Final gate: `Documentation Governance gate`.
+- **Infrastructure CI** — Compose trees, `infra/**`, infrastructure helpers (`scripts/ci/validate-infra.py`, `scripts/ci/write-test-env.sh`), `frontend/apps/web/nginx.conf`, and the Dockerfiles shared with the stack. Final gate: `Infrastructure CI gate`.
+- **Container CI** — Dockerfile/`.dockerignore`, backend/apps/tooling/shared-frontend-config and the workflow itself; builds and gates the backend, web and marketing images (validation only). Final gate: `Container CI gate`.
+- **CI Definition** — delivery authority, `tools/deliveryctl/**`, `delivery/**`, the emit-evidence action, and runtime image-lock security. Final gate: `CI Definition Safety gate`.
 
-E2E must consume the exact build artifact through the generic Node package/restore primitives.
+The durable ownership table in `docs/delivery/ci-cd-architecture.md` is authoritative when ownership is ambiguous.
 
-## 3. Add a mobile app
+## 3. Extend an existing domain
 
-Use provider `mobile` when the current proof contract fits. Keep `deployable = false` until an actual mobile artifact/delivery provider exists; do not model app-store artifacts as Docker images.
+For a capability inside an existing domain:
 
-## 4. Add backend/worker runtime
+1. Add the new source roots to the owning workflow's change-detection patterns.
+2. Add or extend that domain's explicit jobs so the new behavior is actually executed, and keep the fail-closed final gate untouched.
+3. Never add a new final gate or a new required check for a change inside an existing domain; the stable gate name is the branch-protection authority.
 
-If the current backend proof contract applies, register it. If runtime/build/test semantics genuinely differ, add one reusable provider type and corresponding resolved-plan serialization/proof profile. Do not duplicate delivery authority parsing in the new provider.
+## 4. Add a new CI domain
 
-## 5. Add a proof
+A wholly new execution domain (for example a new toolchain or execution host) gets a new standalone workflow, never a plan step in a central file:
 
-Proof vocabulary belongs in `delivery/policy.toml` proof profiles/bindings. The provider emits exactly that proof ID; the planner resolves expectations; the evidence aggregator remains generic.
+```text
+.github/workflows/<domain>-ci.yml
+  changes job:   resolve base/head SHAs for the triggering event,
+                 diff against <domain> ownership patterns, emit the
+                 domain selection (fail-closed on unresolved or invalid
+                 ranges)
+  domain jobs:   run only when the domain selection is true
+  <Domain> gate: if: always(); requires the changes result and every
+                 domain job to have succeeded when selected, and the
+                 domain jobs to be skipped when not selected
+```
 
-Do not hard-code the proof into the final CI gate.
+Then add the new gate name to the protected-branch required checks. Do not create a shared detector used by many workflows; change detection is duplicated deliberately so each domain keeps its own authority and no central orchestrator re-emerges.
 
-## 6. Add an environment
+## 5. Required checks on protected branches
 
-For the current Compose adapter, register the environment in `delivery/environments.toml` and create a matching GitHub Environment with its protection/secrets/variables. Manual-promotion environments reuse `promote-release.yml`.
+Protected trunk requires the six stable domain gates as check names, never per-job names:
 
-A new deployment platform is an adapter extension, not a CI rewrite.
+```text
+Backend CI gate
+Frontend gate
+Documentation Governance gate
+Infrastructure CI gate
+Container CI gate
+CI Definition Safety gate
+```
 
-## 7. Open/closed boundary
+plus the exact CodeQL security checks that GitHub emits for the repository on each workflow run.
+
+## 6. Runtime rule for new jobs
+
+There is no repository CI Python bootstrap.
+
+- CI-definition control jobs use system Python >=3.11 and invoke `python3 -m tools.deliveryctl ...` (validate, architecture-check, visual --check) and the deliveryctl unit tests.
+- Backend jobs use the backend toolchain.
+- Frontend jobs use Node/pnpm/Playwright.
+- Execution/domain jobs never invoke deliveryctl and never parse `delivery/*.toml`.
+
+If a new execution helper needs to decide *what* should run, move that decision into the owning workflow's change detection and pass the result as job selection, not into tooling.
+
+## 7. What stays closed
 
 Routine product growth should leave these contracts closed:
 
 ```text
-.github/workflows/ci.yml
-tools/deliveryctl/evidence.py
-release manifest semantics
-generic deployment adapter contract
-Notrelix CI Gate
+the six domain final gates
+the Compose/Dockerfile stack proofs (unchanged by product growth)
+delivery/images.lock.toml  the only committed image authority, referenced by digest
+delivery authority parsing  tools/deliveryctl only
+release/promotion/deployment workflows  frozen; they do not build application images
 ```
 
-A new capability may extend `tools/deliveryctl/planner.py` only when the canonical execution-plan schema genuinely needs a new provider contract. It must not create a parallel planner/parser.
+Continuous delivery stays frozen/dormant during and after the CI migration; no new push/promotion/deployment wiring is introduced for product growth. CD reactivation is a separate future workstream after CI stabilization.
 
-## 8. Runtime rule for new jobs
+## 8. Review checklist
 
-There is no repository CI Python bootstrap.
+Before extending a domain or adding a new one, confirm:
 
-- Control-plane jobs use system Python >=3.11 and invoke `python3 -m tools.deliveryctl ...`.
-- Backend jobs use the backend toolchain.
-- Frontend/renderer jobs use Node/pnpm/Playwright.
-- Execution providers do not invoke deliveryctl or parse `delivery/*.toml`.
+- owning domain and its ownership patterns;
+- an explicit job that actually executes the new proof;
+- fail-closed gate behavior preserved (`require changes` first; selected requires the proof jobs to succeed; unselected requires the proof jobs to be skipped);
+- container changes remain validation-only (no `docker push`, no attestation, no `packages: write` or `id-token: write`);
+- runtime images referenced by digest from `delivery/images.lock.toml`, never tags;
+- a new domain's gate is added to branch protection as a required check.
 
-If a new execution helper needs to decide *what* should run, move that decision into deliveryctl and pass the result as provider input.
+## 9. Validation
 
-## 9. Review checklist
-
-Before registering a deployable, confirm:
-
-- source ownership/root;
-- provider and proof profile;
-- security domain;
-- build artifact;
-- container context/Dockerfile/image identity;
-- immutable build-image locks;
-- Compose/deployment service and env var;
-- health contract;
-- release intent;
-- migration/stateful implications.
-
-`python3 -m tools.deliveryctl validate` must reject invalid or conflicting registration.
+`python3 -m tools.deliveryctl validate`, `python3 -m tools.deliveryctl architecture-check` and `python3 -m tools.deliveryctl visual --check` must pass; the deliveryctl unit suite (`python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v`) must pass; running actionlint must report zero workflow syntax errors.

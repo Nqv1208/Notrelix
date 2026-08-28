@@ -37,7 +37,7 @@ Workflows are standalone domain owners; they consume no delivery authority and d
 
 ## 2. Required repository checks
 
-Protected trunk should require the stable domain gates plus security enforcement:
+Protected trunk should require the six stable domain gates plus the security checks GitHub actually emits on each workflow run (CodeQL):
 
 ```text
 Backend CI gate
@@ -46,11 +46,10 @@ Documentation Governance gate
 Infrastructure CI gate
 Container CI gate
 CI Definition Safety gate
-Security CI
-CodeQL (repository governance)
+CodeQL (repository security; exact check names per workflow run)
 ```
 
-Do not require per-job names as branch-protection authorities; the fail-closed domain gates are the stable check names.
+Do not require per-job names as branch-protection authorities; the fail-closed domain gates are the stable check names. There is no separate `Security CI` required check.
 
 ## 3. Local validation
 

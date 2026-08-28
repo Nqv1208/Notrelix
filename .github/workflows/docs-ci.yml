@@ -42,7 +42,7 @@ jobs:
               ;;
             push)
               head="$GITHUB_SHA"; base="$BEFORE_SHA"
-              if [[ ! "$base" =~ ^[0-9a-f]{40}$ ]]; then selected=true; fi
+              if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == "0000000000000000000000000000000000000000" ]]; then selected=true; fi
               ;;
             *)
               selected=true
@@ -86,10 +86,16 @@ jobs:
     steps:
       - name: Require documentation proof when selected
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
           SELECTED: ${{ needs.changes.outputs.documentation }}
           GOVERNANCE_RESULT: ${{ needs.governance.result }}
         run: |
           set -euo pipefail
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          require changes "$CHANGES_RESULT"
           if [[ "$SELECTED" == true ]]; then
-            [[ "$GOVERNANCE_RESULT" == success ]] || { echo "::error::governance=${GOVERNANCE_RESULT:-skipped}"; exit 1; }
+            require governance "$GOVERNANCE_RESULT"
+          elif [[ "$GOVERNANCE_RESULT" != skipped ]]; then
+            echo "::error::expected governance to be skipped when unselected"
+            exit 1
           fi

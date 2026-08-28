@@ -41,10 +41,15 @@ jobs:
             pull_request|merge_group)
               if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
                 base="$merge_base"
+              else
+                forced_all=true
               fi
               ;;
             push)
               head="$GITHUB_SHA"; base="$BEFORE_SHA"
+              if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == "0000000000000000000000000000000000000000" ]]; then
+                forced_all=true
+              fi
               ;;
             *)
               forced_all=true
@@ -64,6 +69,8 @@ jobs:
                 delivery/images.lock.toml) runtime_lock=true ;;
               esac
             done <<< "$files"
+          else
+            delivery_tool=true; evidence_action=true; runtime_lock=true
           fi
           {
             echo "delivery_tool=$delivery_tool"
@@ -122,6 +129,8 @@ jobs:
         run: python3 -m tools.deliveryctl architecture-check
       - name: Check visual documentation
         run: python3 -m tools.deliveryctl visual --check
+      - name: Run deliveryctl unit tests
+        run: python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
 
   evidence-action-validation:
     name: Emit evidence contract test
@@ -151,7 +160,8 @@ jobs:
           python3 - <<'EOF'
           import os, sys
           import tomllib
-          data = tomllib.loads(open("delivery/images.lock.toml", "rb").read())
+          with open("delivery/images.lock.toml", "rb") as handle:
+              data = tomllib.load(handle)
           images = data.get("images", {})
           required = {"postgres", "redis", "rabbitmq", "nginx"}
           found: set[str] = set()
