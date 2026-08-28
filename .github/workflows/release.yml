@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       ci_run_id: {description: Successful main-push Notrelix CI run containing release-candidate, required: true, type: string}
-permissions: {contents: read, actions: read, attestations: read}
+permissions: {contents: read, actions: read, attestations: read, packages: read}
 concurrency: {group: notrelix-release-staging, cancel-in-progress: false}
 jobs:
   candidate:
@@ -61,7 +61,7 @@ jobs:
     if: needs.staging.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    permissions: {contents: read, id-token: write, attestations: write}
+    permissions: {contents: read, packages: read, id-token: write, attestations: write}
     steps:
       - env: {CANDIDATE: '${{ needs.candidate.outputs.manifest_json }}'}
         run: |

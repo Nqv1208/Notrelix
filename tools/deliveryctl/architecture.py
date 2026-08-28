@@ -172,5 +172,30 @@ def check(root: Path = ROOT) -> None:
     ):
         errors.append("release/CD rebuild forbidden")
 
+    # V3 regression invariants
+    for path in sorted(workflows.glob("*.yml")):
+        text = path.read_text(encoding="utf-8")
+        if "pull_request_target" in text:
+            errors.append(f"{path.name}: pull_request_target forbidden")
+
+    if "Rehearsal publication trust gate" not in ci:
+        errors.append("ci.yml missing rehearsal trust gate")
+    if "release_execution_mode" not in ci:
+        errors.append("ci.yml missing release_execution_mode plumbing")
+
+    container = (workflows / "container-ci.yml").read_text(encoding="utf-8")
+    if "publication_mode" not in container:
+        errors.append("container-ci.yml missing publication_mode")
+
+    security = (workflows / "security-ci.yml").read_text(encoding="utf-8")
+    if "security:runtime" not in security:
+        errors.append("security-ci.yml missing security:runtime proof")
+    if "scan_runtime" not in security:
+        errors.append("security-ci.yml missing scan_runtime input")
+
+    stack = (workflows / "stack-smoke.yml").read_text(encoding="utf-8")
+    if "trivy" in stack.lower():
+        errors.append("stack-smoke.yml must not own runtime Trivy (moved to security-ci)")
+
     if errors:
         raise ValueError("\n".join(errors))

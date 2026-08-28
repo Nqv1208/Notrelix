@@ -4,6 +4,25 @@ on:
   workflow_dispatch:
 permissions: {contents: read}
 jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {fetch-depth: 0}
+      - run: python3 -m tools.deliveryctl validate
+      - id: plan
+        run: |
+          python3 -m tools.deliveryctl plan \
+            --event-name workflow_dispatch --ref "$GITHUB_REF" --source-sha "$GITHUB_SHA" \
+            --repository "$GITHUB_REPOSITORY" --head-repository "$GITHUB_REPOSITORY" \
+            --actor "$GITHUB_ACTOR" --requested-release-mode auto \
+            --full --output artifacts/ci/scheduled-plan.json --github-output
   security:
+    needs: resolve
     uses: ./.github/workflows/security-ci.yml
-    with: {scan_backend: true, scan_frontend: true}
+    with:
+      scan_backend: true
+      scan_frontend: true
+      scan_runtime: true
+      runtime_images_json: ${{ needs.resolve.outputs.runtime_images_json }}

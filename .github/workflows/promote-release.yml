@@ -4,7 +4,7 @@ on:
     inputs:
       release_run_id: {description: Release Candidate run containing staging-verified manifest, required: true, type: string}
       environment_name: {description: Manual-promotion environment, required: true, type: string, default: production}
-permissions: {contents: read, actions: read, attestations: read}
+permissions: {contents: read, actions: read, attestations: read, packages: read}
 jobs:
   manifest:
     runs-on: ubuntu-24.04

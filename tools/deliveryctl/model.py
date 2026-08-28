@@ -3,7 +3,7 @@ import fnmatch, json, re, tomllib
 from pathlib import Path
 from typing import Any
 from .runtime import ROOT
-SCHEMA_VERSION=5
+SCHEMA_VERSION=6
 SAFE_ID=re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 PROOF_PLACEHOLDER=re.compile(r"\{([a-z_][a-z0-9_]*)\}")
 def compact(v:Any)->str: return json.dumps(v,separators=(",",":"),sort_keys=True)
@@ -75,5 +75,13 @@ def validate_authorities(root:Path=ROOT):
         merged={**envs.get('defaults',{}),**cfg}
         for f in ('deployment_adapter','rollback_after_schema_change','stateful_image_change_policy','smoke_profile','compose_overlay','promotion_mode','run_migrations','rollout_strategy','concurrency_group'):
             if f not in merged:errors.append(f'environment {name}: missing {f}')
+    for rule in p.get('change_rules',[]):
+        rid=rule.get('id','<unknown>')
+        for key in ('release','rehearsal'):
+            val=rule.get(key)
+            if val is not None and not isinstance(val,bool): errors.append(f'rule {rid}: {key} must be boolean')
+    for bname,bcfg in p.get('proof_bindings',{}).items():
+        pname=bcfg.get('profile') if isinstance(bcfg,dict) else bcfg
+        if pname and pname not in p.get('proof_profiles',{}): errors.append(f'proof_bindings.{bname}: unknown profile {pname!r}')
     if errors: raise ValueError('\n'.join(errors))
     return a

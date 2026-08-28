@@ -4,9 +4,53 @@ on:
     inputs:
       scan_backend: {required: false, type: boolean, default: false}
       scan_frontend: {required: false, type: boolean, default: false}
+      scan_runtime: {required: false, type: boolean, default: false}
+      runtime_images_json: {required: false, type: string, default: '{}'}
 permissions:
   contents: read
 jobs:
+  runtime-prepare:
+    name: Prepare runtime image matrix
+    if: inputs.scan_runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      runtime_matrix: ${{ steps.matrix.outputs.runtime_matrix }}
+    steps:
+      - id: matrix
+        env: {IMAGES: '${{ inputs.runtime_images_json }}'}
+        run: |
+          set -euo pipefail
+          jq -e '.api_version=="delivery.notrelix.dev/v1" and .kind=="RuntimeImageSet" and (.images|length>0)' <<<"$IMAGES" >/dev/null
+          jq -e '[.images[].id]|length==(unique|length)' <<<"$IMAGES" >/dev/null
+          jq -e '[.images[].compose_service]|length==(unique|length)' <<<"$IMAGES" >/dev/null
+          jq -e 'all(.images[];.ref|contains("@sha256:"))' <<<"$IMAGES" >/dev/null
+          echo "runtime_matrix=$(jq -c '{include:[.images[]|{id:.id,ref:.ref}]}' <<<"$IMAGES")" >> "$GITHUB_OUTPUT"
+  runtime-security:
+    name: Runtime image vulnerability (${{ matrix.id }})
+    needs: runtime-prepare
+    if: inputs.scan_runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.runtime-prepare.outputs.runtime_matrix) }}
+    steps:
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with: {image-ref: '${{ matrix.ref }}', exit-code: '1', ignore-unfixed: true, vuln-type: 'os,library', severity: 'HIGH,CRITICAL'}
+  runtime-security-gate:
+    name: Runtime security gate
+    if: inputs.scan_runtime
+    needs: [runtime-prepare, runtime-security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require runtime security matrix success
+        env: {RESULT: '${{ needs.runtime-security.result }}'}
+        run: '[[ "$RESULT" == success ]]'
+      - uses: ./.github/actions/emit-evidence
+        with: {proof_id: 'security:runtime', component_id: runtime-infrastructure}
   backend-dependencies:
     name: Backend dependency vulnerabilities
     if: inputs.scan_backend
@@ -48,7 +92,7 @@ jobs:
   gate:
     name: Dependency Security CI gate
     if: always()
-    needs: [backend-dependencies, frontend-dependencies]
+    needs: [backend-dependencies, frontend-dependencies, runtime-security-gate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -56,8 +100,10 @@ jobs:
         env:
           SCAN_BACKEND: ${{ inputs.scan_backend }}
           SCAN_FRONTEND: ${{ inputs.scan_frontend }}
+          SCAN_RUNTIME: ${{ inputs.scan_runtime }}
           BACKEND_RESULT: ${{ needs.backend-dependencies.result }}
           FRONTEND_RESULT: ${{ needs.frontend-dependencies.result }}
+          RUNTIME_RESULT: ${{ needs.runtime-security-gate.result }}
         run: |
           set -euo pipefail
           check(){
@@ -70,3 +116,4 @@ jobs:
           }
           check "$SCAN_BACKEND" "$BACKEND_RESULT" backend
           check "$SCAN_FRONTEND" "$FRONTEND_RESULT" frontend
+          check "$SCAN_RUNTIME" "$RUNTIME_RESULT" runtime

@@ -45,7 +45,15 @@ jobs:
       security_backend: ${{ steps.plan.outputs.security_backend }}
       security_frontend: ${{ steps.plan.outputs.security_frontend }}
       packaging_required: ${{ steps.plan.outputs.packaging_required }}
+      release_required: ${{ steps.plan.outputs.release_required }}
+      rehearsal_required: ${{ steps.plan.outputs.rehearsal_required }}
+      release_execution_mode: ${{ steps.plan.outputs.release_execution_mode }}
+      publication_mode: ${{ steps.plan.outputs.publication_mode }}
       release_candidate: ${{ steps.plan.outputs.release_candidate }}
+      release_rehearsal: ${{ steps.plan.outputs.release_rehearsal }}
+      trusted_source: ${{ steps.plan.outputs.trusted_source }}
+      rehearsal_publish_allowed: ${{ steps.plan.outputs.rehearsal_publish_allowed }}
+      rehearsal_blocked_reason: ${{ steps.plan.outputs.rehearsal_blocked_reason }}
       schema_change: ${{ steps.plan.outputs.schema_change }}
       plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
     steps:
@@ -122,11 +130,13 @@ jobs:
 
   security:
     needs: plan
-    if: needs.plan.outputs.security_backend == 'true' || needs.plan.outputs.security_frontend == 'true'
+    if: needs.plan.outputs.security_backend == 'true' || needs.plan.outputs.security_frontend == 'true' || needs.plan.outputs.release_execution_mode != 'none'
     uses: ./.github/workflows/security-ci.yml
     with:
       scan_backend: ${{ needs.plan.outputs.security_backend == 'true' }}
       scan_frontend: ${{ needs.plan.outputs.security_frontend == 'true' }}
+      scan_runtime: ${{ needs.plan.outputs.release_execution_mode != 'none' }}
+      runtime_images_json: ${{ needs.plan.outputs.runtime_images_json }}
 
   packaging:
     needs: plan
@@ -141,12 +151,32 @@ jobs:
     with:
       component_matrix_json: ${{ needs.plan.outputs.container_matrix }}
       component_count: ${{ fromJSON(needs.plan.outputs.container_count) }}
-      publish_candidate: ${{ needs.plan.outputs.release_candidate == 'true' }}
+      publication_mode: ${{ needs.plan.outputs.publication_mode }}
 
-  assemble-release:
-    name: Assemble immutable release set
-    needs: [plan, packaging]
-    if: needs.plan.outputs.release_candidate == 'true' && needs.packaging.result == 'success'
+  rehearsal-trust-gate:
+    name: Rehearsal publication trust gate
+    needs: plan
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Enforce rehearsal publication trust
+        env:
+          MODE: ${{ needs.plan.outputs.release_execution_mode }}
+          TRUSTED: ${{ needs.plan.outputs.rehearsal_publish_allowed }}
+          BLOCKED_REASON: ${{ needs.plan.outputs.rehearsal_blocked_reason }}
+        run: |
+          set -euo pipefail
+          if [[ "$MODE" == rehearsal ]]; then
+            [[ "$TRUSTED" == true ]] || { echo "rehearsal publication blocked: $BLOCKED_REASON" >&2; exit 1; }
+          else
+            exit 0
+          fi
+
+  assemble-image-set:
+    name: Assemble immutable image set
+    needs: [plan, packaging, rehearsal-trust-gate]
+    if: contains(fromJSON('["rehearsal","release"]'), needs.plan.outputs.release_execution_mode) && needs.plan.outputs.publication_mode != 'none' && needs.packaging.result == 'success' && needs.rehearsal-trust-gate.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     outputs:
@@ -156,28 +186,33 @@ jobs:
         env:
           RUNTIME: ${{ needs.plan.outputs.runtime_images_json }}
           APPLICATION: ${{ needs.packaging.outputs.application_manifest_json }}
+          SCOPE: ${{ needs.plan.outputs.release_execution_mode }}
         run: |
           set -euo pipefail
-          release="$(jq -cn --argjson runtime "$RUNTIME" --argjson app "$APPLICATION" '{api_version:"delivery.notrelix.dev/v1",kind:"ReleaseImageSet",images:(($runtime.images+$app.images)|sort_by(.compose_service))}')"
-          jq -e '.images|length>0 and all(.[];.ref|contains("@sha256:"))' <<<"$release" >/dev/null
-          echo "release_images_json=$(jq -c . <<<"$release")" >> "$GITHUB_OUTPUT"
-          mkdir -p artifacts/release; jq . <<<"$release" > artifacts/release/release-images.json
+          app_scope="$(jq -re '.publication_mode' <<<"$APPLICATION")"; [[ "$app_scope" == "$SCOPE" ]]
+          app_source="$(jq -re '.source_sha' <<<"$APPLICATION")"; [[ "$app_source" == "$GITHUB_SHA" ]]
+          manifest="$(jq -cn --arg scope "$SCOPE" --arg source "$GITHUB_SHA" --argjson runtime "$RUNTIME" --argjson app "$APPLICATION" '{api_version:"delivery.notrelix.dev/v1",kind:"ReleaseImageSet",scope:$scope,source_sha:$source,images:($runtime.images+$app.images)}')"
+          manifest="$(jq -c '(.images|=sort_by(.compose_service))' <<<"$manifest")"
+          jq -e '.images|length>0 and all(.[];.ref|contains("@sha256:"))' <<<"$manifest" >/dev/null
+          echo "release_images_json=$(jq -c . <<<"$manifest")" >> "$GITHUB_OUTPUT"
+          mkdir -p artifacts/release; jq . <<<"$manifest" > artifacts/release/release-images.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with: {name: release-image-set, path: artifacts/release/release-images.json, if-no-files-found: error, retention-days: 30}
 
-  candidate-stack:
-    needs: [plan, assemble-release]
-    if: needs.plan.outputs.release_candidate == 'true' && needs.assemble-release.result == 'success'
+  release-stack:
+    needs: [plan, assemble-image-set, rehearsal-trust-gate, security]
+    if: needs.assemble-image-set.result == 'success'
     permissions: {contents: read, packages: read}
     uses: ./.github/workflows/stack-smoke.yml
     with:
-      release_images_json: ${{ needs.assemble-release.outputs.release_images_json }}
+      release_images_json: ${{ needs.assemble-image-set.outputs.release_images_json }}
       release_contract_json: ${{ needs.plan.outputs.release_contract_json }}
+      scope: ${{ needs.plan.outputs.release_execution_mode }}
 
   proof-gate:
     name: Evidence completeness gate
     if: always()
-    needs: [plan, backend, frontend, documentation, infrastructure, security, packaging, candidate-stack]
+    needs: [plan, backend, frontend, documentation, infrastructure, security, packaging, release-stack]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -193,19 +228,19 @@ jobs:
   seal-candidate:
     name: Seal immutable release candidate
     if: always() && needs.plan.outputs.release_candidate == 'true'
-    needs: [plan, assemble-release, candidate-stack, proof-gate]
+    needs: [plan, assemble-image-set, release-stack, proof-gate, rehearsal-trust-gate]
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     permissions: {contents: read, id-token: write, attestations: write}
     steps:
       - name: Require release proof chain
-        env: {ASSEMBLE: '${{ needs.assemble-release.result }}', STACK: '${{ needs.candidate-stack.result }}', PROOF: '${{ needs.proof-gate.result }}'}
-        run: '[[ "$ASSEMBLE" == success && "$STACK" == success && "$PROOF" == success ]]'
+        env: {ASSEMBLE: '${{ needs.assemble-image-set.result }}', STACK: '${{ needs.release-stack.result }}', PROOF: '${{ needs.proof-gate.result }}', TRUST: '${{ needs.rehearsal-trust-gate.result }}'}
+        run: '[[ "$ASSEMBLE" == success && "$STACK" == success && "$PROOF" == success && "$TRUST" == success ]]'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with: {name: ci-evidence-summary, path: artifacts/evidence}
       - name: Create ReleaseCandidate manifest
         env:
-          IMAGES: ${{ needs.assemble-release.outputs.release_images_json }}
+          IMAGES: ${{ needs.assemble-image-set.outputs.release_images_json }}
           CONTRACT: ${{ needs.plan.outputs.release_contract_json }}
           PLAN_SHA: ${{ needs.plan.outputs.plan_sha256 }}
           SCHEMA_CHANGE: ${{ needs.plan.outputs.schema_change }}
@@ -220,7 +255,7 @@ jobs:
   ci-gate:
     name: Notrelix CI Gate
     if: always()
-    needs: [plan, proof-gate, seal-candidate]
+    needs: [plan, proof-gate, release-stack, seal-candidate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -229,6 +264,8 @@ jobs:
           PROOF: ${{ needs.proof-gate.result }}
           REQUIRED: ${{ needs.plan.outputs.release_candidate }}
           SEALED: ${{ needs.seal-candidate.result }}
+          MODE: ${{ needs.plan.outputs.release_execution_mode }}
+          STACK: ${{ needs.release-stack.result }}
         run: |
           set -euo pipefail
           [[ "$PLAN" == success && "$PROOF" == success ]]

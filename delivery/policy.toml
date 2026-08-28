@@ -1,4 +1,4 @@
-schema_version = 5
+schema_version = 6
 
 [platform]
 control_plane_python_min = "3.11"
@@ -31,6 +31,7 @@ patterns = [".github/workflows/**", ".github/actions/**", ".github/CODEOWNERS", 
 exclusive = true
 full_ci = true
 release = false
+rehearsal = true
 
 [[change_rules]]
 id = "backend-contract"
@@ -162,6 +163,12 @@ required = ["container:{component_id}"]
 [proof_profiles.release-stack]
 required = ["stack:release-candidate"]
 
+[proof_profiles.security-runtime]
+required = ["security:runtime"]
+
+[proof_profiles.release-rehearsal]
+required = ["stack:release-rehearsal"]
+
 [proof_profiles.ui]
 required = ["ui:foundation"]
 
@@ -181,6 +188,9 @@ profile = "container"
 
 [proof_bindings.release]
 profile = "release-stack"
+
+[proof_bindings.rehearsal]
+profile = "release-rehearsal"
 
 [mock]
 artifact_component = "web"
