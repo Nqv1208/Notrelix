@@ -110,9 +110,9 @@ jobs:
           docker network create "$network"
           cleanup(){ rm -f "$creds"; docker rm -f notrelix-ci-backend-http notrelix-ci-rabbitmq notrelix-ci-redis notrelix-ci-postgres >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; }
           trap cleanup EXIT
-          docker run -d --name notrelix-ci-postgres --network "$network" -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=notrelix postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685 >/dev/null
-          docker run -d --name notrelix-ci-redis --network "$network" redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf redis-server --requirepass ci >/dev/null
-          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=ci rabbitmq@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281 >/dev/null
+          docker run -d --name notrelix-ci-postgres --network "$network" -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=notrelix postgres:16-alpine >/dev/null
+          docker run -d --name notrelix-ci-redis --network "$network" redis:7-alpine redis-server --requirepass ci >/dev/null
+          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=ci rabbitmq:3.13-management-alpine >/dev/null
           for _ in $(seq 1 45); do docker exec notrelix-ci-postgres pg_isready -U postgres -d notrelix >/dev/null 2>&1 && break; sleep 1; done
           for _ in $(seq 1 60); do docker exec notrelix-ci-rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1 && break; sleep 1; done
           scripts/ci/generate-test-credentials.sh > "$creds"
