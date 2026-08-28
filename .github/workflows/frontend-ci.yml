@@ -134,10 +134,15 @@ jobs:
     needs: quality
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e
+      env: {PLAYWRIGHT_BROWSERS_PATH: /ms-playwright}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Renderer/package version contract
+        run: |
+          actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "1.61.1" ]]
       - run: pnpm test:ui:freeze
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

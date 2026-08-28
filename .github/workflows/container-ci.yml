@@ -106,47 +106,51 @@ jobs:
         run: |
           set -euo pipefail
           network="notrelix-ci-backend-${{ github.run_id }}"
+          creds="$(mktemp)"
           docker network create "$network"
-          cleanup(){ docker rm -f notrelix-ci-backend-http notrelix-ci-rabbitmq notrelix-ci-redis notrelix-ci-postgres >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; }
+          cleanup(){ rm -f "$creds"; docker rm -f notrelix-ci-backend-http notrelix-ci-rabbitmq notrelix-ci-redis notrelix-ci-postgres >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; }
           trap cleanup EXIT
-          docker run -d --name notrelix-ci-postgres --network "$network" -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=ci postgres:16-alpine >/dev/null
-          docker run -d --name notrelix-ci-redis --network "$network" -e REDIS_PASSWORD=ci redis:7-alpine >/dev/null
-          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=ci -e RABBITMQ_DEFAULT_PASS=ci rabbitmq:3.13-management-alpine >/dev/null
+          docker run -d --name notrelix-ci-postgres --network "$network" -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=notrelix postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685 >/dev/null
+          docker run -d --name notrelix-ci-redis --network "$network" redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf redis-server --requirepass ci >/dev/null
+          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=ci rabbitmq@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281 >/dev/null
+          for _ in $(seq 1 45); do docker exec notrelix-ci-postgres pg_isready -U postgres -d notrelix >/dev/null 2>&1 && break; sleep 1; done
+          for _ in $(seq 1 60); do docker exec notrelix-ci-rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1 && break; sleep 1; done
+          scripts/ci/generate-test-credentials.sh > "$creds"
+          # shellcheck source=/dev/null
+          source "$creds"
           docker run -d --name notrelix-ci-backend-http -p 8080:8080 --network "$network" \
             -e ASPNETCORE_ENVIRONMENT=Production \
             -e ASPNETCORE_URLS=http://+:8080 \
-            -e Cors__AllowedOrigins__0=http://localhost:5173 \
-            -e Cors__AllowedOrigins__1=http://localhost:3000 \
-            -e Frontend__AppBaseUrl=http://localhost \
+            -e HttpsRedirection__Enabled=false \
+            -e ForwardedHeaders__RequireKnownProxyInProduction=false \
             -e Rls__Enabled=true \
             -e Rls__SetSessionContext=true \
             -e DataProtection__PersistKeys=true \
             -e DataProtection__KeysPath=/tmp/dataprotection-keys \
+            -e ConnectionStrings__NotrelixDb="Host=notrelix-ci-postgres;Port=5432;Database=notrelix;Username=postgres;Password=ci" \
+            -e ConnectionStrings__Redis="notrelix-ci-redis:6379,password=ci" \
             -e Messaging__Transport=RabbitMQ \
             -e Messaging__RabbitMQ__Host=notrelix-ci-rabbitmq \
             -e Messaging__RabbitMQ__Port=5672 \
             -e Messaging__RabbitMQ__VHost=/ \
-            -e Messaging__RabbitMQ__Username=ci \
+            -e Messaging__RabbitMQ__Username=rabbitmq \
             -e Messaging__RabbitMQ__Password=ci \
-            -e ConnectionStrings__NotrelixDb="Host=notrelix-ci-postgres;Port=5432;Database=ci;Username=postgres;Password=ci" \
-            -e ConnectionStrings__Redis="notrelix-ci-redis:6379,password=ci" \
-            -e JwtSettings__SecretKey=ci-test-secret-key-must-be-at-least-32-characters \
-            -e JwtSettings__Issuer=Notrelix.CI \
-            -e JwtSettings__Audience=Notrelix.CI \
-            -e Email__Provider=InMemory \
-            -e HttpsRedirection__Enabled=false \
-            -e ForwardedHeaders__UseForwardedHeaders=false \
+            -e JwtSettings__SecretKey="$JWT_SECRET" \
+            -e JwtSettings__Issuer=https://ci.notrelix.invalid \
+            -e JwtSettings__Audience=https://ci.notrelix.invalid \
+            -e Email__ApiKey="$EMAIL_API_KEY" \
+            -e Email__FromEmail=noreply@notrelix.invalid \
+            -e Cors__AllowedOrigins__0=https://ci.notrelix.invalid \
+            -e Frontend__AppBaseUrl=https://ci.notrelix.invalid \
             notrelix-ci/backend:${{ github.sha }}
+          if [[ "$(docker exec notrelix-ci-backend-http id -u)" == 0 ]]; then docker logs notrelix-ci-backend-http; exit 1; fi
           code=000; attempts=0
           while [[ "$code" != 200 && "$attempts" -lt 60 ]]; do
             code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/health/live || true)"
             attempts=$((attempts + 1))
             [[ "$code" != 200 ]] && sleep 3
           done
-          if [[ "$code" != 200 ]]; then
-            docker logs notrelix-ci-backend-http
-            exit 1
-          fi
+          if [[ "$code" != 200 ]]; then docker logs notrelix-ci-backend-http; exit 1; fi
 
   web-image:
     name: Web image validation
