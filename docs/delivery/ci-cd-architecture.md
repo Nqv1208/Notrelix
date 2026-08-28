@@ -33,7 +33,7 @@ review_on:
 
 Notrelix CI/CD is split into independently-owned continuous-integration workflows (one per domain) plus a frozen release path. Each domain owns its complete proof chain locally; no central orchestrator plans execution.
 
-Continuous delivery (CD) is frozen/dormant. The CI migration deliberately does not reactivate or redesign CD. Existing release/promotion/deployment workflows remain frozen. CD reactivation is a separate future workstream after CI stabilization.
+Continuous delivery (CD) is frozen/dormant. The CI migration deliberately does not reactivate or redesign CD. Existing release/promotion/deployment workflows remain frozen. CD reactivation is a separate future workstream after CI stabilization; until CD is explicitly reactivated, no release, promotion, or deployment behavior is activated or redesigned here.
 
 The dependency direction is fixed:
 
