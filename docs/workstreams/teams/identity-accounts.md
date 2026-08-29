@@ -373,6 +373,21 @@ Required resolution:
 
 Until resolved, affected slices remain `BLOCKED` or `CONTRACTED`, not `DONE`.
 
+Resolution status (final Identity & Accounts closure, 2026-08-29):
+  RESOLVED in source and contract — the canonical browser session/CSRF contract
+  is defined by ADR-005 (Double Submit; `X-CSRF-Token` header; `csrf_token`
+  cookie; bootstrap `GET /api/v1/auth/csrf`). Backend (CsrfProtectionMiddleware
+  + CsrfProtector issuing/validating) and the frontend shared transport
+  (bootstrap, `X-CSRF-Token` on unsafe methods, re-bootstrap bounded recovery on
+  `security.csrf_validation_failed`) are merged and covered by tests:
+  API Csrf suites 15/15 (enforcement + rollout-compat + cross-stack flow) and
+  frontend csrf-transport unit tests. No `XSRF-TOKEN`/meta/localStorage
+  mechanism exists in source. `Security:Csrf:Enabled` defaults false; enabling
+  in staging/production is a staged deployment action (P14-MIG-003 in the
+  Identity & Accounts execution package), not an unresolved source mismatch.
+  Slices previously held `BLOCKED` by this item are no longer blocked at
+  source level.
+
 ## 14. Producer dependencies
 
 ### Platform/Foundation

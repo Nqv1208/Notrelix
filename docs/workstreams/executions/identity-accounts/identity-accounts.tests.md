@@ -24,8 +24,8 @@ applies_to:
   - migrations
   - cross-context-contracts
 evidence:
-  - docs/workstreams/execution/identity-accounts/identity-accounts.spec.md
-  - docs/workstreams/execution/identity-accounts/identity-accounts.plan.md
+  - docs/workstreams/executions/identity-accounts/identity-accounts.spec.md
+  - docs/workstreams/executions/identity-accounts/identity-accounts.plan.md
   - docs/workstreams/backend-roadmap.md
   - docs/workstreams/teams/identity-accounts.md
   - docs/workstreams/teams/platform-foundation.md
