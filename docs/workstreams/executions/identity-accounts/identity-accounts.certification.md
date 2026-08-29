@@ -3093,13 +3093,25 @@ Candidate SHA:
   Original certified HEAD: 450bea973307980ce03c4bc27b5f32c1ad6c91cf (develop,
   2026-08-23). All source regression/gates executed at this exact SHA.
   Phase 17–20 closure records + Phase 19 doc alignment are documentation-only
-  working-tree edits on top (no source/contract delta vs 450bea97); they enter
-  history as the certification commit of this record.
-  FINAL_HEAD_SHA: a45b82d3dbb4f0fb3e36eb4cc2f2969d93aebee0 (current main =
-  develop, re-verified 2026-08-29). Source for Identity/Accounts/CSRF is
-  identical to the originally certified tree; backend regression suites were
-  re-run at this SHA and remain green (counts recorded below). The docs-closure
-  commit adds no source/contract delta.
+  working-tree edits on top of 450bea97; they enter history as the
+  certification commit of this record.
+
+  Post-refactor source re-verification baseline:
+  SOURCE_REVERIFICATION_SHA: a45b82d3dbb4f0fb3e36eb4cc2f2969d93aebee0
+  (re-verified 2026-08-29). IMPORTANT: the source is NOT byte-identical to
+  450bea97. Between these two revisions (101 commits) the application
+  authorization pipeline and request execution model were refactored —
+  AuthorizationBehavior / PermissionService were removed and AccessControlBehavior
+  / AccessPolicyEngine were introduced; Identity Auth/MFA/OAuth/API-Tokens/
+  Sessions request contracts were updated. Identity contracts/behavior remained
+  valid after the refactor and were re-verified on a45b82d3 by the full backend
+  regression plus architecture/API/integration/OpenAPI drift gates (counts
+  recorded below).
+
+  Closure PR: documentation-only delta on top of a45b82d3. The exact final
+  commit is established by the closure PR/CI run on the actual PR HEAD, not
+  recorded as a fixed SHA here (this record is itself committed by the
+  docs-closure PR). Required CI must be green on the actual PR HEAD.
   Worktree otherwise as found: pre-existing dirty frontend/apps/marketing/
   vercel.json + untracked .agents/.claude skill dirs (unrelated to scope).
 
@@ -3168,22 +3180,43 @@ Docs/OpenAPI:
           make docs-check ALL PASS; rule-index regenerated via producer
 
 CI:
-  Status: LOCAL GATES GREEN AT EXACT SHA — backend 7 suites 4496 passed /
+  Status: LOCAL GATES GREEN AT EACH STATED EXACT SHA —
+    Original certification (SHA 450bea97): backend 7 suites 4496 passed /
           0 failed / 0 skipped (Architecture 398 incl. TRACE-001 + drift
           gates; Domain 2576; Application 649; Infrastructure 132;
           Platform 147; API 256; Integration 338 incl. PermissionServiceTests
           33/33); frontend pnpm test:node 72 files / 313 passed (incl.
           csrf-transport 11/11); OpenAPI export-vs-canonical CLEAN;
           events manifest drift gate 1/1; make docs-check PASS.
-          Remote CI execution for the certification commit is a post-commit
-          action (record honestly: these counts are local executions).
+    Post-refactor source re-verification (SHA a45b82d3): backend 7 suites
+          4430 passed / 0 failed / 0 skipped (Architecture 410; Domain 2576;
+          Application 571; Infrastructure 134; Platform 147; API 256;
+          Integration 336); dotnet format clean; SQLite guard 0 matches;
+          vulnerable packages 0; OpenAPI export-vs-canonical CLEAN
+          (byte-identical); migration discipline PASS; make docs-check
+          authored gates (links/metadata/authority) PASS.
+    These counts are LOCAL executions. Remote CI on the exact commit is owned
+    by the closure PR and must be green on the actual PR HEAD per
+    definition-of-done.md (recorded in the closure PR accordingly).
 
-Generated artifact checksums (at 450bea97; re-verified at FINAL_HEAD_SHA
-a45b82d3 — no source/contract delta):
-  sha256 backend/contracts/openapi/notrelix.v1.json
-        = f4391c799d864f6542f59e7b44290898a8cc6b1cfa67610b0e762ec6a47c9758
-  sha256 backend/contracts/events/notrelix.events.json
-        = dda01452e66927e2975fb349b953493347be3aec3e6b641e27a9a393745fa0f4
+Generated artifact checksums (captured at each exact revision; the artifacts
+DO differ between the two revisions — the OpenAPI blob changed
+cc9f43→e96e2a and the events manifest fb25d5→f18221, consistent with the
+authorization refactor and related contract updates):
+  Original certification (SHA 450bea97):
+    sha256 backend/contracts/openapi/notrelix.v1.json
+          = f4391c799d864f6542f59e7b44290898a8cc6b1cfa67610b0e762ec6a47c9758
+    sha256 backend/contracts/events/notrelix.events.json
+          = dda01452e66927e2975fb349b953493347be3aec3e6b641e27a9a393745fa0f4
+  Post-refactor source re-verification (SHA a45b82d3):
+    sha256 backend/contracts/openapi/notrelix.v1.json
+          = fc93c590447b9ad9c80c9cba05cd52a998c4f69e61f24a018d42f4eb91a4224a
+    sha256 backend/contracts/events/notrelix.events.json
+          = 67c83f6307160d3c33bff4363d57be0bb9d46c1e322d8ce19e49fbad1c2b7485
+  At a45b82d3 the drift gates re-verify the committed artifacts against the
+  current producers (OpenAPI export-vs-canonical CLEAN byte-identical; events
+  manifest drift gate green), so the committed blob at a45b82d3 is the
+  authoritative output for the re-verified revision.
 
 Phase 13 closure table (IA-CERT-HO-002):
   IA-API-002 DONE | IA-API-003 DONE | IA-API-004 DONE
@@ -3285,9 +3318,11 @@ Reviewer(s):
   Execution agents (Phases 0–20). Human governance review: advisory /
   non-blocking under repository governance (no formal sign-off gate exists).
 Date:
-  2026-08-23 (original certification executed); final closure re-verification
-  at current HEAD a45b82d3 on 2026-08-29 (source identical; this docs-closure
-  record added on top)
+  2026-08-23 (original certification executed at 450bea97); post-refactor
+  source re-verification at SOURCE_REVERIFICATION_SHA a45b82d3 on 2026-08-29
+  (source NOT identical to 450bea97 — refactored; re-verified green, see CI
+  block); docs-closure commit added on top; required CI green at the actual
+  PR HEAD
 ```
 
 # Handoff to Workspace & Governance
