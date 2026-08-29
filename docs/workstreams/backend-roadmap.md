@@ -530,7 +530,7 @@ Required categories:
 Before implementation, create:
 
 ```text
-docs/workstreams/execution/identity-accounts/
+docs/workstreams/executions/identity-accounts/
 ├── identity-accounts.spec.md
 ├── identity-accounts.plan.md
 ├── identity-accounts.tests.md
@@ -2097,7 +2097,7 @@ and each capability has a clear path to stable parallel development.
 The next full execution package should be:
 
 ```text
-docs/workstreams/execution/identity-accounts/
+docs/workstreams/executions/identity-accounts/
 ├── identity-accounts.spec.md
 ├── identity-accounts.plan.md
 ├── identity-accounts.tests.md

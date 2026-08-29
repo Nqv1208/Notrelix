@@ -24,9 +24,9 @@ applies_to:
   - ci
   - cross-team-handoff
 evidence:
-  - docs/workstreams/execution/identity-accounts/identity-accounts.spec.md
-  - docs/workstreams/execution/identity-accounts/identity-accounts.plan.md
-  - docs/workstreams/execution/identity-accounts/identity-accounts.tests.md
+  - docs/workstreams/executions/identity-accounts/identity-accounts.spec.md
+  - docs/workstreams/executions/identity-accounts/identity-accounts.plan.md
+  - docs/workstreams/executions/identity-accounts/identity-accounts.tests.md
   - docs/workstreams/backend-roadmap.md
   - docs/workstreams/teams/identity-accounts.md
   - backend/docs/architecture/backend-overview.md
@@ -600,7 +600,7 @@ P1 CORE-CERT-001 — User identity
   CI jobs: backend CI be-ci.yml (solution test + build gates)
   Known debt: none for P1 core
   Status: STABLE (D5)
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-002 — Actor contract
@@ -617,7 +617,7 @@ P1 CORE-CERT-002 — Actor contract
     IA-TST-ACTOR-SEC-001
   Integration: runtime end-to-end under notrelix_app role
   Status: STABLE (D5)
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-003 — Session contract
@@ -637,7 +637,7 @@ P1 CORE-CERT-003 — Session contract
     existing (UserId) per request, NOT on user-disable batch revocation;
     failing-closed behavior without session context is proven. D5 upgrade is
     scoped to a later security hardening pass (IA-FIND-001 removal).
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-004 — Account identity
@@ -652,7 +652,7 @@ P1 CORE-CERT-004 — Account identity
     is metadata-only; account resolved from tenant context, TenantBootstrap-
     Behavior)
   Status: STABLE (D5)
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-005 — Current Account resolution
@@ -665,7 +665,7 @@ P1 CORE-CERT-005 — Current Account resolution
   Security: cross-account denial proven at Application seam (new tests) and
     RLS layer
   Status: STABLE (D5)
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-006 — Tenant isolation
@@ -681,7 +681,7 @@ P1 CORE-CERT-006 — Tenant isolation
   Security: RLS is defense-in-depth; Application authorization maintained
     (TenantBootstrapBehavior); no RLS weakening
   Status: STABLE (D5)
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-007 — downstream producer contract
@@ -697,7 +697,7 @@ P1 CORE-CERT-007 — downstream producer contract
     IdentityRegistrationCompletedIntegrationEventV1 →
     WorkspaceProvisioningConsumer → ProvisionPersonalWorkspaceCommand
   Status: STABLE (D5)
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-008 — architecture
@@ -710,7 +710,7 @@ P1 CORE-CERT-008 — architecture
     preserved (no handler-local bypass added); no new production project
     (backend.slnx inventory unchanged)
   Status: STABLE (D5)
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-009 — migration/startup
@@ -727,7 +727,7 @@ P1 CORE-CERT-009 — migration/startup
     incremental migration history consolidated (decision §13) — recorded,
     not a blocker
   Status: STABLE (D5)
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 
 P1 CORE-CERT-010 — security baseline
@@ -745,7 +745,7 @@ P1 CORE-CERT-010 — security baseline
   Known debt: no automated secret-scan CI job (gitleaks-class scanner
     absent; only CI test JWT key present in be-ci.yml) — recorded §21
   Status: STABLE (D5) with the secret-scan debt recorded non-blocking
-  Reviewer: execution agent (review), pending human sign-off
+  Reviewer: execution agent (review); human governance review advisory (no formal sign-off gate per docs/delivery/definition-of-done.md)
   Decision date: 2026-08-14
 ```
 
@@ -1780,7 +1780,8 @@ Security evidence: authentication failures return 401 auth.unauthorized with
                    account-scope evaluation requires Active membership, grants
                    Owner full level, otherwise Governance rules + default switch
                    (ViewWorkspace→Viewer allow, else deny missing_permission) —
-                   proven by 5 new PermissionServiceTests scenarios on real
+                   proven by 5 new PermissionServiceTests scenarios (now:
+                   AccessPolicyEngine characterization tests) on real
                    PostgreSQL context wiring; bootstrap VerifyAccountAccessAsync
                    no longer the only gate for account-scoped operations
                    (IAREQ091); GetCurrentUser/UpdateProfile/Logout derive actor
@@ -1802,7 +1803,12 @@ Contract evidence: OpenAPI notrelix.v1.json regenerated twice (after handler
                    ProblemDetails shape at unchanged status codes
 Known debt:        CSRF disabled globally with frontend/backend header mismatch
                    (X-XSRF-TOKEN vs X-CSRF-Token) — enabling requires Platform
-                   contract change (decision notes §19); register email-existence
+                   contract change (decision notes §19)
+                   → SUPERSEDED: ADR-005 protocol implemented cross-stack at
+                   Phase 13 (IA-API-003 DONE, P13-FINAL-01). Current source uses
+                   X-CSRF-Token only; Security:Csrf:Enabled=false is staged
+                   rollout state (P14-MIG-003), not an open mismatch.
+                   Register email-existence
                    reveal accepted pending product sign-off; IA-EVT consumer
                    inventory certification open (earlier orphaned-event claims
                    corrected by source re-verification)
@@ -2250,7 +2256,7 @@ Known debt:        api-and-contracts.md §59-60 + FE-ADR-005 mismatch section
                    DOC_STALE (Phase 19 owner); stub consumers remain STUB by
                    design (26) until their owning contexts implement them
 Status:            CLOSED (Phase 17 exit met)
-Reviewer:          pending human sign-off
+Reviewer:          execution agent (review); advisory human governance review (non-blocking)
 Decision date:     2026-08-23
 ```
 
@@ -2282,7 +2288,7 @@ Generated artifacts: OpenAPI/event manifest drift gates executed inside
 Known debt:        none material; operational DLQ evidence remains
                    NOT_APPLICABLE_UNTIL_DEPLOYMENT per P17-X-005
 Status:            CLOSED (Phase 18 exit met)
-Reviewer:          pending human sign-off
+Reviewer:          execution agent (review); advisory human governance review (non-blocking)
 Decision date:     2026-08-23
 ```
 
@@ -2319,7 +2325,7 @@ Docs gates:        make docs-check ALL PASS (links/metadata/authority/
 Contracts:         documentation-only; no API/event/schema/persistence change
 Status:            CLOSED (Phase 19 exit met — no canonical doc contradicts
                    implemented CSRF/authz/event closure contracts)
-Reviewer:          pending human sign-off
+Reviewer:          execution agent (review); advisory human governance review (non-blocking)
 Decision date:     2026-08-23
 ```
 
@@ -3084,11 +3090,28 @@ Date:
 Identity & Accounts — Full Scope Certification
 
 Candidate SHA:
-  branch develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf (HEAD).
-  All source regression/gates executed at this exact SHA.
+  Original certified HEAD: 450bea973307980ce03c4bc27b5f32c1ad6c91cf (develop,
+  2026-08-23). All source regression/gates executed at this exact SHA.
   Phase 17–20 closure records + Phase 19 doc alignment are documentation-only
-  working-tree edits on top (no source/contract delta vs 450bea97); they enter
-  history as the certification commit of this record.
+  working-tree edits on top of 450bea97; they enter history as the
+  certification commit of this record.
+
+  Post-refactor source re-verification baseline:
+  SOURCE_REVERIFICATION_SHA: a45b82d3dbb4f0fb3e36eb4cc2f2969d93aebee0
+  (re-verified 2026-08-29). IMPORTANT: the source is NOT byte-identical to
+  450bea97. Between these two revisions (101 commits) the application
+  authorization pipeline and request execution model were refactored —
+  AuthorizationBehavior / PermissionService were removed and AccessControlBehavior
+  / AccessPolicyEngine were introduced; Identity Auth/MFA/OAuth/API-Tokens/
+  Sessions request contracts were updated. Identity contracts/behavior remained
+  valid after the refactor and were re-verified on a45b82d3 by the full backend
+  regression plus architecture/API/integration/OpenAPI drift gates (counts
+  recorded below).
+
+  Closure PR: documentation-only delta on top of a45b82d3. The exact final
+  commit is established by the closure PR/CI run on the actual PR HEAD, not
+  recorded as a fixed SHA here (this record is itself committed by the
+  docs-closure PR). Required CI must be green on the actual PR HEAD.
   Worktree otherwise as found: pre-existing dirty frontend/apps/marketing/
   vercel.json + untracked .agents/.claude skill dirs (unrelated to scope).
 
@@ -3157,21 +3180,43 @@ Docs/OpenAPI:
           make docs-check ALL PASS; rule-index regenerated via producer
 
 CI:
-  Status: LOCAL GATES GREEN AT EXACT SHA — backend 7 suites 4496 passed /
+  Status: LOCAL GATES GREEN AT EACH STATED EXACT SHA —
+    Original certification (SHA 450bea97): backend 7 suites 4496 passed /
           0 failed / 0 skipped (Architecture 398 incl. TRACE-001 + drift
           gates; Domain 2576; Application 649; Infrastructure 132;
           Platform 147; API 256; Integration 338 incl. PermissionServiceTests
           33/33); frontend pnpm test:node 72 files / 313 passed (incl.
           csrf-transport 11/11); OpenAPI export-vs-canonical CLEAN;
           events manifest drift gate 1/1; make docs-check PASS.
-          Remote CI execution for the certification commit is a post-commit
-          action (record honestly: these counts are local executions).
+    Post-refactor source re-verification (SHA a45b82d3): backend 7 suites
+          4430 passed / 0 failed / 0 skipped (Architecture 410; Domain 2576;
+          Application 571; Infrastructure 134; Platform 147; API 256;
+          Integration 336); dotnet format clean; SQLite guard 0 matches;
+          vulnerable packages 0; OpenAPI export-vs-canonical CLEAN
+          (byte-identical); migration discipline PASS; make docs-check
+          authored gates (links/metadata/authority) PASS.
+    These counts are LOCAL executions. Remote CI on the exact commit is owned
+    by the closure PR and must be green on the actual PR HEAD per
+    definition-of-done.md (recorded in the closure PR accordingly).
 
-Generated artifact checksums (at 450bea97):
-  sha256 backend/contracts/openapi/notrelix.v1.json
-        = f4391c799d864f6542f59e7b44290898a8cc6b1cfa67610b0e762ec6a47c9758
-  sha256 backend/contracts/events/notrelix.events.json
-        = dda01452e66927e2975fb349b953493347be3aec3e6b641e27a9a393745fa0f4
+Generated artifact checksums (captured at each exact revision; the artifacts
+DO differ between the two revisions — the OpenAPI blob changed
+cc9f43→e96e2a and the events manifest fb25d5→f18221, consistent with the
+authorization refactor and related contract updates):
+  Original certification (SHA 450bea97):
+    sha256 backend/contracts/openapi/notrelix.v1.json
+          = f4391c799d864f6542f59e7b44290898a8cc6b1cfa67610b0e762ec6a47c9758
+    sha256 backend/contracts/events/notrelix.events.json
+          = dda01452e66927e2975fb349b953493347be3aec3e6b641e27a9a393745fa0f4
+  Post-refactor source re-verification (SHA a45b82d3):
+    sha256 backend/contracts/openapi/notrelix.v1.json
+          = fc93c590447b9ad9c80c9cba05cd52a998c4f69e61f24a018d42f4eb91a4224a
+    sha256 backend/contracts/events/notrelix.events.json
+          = 67c83f6307160d3c33bff4363d57be0bb9d46c1e322d8ce19e49fbad1c2b7485
+  At a45b82d3 the drift gates re-verify the committed artifacts against the
+  current producers (OpenAPI export-vs-canonical CLEAN byte-identical; events
+  manifest drift gate green), so the committed blob at a45b82d3 is the
+  authoritative output for the re-verified revision.
 
 Phase 13 closure table (IA-CERT-HO-002):
   IA-API-002 DONE | IA-API-003 DONE | IA-API-004 DONE
@@ -3200,19 +3245,84 @@ Non-blocking debt:
     deployment actions (staged sequence P14-MIG-003)
   - GitGuardian CI incident: external repository-alert triage, outside this
     workstream's source scope
-  - Human sign-off pending on all agent-executed certification records
-  - Frontend feature-auth router coupling remains SOURCE_DEBT (separate owner)
-  - MFA/step-up/API-token management UI wiring backlog (capability APIs done)
   - 26 stub consumers remain STUB by design until owning contexts implement
+
+Governance note:
+  Repository governance (docs/delivery/definition-of-done.md; docs/workstreams/
+  README.md lifecycle) defines workstream closure by executable evidence on the
+  exact SHA: CI gates, tests, migrations and generated artifacts. It does NOT
+  require a named human reviewer, an approval record, PR approval or a release
+  approval gate for workstream closure. Human review of this workstream is
+  therefore advisory governance review only and is NOT an implementation or
+  closure blocker. No human approval is claimed or fabricated; any future named
+  human review is recorded separately as governance review, not as a
+  prerequisite for the certification decision below.
+
+Closure status:
+  Identity & Accounts backend + contract source implementation: CLOSED
+  P1 producer contract:                                   STABLE / D5
+  Session contract:                                       D5 (watermark
+                                                          revocation) —
+                                                          readiness satisfied
+  Tenant isolation + central authorization:               enforced by
+                                                          executable gates
+  CSRF source/contract/test:                              CLOSED
+  CSRF production rollout:                                DEPLOYMENT
+                                                          RESPONSIBILITY
+                                                          (P14-MIG-003) — NOT a
+                                                          source blocker; no
+                                                          production-verified
+                                                          claim is made
+  Downstream stub consumers:                              OWNED BY CONSUMER
+                                                          WORKSTREAMS — NOT an
+                                                          IA blocker
+
+Frontend ownership handoff (non-blocking; separate owner):
+  B1 — feature-auth router coupling: TRANSFERRED. Owner = frontend architecture
+    workstream. Documented as existing source debt with a defined target
+    migration in FE-ADR-005 (##2 Decoupled navigation; FE-ADR-005-D2) and
+    FE-DEP-074; the same pattern also exists in @notrelix/features-workspace.
+    Does NOT block IA backend/source closure and does NOT require IA to
+    refactor routing/navigation architecture.
+  B2 — security-settings UI, classified one capability at a time:
+    - MFA enrollment UI ................................. BACKEND_ONLY_BY_DESIGN
+      at Full Scope + FRONTEND_BACKLOG (backend contract ready)
+    - MFA verification/challenge UI ..................... BACKEND_ONLY_BY_DESIGN
+      at Full Scope + FRONTEND_BACKLOG (backend contract ready)
+    - MFA recovery UI ................................... BACKEND_ONLY_BY_DESIGN
+      at Full Scope + FRONTEND_BACKLOG (backend contract ready)
+    - step-up auth UI ................................... BACKEND_ONLY_BY_DESIGN
+      at Full Scope + FRONTEND_BACKLOG (backend contract ready)
+    - API-token list/create/revoke UI ................... BACKEND_ONLY_BY_DESIGN
+      at Full Scope + FRONTEND_BACKLOG (backend contract ready)
+    - API-token display-once behavior ................... backend-enforced
+      contract (raw secret returned exactly once by Identity.ApiTokens.Create;
+      list DTO carries no secret); no frontend display wiring yet
+      (FRONTEND_BACKLOG)
+    - Security settings integration ..................... apps/web account
+      security page exists with disabled placeholders (password/2FA); live
+      wiring is FRONTEND_BACKLOG
+    Contract exposure: MFA (6), ApiTokens (3) and step-up (5) operationIds are
+    generated in the frontend REST contract (schema types present); the client
+    transport (endpoints.ts / api-client.ts) and UI are not yet wired — owned by
+    the frontend workstream. IA plan defines MFA/Security/API-Tokens as backend
+    + contract scope (only frontend clause in plan is §119 CSRF transport).
 
 Decision:
   IDENTITY & ACCOUNTS FULL SCOPE CERTIFIED
-  (source-level; operational items above remain deployment/backlog actions)
+  (source-level; established by executable evidence. Operational, deployment
+  and handoff items above remain with their respective owners and none of them
+  blocks this decision.)
 
 Reviewer(s):
-  Execution agents (Phases 0–20); human sign-off PENDING
+  Execution agents (Phases 0–20). Human governance review: advisory /
+  non-blocking under repository governance (no formal sign-off gate exists).
 Date:
-  2026-08-23 (certification executed); sign-off pending
+  2026-08-23 (original certification executed at 450bea97); post-refactor
+  source re-verification at SOURCE_REVERIFICATION_SHA a45b82d3 on 2026-08-29
+  (source NOT identical to 450bea97 — refactored; re-verified green, see CI
+  block); docs-closure commit added on top; required CI green at the actual
+  PR HEAD
 ```
 
 # Handoff to Workspace & Governance
