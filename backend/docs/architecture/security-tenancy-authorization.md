@@ -475,6 +475,31 @@ client-provided WorkspaceId + resourceId
 
 as proof they belong together.
 
+### Resource ownership resolution port
+
+Resource-scoped request execution derives the owning Account/Workspace from
+authoritative server data through `IResourceLocator` (defined in
+`Notrelix.Application/Common/Context`), implemented as the shared
+`ResourceLocator` in Infrastructure.
+
+`ResourceLocator` is an approved cross-context read port:
+
+- it resolves only the ownership tuple `(ResourceId, AccountId, WorkspaceId)`
+  for a canonical `ResourceKind`;
+- it performs no authorization, no mutation, and no business logic;
+- it reads owner `DbContext`s directly so that ownership is established from
+  the same authoritative tables that own each resource.
+
+Per-context reads are concentrated in this single replaceable adapter
+(`BE-INF-026`): although it reads WorkManagement/Documents/Collaboration/
+Governance/Automation tables, it is not a WorkManagement business use case. It
+serves the cross-cutting scope resolution owned by the Application
+`ExecutionContextBehavior` (`BE-APP-014`). This is not precedent for new
+handler-local cross-context reads.
+
+Unknown resource kinds resolve to `null` so callers fail closed
+(`BE-SEC-012`).
+
 ---
 
 # 23. Scope mismatch

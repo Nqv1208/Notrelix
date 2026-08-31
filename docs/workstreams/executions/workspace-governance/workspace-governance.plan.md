@@ -1210,6 +1210,30 @@ IResourceScopeResolver
 
 Record every variant, persisted consumer and current canonical usage.
 
+Evidence (executed):
+
+```text
+ResourceKind            → canonical Domain value object (Domain/SharedKernel/ResourceKind),
+                          open string-based "{context}.{resource}" record struct, 16 active kinds:
+                          8 work-management.*, 2 documents.*, 2 collaboration.*,
+                          2 governance.*, 2 automation.*. No legacy ResourceType found.
+ResourceId              → ResourceId is part of ResourceRef (Domain/SharedKernel/ResourceRef).
+ResourceScope           → none found as distinct abstraction (scope lives on request markers).
+Subject                 → no legacy enum Subject in backend/src or backend/tests.
+Action                  → canonical PermissionAction enum
+                          (Domain/Governance/Permissions/PermissionAction.cs), 31 members.
+AuthorizationRequirement→ IRequirePermission (Application/Common/Requests/Security),
+                          exposes PermissionAction Action + ResourceRef? Resource.
+PermissionContext       → none found.
+IResourceReferenceResolver → none.
+IResourceScopeResolver  → none; the scope/resolver role is served by IResourceLocator
+                          (Application/Common/Context) + ResourceLocator (Infrastructure/Services).
+Persisted consumers of ResourceKind (string):
+                          ResourcePermissionGrantedIntegrationEvent / RevokedIntegrationEvent
+                          (string ResourceKind field), RealtimeResourceChangedV1 (property),
+                          RealtimeTopic (Namespace + ResourceKind + ResourceId).
+```
+
 ## 66. WG-RES-002 — select canonical resource category without forced rename
 
 Use the existing source model when it already provides:
@@ -1330,6 +1354,39 @@ Required D4 producer contract:
 - no Governance private EF read of downstream contexts;
 - representative Board contract can be implemented without private-context coupling;
 - P3-A Domain/Data work may open if Workspace/containment prerequisites are also D4+.
+
+Status:
+
+```text
+WG-RES-001 inventory COMPLETE — 16 ResourceKind kinds, no legacy ResourceType/PermissionContext/Subject.
+WG-RES-002 canonical category KEPT as ResourceKind — no forced rename (source already uses it; no rename proof required).
+WG-RES-003 ownership CLEAR — resource teams own identity/lifecycle/Action; Governance owns only registry mechanics
+    (see www-data plan §67). No Governance-invented product actions.
+WG-RES-004 FACTS contract CONFIRMED — AccessFacts (Application/Common/Security/AccessFacts.cs) is entirely
+    fact-based (UserExists, EmailVerified, AccountExists, AccountMemberRole, WorkspaceExists, WorkspaceMemberRole,
+    ResourceExists, ResourceAudience, ResourceMemberRole, HasExplicitResourcePermission, PermissionRules,
+    HasActiveSubscription, SubscriptionTier, FeatureEnabled, AccountOperational, UserOperational). No Can* policy fields.
+WG-RES-005 provider ownership = D6-A — ResourceLocator documented as approved cross-context read port:
+    concentrates per-DbContext reads for the ExecutionContextBehavior scope resolution; performs no authz/mutation;
+    serves the cross-cutting concern so does not become WorkManagement business coupling. Action: canonical doc entry
+    added to backend/docs/architecture/security-tenancy-authorization.md §BE-SEC-011.
+WG-RES-006 facts vs policy CLEAN — no projected field was introduced as a hidden second permission hierarchy;
+    PermissionRule carries Governance policy; AccessFacts stays source-owned facts.
+WG-RES-007 Account/Workspace pairing PROVEN — ExecutionContextBehavior derives Account ALWAYS from the owned
+    workspace/resource row (workspace → ResolveWorkspaceAccessAsync; resource → ResourceLocator); API-token path
+    additionally enforces BoundAccountId equality. New negative proof added: Application.Tests
+    ExecutionContextBehaviorTests "Workspace_request_with_api_token_bound_to_different_account_is_denied"
+    (ApiToken bound to Account B + workspace owned by Account A → ForbiddenException, no snapshot).
+WG-RES-008 transport-neutral seam CONFIRMED — IResourceLocator (Application/Common/Context) exposes no EF/gRPC/HTTP/
+    broker types; ResourceLocator implementation may evolve independently.
+WG-RES-009 module-first layout respected — no production use case added to deprecated legacy feature paths.
+No Governance private EF read of downstream contexts — GovernanceStubConsumers (Messaging/Consumers/Governance)
+    are pure logging stubs with no downstream DbContext/service/provider coupling.
+Representative Board contract is implementable without private-context coupling — ResourceLocator reads Boards only
+    as the cross-cutting scope resolver (D6-A), not as a WorkManagement business use case.
+Evidence: backend.doc security-tenancy-authorization.md doc entry; Application.Tests +1 (588 total);
+    Architecture.Tests 410. Phase 6 CLOSED. P3-A Domain/Data may open under the approved producer contract.
+```
 
 # Phase 7 — Permission model
 
@@ -2717,7 +2774,7 @@ Scope:
 - last-admin invariant;
 - tests.
 
-## 228. PR-WG-03 — Resource/Action contract
+## 228. PR-WG-04 — Phase 6 Resource/Action contract
 
 Scope:
 
@@ -2727,7 +2784,11 @@ Scope:
 
 No WorkManagement business changes except minimal consumer fixture/contract if necessary.
 
-## 229. PR-WG-04 — Permission + built-in Role
+> Execution note: PR IDs are monotonic execution identities; they do not equal phase numbers.
+> Executed history: PR-WG-01 (Phase 3), PR-WG-02 (Phase 4), PR-WG-03 (Phase 5). PR-WG-04
+> corresponds to Phase 6 (Resource/Action contract).
+
+## 229. PR-WG-05 — Phase 7/8 Permission + built-in Role
 
 Scope:
 
@@ -2736,7 +2797,7 @@ Scope:
 - effective mapping;
 - tests.
 
-## 230. PR-WG-05 — Authorization pipeline integration
+## 230. PR-WG-06 — Phase 9 Authorization pipeline integration
 
 Scope:
 
@@ -2745,7 +2806,7 @@ Scope:
 - role-check debt migration limited to representative P2 paths;
 - architecture tests.
 
-## 231. PR-WG-06 — WorkManagement handshake / P2 gate
+## 231. PR-WG-07 — Phase 10/11 WorkManagement handshake / P2 gate
 
 Scope:
 
@@ -2753,27 +2814,27 @@ Scope:
 - allow/deny/cross-tenant proof;
 - P2 certification evidence.
 
-## 232. PR-WG-07 — Invitations / Provisioning
+## 232. PR-WG-08 — Invitations / Provisioning
 
 As release scope requires.
 
-## 233. PR-WG-08 — Teams / Spaces
+## 233. PR-WG-09 — Teams / Spaces
 
 Independent after core where possible.
 
-## 234. PR-WG-09 — Custom roles / Policies / ResourcePermissions
+## 234. PR-WG-10 — Custom roles / Policies / ResourcePermissions
 
 Keep policy complexity isolated from P2 core PRs.
 
-## 235. PR-WG-10 — ShareLinks
+## 235. PR-WG-11 — ShareLinks
 
 Focused security review.
 
-## 236. PR-WG-11 — Audit / SecurityEvents / Templates
+## 236. PR-WG-12 — Audit / SecurityEvents / Templates
 
 Only release-scoped work.
 
-## 237. PR-WG-12 — hardening/migration cleanup
+## 237. PR-WG-13 — hardening/migration cleanup
 
 Use only for residual cross-cutting fixes, not miscellaneous refactor.
 

@@ -957,6 +957,12 @@ Account A + Workspace B(Account B) + Resource B → reject
 Account A + Workspace A + Resource B(Account B) → reject
 ```
 
+Phase 6 audit outcome: `backend/tests/Notrelix.Application.Tests/Common/Behaviors/ExecutionContextBehaviorTests.cs`
+`Workspace_request_with_api_token_bound_to_different_account_is_denied` proves the cross-account/workspace pairing
+reject path (API token bound to Account B + workspace owned by Account A → `ForbiddenException`, no snapshot).
+Structurally this holds because `ExecutionContextBehavior` always derives the Account from the owned workspace or
+resource row, never from a client-supplied pairing (see docs §BE-SEC-011).
+
 ## 56. WG-TST-RES-ARCH-003 — resource registration explicit
 
 Requirements:
