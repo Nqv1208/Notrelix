@@ -1853,6 +1853,8 @@ and current CI verifies those critical tests executed, alongside production comp
 
 This is strong evidence that tenant/RLS proof is a required foundation property.
 
+The canonical Application access facts snapshot (`AccessFacts`) includes an account-operational fact: an `Account` is operational only while its `AccountStatus` is `Active` or `Trialing`. For protected Account/Workspace/Resource-scoped requests, the pure policy engine (`AccessPolicyEngine`) denies `Forbidden` when the owning Account is missing, soft-deleted, or non-operational — failing closed before handler effects (resolve → evaluate → deny → no mutation), consistent with §17/§27 and the network `AccessFactsQuery.Sql` (single canonical query authority).
+
 ---
 
 # 126. BE-SEC-059 — Security critical gate must do non-zero work

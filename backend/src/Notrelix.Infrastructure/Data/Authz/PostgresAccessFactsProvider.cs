@@ -82,7 +82,9 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             rules,
             reader.GetBoolean(11),
             NullableString(reader, 12),
-            reader.GetBoolean(13));
+            reader.GetBoolean(13),
+            reader.GetBoolean(14),
+            reader.GetBoolean(15));
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

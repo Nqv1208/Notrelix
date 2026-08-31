@@ -284,6 +284,73 @@ public sealed class AccessPolicyEngineCharacterizationTests
     }
 
     [Fact]
+    public void AccountScope_NonOperationalAccount_FailsClosedBeforePermission()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
+            Facts(accountMemberRole: "Owner", accountOperational: false),
+            AccountPermissionRequest(PermissionAction.CreateWorkspace));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden,
+            "a suspended/closed account must be denied centrally before any permission grant");
+    }
+
+    [Fact]
+    public void WorkspaceScope_NonOperationalAccount_FailsClosedBeforePermission()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            Facts(workspaceMemberRole: "Owner", accountOperational: false),
+            PermissionRequest(PermissionAction.DeleteWorkspace, null));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden,
+            "an Owner of a workspace cannot operate when the owning account is not operational");
+    }
+
+    [Fact]
+    public void AccountScope_NonOperationalUser_FailsClosedBeforePermission()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
+            Facts(accountMemberRole: "Owner", userOperational: false),
+            AccountPermissionRequest(PermissionAction.CreateWorkspace));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden,
+            "a suspended/deactivated user must be denied centrally before any permission grant");
+    }
+
+    [Fact]
+    public void WorkspaceScope_NonOperationalUser_FailsClosedBeforePermission()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            Facts(workspaceMemberRole: "Owner", userOperational: false),
+            PermissionRequest(PermissionAction.DeleteWorkspace, null));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden,
+            "a workspace Owner whose user account became non-operational must fail closed (WG-MEM-008)");
+    }
+
+    [Fact]
+    public void AccountScope_MissingAccount_FailsClosed()
+    {
+        // Soft-deleted / absent account: operational fact is false even if a
+        // member row would otherwise carry a role.
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
+            Facts(accountMemberRole: "Owner", accountOperational: false),
+            AccountPermissionRequest(PermissionAction.ViewWorkspace));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden,
+            "a missing account must fail closed rather than resolve through member state");
+    }
+
+    [Fact]
     public void RequiredAndEmailVerified_AllowsRequest()
     {
         var decision = Engine.Evaluate(
@@ -392,7 +459,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private static AccessFacts NoFacts => new(
-        false, false, false, null, false, null, false, null, null, false, [], false, null, false);
+        false, false, false, null, false, null, false, null, null, false, [], false, null, false, true, true);
 
     private static AccessFacts Facts(
         bool userExists = false,
@@ -406,7 +473,9 @@ public sealed class AccessPolicyEngineCharacterizationTests
         IReadOnlyList<AccessPermissionRule>? rules = null,
         bool hasActiveSubscription = false,
         string? subscriptionTier = null,
-        bool featureEnabled = false) => new(
+        bool featureEnabled = false,
+        bool accountOperational = true,
+        bool userOperational = true) => new(
         userExists,
         emailVerified,
         false,
@@ -420,7 +489,9 @@ public sealed class AccessPolicyEngineCharacterizationTests
         rules ?? [],
         hasActiveSubscription,
         subscriptionTier,
-        featureEnabled);
+        featureEnabled,
+        accountOperational,
+        userOperational);
 
     private static ExecutionContextSnapshot Context(
         ApplicationPrincipalKind principal,

@@ -271,7 +271,9 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                         PermissionRules: Array.Empty<AccessPermissionRule>(),
                         HasActiveSubscription: true,
                         SubscriptionTier: "Test",
-                        FeatureEnabled: true));
+                        FeatureEnabled: true,
+                        AccountOperational: true,
+                        UserOperational: true));
                 return mock.Object;
             });
 

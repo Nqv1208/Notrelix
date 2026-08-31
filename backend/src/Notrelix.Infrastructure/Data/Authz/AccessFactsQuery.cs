@@ -70,6 +70,12 @@ public static class AccessFactsQuery
               FROM billing.entitlements e
              WHERE e.account_id = @account_id AND e.feature_code = @feature_code
              ORDER BY e.created_at DESC LIMIT 1
-          ), false) END
+          ), false) END,
+          EXISTS (SELECT 1 FROM account.accounts a
+                   WHERE a.id = @account_id AND a.deleted_at IS NULL
+                     AND a.status IN ('Active', 'Trialing')),
+          EXISTS (SELECT 1 FROM identity.users u
+                   WHERE u.id = @user_id AND u.deleted_at IS NULL
+                     AND u.status IN ('Active', 'PendingVerification'))
     """;
 }

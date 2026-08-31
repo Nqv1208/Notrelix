@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Notrelix.API;
+using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
@@ -31,12 +32,12 @@ namespace Notrelix.Integration.Tests.Auth;
 [Collection("Cache")]
 public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
 {
-    private static readonly Guid AccountId = Guid.Parse("A0000000-0000-0000-0000-0000000000A1");
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     private readonly CacheTestContainer _fixture;
     private User _user = null!;
     private User _member = null!;
+    private Guid _accountId;
     private Guid _workspaceA;
     private Guid _workspaceB;
     private string _rawSecret = string.Empty;
@@ -54,6 +55,10 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         _user = User.Create("apitoken-http@example.com", "HTTP Token User", "hashed", Now, hasPasswordCredential: true);
         _member = User.Create("apitoken-member-http@example.com", "HTTP Token Member", "hashed", Now, hasPasswordCredential: true);
 
+        var account = Account.Create(
+            "HTTP Token Account", $"api-http-{Guid.NewGuid():N}"[..16], AccountType.Team, _user.Id, Now);
+        _accountId = account.Id;
+
         var secretService = new ApiTokenSecretService();
         var ownerSecret = secretService.Generate();
         var memberSecret = secretService.Generate();
@@ -61,33 +66,34 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         _memberRawSecret = memberSecret.RawToken;
 
         await using var context = CreateSystemContext();
-        var workspaceA = Workspace.Create(AccountId, _user.Id, "Workspace A", $"ws-a-{Guid.NewGuid():N}"[..16], Now);
-        var workspaceB = Workspace.Create(AccountId, _user.Id, "Workspace B", $"ws-b-{Guid.NewGuid():N}"[..16], Now);
+        var workspaceA = Workspace.Create(_accountId, _user.Id, "Workspace A", $"ws-a-{Guid.NewGuid():N}"[..16], Now);
+        var workspaceB = Workspace.Create(_accountId, _user.Id, "Workspace B", $"ws-b-{Guid.NewGuid():N}"[..16], Now);
         _workspaceA = workspaceA.Id;
         _workspaceB = workspaceB.Id;
 
+        context.Accounts.Add(account);
         context.Users.AddRange(_user, _member);
         context.Workspaces.AddRange(workspaceA, workspaceB);
         context.WorkspaceMembers.AddRange(
             WorkspaceMember.Create(
-                AccountId, _workspaceA, _user.Id, WorkspaceRole.Owner, _user.Id, Now),
+                _accountId, _workspaceA, _user.Id, WorkspaceRole.Owner, _user.Id, Now),
             WorkspaceMember.Create(
-                AccountId, _workspaceB, _user.Id, WorkspaceRole.Owner, _user.Id, Now),
+                _accountId, _workspaceB, _user.Id, WorkspaceRole.Owner, _user.Id, Now),
             WorkspaceMember.Create(
-                AccountId, _workspaceA, _member.Id, WorkspaceRole.Member, _user.Id, Now));
+                _accountId, _workspaceA, _member.Id, WorkspaceRole.Member, _user.Id, Now));
         context.AccessGrants.AddRange(
             CreateGrant(
-                AccountId, _workspaceA, _user.Id, WorkspaceRole.Owner, Now),
+                _accountId, _workspaceA, _user.Id, WorkspaceRole.Owner, Now),
             CreateGrant(
-                AccountId, _workspaceB, _user.Id, WorkspaceRole.Owner, Now),
+                _accountId, _workspaceB, _user.Id, WorkspaceRole.Owner, Now),
             CreateGrant(
-                AccountId, _workspaceA, _member.Id, WorkspaceRole.Member, Now));
+                _accountId, _workspaceA, _member.Id, WorkspaceRole.Member, Now));
         context.ApiTokens.AddRange(
             ApiToken.Create(
-                AccountId, _workspaceA, _user.Id, "HTTP flow owner token", ownerSecret.TokenHash,
+                _accountId, _workspaceA, _user.Id, "HTTP flow owner token", ownerSecret.TokenHash,
                 scopes: null, createdBy: _user.Id, createdAt: Now, expiresAt: null),
             ApiToken.Create(
-                AccountId, _workspaceA, _member.Id, "HTTP flow member token", memberSecret.TokenHash,
+                _accountId, _workspaceA, _member.Id, "HTTP flow member token", memberSecret.TokenHash,
                 scopes: null, createdBy: _user.Id, createdAt: Now, expiresAt: null));
         await context.SaveChangesAsync();
     }

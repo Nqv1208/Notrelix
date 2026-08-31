@@ -37,6 +37,22 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 $"{descriptor.RequestType.Name} requires workspace context.");
         }
 
+        if (descriptor.Scope is ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && !facts.AccountOperational)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This account is not operational.");
+        }
+
+        if (descriptor.Scope is ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && !facts.UserOperational)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This user is not operational.");
+        }
+
         if (descriptor.Access.RequiresPermission)
         {
             var permission = EvaluatePermission(descriptor, facts, request);
