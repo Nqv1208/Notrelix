@@ -163,6 +163,13 @@ jobs:
           Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.IntentionalAllowlistEntries_MustDescribePermanentArchitectureExceptions
           Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllowlistEntries_AreNotStale
           Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllProductionRequests_HaveValidDescriptors
+          Notrelix.Architecture.Tests.CrossContextPersistenceBoundaryTests
+          Notrelix.Architecture.Tests.CrossContextApplicationDependencyTests
+          Notrelix.Architecture.Tests.DataAccess.CrossContextCascadeArchitectureTests
+          Notrelix.Architecture.Tests.Contracts.PublicSemanticContractArchitectureTests
+          Notrelix.Architecture.Tests.ApplicationLayer.ApplicationTransportBoundaryTests
+          Notrelix.Architecture.Tests.Events.IntegrationEventOwnershipArchitectureTests
+          Notrelix.Architecture.Tests.LayerRules.CommonEntitlementsAntiRegressionTests
       - name: Upload architecture test evidence on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
