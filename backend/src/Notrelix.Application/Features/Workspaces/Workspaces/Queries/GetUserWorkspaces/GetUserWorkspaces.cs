@@ -28,7 +28,7 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
 
         var workspaces = await _context.WorkspaceMembers
             .AsNoTracking()
-            .Where(m => m.UserId == _requestContext.UserId)
+            .Where(m => m.UserId == _requestContext.UserId && m.Status != WorkspaceMemberStatus.Removed)
             .Join(_context.Workspaces.AsNoTracking(),
                 member => member.WorkspaceId,
                 workspace => workspace.Id,
@@ -42,7 +42,7 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
             ? new Dictionary<Guid, int>()
             : await _context.WorkspaceMembers
                 .AsNoTracking()
-                .Where(member => workspaceIds.Contains(member.WorkspaceId))
+                .Where(member => workspaceIds.Contains(member.WorkspaceId) && member.Status != WorkspaceMemberStatus.Removed)
                 .GroupBy(member => member.WorkspaceId)
                 .Select(group => new { WorkspaceId = group.Key, Count = group.Count() })
                 .ToDictionaryAsync(item => item.WorkspaceId, item => item.Count, ct);

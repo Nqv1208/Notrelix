@@ -21,6 +21,7 @@ public record WorkspaceMemberDto(
     string Name,
     string? Avatar,
     string Role,
+    string Status,
     DateTime JoinedAt
 );
 
