@@ -18,8 +18,8 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "views", "active", view),
   invitations: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "invitations"),
-  invitationByToken: (token: string) =>
-    globalQueryKey("workspace-invitation", "token", token),
+  invitationPreview: (token: string) =>
+    globalQueryKey("workspace-invitation", "preview", token),
   pendingInvitations: accountQueryKey("workspace-invitations", "pending"),
   activity: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "activity"),

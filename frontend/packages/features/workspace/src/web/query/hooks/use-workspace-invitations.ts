@@ -20,7 +20,7 @@ export function createUseWorkspaceInvitations({
   return function useWorkspaceInvitations(workspaceId: string) {
     return useQuery({
       queryKey: workspaceQueryKeys.invitations(workspaceId),
-      queryFn: () => service.getPending(), // pending invitations scoped generally or in workspace (stubbed fallback)
+      queryFn: () => service.listForWorkspace(workspaceId),
       enabled: !!workspaceId,
     });
   };

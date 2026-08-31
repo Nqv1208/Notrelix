@@ -26,17 +26,36 @@ export interface WorkspaceMember {
 
 export interface WorkspaceInvitation {
   id: string;
-  token?: string;
   email: string;
-  role: WorkspaceMember["role"];
+  role: WorkspaceMember["role"] | string;
   expiresAt: string;
   isAccepted: boolean;
-  isExpired?: boolean;
   createdAt: string;
-  workspaceId?: string;
-  workspaceSlug?: string;
-  workspaceName?: string;
-  inviterName?: string;
+}
+
+export interface PendingWorkspaceInvitation {
+  id: string;
+  workspaceName: string;
+  workspaceSlug: string;
+  inviterName: string;
+  email: string;
+  role: string;
+  expiresAt: string;
+}
+
+export interface InvitationPreview {
+  id: string;
+  workspaceName: string;
+  inviterName: string;
+  email: string;
+  role: string;
+  isExpired: boolean;
+  isAccepted: boolean;
+}
+
+export interface AcceptInvitationResult {
+  workspaceId: string;
+  workspaceSlug: string;
 }
 
 export interface WorkspaceSummary {

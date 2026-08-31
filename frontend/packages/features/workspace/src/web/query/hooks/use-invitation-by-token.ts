@@ -19,8 +19,8 @@ export function createUseInvitationByToken({
 
   return function useInvitationByToken(token: string) {
     return useQuery({
-      queryKey: workspaceQueryKeys.invitationByToken(token),
-      queryFn: () => service.getByToken(token),
+      queryKey: workspaceQueryKeys.invitationPreview(token),
+      queryFn: () => service.getPreview(token),
       enabled: !!token,
     });
   };

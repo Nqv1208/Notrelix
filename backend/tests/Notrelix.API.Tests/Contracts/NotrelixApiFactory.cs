@@ -14,7 +14,9 @@ using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
+using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitationById;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using InvitationByToken = Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
@@ -382,8 +384,20 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<GetWorkspaceInvitationsQuery, Result<List<WorkspaceInvitationDto>>>(services,
                 Result<List<WorkspaceInvitationDto>>.Success(new List<WorkspaceInvitationDto>()));
             MockWorkspaceHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>(services,
-                Result<List<UserPendingInvitationDto>>.Success(new List<UserPendingInvitationDto>()));
+                Result<List<UserPendingInvitationDto>>.Success(new List<UserPendingInvitationDto>
+                {
+                    new(
+                        Guid.Parse("55555555-5555-5555-5555-555555555555"),
+                        "Test Workspace",
+                        "test-workspace",
+                        "Test Inviter",
+                        "test@test.com",
+                        "Member",
+                        DateTime.UtcNow.AddDays(7))
+                }));
             MockWorkspaceHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>(services,
+                Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto("test-slug", Guid.NewGuid())));
+            MockWorkspaceHandler<AcceptInvitationByIdCommand, Result<AcceptInvitationResultDto>>(services,
                 Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto("test-slug", Guid.NewGuid())));
             MockWorkspaceHandler<GetBootstrapQuery, Result<BootstrapResult>>(services,
                 Result<BootstrapResult>.Success(CreateBootstrapResult()));

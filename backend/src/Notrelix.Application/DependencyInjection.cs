@@ -9,6 +9,7 @@ using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Services;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Common.Requests.Execution;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -85,6 +86,10 @@ public static class DependencyInjection
 
         // Accounts-owned onboarding provisioning (spec 5.2)
         services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
+
+        // Workspaces invitations: single shared acceptance pipeline used by
+        // both the token-based and the by-id acceptance paths.
+        services.AddScoped<IInvitationAcceptanceService, InvitationAcceptanceService>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

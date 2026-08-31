@@ -14,7 +14,7 @@ describe("workspaceQueryKeys Q7 purity tests", () => {
       workspaceQueryKeys.views(wsId),
       workspaceQueryKeys.activeView(wsId, "v1"),
       workspaceQueryKeys.invitations(wsId),
-      workspaceQueryKeys.invitationByToken("tok-123"),
+      workspaceQueryKeys.invitationPreview("tok-123"),
       workspaceQueryKeys.pendingInvitations,
       workspaceQueryKeys.activity(wsId),
     ];

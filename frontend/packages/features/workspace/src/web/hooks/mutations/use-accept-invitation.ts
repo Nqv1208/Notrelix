@@ -21,7 +21,7 @@ export function createUseAcceptInvitation({
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: service.accept,
+      mutationFn: service.acceptById,
       onSuccess: () => {
         // Accept invitation changes all workspaces, so clear/invalidate workspaces
         queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all });
