@@ -958,7 +958,7 @@ Verify:
 - concurrency token if used;
 - migration.
 
-## 42. WG-WSP-007 — Account disabled interaction
+## 42. WG-WSP-007 — Account disabled interaction — RESOLVED (D3-B)
 
 If Account inactive:
 
@@ -966,9 +966,20 @@ Workspace protected operations must follow canonical failure policy.
 
 Do not mutate Account state from Workspace.
 
+Decision D3-B (recorded in `decisions/PR-WG-01-phase3-workspace-core.md`): central Application access-control enforcement — `AccessFacts.AccountOperational` fact + `AccessPolicyEngine` deny for Account/Workspace/Resource scopes, failed closed before handler effects. Implemented and proven (see PR-WG-01 verdict ledger).
+
 ## 43. Phase 3 exit
 
 Workspace identity and Account containment must be D4-ready.
+
+Status:
+
+```text
+D3-A decision recorded; archive/delete semantics fixed (effects phased: Membership P4, Invitations P5, Teams/Spaces P13).
+D3-B decision recorded + implemented + proven (central account-operational enforcement).
+WG-FIND-301..304 dispositioned in PR-WG-01.
+Phase 3 CLOSED. Continue to Phase 4.
+```
 
 # Phase 4 — Membership core
 
@@ -1070,6 +1081,19 @@ where relevant.
 
 WorkspaceMember reaches at least D4.
 
+Status:
+
+```text
+D4-A decision recorded + implemented + proven (central user-operational enforcement, WG-MEM-008).
+D4-B decision recorded + implemented (AddMember target User identity validation, WGREQ016).
+D4-C self-leave deferred (no command; owner semantics undefined).
+D4-D membership concurrency hardening deferred (WG-MEM-010; WG-TST-MEM-INF-001/CONC-001 carried).
+D4-E state-change authorization actions are TRANSITION until Phase 8 roles.
+WG-FIND-401 (AddMember literal activeOwnerCount) + WG-FIND-402 (suspended-member pipeline negative) recorded.
+Full suites green (Application 573 / Domain 2576 / Architecture 410 / Integration 343 / API 256 / Infrastructure 134).
+Phase 4 CLOSED. Continue to Phase 5.
+```
+
 # Phase 5 — Invitation baseline
 
 ## 55. Purpose
@@ -1138,6 +1162,25 @@ No raw bearer invitation secret in ordinary logs/list responses.
 Baseline invitation can remain D3/D4 if not required for P3 gate.
 
 Membership itself must remain stable.
+
+Status:
+
+```text
+Phase 5 baseline audit outcome in decisions/PR-WG-03-phase5-invitation-baseline.md (ledger).
+D5-A shared acceptance service (token + by-id converge on one InvitationAcceptanceService) — implemented + proven.
+D5-B active membership accept = idempotent consume (no duplicate member/grant/role) — implemented + proven.
+D5-C suspended/removed invitee acceptance = side-effect-free rejection — implemented + proven.
+D5-D Token removed from UserPendingInvitationDto; pending-list accept now by invitation id — implemented + proven.
+D5-E replay/race matrix + realtime-on-accept deferred (WG-INVITE-005/006; WG-TST-INV-CONC-001 carried).
+D5-F RLS risk recorded: AcceptInvitationByIdCommand is IGlobalRequest → DataSessionBehavior skips tenant scope →
+    RlsSessionContext.ApplyAsync not invoked; prod as notrelix_app (FORCE RLS) may deny writes. Open follow-up.
+D5-G frontend sync to real contract: pending menu accepts by id; deep-link uses POST /invitations/preview;
+    workspace-scoped members table wired to LIST + Cancel; create stays stub (no backend create endpoint this phase).
+New tests: Application +14 (service + by-id handler suite), API +4 invitation endpoints (260 total), Integration +3 (real Postgres), Architecture request-execution baseline +1 (AcceptInvitationByIdCommand).
+Full suites green (Application 587 / Domain 2576 / Architecture 410 / Integration 346 / API 260 / Infrastructure 134).
+Frontend gates green (typecheck, lint, format, architecture, test-taxonomy, node 313, web 2, mock-freeze); codegen:check pending commit of generated schema.
+Phase 5 CLOSED. Continue to Phase 6.
+```
 
 # Phase 6 — Resource authorization category / ResourceId / Action contract
 
@@ -2976,11 +3019,13 @@ Authorization semantics coherent.
 
 ## 264. Phase 3
 
+Workspace identity + Account containment proven; archive/delete semantics + account-inactive failure policy decided (D3-A/D3-B) and D3-B enforced centrally. CLOSED.
+
 Workspace D4-ready.
 
 ## 265. Phase 4
 
-Membership D4+.
+Membership D4+; decisions D4-A..D4-E recorded in PR-WG-02; CLOSED.
 
 ## 266. Phase 6
 

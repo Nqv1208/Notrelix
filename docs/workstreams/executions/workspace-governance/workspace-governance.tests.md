@@ -499,7 +499,35 @@ Only once Phase 0 classification is complete.
 
 If WorkspaceHome is composition/read model, tests must verify it does not become authoritative mutable business state accidentally.
 
+## 19bis. WG-TST-WSP-AUTHZ-001 — non-operational Account fails closed on protected operations
+
+Requirements:
+
+```text
+WGREQ007
+```
+
+Given an Account whose `AccountStatus` is neither `Active` nor `Trialing` (suspended, closed) or which is soft-deleted/missing
+And a protected Account/Workspace/Resource-scoped operation
+Then the central AccessControl pipeline denies `Forbidden` before handler side effects
+And no durable mutation occurs.
+
+Also prove:
+
+- an Owner member cannot operate while its owning Account is non-operational;
+- missing/soft-deleted Account fails closed even when a member row would otherwise carry a role;
+- each denial performs exactly one access-facts evaluation.
+
+Evidence placed at:
+
+```text
+backend/tests/Notrelix.Integration.Tests/Baselines/AccessPolicyEngineCharacterizationTests.cs
+backend/tests/Notrelix.Integration.Tests/Workspaces/WorkspaceCreationPipelineAuthorizationTests.cs (suspended-account negative)
+```
+
 # Membership tests
+
+Phase 4 audit outcome: ledger `decisions/PR-WG-02-phase4-membership-core.md` (D4-1 identity-deactivation gate, D4-2 add-member identity validation, D4-3 query contract). Non-blocking deferrals: WG-TST-MEM-INF-001 / WG-TST-MEM-CONC-001 (concurrency), WG-TST-MEM-APP-003 (no self-leave).
 
 ## 20. WG-TST-MEM-DOM-001 — WorkspaceMember references stable upstream identity
 
@@ -614,6 +642,15 @@ Given membership still exists historically
 When upstream User becomes invalid
 Then protected operation is not authorized.
 
+Covered by PR-WG-02 D4-1 (central `UserOperational` access fact).
+
+Evidence placed at:
+
+```text
+backend/tests/Notrelix.Integration.Tests/Baselines/AccessPolicyEngineCharacterizationTests.cs (account-scope + workspace-scope non-operational user)
+backend/tests/Notrelix.Integration.Tests/Workspaces/WorkspaceCreationPipelineAuthorizationTests.cs (suspended-actor negative, single evaluation)
+```
+
 ## 30. WG-TST-MEM-X-001 — removed member historical attribution preserved
 
 Requirements:
@@ -625,6 +662,8 @@ WGREQ023
 Representative downstream resource/audit reference remains valid.
 
 # Invitation tests
+
+Phase 5 audit outcome: ledger `decisions/PR-WG-03-phase5-invitation-baseline.md` (D5-A shared acceptance service, D5-B idempotent consume of active membership, D5-C suspended/removed side-effect-free rejection, D5-D pending acceptance by invitation id). New evidence: `InvitationAcceptanceServiceTests`, `AcceptInvitationByIdCommandHandlerTests` (+14 Application), `AcceptInvitationByIdEndpointTests` (+4 API), `AcceptInvitationByIdIntegrationTests` (3, real PostgreSQL). Non-blocking deferrals: WG-TST-INV-CONC-001 accept-vs-revoke race (WG-INVITE-006, D5-E), sentinel captured-log secret proof (mechanism covered by hashed `InvitationTokenHash` + token-free DTOs). WG-TST-INV-DOM-001 / APP-002 creation-authority tests belong to the create-invitation phase (no create endpoint in baseline; `InviteMember` command exists, API mapping deferred).
 
 ## 31. WG-TST-INV-DOM-001 — Invitation distinct from active Membership
 
