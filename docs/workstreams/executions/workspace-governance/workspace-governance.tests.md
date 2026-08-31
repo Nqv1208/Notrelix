@@ -1028,6 +1028,16 @@ WGREQ054
 
 Once Phase 2 classification is complete, tests must prove one semantic model.
 
+Evidence (PASS, Phase 7):
+
+```text
+Single canonical decision path — AccessPolicyEngine.EvaluatePermission (pure, architecture-tested via
+AuthPipelineArchitectureTests: no DbContext / no IAccessFactsProvider) + AccessFacts + AccessFactsQuery +
+IRequirePermission (PermissionAction + ResourceRef). One semantic model documented in
+backend/docs/architecture/security-tenancy-authorization.md §11 / §15a. No second PermissionService/
+IPermissionEvaluator exists in source (stale inventory removed).
+```
+
 ## 62. WG-TST-PERM-MIG-001 — persisted permission identity stable
 
 Requirements:
@@ -1035,6 +1045,11 @@ Requirements:
 ```text
 WGREQ055
 ```
+
+Evidence (PASS, Phase 7): identity is the stable domain vocabulary — `PermissionAction` enum members
+persist as `ToString()` (column `action`), `ResourceKind` `{context}.{resource}` record struct persists via
+`ResourceKindConverter` (column `resource_type`). No rename performed this phase; renaming a stored
+action/`resource_type` value is a persisted-meaning change requiring a data migration (documented §15a).
 
 ## 63. WG-TST-PERM-INT-001 — Workspace A permission cannot authorize Workspace B
 
@@ -1046,6 +1061,11 @@ WGREQ152
 ```
 
 Mandatory tenant isolation.
+
+Evidence (PASS, Phase 7): `AccessFactsQuery` binds `account_id` + `workspace_id` to the owning workspace / request
+scope, `subject_type='User'`, `subject_id=@user_id`, `scope_type='Workspace'` or in-workspace resource match, so a
+Workspace A rule can never authorize a Workspace B request. Proven by `EvaluateAsync_BoardFromAnotherWorkspace_IsHidden`
+and the existing `CrossTenantIsolationTests` suites.
 
 ## 64. WG-TST-PERM-APP-001 — explicit deny precedence if supported
 
@@ -1060,6 +1080,11 @@ Only if current canonical model supports explicit deny.
 
 If not supported, mark NOT_APPLICABLE in certification.
 
+Evidence (PASS, Phase 7): explicit Deny IS supported. Within the min-priority rule band, any Deny denies before an
+Allow is considered. Proven by `EvaluateAsync_SamePriorityDenyOverridesAllow`,
+`AccountScope_ExplicitGovernanceDeny_OverridesAdminFallback`, `AccountScope_ExplicitGovernanceAllow_GrantsBaselineDeniedAction`.
+Precedence recorded in §15a.
+
 ## 65. WG-TST-PERM-APP-002 — default deny
 
 Requirements:
@@ -1070,6 +1095,11 @@ WGREQ085
 ```
 
 No applicable grant/policy → denied.
+
+Evidence (PASS, Phase 7): role null → Deny; no applicable allow band → tail default deny (only
+ViewWorkspace/ViewBoard/ViewMembers baseline). Proven by `EvaluateAsync_ShouldDenyNonMembers`,
+`AccountScope_ShouldDenyNonMembers`, `AccountScope_ShouldDenySuspendedMembers`,
+`EvaluateAsync_InactiveOrOutOfWindowRule_IsIgnored`.
 
 ## 66. WG-TST-PERM-INT-002 — permission cache revocation
 
@@ -1084,6 +1114,11 @@ Given cached allow
 When permission is revoked
 Then access stops within accepted security window.
 
+Evidence (PASS, Phase 7): there is NO runtime permission-decision cache in the effective path — `AccessFacts` is
+computed per protected request. Revocation is effective on the next request with no cache security window
+(BE-SEC-024). `EvaluateAsync_RevokedPermissionsAreInvalid` proves a revoked/missing permission denies.
+The persisted `resource_permission_inheritance_cache` projection is not on the decision path.
+
 ## 67. WG-TST-PRULE-APP-001 — PermissionRule deterministic evaluation
 
 Requirements:
@@ -1094,6 +1129,9 @@ WGREQ061
 ```
 
 Only after semantic classification.
+
+Evidence (PASS, Phase 7): deterministic — SQL produces rules ordered by `priority`; the engine selects the
+min-priority band and applies deny-over-allow within it; no time/random input. Documented §15a.
 
 ## 68. WG-TST-PRULE-SEC-001 — client claims not trusted as rule facts
 
@@ -1110,6 +1148,11 @@ Expected:
 ```text
 server-derived trusted facts win
 ```
+
+Evidence (PASS, Phase 7, by design + architecture): the engine's `Action` originates from the server-side
+`IRequirePermission` declaration; all membership/ownership/role/resource facts are server-derived rows from
+`AccessFactsQuery`. No client-supplied role/workspace/owner/admin/attribute is ever presented to the engine.
+(client-supplied `WorkspaceId`/`AccountId` are treated only as inputs, never as authority — BE-APP-013.)
 
 # Role tests
 

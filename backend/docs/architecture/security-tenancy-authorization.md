@@ -288,22 +288,21 @@ scope
 current policy facts
 ```
 
-Current Application Security contracts include concepts such as:
+Current Application Security contracts (executable source evidence of centralized permission/resource evaluation):
 
 ```text
-IPermissionEvaluator
-IPermissionService
-IWorkspacePermissionService
-IResourceReferenceResolver
-IResourceScopeResolver
-IPermissionVersionProvider
-IAuthorizationDecisionStore
-PermissionContext
-PermissionDecision
-PermissionScope
+IRequirePermission        — request marker: PermissionAction Action + ResourceRef? Resource
+AccessPolicyEngine        — pure policy engine (architecture-tested: no DbContext / no IAccessFactsProvider)
+AccessFacts               — server-derived fact snapshot consumed by the engine
+AccessFactsQuery          — single canonical SQL authority producing AccessFacts
+PostgresAccessFactsProvider — Infrastructure adapter behind the facts snapshot
+ResourceLocator / IResourceLocator — approved scope-resolution read port (see §BE-SEC-011)
 ```
 
-These are current source evidence of centralized permission/resource evaluation.
+Governance Domain owns the persistent permission vocabulary (`PermissionRule`, `PermissionAction`,
+`ResourcePermission`, `PermissionScope`, `PermissionLevel`). Governance does not own a second decision
+engine: the engine is the single `AccessPolicyEngine` path, and `AccessFacts` carries only source fact
+snapshots plus the Governance `permission_rules` rows already filtered to the requested action (see §15).
 
 ---
 
@@ -367,6 +366,56 @@ permission/resource version if used
 ```
 
 Do not expose internal database/provider failure as a normal denied decision.
+
+---
+
+# 15a. Permission evaluation contract
+
+The current canonical decision path is `AccessPolicyEngine.EvaluatePermission` (pure, per-request, no cache):
+
+```text
+1. request MUST implement IRequirePermission (Action + optional Resource), else SecurityMisconfiguration.
+2. role = AccountMemberRole (Account scope) or WorkspaceMemberRole (Workspace/Resource scope).
+   role is null (non-member)                 → Deny.Forbidden      (default deny, WG-PERM-004)
+3. role == "Owner"                            → Allow                (short-circuit)
+4. first-priority permission-rule band        → the set of permission_rules whose Priority equals the
+   minimum Priority among the rules returned (already filtered in SQL to this action + this workspace +
+   this subject + active/validity window). Within that single band:
+     any Deny   → Deny.Forbidden              (deny precedence over allow in-band, WG-PERM-005)
+     else any Allow → Allow
+5. no rules / band empty → fall through to Account-scope or Workspace/Resource-scope handling
+   (e.g. Account Admin baseline for ViewWorkspace/CreateWorkspace; DeleteWorkspace always denies;
+    Board-specific resource-visibility + Observer-can't-UpdateItem rules; tail default to
+    ViewWorkspace/ViewBoard/ViewMembers only, else Deny).
+```
+
+Facts feeding the engine are produced by the single canonical SQL authority `AccessFactsQuery`:
+
+```text
+subject_type = 'User' and subject_id = @user_id
+account_id   = @account_id  and workspace_id = @workspace_id
+action       = @action
+status = Active and inside starts_at/expires_at validity window
+scope pinned to the requested Workspace (Workspace scope or an in-workspace resource match)
+```
+
+Because `account_id` and `workspace_id` are bound to the owning workspace/request scope, a rule in
+Workspace A can never authorize a request scoped to Workspace B (WG-PERM-003, tenant isolation). The
+`Action` originates from the server-side `IRequirePermission` declaration, never from client input;
+all membership/ownership/role/resource facts are server-derived rows (WGREQ062 — client claims are not
+trusted as rule facts). Rule priority and effect are compared by the engine deterministically
+(no tie-break beyond deny-over-allow at the min-priority band).
+
+There is **no runtime permission-decision cache** in the effective path: `AccessFacts` is computed
+per protected request (WG-PERM-007). The persisted `resource_permission_inheritance_cache` projection is
+not part of the decision path. Revocation therefore takes effect on the next request with no cache
+security window (BE-SEC-024 satisfied). If a decision cache is ever introduced, it must carry
+tenant/resource/principal or a permission version key and an explicit invalidation path (see §BE-SEC-023).
+
+Persisted permission identity is the stable domain vocabulary: `PermissionAction` enum members persist as
+their `ToString()` name and `ResourceKind` (a `{context}.{resource}` record struct) persists via converter
+as its stable string. Renaming a stored action/`resource_type` value is a persisted-meaning change
+(WG-PERM-002) and requires a data migration, not a silent in-place rewrite.
 
 ---
 

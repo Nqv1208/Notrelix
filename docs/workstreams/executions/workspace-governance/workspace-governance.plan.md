@@ -1460,6 +1460,49 @@ as relevant.
 
 Permission semantics D4/D5-ready.
 
+Status:
+
+```text
+WG-PERM-001 canonical model ESTABLISHED — single decision path = AccessPolicyEngine.EvaluatePermission
+    (pure, architecture-tested) + AccessFacts (server-derived facts) + AccessFactsQuery (single canonical
+    SQL authority) + IRequirePermission (PermissionAction + ResourceRef). §11 contract inventory corrected
+    (removed stale IPermissionService/IPermissionEvaluator/... names; added actual contracts) — DOC_STALE resolved.
+WG-PERM-002 permission identity DOCUMENTED — PermissionAction enum members persist as ToString(); ResourceKind
+    record struct persists via converter as {context}.{resource} string. Renaming stored action/resource_type is
+    a persisted-meaning change → data migration, not in-place rewrite. Recorded in §15a + ledger.
+WG-PERM-003 tenant/resource scope CONFIRMED — AccessFactsQuery binds account_id + workspace_id to the owning
+    Workspace/request scope; subject_type='User'/subject_id; scope_type='Workspace' or in-workspace resource match.
+    Workspace A rule can never authorize Workspace B. Proven by EvaluateAsync_BoardFromAnotherWorkspace_IsHidden
+    + CrossTenantIsolationTests.
+WG-PERM-004 default deny CONFIRMED — role null → Deny; no applicable allow band → tail default deny
+    (only ViewWorkspace/ViewBoard/ViewMembers baseline). Proven: ShouldDenyNonMembers,
+    AccountScope_ShouldDenyNonMembers, AccountScope_ShouldDenySuspendedMembers, InactiveOrOutOfWindowRule_IsIgnored.
+WG-PERM-005 deny precedence CONFIRMED + TESTED — within min-priority rule band, any Deny → deny before Allow.
+    Proven: EvaluateAsync_SamePriorityDenyOverridesAllow, AccountScope_ExplicitGovernanceDeny_OverridesAdminFallback,
+    AccountScope_ExplicitGovernanceAllow_GrantsBaselineDeniedAction. Precedence documented in §15a.
+WG-PERM-006 PermissionRule integration CONFIRMED — PermissionRule is the single canonical persisted action-level
+    rule; ResourcePermission = subject→resource ACL (engine uses row-existence); WorkspacePolicy = secondary config
+    not in evaluator. No duplicate DSL. §11/§15a single-owner statement.
+WG-PERM-007 permission cache NONE — no runtime permission-decision cache in the effective path; AccessFacts
+    computed per protected request. Persisted resource_permission_inheritance_cache projection is NOT on the
+    decision path (BE-SEC-024 revocation effective next request, no cache security window).
+WG-PERM-008 DB/index hardening VERIFY + DEFER (measured promotion gate) — existing permission_rules indexes:
+    (workspace_id), (scope_type, action), (status); resource_permissions: (resource_kind, resource_id), (subject_id).
+    FINDING: hot-path access-facts query filters permission_rules by (account_id, workspace_id, action,
+    subject_type, subject_id, scope_type, status + validity/resource predicates); no subject-aware/index aligned
+    to the query leading predicate. correctness/security blocker: NO; Phase-7 semantic blocker: NO; performance
+    finding: YES. DEFERRED by decision: run EXPLAIN (ANALYZE, BUFFERS) at representative permission-rule
+    cardinality/Workspace distributions in a performance/migration hardening task before choosing index shape
+    ((workspace_id, action, subject_id) not pre-committed; may need account_id/subject_type/partial for Active).
+    No DDL this phase. Owner/follow-up registered in PR-WG-05 ledger.
+WG-TST-PRULE-SEC-001 (WGREQ062) client claims not trusted — CONFIRMED by design: Action originates from
+    server-side IRequirePermission declaration; all membership/ownership/role/resource facts are server-derived
+    rows; no client-supplied role/workspace/owner presented to the engine.
+Evidence: canonical doc §11 correction + §15a permission evaluation contract; Application.Tests 588 (no delta);
+    Architecture.Tests 410 (no source change). Phase 7 CLOSED. Phase 8 (built-in roles, PR-WG-05 continuation)
+    may open.
+```
+
 # Phase 8 — Built-in roles
 
 ## 83. WG-ROLE-001 — role model audit
