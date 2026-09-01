@@ -1,7 +1,7 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Domain.Accounts.Members;
 
-namespace Notrelix.Application.Features.Accounts.Services;
+namespace Notrelix.Application.Features.Accounts.Members.Services;
 
 public sealed class AccountMembershipProvisioner : IAccountMembershipProvisioner
 {

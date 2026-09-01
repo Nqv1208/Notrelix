@@ -1,5 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Accounts.Services;
+using Notrelix.Application.Features.Accounts.Members.Services;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
