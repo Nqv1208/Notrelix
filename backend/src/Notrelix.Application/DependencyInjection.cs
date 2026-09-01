@@ -4,6 +4,7 @@ using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Features.Accounts.Members.Services;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Accounts.Public.Queries;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Identity.Users.Services;
@@ -93,6 +94,9 @@ public static class DependencyInjection
         // Producer-owned public semantic facts (real consumers only)
         services.AddScoped<IIdentityUserFacts, IdentityUserFactsProvider>();
         services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();
+
+        // Producer-owned public target actions (Accounts membership mutation)
+        services.AddScoped<IAccountMembershipActions, AccountMembershipActions>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

@@ -1,6 +1,4 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Accounts.Members.Services;
-using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
@@ -12,6 +10,7 @@ using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
 using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
 using Notrelix.Infrastructure.Services;
@@ -107,9 +106,6 @@ public static class PersistenceRegistration
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();
 
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
-
-        // Application services (ports in Application, adapters in Infrastructure)
-        services.AddScoped<IAccountMembershipProvisioner, AccountMembershipProvisioner>();
 
         // Cross-context read ports (spec 5.1)
         services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadAdapter>();

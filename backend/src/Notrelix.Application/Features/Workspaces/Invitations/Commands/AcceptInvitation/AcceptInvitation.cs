@@ -1,6 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
-using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Accounts.Public.Queries;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Abstractions;
@@ -24,7 +24,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 {
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IIdentityUserFacts _identityUserFacts;
-    private readonly IAccountMembershipProvisioner _accountMembershipProvisioner;
+    private readonly IAccountMembershipActions _accountMembershipActions;
     private readonly IAccountMembershipFacts _accountMembershipFacts;
     private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly ICurrentRequestContext _requestContext;
@@ -34,7 +34,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
         IIdentityUserFacts identityUserFacts,
-        IAccountMembershipProvisioner accountMembershipProvisioner,
+        IAccountMembershipActions accountMembershipActions,
         IAccountMembershipFacts accountMembershipFacts,
         IOneTimeTokenService oneTimeTokenService,
         ICurrentRequestContext requestContext,
@@ -43,7 +43,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     {
         _workspaceContext = workspaceContext;
         _identityUserFacts = identityUserFacts;
-        _accountMembershipProvisioner = accountMembershipProvisioner;
+        _accountMembershipActions = accountMembershipActions;
         _accountMembershipFacts = accountMembershipFacts;
         _oneTimeTokenService = oneTimeTokenService;
         _requestContext = requestContext;
@@ -145,8 +145,8 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
                 new AcceptInvitationResultDto(workspace.Slug, invitation.WorkspaceId));
         }
 
-        await _accountMembershipProvisioner
-            .EnsureWorkspaceInviteeAccountMembershipAsync(
+        await _accountMembershipActions
+            .EnsureWorkspaceInviteeMembershipAsync(
                 workspace.AccountId,
                 currentUserId,
                 invitation.InvitedBy,

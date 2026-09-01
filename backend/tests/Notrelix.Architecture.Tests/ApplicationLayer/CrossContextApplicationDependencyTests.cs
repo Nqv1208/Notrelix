@@ -46,22 +46,15 @@ public class CrossContextApplicationDependencyTests : ArchitectureTestBase
 
     // ARCH-BC-003 signature baseline — precise (rule, consumer type, foreign type) only.
     //
-    // AcceptInvitationCommandHandler (Workspaces) still injects the Accounts
-    // membership provisioner:
-    //   IAccountMembershipProvisioner (Accounts)
-    // Classification: MIGRATE-ON-TOUCH (R2) — cross-BC mutation seam pending the
-    // Accounts↔Workspaces transaction decision. Read-side seams
-    // (IIdentityUserLookupService, IAccountStatusReader) were removed from the
-    // baseline after the producer Public facts migration.
+    // Baseline is empty since the BOUND-TX-002 migration: AcceptInvitation
+    // (Workspaces) now requests the Account-side mutation through the
+    // producer-owned Accounts Public target action
+    // (Features.Accounts.Public.Commands.IAccountMembershipActions) instead of
+    // the foreign private Accounts abstraction. The shared request transaction
+    // remains a reviewed exception (BOUND-TX-002); no producer-internal
+    // Application reference is active anywhere.
     private static readonly HashSet<(string RuleId, string ConsumerType, string ForeignType)>
-        KnownProducerInternalReferences =
-        [
-            (
-                CrossContextBoundaryScanner.RuleProducerInternal,
-                "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationCommandHandler",
-                "Notrelix.Application.Features.Accounts.Abstractions.IAccountMembershipProvisioner"
-            ),
-        ];
+        KnownProducerInternalReferences = [];
 
     // ARCH-BC-003 source baseline — precise (rule, consumer source, foreign chain) only.
     private static readonly HashSet<(string RuleId, string RelativePath, string Chain)>

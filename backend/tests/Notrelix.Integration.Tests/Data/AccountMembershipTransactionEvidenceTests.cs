@@ -12,12 +12,13 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Data;
 
 /// <summary>
-/// STN-TX-001: executable evidence for the current cross-context mutation
-/// behavior of the accounts membership provisioning seam. The invitation
-/// acceptance request runs through a transactional data session, so a
-/// mutation performed by the accounts provisioner and a later failure inside
-/// the same request roll back together. This is evidence of today's
-/// behavior, not an endorsement of cross-context atomicity.
+/// TAC-TX-001 / BOUND-TX-002 evidence: the Accounts Public target action
+/// (IAccountMembershipActions) executes inside the caller's request
+/// transaction, so an Account-side mutation and a later Workspace-side
+/// failure roll back together. Duplicate acceptance under the same identity
+/// is a semantic no-op and must not create a second membership. This is the
+/// reviewed shared-transaction exception (Decision B), not an endorsement of
+/// cross-context atomicity as a general pattern.
 /// </summary>
 [Collection("Database")]
 public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
@@ -47,23 +48,23 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         return tenant;
     }
 
-    private (EfRequestDataSession Session, ApplicationDbContext Context, AccountMembershipProvisioner Provisioner) Create()
+    private (EfRequestDataSession Session, ApplicationDbContext Context, AccountMembershipActions Actions) Create()
     {
         var context = _db.CreateContext(SystemTenant());
         var session = new EfRequestDataSession(
             context,
             new RlsSessionContext(context, Options.Create(new RlsOptions()), SystemTenant()),
             NullLogger<EfRequestDataSession>.Instance);
-        var provisioner = new AccountMembershipProvisioner(
+        var actions = new AccountMembershipActions(
             context,
             new AccessGrantProjectionService(context));
-        return (session, context, provisioner);
+        return (session, context, actions);
     }
 
     [Fact]
     public async Task MutationInsideTransactionalSession_CommitsWithSession()
     {
-        var (session, context, provisioner) = Create();
+        var (session, context, actions) = Create();
         var accountId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
 
@@ -75,7 +76,7 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                await provisioner.EnsureWorkspaceInviteeAccountMembershipAsync(
+                await actions.EnsureWorkspaceInviteeMembershipAsync(
                     accountId, userId, Guid.CreateVersion7(), FixedTime, ct);
                 return null;
             },
@@ -88,9 +89,9 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task FailureAfterProvisionerMutation_RollsBackAccountMember()
+    public async Task FailureAfterAccountMutation_RollsBackAccountMember()
     {
-        var (session, context, provisioner) = Create();
+        var (session, context, actions) = Create();
         var accountId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
 
@@ -102,7 +103,7 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                await provisioner.EnsureWorkspaceInviteeAccountMembershipAsync(
+                await actions.EnsureWorkspaceInviteeMembershipAsync(
                     accountId, userId, Guid.CreateVersion7(), FixedTime, ct);
 
                 // Simulate a later workspace-side failure inside the same request.
@@ -116,5 +117,38 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         var member = await context.AccountMembers
             .FirstOrDefaultAsync(m => m.AccountId == accountId && m.UserId == userId);
         member.Should().BeNull("the accounts mutation must roll back with the request transaction");
+    }
+
+    [Fact]
+    public async Task DuplicateAcceptanceAttempt_IsIdempotentNoOp()
+    {
+        var (session, context, actions) = Create();
+        var accountId = Guid.CreateVersion7();
+        var userId = Guid.CreateVersion7();
+        var invitedBy = Guid.CreateVersion7();
+
+        await session.ExecuteAsync<object?>(
+            new RequestDataSessionOptions(
+                RequestDataAccess.Transactional,
+                ApplyTenantScope: false,
+                ApplyResourceScope: false,
+                ExpectedVersion: null),
+            async ct =>
+            {
+                await actions.EnsureWorkspaceInviteeMembershipAsync(
+                    accountId, userId, invitedBy, FixedTime, ct);
+                await actions.EnsureWorkspaceInviteeMembershipAsync(
+                    accountId, userId, invitedBy, FixedTime.AddMinutes(1), ct);
+                return null;
+            },
+            CancellationToken.None);
+
+        context.ChangeTracker.Clear();
+        var members = await context.AccountMembers
+            .Where(m => m.AccountId == accountId && m.UserId == userId)
+            .ToListAsync();
+        members.Should().ContainSingle(
+            "duplicate invitation acceptance must not create a second account membership");
+        members.Single().Status.Should().Be(AccountMemberStatus.Active);
     }
 }

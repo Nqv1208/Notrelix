@@ -28,7 +28,13 @@ public sealed class AccessGrantProjectionService : IAccessGrantProjectionService
         DateTimeOffset now,
         CancellationToken ct)
     {
-        var grant = await _context.AccessGrants
+        // Track pending Adds too: the sync must stay idempotent when invoked
+        // more than once per transaction (already-active membership is a
+        // contract-level no-op), and a DB query alone cannot see unsaved adds.
+        var grant = _context.AccessGrants.Local
+            .FirstOrDefault(
+                g => g.AccountId == accountId && g.UserId == userId && g.WorkspaceId == null)
+            ?? await _context.AccessGrants
             .FirstOrDefaultAsync(
                 g => g.AccountId == accountId && g.UserId == userId && g.WorkspaceId == null,
                 ct);
@@ -66,7 +72,10 @@ public sealed class AccessGrantProjectionService : IAccessGrantProjectionService
         DateTimeOffset now,
         CancellationToken ct)
     {
-        var grant = await _context.AccessGrants
+        var grant = _context.AccessGrants.Local
+            .FirstOrDefault(
+                g => g.AccountId == accountId && g.WorkspaceId == workspaceId && g.UserId == userId)
+            ?? await _context.AccessGrants
             .FirstOrDefaultAsync(
                 g => g.AccountId == accountId && g.WorkspaceId == workspaceId && g.UserId == userId,
                 ct);
