@@ -6,6 +6,8 @@ using Notrelix.Application.Features.Accounts.Members.Services;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Accounts.Public.Queries;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Public.Commands;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Identity.Users.Services;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
@@ -97,6 +99,10 @@ public static class DependencyInjection
 
         // Producer-owned public target actions (Accounts membership mutation)
         services.AddScoped<IAccountMembershipActions, AccountMembershipActions>();
+
+        // Producer-owned public target actions (WorkManagement item mutations)
+        services.AddScoped<MoveBoardItemUseCase>();
+        services.AddScoped<IWorkItemActions, WorkItemActions>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

@@ -250,6 +250,10 @@ public class FeatureStructureArchitectureTests
             "AccountStatusReader",
             "Features.WorkManagement.Common.Abstractions",
             "Data.ReadPorts",
+            "BoardItemMemberAssignedForAutomationIntegrationEvent",
+            "BoardItemMemberAssignedForAutomationConsumer",
+            "automation.board-item-member-assigned",
+            "AccountMembershipProvisioner",
         };
 
     [Fact]

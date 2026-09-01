@@ -1,7 +1,7 @@
-namespace Notrelix.Application.Events.Automation;
+namespace Notrelix.Application.Events.WorkManagement;
 
-[EventName("automation.board-item-member-assigned", Version = 1)]
-public sealed record BoardItemMemberAssignedForAutomationIntegrationEvent(
+[EventName("work-management.board-item-member-assigned", Version = 1)]
+public sealed record BoardItemMemberAssignedIntegrationEvent(
     Guid EventId,
     Guid AccountIdValue,
     Guid WorkspaceIdValue,
@@ -14,7 +14,7 @@ public sealed record BoardItemMemberAssignedForAutomationIntegrationEvent(
     DateTimeOffset OccurredAt = default)
     : IntegrationEvent(
         EventId,
-        "automation.board-item-member-assigned",
+        "work-management.board-item-member-assigned",
         1,
         CorrelationId,
         SourceEventId,

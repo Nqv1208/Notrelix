@@ -87,105 +87,6 @@
       ]
     },
     {
-      "name": "automation.board-item-member-assigned",
-      "version": 1,
-      "clrType": "Notrelix.Application.Events.Automation.BoardItemMemberAssignedForAutomationIntegrationEvent",
-      "producerContext": "Automation",
-      "classification": "Business",
-      "compatibility": "Backward",
-      "deprecated": false,
-      "scope": {
-        "carriesAccountId": false,
-        "carriesWorkspaceId": false
-      },
-      "serializedProperties": [
-        {
-          "name": "accountIdValue",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "workspaceIdValue",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "itemId",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "assignedUserId",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "assignedBy",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "eventId",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "sourceEventId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "messageName",
-          "type": "string",
-          "nullable": false
-        },
-        {
-          "name": "schemaVersion",
-          "type": "int",
-          "nullable": false
-        },
-        {
-          "name": "accountId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "workspaceId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "actorUserId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "correlationId",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "causationId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "occurredAt",
-          "type": "DateTimeOffset",
-          "nullable": false
-        }
-      ],
-      "piiFields": [],
-      "sensitiveFields": [],
-      "consumers": [
-        {
-          "name": "BoardItemMemberAssignedForAutomationConsumer",
-          "context": "Automation",
-          "maturity": "Implemented"
-        }
-      ]
-    },
-    {
       "name": "automation.n8n-dispatch-requested",
       "version": 1,
       "clrType": "Notrelix.Application.Events.Automation.N8nDispatchRequestedV1",
@@ -3405,6 +3306,105 @@
         {
           "name": "UserDeactivatedConsumer",
           "context": "Identity",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
+      "name": "work-management.board-item-member-assigned",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemMemberAssignedIntegrationEvent",
+      "producerContext": "WorkManagement",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "carriesAccountId": false,
+        "carriesWorkspaceId": false
+      },
+      "serializedProperties": [
+        {
+          "name": "accountIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "workspaceIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "itemId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "assignedUserId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "assignedBy",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "BoardItemMemberAssignedAutomationConsumer",
+          "context": "Automation",
           "maturity": "Implemented"
         }
       ]

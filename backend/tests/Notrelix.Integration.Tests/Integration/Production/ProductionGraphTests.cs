@@ -11,6 +11,7 @@ using Notrelix.Application.Common.Entitlements;
 using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Accounts.Public.Queries;
 using Notrelix.Application.Features.Identity.Public.Queries;
+using Notrelix.Application.Features.WorkManagement.Public.Commands;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Storage;
@@ -88,6 +89,7 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IIdentityUserFacts>().Should().NotBeNull();
         services.GetRequiredService<IAccountMembershipFacts>().Should().NotBeNull();
         services.GetRequiredService<IAccountMembershipActions>().Should().NotBeNull();
+        services.GetRequiredService<IWorkItemActions>().Should().NotBeNull();
 
         // Single request-authorization authority: the pure policy engine.
         services.GetRequiredService<IAccessPolicyEvaluator>().Should().BeOfType<AccessPolicyEngine>();

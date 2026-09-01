@@ -2,6 +2,7 @@ using MassTransit;
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Events.Automation;
+using Notrelix.Application.Events.WorkManagement;
 using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Common;
@@ -14,7 +15,7 @@ using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Application.EventMappers.Automation;
+
 using Notrelix.Infrastructure.Events;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Messaging;
@@ -274,7 +275,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         return execution;
     }
 
-    private static BoardItemMemberAssignedForAutomationIntegrationEvent NewIntegrationEvent(
+    private static BoardItemMemberAssignedIntegrationEvent NewIntegrationEvent(
         Guid accountId, Guid workspaceId) =>
         new(Guid.CreateVersion7(), accountId, workspaceId, Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
@@ -321,7 +322,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
             DeliveryPolicy.CreateBuilder().Build(),
             new CompositeIntegrationEventMapper(
                 new ServiceCollection()
-                    .AddScoped<IIntegrationEventMapper, AutomationEventMapper>()
+                    .AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemMemberAssignedEventMapper>()
                     .BuildServiceProvider()),
             collector);
     }

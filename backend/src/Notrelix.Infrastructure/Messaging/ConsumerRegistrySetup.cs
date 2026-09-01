@@ -474,8 +474,8 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
-                ConsumerName = "BoardItemMemberAssignedForAutomationConsumer",
-                EventName = "automation.board-item-member-assigned",
+                ConsumerName = "BoardItemMemberAssignedAutomationConsumer",
+                EventName = "work-management.board-item-member-assigned",
                 EventVersion = 1,
                 EndpointName = "notrelix-automation-board-item-member-assigned-v1",
                 BoundedContext = "Automation",

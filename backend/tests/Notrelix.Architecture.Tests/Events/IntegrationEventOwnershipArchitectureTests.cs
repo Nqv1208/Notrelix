@@ -87,12 +87,11 @@ public class IntegrationEventOwnershipArchitectureTests
     private static readonly HashSet<(string ClrType, string Classification)> ReviewedConsumerCoupledContracts =
         new()
         {
-            (
-                "Notrelix.Application.Events.Automation.BoardItemMemberAssignedForAutomationIntegrationEvent",
-                "MIGRATE-ON-TOUCH (R2): fact is WorkManagement member assignment; name is " +
-                "consumer-coupled. Trigger: next material edit to the member-assigned event path. " +
-                "Target: WorkManagement-owned fact event."
-            ),
+            // Baseline is empty since the TAC member-assigned fact migration:
+            // the outward member-assigned contract is now the WorkManagement-owned
+            // BoardItemMemberAssignedIntegrationEvent
+            // (work-management.board-item-member-assigned v1); the old
+            // consumer-coupled contract was retired, not kept as an alias.
         };
 
     private static string? ResolveProducerContext(Type type)
