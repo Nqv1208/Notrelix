@@ -1,7 +1,7 @@
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Events.Automation;
 using Notrelix.Application.Features.Automation.Abstractions;
-using Notrelix.Application.Features.Integrations;
+using Notrelix.Application.Features.Integrations.N8n.Configuration;
 using Notrelix.Domain.Automation.Executions;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Notrelix.Application.Features.Integrations;
+namespace Notrelix.Application.Features.Integrations.N8n.Configuration;
 
 public static class N8nAutomationConfiguration
 {

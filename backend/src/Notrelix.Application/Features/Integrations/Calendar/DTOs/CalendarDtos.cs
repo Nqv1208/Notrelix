@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Integrations.DTOs;
+namespace Notrelix.Application.Features.Integrations.Calendar.DTOs;
 
 public record CalendarIntegrationDto(
     Guid Id,
