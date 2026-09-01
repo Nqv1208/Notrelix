@@ -172,8 +172,22 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            if (permission.Action == PermissionAction.UpdateItem
-                && string.Equals(facts.ResourceMemberRole, "Observer", StringComparison.Ordinal))
+            // Built-in role baseline (WG-ROLE-DEC-001): a plain Workspace member
+            // holds collaboration-class authority on a Workspace-visible board.
+            // Board-management authority is resource-owned and requires an explicit
+            // Board-level grant (board owner/admin role or an explicit resource
+            // permission), never Workspace visibility alone.
+            var hasBoardAuthority = IsBoardManagementRole(facts.ResourceMemberRole)
+                || facts.HasExplicitResourcePermission;
+
+            if (IsBoardManagementAction(permission.Action) && !hasBoardAuthority)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            }
+
+            if ((permission.Action is PermissionAction.UpdateItem or PermissionAction.MoveItem or PermissionAction.AssignItem)
+                && string.Equals(facts.ResourceMemberRole, "Observer", StringComparison.Ordinal)
+                && !facts.HasExplicitResourcePermission)
             {
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
@@ -185,6 +199,18 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             ? AccessDecision.Allow()
             : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
     }
+
+    private static bool IsBoardManagementRole(string? resourceMemberRole) =>
+        string.Equals(resourceMemberRole, "Owner", StringComparison.Ordinal)
+        || string.Equals(resourceMemberRole, "Admin", StringComparison.Ordinal);
+
+    private static bool IsBoardManagementAction(PermissionAction action) =>
+        action is PermissionAction.ManageBoard
+            or PermissionAction.ManageBoardPermission
+            or PermissionAction.CreateField
+            or PermissionAction.UpdateField
+            or PermissionAction.DeleteField
+            or PermissionAction.ShareBoardView;
 
     private static bool MeetsMinimumTier(string? actualTier, string? minimumTier)
     {

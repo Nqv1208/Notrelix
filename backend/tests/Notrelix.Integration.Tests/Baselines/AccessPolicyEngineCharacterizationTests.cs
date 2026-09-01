@@ -24,6 +24,10 @@ public static class AccessControlCharacterizationTests
         "EvaluateAsync_ShouldAllowOwnerForAllWorkspaceActions",
         "EvaluateAsync_ShouldDenyNonMembers",
         "EvaluateAsync_WorkspaceBoard_ShouldAllowWorkspaceMembersToView",
+        "EvaluateAsync_WorkspaceMemberCannotManageBoardWithoutBoardAuthority",
+        "EvaluateAsync_BoardOwnerCanManageBoard",
+        "EvaluateAsync_ExplicitResourcePermissionGrantsBoardManagement",
+        "EvaluateAsync_WorkspaceMemberCanManageBoardView",
         "EvaluateAsync_ViewerCannotUpdateItem",
         "EvaluateAsync_PrivateBoard_ShouldHideForNonBoardMembers",
         "EvaluateAsync_EditorCanUpdateItem",
@@ -111,6 +115,59 @@ public sealed class AccessPolicyEngineCharacterizationTests
             Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
             Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace"),
             PermissionRequest(PermissionAction.ViewBoard, ResourceKind.Create("work-management.board")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceMemberCannotManageBoardWithoutBoardAuthority()
+    {
+        // WG-ROLE-DEC-001: a plain Workspace member must NOT gain board-management
+        // authority from Workspace visibility alone; board management is
+        // resource-owned and requires an explicit Board-level grant.
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace"),
+            PermissionRequest(PermissionAction.ManageBoard, ResourceKind.Create("work-management.board")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void EvaluateAsync_BoardOwnerCanManageBoard()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace", resourceMemberRole: "Owner"),
+            PermissionRequest(PermissionAction.ManageBoard, ResourceKind.Create("work-management.board")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_ExplicitResourcePermissionGrantsBoardManagement()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace", hasExplicitResourcePermission: true),
+            PermissionRequest(PermissionAction.ManageBoard, ResourceKind.Create("work-management.board")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceMemberCanManageBoardView()
+    {
+        // Creating/updating a board view is collaboration-class, so a Workspace
+        // member on a Workspace-visible board may do it without a Board-level grant.
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace"),
+            PermissionRequest(PermissionAction.CreateBoardView, ResourceKind.Create("work-management.board")));
 
         decision.Kind.Should().Be(AccessDecisionKind.Allowed);
     }
