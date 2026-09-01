@@ -1,13 +1,15 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Accounts.Public.Commands;
+using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 
 namespace Notrelix.Application.Features.Accounts.Members.Services;
 
 /// <summary>
 /// Producer-owned implementation of the Accounts public membership target
-/// action. Owns the Account-side membership mutation; runs inside the caller's
-/// request transaction under BOUND-TX-002 (see contract documentation).
+/// action. Owns the Account-side mutation and its lifecycle admission checks;
+/// runs inside the caller's request transaction under BOUND-TX-002 (see
+/// contract documentation).
 /// </summary>
 public sealed class AccountMembershipActions : IAccountMembershipActions
 {
@@ -27,6 +29,24 @@ public sealed class AccountMembershipActions : IAccountMembershipActions
         DateTimeOffset now,
         CancellationToken ct)
     {
+        // The action owns account lifecycle admission: an unknown or
+        // non-admissible account is a producer-side business failure.
+        var accountStatus = await _context.Accounts
+            .AsNoTracking()
+            .Where(a => a.Id == accountId)
+            .Select(a => (AccountStatus?)a.Status)
+            .FirstOrDefaultAsync(ct);
+
+        if (accountStatus is null)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                "Accounts_Membership_AccountNotFound",
+                "Cannot add the member because the account does not exist.");
+
+        if (accountStatus is not (AccountStatus.Active or AccountStatus.Trialing))
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                "Accounts_Membership_AccountNotAdmissible",
+                "Cannot add the member because the account is not active.");
+
         // Track pending Adds too so a repeated call inside one request
         // transaction stays an idempotent no-op as the public contract
         // promises; a DB query alone cannot see unsaved adds.
