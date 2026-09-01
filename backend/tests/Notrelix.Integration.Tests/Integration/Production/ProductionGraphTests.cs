@@ -12,6 +12,10 @@ using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Accounts.Public.Queries;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Features.Automation.Executions.Services;
+using Notrelix.Application.Features.Integrations.N8n.Providers;
+using Notrelix.Application.Features.Integrations.Public.Commands;
+using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Storage;
@@ -97,7 +101,12 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         // Durable automation graph: evaluator + narrow network adapter are
         // registered for the outbox/broker consumer path.
         services.GetRequiredService<IN8nClient>().Should().NotBeNull();
+        services.GetRequiredService<IN8nWebhookActions>().Should().NotBeNull();
         services.GetRequiredService<N8nAutomationRuleEvaluator>().Should().NotBeNull();
+        services.GetRequiredService<N8nDispatchUseCase>().Should().NotBeNull();
+        services.GetRequiredService<
+            Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>()
+            .Should().BeOfType<WorkItemActionAdapter>();
     }
 
     [Fact]

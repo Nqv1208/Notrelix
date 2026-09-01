@@ -12,6 +12,7 @@ using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
+using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
 using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
@@ -110,6 +111,11 @@ public static class PersistenceRegistration
         // Cross-context read ports (spec 5.1)
         services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadAdapter>();
         services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadAdapter>();
+
+        // Cross-context target-action port: Automation -> WorkManagement
+        services.AddScoped<
+            Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort,
+            WorkItemActionAdapter>();
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, Notrelix.Infrastructure.Messaging.EventTypeRegistry>();

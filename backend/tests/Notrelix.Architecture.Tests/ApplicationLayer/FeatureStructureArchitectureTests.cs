@@ -254,6 +254,8 @@ public class FeatureStructureArchitectureTests
             "BoardItemMemberAssignedForAutomationConsumer",
             "automation.board-item-member-assigned",
             "AccountMembershipProvisioner",
+            "RequeueForRedelivery",
+            "N8nTriggerResult",
         };
 
     [Fact]

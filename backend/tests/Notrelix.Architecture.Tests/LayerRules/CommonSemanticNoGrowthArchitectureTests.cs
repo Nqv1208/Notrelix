@@ -36,11 +36,10 @@ public class CommonSemanticNoGrowthArchitectureTests
             },
             ["Notrelix.Application.Common.Integrations.N8n"] = new HashSet<string>(StringComparer.Ordinal)
             {
-                // Frozen at closure hardening; the AI-REF-004 provider-boundary
-                // migration must shrink this exact set when it moves N8n
-                // provider semantics under Integrations ownership.
-                "Notrelix.Application.Common.Integrations.N8n.IN8nClient",
-                "Notrelix.Application.Common.Integrations.N8n.N8nTriggerResult",
+                // Shrunk to the webhook-signature verification seam when the
+                // n8n provider client migrated to Integrations ownership
+                // (AI-REF-004). The remaining types are inbound signature
+                // verification, not the outbound provider surface.
                 "Notrelix.Application.Common.Integrations.N8n.IN8nSignatureService",
                 "Notrelix.Application.Common.Integrations.N8n.N8nSignatureService",
             },

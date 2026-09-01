@@ -59,7 +59,6 @@ global using Notrelix.Application.Common.Email;
 global using Notrelix.Application.Common.Events;
 global using Notrelix.Application.Common.Exceptions;
 global using Notrelix.Application.Common.Idempotency;
-global using Notrelix.Application.Common.Integrations.N8n;
 global using Notrelix.Application.Common.Messaging;
 global using Notrelix.Application.Common.Realtime;
 global using Notrelix.Application.Common.RateLimiting;

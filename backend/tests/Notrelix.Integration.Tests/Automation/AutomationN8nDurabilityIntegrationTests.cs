@@ -3,6 +3,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Events.Automation;
 using Notrelix.Application.Events.WorkManagement;
+using Notrelix.Application.Features.Automation.Executions.Services;
+using Notrelix.Application.Features.Integrations.N8n.Providers;
+using Notrelix.Application.Features.Integrations.N8n.Services;
+using Notrelix.Application.Features.Integrations.Public.Commands;
 using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Common;
@@ -151,7 +155,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
             .Returns<string, string, CancellationToken>((_, payload, _) =>
             {
                 seenExecutionId = payload;
-                return Task.FromResult(new N8nTriggerResult(true, 200, null, null));
+                return Task.FromResult(new N8nWebhookDispatchResult(N8nWebhookOutcome.Succeeded, null));
             });
 
         var message = NewDispatchMessage(execution);
@@ -175,11 +179,17 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         var failingAdapter = new Mock<IN8nClient>();
         failingAdapter.Setup(client => client.TriggerWebhookAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new HttpRequestException("n8n unreachable"));
+            .ReturnsAsync(new N8nWebhookDispatchResult(
+                N8nWebhookOutcome.RetryableFailure, "n8n webhook call failed: n8n unreachable"));
 
         var consumeFirst = () => InvokeConsumerAsync(graph, execution, failingAdapter.Object, NewDispatchMessage(execution));
-        await consumeFirst.Should().ThrowAsync<HttpRequestException>(
-            "transient failures must surface to the broker retry contract, not be swallowed as success");
+        await consumeFirst.Should().ThrowAsync<N8nDispatchRetryableException>(
+            "retryable provider failures must surface to the broker retry contract, not be swallowed as success");
+
+        var attemptAfterFirstFailure = await LoadExecutionAsync(execution.Id);
+        attemptAfterFirstFailure.Status.Should().Be(AutomationExecutionStatus.Queued,
+            "a retryable failure records evidence and re-queues the execution for another Automation attempt");
+        attemptAfterFirstFailure.AttemptCount.Should().Be(1);
 
         var succeededAdapter = new Mock<IN8nClient>();
         succeededAdapter.Setup(client => client.TriggerWebhookAsync(
@@ -187,7 +197,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
             .Returns<string, string, CancellationToken>((_, payload, _) =>
             {
                 payloads.Add(payload);
-                return Task.FromResult(new N8nTriggerResult(true, 200, null, null));
+                return Task.FromResult(new N8nWebhookDispatchResult(N8nWebhookOutcome.Succeeded, null));
             });
 
         await InvokeConsumerAsync(graph, execution, succeededAdapter.Object, NewDispatchMessage(execution));
@@ -208,18 +218,19 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         var firstExecution = await SeedExecutionAsync(firstGraph);
         var secondExecution = await SeedExecutionAsync(secondGraph);
 
-        var throwingAdapter = new Mock<IN8nClient>();
-        throwingAdapter.Setup(client => client.TriggerWebhookAsync(
+        var failingAdapter = new Mock<IN8nClient>();
+        failingAdapter.Setup(client => client.TriggerWebhookAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new HttpRequestException("n8n unreachable"));
+            .ReturnsAsync(new N8nWebhookDispatchResult(
+                N8nWebhookOutcome.RetryableFailure, "n8n webhook call failed: n8n unreachable"));
 
-        var consumeFailing = () => InvokeConsumerAsync(firstGraph, firstExecution, throwingAdapter.Object, NewDispatchMessage(firstExecution));
-        await consumeFailing.Should().ThrowAsync<HttpRequestException>();
+        var consumeFailing = () => InvokeConsumerAsync(firstGraph, firstExecution, failingAdapter.Object, NewDispatchMessage(firstExecution));
+        await consumeFailing.Should().ThrowAsync<N8nDispatchRetryableException>();
 
         var succeedingAdapter = new Mock<IN8nClient>();
         succeedingAdapter.Setup(client => client.TriggerWebhookAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new N8nTriggerResult(true, 200, null, null));
+            .ReturnsAsync(new N8nWebhookDispatchResult(N8nWebhookOutcome.Succeeded, null));
 
         await InvokeConsumerAsync(secondGraph, secondExecution, succeedingAdapter.Object, NewDispatchMessage(secondExecution));
 
@@ -294,13 +305,15 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         N8nDispatchRequestedV1 message)
     {
         await using var context = _db.CreateContext(SystemTenant());
-        var trackedExecution = await context.AutomationExecutions
-            .SingleAsync(x => x.Id == execution.Id);
-        ((IHasDomainEvents)trackedExecution).ClearDomainEvents();
+        var clockMock = new Mock<IDateTimeProvider>();
+        clockMock.Setup(c => c.UtcNow).Returns(Now);
 
-        var consumer = new N8nDispatchConsumer(
+        var useCase = new N8nDispatchUseCase(
             context,
-            adapter,
+            new N8nWebhookActions(adapter),
+            clockMock.Object);
+        var consumer = new N8nDispatchConsumer(
+            useCase,
             NullLogger<N8nDispatchConsumer>.Instance,
             new PipelineMetrics());
 
