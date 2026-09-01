@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Automation.Ports.WorkManagement;
-using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
