@@ -385,9 +385,34 @@ The current canonical decision path is `AccessPolicyEngine.EvaluatePermission` (
      else any Allow → Allow
 5. no rules / band empty → fall through to Account-scope or Workspace/Resource-scope handling
    (e.g. Account Admin baseline for ViewWorkspace/CreateWorkspace; DeleteWorkspace always denies;
-    Board-specific resource-visibility + Observer-can't-UpdateItem rules; tail default to
-    ViewWorkspace/ViewBoard/ViewMembers only, else Deny).
+    Board-specific resource visibility + built-in role baseline (WG-ROLE-DEC-001) + Observer
+    restriction; tail default to ViewWorkspace/ViewBoard/ViewMembers only, else Deny).
 ```
+
+### Board built-in role baseline (WG-ROLE-DEC-001)
+
+For `ResourceKind = work-management.board`, the engine applies a typed deterministic built-in role
+baseline in addition to visibility:
+
+```text
+Board-management class (resource-owned authority REQUIRED):
+    ManageBoard, ManageBoardPermission, CreateField, UpdateField, DeleteField, ShareBoardView
+    → allowed only when the caller holds Board-level authority:
+        ResourceMemberRole is Owner or Admin,  OR  HasExplicitResourcePermission
+    otherwise → Deny.Forbidden
+
+Collaboration class (Workspace-member baseline on a Workspace-visible Board):
+    ViewBoard, CreateItem, UpdateItem, MoveItem, AssignItem, CreateBoardView, UpdateBoardView
+    → allowed for a Workspace member unless a tighter rule applies (e.g. Observer).
+
+Restricted/Guest visibility: a non-Workspace-audience Board or a Workspace Guest without a Board
+grant/explicit permission is hidden (ResourceExists gate → NotFound).
+```
+
+A plain Workspace member does **not** gain Board-management authority from Workspace visibility alone
+(this replaces the previous broad Board grant). WorkspaceRole is a role class, not a wildcard over
+Board-management actions; Board authority is owned by WorkManagement and consumed from the
+transport-neutral Phase 6 facts (`ResourceMemberRole`, `HasExplicitResourcePermission`).
 
 Facts feeding the engine are produced by the single canonical SQL authority `AccessFactsQuery`:
 

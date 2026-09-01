@@ -1531,6 +1531,21 @@ Select only product-approved roles already present/defined.
 
 Do not invent role taxonomy.
 
+Status: DONE (WG-ROLE-DEC-001 Option 3).
+
+- Role classes: Owner/Admin = administrative; Member = collaboration; Guest = constrained.
+- Board-management authority is resource-owned: requires an explicit Board-level grant
+  (Board owner/admin role or explicit resource permission), never Workspace visibility alone.
+- `AccessPolicyEngine` board gate now enforces the baseline: `IsBoardManagementAction`
+  (ManageBoard, ManageBoardPermission, CreateField, UpdateField, DeleteField, ShareBoardView)
+  requires `IsBoardManagementRole` (Owner/Admin) or `HasExplicitResourcePermission`.
+  Collaboration-class actions (View/CreateItem/UpdateItem/MoveItem/AssignItem/CreateBoardView/
+  UpdateBoardView) remain available to a Workspace member on a Workspace-visible board.
+- Observer restriction widened to MoveItem/AssignItem alongside UpdateItem.
+- Evidence: `AccessPolicyEngineCharacterizationTests` new baseline tests
+  (`WorkspaceMemberCannotManageBoardWithoutBoardAuthority`, `BoardOwnerCanManageBoard`,
+  `ExplicitResourcePermissionGrantsBoardManagement`, `WorkspaceMemberCanManageBoardView`).
+
 ## 85. WG-ROLE-003 — stable role identity
 
 Display-name change must not break persisted role assignments.
@@ -1553,6 +1568,9 @@ Verify:
 
 If admin/owner role encodes required Workspace administration, enforce concurrency-safe invariant.
 
+Status: DONE (WG-ROLE-DEC-001). Retain last-Owner invariant only. NO separate
+last-Admin invariant — zero Admin members is valid while Owner remains.
+
 ## 89. WG-ROLE-007 — custom-role deferral
 
 If custom roles are not required for P3:
@@ -1564,6 +1582,23 @@ do not block P2 core
 ## 90. Phase 8 exit
 
 Built-in role baseline at least D4.
+
+Status: CLOSED.
+
+```text
+WG-ROLE-001 role model audit        DONE  (WorkspaceRole enum, board role facts from Phase 6)
+WG-ROLE-002 built-in role baseline  DONE  (WG-ROLE-DEC-001 Option 3, engine board gate)
+WG-ROLE-003 stable role identity    DONE  (string-persisted WorkspaceRole converter, no rename)
+WG-ROLE-004 permission mapping      DONE  (typed PermissionAction sets in AccessPolicyEngine)
+WG-ROLE-005 assignment              DONE  (WorkspaceRole persisted on workspace_members; Authorize pipeline)
+WG-ROLE-006 last-admin invariant    DONE  (last-Owner only, NO last-Admin per decision)
+WG-ROLE-007 custom-role deferral    DONE  (CustomRole/MemberRoleAssignment deferred, not blocking)
+
+Evidence: Application.Tests 588 green; Integration.Tests 350 green (4 new baseline
+ characterization tests); Architecture.Tests 410 green. Broad Board-management
+ fallback removed/replaced by resource-owned Board authority (WG-ROLE-DEC-001).
+ Phase 8 CLOSED. Phase 9 (existing authorization path hardening) may open.
+```
 
 # Phase 9 — Existing authorization path hardening
 

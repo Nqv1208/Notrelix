@@ -147,3 +147,117 @@ Permission semantics are D4/D5-ready (PLAN §82):
 
 Recorded decisions D7-A..D7-D; carried + new findings above. **Phase 7 CLOSED.** Phase 8 (built-in Role,
 PLAN §83–90) continues PR-WG-05 when it opens.
+
+---
+
+# PR-WG-05 — Phase 8 Built-in roles (continuation)
+
+Evidence record for PLAN §83–90 (WG-ROLE-001..007), SPEC role requirements (WGREQ063–070), TESTS §69–75 (WG-TST-ROLE-*).
+Implements the **WG-ROLE-DEC-001 Option 3** decision (user-selected) recorded in the Phase 2 semantic inventory (PR-WG-00).
+
+## Baseline
+
+- Branch: `feature/workspace-governance`.
+- Phase 8 opens from Phase 7 close (`2b4a673` docs commit).
+- Baseline suites: Application 588, Integration 346, Architecture 410 (Phase 6 close `2734ee4`).
+
+## Decision recap — WG-ROLE-DEC-001 Option 3
+
+- Resource-management semantics: explicit resource-owned Board authority is REQUIRED; a plain Workspace Member
+  must NOT gain Board-management authority merely because the Board has Workspace visibility.
+- Workspace-level baseline: Owner/Admin = administrative class; Member = collaboration class; Guest = constrained.
+- Do NOT model as "every caller must have a BoardMember row" — consume the transport-neutral Board authorization
+  facts from Phase 6 (`ResourceMemberRole`, `HasExplicitResourcePermission`); Board authority owned by WorkManagement.
+- WorkspaceRole is NOT a wildcard over all ResourceKinds.
+- Preserve PermissionRule precedence / default-deny from Phase 7.
+- Keep CustomRole/MemberRoleAssignment deferred.
+- **Retain last-Owner invariant only; NO separate last-Admin invariant** — zero Admin members is valid while Owner remains.
+- Add a typed deterministic built-in role baseline + tests from canonical authority (not test-authored permissions).
+
+## Change
+
+### Production code
+
+`backend/src/Notrelix.Application/Common/Security/AccessPolicyEngine.cs` — replaced the broad Board fallback
+(the previous board gate allowed workspace-visible Boards to pass after basic visibility checks) with a typed
+built-in-role baseline:
+
+- `IsBoardManagementAction(action)`: `ManageBoard`, `ManageBoardPermission`, `CreateField`, `UpdateField`,
+  `DeleteField`, `ShareBoardView` — management-class, requires resource-owned authority.
+- `hasBoardAuthority = IsBoardManagementRole(ResourceMemberRole) || HasExplicitResourcePermission`, where
+  `IsBoardManagementRole` is Board `Owner`/`Admin`.
+- A management-class action without Board authority → `Forbidden` (resource-owned, never visibility-granted).
+- Observer restriction widened from `UpdateItem` to `UpdateItem`/`MoveItem`/`AssignItem` (unless an explicit
+  resource permission exists).
+- Owner short-circuit (`role == "Owner"`), PermissionRule min-priority-band deny precedence, existence/audience
+  checks, and guest/restricted hide-all (`NotFound`) are preserved unchanged.
+- Collaboration-class actions (`ViewBoard`, `CreateItem`, `UpdateItem`, `MoveItem`, `AssignItem`,
+  `CreateBoardView`, `UpdateBoardView`) remain available to a Workspace member on a Workspace-visible board.
+
+### Tests
+
+`backend/tests/Notrelix.Integration.Tests/Baselines/AccessPolicyEngineCharacterizationTests.cs` — 4 new
+characterization tests, names registered in `CharacterizationTestNames` (WG-TST-ROLE-APP-001):
+
+- `WorkspaceMemberCannotManageBoardWithoutBoardAuthority` — Member + Workspace board + ManageBoard → Forbidden
+- `BoardOwnerCanManageBoard` — Member + board Owner role + ManageBoard → Allowed
+- `ExplicitResourcePermissionGrantsBoardManagement` — Member + explicit resource permission + ManageBoard → Allowed
+- `WorkspaceMemberCanManageBoardView` — Member + Workspace board + CreateBoardView → Allowed (collaboration class)
+
+## Phase 8 verdicts
+
+| ID | Verdict | Evidence |
+|---|---|---|
+| WG-ROLE-001 | DONE | `WorkspaceRole` enum (Domain/Workspaces/Members, string-persisted); board role facts consumed from Phase 6 (`ResourceMemberRole`); no new role table |
+| WG-ROLE-002 | DONE | Option 3 baseline implemented as typed `PermissionAction` sets in `AccessPolicyEngine` |
+| WG-ROLE-003 | DONE | WorkspaceRole string-persisted via converter; no rename; persisted assignments stable |
+| WG-ROLE-004 | DONE | Deterministic typed mapping; version/migration-safe (engine-only, no new persisted set) |
+| WG-ROLE-005 | DONE | WorkspaceRole persists on `workspace_members.role`; Authorize pipeline supplies facts server-side |
+| WG-ROLE-006 | DONE | last-Owner only; NO last-Admin invariant per decision |
+| WG-ROLE-007 | DONE | CustomRole/MemberRoleAssignment remain deferred; not blocking P2 core |
+
+## Suite evidence
+
+| Suite | Result | Note |
+|---|---|---|
+| Application.Tests | 588 green | no behavioral delta beyond engine helpers |
+| Integration.Tests | **350 green** (346 → 350) | +4 new characterization tests |
+| Architecture.Tests | 410 green | engine purity invariants unchanged |
+
+## Phase 8 decisions
+
+### D8-A — Board-management authority is resource-owned (Option 3) — IMPLEMENTED + TESTED
+
+A plain Workspace member (Member) on a Workspace-visible Board no longer receives management actions
+(`ManageBoard`, `ManageBoardPermission`, `CreateField`, `UpdateField`, `DeleteField`, `ShareBoardView`).
+Management can only be reached through an explicit Board-level grant (Board `Owner`/`Admin` role or an explicit
+resource permission). This implements the user decision and replaces the previous broad Board fallback.
+
+### D8-B — WorkspaceRole is role-class, not a resource wildcard — IMPLEMENTED
+
+WorkspaceOwner/Admin/Member/Guest classes determine workspace-scope baseline; resource-owned Board authority is
+resolved independently from Board facts. WorkspaceRole never grants board-management across the workspace.
+
+### D8-C — Collaboration class preserved — IMPLEMENTED
+
+Workspace Member on a Workspace-visible Board retains item/view collaboration (`ViewBoard`, `CreateItem`,
+`UpdateItem`, `MoveItem`, `AssignItem`, board-view create/update). Observer restriction extended to item
+mutation actions.
+
+### D8-D — No last-Admin invariant — DECIDED
+
+Only the last-Owner invariant is retained (Workspace membership). Zero Admins is valid while an Owner remains.
+
+### D8-E — Custom-role deferral kept — DECIDED
+
+`CustomRole`/`MemberRoleAssignment` stayed deferred; the P2 built-in baseline is complete without them.
+
+## Follow-up findings
+
+- Observer restriction now also guards `MoveItem`/`AssignItem` (was `UpdateItem` only) — an intentional
+  tightening aligned with the collaboration baseline; documented in the engine and §84.
+
+## Phase 8 exit
+
+Built-in role baseline reached D4+. **Phase 8 CLOSED.** Phase 9 (existing authorization path hardening) may open.
+

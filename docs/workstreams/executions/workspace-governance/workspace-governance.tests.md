@@ -1174,6 +1174,13 @@ WGREQ064
 
 Expected permissions come from canonical product/source authority, not test author invention.
 
+Status: Evidence in `AccessPolicyEngineCharacterizationTests` (`Notrelix.Integration.Tests`, Baselines):
+- `WorkspaceMemberCannotManageBoardWithoutBoardAuthority` — Member + Workspace-visible board, ManageBoard → Forbidden (resource-owned authority)
+- `BoardOwnerCanManageBoard` — Member + board owner role, ManageBoard → Allowed
+- `ExplicitResourcePermissionGrantsBoardManagement` — Member + explicit resource permission, ManageBoard → Allowed
+- `WorkspaceMemberCanManageBoardView` — Member + Workspace-visible board, CreateBoardView → Allowed (collaboration class)
+Baseline derived from WG-ROLE-DEC-001 (Option 3), not test-authored permissions.
+
 ## 71. WG-TST-ROLE-DOM-002 — built-in Role ID stable across display-name change
 
 Requirements:
