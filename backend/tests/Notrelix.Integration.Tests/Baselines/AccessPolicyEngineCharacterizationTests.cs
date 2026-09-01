@@ -28,6 +28,13 @@ public static class AccessControlCharacterizationTests
         "EvaluateAsync_BoardOwnerCanManageBoard",
         "EvaluateAsync_ExplicitResourcePermissionGrantsBoardManagement",
         "EvaluateAsync_WorkspaceMemberCanManageBoardView",
+        "EvaluateAsync_WorkspaceAdminCanManageWorkspace",
+        "EvaluateAsync_WorkspaceAdminCanInviteMember",
+        "EvaluateAsync_WorkspaceAdminCanChangeMemberRole",
+        "EvaluateAsync_WorkspaceMemberCannotAdministerWorkspace",
+        "EvaluateAsync_WorkspaceGuestCannotAdministerWorkspace",
+        "EvaluateAsync_WorkspaceAdminCannotManageBoardWithoutBoardAuthority",
+        "EvaluateAsync_WorkspaceAdminCannotDeleteWorkspace",
         "EvaluateAsync_ViewerCannotUpdateItem",
         "EvaluateAsync_PrivateBoard_ShouldHideForNonBoardMembers",
         "EvaluateAsync_EditorCanUpdateItem",
@@ -170,6 +177,97 @@ public sealed class AccessPolicyEngineCharacterizationTests
             PermissionRequest(PermissionAction.CreateBoardView, ResourceKind.Create("work-management.board")));
 
         decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceAdminCanManageWorkspace()
+    {
+        // WG-ROLE-DEC-001 administrative class: a Workspace Admin may perform
+        // workspace-scope administration without a custom permission rule.
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            Facts(workspaceMemberRole: "Admin"),
+            PermissionRequest(PermissionAction.ManageWorkspace, ResourceKind.Create("workspaces.workspace")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceAdminCanInviteMember()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            Facts(workspaceMemberRole: "Admin"),
+            PermissionRequest(PermissionAction.InviteMember, ResourceKind.Create("workspaces.workspace")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceAdminCanChangeMemberRole()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            Facts(workspaceMemberRole: "Admin"),
+            PermissionRequest(PermissionAction.ChangeMemberRole, ResourceKind.Create("workspaces.workspace")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceMemberCannotAdministerWorkspace()
+    {
+        // A plain Workspace Member is not in the administrative class and cannot
+        // manage the workspace. This is the baseline default (fails closed).
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            Facts(workspaceMemberRole: "Member"),
+            PermissionRequest(PermissionAction.ManageWorkspace, ResourceKind.Create("workspaces.workspace")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceGuestCannotAdministerWorkspace()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            Facts(workspaceMemberRole: "Guest"),
+            PermissionRequest(PermissionAction.ManageWorkspace, ResourceKind.Create("workspaces.workspace")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceAdminCannotManageBoardWithoutBoardAuthority()
+    {
+        // Phase 8 boundary: board management is resource-owned and is NOT granted by
+        // the Workspace administrative class. An Admin still needs board authority.
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Admin", resourceExists: true, resourceAudience: "Workspace"),
+            PermissionRequest(PermissionAction.ManageBoard, ResourceKind.Create("work-management.board")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void EvaluateAsync_WorkspaceAdminCannotDeleteWorkspace()
+    {
+        // Only the Owner may delete a workspace; Admin is denied.
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Workspace),
+            Facts(workspaceMemberRole: "Admin"),
+            PermissionRequest(PermissionAction.DeleteWorkspace, ResourceKind.Create("workspaces.workspace")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
     }
 
     [Fact]

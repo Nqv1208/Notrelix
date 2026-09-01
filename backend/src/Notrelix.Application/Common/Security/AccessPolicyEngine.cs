@@ -156,6 +156,17 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
+        // WorkspaceAdmin administrative baseline (WG-ROLE-DEC-001): an Admin performs
+        // workspace-scope administration without a custom rule. Board management stays
+        // resource-owned (Phase 8), Owner-only actions stay Owner-only, and the grant is
+        // scoped to Workspace requests so it never leaks into Resource/board scope.
+        if (descriptor.Scope == ApplicationScopeKind.Workspace
+            && string.Equals(role, "Admin", StringComparison.Ordinal)
+            && IsWorkspaceAdministrativeAction(permission.Action))
+        {
+            return AccessDecision.Allow();
+        }
+
         if (permission.Resource?.Kind.Value == "work-management.board")
         {
             if (!facts.ResourceExists)
@@ -211,6 +222,14 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             or PermissionAction.UpdateField
             or PermissionAction.DeleteField
             or PermissionAction.ShareBoardView;
+
+    private static bool IsWorkspaceAdministrativeAction(PermissionAction action) =>
+        action is PermissionAction.ManageWorkspace
+            or PermissionAction.InviteMember
+            or PermissionAction.ChangeMemberRole
+            or PermissionAction.RemoveMember
+            or PermissionAction.ManageWorkspaceSettings
+            or PermissionAction.CreateBoard;
 
     private static bool MeetsMinimumTier(string? actualTier, string? minimumTier)
     {
