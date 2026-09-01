@@ -40,32 +40,20 @@ public class CrossContextApplicationDependencyTests : ArchitectureTestBase
         KnownForeignDomainReferences = [];
 
     // ARCH-BC-002 source baseline — precise (rule, consumer source, foreign chain) only.
-    //
-    // AcceptInvitation (Workspaces) imports Domain.Accounts.Accounts for the
-    // AccountStatus enum consumed through the Accounts-owned status reader port.
-    // Classification: MIGRATE-ON-TOUCH (R2). Trigger: next material edit to the
-    // AcceptInvitation use case. Target: Accounts-owned Public status fact or a
-    // Workspaces-owned consumer port (BOUND-PORT-002), removing the producer
-    // Domain enum import.
+    // Empty since the AcceptInvitation read migration: Workspaces now consumes
+    // Identity.Public / Accounts.Public facts instead of producer Domain enums.
     private static readonly HashSet<(string RuleId, string RelativePath, string Chain)>
-        KnownForeignDomainSourceReferences =
-        [
-            (
-                CrossContextBoundaryScanner.RuleForeignDomainModel,
-                "Features/Workspaces/Invitations/Commands/AcceptInvitation/AcceptInvitation.cs",
-                "Notrelix.Domain.Accounts.Accounts"
-            ),
-        ];
+        KnownForeignDomainSourceReferences = [];
 
     // ARCH-BC-003 signature baseline — precise (rule, consumer type, foreign type) only.
     //
-    // AcceptInvitationCommandHandler (Workspaces) injects Accounts/Identity
-    // Abstractions service ports:
-    //   IAccountMembershipProvisioner, IAccountStatusReader (Accounts)
-    //   IIdentityUserLookupService (Identity)
-    // Classification: MIGRATE-ON-TOUCH (R2). Trigger: next material edit to the
-    // AcceptInvitation use case. Target: producer Public semantic contracts or
-    // Workspaces-owned consumer ports speaking workspace language.
+    // AcceptInvitationCommandHandler (Workspaces) still injects the Accounts
+    // membership provisioner:
+    //   IAccountMembershipProvisioner (Accounts)
+    // Classification: MIGRATE-ON-TOUCH (R2) — cross-BC mutation seam pending the
+    // Accounts↔Workspaces transaction decision. Read-side seams
+    // (IIdentityUserLookupService, IAccountStatusReader) were removed from the
+    // baseline after the producer Public facts migration.
     private static readonly HashSet<(string RuleId, string ConsumerType, string ForeignType)>
         KnownProducerInternalReferences =
         [
@@ -73,16 +61,6 @@ public class CrossContextApplicationDependencyTests : ArchitectureTestBase
                 CrossContextBoundaryScanner.RuleProducerInternal,
                 "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationCommandHandler",
                 "Notrelix.Application.Features.Accounts.Abstractions.IAccountMembershipProvisioner"
-            ),
-            (
-                CrossContextBoundaryScanner.RuleProducerInternal,
-                "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationCommandHandler",
-                "Notrelix.Application.Features.Accounts.Abstractions.IAccountStatusReader"
-            ),
-            (
-                CrossContextBoundaryScanner.RuleProducerInternal,
-                "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationCommandHandler",
-                "Notrelix.Application.Features.Identity.Abstractions.IIdentityUserLookupService"
             ),
         ];
 

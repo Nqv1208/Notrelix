@@ -1,9 +1,9 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Accounts.Public.Queries;
+using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Abstractions;
-using Notrelix.Domain.Accounts.Accounts;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 
@@ -23,9 +23,9 @@ public record AcceptInvitationCommand(string Token)
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
 {
     private readonly IWorkspaceDbContext _workspaceContext;
-    private readonly IIdentityUserLookupService _identityUserLookup;
+    private readonly IIdentityUserFacts _identityUserFacts;
     private readonly IAccountMembershipProvisioner _accountMembershipProvisioner;
-    private readonly IAccountStatusReader _accountStatusReader;
+    private readonly IAccountMembershipFacts _accountMembershipFacts;
     private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -33,18 +33,18 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
-        IIdentityUserLookupService identityUserLookup,
+        IIdentityUserFacts identityUserFacts,
         IAccountMembershipProvisioner accountMembershipProvisioner,
-        IAccountStatusReader accountStatusReader,
+        IAccountMembershipFacts accountMembershipFacts,
         IOneTimeTokenService oneTimeTokenService,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IAccessGrantProjectionService grantProjection)
     {
         _workspaceContext = workspaceContext;
-        _identityUserLookup = identityUserLookup;
+        _identityUserFacts = identityUserFacts;
         _accountMembershipProvisioner = accountMembershipProvisioner;
-        _accountStatusReader = accountStatusReader;
+        _accountMembershipFacts = accountMembershipFacts;
         _oneTimeTokenService = oneTimeTokenService;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -60,13 +60,13 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         var currentUserId = _requestContext.UserId;
 
-        var currentUser = await _identityUserLookup.FindByIdAsync(currentUserId, ct);
+        var currentUser = await _identityUserFacts.FindByIdAsync(currentUserId, ct);
 
         if (currentUser is null)
             return Result<AcceptInvitationResultDto>.Failure(
                 "Current user was not found.");
 
-        if (currentUser.Status is not (UserStatus.Active or UserStatus.PendingVerification))
+        if (!currentUser.CanParticipate)
             return Result<AcceptInvitationResultDto>.Failure(
                 "Your account must be active before accepting workspace invitations.");
 
@@ -122,14 +122,14 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             return Result<AcceptInvitationResultDto>.Failure(
                 "Cannot accept invitation for an inactive workspace.");
 
-        var accountStatus = await _accountStatusReader.GetStatusAsync(
+        var accountAdmission = await _accountMembershipFacts.GetAdmissionAsync(
             workspace.AccountId, ct);
 
-        if (accountStatus is null)
+        if (accountAdmission is null)
             return Result<AcceptInvitationResultDto>.Failure(
                 "Account was not found.");
 
-        if (accountStatus is not AccountStatus.Active and not AccountStatus.Trialing)
+        if (!accountAdmission.CanAdmitMember)
             return Result<AcceptInvitationResultDto>.Failure(
                 "Cannot accept invitation for an inactive account.");
 

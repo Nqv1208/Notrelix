@@ -2,7 +2,11 @@ using System.Reflection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Diagnostics;
+using Notrelix.Application.Features.Accounts.Members.Services;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.Queries;
+using Notrelix.Application.Features.Identity.Public.Queries;
+using Notrelix.Application.Features.Identity.Users.Services;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Services;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
@@ -85,6 +89,10 @@ public static class DependencyInjection
 
         // Accounts-owned onboarding provisioning (spec 5.2)
         services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
+
+        // Producer-owned public semantic facts (real consumers only)
+        services.AddScoped<IIdentityUserFacts, IdentityUserFactsProvider>();
+        services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

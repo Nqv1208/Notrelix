@@ -186,7 +186,7 @@ public abstract class IdentityHandlerTestBase
             TestNow);
     }
 
-    private static DbSet<T> CreateAsyncDbSet<T>(List<T> data) where T : class
+    protected static DbSet<T> CreateAsyncDbSet<T>(List<T> data) where T : class
     {
         var mock = new Mock<DbSet<T>>();
         var queryable = data.AsQueryable();

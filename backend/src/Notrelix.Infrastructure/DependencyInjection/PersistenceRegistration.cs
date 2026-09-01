@@ -12,9 +12,9 @@ using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
-using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
 using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
+using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Abstractions;
@@ -109,9 +109,7 @@ public static class PersistenceRegistration
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
         // Application services (ports in Application, adapters in Infrastructure)
-        services.AddScoped<IIdentityUserLookupService, IdentityUserLookupService>();
         services.AddScoped<IAccountMembershipProvisioner, AccountMembershipProvisioner>();
-        services.AddScoped<IAccountStatusReader, AccountStatusReader>();
 
         // Cross-context read ports (spec 5.1)
         services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadAdapter>();
