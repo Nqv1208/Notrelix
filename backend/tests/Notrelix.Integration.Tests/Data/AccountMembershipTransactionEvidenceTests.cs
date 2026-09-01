@@ -48,6 +48,20 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         return tenant;
     }
 
+    private static Domain.Accounts.Accounts.Account CreateActiveAccount(Guid accountId)
+    {
+        var account = Domain.Accounts.Accounts.Account.Create(
+            "TAC Evidence Account",
+            "tac-evidence-account",
+            Domain.Accounts.Accounts.AccountType.Team,
+            Guid.CreateVersion7(),
+            FixedTime);
+        typeof(Domain.Accounts.Accounts.Account)
+            .GetProperty(nameof(Domain.Accounts.Accounts.Account.Id))!
+            .SetValue(account, accountId);
+        return account;
+    }
+
     private (EfRequestDataSession Session, ApplicationDbContext Context, AccountMembershipActions Actions) Create()
     {
         var context = _db.CreateContext(SystemTenant());
@@ -67,6 +81,8 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         var (session, context, actions) = Create();
         var accountId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
+        context.Accounts.Add(CreateActiveAccount(accountId));
+        await context.SaveChangesAsync();
 
         await session.ExecuteAsync<object?>(
             new RequestDataSessionOptions(
@@ -94,6 +110,8 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         var (session, context, actions) = Create();
         var accountId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
+        context.Accounts.Add(CreateActiveAccount(accountId));
+        await context.SaveChangesAsync();
 
         var act = async () => await session.ExecuteAsync<object?>(
             new RequestDataSessionOptions(
@@ -126,6 +144,8 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         var accountId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
         var invitedBy = Guid.CreateVersion7();
+        context.Accounts.Add(CreateActiveAccount(accountId));
+        await context.SaveChangesAsync();
 
         await session.ExecuteAsync<object?>(
             new RequestDataSessionOptions(

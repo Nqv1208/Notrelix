@@ -8,6 +8,9 @@ using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Entitlements;
+using Notrelix.Application.Features.Accounts.Public.Commands;
+using Notrelix.Application.Features.Accounts.Public.Queries;
+using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Storage;
@@ -80,6 +83,11 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IFeatureGateChecker>().Should().BeOfType<DatabaseFeatureGateChecker>();
 
         services.GetRequiredService<IAuditService>().Should().NotBeNull();
+
+        // Producer-owned public semantic surfaces resolve in production DI.
+        services.GetRequiredService<IIdentityUserFacts>().Should().NotBeNull();
+        services.GetRequiredService<IAccountMembershipFacts>().Should().NotBeNull();
+        services.GetRequiredService<IAccountMembershipActions>().Should().NotBeNull();
 
         // Single request-authorization authority: the pure policy engine.
         services.GetRequiredService<IAccessPolicyEvaluator>().Should().BeOfType<AccessPolicyEngine>();

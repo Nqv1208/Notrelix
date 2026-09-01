@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Workspaces.Members.Events;
 using Notrelix.Application.EventMappers.Workspaces;
