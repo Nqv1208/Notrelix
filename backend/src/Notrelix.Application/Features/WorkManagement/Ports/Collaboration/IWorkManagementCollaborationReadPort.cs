@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.WorkManagement.Common.Abstractions;
+namespace Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 /// <summary>
 /// Cross-context read port (spec 5.1): WorkManagement queries read

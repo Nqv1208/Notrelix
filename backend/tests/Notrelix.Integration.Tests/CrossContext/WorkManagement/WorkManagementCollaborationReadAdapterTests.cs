@@ -1,21 +1,21 @@
 using System.Text.Json;
-using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 using Notrelix.Domain.Collaboration.Attachments;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.SharedKernel;
-using Notrelix.Infrastructure.Data.ReadPorts.Collaboration;
+using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.ReadPorts;
 
 [Collection("Database")]
-public class WorkManagementCollaborationReadPortTests : IAsyncLifetime
+public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
 {
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
 
-    public WorkManagementCollaborationReadPortTests(PostgresTestContainer db)
+    public WorkManagementCollaborationReadAdapterTests(PostgresTestContainer db)
     {
         _db = db;
     }
@@ -55,7 +55,7 @@ public class WorkManagementCollaborationReadPortTests : IAsyncLifetime
             AttachmentType.Document, FileMetadata.Create("a.pdf", 10, "application/pdf"), AccountId, now));
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadPort(context);
+        var sut = new WorkManagementCollaborationReadAdapter(context);
         var counts = await sut.GetCountsAsync([firstItem, secondItem], CancellationToken.None);
 
         counts[firstItem].Should().Be(new WorkItemCollaborationCounts(2, 1));
@@ -69,7 +69,7 @@ public class WorkManagementCollaborationReadPortTests : IAsyncLifetime
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
 
-        var sut = new WorkManagementCollaborationReadPort(context);
+        var sut = new WorkManagementCollaborationReadAdapter(context);
         var counts = await sut.GetCountsAsync([Guid.NewGuid()], CancellationToken.None);
 
         counts.Values.Single().Should().Be(new WorkItemCollaborationCounts(0, 0));
@@ -91,7 +91,7 @@ public class WorkManagementCollaborationReadPortTests : IAsyncLifetime
         context.Comments.Add(deleted);
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadPort(context);
+        var sut = new WorkManagementCollaborationReadAdapter(context);
         var counts = await sut.GetCountsAsync([item], CancellationToken.None);
 
         counts[item].CommentCount.Should().Be(1);
@@ -112,7 +112,7 @@ public class WorkManagementCollaborationReadPortTests : IAsyncLifetime
             JsonContent("board comment"), AccountId, now));
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadPort(context);
+        var sut = new WorkManagementCollaborationReadAdapter(context);
         var counts = await sut.GetCountsAsync([item], CancellationToken.None);
 
         counts[item].CommentCount.Should().Be(0);

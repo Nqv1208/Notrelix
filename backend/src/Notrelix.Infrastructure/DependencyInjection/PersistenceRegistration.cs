@@ -2,9 +2,9 @@ using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Accounts.Services;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
-using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
+using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
@@ -13,12 +13,12 @@ using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Infrastructure.Services;
+using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
+using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Interceptors;
-using Notrelix.Infrastructure.Data.ReadPorts.Collaboration;
-using Notrelix.Infrastructure.Data.ReadPorts.Identity;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Events;
 using Notrelix.Infrastructure.Options;
@@ -114,8 +114,8 @@ public static class PersistenceRegistration
         services.AddScoped<IAccountStatusReader, AccountStatusReader>();
 
         // Cross-context read ports (spec 5.1)
-        services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadPort>();
-        services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadPort>();
+        services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadAdapter>();
+        services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadAdapter>();
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, Notrelix.Infrastructure.Messaging.EventTypeRegistry>();

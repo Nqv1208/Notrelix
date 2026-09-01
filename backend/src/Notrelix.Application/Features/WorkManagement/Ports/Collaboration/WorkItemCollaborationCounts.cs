@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.WorkManagement.Common.Abstractions;
+namespace Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 /// <summary>
 /// Aggregated collaboration counts for a set of work-management board items.

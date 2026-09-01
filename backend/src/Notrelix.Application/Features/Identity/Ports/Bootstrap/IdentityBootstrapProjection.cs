@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Identity.Auth.GetBootstrap;
+namespace Notrelix.Application.Features.Identity.Ports.Bootstrap;
 
 /// <summary>
 /// Immutable bootstrap projection returned by <see cref="IIdentityBootstrapReadPort"/>.

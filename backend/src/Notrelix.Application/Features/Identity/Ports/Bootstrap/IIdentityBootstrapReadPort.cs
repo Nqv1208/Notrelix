@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Identity.Auth.GetBootstrap;
+namespace Notrelix.Application.Features.Identity.Ports.Bootstrap;
 
 /// <summary>
 /// Cross-context read port (spec 5.1): the bootstrap query reads Identity,

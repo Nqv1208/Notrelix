@@ -1,21 +1,21 @@
 using Notrelix.Application.Features.Collaboration.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
-namespace Notrelix.Infrastructure.Data.ReadPorts.Collaboration;
+namespace Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
 
 /// <summary>
 /// Queries Comments and Attachments targeted at <c>work-management.board-item</c>
 /// resources, groups by resource id and returns zero counts for missing ids.
 /// Soft-deleted comments are excluded from the counts.
 /// </summary>
-public sealed class WorkManagementCollaborationReadPort : IWorkManagementCollaborationReadPort
+public sealed class WorkManagementCollaborationReadAdapter : IWorkManagementCollaborationReadPort
 {
     private static readonly ResourceKind BoardItemKind =
         ResourceKind.Create("work-management.board-item");
 
     private readonly ICollaborationDbContext _context;
 
-    public WorkManagementCollaborationReadPort(ICollaborationDbContext context)
+    public WorkManagementCollaborationReadAdapter(ICollaborationDbContext context)
     {
         _context = context;
     }
