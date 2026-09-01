@@ -91,6 +91,7 @@ Use the correct owner.
 | Product meaning / lifecycle | `../docs/product/contexts/**` |
 | System boundary / context relationship | `../docs/architecture/**` |
 | Backend overall topology | `docs/architecture/backend-overview.md` |
+| How do I build this cross-context interaction? (reference pack map) | `docs/architecture/backend-overview.md` § 74A |
 | Domain behavior | `docs/architecture/domain-modeling.md` |
 | Application orchestration/pipeline | `docs/architecture/application-model.md` |
 | EF/PostgreSQL/RLS/providers/cache | `docs/architecture/infrastructure-and-data.md` |
