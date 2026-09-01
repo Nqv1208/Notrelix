@@ -1,7 +1,6 @@
 using System.Reflection;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Boards;
-using Xunit;
 
 namespace Notrelix.Architecture.Tests;
 

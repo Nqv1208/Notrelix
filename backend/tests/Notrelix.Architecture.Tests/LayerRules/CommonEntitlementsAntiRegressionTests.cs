@@ -1,5 +1,4 @@
 using System.Reflection;
-using Xunit;
 
 namespace Notrelix.Architecture.Tests.LayerRules;
 

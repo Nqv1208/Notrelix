@@ -1,7 +1,6 @@
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Public.Facts;
 using Notrelix.Application.Features.Identity.Public.Queries;
-using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Features.Identity.Users.Services;
 

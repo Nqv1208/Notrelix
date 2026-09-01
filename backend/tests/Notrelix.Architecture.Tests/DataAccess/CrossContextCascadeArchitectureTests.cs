@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Notrelix.Infrastructure.Data;
-using Xunit;
 
 namespace Notrelix.Architecture.Tests.DataAccess;
 

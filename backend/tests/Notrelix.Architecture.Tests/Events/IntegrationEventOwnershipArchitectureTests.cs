@@ -1,8 +1,5 @@
 using System.Reflection;
-using MassTransit;
 using Notrelix.Domain.Common;
-using Notrelix.Infrastructure.Messaging;
-using Xunit;
 
 namespace Notrelix.Architecture.Tests.Events;
 

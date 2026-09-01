@@ -507,7 +507,9 @@ internal static class CrossContextBoundaryScanner
         var dot = remainder.IndexOf('.');
         var candidate = dot > 0 ? remainder[..dot] : remainder;
         return BusinessContexts.Contains(candidate) ? candidate : null;
-    }    private static bool IsConsumerType(Type type)
+    }
+
+    private static bool IsConsumerType(Type type)
     {
         if (ResolveContextFromNamespace(type.Namespace) is null)
             return false;
