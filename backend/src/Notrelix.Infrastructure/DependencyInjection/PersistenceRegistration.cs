@@ -13,6 +13,7 @@ using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
 using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
+using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
 using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
@@ -116,6 +117,18 @@ public static class PersistenceRegistration
         services.AddScoped<
             Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort,
             WorkItemActionAdapter>();
+
+        // Cross-context projection-source port: Analytics rebuild -> WorkManagement
+        services.AddScoped<
+            Notrelix.Application.Features.WorkManagement.Public.Queries.IWorkItemProjectionSource,
+            WorkItemProjectionSourceAdapter>();
+        services.AddScoped<
+            Notrelix.Infrastructure.Messaging.Consumers.Analytics.IWorkItemProjectionSourceAdapter,
+            WorkItemProjectionSourceAdapter>();
+
+        // Analytics-owned placement projection maintenance
+        services.AddScoped<
+            Notrelix.Application.Features.Analytics.Placements.Services.WorkspaceWorkItemPlacementService>();
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, Notrelix.Infrastructure.Messaging.EventTypeRegistry>();

@@ -252,6 +252,7 @@ public partial class ApplicationDbContext
     public DbSet<DashboardWidget> DashboardWidgets => Set<DashboardWidget>();
     public DbSet<DashboardSource> DashboardSources => Set<DashboardSource>();
     public DbSet<ReportingSnapshot> ReportingSnapshots => Set<ReportingSnapshot>();
+    public DbSet<Domain.Analytics.Placements.WorkspaceWorkItemPlacementProjection> WorkspaceWorkItemPlacements => Set<Domain.Analytics.Placements.WorkspaceWorkItemPlacementProjection>();
 
     // Enterprise event store
     public DbSet<DomainEventLog> DomainEventLogs => Set<DomainEventLog>();

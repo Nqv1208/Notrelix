@@ -333,6 +333,15 @@ public sealed class PipelineMigrationBaselineTests : ArchitectureTestBase
 
     private static string[] ExpectedDataMarkers(RequestBaselineEntry oldEntry)
     {
+        // Entries baselined against the final marker model (no legacy
+        // ITransactionalRequest/IRlsReadRequest history) compare as-is.
+        if (oldEntry.DataMarkers.Contains("IWriteRequest", StringComparer.Ordinal)
+            || oldEntry.DataMarkers.Contains("IReadRequest", StringComparer.Ordinal)
+            || oldEntry.DataMarkers.Contains("INoDataRequest", StringComparer.Ordinal))
+        {
+            return oldEntry.DataMarkers;
+        }
+
         if (oldEntry.DataMarkers.Contains("ITransactionalRequest", StringComparer.Ordinal))
         {
             return [nameof(IWriteRequest)];
