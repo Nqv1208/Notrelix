@@ -133,25 +133,66 @@ public class FeatureStructureArchitectureTests
     public void InfrastructureServices_CannotGrow()
     {
         var servicesPath = Path.Combine(InfrastructureRoot, "Services");
-        if (!Directory.Exists(servicesPath))
-        {
-            // Directory fully cleaned up — the baseline may shrink to nothing.
-            return;
-        }
 
-        var actual = Directory
-            .EnumerateFiles(servicesPath, "*.cs", SearchOption.TopDirectoryOnly)
-            .Select(Path.GetFileName!)
-            .Where(name => name != null)
-            .ToHashSet(StringComparer.Ordinal);
+        var actual = Directory.Exists(servicesPath)
+            ? Directory
+                .EnumerateFiles(servicesPath, "*.cs", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileName!)
+                .Where(name => name != null)
+                .ToHashSet(StringComparer.Ordinal)
+            : new HashSet<string>(StringComparer.Ordinal);
 
+        // Monotonic exact-baseline semantics: actual == reviewed baseline.
+        // Deleting a source file requires shrinking the baseline in the same
+        // change; a deleted file must not silently regrow or linger in the
+        // baseline as a stale reusable allowance.
         var unknown = actual.Except(AllowedInfrastructureServices).ToList();
+        var stale = AllowedInfrastructureServices.Except(actual).ToList();
 
         unknown.Should().BeEmpty(
             $"{RuleServicesGrowth}: new generic Infrastructure/Services files are forbidden " +
             $"(actual-not-in-baseline: [{string.Join(", ", unknown)}]). Classify the type and place it " +
             "under its owning context or an intentional boundary location, or update the " +
             "reviewed baseline in this test.");
+
+        stale.Should().BeEmpty(
+            $"{RuleServicesGrowth}: baseline entries without matching source are stale allowances " +
+            $"(baseline-not-in-actual: [{string.Join(", ", stale)}]). Shrink the reviewed baseline " +
+            "in the same change that removes the source file.");
+    }
+
+    // ------------------------------------------------------------------
+    // STN-ARCH-006 gate self-tests (exact-baseline semantics)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void ServicesBaseline_MatchesExactly_Passes()
+    {
+        var actual = new HashSet<string>(StringComparer.Ordinal) { "A.cs", "B.cs" };
+        var baseline = new HashSet<string>(StringComparer.Ordinal) { "A.cs", "B.cs" };
+
+        actual.Except(baseline).Should().BeEmpty();
+        baseline.Except(actual).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ServicesBaseline_MissingSource_FailsAsStale()
+    {
+        // baseline {A,B}, actual {A}: deleted source without baseline shrink.
+        var actual = new HashSet<string>(StringComparer.Ordinal) { "A.cs" };
+        var baseline = new HashSet<string>(StringComparer.Ordinal) { "A.cs", "B.cs" };
+
+        baseline.Except(actual).Should().NotBeEmpty("a deleted file must shrink the baseline");
+    }
+
+    [Fact]
+    public void ServicesBaseline_NewFile_FailsAsUnknown()
+    {
+        // baseline {A}, actual {A,B}: regrowth beyond the reviewed baseline.
+        var actual = new HashSet<string>(StringComparer.Ordinal) { "A.cs", "B.cs" };
+        var baseline = new HashSet<string>(StringComparer.Ordinal) { "A.cs" };
+
+        actual.Except(baseline).Should().NotBeEmpty("a new generic Services file requires review");
     }
 
     // ------------------------------------------------------------------

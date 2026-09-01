@@ -40,9 +40,10 @@ public class PublicSemanticContractArchitectureTests
 
         foreach (var type in publicTypes)
         {
+            var ownProducer = ResolveProducerFromPublicNamespace(type.Namespace);
             foreach (var referenced in CollectReferencedTypes(type))
             {
-                if (ClassifyPurity(referenced) is { } reason)
+                if (ClassifyPurity(referenced, ownProducer) is { } reason)
                     violations.Add($"{type.FullName}: {reason} ({referenced.FullName})");
             }
         }
@@ -59,7 +60,7 @@ public class PublicSemanticContractArchitectureTests
     [Fact]
     public void Gate_Detects_DomainTypeInsidePublicContract()
     {
-        var violation = ClassifyPurity(typeof(Notrelix.Domain.WorkManagement.Boards.Board));
+        var violation = ClassifyPurity(typeof(Notrelix.Domain.WorkManagement.Boards.Board), ownProducer: null);
 
         violation.Should().NotBeNull("producer Domain aggregates must not leak into Public contracts");
     }
@@ -67,7 +68,7 @@ public class PublicSemanticContractArchitectureTests
     [Fact]
     public void Gate_Detects_TransportTypeInsidePublicContract()
     {
-        var violation = ClassifyPurity(typeof(System.Net.Http.HttpClient));
+        var violation = ClassifyPurity(typeof(System.Net.Http.HttpClient), ownProducer: null);
 
         violation.Should().NotBeNull("transport types must not leak into Public contracts");
     }
@@ -75,14 +76,50 @@ public class PublicSemanticContractArchitectureTests
     [Fact]
     public void Gate_Allows_SystemAndOwnPublicPrimitives()
     {
-        ClassifyPurity(typeof(Guid)).Should().BeNull();
-        ClassifyPurity(typeof(Notrelix.Application.Common.Events.IntegrationEvent)).Should().BeNull();
-        ClassifyPurity(typeof(PublicSemanticContractArchitectureTests)).Should().BeNull(
+        ClassifyPurity(typeof(Guid), ownProducer: null).Should().BeNull();
+        ClassifyPurity(typeof(PublicSemanticContractArchitectureTests), ownProducer: null).Should().BeNull(
             "own Public namespace types are allowed");
     }
 
+    [Fact]
+    public void Gate_Detects_ArbitraryCommonBusinessType()
+    {
+        // Business vocabulary is a foreign context's concern: any Common type
+        // outside the exact approved technical allowlist fails even for its
+        // own producer.
+        var violation = ClassifyPurity(
+            typeof(Notrelix.Application.Common.Tenancy.IAccessGrantProjectionService),
+            ownProducer: null);
+
+        violation.Should().NotBeNull("arbitrary Common business semantics must not enter Public contracts");
+    }
+
+    [Fact]
+    public void Gate_Detects_ForeignProducerPublicContract()
+    {
+        // Public-to-Public references across producers are denied by default:
+        // producer awareness means Identity.Public may reference only its own
+        // surface, never Accounts.Public (exact reviewed exceptions only).
+        var violation = ClassifyPurity(
+            typeof(Notrelix.Application.Features.Accounts.Public.Facts.AccountMembershipAdmissionFact),
+            ownProducer: "Identity");
+
+        violation.Should().NotBeNull("foreign producer Public contracts are denied by default");
+    }
+
+    [Fact]
+    public void Gate_Allows_OwnProducerPublicContract()
+    {
+        var violation = ClassifyPurity(
+            typeof(Notrelix.Application.Features.Accounts.Public.Facts.AccountMembershipAdmissionFact),
+            ownProducer: "Accounts");
+
+        violation.Should().BeNull("a producer may reference its own Public surface");
+    }
+
     /// <summary>
-    /// A type belongs to the Public surface when its namespace sits under    /// `Features.{Context}.Public`. Mirrors CrossContextBoundaryScanner's
+    /// A type belongs to the Public surface when its namespace sits under
+    /// `Features.{Context}.Public`. Mirrors CrossContextBoundaryScanner's
     /// namespace resolution (segments after `Notrelix.Application.Features.`).
     /// </summary>
     private static bool IsPublicSurfaceType(Type type)
@@ -94,6 +131,30 @@ public class PublicSemanticContractArchitectureTests
         var segments = ns.Split('.');
         return segments.Length > 4 && segments[4] == "Public";
     }
+
+    private static string? ResolveProducerFromPublicNamespace(string? ns)
+    {
+        if (ns is null || !ns.StartsWith("Notrelix.Application.Features.", StringComparison.Ordinal))
+            return null;
+
+        var segments = ns.Split('.');
+        return segments.Length > 4 && segments[4] == "Public"
+            ? segments[3]
+            : null;
+    }
+
+    /// <summary>
+    /// Exact allowlist of approved technical Common primitives that Public
+    /// contracts may reference. Business vocabulary (entitlements, roles,
+    /// lifecycle state, tenancy services, event infrastructure) is producer
+    /// semantics and must never ride through Common into a Public surface.
+    /// A new allowed entry requires deliberate review of this list.
+    /// </summary>
+    private static readonly IReadOnlySet<string> ApprovedCommonPrimitives =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Notrelix.Application.Common.Models.Result", // stable result envelope
+        };
 
     private static IEnumerable<Type> CollectReferencedTypes(Type type)
     {
@@ -138,7 +199,7 @@ public class PublicSemanticContractArchitectureTests
         return collected;
     }
 
-    private static string? ClassifyPurity(Type referenced)
+    private static string? ClassifyPurity(Type referenced, string? ownProducer)
     {
         var ns = referenced.Namespace;
         if (ns is null)
@@ -151,10 +212,22 @@ public class PublicSemanticContractArchitectureTests
             return null;
 
         if (ns.StartsWith("Notrelix.Application.Common.", StringComparison.Ordinal))
-            return null;
+        {
+            return ApprovedCommonPrimitives.Contains(referenced.FullName ?? string.Empty)
+                ? null
+                : "unapproved Common type (exact technical allowlist only)";
+        }
 
         if (IsPublicSurfaceType(referenced))
-            return null;
+        {
+            // Producer-aware Public rule: a producer's Public surface may
+            // reference only its own Public types. Foreign producer Public is
+            // denied by default; a reviewed exception must be an exact entry.
+            var referencedProducer = ResolveProducerFromPublicNamespace(referenced.Namespace);
+            return referencedProducer == ownProducer
+                ? null
+                : "foreign producer Public contract";
+        }
 
         if (ns.StartsWith("Notrelix.Domain.", StringComparison.Ordinal))
             return "producer Domain model";

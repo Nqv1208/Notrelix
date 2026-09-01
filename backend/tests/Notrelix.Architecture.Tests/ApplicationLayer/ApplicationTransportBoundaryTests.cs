@@ -29,6 +29,7 @@ public class ApplicationTransportBoundaryTests
         "Grpc.Core",
         "Grpc.Net.Client",
         "MassTransit",
+        "RabbitMQ.Client",
         "Npgsql",
         "StackExchange.Redis",
         "Stripe",
