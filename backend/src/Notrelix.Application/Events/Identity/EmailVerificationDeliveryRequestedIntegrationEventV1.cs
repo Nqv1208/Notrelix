@@ -1,5 +1,6 @@
 namespace Notrelix.Application.Events.Identity;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.None)]
 [EventName("identity.email-verification-delivery-requested", Version = 1)]
 [EventPiiField("Email",
     Purpose = "Address the verification email to the registering account owner.",

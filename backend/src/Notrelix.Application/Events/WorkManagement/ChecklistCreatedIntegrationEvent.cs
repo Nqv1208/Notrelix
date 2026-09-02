@@ -1,8 +1,10 @@
 namespace Notrelix.Application.Events.WorkManagement;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("checklist.created", Version = 1)]
 public sealed record ChecklistCreatedIntegrationEvent(
     Guid EventId,
+    Guid? AccountId,
     Guid ChecklistId,
     Guid ItemId,
     Guid BoardId,
@@ -18,7 +20,7 @@ public sealed record ChecklistCreatedIntegrationEvent(
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,
-    accountId: null,
+    accountId: AccountId,
     workspaceId: WorkspaceId,
     actorUserId: ActorUserId,
     causationId: CausationId,

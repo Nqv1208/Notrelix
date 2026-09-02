@@ -1,5 +1,6 @@
 namespace Notrelix.Application.Events.WorkManagement;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("work-management.board-item-member-assigned", Version = 1)]
 public sealed record BoardItemMemberAssignedIntegrationEvent(
     Guid EventId,

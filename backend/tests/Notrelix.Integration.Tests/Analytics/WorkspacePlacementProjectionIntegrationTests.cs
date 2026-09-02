@@ -53,10 +53,15 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
     }
 
     private static BoardItemMovedIntegrationEvent MovedEvent(
-        Guid workspaceId, Guid itemId, Guid boardId, Guid groupId, DateTimeOffset occurredAt) =>
+        Guid accountId, Guid workspaceId, Guid itemId, Guid boardId, Guid groupId, DateTimeOffset occurredAt) =>
         new(
-            Guid.CreateVersion7(), itemId, boardId, workspaceId,
-            OldGroupId: Guid.CreateVersion7(), NewGroupId: groupId,
+            EventId: Guid.CreateVersion7(),
+            AccountId: accountId,
+            ItemId: itemId,
+            BoardId: boardId,
+            WorkspaceId: workspaceId,
+            OldGroupId: Guid.CreateVersion7(),
+            NewGroupId: groupId,
             CorrelationId: Guid.CreateVersion7(),
             OccurredAt: occurredAt);
 
@@ -188,7 +193,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var consumer = new BoardItemMovedPlacementConsumer(
             service, projectionSourceMock.Object, NullLogger<BoardItemMovedPlacementConsumer>.Instance);
         var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemMovedIntegrationEvent>>();
-        consumeContext.SetupGet(c => c.Message).Returns(MovedEvent(workspaceId, itemId, boardId, groupId, Now));
+        consumeContext.SetupGet(c => c.Message).Returns(MovedEvent(accountId, workspaceId, itemId, boardId, groupId, Now));
         consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
 
         await consumer.Consume(consumeContext.Object);

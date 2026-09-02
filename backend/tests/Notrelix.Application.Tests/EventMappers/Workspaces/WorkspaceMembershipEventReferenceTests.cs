@@ -53,7 +53,8 @@ public class WorkspaceMembershipEventReferenceTests
         var integrationEvent = mapper.Map(domainEvent);
 
         integrationEvent.Should().NotBeNull();
-        integrationEvent!.WorkspaceId.Should().Be(domainEvent.WorkspaceId);
+        integrationEvent!.AccountId.Should().Be(domainEvent.AccountId);
+        integrationEvent.WorkspaceId.Should().Be(domainEvent.WorkspaceId);
         integrationEvent.UserId.Should().Be(domainEvent.UserId);
         integrationEvent.Role.Should().Be(domainEvent.Role.ToString());
         integrationEvent.CorrelationId.Should().Be(domainEvent.EventId);
@@ -64,9 +65,11 @@ public class WorkspaceMembershipEventReferenceTests
     public void WorkspaceMemberAddedEvent_CarriesEnvelopeIdentity()
     {
         var eventId = Guid.CreateVersion7();
+        var accountId = Guid.CreateVersion7();
         var correlationId = Guid.CreateVersion7();
         var integrationEvent = new WorkspaceMemberAddedIntegrationEvent(
             EventId: eventId,
+            AccountId: accountId,
             WorkspaceId: Guid.CreateVersion7(),
             UserId: Guid.CreateVersion7(),
             Role: "Member",
@@ -76,6 +79,7 @@ public class WorkspaceMembershipEventReferenceTests
             OccurredAt: DateTimeOffset.UtcNow);
 
         integrationEvent.EventId.Should().Be(eventId);
+        integrationEvent.AccountId.Should().Be(accountId);
         integrationEvent.CorrelationId.Should().Be(correlationId);
         integrationEvent.MessageName.Should().Be("workspace.member.added");
         integrationEvent.SchemaVersion.Should().Be(1);
