@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Accounts.Members.Services;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
@@ -11,6 +12,7 @@ using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
 using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
 using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
@@ -99,7 +101,9 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<IAccountAccessEvaluator, AccountAccessEvaluator>();
         services.AddScoped<ITenantBootstrapStore, TenantBootstrapStore>();
-        services.AddScoped<IAccessGrantProjectionService, AccessGrantProjectionService>();
+        services.AddScoped<AccessGrantProjectionService>();
+        services.AddScoped<IAccountGrantProjectionService, AccountGrantProjectionServiceAdapter>();
+        services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
         services.AddScoped<IActorLookupService, ActorLookupService>();

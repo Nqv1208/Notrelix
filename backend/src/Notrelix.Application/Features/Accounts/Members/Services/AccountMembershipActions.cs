@@ -14,9 +14,9 @@ namespace Notrelix.Application.Features.Accounts.Members.Services;
 public sealed class AccountMembershipActions : IAccountMembershipActions
 {
     private readonly IAccountDbContext _context;
-    private readonly IAccessGrantProjectionService _grantProjection;
+    private readonly IAccountGrantProjectionService _grantProjection;
 
-    public AccountMembershipActions(IAccountDbContext context, IAccessGrantProjectionService grantProjection)
+    public AccountMembershipActions(IAccountDbContext context, IAccountGrantProjectionService grantProjection)
     {
         _context = context;
         _grantProjection = grantProjection;

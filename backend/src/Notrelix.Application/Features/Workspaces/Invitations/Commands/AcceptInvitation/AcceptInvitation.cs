@@ -4,6 +4,7 @@ using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Accounts.Public.Queries;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 
@@ -29,7 +30,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IAccessGrantProjectionService _grantProjection;
+    private readonly IWorkspaceGrantProjectionService _grantProjection;
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -39,7 +40,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         IOneTimeTokenService oneTimeTokenService,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IAccessGrantProjectionService grantProjection)
+        IWorkspaceGrantProjectionService grantProjection)
     {
         _workspaceContext = workspaceContext;
         _identityUserFacts = identityUserFacts;

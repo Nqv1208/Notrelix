@@ -71,7 +71,7 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
             NullLogger<EfRequestDataSession>.Instance);
         var actions = new AccountMembershipActions(
             context,
-            new AccessGrantProjectionService(context));
+            new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
         return (session, context, actions);
     }
 

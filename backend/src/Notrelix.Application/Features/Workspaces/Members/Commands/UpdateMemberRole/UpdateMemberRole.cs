@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;
 
@@ -18,13 +19,13 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IAccessGrantProjectionService _grantProjection;
+    private readonly IWorkspaceGrantProjectionService _grantProjection;
 
     public UpdateMemberRoleCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IAccessGrantProjectionService grantProjection)
+        IWorkspaceGrantProjectionService grantProjection)
     {
         _context = context;
         _requestContext = requestContext;

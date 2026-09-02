@@ -26,7 +26,7 @@ public class AccountMembershipActionsTests
     }
 
     private AccountMembershipActions CreateSut(TestAccountDbContext context)
-        => new(context, Mock.Of<IAccessGrantProjectionService>());
+        => new(context, Mock.Of<IAccountGrantProjectionService>());
 
     private static Account CreateAccount(AccountStatus status, Guid id)
     {

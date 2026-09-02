@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Accounts.Members.Services;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 
@@ -12,9 +13,9 @@ namespace Notrelix.Application.Features.Accounts.Provisioning;
 public sealed class AccountProvisioningService : IAccountProvisioningService
 {
     private readonly IAccountDbContext _context;
-    private readonly IAccessGrantProjectionService _grantProjection;
+    private readonly IAccountGrantProjectionService _grantProjection;
 
-    public AccountProvisioningService(IAccountDbContext context, IAccessGrantProjectionService grantProjection)
+    public AccountProvisioningService(IAccountDbContext context, IAccountGrantProjectionService grantProjection)
     {
         _context = context;
         _grantProjection = grantProjection;

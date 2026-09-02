@@ -9,6 +9,7 @@ using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Accounts.Members.Services;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
@@ -50,7 +51,7 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<IOneTimeTokenService> OneTimeTokenServiceMock = new();
     protected readonly Mock<IIntegrationEventCollector> IntegrationEventCollectorMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();
-    protected readonly Mock<IAccessGrantProjectionService> GrantProjectionMock = new();
+    protected readonly Mock<IAccountGrantProjectionService> GrantProjectionMock = new();
     protected readonly Mock<ILogger<LoginCommandHandler>> LoginLoggerMock = new();
     protected readonly Mock<ILogger<LogoutCommandHandler>> LogoutLoggerMock = new();
     protected readonly Mock<ILogger<ForgotPasswordCommandHandler>> ForgotPasswordLoggerMock = new();

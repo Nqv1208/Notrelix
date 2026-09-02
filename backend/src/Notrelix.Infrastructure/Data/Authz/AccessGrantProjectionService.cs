@@ -8,7 +8,7 @@ namespace Notrelix.Infrastructure.Data.Authz;
 /// Operates on the same scoped ApplicationDbContext as the requesting
 /// handler, so granted rows commit atomically with the membership change.
 /// </summary>
-public sealed class AccessGrantProjectionService : IAccessGrantProjectionService
+public sealed class AccessGrantProjectionService
 {
     private const string MembershipActive = "Active";
     private const string AccountSourceContext = "Account";

@@ -88,7 +88,7 @@ public class PublicSemanticContractArchitectureTests
         // outside the exact approved technical allowlist fails even for its
         // own producer.
         var violation = ClassifyPurity(
-            typeof(Notrelix.Application.Common.Tenancy.IAccessGrantProjectionService),
+            typeof(Notrelix.Application.Common.Entitlements.FeatureCode),
             ownProducer: null);
 
         violation.Should().NotBeNull("arbitrary Common business semantics must not enter Public contracts");

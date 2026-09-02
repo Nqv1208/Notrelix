@@ -74,7 +74,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             providerClient.Object,
             optionsProvider.Object,
             context,
-            new AccountProvisioningService(context, new AccessGrantProjectionService(context)),
+            new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))),
             sessionIssuer.Object,
             Mock.Of<IMfaChallengeStore>(),
             passwordHasher.Object,
