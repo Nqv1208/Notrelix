@@ -1636,9 +1636,21 @@ existing responsibility conflicts semantically → stop + explicit migration dec
 new parallel authorization stack → forbidden
 ```
 
+Status: DONE. Single canonical decision path verified: `AccessPolicyEngine` (pure evaluator,
+`Application/Common/Security/AccessPolicyEngine.cs`) + `AccessControlBehavior` (pipeline) +
+`PostgresAccessFactsProvider` + `AccessFactsQuery` + `IRequirePermission` (100+ adopters across
+WorkManagement/Workspaces/Governance/Documents/Automation). No second
+AuthorizationBehavior/PermissionService stack exists (WG-PERM-001 established in Phase 7). No
+`ResourceType` symbol exists — `ResourceKind` is canonical (WG-AUTHZ-004 note).
+
 ## 93. WG-AUTHZ-002 — production registration
 
 Prove central behavior is registered in production DI.
+
+Status: DONE. `IAccessPolicyEvaluator → AccessPolicyEngine` singleton (`Application/DependencyInjection.cs:44`);
+`IResourceLocator`, `IAccessFactsProvider → PostgresAccessFactsProvider`
+(`Infrastructure/DependencyInjection/PersistenceRegistration.cs:97-107`); pipeline behaviors registered
+in `Application/DependencyInjection.cs:32-38`.
 
 ## 94. WG-AUTHZ-003 — pipeline ordering
 
@@ -1653,6 +1665,11 @@ logging
 ```
 
 Do not reorder unless architecture evidence requires it.
+
+Status: DONE. Order (outermost→innermost): ExceptionMapping → ApplicationTracing →
+RequestContract → ExecutionContext → DataSession → **AccessControl** → Idempotency
+(`Application/DependencyInjection.cs:32-38`). Authorization runs inside the data-session stage because
+`PostgresAccessFactsProvider` requires an open connection/transaction. No reorder performed.
 
 ## 95. WG-AUTHZ-004 — canonical decision inputs
 
@@ -1669,6 +1686,12 @@ Action
 
 using current abstractions.
 
+Status: DONE. The engine receives Actor/Account/Workspace/resource context via `AccessFacts`
+(`AccountMemberRole`, `WorkspaceMemberRole`, `ResourceExists`, `ResourceAudience`, `ResourceMemberRole`,
+`HasExplicitResourcePermission`) and the requested `Action` via `IRequirePermission`. Canonical resource
+category name is `ResourceKind` (`Domain/SharedKernel/ResourceKind.cs`); no `ResourceType` symbol exists
+(WG-AUTHZ-004 clarified).
+
 ## 96. WG-AUTHZ-005 — effective decision evaluator
 
 Connect:
@@ -1682,9 +1705,19 @@ policy/resource permission where supported
 
 to one decision path.
 
+Status: DONE. `AccessPolicyEngine.EvaluatePermission` composes membership (role null → deny), role
+(Owner short-circuit; WorkspaceAdmin administrative baseline), governance `permission_rules` (min-priority
+band, deny-over-allow), and resource permission (Board `ResourceMemberRole` / `HasExplicitResourcePermission`)
+into a single deterministic decision path.
+
 ## 97. WG-AUTHZ-006 — fail closed
 
 Missing/invalid context or evaluator failure must not grant access.
+
+Status: DONE. `AccessControlBehavior` maps only `Allowed` to `next()`; every other kind throws
+(`AccessControlBehavior.cs:50-68`). Missing Account/Workspace context → `SecurityMisconfiguration`
+(`AccessPolicyEngine.cs:24-38`); non-member → Forbidden; `ResourceLocator` unknown kind → null → deny;
+`PostgresAccessFactsProvider` throws on missing connection/transaction/row. No `try/catch → Allow` exists.
 
 ## 98. WG-AUTHZ-007 — unauthorized handler side effect proof
 
@@ -1694,6 +1727,11 @@ Representative protected handler:
 authorization denied
 → handler protected work does not commit
 ```
+
+Status: DONE. Existing integration proof: `MemberApiToken_SameWorkspace_PassesBootstrap_ButGovernanceDeniesManageWorkspaceSettings`
+(`Auth/ApiTokenHttpFlowTests.cs`) proves the protected pipeline denies a Member before the workspace-management
+side effect. Denial happens in `AccessControlBehavior` before `next()`, so the handler is never invoked on
+denial (no commit path).
 
 ## 99. WG-AUTHZ-008 — role-check debt inventory
 
@@ -1710,11 +1748,22 @@ defer with source debt
 
 Do not mass-rewrite without semantic proof.
 
+Status: DONE (focused — no mass rewrite). All handler-local role checks are **registered business
+invariants**, enforced by `HandlerAuthorizationBypassArchitectureTests` exception registry: `TransferOwnership`
+(current-actor ownership handover), member handlers `RemoveMember`/`SuspendMember`/`UpdateMemberRole`
+(last-owner counts), `ActivateMember`, `CreateWorkspace` (bootstrap), `ProvisionPersonalWorkspaceCommand`
+(system bootstrap). `http`/API layer does scope-gating only. No unregistered role-check debt found.
+
 ## 100. WG-AUTHZ-009 — API-only checks
 
 Where endpoint has business permission logic:
 
 move declaration/enforcement to approved Application path while preserving transport adaptation.
+
+Status: DONE. API layer is scope-gating only via `EndpointAccessAttribute` (`PublicEndpoint`/`AuthenticatedEndpoint`/
+`AccountScopedEndpoint`/`WorkspaceScopedEndpoint`/`ResourceScopedEndpoint`/`AdminEndpoint`/`InternalEndpoint`);
+`HttpRequestContextMiddleware` explicitly delegates business authorization to the Application layer. Endpoints
+(e.g. `UpdateMemberRoleEndpoint`) are thin and send commands; no endpoint re-implements business permission logic.
 
 ## 101. WG-AUTHZ-010 — background actor
 
@@ -1724,9 +1773,38 @@ verify explicit principal/authorization semantics.
 
 No global bypass.
 
+Status: DONE. Background consumers establish explicit principal/tenant context via `TenantContextConsumeFilter`
+(`SetAccount`/`SetWorkspace`/`SetSystem`); system-principal commands (`ProvisionPersonalWorkspaceCommand`,
+`SendWelcomeEmailCommand`) implement `ISystemInternalRequest` and are guarded by architecture tests
+(`SystemInternalRequests_Must_Not_Be_Anonymous` / `..._RequireUserPermission` / `..._Exposed_By_Api_Endpoints`).
+Delivery lease commits only after handler success (`ConsumerHost`). No implicit global bypass.
+
 ## 102. Phase 9 exit
 
 Authorization integration reaches D4/D5 for representative resources.
+
+Status: CLOSED.
+
+```text
+WG-AUTHZ-001 inventory central authorization path  DONE  (single AccessPolicyEngine path)
+WG-AUTHZ-002 production registration              DONE  (DI registration verified)
+WG-AUTHZ-003 pipeline ordering                     DONE  (authz inside data-session stage; no reorder)
+WG-AUTHZ-004 canonical decision inputs            DONE  (ResourceKind canonical; no ResourceType symbol)
+WG-AUTHZ-005 effective decision evaluator         DONE  (membership+role+permission+resource → one path)
+WG-AUTHZ-006 fail closed                          DONE  (AccessControlBehavior; default-deny tail)
+WG-AUTHZ-007 unauthorized side-effect proof       DONE  (pipeline denies before handler/commit)
+WG-AUTHZ-008 role-check debt inventory            DONE  (only registered business invariants; no mass rewrite)
+WG-AUTHZ-009 API-only checks                      DONE  (API is scope-gating only)
+WG-AUTHZ-010 background actor                     DONE  (explicit system/tenant principal; guards; no bypass)
+
+Feature fix: WorkspaceAdmin administrative baseline implemented in AccessPolicyEngine
+ (ManageWorkspace/InviteMember/ChangeMemberRole/RemoveMember/ManageWorkspaceSettings/CreateBoard at
+ Workspace scope for Admin). Board management remains resource-owned (Phase 8); DeleteWorkspace Owner-only.
+
+Evidence: Application.Tests 588 green; Integration.Tests 357 green (7 new Admin-baseline characterization
+ tests); Architecture.Tests 410 green. Full backend.slnx build 0 errors (SDK 9.0.317).
+ Phase 9 CLOSED. Phase 10 (WorkManagement handshake, PR-WG-07) may open.
+```
 
 # Phase 10 — WorkManagement handshake
 

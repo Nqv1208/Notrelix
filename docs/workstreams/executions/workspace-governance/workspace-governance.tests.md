@@ -1346,6 +1346,14 @@ WGREQ080
 
 Representative command must not combine a second handler-local permission decision after pipeline allow/deny.
 
+Status: Evidence in `AccessPolicyEngineCharacterizationTests` (Integration, Baselines) — all decision
+input (workspace role, board role, explicit resource permission) is resolved inside the single
+`AccessPolicyEngine` path; no handler-local second decision. New baseline tests:
+- `WorkspaceAdminCanManageWorkspace` / `WorkspaceAdminCanInviteMember` / `WorkspaceAdminCanChangeMemberRole` — Admin allowed at Workspace scope
+- `WorkspaceMemberCannotAdministerWorkspace` / `WorkspaceGuestCannotAdministerWorkspace` — Member/Guest denied
+- `WorkspaceAdminCannotManageBoardWithoutBoardAuthority` — Admin not granted board management (resource-owned, Phase 8)
+- `WorkspaceAdminCannotDeleteWorkspace` — Owner-only preserved
+
 ## 87. WG-TST-AUTHZ-APP-002 — valid authentication still requires authorization
 
 Requirements:
@@ -1430,6 +1438,11 @@ Critical P2 gate test.
 
 Given denial
 Then handler protected state is unchanged.
+
+Status: Evidence — `AccessControlBehavior` maps only `Allowed` to `next()`; all other
+kinds throw before the handler runs (no commit path). Integration proof:
+`MemberApiToken_SameWorkspace_PassesBootstrap_ButGovernanceDeniesManageWorkspaceSettings`
+(`Auth/ApiTokenHttpFlowTests.cs`) denies a Member before the workspace-management side effect.
 
 ## 94. WG-TST-PIPE-ARCH-001 — handler-local role check prohibited as canonical enforcement
 

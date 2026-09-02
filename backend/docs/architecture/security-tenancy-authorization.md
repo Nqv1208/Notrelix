@@ -385,8 +385,9 @@ The current canonical decision path is `AccessPolicyEngine.EvaluatePermission` (
      else any Allow → Allow
 5. no rules / band empty → fall through to Account-scope or Workspace/Resource-scope handling
    (e.g. Account Admin baseline for ViewWorkspace/CreateWorkspace; DeleteWorkspace always denies;
-    Board-specific resource visibility + built-in role baseline (WG-ROLE-DEC-001) + Observer
-    restriction; tail default to ViewWorkspace/ViewBoard/ViewMembers only, else Deny).
+     WorkspaceAdmin administrative baseline (WG-ROLE-DEC-001); Board-specific resource visibility
+     + built-in role baseline + Observer restriction; tail default to ViewWorkspace/ViewBoard/
+     ViewMembers only, else Deny).
 ```
 
 ### Board built-in role baseline (WG-ROLE-DEC-001)
@@ -413,6 +414,35 @@ A plain Workspace member does **not** gain Board-management authority from Works
 (this replaces the previous broad Board grant). WorkspaceRole is a role class, not a wildcard over
 Board-management actions; Board authority is owned by WorkManagement and consumed from the
 transport-neutral Phase 6 facts (`ResourceMemberRole`, `HasExplicitResourcePermission`).
+
+### WorkspaceAdmin administrative baseline (WG-ROLE-DEC-001)
+
+For **Workspace scope** (`ApplicationScopeKind.Workspace`, resource `workspaces.workspace`), a
+Workspace **Admin** (role class = administrative) may perform workspace-scope administration without
+a custom `permission_rules` row:
+
+```text
+WorkspaceAdmin administrative class:
+    ManageWorkspace, InviteMember, ChangeMemberRole, RemoveMember, ManageWorkspaceSettings,
+    CreateBoard
+    → allowed for role == Admin at Workspace scope
+    otherwise (Member/Guest) → falls through to default denial
+```
+
+Boundary guarantees:
+
+```text
+not admin-granted (resource-owned, Phase 8):  ManageBoard, ManageBoardPermission, CreateField,
+                                               UpdateField, DeleteField, ShareBoardView,
+                                               CreateBoardView, UpdateBoardView → board authority required
+Owner-only (never Admin):                     DeleteWorkspace → always denied for non-Owner
+Member baseline (unchanged):                  ViewWorkspace, ViewBoard, ViewMembers
+PermissionRule precedence / default-deny:     preserved (a custom Deny rule still overrides; WG-PERM-005)
+```
+
+The grant is scoped to `descriptor.Scope == Workspace`, so it never leaks into Resource/board scope.
+`CreateBoard` is workspace-scoped board creation (administrative); the Board it creates is then
+governed by the resource-owned Board baseline above.
 
 Facts feeding the engine are produced by the single canonical SQL authority `AccessFactsQuery`:
 
