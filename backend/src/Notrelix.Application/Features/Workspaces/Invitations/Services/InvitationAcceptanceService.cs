@@ -94,8 +94,8 @@ public sealed class InvitationAcceptanceService : IInvitationAcceptanceService
             return Result<AcceptInvitationResultDto>.Failure(
                 "This invitation belongs to a different email address.");
 
-var workspace = await _workspaceContext.Workspaces
-            .FirstOrDefaultAsync(w => w.Id == invitation.WorkspaceId, ct);
+        var workspace = await _workspaceContext.Workspaces
+                    .FirstOrDefaultAsync(w => w.Id == invitation.WorkspaceId, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), invitation.WorkspaceId);

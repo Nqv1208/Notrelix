@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Infrastructure.Data.ReadPorts.WorkManagement;

@@ -1,7 +1,5 @@
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
-using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
 

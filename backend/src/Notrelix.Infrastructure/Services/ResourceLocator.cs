@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
@@ -62,19 +61,19 @@ public sealed class ResourceLocator : IResourceLocator
             case "work-management.label":
             case "work-management.checklist":
             case "work-management.checklist-item":
-            {
-                var facts = await _resourceFactsProvider.ResolveAsync(resource, actorUserId, cancellationToken);
-                if (facts is null || facts.AccountId == Guid.Empty)
                 {
-                    return null;
-                }
+                    var facts = await _resourceFactsProvider.ResolveAsync(resource, actorUserId, cancellationToken);
+                    if (facts is null || facts.AccountId == Guid.Empty)
+                    {
+                        return null;
+                    }
 
-                return new ResourceLocation(
-                    resource.Kind,
-                    facts.ResourceId,
-                    facts.AccountId,
-                    facts.WorkspaceId);
-            }
+                    return new ResourceLocation(
+                        resource.Kind,
+                        facts.ResourceId,
+                        facts.AccountId,
+                        facts.WorkspaceId);
+                }
         }
 
         return resource.Kind.Value switch

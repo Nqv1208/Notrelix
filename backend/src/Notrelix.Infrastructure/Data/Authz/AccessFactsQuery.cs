@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Security;
-
 namespace Notrelix.Infrastructure.Data.Authz;
 
 /// <summary>

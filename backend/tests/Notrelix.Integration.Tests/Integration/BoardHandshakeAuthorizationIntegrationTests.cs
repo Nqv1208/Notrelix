@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Requests.Execution;

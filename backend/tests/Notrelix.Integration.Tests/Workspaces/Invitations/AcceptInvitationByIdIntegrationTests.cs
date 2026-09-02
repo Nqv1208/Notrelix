@@ -24,7 +24,6 @@ using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Workspaces.Invitations;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data;
