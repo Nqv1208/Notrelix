@@ -1,5 +1,8 @@
+using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using MassTransit;
+using Notrelix.Application.Common.Realtime;
+using Notrelix.Application.Events.Accounts;
 using Notrelix.Application.Events.Collaboration;
 using Notrelix.Application.Events.Documents;
 using Notrelix.Application.Events.Identity;
@@ -138,6 +141,119 @@ public class TenantContextConsumeFilterScopedEventTests
             OccurredAt: Now));
     }
 
+    [Fact]
+    public async Task WorkspaceEvent_WithNullAccountId_IsRejectedBeforeConsumer()
+    {
+        await AssertRejectedAsync(new PageCreatedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: null,
+            PageId: Guid.CreateVersion7(),
+            WorkspaceId: Guid.CreateVersion7(),
+            Title: "Invalid page",
+            ParentId: null,
+            CorrelationId: Guid.CreateVersion7(),
+            OccurredAt: Now));
+    }
+
+    [Fact]
+    public async Task WorkspaceEvent_WithEmptyAccountId_IsRejectedBeforeConsumer()
+    {
+        await AssertRejectedAsync(new PageCreatedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: Guid.Empty,
+            PageId: Guid.CreateVersion7(),
+            WorkspaceId: Guid.CreateVersion7(),
+            Title: "Invalid page",
+            ParentId: null,
+            CorrelationId: Guid.CreateVersion7(),
+            OccurredAt: Now));
+    }
+
+    [Fact]
+    public async Task WorkspaceEvent_WithNullWorkspaceId_IsRejectedBeforeConsumer()
+    {
+        await AssertRejectedAsync(new PageCreatedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: Guid.CreateVersion7(),
+            PageId: Guid.CreateVersion7(),
+            WorkspaceId: null,
+            Title: "Invalid page",
+            ParentId: null,
+            CorrelationId: Guid.CreateVersion7(),
+            OccurredAt: Now));
+    }
+
+    [Fact]
+    public async Task WorkspaceEvent_WithEmptyWorkspaceId_IsRejectedBeforeConsumer()
+    {
+        await AssertRejectedAsync(new PageCreatedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: Guid.CreateVersion7(),
+            PageId: Guid.CreateVersion7(),
+            WorkspaceId: Guid.Empty,
+            Title: "Invalid page",
+            ParentId: null,
+            CorrelationId: Guid.CreateVersion7(),
+            OccurredAt: Now));
+    }
+
+    [Fact]
+    public async Task AccountEvent_WithNullAccountId_IsRejectedBeforeConsumer()
+    {
+        await AssertRejectedAsync(new AccountCreatedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: null,
+            OwnerUserId: Guid.CreateVersion7(),
+            Name: "Invalid account",
+            CorrelationId: Guid.CreateVersion7(),
+            OccurredAt: Now));
+    }
+
+    [Fact]
+    public async Task AccountEvent_WithEmptyAccountId_IsRejectedBeforeConsumer()
+    {
+        await AssertRejectedAsync(new AccountCreatedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: Guid.Empty,
+            OwnerUserId: Guid.CreateVersion7(),
+            Name: "Invalid account",
+            CorrelationId: Guid.CreateVersion7(),
+            OccurredAt: Now));
+    }
+
+    [Fact]
+    public async Task NoneEvent_WithTenantValues_StillRunsAsSystem()
+    {
+        var change = new RealtimeResourceChangedV1(
+            eventId: Guid.CreateVersion7(),
+            accountId: Guid.CreateVersion7(),
+            workspaceId: Guid.CreateVersion7(),
+            actorUserId: Guid.CreateVersion7(),
+            correlationId: Guid.CreateVersion7(),
+            causationId: null,
+            occurredAt: Now,
+            topicNamespace: "work-management",
+            resourceKind: "board-item",
+            resourceId: Guid.CreateVersion7(),
+            streamKey: "board-item:test",
+            streamVersion: 1,
+            changeKind: "updated",
+            payloadContract: "test",
+            payload: JsonDocument.Parse("{}").RootElement);
+
+        await AssertSystemTenantAsync(change);
+    }
+
+    [Fact]
+    public async Task UnclassifiedIntegrationEvent_IsRejectedBeforeConsumer()
+    {
+        await AssertRejectedAsync(new UnclassifiedIntegrationEvent(
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7()));
+    }
+
     private static async Task AssertWorkspaceTenantAsync<T>(T integrationEvent, Guid accountId, Guid workspaceId)
         where T : class
     {
@@ -168,6 +284,27 @@ public class TenantContextConsumeFilterScopedEventTests
         observed.IsSystemContext.Should().BeTrue();
     }
 
+    private static async Task AssertRejectedAsync<T>(T integrationEvent)
+        where T : class
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        var filter = new TenantContextConsumeFilter<T>(tenant, NullLogger<TenantContextConsumeFilter<T>>.Instance);
+
+        var context = new Mock<ConsumeContext<T>>();
+        context.SetupGet(c => c.Message).Returns(integrationEvent);
+
+        var pipe = new Mock<IPipe<ConsumeContext<T>>>();
+
+        var act = () => filter.Send(context.Object, pipe.Object);
+
+        await act.Should().ThrowAsync<IntegrationEventTenantEnvelopeException>();
+        pipe.Verify(p => p.Send(It.IsAny<ConsumeContext<T>>()), Times.Never);
+        tenant.AccountId.Should().BeNull();
+        tenant.WorkspaceId.Should().BeNull();
+        tenant.IsSystemContext.Should().BeFalse();
+    }
+
     private static async Task<(Guid? Account, Guid? Workspace, bool IsSystemContext)> RunFilterAsync<T>(T integrationEvent)
         where T : class
     {
@@ -196,4 +333,17 @@ public class TenantContextConsumeFilterScopedEventTests
 
         return (observedAccount, observedWorkspace, observedSystemContext);
     }
+
+    public sealed record UnclassifiedIntegrationEvent(
+        Guid EventId,
+        Guid? AccountId,
+        Guid? WorkspaceId,
+        Guid CorrelationId)
+        : IntegrationEvent(
+            eventId: EventId,
+            messageName: "test.unclassified",
+            schemaVersion: 1,
+            correlationId: CorrelationId,
+            accountId: AccountId,
+            workspaceId: WorkspaceId);
 }
