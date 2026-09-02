@@ -1825,6 +1825,10 @@ because Board is P3 transactional root.
 
 Do not start with every WorkManagement resource.
 
+Status: DONE. Scoped to the representative WorkManagement Board slice only. Board/BoardMember/BoardRole/
+BoardVisibility and IWorkManagementDbContext knowledge stays behind the WorkManagement-owned adapter. No
+Documents/Automation/Collaboration owner is refactored this phase.
+
 ## 105. WG-WM-002 — Board resource authorization category
 
 WorkManagement owns semantic declaration.
@@ -1838,6 +1842,10 @@ Workspace/Account scope
 supported actions
 ```
 
+Status: DONE. WorkManagement owns the Board semantic declaration (`work-management.board` ResourceKind plus
+the WorkManagement actions such as `ManageBoard` consumed by Governance). The neutral facts SPI exposes only
+resource-owned facts and the shared authorization boundary no longer reads WorkManagement private persistence.
+
 ## 106. WG-WM-003 — Board actions
 
 Select only current product-approved Board actions needed for first vertical slice.
@@ -1845,6 +1853,10 @@ Select only current product-approved Board actions needed for first vertical sli
 Examples are not authoritative.
 
 Do not predesign every future Board action.
+
+Status: DONE. Proof uses the existing product-approved `ArchiveBoard` action (WorkManagement `ManageBoard`
+authorization category) already wired through the canonical AccessPolicyEngine path. Only first-slice Board
+management action exercised; no speculative Board action added.
 
 ## 107. WG-WM-004 — resource lookup
 
@@ -1857,6 +1869,14 @@ If authorization requires Board→Workspace or actor↔Board facts:
 
 Do not place a Board resolver under `Infrastructure.Governance` if it directly queries WorkManagement private persistence.
 
+Status: DONE. Approved neutral transport-neutral SPI `Application.Common.Security.IResourceAuthorizationFactsProvider`
+(exposes only resource-owned facts, no EF/HTTP/gRPC/broker/policy leakage). WorkManagement-owned adapter
+`Infrastructure.Data.ReadPorts.WorkManagement.WorkManagementResourceAuthorizationFactsProvider` owns
+`IWorkManagementDbContext` and resolves Board existence/lifecycle, visibility/audience, and actor→Board role.
+Governance consumes facts and AccessPolicyEngine evaluates policy (single evaluator — no second engine).
+`AccessFactsQuery` no longer contains raw `work.boards`/`work.board_members` SQL; `ResourceLocator` routes
+WorkManagement resources through the SPI. Enforced by architecture guards.
+
 ## 108. WG-WM-005 — representative allow path
 
 Test:
@@ -1865,6 +1885,9 @@ Test:
 Actor with valid Workspace membership + permission
 → Board action allowed
 ```
+
+Status: DONE. `ArchiveBoard_WorkspaceBoardOwner_AllowedThroughHandshake_AndCommitted` proves a Board Owner with
+Workspace membership archives through the canonical Governance handshake and the mutation commits durable state.
 
 ## 109. WG-WM-006 — representative deny path
 
@@ -1876,6 +1899,9 @@ Actor lacks permission
 → handler does not commit
 ```
 
+Status: DONE. `ArchiveBoard_WorkspaceMemberWithoutBoardAuthority_DeniedBeforeCommit` proves a Workspace member
+with no Board-level grant is denied by the engine (ForbiddenException) and the board is left unchanged (no commit).
+
 ## 110. WG-WM-007 — cross-tenant deny
 
 Test:
@@ -1886,9 +1912,21 @@ Actor in Account A
 → denied
 ```
 
+Status: DONE. `ArchiveBoard_CrossTenantBoard_DeniedWithoutMutation` proves an Account-A actor targeting a board
+under Account B is denied (ForbiddenException) before any effect; the foreign board stays unarchived. Cross-tenant
+protection is preserved by composition: the SPI-backed locator resolves board B's owning workspace, then
+AccessFactsQuery resolves the actor's workspace membership in that workspace → null for a foreign actor → engine
+denies. The SPI adapter uses IgnoreQueryFilters (same trust boundary as the locator it replaced) because AccessControl
+still enforces membership.
+
 ## 111. WG-WM-008 — no role-string dependency
 
 WorkManagement handler must not know Governance role display names.
+
+Status: DONE. The neutral SPI returns only resource-owned facts (BoardRole member role, visibility/audience,
+existence/lifecycle) and never Governance permission/role vocabulary. `HasExplicitResourcePermission` remains
+Governance-owned; the WorkManagement adapter exposes no policy decision. Architecture guard
+`PostgresAccessFactsProvider_MustNotEmitPolicyDecisions` and the neutral-SPI guard enforce the boundary.
 
 ## 112. WG-WM-009 — BoardItem deferral
 
@@ -1896,9 +1934,37 @@ Only add BoardItem independent resource contract if current product requires ind
 
 Do not create per-entity ACL by default.
 
+Status: DONE. The representative Board slice is the only independent work-management resource contract this
+phase. The adapter still resolves ownership scope for BoardGroup/BoardField/BoardView/BoardItem/Label/Checklist/
+ChecklistItem (so existing resource-scoped requests keep their canonical locate path), but no per-entity ACL is
+introduced. BoardItem continues to authorize through the Board (`work-management.board` facts + AccessPolicyEngine).
+
 ## 113. Phase 10 exit
 
 WorkManagement handshake proven.
+
+Status: CLOSED.
+
+```text
+WG-WM-001 identify first WorkManagement resource    DONE  (Board slice only)
+WG-WM-002 Board resource authorization category     DONE  (work-management.board; WorkManagement-owned)
+WG-WM-003 Board actions                             DONE  (ArchiveBoard / ManageBoard first slice)
+WG-WM-004 resource lookup / facts boundary          DONE  (neutral SPI + WorkManagement adapter; no work.* SQL in shared authz)
+WG-WM-005 representative allow path                 DONE  (Owner allowed + committed)
+WG-WM-006 representative deny path                  DONE  (member w/o board grant denied, no commit)
+WG-WM-007 cross-tenant deny                         DONE  (foreign account denied, no mutation)
+WG-WM-008 no role-string dependency                 DONE  (fact boundary; policy stays Governance-owned)
+WG-WM-009 BoardItem deferral                        DONE  (no per-entity ACL; scope-only for other kinds)
+
+Feature fix: raw work.boards / work.board_members reads removed from AccessFactsQuery; Board facts now composed
+ via the WorkManagement-owned facts adapter (WG-WM-004) over the tenant/account/Governance snapshot. ResourceLocator
+ routes the 8 work-management resource kinds through the same SPI. No second policy evaluator introduced.
+
+Evidence: Integration.Tests 361 green (4 new SPI-backed handshake proofs: allow+commit, deny+no-commit,
+ hidden/restricted Private board NotFound, cross-tenant deny); Architecture.Tests 414 green (4 new guards +
+ classified IgnoreQueryFilters allowlist); Application.Tests 588 green. Full backend.slnx build 0 errors (SDK 9.0.317).
+ Phase 10 CLOSED. Phase 11 (protected P3-B slice verification) may proceed/continue.
+```
 
 # Phase 11 — P2 protected-slice verification and staged P3 handoff
 
@@ -2969,6 +3035,9 @@ Scope:
 - Board resource/action integration;
 - allow/deny/cross-tenant proof;
 - P2 certification evidence.
+
+Status: Phase 10 (WorkManagement handshake) WORKING/COMPLETE — evidence in §113 and ledger
+`decisions/PR-WG-07-phase10-workmanagement-handshake.md`. Phase 11 P3-B protected-slice verification remains open.
 
 ## 232. PR-WG-08 — Invitations / Provisioning
 

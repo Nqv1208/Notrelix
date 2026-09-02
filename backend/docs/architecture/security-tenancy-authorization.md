@@ -294,9 +294,10 @@ Current Application Security contracts (executable source evidence of centralize
 IRequirePermission        — request marker: PermissionAction Action + ResourceRef? Resource
 AccessPolicyEngine        — pure policy engine (architecture-tested: no DbContext / no IAccessFactsProvider)
 AccessFacts               — server-derived fact snapshot consumed by the engine
-AccessFactsQuery          — single canonical SQL authority producing AccessFacts
-PostgresAccessFactsProvider — Infrastructure adapter behind the facts snapshot
-ResourceLocator / IResourceLocator — approved scope-resolution read port (see §BE-SEC-011)
+AccessFactsQuery          — single canonical SQL authority producing AccessFacts (never reads WorkManagement private persistence)
+PostgresAccessFactsProvider — Infrastructure adapter behind the facts snapshot; composes neutral resource-owner facts
+IResourceAuthorizationFactsProvider — transport-neutral resource-owner facts SPI (see §BE-SEC-011 / WG-WM-004); WorkManagement-owned adapter
+ResourceLocator / IResourceLocator — approved scope-resolution read port (see §BE-SEC-011); WorkManagement kinds routed through the SPI
 ```
 
 Governance Domain owns the persistent permission vocabulary (`PermissionRule`, `PermissionAction`,
@@ -454,6 +455,13 @@ status = Active and inside starts_at/expires_at validity window
 scope pinned to the requested Workspace (Workspace scope or an in-workspace resource match)
 ```
 
+The Governance permission facts above come from `AccessFactsQuery`. Resource-**owner** facts — Board
+existence/lifecycle, visibility/audience, and actor→Board role for `work-management.board` — are not read from
+`work.boards`/`work.board_members` SQL in the shared query; they are composed by `PostgresAccessFactsProvider`
+from the transport-neutral resource-owner facts SPI (`IResourceAuthorizationFactsProvider`, WG-WM-004) whose
+WorkManagement-owned adapter owns `IWorkManagementDbContext`. `AccessPolicyEngine` still evaluates the single
+decision over the composed `AccessFacts`; no second engine exists.
+
 Because `account_id` and `workspace_id` are bound to the owning workspace/request scope, a rule in
 Workspace A can never authorize a request scoped to Workspace B (WG-PERM-003, tenant isolation). The
 `Action` originates from the server-side `IRequirePermission` declaration, never from client input;
@@ -591,15 +599,20 @@ authoritative server data through `IResourceLocator` (defined in
 - it resolves only the ownership tuple `(ResourceId, AccountId, WorkspaceId)`
   for a canonical `ResourceKind`;
 - it performs no authorization, no mutation, and no business logic;
-- it reads owner `DbContext`s directly so that ownership is established from
-  the same authoritative tables that own each resource.
+- WorkManagement resources are resolved through the transport-neutral
+  resource-owner facts SPI (`IResourceAuthorizationFactsProvider`, WG-WM-004)
+  whose WorkManagement-owned adapter reads `IWorkManagementDbContext`;
+- Documents/Collaboration/Governance/Automation reads remain owner-`DbContext`
+  direct reads this phase (WG-WM-001: Board-slice-only handshake).
 
 Per-context reads are concentrated in this single replaceable adapter
-(`BE-INF-026`): although it reads WorkManagement/Documents/Collaboration/
-Governance/Automation tables, it is not a WorkManagement business use case. It
+(`BE-INF-026`): it is not a WorkManagement business use case. It
 serves the cross-cutting scope resolution owned by the Application
 `ExecutionContextBehavior` (`BE-APP-014`). This is not precedent for new
-handler-local cross-context reads.
+handler-local cross-context reads. The WorkManagement adapter uses
+`IgnoreQueryFilters()` to identify the owning tenant before RLS context is
+established — the same trust boundary the direct read used — because
+`AccessControlBehavior` still enforces membership/visibility afterwards.
 
 Unknown resource kinds resolve to `null` so callers fail closed
 (`BE-SEC-012`).

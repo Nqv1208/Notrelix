@@ -2589,6 +2589,20 @@ no WorkManagement role-name check
 no Governance private WorkManagement DB access
 ```
 
+Evidence (Integration.Tests, real Postgres pipeline via `BoardHandshakeAuthorizationIntegrationTests`, using
+`ArchiveBoard` / `ManageBoard`):
+
+```text
+Board allow                   ArchiveBoard_WorkspaceBoardOwner_AllowedThroughHandshake_AndCommitted  (Owner + WS membership → allowed, committed)
+Board deny                    ArchiveBoard_WorkspaceMemberWithoutBoardAuthority_DeniedBeforeCommit  (WS member, no Board grant → denied, no commit)
+Board cross-tenant deny       ArchiveBoard_CrossTenantBoard_DeniedWithoutMutation                  (Account A actor → Board under Account B → denied, no mutation)
+hidden/restricted (Private)   ArchiveBoard_PrivateBoardNonMember_HiddenAsNotFound                  (non-member on Private board → NotFoundException, no commit)
+no Governance private WM DB   Architecture: SharedAuthzSql_MustNotReadWorkManagementTablesDirectly (no work.boards/work.board_members in AccessFactsQuery)
+no role-name Check            Architecture: ResourceAuthorizationSpi_MustRemainTransportAndPersistenceNeutral + PostgresAccessFactsProvider_MustNotEmitPolicyDecisions
+```
+
+Integration.Tests 361 green (4 new Board-handshake proofs), Architecture.Tests 414 green (4 new guards).
+
 ## 191. WG-TST-P2-CORE-007 — migration/startup
 
 If schema changed:
