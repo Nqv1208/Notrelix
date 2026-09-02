@@ -1,9 +1,18 @@
+using Notrelix.Application.Common.Security;
+
 namespace Notrelix.Infrastructure.Data.Authz;
 
 /// <summary>
 /// Canonical AccessFacts SQL authority: the provider executes EXACTLY this text and
 /// performance evidence explains EXACTLY this text. Single source of truth —
 /// never fork the query for tests.
+///
+/// The query owns tenant/account/workspace/user/subscription/feature/operational facts and
+/// the Governance-owned facts (permission_rules, resource_permissions). Resource-owner facts
+/// that were previously embedded here for <c>work-management.board</c> (ResourceExists,
+/// ResourceAudience, ResourceMemberRole) are now resolved by the resource-owner SPI
+/// (<see cref="IResourceAuthorizationFactsProvider"/>) and composed by
+/// <see cref="PostgresAccessFactsProvider"/> — no WorkManagement private tables are read here.
 /// </summary>
 public static class AccessFactsQuery
 {
@@ -20,19 +29,12 @@ public static class AccessFactsQuery
              WHERE wm.account_id = @account_id AND wm.workspace_id = @workspace_id
                AND wm.user_id = @user_id AND wm.status = 'Active' LIMIT 1),
           CASE
-            WHEN @resource_type = 'work-management.board' THEN EXISTS (
-              SELECT 1 FROM work.boards b WHERE b.id = @resource_id
-                AND b.workspace_id = @workspace_id AND b.deleted_at IS NULL AND b.is_archived = false)
             WHEN @resource_type = 'workspaces.workspace' THEN EXISTS (
               SELECT 1 FROM workspace.workspaces w WHERE w.id = @resource_id AND w.deleted_at IS NULL)
             ELSE @resource_was_located
           END,
-          CASE WHEN @resource_type = 'work-management.board' THEN (
-            SELECT b.visibility FROM work.boards b WHERE b.id = @resource_id
-              AND b.deleted_at IS NULL AND b.is_archived = false LIMIT 1) END,
-          CASE WHEN @resource_type = 'work-management.board' THEN (
-            SELECT bm.role FROM work.board_members bm
-              WHERE bm.board_id = @resource_id AND bm.user_id = @user_id LIMIT 1) END,
+          NULL::text,
+          NULL::text,
           EXISTS (
             SELECT 1 FROM governance.resource_permissions rp
              WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id

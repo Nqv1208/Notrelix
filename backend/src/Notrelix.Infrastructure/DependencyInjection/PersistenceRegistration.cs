@@ -18,6 +18,7 @@ using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.ReadPorts.Collaboration;
+using Notrelix.Infrastructure.Data.ReadPorts.WorkManagement;
 using Notrelix.Infrastructure.Data.ReadPorts.Identity;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Events;
@@ -100,6 +101,7 @@ public static class PersistenceRegistration
         services.AddScoped<ITenantBootstrapStore, TenantBootstrapStore>();
         services.AddScoped<IAccessGrantProjectionService, AccessGrantProjectionService>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
+        services.AddScoped<IResourceAuthorizationFactsProvider, WorkManagementResourceAuthorizationFactsProvider>();
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<ApplicationDbContextInitialiser>();

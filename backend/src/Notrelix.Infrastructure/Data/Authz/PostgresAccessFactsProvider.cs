@@ -10,14 +10,20 @@ namespace Notrelix.Infrastructure.Data.Authz;
 public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
 {
     private const string Sql = AccessFactsQuery.Sql;
+    private static readonly ResourceKind BoardKind = ResourceKind.Create("work-management.board");
 
     private readonly ApplicationDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
+    private readonly IResourceAuthorizationFactsProvider _resourceFactsProvider;
 
-    public PostgresAccessFactsProvider(ApplicationDbContext dbContext, TimeProvider timeProvider)
+    public PostgresAccessFactsProvider(
+        ApplicationDbContext dbContext,
+        TimeProvider timeProvider,
+        IResourceAuthorizationFactsProvider resourceFactsProvider)
     {
         _dbContext = dbContext;
         _timeProvider = timeProvider;
+        _resourceFactsProvider = resourceFactsProvider;
     }
 
     public async Task<AccessFacts> ResolveAsync(
@@ -61,6 +67,14 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
         Add(command, "feature_amount", feature?.Amount ?? 0, NpgsqlDbType.Integer);
         Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
 
+        // Resource-owner Board scope facts come from the WorkManagement-owned SPI (WG-WM-004).
+        // They are resolved BEFORE the facts reader is opened so the SPI's own EF queries do not
+        // run while a command is already in progress on the same connection, then composed over
+        // the tenant/account/Governance snapshot produced by the SQL below.
+        ResourceAuthorizationFacts? boardFacts = resource?.Kind == BoardKind
+            ? await _resourceFactsProvider.ResolveAsync(resource, context.UserId ?? Guid.Empty, cancellationToken)
+            : null;
+
         await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
         {
@@ -68,6 +82,11 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
         }
 
         var rules = JsonSerializer.Deserialize<AccessPermissionRule[]>(reader.GetString(10), JsonOptions) ?? [];
+
+        bool resourceExists = boardFacts?.Exists ?? reader.GetBoolean(6);
+        string? resourceAudience = boardFacts is null ? NullableString(reader, 7) : boardFacts.Audience;
+        string? resourceMemberRole = boardFacts is null ? NullableString(reader, 8) : boardFacts.MemberRole;
+
         return new AccessFacts(
             reader.GetBoolean(0),
             reader.GetBoolean(1),
@@ -75,9 +94,9 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             NullableString(reader, 3),
             reader.GetBoolean(4),
             NullableString(reader, 5),
-            reader.GetBoolean(6),
-            NullableString(reader, 7),
-            NullableString(reader, 8),
+            resourceExists,
+            resourceAudience,
+            resourceMemberRole,
             reader.GetBoolean(9),
             rules,
             reader.GetBoolean(11),

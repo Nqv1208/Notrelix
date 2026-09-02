@@ -217,4 +217,62 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
         content.Should().NotContain("IWorkManagementDbContext", "AccessPolicyEngine must not couple to persistence ports");
         content.Should().NotContain("IAccessFactsProvider", "AccessPolicyEngine consumes AccessFacts, never the facts provider");
     }
+
+    [Fact]
+    public void SharedAuthzSql_MustNotReadWorkManagementTablesDirectly()
+    {
+        // The neutral resource-authorization facts query must not couple the shared
+        // authorization boundary to WorkManagement persistence. Board owner facts are
+        // resolved through the WorkManagement-owned SPI (WG-WM-004), never via raw
+        // work.boards / work.board_members SQL in the canonical AccessFactsQuery.
+        var queryPath = Path.Combine(GetInfrastructurePath(), "Data", "Authz", "AccessFactsQuery.cs");
+        var content = RemoveComments(File.ReadAllText(queryPath));
+
+        content.Should().NotContain("work.boards", "shared authorization SQL must not read WorkManagement-owned work.boards");
+        content.Should().NotContain("work.board_members", "shared authorization SQL must not read WorkManagement-owned work.board_members");
+    }
+
+    [Fact]
+    public void ResourceAuthorizationSpi_MustRemainTransportAndPersistenceNeutral()
+    {
+        // The neutral SPI (WG-WM-004) is a work-management-owned facts boundary. It must
+        // expose only resource-owned facts and must not leak EF/HTTP/gRPC/broker/policy
+        // concepts into the shared application contract.
+        var spiPath = Path.Combine(GetApplicationPath(), "Common", "Security", "IResourceAuthorizationFactsProvider.cs");
+        var content = RemoveComments(File.ReadAllText(spiPath));
+
+        content.Should().NotContain("DbContext", "the neutral resource-authorization SPI must not reference persistence");
+        content.Should().NotContain("Npgsql", "the neutral resource-authorization SPI must not reference Npgsql");
+        content.Should().NotContain("HttpClient", "the neutral resource-authorization SPI must not reference HTTP");
+        content.Should().NotContain("Grpc", "the neutral resource-authorization SPI must not reference gRPC");
+        content.Should().NotContain("IBus", "the neutral resource-authorization SPI must not reference the message broker");
+        content.Should().NotContain("AccessDecision", "the SPI must expose facts, never an authorization decision");
+    }
+
+    [Fact]
+    public void WorkManagementFactsAdapter_MustOwnTheWorkManagementDbContext()
+    {
+        // The WorkManagement-owned facts adapter (WG-WM-004) is the only place that reads
+        // WorkManagement persistence to resolve resource-owner facts for the board handshake.
+        // It must therefore own IWorkManagementDbContext, not a generic Application context.
+        var adapterPath = Path.Combine(
+            GetInfrastructurePath(), "Data", "ReadPorts", "WorkManagement", "WorkManagementResourceAuthorizationFactsProvider.cs");
+        var content = RemoveComments(File.ReadAllText(adapterPath));
+
+        content.Should().Contain("IWorkManagementDbContext", "the WorkManagement facts adapter must own IWorkManagementDbContext");
+        content.Should().Contain("IResourceAuthorizationFactsProvider", "the WorkManagement facts adapter must implement the neutral SPI");
+    }
+
+    [Fact]
+    public void PostgresAccessFactsProvider_MustNotEmitPolicyDecisions()
+    {
+        // The facts provider composes neutral resource-owner facts onto the tenant/account/
+        // Governance query snapshot and returns AccessFacts. It must not decide policy; that
+        // authority stays with AccessPolicyEngine.
+        var providerPath = Path.Combine(GetInfrastructurePath(), "Data", "Authz", "PostgresAccessFactsProvider.cs");
+        var content = RemoveComments(File.ReadAllText(providerPath));
+
+        content.Should().NotContain("Allow", "the facts provider resolves facts; the policy engine decides Allow");
+        content.Should().NotContain("Deny", "the facts provider resolves facts; the policy engine decides Deny");
+    }
 }

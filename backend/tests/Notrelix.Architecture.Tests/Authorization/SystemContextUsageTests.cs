@@ -27,6 +27,7 @@ public class SystemContextUsageTests
         "RestoreTeam.cs",
         "TenantBootstrapStore.cs",
         "ResourceLocator.cs",
+        "WorkManagementResourceAuthorizationFactsProvider.cs",
         "EmailTemplateMaterialization.cs",
         "EmailVerificationTokenIssuer.cs",
         "ActiveVerificationTokenLocker.cs",

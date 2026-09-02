@@ -317,7 +317,9 @@ public sealed class AcceptInvitationByIdIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccessFactsProvider>(sp =>
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
-                sp.GetRequiredService<TimeProvider>()));
+                sp.GetRequiredService<TimeProvider>(),
+                sp.GetRequiredService<IResourceAuthorizationFactsProvider>()));
+        services.AddScoped<IResourceAuthorizationFactsProvider, FakeResourceAuthorizationFactsProvider>();
         services.AddScoped<IAccessGrantProjectionService>(sp =>
             new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>()));
         services.AddScoped<IResourceLocator, ResourceLocator>();
