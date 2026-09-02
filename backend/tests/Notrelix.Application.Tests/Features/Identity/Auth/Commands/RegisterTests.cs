@@ -93,6 +93,7 @@ public class RegisterTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeTrue();
         var integrationEvent = captured.Should().BeOfType<IdentityRegistrationCompletedIntegrationEventV1>().Subject;
         integrationEvent.AccountId.Should().Be(accountId);
+        integrationEvent.AccountId.Should().NotBe(Guid.Empty);
         integrationEvent.AccountName.Should().Be("Test User's Account");
     }
 
@@ -145,5 +146,26 @@ public class RegisterTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeTrue();
         TokenIssuerMock.Verify(t => t.IssueAsync(It.IsAny<User>(), It.IsAny<Guid>(), TestNow, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenProvisioningFails_DoesNotEmitRegistrationCompleted()
+    {
+        PasswordHasherMock.Setup(h => h.HashPassword(TestPassword)).Returns(TestHashedPassword);
+        _provisioningServiceMock
+            .Setup(s => s.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("provisioning failed"));
+
+        var sut = CreateSut();
+
+        var act = () => sut.Handle(new RegisterCommand
+        {
+            Email = TestEmail,
+            Password = TestPassword,
+            Name = "Test User"
+        }, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        IntegrationEventCollectorMock.Verify(c => c.Add(It.IsAny<IIntegrationEvent>()), Times.Never);
     }
 }
