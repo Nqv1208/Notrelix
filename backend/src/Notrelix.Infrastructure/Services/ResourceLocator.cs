@@ -1,8 +1,7 @@
-using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.Automation.Abstractions;
 
 namespace Notrelix.Infrastructure.Services;
 
@@ -10,17 +9,14 @@ namespace Notrelix.Infrastructure.Services;
 /// Resolves the tenant scope of a resource by canonical <see cref="ResourceKind"/>.
 /// Keyed directly on the kind value — there is no reverse mapping to a legacy enum.
 /// Unknown kinds return null so callers fail closed.
+///
+/// WorkManagement resources are routed through the WorkManagement-owned resource
+/// authorization facts SPI (<see cref="IResourceAuthorizationFactsProvider"/>) so shared
+/// Infrastructure no longer depends on WorkManagement private persistence; other owners
+/// (Documents/Collaboration/Governance/Automation) remain resolved here directly this phase.
 /// </summary>
 public sealed class ResourceLocator : IResourceLocator
 {
-    private static readonly ResourceKind Board = ResourceKind.Create("work-management.board");
-    private static readonly ResourceKind BoardGroup = ResourceKind.Create("work-management.board-group");
-    private static readonly ResourceKind BoardField = ResourceKind.Create("work-management.board-field");
-    private static readonly ResourceKind BoardView = ResourceKind.Create("work-management.board-view");
-    private static readonly ResourceKind BoardItem = ResourceKind.Create("work-management.board-item");
-    private static readonly ResourceKind Label = ResourceKind.Create("work-management.label");
-    private static readonly ResourceKind Checklist = ResourceKind.Create("work-management.checklist");
-    private static readonly ResourceKind ChecklistItem = ResourceKind.Create("work-management.checklist-item");
     private static readonly ResourceKind Page = ResourceKind.Create("documents.page");
     private static readonly ResourceKind Block = ResourceKind.Create("documents.block");
     private static readonly ResourceKind Comment = ResourceKind.Create("collaboration.comment");
@@ -30,20 +26,20 @@ public sealed class ResourceLocator : IResourceLocator
     private static readonly ResourceKind AutomationRule = ResourceKind.Create("automation.rule");
     private static readonly ResourceKind AutomationExecution = ResourceKind.Create("automation.execution");
 
-    private readonly IWorkManagementDbContext _workDb;
+    private readonly IResourceAuthorizationFactsProvider _resourceFactsProvider;
     private readonly IDocumentDbContext _docDb;
     private readonly ICollaborationDbContext _collabDb;
     private readonly IGovernanceDbContext _govDb;
     private readonly IAutomationDbContext _autoDb;
 
     public ResourceLocator(
-        IWorkManagementDbContext workDb,
+        IResourceAuthorizationFactsProvider resourceFactsProvider,
         IDocumentDbContext docDb,
         ICollaborationDbContext collabDb,
         IGovernanceDbContext govDb,
         IAutomationDbContext autoDb)
     {
-        _workDb = workDb;
+        _resourceFactsProvider = resourceFactsProvider;
         _docDb = docDb;
         _collabDb = collabDb;
         _govDb = govDb;
@@ -55,57 +51,33 @@ public sealed class ResourceLocator : IResourceLocator
         Guid actorUserId,
         CancellationToken cancellationToken)
     {
+        switch (resource.Kind.Value)
+        {
+            case "work-management.board":
+            case "work-management.board-group":
+            case "work-management.board-field":
+            case "work-management.board-view":
+            case "work-management.board-item":
+            case "work-management.label":
+            case "work-management.checklist":
+            case "work-management.checklist-item":
+                {
+                    var facts = await _resourceFactsProvider.ResolveAsync(resource, actorUserId, cancellationToken);
+                    if (facts is null || facts.AccountId == Guid.Empty)
+                    {
+                        return null;
+                    }
+
+                    return new ResourceLocation(
+                        resource.Kind,
+                        facts.ResourceId,
+                        facts.AccountId,
+                        facts.WorkspaceId);
+                }
+        }
+
         return resource.Kind.Value switch
         {
-            "work-management.board" => ToLocation(Board, await _workDb.Boards
-                .IgnoreQueryFilters()
-                .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken)),
-
-            "work-management.board-group" => ToLocation(BoardGroup, await _workDb.BoardGroups
-                .IgnoreQueryFilters()
-                .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken)),
-
-            "work-management.board-field" => ToLocation(BoardField, await _workDb.BoardFields
-                .IgnoreQueryFilters()
-                .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken)),
-
-            "work-management.board-view" => ToLocation(BoardView, await _workDb.BoardViews
-                .IgnoreQueryFilters()
-                .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken)),
-
-            "work-management.board-item" => ToLocation(BoardItem, await _workDb.BoardItems
-                .IgnoreQueryFilters()
-                .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken)),
-
-            "work-management.label" => ToLocation(Label, await _workDb.Labels
-                .IgnoreQueryFilters()
-                .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken)),
-
-            "work-management.checklist" => ToLocation(Checklist, await _workDb.Checklists
-                .IgnoreQueryFilters()
-                .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
-                .FirstOrDefaultAsync(cancellationToken)),
-
-            "work-management.checklist-item" => ToLocation(ChecklistItem, await (
-                from ci in _workDb.ChecklistItems.IgnoreQueryFilters()
-                join c in _workDb.Checklists.IgnoreQueryFilters() on ci.ChecklistId equals c.Id
-                where ci.Id == resource.ResourceId
-                select new LocatedRow(ci.Id, c.AccountId, c.WorkspaceId)
-            ).FirstOrDefaultAsync(cancellationToken)),
-
             "documents.page" => ToLocation(Page, await _docDb.Pages
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)

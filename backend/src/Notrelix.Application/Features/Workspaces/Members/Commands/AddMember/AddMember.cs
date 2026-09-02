@@ -19,13 +19,20 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAccessGrantProjectionService _grantProjection;
+    private readonly IActorLookupService _actorLookup;
 
-    public AddMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessGrantProjectionService grantProjection)
+    public AddMemberCommandHandler(
+        IWorkspaceDbContext context,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider,
+        IAccessGrantProjectionService grantProjection,
+        IActorLookupService actorLookup)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _grantProjection = grantProjection;
+        _actorLookup = actorLookup;
     }
 
     public async Task<Result> Handle(AddMemberCommand request, CancellationToken ct)
@@ -35,6 +42,10 @@ public class AddMemberCommandHandler : IRequestHandler<AddMemberCommand, Result>
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
+
+        var actor = await _actorLookup.FindAsync(request.UserId, ct);
+        if (actor is null)
+            throw new NotFoundException(nameof(User), request.UserId);
 
         var existingMember = await _context.WorkspaceMembers
             .FirstOrDefaultAsync(m => m.WorkspaceId == request.WorkspaceId && m.UserId == request.UserId, ct);

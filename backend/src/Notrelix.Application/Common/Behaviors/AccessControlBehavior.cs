@@ -7,7 +7,7 @@ public sealed class AccessControlBehavior<TRequest, TResponse> : IPipelineBehavi
     where TRequest : notnull
 {
     private static readonly AccessFacts NoFacts = new(
-        false, false, false, null, false, null, false, null, null, false, [], false, null, false);
+        false, false, false, null, false, null, false, null, null, false, [], false, null, false, true, true);
 
     private readonly IRequestDescriptorRegistry _descriptors;
     private readonly IExecutionContextReader _executionContext;

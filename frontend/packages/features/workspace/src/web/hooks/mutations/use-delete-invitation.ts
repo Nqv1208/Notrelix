@@ -22,7 +22,7 @@ export function createUseDeleteInvitation({
 
     return useMutation({
       mutationFn: (invitationId: string) =>
-        service.delete(workspaceId, invitationId),
+        service.cancel(workspaceId, invitationId),
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: workspaceQueryKeys.invitations(workspaceId),

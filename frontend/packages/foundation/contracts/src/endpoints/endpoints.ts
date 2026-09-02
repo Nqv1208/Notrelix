@@ -17,11 +17,15 @@ export const endpoints = {
   workspaces: {
     list: "/workspaces",
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
-    invitationByToken: (token: string) =>
-      `/workspaces/invitations/by-token/${token}`,
-    acceptInvitation: (token: string) =>
-      `/workspaces/invitations/accept/${token}`,
-    pendingInvitations: "/workspaces/invitations/pending",
+    invitationList: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/invitations`,
+    cancelInvitation: (workspaceId: string, invitationId: string) =>
+      `/workspaces/${workspaceId}/invitations/${invitationId}`,
+    invitationPreview: "/invitations/preview",
+    acceptInvitation: "/invitations/accept",
+    acceptInvitationById: (invitationId: string) =>
+      `/invitations/${invitationId}/accept`,
+    pendingInvitations: "/invitations/pending",
   },
   pages: {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,

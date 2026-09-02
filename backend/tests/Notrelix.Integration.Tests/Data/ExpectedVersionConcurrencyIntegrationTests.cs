@@ -333,10 +333,10 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
     private async Task<(Guid AccountId, Guid OwnerId, Guid WorkspaceId)> SeedFullGraphAsync()
     {
         var accountId = Guid.NewGuid();
-        var ownerId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
         var user = User.Create($"evp-{Guid.NewGuid():N}@example.com", "EV Pipeline User", "hashed", now, true);
         user.ConfirmEmail(user.Id, now);
+        var ownerId = user.Id;
         var account = Account.Create("EV Pipeline Account", $"evp-{Guid.NewGuid():N}", AccountType.Team, ownerId, now);
         var workspace = Domain.Workspaces.Workspaces.Workspace.Create(
             account.Id, ownerId, "Pipeline Workspace", $"evp-{Guid.NewGuid():N}", now);
@@ -431,7 +431,9 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccessFactsProvider>(sp =>
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
-                sp.GetRequiredService<TimeProvider>()));
+                sp.GetRequiredService<TimeProvider>(),
+                sp.GetRequiredService<IResourceAuthorizationFactsProvider>()));
+        services.AddScoped<IResourceAuthorizationFactsProvider, FakeResourceAuthorizationFactsProvider>();
         services.AddScoped<IAccessGrantProjectionService>(sp =>
             new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>()));
         services.AddScoped<IResourceLocator, ResourceLocator>();

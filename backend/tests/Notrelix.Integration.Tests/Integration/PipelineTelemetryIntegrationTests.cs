@@ -37,6 +37,7 @@ using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Data.ReadPorts.WorkManagement;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Observability.Metrics;
 using Notrelix.Infrastructure.Operations.Idempotency;
@@ -424,7 +425,11 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccessFactsProvider>(sp =>
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
-                sp.GetRequiredService<TimeProvider>()));
+                sp.GetRequiredService<TimeProvider>(),
+                sp.GetRequiredService<IResourceAuthorizationFactsProvider>()));
+        services.AddScoped<IResourceAuthorizationFactsProvider>(sp =>
+            new WorkManagementResourceAuthorizationFactsProvider(
+                sp.GetRequiredService<IWorkManagementDbContext>()));
         services.AddScoped<IAccessGrantProjectionService>(sp =>
             new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>()));
 

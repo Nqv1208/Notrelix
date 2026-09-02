@@ -75,6 +75,37 @@ public sealed class ExecutionContextBehaviorTests
     }
 
     [Fact]
+    public async Task Workspace_request_with_api_token_bound_to_different_account_is_denied()
+    {
+        var fixture = CreateFixture<WorkspaceRequest>(CredentialKind.ApiToken);
+        var workspaceId = Guid.NewGuid();
+        var workspaceAccountId = Guid.NewGuid();
+        var tokenAccountId = Guid.NewGuid();
+        fixture.Credential
+            .SetupGet(context => context.BoundAccountId)
+            .Returns(tokenAccountId);
+        fixture.Credential
+            .SetupGet(context => context.BoundWorkspaceId)
+            .Returns(workspaceId);
+        fixture.TenantBootstrap.Setup(store => store.ResolveWorkspaceAccessAsync(
+                workspaceId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkspaceAccessSnapshot(
+                workspaceAccountId, workspaceId, Guid.NewGuid(), true, true));
+
+        var act = () => fixture.Behavior.Handle(
+            new WorkspaceRequest(workspaceId),
+            _ => Task.FromResult("ok"),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+        fixture.ExecutionContext.Snapshot.Should().BeNull();
+
+        fixture.Credential.Verify(
+            context => context.Kind,
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
     public async Task Missing_resource_preserves_not_found_contract()
     {
         var fixture = CreateFixture<ResourceRequest>();
@@ -92,7 +123,8 @@ public sealed class ExecutionContextBehaviorTests
         fixture.ExecutionContext.Snapshot.Should().BeNull();
     }
 
-    private static Fixture<TRequest> CreateFixture<TRequest>() where TRequest : IRequest<string>
+    private static Fixture<TRequest> CreateFixture<TRequest>(CredentialKind credentialKind = CredentialKind.UserSession)
+        where TRequest : IRequest<string>
     {
         var userId = Guid.NewGuid();
         var executionContext = new Notrelix.Application.Common.Context.ExecutionContext();
@@ -100,7 +132,7 @@ public sealed class ExecutionContextBehaviorTests
         var tenant = new Mock<ICurrentTenantContext>();
         tenant.SetupGet(context => context.UserId).Returns(userId);
         var credential = new Mock<ICurrentCredentialContext>();
-        credential.SetupGet(context => context.Kind).Returns(CredentialKind.UserSession);
+        credential.SetupGet(context => context.Kind).Returns(credentialKind);
         var locator = new Mock<IResourceLocator>();
         var descriptor = RequestDescriptorValidator.Create(typeof(TRequest));
         var descriptors = new Mock<IRequestDescriptorRegistry>();
@@ -121,13 +153,14 @@ public sealed class ExecutionContextBehaviorTests
             locator.Object,
             tenantBootstrap.Object);
 
-        return new Fixture<TRequest>(behavior, executionContext, tenant, locator, tenantBootstrap);
+        return new Fixture<TRequest>(behavior, executionContext, tenant, credential, locator, tenantBootstrap);
     }
 
     private sealed record Fixture<TRequest>(
         ExecutionContextBehavior<TRequest, string> Behavior,
         Notrelix.Application.Common.Context.ExecutionContext ExecutionContext,
         Mock<ICurrentTenantContext> Tenant,
+        Mock<ICurrentCredentialContext> Credential,
         Mock<IResourceLocator> Locator,
         Mock<ITenantBootstrapStore> TenantBootstrap)
         where TRequest : IRequest<string>;

@@ -115,6 +115,91 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
     }
 
     /// <summary>
+    /// IA-TST-X-AUTHZ-002: a non-operational (suspended) owning Account must be
+    /// denied centrally by the pipeline BEFORE the handler executes, even for an
+    /// Owner member whose account_members row still grants the role. No workspace
+    /// is persisted and exactly one authorization evaluation occurs.
+    /// </summary>
+    [Fact]
+    public async Task CreateWorkspace_WhenAccountIsSuspended_FailsClosedBeforeHandlerEffects()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create($"suspended-{Guid.NewGuid():N}@example.com", "Suspended User", "hashed", now, true);
+        user.ConfirmEmail(user.Id, now);
+        var actorId = user.Id;
+        var account = Account.Create("Suspended Account", $"suspended-{Guid.NewGuid():N}", AccountType.Team, actorId, now);
+        var accountId = account.Id;
+        account.Suspend(actorId, now, "integration proof");
+
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            seed.Users.Add(user);
+            seed.Accounts.Add(account);
+            seed.AccountMembers.Add(AccountMember.Create(accountId, actorId, AccountRole.Owner, actorId, now));
+            await seed.SaveChangesAsync();
+        }
+
+        using var provider = CreatePipelineProvider(accountId, actorId);
+        var sender = provider.GetRequiredService<ISender>();
+        var evaluations = provider.GetRequiredService<EvaluationCountingDecisionStore>();
+        var command = new CreateWorkspaceCommand($"WS Suspended {Guid.NewGuid():N}", null, false);
+
+        var act = () => sender.Send(command);
+
+        var assertion = await act.Should().ThrowAsync<AppForbidden>(
+            "a suspended owning Account must fail closed before any workspace mutation");
+        evaluations.EvaluationCount.Should().Be(1,
+            "the pipeline performs exactly one evaluation and denies before the handler");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        verify.Workspaces.Any(w => w.AccountId == accountId).Should().BeFalse(
+            "a denied request on a suspended Account must leave no durable side effects");
+    }
+
+    /// <summary>
+    /// IA-TST-X-AUTHZ-003 / WG-MEM-008: a deactivated (suspended) User must be
+    /// denied centrally BEFORE the handler executes even when the owning Account
+    /// remains operational and the account_members row still grants Owner. The
+    /// actor's own identity status is a hard fail-closed gate; stale role rows /
+    /// membership caches cannot keep the user operational.
+    /// </summary>
+    [Fact]
+    public async Task CreateWorkspace_WhenActorUserIsSuspended_FailsClosedBeforeHandlerEffects()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create($"suspended-user-{Guid.NewGuid():N}@example.com", "Suspended User", "hashed", now, true);
+        user.ConfirmEmail(user.Id, now);
+        user.Suspend(user.Id, now, "integration proof: identity deactivation");
+        var actorId = user.Id;
+        var account = Account.Create("Active Account", $"active-{Guid.NewGuid():N}", AccountType.Team, actorId, now);
+        var accountId = account.Id;
+
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            seed.Users.Add(user);
+            seed.Accounts.Add(account);
+            seed.AccountMembers.Add(AccountMember.Create(accountId, actorId, AccountRole.Owner, actorId, now));
+            await seed.SaveChangesAsync();
+        }
+
+        using var provider = CreatePipelineProvider(accountId, actorId);
+        var sender = provider.GetRequiredService<ISender>();
+        var evaluations = provider.GetRequiredService<EvaluationCountingDecisionStore>();
+        var command = new CreateWorkspaceCommand($"WS Suspended {Guid.NewGuid():N}", null, false);
+
+        var act = () => sender.Send(command);
+
+        var assertion = await act.Should().ThrowAsync<AppForbidden>(
+            "a User disabled by Identity must fail closed before any workspace mutation");
+        evaluations.EvaluationCount.Should().Be(1,
+            "the pipeline performs exactly one evaluation and denies before the handler");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        verify.Workspaces.Any(w => w.AccountId == accountId).Should().BeFalse(
+            "a denied request on a suspended User must leave no durable side effects");
+    }
+
+    /// <summary>
     /// Composes the production MediatR pipeline slice: the REAL DataSessionBehavior
     /// and REAL AccessControlBehavior registered exactly as production does, delegating to
     /// the real PostgresAccessFactsProvider + pure policy evaluator over the test PostgreSQL
@@ -186,7 +271,9 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
             sp.GetRequiredService<EvaluationCountingDecisionStore>().Wrap(
                 new PostgresAccessFactsProvider(
                     sp.GetRequiredService<ApplicationDbContext>(),
-                    sp.GetRequiredService<TimeProvider>())));
+                    sp.GetRequiredService<TimeProvider>(),
+                    sp.GetRequiredService<IResourceAuthorizationFactsProvider>())));
+        services.AddScoped<IResourceAuthorizationFactsProvider, FakeResourceAuthorizationFactsProvider>();
 
         // Production pipeline nesting: DataSessionBehavior (outer) → AccessControlBehavior (inner),
         // matching the canonical frozen behavior order.

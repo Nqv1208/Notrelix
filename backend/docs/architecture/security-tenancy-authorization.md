@@ -288,22 +288,22 @@ scope
 current policy facts
 ```
 
-Current Application Security contracts include concepts such as:
+Current Application Security contracts (executable source evidence of centralized permission/resource evaluation):
 
 ```text
-IPermissionEvaluator
-IPermissionService
-IWorkspacePermissionService
-IResourceReferenceResolver
-IResourceScopeResolver
-IPermissionVersionProvider
-IAuthorizationDecisionStore
-PermissionContext
-PermissionDecision
-PermissionScope
+IRequirePermission        — request marker: PermissionAction Action + ResourceRef? Resource
+AccessPolicyEngine        — pure policy engine (architecture-tested: no DbContext / no IAccessFactsProvider)
+AccessFacts               — server-derived fact snapshot consumed by the engine
+AccessFactsQuery          — single canonical SQL authority producing AccessFacts (never reads WorkManagement private persistence)
+PostgresAccessFactsProvider — Infrastructure adapter behind the facts snapshot; composes neutral resource-owner facts
+IResourceAuthorizationFactsProvider — transport-neutral resource-owner facts SPI (see §BE-SEC-011 / WG-WM-004); WorkManagement-owned adapter
+ResourceLocator / IResourceLocator — approved scope-resolution read port (see §BE-SEC-011); WorkManagement kinds routed through the SPI
 ```
 
-These are current source evidence of centralized permission/resource evaluation.
+Governance Domain owns the persistent permission vocabulary (`PermissionRule`, `PermissionAction`,
+`ResourcePermission`, `PermissionScope`, `PermissionLevel`). Governance does not own a second decision
+engine: the engine is the single `AccessPolicyEngine` path, and `AccessFacts` carries only source fact
+snapshots plus the Governance `permission_rules` rows already filtered to the requested action (see §15).
 
 ---
 
@@ -367,6 +367,118 @@ permission/resource version if used
 ```
 
 Do not expose internal database/provider failure as a normal denied decision.
+
+---
+
+# 15a. Permission evaluation contract
+
+The current canonical decision path is `AccessPolicyEngine.EvaluatePermission` (pure, per-request, no cache):
+
+```text
+1. request MUST implement IRequirePermission (Action + optional Resource), else SecurityMisconfiguration.
+2. role = AccountMemberRole (Account scope) or WorkspaceMemberRole (Workspace/Resource scope).
+   role is null (non-member)                 → Deny.Forbidden      (default deny, WG-PERM-004)
+3. role == "Owner"                            → Allow                (short-circuit)
+4. first-priority permission-rule band        → the set of permission_rules whose Priority equals the
+   minimum Priority among the rules returned (already filtered in SQL to this action + this workspace +
+   this subject + active/validity window). Within that single band:
+     any Deny   → Deny.Forbidden              (deny precedence over allow in-band, WG-PERM-005)
+     else any Allow → Allow
+5. no rules / band empty → fall through to Account-scope or Workspace/Resource-scope handling
+   (e.g. Account Admin baseline for ViewWorkspace/CreateWorkspace; DeleteWorkspace always denies;
+     WorkspaceAdmin administrative baseline (WG-ROLE-DEC-001); Board-specific resource visibility
+     + built-in role baseline + Observer restriction; tail default to ViewWorkspace/ViewBoard/
+     ViewMembers only, else Deny).
+```
+
+### Board built-in role baseline (WG-ROLE-DEC-001)
+
+For `ResourceKind = work-management.board`, the engine applies a typed deterministic built-in role
+baseline in addition to visibility:
+
+```text
+Board-management class (resource-owned authority REQUIRED):
+    ManageBoard, ManageBoardPermission, CreateField, UpdateField, DeleteField, ShareBoardView
+    → allowed only when the caller holds Board-level authority:
+        ResourceMemberRole is Owner or Admin,  OR  HasExplicitResourcePermission
+    otherwise → Deny.Forbidden
+
+Collaboration class (Workspace-member baseline on a Workspace-visible Board):
+    ViewBoard, CreateItem, UpdateItem, MoveItem, AssignItem, CreateBoardView, UpdateBoardView
+    → allowed for a Workspace member unless a tighter rule applies (e.g. Observer).
+
+Restricted/Guest visibility: a non-Workspace-audience Board or a Workspace Guest without a Board
+grant/explicit permission is hidden (ResourceExists gate → NotFound).
+```
+
+A plain Workspace member does **not** gain Board-management authority from Workspace visibility alone
+(this replaces the previous broad Board grant). WorkspaceRole is a role class, not a wildcard over
+Board-management actions; Board authority is owned by WorkManagement and consumed from the
+transport-neutral Phase 6 facts (`ResourceMemberRole`, `HasExplicitResourcePermission`).
+
+### WorkspaceAdmin administrative baseline (WG-ROLE-DEC-001)
+
+For **Workspace scope** (`ApplicationScopeKind.Workspace`, resource `workspaces.workspace`), a
+Workspace **Admin** (role class = administrative) may perform workspace-scope administration without
+a custom `permission_rules` row:
+
+```text
+WorkspaceAdmin administrative class:
+    ManageWorkspace, InviteMember, ChangeMemberRole, RemoveMember, ManageWorkspaceSettings,
+    CreateBoard
+    → allowed for role == Admin at Workspace scope
+    otherwise (Member/Guest) → falls through to default denial
+```
+
+Boundary guarantees:
+
+```text
+not admin-granted (resource-owned, Phase 8):  ManageBoard, ManageBoardPermission, CreateField,
+                                               UpdateField, DeleteField, ShareBoardView,
+                                               CreateBoardView, UpdateBoardView → board authority required
+Owner-only (never Admin):                     DeleteWorkspace → always denied for non-Owner
+Member baseline (unchanged):                  ViewWorkspace, ViewBoard, ViewMembers
+PermissionRule precedence / default-deny:     preserved (a custom Deny rule still overrides; WG-PERM-005)
+```
+
+The grant is scoped to `descriptor.Scope == Workspace`, so it never leaks into Resource/board scope.
+`CreateBoard` is workspace-scoped board creation (administrative); the Board it creates is then
+governed by the resource-owned Board baseline above.
+
+Facts feeding the engine are produced by the single canonical SQL authority `AccessFactsQuery`:
+
+```text
+subject_type = 'User' and subject_id = @user_id
+account_id   = @account_id  and workspace_id = @workspace_id
+action       = @action
+status = Active and inside starts_at/expires_at validity window
+scope pinned to the requested Workspace (Workspace scope or an in-workspace resource match)
+```
+
+The Governance permission facts above come from `AccessFactsQuery`. Resource-**owner** facts — Board
+existence/lifecycle, visibility/audience, and actor→Board role for `work-management.board` — are not read from
+`work.boards`/`work.board_members` SQL in the shared query; they are composed by `PostgresAccessFactsProvider`
+from the transport-neutral resource-owner facts SPI (`IResourceAuthorizationFactsProvider`, WG-WM-004) whose
+WorkManagement-owned adapter owns `IWorkManagementDbContext`. `AccessPolicyEngine` still evaluates the single
+decision over the composed `AccessFacts`; no second engine exists.
+
+Because `account_id` and `workspace_id` are bound to the owning workspace/request scope, a rule in
+Workspace A can never authorize a request scoped to Workspace B (WG-PERM-003, tenant isolation). The
+`Action` originates from the server-side `IRequirePermission` declaration, never from client input;
+all membership/ownership/role/resource facts are server-derived rows (WGREQ062 — client claims are not
+trusted as rule facts). Rule priority and effect are compared by the engine deterministically
+(no tie-break beyond deny-over-allow at the min-priority band).
+
+There is **no runtime permission-decision cache** in the effective path: `AccessFacts` is computed
+per protected request (WG-PERM-007). The persisted `resource_permission_inheritance_cache` projection is
+not part of the decision path. Revocation therefore takes effect on the next request with no cache
+security window (BE-SEC-024 satisfied). If a decision cache is ever introduced, it must carry
+tenant/resource/principal or a permission version key and an explicit invalidation path (see §BE-SEC-023).
+
+Persisted permission identity is the stable domain vocabulary: `PermissionAction` enum members persist as
+their `ToString()` name and `ResourceKind` (a `{context}.{resource}` record struct) persists via converter
+as its stable string. Renaming a stored action/`resource_type` value is a persisted-meaning change
+(WG-PERM-002) and requires a data migration, not a silent in-place rewrite.
 
 ---
 
@@ -474,6 +586,36 @@ client-provided WorkspaceId + resourceId
 ```
 
 as proof they belong together.
+
+### Resource ownership resolution port
+
+Resource-scoped request execution derives the owning Account/Workspace from
+authoritative server data through `IResourceLocator` (defined in
+`Notrelix.Application/Common/Context`), implemented as the shared
+`ResourceLocator` in Infrastructure.
+
+`ResourceLocator` is an approved cross-context read port:
+
+- it resolves only the ownership tuple `(ResourceId, AccountId, WorkspaceId)`
+  for a canonical `ResourceKind`;
+- it performs no authorization, no mutation, and no business logic;
+- WorkManagement resources are resolved through the transport-neutral
+  resource-owner facts SPI (`IResourceAuthorizationFactsProvider`, WG-WM-004)
+  whose WorkManagement-owned adapter reads `IWorkManagementDbContext`;
+- Documents/Collaboration/Governance/Automation reads remain owner-`DbContext`
+  direct reads this phase (WG-WM-001: Board-slice-only handshake).
+
+Per-context reads are concentrated in this single replaceable adapter
+(`BE-INF-026`): it is not a WorkManagement business use case. It
+serves the cross-cutting scope resolution owned by the Application
+`ExecutionContextBehavior` (`BE-APP-014`). This is not precedent for new
+handler-local cross-context reads. The WorkManagement adapter uses
+`IgnoreQueryFilters()` to identify the owning tenant before RLS context is
+established — the same trust boundary the direct read used — because
+`AccessControlBehavior` still enforces membership/visibility afterwards.
+
+Unknown resource kinds resolve to `null` so callers fail closed
+(`BE-SEC-012`).
 
 ---
 
@@ -1852,6 +1994,8 @@ RlsRuntimeEnforcementTests
 and current CI verifies those critical tests executed, alongside production composition and other reliability suites.
 
 This is strong evidence that tenant/RLS proof is a required foundation property.
+
+The canonical Application access facts snapshot (`AccessFacts`) includes an account-operational fact: an `Account` is operational only while its `AccountStatus` is `Active` or `Trialing`. For protected Account/Workspace/Resource-scoped requests, the pure policy engine (`AccessPolicyEngine`) denies `Forbidden` when the owning Account is missing, soft-deleted, or non-operational — failing closed before handler effects (resolve → evaluate → deny → no mutation), consistent with §17/§27 and the network `AccessFactsQuery.Sql` (single canonical query authority).
 
 ---
 

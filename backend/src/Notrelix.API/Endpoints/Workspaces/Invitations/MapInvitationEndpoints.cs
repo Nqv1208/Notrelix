@@ -24,6 +24,7 @@ public static class MapInvitationEndpoints
 
         invitationsGroup.MapGetUserPendingInvitations();
         invitationsGroup.MapAcceptInvitation();
+        invitationsGroup.MapAcceptInvitationById();
         invitationsGroup.MapDeclineInvitation();
         invitationsGroup.MapGetInvitationByToken();
 

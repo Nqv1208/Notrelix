@@ -18,7 +18,7 @@ import {
 import { createUsePendingInvitations } from "../query/hooks/use-pending-invitations";
 import { createUseAcceptInvitation } from "../hooks/mutations/use-accept-invitation";
 import type {
-  WorkspaceInvitation,
+  PendingWorkspaceInvitation,
   WorkspaceApiClient,
   InvitationsEndpoints,
 } from "../../core";
@@ -48,21 +48,21 @@ export function PendingInvitationsMenu({
 
   const { data: invitations, isLoading, refetch } = usePendingInvitations();
   const acceptMutation = useAcceptInvitation();
-  const [acceptingToken, setAcceptingToken] = useState<string | null>(null);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   const hasInvitations = invitations && invitations.length > 0;
 
-  const handleAccept = (token: string) => {
-    setAcceptingToken(token);
-    acceptMutation.mutate(token, {
+  const handleAccept = (invitationId: string) => {
+    setAcceptingId(invitationId);
+    acceptMutation.mutate(invitationId, {
       onSuccess: () => {
         setOpen(false);
-        setAcceptingToken(null);
+        setAcceptingId(null);
         refetch();
         navigate({ to: "/home" });
       },
       onError: () => {
-        setAcceptingToken(null);
+        setAcceptingId(null);
       },
     });
   };
@@ -121,8 +121,8 @@ export function PendingInvitationsMenu({
               </p>
             </div>
           ) : (
-            invitations.map((invite: WorkspaceInvitation) => {
-              const isAccepting = acceptingToken === invite.token;
+            invitations.map((invite: PendingWorkspaceInvitation) => {
+              const isAccepting = acceptingId === invite.id;
               return (
                 <div
                   key={invite.id}
@@ -164,10 +164,8 @@ export function PendingInvitationsMenu({
                   <div className="flex items-center gap-2 pt-1">
                     <Button
                       size="sm"
-                      onClick={() => invite.token && handleAccept(invite.token)}
-                      disabled={
-                        isAccepting || acceptMutation.isPending || !invite.token
-                      }
+                      onClick={() => handleAccept(invite.id)}
+                      disabled={isAccepting || acceptMutation.isPending}
                       className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
                     >
                       {isAccepting ? (

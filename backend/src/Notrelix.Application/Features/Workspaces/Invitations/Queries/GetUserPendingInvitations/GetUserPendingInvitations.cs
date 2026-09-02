@@ -11,7 +11,6 @@ public record UserPendingInvitationDto(
     string InviterName,
     string Email,
     string Role,
-    string Token,
     DateTime ExpiresAt
 );
 
@@ -69,7 +68,6 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
                 inviterName,
                 i.Email,
                 i.Role.ToString(),
-                i.Token.Value,
                 i.ExpiresAt.DateTime
             ));
         }

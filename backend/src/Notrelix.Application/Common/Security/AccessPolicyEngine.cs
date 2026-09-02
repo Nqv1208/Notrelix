@@ -37,6 +37,22 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 $"{descriptor.RequestType.Name} requires workspace context.");
         }
 
+        if (descriptor.Scope is ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && !facts.AccountOperational)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This account is not operational.");
+        }
+
+        if (descriptor.Scope is ApplicationScopeKind.Account or ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && !facts.UserOperational)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This user is not operational.");
+        }
+
         if (descriptor.Access.RequiresPermission)
         {
             var permission = EvaluatePermission(descriptor, facts, request);
@@ -140,6 +156,17 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
+        // WorkspaceAdmin administrative baseline (WG-ROLE-DEC-001): an Admin performs
+        // workspace-scope administration without a custom rule. Board management stays
+        // resource-owned (Phase 8), Owner-only actions stay Owner-only, and the grant is
+        // scoped to Workspace requests so it never leaks into Resource/board scope.
+        if (descriptor.Scope == ApplicationScopeKind.Workspace
+            && string.Equals(role, "Admin", StringComparison.Ordinal)
+            && IsWorkspaceAdministrativeAction(permission.Action))
+        {
+            return AccessDecision.Allow();
+        }
+
         if (permission.Resource?.Kind.Value == "work-management.board")
         {
             if (!facts.ResourceExists)
@@ -156,8 +183,22 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            if (permission.Action == PermissionAction.UpdateItem
-                && string.Equals(facts.ResourceMemberRole, "Observer", StringComparison.Ordinal))
+            // Built-in role baseline (WG-ROLE-DEC-001): a plain Workspace member
+            // holds collaboration-class authority on a Workspace-visible board.
+            // Board-management authority is resource-owned and requires an explicit
+            // Board-level grant (board owner/admin role or an explicit resource
+            // permission), never Workspace visibility alone.
+            var hasBoardAuthority = IsBoardManagementRole(facts.ResourceMemberRole)
+                || facts.HasExplicitResourcePermission;
+
+            if (IsBoardManagementAction(permission.Action) && !hasBoardAuthority)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            }
+
+            if ((permission.Action is PermissionAction.UpdateItem or PermissionAction.MoveItem or PermissionAction.AssignItem)
+                && string.Equals(facts.ResourceMemberRole, "Observer", StringComparison.Ordinal)
+                && !facts.HasExplicitResourcePermission)
             {
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
@@ -169,6 +210,26 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             ? AccessDecision.Allow()
             : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
     }
+
+    private static bool IsBoardManagementRole(string? resourceMemberRole) =>
+        string.Equals(resourceMemberRole, "Owner", StringComparison.Ordinal)
+        || string.Equals(resourceMemberRole, "Admin", StringComparison.Ordinal);
+
+    private static bool IsBoardManagementAction(PermissionAction action) =>
+        action is PermissionAction.ManageBoard
+            or PermissionAction.ManageBoardPermission
+            or PermissionAction.CreateField
+            or PermissionAction.UpdateField
+            or PermissionAction.DeleteField
+            or PermissionAction.ShareBoardView;
+
+    private static bool IsWorkspaceAdministrativeAction(PermissionAction action) =>
+        action is PermissionAction.ManageWorkspace
+            or PermissionAction.InviteMember
+            or PermissionAction.ChangeMemberRole
+            or PermissionAction.RemoveMember
+            or PermissionAction.ManageWorkspaceSettings
+            or PermissionAction.CreateBoard;
 
     private static bool MeetsMinimumTier(string? actualTier, string? minimumTier)
     {

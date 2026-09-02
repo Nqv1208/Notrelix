@@ -958,7 +958,7 @@ Verify:
 - concurrency token if used;
 - migration.
 
-## 42. WG-WSP-007 — Account disabled interaction
+## 42. WG-WSP-007 — Account disabled interaction — RESOLVED (D3-B)
 
 If Account inactive:
 
@@ -966,9 +966,20 @@ Workspace protected operations must follow canonical failure policy.
 
 Do not mutate Account state from Workspace.
 
+Decision D3-B (recorded in `decisions/PR-WG-01-phase3-workspace-core.md`): central Application access-control enforcement — `AccessFacts.AccountOperational` fact + `AccessPolicyEngine` deny for Account/Workspace/Resource scopes, failed closed before handler effects. Implemented and proven (see PR-WG-01 verdict ledger).
+
 ## 43. Phase 3 exit
 
 Workspace identity and Account containment must be D4-ready.
+
+Status:
+
+```text
+D3-A decision recorded; archive/delete semantics fixed (effects phased: Membership P4, Invitations P5, Teams/Spaces P13).
+D3-B decision recorded + implemented + proven (central account-operational enforcement).
+WG-FIND-301..304 dispositioned in PR-WG-01.
+Phase 3 CLOSED. Continue to Phase 4.
+```
 
 # Phase 4 — Membership core
 
@@ -1070,6 +1081,19 @@ where relevant.
 
 WorkspaceMember reaches at least D4.
 
+Status:
+
+```text
+D4-A decision recorded + implemented + proven (central user-operational enforcement, WG-MEM-008).
+D4-B decision recorded + implemented (AddMember target User identity validation, WGREQ016).
+D4-C self-leave deferred (no command; owner semantics undefined).
+D4-D membership concurrency hardening deferred (WG-MEM-010; WG-TST-MEM-INF-001/CONC-001 carried).
+D4-E state-change authorization actions are TRANSITION until Phase 8 roles.
+WG-FIND-401 (AddMember literal activeOwnerCount) + WG-FIND-402 (suspended-member pipeline negative) recorded.
+Full suites green (Application 573 / Domain 2576 / Architecture 410 / Integration 343 / API 256 / Infrastructure 134).
+Phase 4 CLOSED. Continue to Phase 5.
+```
+
 # Phase 5 — Invitation baseline
 
 ## 55. Purpose
@@ -1139,6 +1163,25 @@ Baseline invitation can remain D3/D4 if not required for P3 gate.
 
 Membership itself must remain stable.
 
+Status:
+
+```text
+Phase 5 baseline audit outcome in decisions/PR-WG-03-phase5-invitation-baseline.md (ledger).
+D5-A shared acceptance service (token + by-id converge on one InvitationAcceptanceService) — implemented + proven.
+D5-B active membership accept = idempotent consume (no duplicate member/grant/role) — implemented + proven.
+D5-C suspended/removed invitee acceptance = side-effect-free rejection — implemented + proven.
+D5-D Token removed from UserPendingInvitationDto; pending-list accept now by invitation id — implemented + proven.
+D5-E replay/race matrix + realtime-on-accept deferred (WG-INVITE-005/006; WG-TST-INV-CONC-001 carried).
+D5-F RLS risk recorded: AcceptInvitationByIdCommand is IGlobalRequest → DataSessionBehavior skips tenant scope →
+    RlsSessionContext.ApplyAsync not invoked; prod as notrelix_app (FORCE RLS) may deny writes. Open follow-up.
+D5-G frontend sync to real contract: pending menu accepts by id; deep-link uses POST /invitations/preview;
+    workspace-scoped members table wired to LIST + Cancel; create stays stub (no backend create endpoint this phase).
+New tests: Application +14 (service + by-id handler suite), API +4 invitation endpoints (260 total), Integration +3 (real Postgres), Architecture request-execution baseline +1 (AcceptInvitationByIdCommand).
+Full suites green (Application 587 / Domain 2576 / Architecture 410 / Integration 346 / API 260 / Infrastructure 134).
+Frontend gates green (typecheck, lint, format, architecture, test-taxonomy, node 313, web 2, mock-freeze); codegen:check pending commit of generated schema.
+Phase 5 CLOSED. Continue to Phase 6.
+```
+
 # Phase 6 — Resource authorization category / ResourceId / Action contract
 
 ## 64. Purpose
@@ -1166,6 +1209,30 @@ IResourceScopeResolver
 ```
 
 Record every variant, persisted consumer and current canonical usage.
+
+Evidence (executed):
+
+```text
+ResourceKind            → canonical Domain value object (Domain/SharedKernel/ResourceKind),
+                          open string-based "{context}.{resource}" record struct, 16 active kinds:
+                          8 work-management.*, 2 documents.*, 2 collaboration.*,
+                          2 governance.*, 2 automation.*. No legacy ResourceType found.
+ResourceId              → ResourceId is part of ResourceRef (Domain/SharedKernel/ResourceRef).
+ResourceScope           → none found as distinct abstraction (scope lives on request markers).
+Subject                 → no legacy enum Subject in backend/src or backend/tests.
+Action                  → canonical PermissionAction enum
+                          (Domain/Governance/Permissions/PermissionAction.cs), 31 members.
+AuthorizationRequirement→ IRequirePermission (Application/Common/Requests/Security),
+                          exposes PermissionAction Action + ResourceRef? Resource.
+PermissionContext       → none found.
+IResourceReferenceResolver → none.
+IResourceScopeResolver  → none; the scope/resolver role is served by IResourceLocator
+                          (Application/Common/Context) + ResourceLocator (Infrastructure/Services).
+Persisted consumers of ResourceKind (string):
+                          ResourcePermissionGrantedIntegrationEvent / RevokedIntegrationEvent
+                          (string ResourceKind field), RealtimeResourceChangedV1 (property),
+                          RealtimeTopic (Namespace + ResourceKind + ResourceId).
+```
 
 ## 66. WG-RES-002 — select canonical resource category without forced rename
 
@@ -1288,6 +1355,39 @@ Required D4 producer contract:
 - representative Board contract can be implemented without private-context coupling;
 - P3-A Domain/Data work may open if Workspace/containment prerequisites are also D4+.
 
+Status:
+
+```text
+WG-RES-001 inventory COMPLETE — 16 ResourceKind kinds, no legacy ResourceType/PermissionContext/Subject.
+WG-RES-002 canonical category KEPT as ResourceKind — no forced rename (source already uses it; no rename proof required).
+WG-RES-003 ownership CLEAR — resource teams own identity/lifecycle/Action; Governance owns only registry mechanics
+    (see www-data plan §67). No Governance-invented product actions.
+WG-RES-004 FACTS contract CONFIRMED — AccessFacts (Application/Common/Security/AccessFacts.cs) is entirely
+    fact-based (UserExists, EmailVerified, AccountExists, AccountMemberRole, WorkspaceExists, WorkspaceMemberRole,
+    ResourceExists, ResourceAudience, ResourceMemberRole, HasExplicitResourcePermission, PermissionRules,
+    HasActiveSubscription, SubscriptionTier, FeatureEnabled, AccountOperational, UserOperational). No Can* policy fields.
+WG-RES-005 provider ownership = D6-A — ResourceLocator documented as approved cross-context read port:
+    concentrates per-DbContext reads for the ExecutionContextBehavior scope resolution; performs no authz/mutation;
+    serves the cross-cutting concern so does not become WorkManagement business coupling. Action: canonical doc entry
+    added to backend/docs/architecture/security-tenancy-authorization.md §BE-SEC-011.
+WG-RES-006 facts vs policy CLEAN — no projected field was introduced as a hidden second permission hierarchy;
+    PermissionRule carries Governance policy; AccessFacts stays source-owned facts.
+WG-RES-007 Account/Workspace pairing PROVEN — ExecutionContextBehavior derives Account ALWAYS from the owned
+    workspace/resource row (workspace → ResolveWorkspaceAccessAsync; resource → ResourceLocator); API-token path
+    additionally enforces BoundAccountId equality. New negative proof added: Application.Tests
+    ExecutionContextBehaviorTests "Workspace_request_with_api_token_bound_to_different_account_is_denied"
+    (ApiToken bound to Account B + workspace owned by Account A → ForbiddenException, no snapshot).
+WG-RES-008 transport-neutral seam CONFIRMED — IResourceLocator (Application/Common/Context) exposes no EF/gRPC/HTTP/
+    broker types; ResourceLocator implementation may evolve independently.
+WG-RES-009 module-first layout respected — no production use case added to deprecated legacy feature paths.
+No Governance private EF read of downstream contexts — GovernanceStubConsumers (Messaging/Consumers/Governance)
+    are pure logging stubs with no downstream DbContext/service/provider coupling.
+Representative Board contract is implementable without private-context coupling — ResourceLocator reads Boards only
+    as the cross-cutting scope resolver (D6-A), not as a WorkManagement business use case.
+Evidence: backend.doc security-tenancy-authorization.md doc entry; Application.Tests +1 (588 total);
+    Architecture.Tests 410. Phase 6 CLOSED. P3-A Domain/Data may open under the approved producer contract.
+```
+
 # Phase 7 — Permission model
 
 ## 74. WG-PERM-001 — canonical Permission model
@@ -1360,6 +1460,49 @@ as relevant.
 
 Permission semantics D4/D5-ready.
 
+Status:
+
+```text
+WG-PERM-001 canonical model ESTABLISHED — single decision path = AccessPolicyEngine.EvaluatePermission
+    (pure, architecture-tested) + AccessFacts (server-derived facts) + AccessFactsQuery (single canonical
+    SQL authority) + IRequirePermission (PermissionAction + ResourceRef). §11 contract inventory corrected
+    (removed stale IPermissionService/IPermissionEvaluator/... names; added actual contracts) — DOC_STALE resolved.
+WG-PERM-002 permission identity DOCUMENTED — PermissionAction enum members persist as ToString(); ResourceKind
+    record struct persists via converter as {context}.{resource} string. Renaming stored action/resource_type is
+    a persisted-meaning change → data migration, not in-place rewrite. Recorded in §15a + ledger.
+WG-PERM-003 tenant/resource scope CONFIRMED — AccessFactsQuery binds account_id + workspace_id to the owning
+    Workspace/request scope; subject_type='User'/subject_id; scope_type='Workspace' or in-workspace resource match.
+    Workspace A rule can never authorize Workspace B. Proven by EvaluateAsync_BoardFromAnotherWorkspace_IsHidden
+    + CrossTenantIsolationTests.
+WG-PERM-004 default deny CONFIRMED — role null → Deny; no applicable allow band → tail default deny
+    (only ViewWorkspace/ViewBoard/ViewMembers baseline). Proven: ShouldDenyNonMembers,
+    AccountScope_ShouldDenyNonMembers, AccountScope_ShouldDenySuspendedMembers, InactiveOrOutOfWindowRule_IsIgnored.
+WG-PERM-005 deny precedence CONFIRMED + TESTED — within min-priority rule band, any Deny → deny before Allow.
+    Proven: EvaluateAsync_SamePriorityDenyOverridesAllow, AccountScope_ExplicitGovernanceDeny_OverridesAdminFallback,
+    AccountScope_ExplicitGovernanceAllow_GrantsBaselineDeniedAction. Precedence documented in §15a.
+WG-PERM-006 PermissionRule integration CONFIRMED — PermissionRule is the single canonical persisted action-level
+    rule; ResourcePermission = subject→resource ACL (engine uses row-existence); WorkspacePolicy = secondary config
+    not in evaluator. No duplicate DSL. §11/§15a single-owner statement.
+WG-PERM-007 permission cache NONE — no runtime permission-decision cache in the effective path; AccessFacts
+    computed per protected request. Persisted resource_permission_inheritance_cache projection is NOT on the
+    decision path (BE-SEC-024 revocation effective next request, no cache security window).
+WG-PERM-008 DB/index hardening VERIFY + DEFER (measured promotion gate) — existing permission_rules indexes:
+    (workspace_id), (scope_type, action), (status); resource_permissions: (resource_kind, resource_id), (subject_id).
+    FINDING: hot-path access-facts query filters permission_rules by (account_id, workspace_id, action,
+    subject_type, subject_id, scope_type, status + validity/resource predicates); no subject-aware/index aligned
+    to the query leading predicate. correctness/security blocker: NO; Phase-7 semantic blocker: NO; performance
+    finding: YES. DEFERRED by decision: run EXPLAIN (ANALYZE, BUFFERS) at representative permission-rule
+    cardinality/Workspace distributions in a performance/migration hardening task before choosing index shape
+    ((workspace_id, action, subject_id) not pre-committed; may need account_id/subject_type/partial for Active).
+    No DDL this phase. Owner/follow-up registered in PR-WG-05 ledger.
+WG-TST-PRULE-SEC-001 (WGREQ062) client claims not trusted — CONFIRMED by design: Action originates from
+    server-side IRequirePermission declaration; all membership/ownership/role/resource facts are server-derived
+    rows; no client-supplied role/workspace/owner presented to the engine.
+Evidence: canonical doc §11 correction + §15a permission evaluation contract; Application.Tests 588 (no delta);
+    Architecture.Tests 410 (no source change). Phase 7 CLOSED. Phase 8 (built-in roles, PR-WG-05 continuation)
+    may open.
+```
+
 # Phase 8 — Built-in roles
 
 ## 83. WG-ROLE-001 — role model audit
@@ -1388,6 +1531,21 @@ Select only product-approved roles already present/defined.
 
 Do not invent role taxonomy.
 
+Status: DONE (WG-ROLE-DEC-001 Option 3).
+
+- Role classes: Owner/Admin = administrative; Member = collaboration; Guest = constrained.
+- Board-management authority is resource-owned: requires an explicit Board-level grant
+  (Board owner/admin role or explicit resource permission), never Workspace visibility alone.
+- `AccessPolicyEngine` board gate now enforces the baseline: `IsBoardManagementAction`
+  (ManageBoard, ManageBoardPermission, CreateField, UpdateField, DeleteField, ShareBoardView)
+  requires `IsBoardManagementRole` (Owner/Admin) or `HasExplicitResourcePermission`.
+  Collaboration-class actions (View/CreateItem/UpdateItem/MoveItem/AssignItem/CreateBoardView/
+  UpdateBoardView) remain available to a Workspace member on a Workspace-visible board.
+- Observer restriction widened to MoveItem/AssignItem alongside UpdateItem.
+- Evidence: `AccessPolicyEngineCharacterizationTests` new baseline tests
+  (`WorkspaceMemberCannotManageBoardWithoutBoardAuthority`, `BoardOwnerCanManageBoard`,
+  `ExplicitResourcePermissionGrantsBoardManagement`, `WorkspaceMemberCanManageBoardView`).
+
 ## 85. WG-ROLE-003 — stable role identity
 
 Display-name change must not break persisted role assignments.
@@ -1410,6 +1568,9 @@ Verify:
 
 If admin/owner role encodes required Workspace administration, enforce concurrency-safe invariant.
 
+Status: DONE (WG-ROLE-DEC-001). Retain last-Owner invariant only. NO separate
+last-Admin invariant — zero Admin members is valid while Owner remains.
+
 ## 89. WG-ROLE-007 — custom-role deferral
 
 If custom roles are not required for P3:
@@ -1421,6 +1582,23 @@ do not block P2 core
 ## 90. Phase 8 exit
 
 Built-in role baseline at least D4.
+
+Status: CLOSED.
+
+```text
+WG-ROLE-001 role model audit        DONE  (WorkspaceRole enum, board role facts from Phase 6)
+WG-ROLE-002 built-in role baseline  DONE  (WG-ROLE-DEC-001 Option 3, engine board gate)
+WG-ROLE-003 stable role identity    DONE  (string-persisted WorkspaceRole converter, no rename)
+WG-ROLE-004 permission mapping      DONE  (typed PermissionAction sets in AccessPolicyEngine)
+WG-ROLE-005 assignment              DONE  (WorkspaceRole persisted on workspace_members; Authorize pipeline)
+WG-ROLE-006 last-admin invariant    DONE  (last-Owner only, NO last-Admin per decision)
+WG-ROLE-007 custom-role deferral    DONE  (CustomRole/MemberRoleAssignment deferred, not blocking)
+
+Evidence: Application.Tests 588 green; Integration.Tests 350 green (4 new baseline
+ characterization tests); Architecture.Tests 410 green. Broad Board-management
+ fallback removed/replaced by resource-owned Board authority (WG-ROLE-DEC-001).
+ Phase 8 CLOSED. Phase 9 (existing authorization path hardening) may open.
+```
 
 # Phase 9 — Existing authorization path hardening
 
@@ -1458,9 +1636,21 @@ existing responsibility conflicts semantically → stop + explicit migration dec
 new parallel authorization stack → forbidden
 ```
 
+Status: DONE. Single canonical decision path verified: `AccessPolicyEngine` (pure evaluator,
+`Application/Common/Security/AccessPolicyEngine.cs`) + `AccessControlBehavior` (pipeline) +
+`PostgresAccessFactsProvider` + `AccessFactsQuery` + `IRequirePermission` (100+ adopters across
+WorkManagement/Workspaces/Governance/Documents/Automation). No second
+AuthorizationBehavior/PermissionService stack exists (WG-PERM-001 established in Phase 7). No
+`ResourceType` symbol exists — `ResourceKind` is canonical (WG-AUTHZ-004 note).
+
 ## 93. WG-AUTHZ-002 — production registration
 
 Prove central behavior is registered in production DI.
+
+Status: DONE. `IAccessPolicyEvaluator → AccessPolicyEngine` singleton (`Application/DependencyInjection.cs:44`);
+`IResourceLocator`, `IAccessFactsProvider → PostgresAccessFactsProvider`
+(`Infrastructure/DependencyInjection/PersistenceRegistration.cs:97-107`); pipeline behaviors registered
+in `Application/DependencyInjection.cs:32-38`.
 
 ## 94. WG-AUTHZ-003 — pipeline ordering
 
@@ -1475,6 +1665,11 @@ logging
 ```
 
 Do not reorder unless architecture evidence requires it.
+
+Status: DONE. Order (outermost→innermost): ExceptionMapping → ApplicationTracing →
+RequestContract → ExecutionContext → DataSession → **AccessControl** → Idempotency
+(`Application/DependencyInjection.cs:32-38`). Authorization runs inside the data-session stage because
+`PostgresAccessFactsProvider` requires an open connection/transaction. No reorder performed.
 
 ## 95. WG-AUTHZ-004 — canonical decision inputs
 
@@ -1491,6 +1686,12 @@ Action
 
 using current abstractions.
 
+Status: DONE. The engine receives Actor/Account/Workspace/resource context via `AccessFacts`
+(`AccountMemberRole`, `WorkspaceMemberRole`, `ResourceExists`, `ResourceAudience`, `ResourceMemberRole`,
+`HasExplicitResourcePermission`) and the requested `Action` via `IRequirePermission`. Canonical resource
+category name is `ResourceKind` (`Domain/SharedKernel/ResourceKind.cs`); no `ResourceType` symbol exists
+(WG-AUTHZ-004 clarified).
+
 ## 96. WG-AUTHZ-005 — effective decision evaluator
 
 Connect:
@@ -1504,9 +1705,19 @@ policy/resource permission where supported
 
 to one decision path.
 
+Status: DONE. `AccessPolicyEngine.EvaluatePermission` composes membership (role null → deny), role
+(Owner short-circuit; WorkspaceAdmin administrative baseline), governance `permission_rules` (min-priority
+band, deny-over-allow), and resource permission (Board `ResourceMemberRole` / `HasExplicitResourcePermission`)
+into a single deterministic decision path.
+
 ## 97. WG-AUTHZ-006 — fail closed
 
 Missing/invalid context or evaluator failure must not grant access.
+
+Status: DONE. `AccessControlBehavior` maps only `Allowed` to `next()`; every other kind throws
+(`AccessControlBehavior.cs:50-68`). Missing Account/Workspace context → `SecurityMisconfiguration`
+(`AccessPolicyEngine.cs:24-38`); non-member → Forbidden; `ResourceLocator` unknown kind → null → deny;
+`PostgresAccessFactsProvider` throws on missing connection/transaction/row. No `try/catch → Allow` exists.
 
 ## 98. WG-AUTHZ-007 — unauthorized handler side effect proof
 
@@ -1516,6 +1727,11 @@ Representative protected handler:
 authorization denied
 → handler protected work does not commit
 ```
+
+Status: DONE. Existing integration proof: `MemberApiToken_SameWorkspace_PassesBootstrap_ButGovernanceDeniesManageWorkspaceSettings`
+(`Auth/ApiTokenHttpFlowTests.cs`) proves the protected pipeline denies a Member before the workspace-management
+side effect. Denial happens in `AccessControlBehavior` before `next()`, so the handler is never invoked on
+denial (no commit path).
 
 ## 99. WG-AUTHZ-008 — role-check debt inventory
 
@@ -1532,11 +1748,22 @@ defer with source debt
 
 Do not mass-rewrite without semantic proof.
 
+Status: DONE (focused — no mass rewrite). All handler-local role checks are **registered business
+invariants**, enforced by `HandlerAuthorizationBypassArchitectureTests` exception registry: `TransferOwnership`
+(current-actor ownership handover), member handlers `RemoveMember`/`SuspendMember`/`UpdateMemberRole`
+(last-owner counts), `ActivateMember`, `CreateWorkspace` (bootstrap), `ProvisionPersonalWorkspaceCommand`
+(system bootstrap). `http`/API layer does scope-gating only. No unregistered role-check debt found.
+
 ## 100. WG-AUTHZ-009 — API-only checks
 
 Where endpoint has business permission logic:
 
 move declaration/enforcement to approved Application path while preserving transport adaptation.
+
+Status: DONE. API layer is scope-gating only via `EndpointAccessAttribute` (`PublicEndpoint`/`AuthenticatedEndpoint`/
+`AccountScopedEndpoint`/`WorkspaceScopedEndpoint`/`ResourceScopedEndpoint`/`AdminEndpoint`/`InternalEndpoint`);
+`HttpRequestContextMiddleware` explicitly delegates business authorization to the Application layer. Endpoints
+(e.g. `UpdateMemberRoleEndpoint`) are thin and send commands; no endpoint re-implements business permission logic.
 
 ## 101. WG-AUTHZ-010 — background actor
 
@@ -1546,9 +1773,38 @@ verify explicit principal/authorization semantics.
 
 No global bypass.
 
+Status: DONE. Background consumers establish explicit principal/tenant context via `TenantContextConsumeFilter`
+(`SetAccount`/`SetWorkspace`/`SetSystem`); system-principal commands (`ProvisionPersonalWorkspaceCommand`,
+`SendWelcomeEmailCommand`) implement `ISystemInternalRequest` and are guarded by architecture tests
+(`SystemInternalRequests_Must_Not_Be_Anonymous` / `..._RequireUserPermission` / `..._Exposed_By_Api_Endpoints`).
+Delivery lease commits only after handler success (`ConsumerHost`). No implicit global bypass.
+
 ## 102. Phase 9 exit
 
 Authorization integration reaches D4/D5 for representative resources.
+
+Status: CLOSED.
+
+```text
+WG-AUTHZ-001 inventory central authorization path  DONE  (single AccessPolicyEngine path)
+WG-AUTHZ-002 production registration              DONE  (DI registration verified)
+WG-AUTHZ-003 pipeline ordering                     DONE  (authz inside data-session stage; no reorder)
+WG-AUTHZ-004 canonical decision inputs            DONE  (ResourceKind canonical; no ResourceType symbol)
+WG-AUTHZ-005 effective decision evaluator         DONE  (membership+role+permission+resource → one path)
+WG-AUTHZ-006 fail closed                          DONE  (AccessControlBehavior; default-deny tail)
+WG-AUTHZ-007 unauthorized side-effect proof       DONE  (pipeline denies before handler/commit)
+WG-AUTHZ-008 role-check debt inventory            DONE  (only registered business invariants; no mass rewrite)
+WG-AUTHZ-009 API-only checks                      DONE  (API is scope-gating only)
+WG-AUTHZ-010 background actor                     DONE  (explicit system/tenant principal; guards; no bypass)
+
+Feature fix: WorkspaceAdmin administrative baseline implemented in AccessPolicyEngine
+ (ManageWorkspace/InviteMember/ChangeMemberRole/RemoveMember/ManageWorkspaceSettings/CreateBoard at
+ Workspace scope for Admin). Board management remains resource-owned (Phase 8); DeleteWorkspace Owner-only.
+
+Evidence: Application.Tests 588 green; Integration.Tests 357 green (7 new Admin-baseline characterization
+ tests); Architecture.Tests 410 green. Full backend.slnx build 0 errors (SDK 9.0.317).
+ Phase 9 CLOSED. Phase 10 (WorkManagement handshake, PR-WG-07) may open.
+```
 
 # Phase 10 — WorkManagement handshake
 
@@ -1569,6 +1825,10 @@ because Board is P3 transactional root.
 
 Do not start with every WorkManagement resource.
 
+Status: DONE. Scoped to the representative WorkManagement Board slice only. Board/BoardMember/BoardRole/
+BoardVisibility and IWorkManagementDbContext knowledge stays behind the WorkManagement-owned adapter. No
+Documents/Automation/Collaboration owner is refactored this phase.
+
 ## 105. WG-WM-002 — Board resource authorization category
 
 WorkManagement owns semantic declaration.
@@ -1582,6 +1842,10 @@ Workspace/Account scope
 supported actions
 ```
 
+Status: DONE. WorkManagement owns the Board semantic declaration (`work-management.board` ResourceKind plus
+the WorkManagement actions such as `ManageBoard` consumed by Governance). The neutral facts SPI exposes only
+resource-owned facts and the shared authorization boundary no longer reads WorkManagement private persistence.
+
 ## 106. WG-WM-003 — Board actions
 
 Select only current product-approved Board actions needed for first vertical slice.
@@ -1589,6 +1853,10 @@ Select only current product-approved Board actions needed for first vertical sli
 Examples are not authoritative.
 
 Do not predesign every future Board action.
+
+Status: DONE. Proof uses the existing product-approved `ArchiveBoard` action (WorkManagement `ManageBoard`
+authorization category) already wired through the canonical AccessPolicyEngine path. Only first-slice Board
+management action exercised; no speculative Board action added.
 
 ## 107. WG-WM-004 — resource lookup
 
@@ -1601,6 +1869,14 @@ If authorization requires Board→Workspace or actor↔Board facts:
 
 Do not place a Board resolver under `Infrastructure.Governance` if it directly queries WorkManagement private persistence.
 
+Status: DONE. Approved neutral transport-neutral SPI `Application.Common.Security.IResourceAuthorizationFactsProvider`
+(exposes only resource-owned facts, no EF/HTTP/gRPC/broker/policy leakage). WorkManagement-owned adapter
+`Infrastructure.Data.ReadPorts.WorkManagement.WorkManagementResourceAuthorizationFactsProvider` owns
+`IWorkManagementDbContext` and resolves Board existence/lifecycle, visibility/audience, and actor→Board role.
+Governance consumes facts and AccessPolicyEngine evaluates policy (single evaluator — no second engine).
+`AccessFactsQuery` no longer contains raw `work.boards`/`work.board_members` SQL; `ResourceLocator` routes
+WorkManagement resources through the SPI. Enforced by architecture guards.
+
 ## 108. WG-WM-005 — representative allow path
 
 Test:
@@ -1609,6 +1885,9 @@ Test:
 Actor with valid Workspace membership + permission
 → Board action allowed
 ```
+
+Status: DONE. `ArchiveBoard_WorkspaceBoardOwner_AllowedThroughHandshake_AndCommitted` proves a Board Owner with
+Workspace membership archives through the canonical Governance handshake and the mutation commits durable state.
 
 ## 109. WG-WM-006 — representative deny path
 
@@ -1620,6 +1899,9 @@ Actor lacks permission
 → handler does not commit
 ```
 
+Status: DONE. `ArchiveBoard_WorkspaceMemberWithoutBoardAuthority_DeniedBeforeCommit` proves a Workspace member
+with no Board-level grant is denied by the engine (ForbiddenException) and the board is left unchanged (no commit).
+
 ## 110. WG-WM-007 — cross-tenant deny
 
 Test:
@@ -1630,9 +1912,21 @@ Actor in Account A
 → denied
 ```
 
+Status: DONE. `ArchiveBoard_CrossTenantBoard_DeniedWithoutMutation` proves an Account-A actor targeting a board
+under Account B is denied (ForbiddenException) before any effect; the foreign board stays unarchived. Cross-tenant
+protection is preserved by composition: the SPI-backed locator resolves board B's owning workspace, then
+AccessFactsQuery resolves the actor's workspace membership in that workspace → null for a foreign actor → engine
+denies. The SPI adapter uses IgnoreQueryFilters (same trust boundary as the locator it replaced) because AccessControl
+still enforces membership.
+
 ## 111. WG-WM-008 — no role-string dependency
 
 WorkManagement handler must not know Governance role display names.
+
+Status: DONE. The neutral SPI returns only resource-owned facts (BoardRole member role, visibility/audience,
+existence/lifecycle) and never Governance permission/role vocabulary. `HasExplicitResourcePermission` remains
+Governance-owned; the WorkManagement adapter exposes no policy decision. Architecture guard
+`PostgresAccessFactsProvider_MustNotEmitPolicyDecisions` and the neutral-SPI guard enforce the boundary.
 
 ## 112. WG-WM-009 — BoardItem deferral
 
@@ -1640,9 +1934,37 @@ Only add BoardItem independent resource contract if current product requires ind
 
 Do not create per-entity ACL by default.
 
+Status: DONE. The representative Board slice is the only independent work-management resource contract this
+phase. The adapter still resolves ownership scope for BoardGroup/BoardField/BoardView/BoardItem/Label/Checklist/
+ChecklistItem (so existing resource-scoped requests keep their canonical locate path), but no per-entity ACL is
+introduced. BoardItem continues to authorize through the Board (`work-management.board` facts + AccessPolicyEngine).
+
 ## 113. Phase 10 exit
 
 WorkManagement handshake proven.
+
+Status: CLOSED.
+
+```text
+WG-WM-001 identify first WorkManagement resource    DONE  (Board slice only)
+WG-WM-002 Board resource authorization category     DONE  (work-management.board; WorkManagement-owned)
+WG-WM-003 Board actions                             DONE  (ArchiveBoard / ManageBoard first slice)
+WG-WM-004 resource lookup / facts boundary          DONE  (neutral SPI + WorkManagement adapter; no work.* SQL in shared authz)
+WG-WM-005 representative allow path                 DONE  (Owner allowed + committed)
+WG-WM-006 representative deny path                  DONE  (member w/o board grant denied, no commit)
+WG-WM-007 cross-tenant deny                         DONE  (foreign account denied, no mutation)
+WG-WM-008 no role-string dependency                 DONE  (fact boundary; policy stays Governance-owned)
+WG-WM-009 BoardItem deferral                        DONE  (no per-entity ACL; scope-only for other kinds)
+
+Feature fix: raw work.boards / work.board_members reads removed from AccessFactsQuery; Board facts now composed
+ via the WorkManagement-owned facts adapter (WG-WM-004) over the tenant/account/Governance snapshot. ResourceLocator
+ routes the 8 work-management resource kinds through the same SPI. No second policy evaluator introduced.
+
+Evidence: Integration.Tests 361 green (4 new SPI-backed handshake proofs: allow+commit, deny+no-commit,
+ hidden/restricted Private board NotFound, cross-tenant deny); Architecture.Tests 414 green (4 new guards +
+ classified IgnoreQueryFilters allowlist); Application.Tests 588 green. Full backend.slnx build 0 errors (SDK 9.0.317).
+ Phase 10 CLOSED. Phase 11 (protected P3-B slice verification) may proceed/continue.
+```
 
 # Phase 11 — P2 protected-slice verification and staged P3 handoff
 
@@ -2674,7 +2996,7 @@ Scope:
 - last-admin invariant;
 - tests.
 
-## 228. PR-WG-03 — Resource/Action contract
+## 228. PR-WG-04 — Phase 6 Resource/Action contract
 
 Scope:
 
@@ -2684,7 +3006,11 @@ Scope:
 
 No WorkManagement business changes except minimal consumer fixture/contract if necessary.
 
-## 229. PR-WG-04 — Permission + built-in Role
+> Execution note: PR IDs are monotonic execution identities; they do not equal phase numbers.
+> Executed history: PR-WG-01 (Phase 3), PR-WG-02 (Phase 4), PR-WG-03 (Phase 5). PR-WG-04
+> corresponds to Phase 6 (Resource/Action contract).
+
+## 229. PR-WG-05 — Phase 7/8 Permission + built-in Role
 
 Scope:
 
@@ -2693,7 +3019,7 @@ Scope:
 - effective mapping;
 - tests.
 
-## 230. PR-WG-05 — Authorization pipeline integration
+## 230. PR-WG-06 — Phase 9 Authorization pipeline integration
 
 Scope:
 
@@ -2702,7 +3028,7 @@ Scope:
 - role-check debt migration limited to representative P2 paths;
 - architecture tests.
 
-## 231. PR-WG-06 — WorkManagement handshake / P2 gate
+## 231. PR-WG-07 — Phase 10/11 WorkManagement handshake / P2 gate
 
 Scope:
 
@@ -2710,27 +3036,30 @@ Scope:
 - allow/deny/cross-tenant proof;
 - P2 certification evidence.
 
-## 232. PR-WG-07 — Invitations / Provisioning
+Status: Phase 10 (WorkManagement handshake) WORKING/COMPLETE — evidence in §113 and ledger
+`decisions/PR-WG-07-phase10-workmanagement-handshake.md`. Phase 11 P3-B protected-slice verification remains open.
+
+## 232. PR-WG-08 — Invitations / Provisioning
 
 As release scope requires.
 
-## 233. PR-WG-08 — Teams / Spaces
+## 233. PR-WG-09 — Teams / Spaces
 
 Independent after core where possible.
 
-## 234. PR-WG-09 — Custom roles / Policies / ResourcePermissions
+## 234. PR-WG-10 — Custom roles / Policies / ResourcePermissions
 
 Keep policy complexity isolated from P2 core PRs.
 
-## 235. PR-WG-10 — ShareLinks
+## 235. PR-WG-11 — ShareLinks
 
 Focused security review.
 
-## 236. PR-WG-11 — Audit / SecurityEvents / Templates
+## 236. PR-WG-12 — Audit / SecurityEvents / Templates
 
 Only release-scoped work.
 
-## 237. PR-WG-12 — hardening/migration cleanup
+## 237. PR-WG-13 — hardening/migration cleanup
 
 Use only for residual cross-cutting fixes, not miscellaneous refactor.
 
@@ -2976,11 +3305,13 @@ Authorization semantics coherent.
 
 ## 264. Phase 3
 
+Workspace identity + Account containment proven; archive/delete semantics + account-inactive failure policy decided (D3-A/D3-B) and D3-B enforced centrally. CLOSED.
+
 Workspace D4-ready.
 
 ## 265. Phase 4
 
-Membership D4+.
+Membership D4+; decisions D4-A..D4-E recorded in PR-WG-02; CLOSED.
 
 ## 266. Phase 6
 

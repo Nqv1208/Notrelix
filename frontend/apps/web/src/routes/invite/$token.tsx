@@ -42,8 +42,12 @@ export function InvitePage() {
   const invitationsEndpoints: InvitationsEndpoints = useMemo(
     () => ({
       workspaces: {
-        invitationByToken: runtimeClient.endpoints.workspaces.invitationByToken,
+        invitationList: runtimeClient.endpoints.workspaces.invitationList,
+        cancelInvitation: runtimeClient.endpoints.workspaces.cancelInvitation,
+        invitationPreview: runtimeClient.endpoints.workspaces.invitationPreview,
         acceptInvitation: runtimeClient.endpoints.workspaces.acceptInvitation,
+        acceptInvitationById:
+          runtimeClient.endpoints.workspaces.acceptInvitationById,
         pendingInvitations:
           runtimeClient.endpoints.workspaces.pendingInvitations,
       },
@@ -93,16 +97,19 @@ export function InvitePage() {
     isLoading: inviteLoading,
     error,
   } = useQuery({
-    queryKey: workspaceQueryKeys.invitationByToken(token),
-    queryFn: () => invitationService.getByToken(token),
+    queryKey: workspaceQueryKeys.invitationPreview(token),
+    queryFn: () => invitationService.getPreview(token),
     enabled: !!token,
   });
 
   const acceptMutation = useMutation({
     mutationFn: () => invitationService.accept(token),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all });
-      const workspaceId = invitation?.workspaceId;
+      queryClient.invalidateQueries({
+        queryKey: workspaceQueryKeys.pendingInvitations,
+      });
+      const workspaceId = result?.workspaceId;
       if (workspaceId) {
         navigate({ to: `/workspaces/${workspaceId}` });
       } else {

@@ -499,7 +499,35 @@ Only once Phase 0 classification is complete.
 
 If WorkspaceHome is composition/read model, tests must verify it does not become authoritative mutable business state accidentally.
 
+## 19bis. WG-TST-WSP-AUTHZ-001 — non-operational Account fails closed on protected operations
+
+Requirements:
+
+```text
+WGREQ007
+```
+
+Given an Account whose `AccountStatus` is neither `Active` nor `Trialing` (suspended, closed) or which is soft-deleted/missing
+And a protected Account/Workspace/Resource-scoped operation
+Then the central AccessControl pipeline denies `Forbidden` before handler side effects
+And no durable mutation occurs.
+
+Also prove:
+
+- an Owner member cannot operate while its owning Account is non-operational;
+- missing/soft-deleted Account fails closed even when a member row would otherwise carry a role;
+- each denial performs exactly one access-facts evaluation.
+
+Evidence placed at:
+
+```text
+backend/tests/Notrelix.Integration.Tests/Baselines/AccessPolicyEngineCharacterizationTests.cs
+backend/tests/Notrelix.Integration.Tests/Workspaces/WorkspaceCreationPipelineAuthorizationTests.cs (suspended-account negative)
+```
+
 # Membership tests
+
+Phase 4 audit outcome: ledger `decisions/PR-WG-02-phase4-membership-core.md` (D4-1 identity-deactivation gate, D4-2 add-member identity validation, D4-3 query contract). Non-blocking deferrals: WG-TST-MEM-INF-001 / WG-TST-MEM-CONC-001 (concurrency), WG-TST-MEM-APP-003 (no self-leave).
 
 ## 20. WG-TST-MEM-DOM-001 — WorkspaceMember references stable upstream identity
 
@@ -614,6 +642,15 @@ Given membership still exists historically
 When upstream User becomes invalid
 Then protected operation is not authorized.
 
+Covered by PR-WG-02 D4-1 (central `UserOperational` access fact).
+
+Evidence placed at:
+
+```text
+backend/tests/Notrelix.Integration.Tests/Baselines/AccessPolicyEngineCharacterizationTests.cs (account-scope + workspace-scope non-operational user)
+backend/tests/Notrelix.Integration.Tests/Workspaces/WorkspaceCreationPipelineAuthorizationTests.cs (suspended-actor negative, single evaluation)
+```
+
 ## 30. WG-TST-MEM-X-001 — removed member historical attribution preserved
 
 Requirements:
@@ -625,6 +662,8 @@ WGREQ023
 Representative downstream resource/audit reference remains valid.
 
 # Invitation tests
+
+Phase 5 audit outcome: ledger `decisions/PR-WG-03-phase5-invitation-baseline.md` (D5-A shared acceptance service, D5-B idempotent consume of active membership, D5-C suspended/removed side-effect-free rejection, D5-D pending acceptance by invitation id). New evidence: `InvitationAcceptanceServiceTests`, `AcceptInvitationByIdCommandHandlerTests` (+14 Application), `AcceptInvitationByIdEndpointTests` (+4 API), `AcceptInvitationByIdIntegrationTests` (3, real PostgreSQL). Non-blocking deferrals: WG-TST-INV-CONC-001 accept-vs-revoke race (WG-INVITE-006, D5-E), sentinel captured-log secret proof (mechanism covered by hashed `InvitationTokenHash` + token-free DTOs). WG-TST-INV-DOM-001 / APP-002 creation-authority tests belong to the create-invitation phase (no create endpoint in baseline; `InviteMember` command exists, API mapping deferred).
 
 ## 31. WG-TST-INV-DOM-001 — Invitation distinct from active Membership
 
@@ -918,6 +957,12 @@ Account A + Workspace B(Account B) + Resource B → reject
 Account A + Workspace A + Resource B(Account B) → reject
 ```
 
+Phase 6 audit outcome: `backend/tests/Notrelix.Application.Tests/Common/Behaviors/ExecutionContextBehaviorTests.cs`
+`Workspace_request_with_api_token_bound_to_different_account_is_denied` proves the cross-account/workspace pairing
+reject path (API token bound to Account B + workspace owned by Account A → `ForbiddenException`, no snapshot).
+Structurally this holds because `ExecutionContextBehavior` always derives the Account from the owned workspace or
+resource row, never from a client-supplied pairing (see docs §BE-SEC-011).
+
 ## 56. WG-TST-RES-ARCH-003 — resource registration explicit
 
 Requirements:
@@ -983,6 +1028,16 @@ WGREQ054
 
 Once Phase 2 classification is complete, tests must prove one semantic model.
 
+Evidence (PASS, Phase 7):
+
+```text
+Single canonical decision path — AccessPolicyEngine.EvaluatePermission (pure, architecture-tested via
+AuthPipelineArchitectureTests: no DbContext / no IAccessFactsProvider) + AccessFacts + AccessFactsQuery +
+IRequirePermission (PermissionAction + ResourceRef). One semantic model documented in
+backend/docs/architecture/security-tenancy-authorization.md §11 / §15a. No second PermissionService/
+IPermissionEvaluator exists in source (stale inventory removed).
+```
+
 ## 62. WG-TST-PERM-MIG-001 — persisted permission identity stable
 
 Requirements:
@@ -990,6 +1045,11 @@ Requirements:
 ```text
 WGREQ055
 ```
+
+Evidence (PASS, Phase 7): identity is the stable domain vocabulary — `PermissionAction` enum members
+persist as `ToString()` (column `action`), `ResourceKind` `{context}.{resource}` record struct persists via
+`ResourceKindConverter` (column `resource_type`). No rename performed this phase; renaming a stored
+action/`resource_type` value is a persisted-meaning change requiring a data migration (documented §15a).
 
 ## 63. WG-TST-PERM-INT-001 — Workspace A permission cannot authorize Workspace B
 
@@ -1001,6 +1061,11 @@ WGREQ152
 ```
 
 Mandatory tenant isolation.
+
+Evidence (PASS, Phase 7): `AccessFactsQuery` binds `account_id` + `workspace_id` to the owning workspace / request
+scope, `subject_type='User'`, `subject_id=@user_id`, `scope_type='Workspace'` or in-workspace resource match, so a
+Workspace A rule can never authorize a Workspace B request. Proven by `EvaluateAsync_BoardFromAnotherWorkspace_IsHidden`
+and the existing `CrossTenantIsolationTests` suites.
 
 ## 64. WG-TST-PERM-APP-001 — explicit deny precedence if supported
 
@@ -1015,6 +1080,11 @@ Only if current canonical model supports explicit deny.
 
 If not supported, mark NOT_APPLICABLE in certification.
 
+Evidence (PASS, Phase 7): explicit Deny IS supported. Within the min-priority rule band, any Deny denies before an
+Allow is considered. Proven by `EvaluateAsync_SamePriorityDenyOverridesAllow`,
+`AccountScope_ExplicitGovernanceDeny_OverridesAdminFallback`, `AccountScope_ExplicitGovernanceAllow_GrantsBaselineDeniedAction`.
+Precedence recorded in §15a.
+
 ## 65. WG-TST-PERM-APP-002 — default deny
 
 Requirements:
@@ -1025,6 +1095,11 @@ WGREQ085
 ```
 
 No applicable grant/policy → denied.
+
+Evidence (PASS, Phase 7): role null → Deny; no applicable allow band → tail default deny (only
+ViewWorkspace/ViewBoard/ViewMembers baseline). Proven by `EvaluateAsync_ShouldDenyNonMembers`,
+`AccountScope_ShouldDenyNonMembers`, `AccountScope_ShouldDenySuspendedMembers`,
+`EvaluateAsync_InactiveOrOutOfWindowRule_IsIgnored`.
 
 ## 66. WG-TST-PERM-INT-002 — permission cache revocation
 
@@ -1039,6 +1114,11 @@ Given cached allow
 When permission is revoked
 Then access stops within accepted security window.
 
+Evidence (PASS, Phase 7): there is NO runtime permission-decision cache in the effective path — `AccessFacts` is
+computed per protected request. Revocation is effective on the next request with no cache security window
+(BE-SEC-024). `EvaluateAsync_RevokedPermissionsAreInvalid` proves a revoked/missing permission denies.
+The persisted `resource_permission_inheritance_cache` projection is not on the decision path.
+
 ## 67. WG-TST-PRULE-APP-001 — PermissionRule deterministic evaluation
 
 Requirements:
@@ -1049,6 +1129,9 @@ WGREQ061
 ```
 
 Only after semantic classification.
+
+Evidence (PASS, Phase 7): deterministic — SQL produces rules ordered by `priority`; the engine selects the
+min-priority band and applies deny-over-allow within it; no time/random input. Documented §15a.
 
 ## 68. WG-TST-PRULE-SEC-001 — client claims not trusted as rule facts
 
@@ -1065,6 +1148,11 @@ Expected:
 ```text
 server-derived trusted facts win
 ```
+
+Evidence (PASS, Phase 7, by design + architecture): the engine's `Action` originates from the server-side
+`IRequirePermission` declaration; all membership/ownership/role/resource facts are server-derived rows from
+`AccessFactsQuery`. No client-supplied role/workspace/owner/admin/attribute is ever presented to the engine.
+(client-supplied `WorkspaceId`/`AccountId` are treated only as inputs, never as authority — BE-APP-013.)
 
 # Role tests
 
@@ -1085,6 +1173,13 @@ WGREQ064
 ```
 
 Expected permissions come from canonical product/source authority, not test author invention.
+
+Status: Evidence in `AccessPolicyEngineCharacterizationTests` (`Notrelix.Integration.Tests`, Baselines):
+- `WorkspaceMemberCannotManageBoardWithoutBoardAuthority` — Member + Workspace-visible board, ManageBoard → Forbidden (resource-owned authority)
+- `BoardOwnerCanManageBoard` — Member + board owner role, ManageBoard → Allowed
+- `ExplicitResourcePermissionGrantsBoardManagement` — Member + explicit resource permission, ManageBoard → Allowed
+- `WorkspaceMemberCanManageBoardView` — Member + Workspace-visible board, CreateBoardView → Allowed (collaboration class)
+Baseline derived from WG-ROLE-DEC-001 (Option 3), not test-authored permissions.
 
 ## 71. WG-TST-ROLE-DOM-002 — built-in Role ID stable across display-name change
 
@@ -1251,6 +1346,14 @@ WGREQ080
 
 Representative command must not combine a second handler-local permission decision after pipeline allow/deny.
 
+Status: Evidence in `AccessPolicyEngineCharacterizationTests` (Integration, Baselines) — all decision
+input (workspace role, board role, explicit resource permission) is resolved inside the single
+`AccessPolicyEngine` path; no handler-local second decision. New baseline tests:
+- `WorkspaceAdminCanManageWorkspace` / `WorkspaceAdminCanInviteMember` / `WorkspaceAdminCanChangeMemberRole` — Admin allowed at Workspace scope
+- `WorkspaceMemberCannotAdministerWorkspace` / `WorkspaceGuestCannotAdministerWorkspace` — Member/Guest denied
+- `WorkspaceAdminCannotManageBoardWithoutBoardAuthority` — Admin not granted board management (resource-owned, Phase 8)
+- `WorkspaceAdminCannotDeleteWorkspace` — Owner-only preserved
+
 ## 87. WG-TST-AUTHZ-APP-002 — valid authentication still requires authorization
 
 Requirements:
@@ -1335,6 +1438,11 @@ Critical P2 gate test.
 
 Given denial
 Then handler protected state is unchanged.
+
+Status: Evidence — `AccessControlBehavior` maps only `Allowed` to `next()`; all other
+kinds throw before the handler runs (no commit path). Integration proof:
+`MemberApiToken_SameWorkspace_PassesBootstrap_ButGovernanceDeniesManageWorkspaceSettings`
+(`Auth/ApiTokenHttpFlowTests.cs`) denies a Member before the workspace-management side effect.
 
 ## 94. WG-TST-PIPE-ARCH-001 — handler-local role check prohibited as canonical enforcement
 
@@ -2480,6 +2588,20 @@ Board cross-tenant deny
 no WorkManagement role-name check
 no Governance private WorkManagement DB access
 ```
+
+Evidence (Integration.Tests, real Postgres pipeline via `BoardHandshakeAuthorizationIntegrationTests`, using
+`ArchiveBoard` / `ManageBoard`):
+
+```text
+Board allow                   ArchiveBoard_WorkspaceBoardOwner_AllowedThroughHandshake_AndCommitted  (Owner + WS membership → allowed, committed)
+Board deny                    ArchiveBoard_WorkspaceMemberWithoutBoardAuthority_DeniedBeforeCommit  (WS member, no Board grant → denied, no commit)
+Board cross-tenant deny       ArchiveBoard_CrossTenantBoard_DeniedWithoutMutation                  (Account A actor → Board under Account B → denied, no mutation)
+hidden/restricted (Private)   ArchiveBoard_PrivateBoardNonMember_HiddenAsNotFound                  (non-member on Private board → NotFoundException, no commit)
+no Governance private WM DB   Architecture: SharedAuthzSql_MustNotReadWorkManagementTablesDirectly (no work.boards/work.board_members in AccessFactsQuery)
+no role-name Check            Architecture: ResourceAuthorizationSpi_MustRemainTransportAndPersistenceNeutral + PostgresAccessFactsProvider_MustNotEmitPolicyDecisions
+```
+
+Integration.Tests 361 green (4 new Board-handshake proofs), Architecture.Tests 414 green (4 new guards).
 
 ## 191. WG-TST-P2-CORE-007 — migration/startup
 

@@ -39,7 +39,8 @@ public sealed class PostgresAccessFactsProviderTests : IAsyncLifetime
         await using var context = _database.CreateContext(tenant);
         await context.Database.OpenConnectionAsync();
         await using var transaction = await context.Database.BeginTransactionAsync();
-        var provider = new PostgresAccessFactsProvider(context, TimeProvider.System);
+        var provider = new PostgresAccessFactsProvider(
+            context, TimeProvider.System, new FakeResourceAuthorizationFactsProvider());
         var descriptor = RequestDescriptorValidator.Create(typeof(VerifiedRequest));
         var snapshot = new ExecutionContextSnapshot(
             Guid.NewGuid(), null, null, null,
