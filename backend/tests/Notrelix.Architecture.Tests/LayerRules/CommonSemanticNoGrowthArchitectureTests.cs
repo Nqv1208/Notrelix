@@ -48,10 +48,40 @@ public class CommonSemanticNoGrowthArchitectureTests
     private static readonly IReadOnlyList<string> KnownBusinessVocabularyTokens =
     [
         // Business vocabulary that must never become a new Common namespace.
+        // TAC-GATE-006: reference packs may not introduce shared PlanTier /
+        // Permission / WorkspaceRole / AccountStatus types for convenience.
         "PlanTier",
         "SubscriptionTier",
         "Entitlement",
+        "Permission",
+        "WorkspaceRole",
+        "AccountStatus",
     ];
+
+    /// <summary>
+    /// Exact governed business-vocabulary debt allowed to exist under Common
+    /// outside the frozen namespaces. Each entry is a real production type
+    /// already registered as exact debt; new vocabulary types are rejected and
+    /// a baseline entry that disappears must shrink this baseline in the same
+    /// change (two-way exact semantics).
+    ///
+    ///   Notrelix.Application.Common.Requests.IRequirePermission — DEBT-COMMON-001:
+    ///   the request marker exposes the Governance-owned PermissionAction vocabulary
+    ///   through its Action member; it may only be removed together with the
+    ///   governed permission-seam migration (TAC-GATE-022 shrink).
+    ///
+    ///   Notrelix.Application.Common.Security.AccessPermissionRule — pipeline-owned
+    ///   authorization machinery (the AccessFacts/AccessPolicyEngine seam governed
+    ///   by WG-REF-002); it describes permission-rule rows, not new shared
+    ///   business vocabulary. Removal belongs to the same governed
+    ///   permission-seam migration family.
+    /// </summary>
+    private static readonly IReadOnlySet<string> KnownVocabularyDebt =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Notrelix.Application.Common.Requests.IRequirePermission",
+            "Notrelix.Application.Common.Security.AccessPermissionRule",
+        };
 
     [Fact]
     public void FrozenBusinessNamespaces_TypeSets_AreExact()
@@ -80,18 +110,20 @@ public class CommonSemanticNoGrowthArchitectureTests
     [Fact]
     public void CommonTypes_MustNotCarry_BusinessVocabularyNames()
     {
-        var violations = Assembly.Load("Notrelix.Application")
-            .GetTypes()
-            .Where(t => t.Namespace?.StartsWith("Notrelix.Application.Common.", StringComparison.Ordinal) == true)
-            .Where(t => !FrozenBusinessNamespaces.ContainsKey(t.Namespace!))
-            .Where(t => KnownBusinessVocabularyTokens.Any(token =>
-                t.Name.Contains(token, StringComparison.Ordinal)))
-            .Select(t => $"{t.FullName}: business vocabulary must live in its owning context")
-            .ToList();
+        var flaggedDebt = CollectVocabularyDebt();
 
-        violations.Should().BeEmpty(
+        var unexpected = flaggedDebt.Except(KnownVocabularyDebt).ToList();
+        var stale = KnownVocabularyDebt.Except(flaggedDebt).ToList();
+
+        unexpected.Should().BeEmpty(
             "ARCH-BC-008: reference packs must not push plan/role/permission/entitlement " +
-            "vocabulary into Application/Common. Violations:\n" + string.Join("\n", violations));
+            "vocabulary into Application/Common. A new business-vocabulary type requires " +
+            "the governed migration that moves it to its owning context. Violations:\n" +
+            string.Join("\n", unexpected));
+
+        stale.Should().BeEmpty(
+            "ARCH-BC-008: the vocabulary-debt baseline shrank — shrink KnownVocabularyDebt " +
+            "in this test in the same change. Removed: " + string.Join(", ", stale));
     }
 
     // ------------------------------------------------------------------
@@ -117,5 +149,56 @@ public class CommonSemanticNoGrowthArchitectureTests
         baseline.Contains(ns + ".FeatureCode").Should().BeTrue();
         baseline.Contains(ns + ".NewPlanTierType").Should().BeFalse(
             "an unbaselined type would fail the exact-set check");
+    }
+
+    [Fact]
+    public void Gate_Detects_NewVocabularyDebt_OutsideBaseline()
+    {
+        var flagged = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Notrelix.Application.Common.Requests.IRequirePermission", // registered exact debt
+            "Notrelix.Application.Common.Foo.WorkspaceRole", // synthetic new debt
+        };
+
+        var unexpected = flagged.Except(KnownVocabularyDebt).ToList();
+
+        unexpected.Should().Contain("Notrelix.Application.Common.Foo.WorkspaceRole",
+            "a new business-vocabulary Common type must fail — no broad token allowance");
+        unexpected.Should().ContainSingle(
+            "the exact registered debt entries must stay allowed");
+    }
+
+    [Fact]
+    public void Gate_VocabularyDebt_IsExact()
+    {
+        KnownVocabularyDebt.Should().Contain(
+            "Notrelix.Application.Common.Requests.IRequirePermission",
+            "DEBT-COMMON-001 is the only sanctioned vocabulary-debt entry");
+
+        KnownVocabularyDebt.Should().OnlyContain(t =>
+            t.StartsWith("Notrelix.Application.Common.", StringComparison.Ordinal),
+            "debt entries must be exact Common type identities, not namespace wildcards");
+    }
+
+    private static SortedSet<string> CollectVocabularyDebt()
+    {
+        var debt = new SortedSet<string>(StringComparer.Ordinal);
+
+        foreach (var type in Assembly.Load("Notrelix.Application").GetTypes())
+        {
+            if (type.Namespace?.StartsWith("Notrelix.Application.Common.", StringComparison.Ordinal) != true)
+                continue;
+
+            if (FrozenBusinessNamespaces.ContainsKey(type.Namespace))
+                continue;
+
+            if (KnownBusinessVocabularyTokens.Any(token =>
+                    type.Name.Contains(token, StringComparison.Ordinal)))
+            {
+                debt.Add(type.FullName!);
+            }
+        }
+
+        return debt;
     }
 }

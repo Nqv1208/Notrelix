@@ -83,6 +83,38 @@ public class ApplicationTransportBoundaryTests
             .Should().NotBeNull("low-level Redis client must not enter Application");
     }
 
+    // TAC-GATE-007: every forbidden root must be exercised by a negative
+    // self-test — the gate must prove it rejects each listed policy root,
+    // not just the samples above.
+
+    public static TheoryData<string> ForbiddenRootCases()
+    {
+        var data = new TheoryData<string>();
+        foreach (var root in ForbiddenNamespaceRoots)
+            data.Add(root);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ForbiddenRootCases))]
+    public void Gate_Rejects_EveryForbiddenNamespaceRoot(string root)
+    {
+        var violation = ClassifyTransportDependencyByNamespace($"{root}.SomeClient");
+
+        violation.Should().NotBeNull(
+            $"'{root}' is a forbidden transport/provider root — Application code must not depend on it");
+    }
+
+    [Theory]
+    [MemberData(nameof(ForbiddenRootCases))]
+    public void Gate_Rejects_ExactForbiddenRootNamespace(string root)
+    {
+        var violation = ClassifyTransportDependencyByNamespace(root);
+
+        violation.Should().NotBeNull(
+            $"a type directly in the forbidden root namespace '{root}' must fail");
+    }
+
     [Fact]
     public void Gate_Allows_SemanticPortsAndApprovedEfException()
     {

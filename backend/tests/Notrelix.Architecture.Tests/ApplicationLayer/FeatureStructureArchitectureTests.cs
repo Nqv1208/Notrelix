@@ -186,6 +186,18 @@ public class FeatureStructureArchitectureTests
     }
 
     [Fact]
+    public void ServicesBaseline_ShrunkBaseline_MatchesActual_Passes()
+    {
+        // baseline {A}, actual {A}: baseline was shrunk in the same change
+        // that removed the source file — the reviewed shrink is accepted.
+        var actual = new HashSet<string>(StringComparer.Ordinal) { "A.cs" };
+        var baseline = new HashSet<string>(StringComparer.Ordinal) { "A.cs" };
+
+        actual.Except(baseline).Should().BeEmpty();
+        baseline.Except(actual).Should().BeEmpty();
+    }
+
+    [Fact]
     public void ServicesBaseline_NewFile_FailsAsUnknown()
     {
         // baseline {A}, actual {A,B}: regrowth beyond the reviewed baseline.
