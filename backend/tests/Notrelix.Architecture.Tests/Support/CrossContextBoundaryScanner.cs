@@ -490,7 +490,7 @@ internal static class CrossContextBoundaryScanner
             return false;
 
         return declaringType.GetInterfaces()
-            .Any(i => i.FullName == "Notrelix.Application.Common.Requests.IRequirePermission");
+            .Any(i => i.FullName == "Notrelix.Application.Common.Requests.Security.IRequirePermission");
     }
 
     private static bool IsInsideUsingDirective(SyntaxNode node)

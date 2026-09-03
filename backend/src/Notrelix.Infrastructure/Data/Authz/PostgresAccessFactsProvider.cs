@@ -2,8 +2,9 @@ using System.Data;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Storage;
 using Notrelix.Application.Common.Exceptions;
-using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Common.Requests.Execution;
+using Notrelix.Application.Common.Requests.Gates;
+using Notrelix.Application.Common.Requests.Security;
 
 namespace Notrelix.Infrastructure.Data.Authz;
 

@@ -52,6 +52,7 @@ global using Notrelix.Domain.Collaboration.Reactions;
 global using Notrelix.Application.Common.Auditing;
 global using Notrelix.Application.Common.Context;
 global using Notrelix.Application.Common.Requests;
+global using Notrelix.Application.Common.Requests.Gates;
 global using Notrelix.Application.Common.Requests.Security;
 global using Notrelix.Application.Common.SystemOperations;
 global using Notrelix.Application.Common.Data;

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Realtime;
+using Notrelix.Application.Common.Requests.Gates;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Requests.Security;
 

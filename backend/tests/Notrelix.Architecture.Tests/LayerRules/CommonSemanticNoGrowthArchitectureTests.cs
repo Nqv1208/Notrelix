@@ -65,10 +65,12 @@ public class CommonSemanticNoGrowthArchitectureTests
     /// a baseline entry that disappears must shrink this baseline in the same
     /// change (two-way exact semantics).
     ///
-    ///   Notrelix.Application.Common.Requests.IRequirePermission — DEBT-COMMON-001:
-    ///   the request marker exposes the Governance-owned PermissionAction vocabulary
-    ///   through its Action member; it may only be removed together with the
-    ///   governed permission-seam migration (TAC-GATE-022 shrink).
+    ///   Notrelix.Application.Common.Requests.Security.IRequirePermission —
+    ///   DEBT-COMMON-001: the request marker exposes the Governance-owned
+    ///   PermissionAction vocabulary through its Action member; it may only be
+    ///   removed together with the governed permission-seam migration
+    ///   (TAC-GATE-022 shrink). Namespace aligned with its Requests/Security/
+    ///   folder in the request-marker namespace-alignment change.
     ///
     ///   Notrelix.Application.Common.Security.AccessPermissionRule — pipeline-owned
     ///   authorization machinery (the AccessFacts/AccessPolicyEngine seam governed
@@ -79,7 +81,7 @@ public class CommonSemanticNoGrowthArchitectureTests
     private static readonly IReadOnlySet<string> KnownVocabularyDebt =
         new HashSet<string>(StringComparer.Ordinal)
         {
-            "Notrelix.Application.Common.Requests.IRequirePermission",
+            "Notrelix.Application.Common.Requests.Security.IRequirePermission",
             "Notrelix.Application.Common.Security.AccessPermissionRule",
         };
 
@@ -156,7 +158,7 @@ public class CommonSemanticNoGrowthArchitectureTests
     {
         var flagged = new HashSet<string>(StringComparer.Ordinal)
         {
-            "Notrelix.Application.Common.Requests.IRequirePermission", // registered exact debt
+            "Notrelix.Application.Common.Requests.Security.IRequirePermission", // registered exact debt
             "Notrelix.Application.Common.Foo.WorkspaceRole", // synthetic new debt
         };
 
@@ -172,8 +174,8 @@ public class CommonSemanticNoGrowthArchitectureTests
     public void Gate_VocabularyDebt_IsExact()
     {
         KnownVocabularyDebt.Should().Contain(
-            "Notrelix.Application.Common.Requests.IRequirePermission",
-            "DEBT-COMMON-001 is the only sanctioned vocabulary-debt entry");
+            "Notrelix.Application.Common.Requests.Security.IRequirePermission",
+            "DEBT-COMMON-001 is the only sanctioned permission-marker vocabulary-debt entry");
 
         KnownVocabularyDebt.Should().OnlyContain(t =>
             t.StartsWith("Notrelix.Application.Common.", StringComparison.Ordinal),
