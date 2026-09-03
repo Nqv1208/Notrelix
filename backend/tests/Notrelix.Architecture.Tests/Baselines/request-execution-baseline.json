@@ -1,5 +1,30 @@
 [
   {
+    "requestType": "Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount.RenameAccountCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount.RenameAccountCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Analytics.Placements.Commands.RebuildWorkspacePlacements.RebuildWorkspacePlacementsCommand",
     "kind": "Command",
     "principalMarkers": [

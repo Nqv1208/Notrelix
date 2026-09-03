@@ -220,6 +220,46 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CommandOwnedConsumerFailureAfterClaim_ClaimRemovedSoRetrySucceeds()
+    {
+        // Command-dispatching consumers (e.g. WorkspaceProvisioningConsumer) must
+        // not be wrapped in the dedup transaction (their MediatR command opens its
+        // own data-session transaction). On effect failure the "Processing" claim
+        // must still be removed so unique-constraint dedup does not block retry.
+        var eventId = Guid.NewGuid();
+        var consumerName = "notrelix-identity-registration-completed-workspace-provision-v1";
+        _consumerExecutionCount = 0;
+
+        var integrationEvent = new TestIntegrationEvent
+        {
+            EventId = eventId,
+            MessageName = "identity.registration-completed",
+            SchemaVersion = 1,
+            AccountId = Guid.NewGuid(),
+            ActorUserId = Guid.NewGuid()
+        };
+
+        // First delivery - the command-owned consumer throws; claim must be removed.
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            DeliverMessageInNewScope(integrationEvent, consumerName, shouldThrow: true));
+
+        var (context1, _, _) = CreateFixture();
+        var rowsAfterFail = await context1.Set<MessagingProcessedEvent>()
+            .CountAsync(e => e.EventId == eventId && e.ConsumerName == consumerName);
+        rowsAfterFail.Should().Be(0, "claim must be removed so the message can be retried");
+
+        // Second delivery - succeeds; exactly one Succeeded row.
+        await DeliverMessageInNewScope(integrationEvent, consumerName, shouldThrow: false);
+
+        var (context2, _, _) = CreateFixture();
+        var rows = await context2.Set<MessagingProcessedEvent>()
+            .Where(e => e.EventId == eventId && e.ConsumerName == consumerName)
+            .ToListAsync();
+        rows.Count.Should().Be(1);
+        rows[0].Status.Should().Be("Succeeded");
+    }
+
+    [Fact]
     public async Task RLSAppliedInsideTransaction_ConsumerQueryRespectsTenant()
     {
         // Arrange: Create 2 workspaces with different boards
