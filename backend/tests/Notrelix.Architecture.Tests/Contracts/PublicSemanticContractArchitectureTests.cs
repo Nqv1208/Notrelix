@@ -46,17 +46,37 @@ public class PublicSemanticContractArchitectureTests
 
         foreach (var type in publicTypes)
         {
-            var ownProducer = ResolveProducerFromPublicNamespace(type.Namespace);
-            foreach (var referenced in CollectReferencedTypes(type))
-            {
-                if (ClassifyPurity(referenced, ownProducer) is { } reason)
-                    violations.Add($"{type.FullName}: {reason} ({referenced.FullName})");
-            }
+            violations.AddRange(EvaluatePublicContract(type));
         }
 
         violations.Should().BeEmpty(
             "ARCH-BC-005: producer Public contracts must be small immutable semantic " +
             "surfaces. Violations:\n" + string.Join("\n", violations));
+    }
+
+    /// <summary>
+    /// Evaluates a single Public contract against the ARCH-BC-005 purity rules,
+    /// classifying the contract's own surface first and then each dependency it
+    /// references. The production gate and the structural self-tests share this
+    /// exact traversal, so a fixture's failure proves the production algorithm
+    /// (not just a private classifier called in isolation).
+    /// </summary>
+    private static IEnumerable<string> EvaluatePublicContract(Type type)
+    {
+        var ownProducer = ResolveProducerFromPublicNamespace(type.Namespace);
+
+        // Self-surface first: classify the Public contract type itself so a
+        // persistence-leaking signature (IQueryable / DbSet / EF) is rejected
+        // structurally, not just its referenced dependencies.
+        if (ClassifyPurity(type, ownProducer) is { } selfReason)
+            yield return $"{type.FullName}: {selfReason} (contract surface)";
+
+        // Then each dependency the contract references.
+        foreach (var referenced in CollectReferencedTypes(type))
+        {
+            if (ClassifyPurity(referenced, ownProducer) is { } reason)
+                yield return $"{type.FullName}: {reason} ({referenced.FullName})";
+        }
     }
 
     // ------------------------------------------------------------------
@@ -95,7 +115,9 @@ public class PublicSemanticContractArchitectureTests
     [Fact]
     public void Gate_Detects_RepositoryInsidePublicContract()
     {
-        ClassifyPurity("Notrelix.Application.Common.Requests.Transactions.IRequestDataSession", ownProducer: null)
+        // The real current data-session mechanism identity. Classified via the
+        // exact reviewed identity + Common-branch rejection, not a stale FQN.
+        ClassifyPurity(typeof(Notrelix.Application.Common.Data.IRequestDataSession), ownProducer: null)
             .Should().NotBeNull("repository/session mechanisms must not leak into Public contracts");
     }
 
@@ -253,12 +275,14 @@ public class PublicSemanticContractArchitectureTests
     [Fact]
     public void Gate_Detects_OwnProducer_Public_RepositoryMechanism()
     {
-        // Real-Type path: rejection is structural (surface/signature evidence),
-        // not caused by the fixture's name.
-        ClassifyPurity(
-                typeof(Notrelix.Application.Features.Accounts.Public.IAccountReadWriteSurface),
-                ownProducer: "Accounts")
-            .Should().NotBeNull(
+        // Real-Type path through the SAME algorithm the production gate uses
+        // (EvaluatePublicContract classifies the contract surface first, then
+        // dependencies). Rejection is structural (surface/signature evidence),
+        // not caused by the fixture's name; the fixture's name contains no
+        // mechanism words.
+        EvaluatePublicContract(
+                typeof(Notrelix.Application.Features.Accounts.Public.IAccountReadWriteSurface))
+            .Should().NotBeEmpty(
                 "repository/mechanism contracts must be rejected on the own Producer.Public " +
                 "semantic surface even though they are own-Public; rejection must be caused " +
                 "by structural persistence-surface evidence, not by mechanism nouns in the name");
