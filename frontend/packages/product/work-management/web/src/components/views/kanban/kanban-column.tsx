@@ -18,23 +18,23 @@ import { KanbanColumnMenu } from "./kanban-column-menu";
 export function KanbanColumn({
   board,
   group,
-  workspaceId,
   onOpenDetails,
   onRename,
   onColorChange,
   onDelete,
   onDuplicateCard,
   onDeleteCard,
+  onCreateCard,
 }: {
   board: Board;
   group: BoardGroup;
-  workspaceId: string;
   onOpenDetails: (cardId: string) => void;
   onRename: (title: string) => void;
   onColorChange: (color: string) => void;
   onDelete: () => void;
   onDuplicateCard: (cardId: string) => void;
   onDeleteCard: (cardId: string) => void;
+  onCreateCard: (title: string) => void;
 }) {
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -145,11 +145,10 @@ export function KanbanColumn({
               />
             ))}
             <KanbanAddCard
-              boardId={board.id}
-              workspaceId={workspaceId}
               group={group}
               isAdding={isAdding}
               onToggleAdding={setIsAdding}
+              onSubmit={onCreateCard}
             />
           </div>
         </SortableContext>

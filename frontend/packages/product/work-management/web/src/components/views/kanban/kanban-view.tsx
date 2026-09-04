@@ -6,13 +6,14 @@ import {
 import {
   useDuplicateCard,
   useDeleteCard,
+  useCreateCard,
 } from "@notrelix/work-management-state";
 import { generatePosition } from "@notrelix/work-management-core";
 import { KanbanToolbar } from "./kanban-toolbar";
 import { KanbanBoard } from "./kanban-board";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { KanbanSkeleton } from "./kanban-skeleton";
-import { AlertCircle } from "lucide-react";
+import { KanbanUnavailableState } from "./kanban-unavailable-state";
 
 export function KanbanView({
   boardId,
@@ -42,6 +43,7 @@ export function KanbanView({
   } = useSelectedCardPanel();
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const deleteCard = useDeleteCard(boardId, workspaceId);
+  const createCard = useCreateCard(boardId, workspaceId);
 
   const handleOpenDetail = useCallback(
     (cardId: string) => {
@@ -56,19 +58,7 @@ export function KanbanView({
 
   if (isLoading) return <KanbanSkeleton />;
   if (error || !board) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-xs">
-          <AlertCircle className="mx-auto mb-3 size-8 text-destructive" />
-          <h2 className="text-lg font-semibold text-foreground font-display">
-            Board unavailable
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            The Kanban board could not be loaded.
-          </p>
-        </div>
-      </div>
-    );
+    return <KanbanUnavailableState />;
   }
 
   const handleCreateCard = () => {
@@ -104,35 +94,37 @@ export function KanbanView({
           <KanbanBoard
             board={board}
             columns={columns}
-            workspaceId={workspaceId}
             onOpenDetails={handleOpenDetail}
-            onMoveCard={(cardId: any, listId: any, position: any) => {
+            onMoveCard={(cardId, listId, position) => {
               moveCard.mutate({ cardId, listId, position });
             }}
-            onReorderColumns={(updated: any) => {
+            onReorderColumns={(updated) => {
               reorderColumns.mutate(updated);
             }}
-            onAdd={(title: any) => {
+            onAdd={(title) => {
               const lastPos = columns.at(-1)?.position;
               createColumn.mutate({
                 title,
                 position: generatePosition(lastPos, undefined),
               });
             }}
-            onRenameColumn={(listId: any, title: any) => {
+            onRenameColumn={(listId, title) => {
               updateColumn.mutate({ listId, title });
             }}
-            onColorChangeColumn={(listId: any, color: any) => {
+            onColorChangeColumn={(listId, color) => {
               updateColumn.mutate({ listId, color });
             }}
-            onDeleteColumn={(listId: any) => {
+            onDeleteColumn={(listId) => {
               deleteColumn.mutate(listId);
             }}
-            onDuplicateCard={(cardId: any) => {
+            onDuplicateCard={(cardId) => {
               duplicateCard.mutate(cardId);
             }}
-            onDeleteCard={(cardId: any) => {
+            onDeleteCard={(cardId) => {
               deleteCard.mutate(cardId);
+            }}
+            onCreateCard={(listId, title, position) => {
+              createCard.mutate({ listId, title, position });
             }}
           />
         </div>

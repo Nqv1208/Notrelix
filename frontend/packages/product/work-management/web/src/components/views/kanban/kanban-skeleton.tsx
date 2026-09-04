@@ -6,6 +6,7 @@ export function KanbanSkeleton() {
       className="flex h-full flex-col gap-4 overflow-hidden bg-card p-4 sm:p-6"
       aria-busy="true"
       aria-label="Loading Kanban board"
+      role="status"
     >
       {/* Toolbar skeleton */}
       <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-border pb-4">

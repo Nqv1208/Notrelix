@@ -19,30 +19,33 @@ import {
 import { Input } from "@notrelix/ui-web";
 import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
 import { Skeleton } from "@notrelix/ui-web";
-import { useCardActivity } from "@notrelix/work-management-state";
-import type { CardDetail, CardActivity } from "@notrelix/work-management-core";
+import type { CardActivity } from "@notrelix/work-management-core";
 import { TaskDetailEmptyState } from "./task-detail-empty-state";
 
-export function TaskActivityTab({ card }: { card: CardDetail }) {
-  const {
-    data = [],
-    isLoading,
-    isFetching,
-    refetch,
-  } = useCardActivity(card.id, card.workspaceId);
+export function TaskActivityTab({
+  activity,
+  isLoading,
+  isFetching,
+  onRefresh,
+}: {
+  activity: readonly CardActivity[];
+  isLoading: boolean;
+  isFetching: boolean;
+  onRefresh: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [person, setPerson] = useState<string | null>(null);
   const filteredActivity = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return data.filter((item) => {
+    return activity.filter((item) => {
       const matchesQuery =
         !normalized ||
         `${item.actor} ${item.action}`.toLowerCase().includes(normalized);
       const matchesPerson = !person || item.actor === person;
       return matchesQuery && matchesPerson;
     });
-  }, [data, person, query]);
-  const people = Array.from(new Set(data.map((item) => item.actor)));
+  }, [activity, person, query]);
+  const people = Array.from(new Set(activity.map((item) => item.actor)));
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -100,7 +103,7 @@ export function TaskActivityTab({ card }: { card: CardDetail }) {
             variant="ghost"
             size="icon-sm"
             aria-label="Refresh activity"
-            onClick={() => refetch()}
+            onClick={onRefresh}
             disabled={isFetching}
           >
             <RefreshCw
@@ -131,7 +134,7 @@ export function TaskActivityTab({ card }: { card: CardDetail }) {
         />
       ) : (
         <div className="flex flex-col gap-2">
-          {filteredActivity.map((item: CardActivity) => (
+          {filteredActivity.map((item) => (
             <div
               key={item.id}
               className="rounded-lg border border-border bg-card p-3"
