@@ -48,7 +48,7 @@ function discoverWorkspacePackages(): DiscoveredPackage[] {
 describe("closed-world architecture manifest", () => {
   const discovered = discoverWorkspacePackages();
   const discoveredNames = new Set(discovered.map((pkg) => pkg.name));
-  const manifestNames = new Set(
+  const manifestNames: Set<string> = new Set(
     ARCHITECTURE_MANIFEST.map((entry) => entry.packageName),
   );
 
@@ -113,7 +113,7 @@ describe("closed-world architecture manifest", () => {
   });
 
   it("ARCH-008 production scope cannot allow product-testing", () => {
-    const testingPackages = new Set(
+    const testingPackages: Set<string> = new Set(
       ARCHITECTURE_MANIFEST.filter(
         (entry) => entry.layer === "product-testing",
       ).map((entry) => entry.packageName),
@@ -371,7 +371,7 @@ describe("layer policy validation", () => {
   });
 
   it("product testing is never allowed from core-production or app entries", () => {
-    const testingPackages = new Set(
+    const testingPackages: Set<string> = new Set(
       ARCHITECTURE_MANIFEST.filter(
         (entry) => entry.layer === "product-testing",
       ).map((entry) => entry.packageName),

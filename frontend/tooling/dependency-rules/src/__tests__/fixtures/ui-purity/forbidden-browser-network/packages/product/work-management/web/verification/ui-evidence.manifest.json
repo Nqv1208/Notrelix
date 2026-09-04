@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "work-management.forbidden-xhr",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/xhr.tsx",
+      "stories": [
+        { "id": "work-management-forbidden-xhr--default", "state": "Default" }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "work-management.forbidden-websocket",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/websocket.tsx",
+      "stories": [
+        {
+          "id": "work-management-forbidden-websocket--default",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    }
+  ]
+}

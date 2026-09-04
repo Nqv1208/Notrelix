@@ -42,6 +42,7 @@ export interface ArchitecturePackagePolicy {
   readonly layer: ArchitectureLayer;
   readonly freezeScope: FreezeScope;
   readonly allowedInternalImports: readonly string[];
+  readonly allowedVerificationInternalImports?: readonly string[];
 }
 
 export type ManifestViolationCode =
@@ -85,7 +86,7 @@ const FEATURE_WEB_NO_UI = [
   "@notrelix/query",
 ] as const;
 
-export const ARCHITECTURE_MANIFEST = [
+const ARCHITECTURE_MANIFEST_SOURCE = [
   // ── Foundation ──────────────────────────────────────────────────────
   {
     packageName: "@notrelix/contracts",
@@ -229,6 +230,10 @@ export const ARCHITECTURE_MANIFEST = [
       "@notrelix/ui-web",
       "@notrelix/platform",
     ],
+    allowedVerificationInternalImports: [
+      "@notrelix/testing",
+      "@notrelix/work-management-testing",
+    ],
   },
   {
     packageName: "@notrelix/work-management-mobile",
@@ -248,10 +253,7 @@ export const ARCHITECTURE_MANIFEST = [
     relativePath: "packages/product/work-management/testing",
     layer: "product-testing",
     freezeScope: "verification",
-    allowedInternalImports: [
-      "@notrelix/work-management-core",
-      "@notrelix/work-management-state",
-    ],
+    allowedInternalImports: ["@notrelix/work-management-core"],
   },
 
   // ── Product: Docs ──────────────────────────────────────────────────
@@ -293,6 +295,7 @@ export const ARCHITECTURE_MANIFEST = [
       "@notrelix/ui-web",
       "@notrelix/platform",
     ],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/docs-mobile",
@@ -336,6 +339,10 @@ export const ARCHITECTURE_MANIFEST = [
       "@notrelix/ui-web",
       "@notrelix/platform",
     ],
+    allowedVerificationInternalImports: [
+      "@notrelix/automation-testing",
+      "@notrelix/testing",
+    ],
   },
   {
     packageName: "@notrelix/automation-mobile",
@@ -367,6 +374,7 @@ export const ARCHITECTURE_MANIFEST = [
     layer: "feature",
     freezeScope: "core-production",
     allowedInternalImports: [...FEATURE_WEB_BASE],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/features-workspace",
@@ -374,6 +382,7 @@ export const ARCHITECTURE_MANIFEST = [
     layer: "feature",
     freezeScope: "core-production",
     allowedInternalImports: [...FEATURE_WEB_BASE],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/features-account",
@@ -388,6 +397,7 @@ export const ARCHITECTURE_MANIFEST = [
     layer: "feature",
     freezeScope: "core-production",
     allowedInternalImports: [...FEATURE_WEB_BASE],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/features-integrations",
@@ -402,6 +412,7 @@ export const ARCHITECTURE_MANIFEST = [
     layer: "feature",
     freezeScope: "core-production",
     allowedInternalImports: [...FEATURE_WEB_REALTIME],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/features-activity",
@@ -423,6 +434,7 @@ export const ARCHITECTURE_MANIFEST = [
     layer: "feature",
     freezeScope: "core-production",
     allowedInternalImports: [...FEATURE_WEB_BASE],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/features-collaboration",
@@ -430,6 +442,7 @@ export const ARCHITECTURE_MANIFEST = [
     layer: "feature",
     freezeScope: "core-production",
     allowedInternalImports: [...FEATURE_WEB_REALTIME],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
 
   // ── Dev Support ───────────────────────────────────────────────────
@@ -515,7 +528,14 @@ export const ARCHITECTURE_MANIFEST = [
       "@notrelix/automation-mobile",
     ],
   },
-] as const satisfies readonly ArchitecturePackagePolicy[];
+] as const;
+
+export const ARCHITECTURE_MANIFEST = ARCHITECTURE_MANIFEST_SOURCE.map(
+  (entry) => ({
+    allowedVerificationInternalImports: [],
+    ...entry,
+  }),
+) satisfies readonly ArchitecturePackagePolicy[];
 
 export const ARCHITECTURE_POLICY_BY_PACKAGE = new Map<
   string,

@@ -1957,7 +1957,18 @@ Stop completion/certification if:
 
 ---
 
-# 163. Executable evidence
+# 163. FE-TST-082 — Fixture, application mock, shell, and real E2E prove different properties
+
+- Typed fixtures and scenarios render isolated components and exercise deterministic local behavior; they do not intercept transport or prove backend compatibility.
+- `@notrelix/dev-mock-backend` is the canonical closed-world application mock. It proves application flows against modeled API semantics and must never fall through to real HTTP.
+- Production-shell E2E proves the built client starts and fails safely with mock mode disabled; unreachable placeholder endpoints do not make it a backend integration test.
+- Real-backend E2E must orchestrate a reachable canonical backend, deterministic reset/seed, real authentication, persistence reread, and tenant/permission negatives. Its claim must remain separate from shell and mock lanes.
+
+Critical product UI evidence is selected from owner-local schema-version-1 manifests and collected Storybook tags. Manifest rows bind `surfaceId`, `pureEntry`, required story states, checks, owner-local `interactionTests[]`, and explicit N/A rationale. A11y/visual/network runners select the registered stories generically from the built Storybook index; interaction entries require an existing focused component test file and guarded web-test reporting must prove that each declared file executed non-zero. Missing, duplicate, stale, zero-collected, skipped, or provider-backed bindings fail closed.
+
+Pure UI component tests use `renderPureUi`. That harness does not create a QueryClient, Router, auth/session provider, runtime provider, application service, API client, or mock backend. Pure UI tests and stories install a fail-closed network guard for `fetch`, `XMLHttpRequest`, and `WebSocket`; an API interception or fake auth/session provider is integration evidence, not pure UI evidence.
+
+# 164. Executable evidence
 
 Current primary evidence:
 
