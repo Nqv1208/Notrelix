@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "search.results",
+      "owner": "@notrelix/features-search",
+      "pureEntry": "src/web/search-results-surface.tsx",
+      "stories": [
+        { "id": "search-search-results--default", "state": "Default" },
+        { "id": "search-search-results--empty", "state": "Empty" },
+        { "id": "search-search-results--edge-data", "state": "EdgeData" }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}

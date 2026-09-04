@@ -71,6 +71,7 @@ export function AutomationsTab({
               </p>
             </div>
             <Switch
+              aria-label={`Toggle automation rule ${rule.name}`}
               checked={rule.isEnabled}
               onCheckedChange={(enabled) => onToggleRule?.(rule.id, enabled)}
               className="data-[state=checked]:bg-primary"

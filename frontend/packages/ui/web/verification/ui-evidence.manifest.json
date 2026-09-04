@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "ui-web.brand.logo",
+      "owner": "@notrelix/ui-web",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "stories": [
+        { "id": "ui-web-critical-surfaces--brand-logo", "state": "Default" }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["a11y", "visual", "purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "ui-web.feedback.states",
+      "owner": "@notrelix/ui-web",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--feedback-states",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["a11y", "visual", "purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "ui-web.forms.submit-state",
+      "owner": "@notrelix/ui-web",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "stories": [
+        { "id": "ui-web-critical-surfaces--submit-state", "state": "Default" }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "ui-web.primitives.form-controls",
+      "owner": "@notrelix/ui-web",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "stories": [
+        { "id": "ui-web-critical-surfaces--form-controls", "state": "Default" }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "ui-web.primitives.navigation",
+      "owner": "@notrelix/ui-web",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--navigation-primitives",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "ui-web.primitives.overlays",
+      "owner": "@notrelix/ui-web",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--overlay-primitives",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "ui-web.primitives.data-display",
+      "owner": "@notrelix/ui-web",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--data-display-primitives",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}

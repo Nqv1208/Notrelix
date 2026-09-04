@@ -21,7 +21,7 @@ export function AccessDeniedState({
         <h3 className="text-lg font-semibold tracking-tight text-amber-900 dark:text-amber-200">
           {title}
         </h3>
-        <p className="text-sm text-amber-700/85 dark:text-amber-400/80">
+        <p className="text-sm text-amber-800 dark:text-amber-200">
           {description}
         </p>
       </div>

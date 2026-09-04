@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "notifications.bell",
+      "owner": "@notrelix/features-notifications",
+      "pureEntry": "src/web/components/notification-bell-surface.tsx",
+      "stories": [
+        {
+          "id": "notifications-notification-bell--default",
+          "state": "Default"
+        },
+        {
+          "id": "notifications-notification-bell--empty",
+          "state": "Empty"
+        },
+        {
+          "id": "notifications-notification-bell--edge-data",
+          "state": "EdgeData"
+        }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/notification-bell-surface.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}

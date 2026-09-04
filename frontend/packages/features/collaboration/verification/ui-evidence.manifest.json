@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "collaboration.comments",
+      "owner": "@notrelix/features-collaboration",
+      "pureEntry": "src/web/components/resource-comments-surface.tsx",
+      "stories": [
+        {
+          "id": "collaboration-resource-comments--default",
+          "state": "Default"
+        },
+        {
+          "id": "collaboration-resource-comments--empty",
+          "state": "Empty"
+        },
+        {
+          "id": "collaboration-resource-comments--edge-data",
+          "state": "EdgeData"
+        }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/resource-comments-surface.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}
