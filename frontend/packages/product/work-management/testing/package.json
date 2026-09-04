@@ -14,8 +14,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@notrelix/work-management-core": "workspace:*",
-    "@notrelix/work-management-state": "workspace:*"
+    "@notrelix/work-management-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

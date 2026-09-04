@@ -1,3 +1,5 @@
+import { fixedIso } from "../support/fixed-clock";
+
 export interface BoardPatch {
   type: string;
   boardId: string;
@@ -16,7 +18,7 @@ export function createBoardPatch(overrides?: Partial<BoardPatch>): BoardPatch {
     itemId: "card-test",
     groupId: "group-test",
     value: "status-doing",
-    timestamp: new Date().toISOString(),
+    timestamp: fixedIso(),
     ...overrides,
   };
 }
