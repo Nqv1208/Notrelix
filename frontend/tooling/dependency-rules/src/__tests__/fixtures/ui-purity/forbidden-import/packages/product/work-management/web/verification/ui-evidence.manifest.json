@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "work-management.forbidden-import",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/entry.tsx",
+      "stories": [
+        {
+          "id": "work-management-forbidden-import--default",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    }
+  ]
+}

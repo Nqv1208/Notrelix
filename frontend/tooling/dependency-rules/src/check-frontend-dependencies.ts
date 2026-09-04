@@ -193,6 +193,16 @@ function walkDir(dir: string, exts = [".ts", ".tsx"]): string[] {
   return results;
 }
 
+export function isVerificationSource(filePath: string): boolean {
+  return (
+    filePath.includes("/__tests__/") ||
+    filePath.includes("/verification/") ||
+    filePath.includes(".test.") ||
+    filePath.includes(".spec.") ||
+    filePath.includes(".stories.")
+  );
+}
+
 const FORBIDDEN_MOBILE_DOM_ELEMENTS = new Set([
   "div",
   "span",
@@ -267,7 +277,6 @@ export function checkArchitecture(
   // scan to avoid cascading noise, but keep scanning every registered package.
   for (const [pkgName, pkg] of registered) {
     const policy = policyByPackage.get(pkgName)!;
-    const allowed = policy.allowedInternalImports;
     const isManifestMobileUnit = isMobilePolicy(policy, pkgName);
     const forbidden = [
       ...(FORBIDDEN_IMPORTS[pkgName] ?? []),
@@ -278,6 +287,12 @@ export function checkArchitecture(
 
     for (const file of files) {
       const relPath = file.replace(rootDir, "");
+      const allowed = isVerificationSource(relPath)
+        ? [
+            ...policy.allowedInternalImports,
+            ...(policy.allowedVerificationInternalImports ?? []),
+          ]
+        : policy.allowedInternalImports;
       const content = readFileSync(file, "utf8");
       const layer = classifyLayer(relPath, pkgName);
       const isMobileUnit =
