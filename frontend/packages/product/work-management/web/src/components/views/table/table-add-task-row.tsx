@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@notrelix/ui-web";
 import { Input } from "@notrelix/ui-web";
-import { useCreateCard } from "@notrelix/work-management-state";
 import type {
   BoardGroup,
   BoardTableColumn,
@@ -10,39 +9,35 @@ import type {
 import { generatePosition } from "@notrelix/work-management-core";
 
 export function TableAddTaskRow({
-  boardId,
-  workspaceId,
   group,
   columns,
   gridTemplate,
   inputId,
+  onCreateTask,
 }: {
-  boardId: string;
-  workspaceId: string;
   group: BoardGroup;
   columns: BoardTableColumn[];
   gridTemplate: string;
   inputId: string;
+  onCreateTask: (groupId: string, title: string, position: number) => void;
 }) {
   const [title, setTitle] = useState("");
-  const createCard = useCreateCard(boardId, workspaceId);
   const firstColumn = columns[0];
 
   function submit() {
     const nextTitle = title.trim();
     if (!nextTitle) return;
     const lastPosition = group.cards.at(-1)?.position;
-    createCard.mutate({
-      listId: group.id,
-      title: nextTitle,
-      position: generatePosition(lastPosition, undefined),
-    });
+    onCreateTask(
+      group.id,
+      nextTitle,
+      generatePosition(lastPosition, undefined),
+    );
     setTitle("");
   }
 
   return (
     <div
-      role="row"
       className="grid min-h-[44px] items-center border-b border-l-[3px] border-border/70 border-l-transparent bg-table-row text-sm text-muted-foreground transition-colors duration-150 focus-within:bg-table-row-hover hover:bg-table-row-hover/60"
       style={{ gridTemplateColumns: gridTemplate }}
     >
@@ -52,7 +47,6 @@ export function TableAddTaskRow({
       {columns.map((column, index) => (
         <div
           key={column.id}
-          role="gridcell"
           className="min-w-0 border-r border-border/70 px-3 py-1.5"
         >
           {index === 0 ? (

@@ -20,27 +20,30 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
 import { Textarea } from "@notrelix/ui-web";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@notrelix/ui-web";
-import { useCreateCardUpdate } from "@notrelix/work-management-state";
 import type { CardMember } from "@notrelix/work-management-core";
+import type { TaskDetailCallbacks } from "./task-detail-types";
 
 export function UpdateComposer({
   cardId,
-  workspaceId,
   members,
+  disabled = false,
+  onCreateUpdate,
 }: {
   cardId: string;
-  workspaceId: string;
   members: CardMember[];
+  disabled?: boolean;
+  onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
 }) {
   const [body, setBody] = useState("");
   const [mentionUserIds, setMentionUserIds] = useState<string[]>([]);
-  const createUpdate = useCreateCardUpdate(cardId, workspaceId);
-  const canSubmit = body.trim().length > 0 && !createUpdate.isPending;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const canSubmit = body.trim().length > 0 && !disabled && !isSubmitting;
 
   function submit() {
     const nextBody = body.trim();
     if (!nextBody) return;
-    createUpdate.mutate(
+    setIsSubmitting(true);
+    onCreateUpdate(
       {
         cardId,
         body: nextBody,
@@ -51,6 +54,7 @@ export function UpdateComposer({
         onSuccess: () => {
           setBody("");
           setMentionUserIds([]);
+          setIsSubmitting(false);
         },
       },
     );
@@ -68,10 +72,11 @@ export function UpdateComposer({
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       <Textarea
         value={body}
-        onChange={(event: any) => setBody(event.target.value)}
+        onChange={(event) => setBody(event.target.value)}
         placeholder="Write an update..."
         className="min-h-16 h-16 resize-none border-0 bg-card p-2.5 text-xs shadow-none focus-visible:ring-0"
         aria-label="Write an update"
+        disabled={disabled}
       />
       <div className="flex flex-wrap items-center justify-between gap-1.5 border-t border-border px-2 py-1 bg-muted/10">
         <div className="flex items-center gap-0.5">
@@ -85,6 +90,7 @@ export function UpdateComposer({
                     size="icon-sm"
                     className="size-7"
                     aria-label="Mention user"
+                    disabled={disabled}
                   >
                     <AtSign className="size-3.5" />
                   </Button>
@@ -117,10 +123,7 @@ export function UpdateComposer({
                         className="text-xs py-1"
                       >
                         <Avatar className="size-5">
-                          <AvatarFallback
-                            className="text-[8px] font-bold text-primary-foreground"
-                            style={{ backgroundColor: member.color }}
-                          >
+                          <AvatarFallback className="bg-foreground text-[10px] font-bold text-background">
                             {member.initials}
                           </AvatarFallback>
                         </Avatar>

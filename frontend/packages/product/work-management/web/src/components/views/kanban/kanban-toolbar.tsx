@@ -37,7 +37,7 @@ export function KanbanToolbar({
         <Plus className="mr-1 size-4" />
         Column
       </Button>
-      <Button size="sm" onClick={onCreateCard}>
+      <Button variant="outline" size="sm" onClick={onCreateCard}>
         <Plus className="mr-1 size-4" />
         Card
       </Button>

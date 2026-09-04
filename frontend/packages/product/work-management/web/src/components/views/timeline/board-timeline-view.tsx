@@ -3,9 +3,15 @@ import type { BoardGroup, Card } from "@notrelix/work-management-core";
 
 type TimelineCard = Card & { groupTitle: string };
 
-export function BoardTimelineView({ groups }: { groups: BoardGroup[] }) {
+export function BoardTimelineView({
+  groups,
+  referenceDate = new Date(),
+}: {
+  groups: BoardGroup[];
+  referenceDate?: Date;
+}) {
   const { timelineStart, timelineEnd, weeks } = useMemo(() => {
-    const today = new Date();
+    const today = new Date(referenceDate);
     const dayOfWeek = today.getDay();
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const timelineStart = new Date(today);
@@ -19,7 +25,7 @@ export function BoardTimelineView({ groups }: { groups: BoardGroup[] }) {
       (_, index) => `Week ${index + 1}`,
     );
     return { timelineStart, timelineEnd, weeks };
-  }, []);
+  }, [referenceDate]);
 
   const cards = useMemo<TimelineCard[]>(() => {
     return groups
@@ -31,8 +37,9 @@ export function BoardTimelineView({ groups }: { groups: BoardGroup[] }) {
 
   const getTimelineBarStyles = useCallback(
     (card: TimelineCard, index: number) => {
-      const start = new Date(card.startDate || new Date());
-      const end = new Date(card.dueDate || new Date());
+      const fallbackDate = new Date(referenceDate);
+      const start = new Date(card.startDate || fallbackDate);
+      const end = new Date(card.dueDate || fallbackDate);
 
       if (
         Number.isNaN(start.getTime()) ||
@@ -62,7 +69,7 @@ export function BoardTimelineView({ groups }: { groups: BoardGroup[] }) {
         marginLeft: `${marginLeftPct}%`,
       };
     },
-    [timelineEnd, timelineStart],
+    [referenceDate, timelineEnd, timelineStart],
   );
 
   return (
@@ -90,7 +97,11 @@ export function BoardTimelineView({ groups }: { groups: BoardGroup[] }) {
                 </p>
               </div>
               <div className="col-span-6 h-3 rounded-full bg-muted">
-                <div className="h-3 rounded-full bg-primary" style={barStyle} />
+                <div
+                  className="h-3 rounded-full bg-primary"
+                  data-testid={`timeline-bar-${card.id}`}
+                  style={barStyle}
+                />
               </div>
             </div>
           );

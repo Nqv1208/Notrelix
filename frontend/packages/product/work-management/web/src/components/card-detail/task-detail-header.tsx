@@ -18,31 +18,75 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@notrelix/ui-web";
 import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
 import { Calendar } from "@notrelix/ui-web";
-import {
-  useDeleteCard,
-  useDuplicateCard,
-  useUpdateCard,
-  useUpdateFieldValue,
-} from "@notrelix/work-management-state";
-import type { Board, CardDetail } from "@notrelix/work-management-core";
+import type {
+  Board,
+  CardDetail,
+  UpdateCardInput,
+  UpdateFieldValueInput,
+} from "@notrelix/work-management-core";
 import { cn } from "@notrelix/ui-web";
 import { formatDate } from "../views/table/table-utils";
+import type { TaskDetailCapabilities } from "./task-detail-types";
 
 export function TaskDetailHeader({
   board,
   card,
+  capabilities,
   onClose,
+  onRenameTitle,
+  onToggleWatch,
+  onDuplicate,
+  onArchive,
+  onUpdateFieldValue,
 }: {
   board: Board;
   card: CardDetail;
+  capabilities: TaskDetailCapabilities;
   onClose: () => void;
+  onRenameTitle: (cardId: string, patch: UpdateCardInput) => void;
+  onToggleWatch: (watched: boolean) => void;
+  onDuplicate: (cardId: string) => void;
+  onArchive: (cardId: string) => void;
+  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+}) {
+  return (
+    <TaskDetailHeaderImpl
+      board={board}
+      card={card}
+      capabilities={capabilities}
+      onClose={onClose}
+      onRenameTitle={onRenameTitle}
+      onToggleWatch={onToggleWatch}
+      onDuplicate={onDuplicate}
+      onArchive={onArchive}
+      onUpdateFieldValue={onUpdateFieldValue}
+    />
+  );
+}
+
+function TaskDetailHeaderImpl({
+  board,
+  card,
+  capabilities,
+  onClose,
+  onRenameTitle,
+  onToggleWatch,
+  onDuplicate,
+  onArchive,
+  onUpdateFieldValue,
+}: {
+  board: Board;
+  card: CardDetail;
+  capabilities: TaskDetailCapabilities;
+  onClose: () => void;
+  onRenameTitle: (cardId: string, patch: UpdateCardInput) => void;
+  onToggleWatch: (watched: boolean) => void;
+  onDuplicate: (cardId: string) => void;
+  onArchive: (cardId: string) => void;
+  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
 }) {
   const [isWatched, setIsWatched] = useState(card.isWatched);
   const titleRef = useRef<HTMLDivElement>(null);
-  const updateCard = useUpdateCard(card.boardId, card.workspaceId);
-  const deleteCard = useDeleteCard(card.boardId, card.workspaceId);
-  const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
-  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
 
   const personField = board.fieldDefinitions.find(
     (f) => f.fieldType === "person" || f.id.endsWith("field-person"),
@@ -78,8 +122,8 @@ export function TaskDetailHeader({
       if (titleRef.current) titleRef.current.textContent = card.title;
       return;
     }
-    updateCard.mutate({ cardId: card.id, patch: { title: nextTitle } });
-  }, [card.id, card.title, updateCard]);
+    onRenameTitle(card.id, { title: nextTitle });
+  }, [card.id, card.title, onRenameTitle]);
 
   function handleTitleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Enter") {
@@ -97,7 +141,8 @@ export function TaskDetailHeader({
     const next = new Set(selectedUserIds);
     if (next.has(memberId)) next.delete(memberId);
     else next.add(memberId);
-    updateFieldValue.mutate({
+    if (!capabilities.canEditFields) return;
+    onUpdateFieldValue({
       cardId: card.id,
       fieldDefinitionId: personField.id,
       value: Array.from(next),
@@ -106,7 +151,8 @@ export function TaskDetailHeader({
 
   function updateStatus(statusId: string) {
     if (!statusField) return;
-    updateFieldValue.mutate({
+    if (!capabilities.canEditFields) return;
+    onUpdateFieldValue({
       cardId: card.id,
       fieldDefinitionId: statusField.id,
       value: statusId,
@@ -115,7 +161,8 @@ export function TaskDetailHeader({
 
   function updatePriority(priorityId: string) {
     if (!priorityField) return;
-    updateFieldValue.mutate({
+    if (!capabilities.canEditFields) return;
+    onUpdateFieldValue({
       cardId: card.id,
       fieldDefinitionId: priorityField.id,
       value: priorityId,
@@ -124,7 +171,8 @@ export function TaskDetailHeader({
 
   function updateDueDate(date: Date | undefined) {
     if (!dueDateField) return;
-    updateFieldValue.mutate({
+    if (!capabilities.canEditFields) return;
+    onUpdateFieldValue({
       cardId: card.id,
       fieldDefinitionId: dueDateField.id,
       value: date ? date.toISOString() : null,
@@ -168,7 +216,14 @@ export function TaskDetailHeader({
                 variant="ghost"
                 size="icon-sm"
                 aria-label={isWatched ? "Unfollow task" : "Follow task"}
-                onClick={() => setIsWatched((current) => !current)}
+                onClick={() =>
+                  setIsWatched((current) => {
+                    const next = !current;
+                    onToggleWatch(next);
+                    return next;
+                  })
+                }
+                disabled={!capabilities.canEditFields}
               >
                 {isWatched ? (
                   <Bell className="size-4" />
@@ -190,18 +245,17 @@ export function TaskDetailHeader({
             <DropdownMenuContent align="end">
               <DropdownMenuItem>Copy task link</DropdownMenuItem>
               <DropdownMenuItem>Move to group</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => duplicateCard.mutate(card.id)}>
+              <DropdownMenuItem onClick={() => onDuplicate(card.id)}>
                 Duplicate task
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => {
-                  deleteCard.mutate(card.id);
-                  onClose();
-                }}
-              >
-                Archive task
-              </DropdownMenuItem>
+              {capabilities.canDelete ? (
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => onArchive(card.id)}
+                >
+                  Archive task
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
@@ -223,6 +277,7 @@ export function TaskDetailHeader({
             <button
               type="button"
               className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+              disabled={!capabilities.canEditFields}
             >
               {card.members.length > 0 ? (
                 <>
@@ -232,10 +287,7 @@ export function TaskDetailHeader({
                         key={member.id}
                         className="inline-flex size-5 ring-2 ring-popover"
                       >
-                        <AvatarFallback
-                          className="text-[8px] font-bold text-primary-foreground"
-                          style={{ backgroundColor: member.color }}
-                        >
+                        <AvatarFallback className="bg-foreground text-[10px] font-bold text-background">
                           {member.initials}
                         </AvatarFallback>
                       </Avatar>
@@ -270,10 +322,7 @@ export function TaskDetailHeader({
                   onClick={() => toggleMember(member.userId)}
                 >
                   <Avatar className="size-6">
-                    <AvatarFallback
-                      className="text-[9px] font-bold text-primary-foreground"
-                      style={{ backgroundColor: member.color }}
-                    >
+                    <AvatarFallback className="bg-foreground text-[10px] font-bold text-background">
                       {member.initials}
                     </AvatarFallback>
                   </Avatar>
@@ -302,6 +351,7 @@ export function TaskDetailHeader({
                   "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/40",
                   status ? "text-foreground" : "text-muted-foreground",
                 )}
+                disabled={!capabilities.canEditFields}
               >
                 <span
                   className="size-2 rounded-full shrink-0"
@@ -340,6 +390,7 @@ export function TaskDetailHeader({
                   "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/40",
                   priority ? "text-foreground" : "text-muted-foreground",
                 )}
+                disabled={!capabilities.canEditFields}
               >
                 <span
                   className="size-2 rounded-full shrink-0"
@@ -377,6 +428,7 @@ export function TaskDetailHeader({
                 "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/40",
                 card.dueDate ? "text-foreground" : "text-muted-foreground",
               )}
+              disabled={!capabilities.canEditFields}
             >
               <CalendarDays className="size-3.5 shrink-0" />
               <span>{card.dueDate ? formatDate(card.dueDate) : "No date"}</span>

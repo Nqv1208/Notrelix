@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent, type KeyboardEvent } from "react";
 import {
   ChevronDown,
   MoreHorizontal,
@@ -17,19 +17,16 @@ import {
 import { Badge } from "@notrelix/ui-web";
 import { Button } from "@notrelix/ui-web";
 import { Input } from "@notrelix/ui-web";
-import {
-  useDeleteGroup,
-  useDuplicateGroup,
-  useUpdateGroup,
-} from "@notrelix/work-management-state";
 import type {
   Board,
   BoardGroup,
   BoardTableColumn,
+  UpdateCardInput,
 } from "@notrelix/work-management-core";
 import { cn } from "@notrelix/ui-web";
 import { TableAddTaskRow } from "./table-add-task-row";
 import { TableRow } from "./table-row";
+import type { TableFieldValueUpdate } from "./table-cell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,16 +55,34 @@ export function TableGroupSection({
   onSetCardSelected,
   onOpenDetail,
   onToggleGroup,
+  onCreateTask,
+  onRenameGroup,
+  onUpdateGroupColor,
+  onDuplicateGroup,
+  onDeleteGroup,
+  onDuplicateCard,
+  onDeleteCard,
+  onUpdateCard,
+  onUpdateFieldValue,
 }: {
   board: Board;
   group: BoardGroup;
   columns: BoardTableColumn[];
   gridTemplate: string;
-  selectedCardIdSet: Set<string>;
+  selectedCardIdSet: ReadonlySet<string>;
   activeDetailCardId?: string | null;
   onSetCardSelected: (cardId: string, selected: boolean) => void;
   onOpenDetail: (cardId: string) => void;
   onToggleGroup: (groupId: string) => void;
+  onCreateTask: (groupId: string, title: string, position: number) => void;
+  onRenameGroup: (groupId: string, title: string) => void;
+  onUpdateGroupColor: (groupId: string, color: string) => void;
+  onDuplicateGroup: (groupId: string) => void;
+  onDeleteGroup: (groupId: string) => void;
+  onDuplicateCard: (cardId: string) => void;
+  onDeleteCard: (cardId: string) => void;
+  onUpdateCard: (cardId: string, patch: UpdateCardInput) => void;
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: group.id,
@@ -85,10 +100,13 @@ export function TableGroupSection({
       )}
     >
       <GroupHeader
-        board={board}
         group={group}
         inputId={inputId}
         onToggleGroup={onToggleGroup}
+        onRenameGroup={onRenameGroup}
+        onUpdateGroupColor={onUpdateGroupColor}
+        onDuplicateGroup={onDuplicateGroup}
+        onDeleteGroup={onDeleteGroup}
       />
       {!group.isCollapsed ? (
         <SortableContext
@@ -108,15 +126,18 @@ export function TableGroupSection({
               isDetailSelected={activeDetailCardId === card.id}
               onSelect={(selected) => onSetCardSelected(card.id, selected)}
               onOpenDetail={() => onOpenDetail(card.id)}
+              onDuplicateCard={onDuplicateCard}
+              onDeleteCard={onDeleteCard}
+              onUpdateCard={onUpdateCard}
+              onUpdateFieldValue={onUpdateFieldValue}
             />
           ))}
           <TableAddTaskRow
-            boardId={board.id}
-            workspaceId={board.workspaceId}
             group={group}
             columns={columns}
             gridTemplate={gridTemplate}
             inputId={inputId}
+            onCreateTask={onCreateTask}
           />
         </SortableContext>
       ) : null}
@@ -125,15 +146,21 @@ export function TableGroupSection({
 }
 
 function GroupHeader({
-  board,
   group,
   inputId,
   onToggleGroup,
+  onRenameGroup,
+  onUpdateGroupColor,
+  onDuplicateGroup,
+  onDeleteGroup,
 }: {
-  board: Board;
   group: BoardGroup;
   inputId: string;
   onToggleGroup: (groupId: string) => void;
+  onRenameGroup: (groupId: string, title: string) => void;
+  onUpdateGroupColor: (groupId: string, color: string) => void;
+  onDuplicateGroup: (groupId: string) => void;
+  onDeleteGroup: (groupId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [prevTitle, setPrevTitle] = useState(group.title);
@@ -142,9 +169,6 @@ function GroupHeader({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prevColor, setPrevColor] = useState(group.color || "");
   const [customColor, setCustomColor] = useState(group.color || "");
-  const updateGroup = useUpdateGroup(board.id, board.workspaceId);
-  const deleteGroup = useDeleteGroup(board.id, board.workspaceId);
-  const duplicateGroup = useDuplicateGroup(board.id, board.workspaceId);
 
   if (group.title !== prevTitle) {
     setPrevTitle(group.title);
@@ -163,7 +187,7 @@ function GroupHeader({
       setTitle(group.title);
       return;
     }
-    updateGroup.mutate({ groupId: group.id, title: next });
+    onRenameGroup(group.id, next);
   }
 
   const accentColor = group.color || "var(--primary)";
@@ -196,9 +220,11 @@ function GroupHeader({
             <Input
               autoFocus
               value={title}
-              onChange={(event: any) => setTitle(event.target.value)}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setTitle(event.target.value)
+              }
               onBlur={commitTitle}
-              onKeyDown={(event: any) => {
+              onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
                 if (event.key === "Enter") commitTitle();
                 if (event.key === "Escape") {
                   setTitle(group.title);
@@ -271,19 +297,21 @@ function GroupHeader({
               </label>
               <Input
                 value={title}
-                onChange={(e: any) => setTitle(e.target.value)}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setTitle(event.target.value)
+                }
                 onBlur={() => {
                   const next = title.trim();
                   if (next && next !== group.title) {
-                    updateGroup.mutate({ groupId: group.id, title: next });
+                    onRenameGroup(group.id, next);
                   }
                 }}
-                onKeyDown={(e: any) => {
-                  if (e.key === "Enter") {
+                onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+                  if (event.key === "Enter") {
                     const next = title.trim();
                     if (next && next !== group.title) {
-                      updateGroup.mutate({ groupId: group.id, title: next });
-                      e.currentTarget.blur();
+                      onRenameGroup(group.id, next);
+                      event.currentTarget.blur();
                     }
                   }
                 }}
@@ -313,9 +341,7 @@ function GroupHeader({
                           : "hover:border-muted-foreground/40",
                       )}
                       style={{ backgroundColor: color }}
-                      onClick={() =>
-                        updateGroup.mutate({ groupId: group.id, color })
-                      }
+                      onClick={() => onUpdateGroupColor(group.id, color)}
                     >
                       {isActive && (
                         <Check
@@ -344,12 +370,9 @@ function GroupHeader({
                     type="color"
                     value={group.color || "#579bfc"}
                     className="absolute inset-0 size-full cursor-pointer opacity-0"
-                    onChange={(e: any) => {
-                      updateGroup.mutate({
-                        groupId: group.id,
-                        color: e.target.value,
-                      });
-                      setCustomColor(e.target.value);
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      onUpdateGroupColor(group.id, event.target.value);
+                      setCustomColor(event.target.value);
                     }}
                   />
                   <div
@@ -370,14 +393,14 @@ function GroupHeader({
                   value={customColor}
                   placeholder="#579bfc"
                   className="h-8 w-24 text-xs font-mono uppercase bg-background border-border text-center"
-                  onChange={(e: any) => {
-                    let val = e.target.value;
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    let val = event.target.value;
                     if (val && !val.startsWith("#")) {
                       val = "#" + val;
                     }
                     setCustomColor(val);
                     if (/^#[0-9A-F]{6}$/i.test(val)) {
-                      updateGroup.mutate({ groupId: group.id, color: val });
+                      onUpdateGroupColor(group.id, val);
                     }
                   }}
                   onBlur={() => {
@@ -400,7 +423,7 @@ function GroupHeader({
                   size="sm"
                   className="flex items-center justify-start gap-2 h-9 text-xs border-border bg-background hover:bg-muted/40"
                   onClick={() => {
-                    duplicateGroup.mutate(group.id);
+                    onDuplicateGroup(group.id);
                     setSettingsDialogOpen(false);
                   }}
                 >
@@ -472,7 +495,7 @@ function GroupHeader({
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                deleteGroup.mutate(group.id);
+                onDeleteGroup(group.id);
                 setDeleteDialogOpen(false);
               }}
             >

@@ -5,20 +5,27 @@ import type { BoardGroup, Card } from "@notrelix/work-management-core";
 
 type CalendarCard = Card & { groupTitle: string };
 
-export function BoardCalendarView({ groups }: { groups: BoardGroup[] }) {
+export function BoardCalendarView({
+  groups,
+  referenceDate = new Date(),
+}: {
+  groups: BoardGroup[];
+  referenceDate?: Date;
+}) {
   const currentWeekDays = useMemo(() => {
-    const today = new Date();
+    const today = new Date(referenceDate);
     const dayOfWeek = today.getDay();
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const monday = new Date(today);
     monday.setDate(today.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
 
     return Array.from({ length: 5 }).map((_, index) => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + index);
       return date;
     });
-  }, []);
+  }, [referenceDate]);
 
   const cards = useMemo<CalendarCard[]>(() => {
     return groups.flatMap((group) =>

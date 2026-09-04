@@ -39,7 +39,7 @@ export function KanbanColumnMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon-sm" aria-label="Column menu">
-          <MoreHorizontal className="size-4" />
+          <MoreHorizontal className="size-4" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
@@ -61,6 +61,7 @@ export function KanbanColumnMenu({
                   key={color.name}
                   className="size-6 rounded-full border border-border/30 transition-transform hover:scale-110 active:scale-95"
                   style={{ backgroundColor: color.value }}
+                  aria-label={`Set column color to ${color.name}`}
                   title={color.name}
                   onClick={() => onColorChange(color.value)}
                 />

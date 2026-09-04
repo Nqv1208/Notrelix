@@ -36,7 +36,7 @@ export function KanbanFilterMenu({
   const handleToggle = (key: "status" | "priority", optionId: string) => {
     const current = filters[key];
     const next = current.includes(optionId)
-      ? current.filter((id: any) => id !== optionId)
+      ? current.filter((id) => id !== optionId)
       : [...current, optionId];
     onFilterChange(key, next);
   };
