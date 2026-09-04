@@ -95,7 +95,7 @@ public static class DependencyInjection
         services.AddScoped<IMfaCodeVerifier, MfaCodeVerifier>();
 
         // Accounts-owned onboarding provisioning (spec 5.2)
-        services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
+        services.AddScoped<IAccountProvisioningActions, AccountProvisioningService>();
 
         // Producer-owned public semantic facts (real consumers only)
         services.AddScoped<IIdentityUserFacts, IdentityUserFactsProvider>();

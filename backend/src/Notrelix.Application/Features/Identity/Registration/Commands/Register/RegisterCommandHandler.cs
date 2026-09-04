@@ -1,6 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
-using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 
@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Identity.Registration.Commands.Register;
 public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResult>>
 {
     private readonly IIdentityDbContext _identityContext;
-    private readonly IAccountProvisioningService _provisioningService;
+    private readonly IAccountProvisioningActions _provisioningActions;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -18,7 +18,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
 
     public RegisterCommandHandler(
         IIdentityDbContext identityContext,
-        IAccountProvisioningService provisioningService,
+        IAccountProvisioningActions provisioningActions,
         IPasswordHasher passwordHasher,
         IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
@@ -26,7 +26,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         IEmailVerificationTokenIssuer? emailVerificationTokenIssuer = null)
     {
         _identityContext = identityContext;
-        _provisioningService = provisioningService;
+        _provisioningActions = provisioningActions;
         _passwordHasher = passwordHasher;
         _sessionIssuer = sessionIssuer;
         _dateTimeProvider = dateTimeProvider;
@@ -51,9 +51,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         var user = User.Create(request.Email, request.Name, passwordHash, now, hasPasswordCredential: true);
         _identityContext.Users.Add(user);
 
-        // Create personal account through the Accounts-owned provisioning service
+        // Create personal account through the Accounts-owned public provisioning action
         var accountName = $"{request.Name}'s Account";
-        var provisioning = await _provisioningService.ProvisionPersonalAccountAsync(
+        var provisioning = await _provisioningActions.ProvisionPersonalAccountAsync(
             user.Id,
             request.Name,
             now,

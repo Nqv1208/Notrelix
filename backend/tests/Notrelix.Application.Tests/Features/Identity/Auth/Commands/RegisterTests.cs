@@ -1,7 +1,8 @@
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Events.Identity;
-using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.Commands;
+using Notrelix.Application.Features.Accounts.Public.Facts;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Domain.Identity.Users;
 
@@ -9,11 +10,11 @@ namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
 
 public class RegisterTests : IdentityHandlerTestBase
 {
-    private readonly Mock<IAccountProvisioningService> _provisioningServiceMock = new();
+    private readonly Mock<IAccountProvisioningActions> _provisioningActionsMock = new();
 
     private RegisterCommandHandler CreateSut(IEmailVerificationTokenIssuer? tokenIssuer = null) => new(
         IdentityContextMock.Object,
-        _provisioningServiceMock.Object,
+        _provisioningActionsMock.Object,
         PasswordHasherMock.Object,
         SessionIssuerMock.Object,
         DateTimeProviderMock.Object,
@@ -22,7 +23,7 @@ public class RegisterTests : IdentityHandlerTestBase
 
     private void SetupProvisioning(Guid accountId)
     {
-        _provisioningServiceMock
+        _provisioningActionsMock
             .Setup(s => s.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PersonalAccountProvisioningResult(accountId));
     }
@@ -53,7 +54,7 @@ public class RegisterTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeTrue();
         result.Data!.WorkspaceProvisioning.Should().Be("pending");
-        _provisioningServiceMock.Verify(
+        _provisioningActionsMock.Verify(
             s => s.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), "Test User", TestNow, It.IsAny<CancellationToken>()),
             Times.Once);
         AccountContextMock.Verify(c => c.Accounts.Add(It.IsAny<Notrelix.Domain.Accounts.Accounts.Account>()), Times.Never);
@@ -113,7 +114,7 @@ public class RegisterTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("already in use"));
-        _provisioningServiceMock.Verify(
+        _provisioningActionsMock.Verify(
             s => s.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -152,7 +153,7 @@ public class RegisterTests : IdentityHandlerTestBase
     public async Task Handle_WhenProvisioningFails_DoesNotEmitRegistrationCompleted()
     {
         PasswordHasherMock.Setup(h => h.HashPassword(TestPassword)).Returns(TestHashedPassword);
-        _provisioningServiceMock
+        _provisioningActionsMock
             .Setup(s => s.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("provisioning failed"));
 

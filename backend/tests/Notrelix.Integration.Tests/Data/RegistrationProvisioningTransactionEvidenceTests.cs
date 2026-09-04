@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data;
@@ -145,7 +146,7 @@ public class RegistrationProvisioningTransactionEvidenceTests : IAsyncLifetime
         var (session, context) = Create();
         var time = new DateTimeOffset(2026, 9, 1, 12, 0, 0, TimeSpan.Zero);
 
-        var failing = new Mock<IAccountProvisioningService>();
+        var failing = new Mock<IAccountProvisioningActions>();
         failing
             .Setup(x => x.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("accounts-side failure"));

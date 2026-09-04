@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.Commands;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
@@ -69,7 +70,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         Mock<IDateTimeProvider> dateTimeProvider,
         Mock<IIntegrationEventCollector> eventCollector,
         ApplicationDbContext context,
-        IAccountProvisioningService? provisioningService = null)
+        IAccountProvisioningActions? provisioningService = null)
     {
         return new CompleteOAuthLoginCommandHandler(
             stateStore.Object,
@@ -401,7 +402,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         mocks.PasswordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("sentinel-hash");
         mocks.DateTimeProvider.Setup(x => x.UtcNow).Returns(() => now);
 
-        var provisioning = new Mock<IAccountProvisioningService>();
+        var provisioning = new Mock<IAccountProvisioningActions>();
         provisioning.Setup(s => s.ProvisionPersonalAccountAsync(
                 It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("provisioning failed"));
