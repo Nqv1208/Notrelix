@@ -240,20 +240,28 @@ public class PublicSemanticContractArchitectureTests
             .Should().BeNull("a producer may reference its own Public surface");
     }
 
-    // TAC-M3A / P4 — repository/mechanism rejection independent of own-Public allowance.
+    // TAC-M3A / P4 — repository/mechanism rejection independent of own-Public
+    // allowance. ARCH-BC-005 hardening: a repository/mechanism contract placed on
+    // the producer's own Public surface must FAIL via structural classification,
+    // not pass through the own-Public allowance and not be lexical.
+    //
+    // The decisive negative proof uses the real-`Type` path: the isolated fixture
+    // (PublicSurfaceSmugglingFixture) stays logically on the own Producer.Public
+    // namespace, is named WITHOUT mechanism words, and is rejected because its
+    // signature surfaces a strong persistence mechanism (IQueryable / DbSet).
 
     [Fact]
     public void Gate_Detects_OwnProducer_Public_RepositoryMechanism()
     {
-        // A repository/mechanism contract placed on the producer's own Public
-        // surface must FAIL via mechanism classification, not pass through the
-        // own-Public allowance. (Synthetic fixture only — never in production.)
+        // Real-Type path: rejection is structural (surface/signature evidence),
+        // not caused by the fixture's name.
         ClassifyPurity(
-                "Notrelix.Application.Features.Accounts.Public.IAccountRepository",
+                typeof(Notrelix.Application.Features.Accounts.Public.IAccountReadWriteSurface),
                 ownProducer: "Accounts")
             .Should().NotBeNull(
                 "repository/mechanism contracts must be rejected on the own Producer.Public " +
-                "semantic surface even though they are own-Public");
+                "semantic surface even though they are own-Public; rejection must be caused " +
+                "by structural persistence-surface evidence, not by mechanism nouns in the name");
     }
 
     [Fact]
@@ -261,13 +269,26 @@ public class PublicSemanticContractArchitectureTests
     {
         // Legitimate own-Public semantic surfaces (actions/facts/queries) must pass.
         ClassifyPurity(
-                "Notrelix.Application.Features.Accounts.Public.Commands.IAccountMembershipActions",
+                typeof(Notrelix.Application.Features.Accounts.Public.Commands.IAccountMembershipActions),
                 ownProducer: "Accounts")
             .Should().BeNull("an own-Public action surface is a semantic contract");
         ClassifyPurity(
-                "Notrelix.Application.Features.Accounts.Public.Queries.IAccountMembershipFacts",
+                typeof(Notrelix.Application.Features.Accounts.Public.Queries.IAccountMembershipFacts),
                 ownProducer: "Accounts")
             .Should().BeNull("an own-Public read-query surface is a semantic contract");
+    }
+
+    [Fact]
+    public void Gate_Allows_OwnProducer_Public_EnumerableQuerySurface()
+    {
+        // A semantic read surface returning a plain enumerable must NOT be treated
+        // as persistence. Task<IReadOnlyList<T>> / IEnumerable<T> are legitimate
+        // semantic result shapes and are not strong persistence evidence.
+        ClassifyPurity(
+                typeof(Notrelix.Application.Features.WorkManagement.Public.Queries.IWorkItemProjectionSource),
+                ownProducer: "WorkManagement")
+            .Should().BeNull(
+                "a semantic enumerable read-query surface is not persistence and must pass");
     }
 
     /// <summary>
@@ -310,52 +331,6 @@ public class PublicSemanticContractArchitectureTests
         };
 
     /// <summary>
-    /// Curated mechanism-noun set used to reject repository/mechanism contracts
-    /// that a producer might otherwise slip onto its own Public semantic surface
-    /// (TAC-M3A / P4 loophole). These nouns unambiguously denote persistence /
-    /// session / DbContext / broker / transport / provider machinery, not
-    /// semantic facts, actions, or read-query surfaces. This is a bounded
-    /// structural classifier scoped to the own-Public allowance branch only; it
-    /// is not a blanket substring ban, and it is backed by self-tests proving
-    /// that legitimate `Actions` / `Facts` / `Queries` surfaces pass.
-    /// </summary>
-    private static readonly IReadOnlyList<string> MechanismNouns =
-    [
-        "Repository",
-        "Session",
-        "DbContext",
-        "Store",
-        "Client",
-        "Provider",
-        "Broker",
-        "Transport",
-        "Dispatcher",
-        "Gateway",
-        "Cache",
-        "Queue",
-        "Partitioner",
-        "SnapshotStore",
-    ];
-
-    /// <summary>
-    /// True when the referenced type name denotes a repository/mechanism
-    /// contract. Uses a bounded mechanism-noun classifier (not a blanket name
-    /// substring ban) and runs only inside the own-Public allowance path.
-    /// </summary>
-    private static bool IsMechanismContractName(string typeFullName)
-    {
-        var lastDot = typeFullName.LastIndexOf('.');
-        var name = lastDot > 0 ? typeFullName[(lastDot + 1)..] : typeFullName;
-        foreach (var noun in MechanismNouns)
-        {
-            if (name.Contains(noun, StringComparison.Ordinal))
-                return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
     /// Provider/SDK roots forbidden in Public contracts. Local policy of this
     /// gate (see class doc); mirrors ARCH-BC-006 without code sharing.
     /// </summary>
@@ -371,12 +346,127 @@ public class PublicSemanticContractArchitectureTests
         "Azure.Storage",
     ];
 
+    /// <summary>
+    /// Exact full-type identities of approved persistence/session abstractions.
+    /// A type whose own-Public surface is literally one of these (or derives
+    /// from one) is a mechanism contract. These are exact reviewed identities,
+    /// not name-substring tokens.
+    /// </summary>
+    private static readonly IReadOnlySet<string> ReviewedMechanismIdentities =
+        CrossContextBoundaryScanner.ContextDbContextInterface.Values
+            .ToHashSet(StringComparer.Ordinal);
+
+    private const string RequestDataSessionFullName =
+        "Notrelix.Application.Common.Data.IRequestDataSession";
+
+    /// <summary>
+    /// True when the referenced own-Public type is structurally a
+    /// repository/mechanism contract. This is the ARCH-BC-005 hardening path:
+    /// it runs only inside the own-Public allowance branch and uses structural
+    /// evidence, never a name-substring heuristic.
+    ///
+    /// Orphaned lexically common "repository/store/session" words are NOT
+    /// evidence; only a persistence-leaking structure is rejected.
+    /// </summary>
+    private static bool IsStructuralMechanismContract(Type type)
+    {
+        if (HasPersistenceSurface(type))
+            return true;
+
+        if (ReviewedMechanismIdentities.Contains(type.FullName ?? string.Empty))
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// A referenced type exposes a persistence mechanism when its own surface,
+    /// or the surface of any base/interface it derives from, references a strong
+    /// persistence primitive (IQueryable, DbSet / EF-rooted type, a known
+    /// data-session abstraction, or an exact owned DbContext abstraction).
+    /// Generic enumerables (IEnumerable/IReadOnlyList/IAsyncEnumerable) and
+    /// plain method names (Add/Update/Save) are deliberately NOT strong evidence.
+    /// </summary>
+    private static bool HasPersistenceSurface(Type type)
+    {
+        if (HasStrongPersistenceAncestry(type))
+            return true;
+
+        foreach (var iface in type.GetInterfaces())
+        {
+            if (HasStrongPersistenceAncestry(iface))
+                return true;
+        }
+
+        foreach (var method in type.GetMethods(ReflectionFlags).Where(m => !m.IsSpecialName))
+        {
+            if (IsStrongPersistenceType(method.ReturnType))
+                return true;
+
+            foreach (var parameter in method.GetParameters())
+            {
+                if (IsStrongPersistenceType(parameter.ParameterType))
+                    return true;
+            }
+        }
+
+        foreach (var property in type.GetProperties(ReflectionFlags))
+        {
+            if (IsStrongPersistenceType(property.PropertyType))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasStrongPersistenceAncestry(Type type)
+    {
+        if (IsStrongPersistenceType(type))
+            return true;
+
+        if (type.BaseType is { } baseType && HasStrongPersistenceAncestry(baseType))
+            return true;
+
+        foreach (var iface in type.GetInterfaces())
+        {
+            if (HasStrongPersistenceAncestry(iface))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Strong persistence evidence: IQueryable, EF/DbContext-rooted types, the
+    /// known data-session abstraction, or an exact owned DbContext abstraction.
+    /// Generic enumerables and plain persistence-shaped method names are not.
+    /// </summary>
+    private static bool IsStrongPersistenceType(Type type)
+    {
+        var candidate = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+
+        if (candidate.FullName == "System.Linq.IQueryable`1")
+            return true;
+
+        var ns = candidate.Namespace;
+        if (ns is null)
+            return false;
+
+        if (ns.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal))
+            return true;
+
+        if (candidate.FullName == RequestDataSessionFullName)
+            return true;
+
+        return ReviewedMechanismIdentities.Contains(candidate.FullName ?? string.Empty);
+    }
+
+    private const BindingFlags ReflectionFlags =
+        BindingFlags.Public | BindingFlags.NonPublic |
+        BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
     private static IEnumerable<Type> CollectReferencedTypes(Type type)
     {
-        const BindingFlags flags =
-            BindingFlags.Public | BindingFlags.NonPublic |
-            BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
-
         var seen = new HashSet<Type>();
         var collected = new List<Type>();
 
@@ -397,14 +487,14 @@ public class PublicSemanticContractArchitectureTests
         Collect(type.BaseType);
         foreach (var iface in type.GetInterfaces())
             Collect(iface);
-        foreach (var field in type.GetFields(flags))
+        foreach (var field in type.GetFields(ReflectionFlags))
             Collect(field.FieldType);
-        foreach (var property in type.GetProperties(flags))
+        foreach (var property in type.GetProperties(ReflectionFlags))
             Collect(property.PropertyType);
-        foreach (var ctor in type.GetConstructors(flags))
+        foreach (var ctor in type.GetConstructors(ReflectionFlags))
             foreach (var parameter in ctor.GetParameters())
                 Collect(parameter.ParameterType);
-        foreach (var method in type.GetMethods(flags).Where(m => !m.IsSpecialName))
+        foreach (var method in type.GetMethods(ReflectionFlags).Where(m => !m.IsSpecialName))
         {
             Collect(method.ReturnType);
             foreach (var parameter in method.GetParameters())
@@ -415,26 +505,30 @@ public class PublicSemanticContractArchitectureTests
     }
 
     private static string? ClassifyPurity(Type referenced, string? ownProducer)
-        => ClassifyPurity(referenced.Namespace, referenced.FullName, ownProducer);
+        => ClassifyPurity(referenced, referenced.Namespace, referenced.FullName, ownProducer);
 
     /// <summary>
     /// String overload for self-tests over type identities that are not
-    /// referenced by this test project (Platform, provider SDKs).
+    /// referenced by this test project (Platform, provider SDKs). No real-`Type`
+    /// surface is available, so structural persistence-surface detection cannot
+    /// run on this path (it is not the M3A own-Public closure proof).
     /// </summary>
     private static string? ClassifyPurity(string typeFullName, string? ownProducer)
     {
         var separator = typeFullName.LastIndexOf('.');
         var ns = separator > 0 ? typeFullName[..separator] : null;
-        return ClassifyPurity(ns, typeFullName, ownProducer);
+        return ClassifyPurity(type: null, ns, typeFullName, ownProducer);
     }
 
     /// <summary>
     /// Classification core over (namespace, fullName) so self-tests can
     /// exercise types that are not referenced by this test project
     /// (Platform, provider SDKs) while preserving exact-type Common
-    /// allowlist semantics.
+    /// allowlist semantics. <paramref name="type"/> carries the real CLR type
+    /// when available so the own-Public mechanism classifier can inspect the
+    /// signature surface for structural persistence evidence.
     /// </summary>
-    private static string? ClassifyPurity(string? ns, string? fullName, string? ownProducer)
+    private static string? ClassifyPurity(Type? type, string? ns, string? fullName, string? ownProducer)
     {
         if (ns is null)
             return null;
@@ -466,9 +560,12 @@ public class PublicSemanticContractArchitectureTests
             // be rejected here independently of the own-Public allowance — a
             // producer must not smuggle a persistence/session/DbContext/repository
             // mechanism onto its Public surface under the cover of "own Public".
-            return IsMechanismContractName(fullName ?? string.Empty)
-                ? "repository/mechanism on own Producer.Public semantic surface"
-                : null;
+            // Detection is structural (real-Type surface inspection primary;
+            // exact reviewed mechanism identities as defense), never lexical.
+            if (type is not null && IsStructuralMechanismContract(type))
+                return "repository/mechanism on own Producer.Public semantic surface";
+
+            return null;
         }
 
         if (ns.StartsWith("Notrelix.Domain.", StringComparison.Ordinal))
