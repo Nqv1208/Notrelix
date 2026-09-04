@@ -59,6 +59,26 @@ public class CommonSemanticNoGrowthArchitectureTests
     ];
 
     /// <summary>
+    /// Exact technical-pipeline types under Common that are NOT business
+    /// vocabulary and therefore must not be booked as business-vocabulary debt.
+    /// Each entry is a real exact type identity and is excluded from the
+    /// vocabulary scan by exact full name only (no namespace/name wildcards).
+    ///
+    ///   Notrelix.Application.Common.Security.AccessPermissionRule — a pure
+    ///   technical authorization-pipeline representation (TAC-M3C): a
+    ///   deserialized permission-rule row shape (`record(int Priority, string
+    ///   Effect)`) used by the AccessFacts/AccessPolicyEngine seam governed by
+    ///   WG-REF-002. It describes pipeline rule rows, not new shared business
+    ///   vocabulary. Its presence on the token-matched vocabulary set is an
+    ///   artifact of the `Permission` token, not a semantic classification.
+    /// </summary>
+    private static readonly IReadOnlySet<string> TechnicalPipelineTypes =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Notrelix.Application.Common.Security.AccessPermissionRule",
+        };
+
+    /// <summary>
     /// Exact governed business-vocabulary debt allowed to exist under Common
     /// outside the frozen namespaces. Each entry is a real production type
     /// already registered as exact debt; new vocabulary types are rejected and
@@ -72,17 +92,14 @@ public class CommonSemanticNoGrowthArchitectureTests
     ///   (TAC-GATE-022 shrink). Namespace aligned with its Requests/Security/
     ///   folder in the request-marker namespace-alignment change.
     ///
-    ///   Notrelix.Application.Common.Security.AccessPermissionRule — pipeline-owned
-    ///   authorization machinery (the AccessFacts/AccessPolicyEngine seam governed
-    ///   by WG-REF-002); it describes permission-rule rows, not new shared
-    ///   business vocabulary. Removal belongs to the same governed
-    ///   permission-seam migration family.
+    /// AccessPermissionRule is intentionally NOT listed here — it is classified
+    /// as an exact technical-pipeline exception in TechnicalPipelineTypes, not
+    /// as business-vocabulary debt (TAC-M3C).
     /// </summary>
     private static readonly IReadOnlySet<string> KnownVocabularyDebt =
         new HashSet<string>(StringComparer.Ordinal)
         {
             "Notrelix.Application.Common.Requests.Security.IRequirePermission",
-            "Notrelix.Application.Common.Security.AccessPermissionRule",
         };
 
     [Fact]
@@ -170,6 +187,46 @@ public class CommonSemanticNoGrowthArchitectureTests
             "the exact registered debt entries must stay allowed");
     }
 
+    // TAC-M3C self-tests — technical-pipeline exact classification.
+
+    [Fact]
+    public void Gate_TechPipelineTypes_AreExactCommonIdentities()
+    {
+        TechnicalPipelineTypes.Should().OnlyContain(
+            t => t.StartsWith("Notrelix.Application.Common.", StringComparison.Ordinal),
+            "technical-pipeline entries must be exact Common type identities, not wildcards");
+    }
+
+    [Fact]
+    public void Gate_AccessPermissionRule_Is_TechnicalNotDebt()
+    {
+        // AccessPermissionRule must not be booked as business-vocabulary debt.
+        KnownVocabularyDebt.Should().NotContain(
+            "Notrelix.Application.Common.Security.AccessPermissionRule",
+            "AccessPermissionRule is classified exactly once as a technical-pipeline exception (TAC-M3C)");
+
+        TechnicalPipelineTypes.Should().Contain(
+            "Notrelix.Application.Common.Security.AccessPermissionRule",
+            "AccessPermissionRule is the exact technical-pipeline exception");
+    }
+
+    [Fact]
+    public void Gate_Detects_NewPermissionVocabulary_NotMaskedAsTechnical()
+    {
+        // A NEW permission-vocabulary type (even under Security.*) must fail —
+        // there is no Security.* / Permission* wildcard forgiveness. Exact
+        // TechnicalPipelineTypes is the only exemption.
+        var flagged = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Notrelix.Application.Common.Security.PermissionRule", // synthetic new business vocabulary
+        };
+
+        var unexpected = flagged.Except(TechnicalPipelineTypes).ToList();
+
+        unexpected.Should().Contain("Notrelix.Application.Common.Security.PermissionRule",
+            "a new permission/role vocabulary type must not ride the technical-pipeline exception");
+    }
+
     [Fact]
     public void Gate_VocabularyDebt_IsExact()
     {
@@ -192,6 +249,11 @@ public class CommonSemanticNoGrowthArchitectureTests
                 continue;
 
             if (FrozenBusinessNamespaces.ContainsKey(type.Namespace))
+                continue;
+
+            // TAC-M3C: exact technical-pipeline types are excluded by exact full
+            // name (not namespace/name wildcard). They are not business debt.
+            if (TechnicalPipelineTypes.Contains(type.FullName!))
                 continue;
 
             if (KnownBusinessVocabularyTokens.Any(token =>

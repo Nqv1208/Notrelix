@@ -1,9 +1,7 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Accounts.Members.Services;
 using Notrelix.Application.Features.Identity.Abstractions;
-using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
@@ -13,10 +11,6 @@ using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
-using Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration;
-using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
-using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
-using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
@@ -113,22 +107,8 @@ public static class PersistenceRegistration
 
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
-        // Cross-context read ports (spec 5.1)
-        services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadAdapter>();
-        services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadAdapter>();
-
-        // Cross-context target-action port: Automation -> WorkManagement
-        services.AddScoped<
-            Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort,
-            WorkItemActionAdapter>();
-
-        // Cross-context projection-source port: Analytics rebuild -> WorkManagement
-        services.AddScoped<
-            Notrelix.Application.Features.WorkManagement.Public.Queries.IWorkItemProjectionSource,
-            WorkItemProjectionSourceAdapter>();
-        services.AddScoped<
-            Notrelix.Infrastructure.Messaging.Consumers.Analytics.IWorkItemProjectionSourceAdapter,
-            WorkItemProjectionSourceAdapter>();
+        // Cross-context runtime bindings live in CrossContextRegistration
+        // (AddCrossContextBindings) — see CrossContextRegistration.cs.
 
         // Analytics-owned placement projection maintenance
         services.AddScoped<

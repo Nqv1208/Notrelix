@@ -240,6 +240,36 @@ public class PublicSemanticContractArchitectureTests
             .Should().BeNull("a producer may reference its own Public surface");
     }
 
+    // TAC-M3A / P4 — repository/mechanism rejection independent of own-Public allowance.
+
+    [Fact]
+    public void Gate_Detects_OwnProducer_Public_RepositoryMechanism()
+    {
+        // A repository/mechanism contract placed on the producer's own Public
+        // surface must FAIL via mechanism classification, not pass through the
+        // own-Public allowance. (Synthetic fixture only — never in production.)
+        ClassifyPurity(
+                "Notrelix.Application.Features.Accounts.Public.IAccountRepository",
+                ownProducer: "Accounts")
+            .Should().NotBeNull(
+                "repository/mechanism contracts must be rejected on the own Producer.Public " +
+                "semantic surface even though they are own-Public");
+    }
+
+    [Fact]
+    public void Gate_Allows_OwnProducer_Public_SemanticSurfaces()
+    {
+        // Legitimate own-Public semantic surfaces (actions/facts/queries) must pass.
+        ClassifyPurity(
+                "Notrelix.Application.Features.Accounts.Public.Commands.IAccountMembershipActions",
+                ownProducer: "Accounts")
+            .Should().BeNull("an own-Public action surface is a semantic contract");
+        ClassifyPurity(
+                "Notrelix.Application.Features.Accounts.Public.Queries.IAccountMembershipFacts",
+                ownProducer: "Accounts")
+            .Should().BeNull("an own-Public read-query surface is a semantic contract");
+    }
+
     /// <summary>
     /// A type belongs to the Public surface when its namespace sits under
     /// `Features.{Context}.Public`. Mirrors CrossContextBoundaryScanner's
@@ -278,6 +308,52 @@ public class PublicSemanticContractArchitectureTests
         {
             "Notrelix.Application.Common.Models.Result", // stable result envelope
         };
+
+    /// <summary>
+    /// Curated mechanism-noun set used to reject repository/mechanism contracts
+    /// that a producer might otherwise slip onto its own Public semantic surface
+    /// (TAC-M3A / P4 loophole). These nouns unambiguously denote persistence /
+    /// session / DbContext / broker / transport / provider machinery, not
+    /// semantic facts, actions, or read-query surfaces. This is a bounded
+    /// structural classifier scoped to the own-Public allowance branch only; it
+    /// is not a blanket substring ban, and it is backed by self-tests proving
+    /// that legitimate `Actions` / `Facts` / `Queries` surfaces pass.
+    /// </summary>
+    private static readonly IReadOnlyList<string> MechanismNouns =
+    [
+        "Repository",
+        "Session",
+        "DbContext",
+        "Store",
+        "Client",
+        "Provider",
+        "Broker",
+        "Transport",
+        "Dispatcher",
+        "Gateway",
+        "Cache",
+        "Queue",
+        "Partitioner",
+        "SnapshotStore",
+    ];
+
+    /// <summary>
+    /// True when the referenced type name denotes a repository/mechanism
+    /// contract. Uses a bounded mechanism-noun classifier (not a blanket name
+    /// substring ban) and runs only inside the own-Public allowance path.
+    /// </summary>
+    private static bool IsMechanismContractName(string typeFullName)
+    {
+        var lastDot = typeFullName.LastIndexOf('.');
+        var name = lastDot > 0 ? typeFullName[(lastDot + 1)..] : typeFullName;
+        foreach (var noun in MechanismNouns)
+        {
+            if (name.Contains(noun, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Provider/SDK roots forbidden in Public contracts. Local policy of this
@@ -382,9 +458,17 @@ public class PublicSemanticContractArchitectureTests
             // reference only its own Public types. Foreign producer Public is
             // denied by default; a reviewed exception must be an exact entry.
             var referencedProducer = ResolveProducerFromPublicNamespace(ns);
-            return referencedProducer == ownProducer
-                ? null
-                : "foreign producer Public contract";
+            if (referencedProducer != ownProducer)
+                return "foreign producer Public contract";
+
+            // ARCH-BC-005 hardening (TAC-M3A / P4): own Producer.Public is the
+            // approved semantic surface. Repository/mechanism contracts must
+            // be rejected here independently of the own-Public allowance — a
+            // producer must not smuggle a persistence/session/DbContext/repository
+            // mechanism onto its Public surface under the cover of "own Public".
+            return IsMechanismContractName(fullName ?? string.Empty)
+                ? "repository/mechanism on own Producer.Public semantic surface"
+                : null;
         }
 
         if (ns.StartsWith("Notrelix.Domain.", StringComparison.Ordinal))
