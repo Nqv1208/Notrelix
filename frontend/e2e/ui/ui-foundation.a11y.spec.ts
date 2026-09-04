@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
+import { analyzeA11y } from "./support/a11y";
 
 /**
  * UI freeze gate: Foundation Gallery accessibility scan.
@@ -24,7 +24,7 @@ for (const storyId of GALLERY_STORIES) {
   }) => {
     await page.goto(`/iframe.html?id=${storyId}`);
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const results = await analyzeA11y(page);
 
     const blocking = results.violations.filter(
       (violation) =>
