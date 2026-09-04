@@ -15,7 +15,7 @@ export default defineConfig({
     environment: "jsdom",
     passWithNoTests: true,
     setupFiles: [path.resolve(__dirname, "./src/setup-web.ts")],
-    include: ["{apps,packages}/**/*.component.test.{ts,tsx}"],
+    include: ["{apps,packages,tooling}/**/*.component.test.{ts,tsx}"],
     exclude: ["**/node_modules/**", "**/dist/**", "**/.next/**"],
   },
 });
