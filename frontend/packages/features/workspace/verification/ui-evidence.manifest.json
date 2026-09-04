@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "workspace.directory",
+      "owner": "@notrelix/features-workspace",
+      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "stories": [
+        {
+          "id": "workspace-workspace-ui-surfaces--directory-default",
+          "state": "Default"
+        },
+        {
+          "id": "workspace-workspace-ui-surfaces--directory-empty",
+          "state": "Empty"
+        },
+        {
+          "id": "workspace-workspace-ui-surfaces--directory-edge-data",
+          "state": "EdgeData"
+        }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "workspace.compact-header",
+      "owner": "@notrelix/features-workspace",
+      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "stories": [
+        {
+          "id": "workspace-workspace-ui-surfaces--compact-header-default",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "workspace.view-tabs",
+      "owner": "@notrelix/features-workspace",
+      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "stories": [
+        {
+          "id": "workspace-workspace-ui-surfaces--view-tabs-default",
+          "state": "Default"
+        },
+        {
+          "id": "workspace-workspace-ui-surfaces--view-tabs-empty",
+          "state": "Empty"
+        },
+        {
+          "id": "workspace-workspace-ui-surfaces--view-tabs-edge-data",
+          "state": "EdgeData"
+        }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "workspace.pending-invitations",
+      "owner": "@notrelix/features-workspace",
+      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "stories": [
+        {
+          "id": "workspace-workspace-ui-surfaces--invitations-default",
+          "state": "Default"
+        },
+        {
+          "id": "workspace-workspace-ui-surfaces--invitations-empty",
+          "state": "Empty"
+        }
+      ],
+      "requiredStates": ["Default", "Empty"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "workspace.dashboard",
+      "owner": "@notrelix/features-workspace",
+      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "stories": [
+        {
+          "id": "workspace-workspace-ui-surfaces--dashboard-default",
+          "state": "Default"
+        },
+        {
+          "id": "workspace-workspace-ui-surfaces--dashboard-empty",
+          "state": "Empty"
+        },
+        {
+          "id": "workspace-workspace-ui-surfaces--dashboard-loading",
+          "state": "Loading"
+        }
+      ],
+      "requiredStates": ["Default", "Empty", "Loading"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}

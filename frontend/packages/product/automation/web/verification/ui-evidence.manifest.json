@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "automation.rules.tab",
+      "owner": "@notrelix/automation-web",
+      "pureEntry": "src/components/automations-tab.tsx",
+      "stories": [
+        { "id": "automation-automations-tab--default", "state": "Default" },
+        { "id": "automation-automations-tab--empty", "state": "Empty" },
+        { "id": "automation-automations-tab--edge-data", "state": "EdgeData" }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/components/__tests__/automations-tab.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}

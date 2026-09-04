@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "docs.page.screen",
+      "owner": "@notrelix/docs-web",
+      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "stories": [
+        { "id": "docs-page-surfaces--page-screen-default", "state": "Default" },
+        { "id": "docs-page-surfaces--page-screen-empty", "state": "Empty" },
+        {
+          "id": "docs-page-surfaces--page-screen-edge-data",
+          "state": "EdgeData"
+        },
+        { "id": "docs-page-surfaces--page-screen-loading", "state": "Loading" }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData", "Loading"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "docs.page.tree",
+      "owner": "@notrelix/docs-web",
+      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "stories": [
+        { "id": "docs-page-surfaces--page-tree-default", "state": "Default" },
+        { "id": "docs-page-surfaces--page-tree-empty", "state": "Empty" },
+        {
+          "id": "docs-page-surfaces--page-tree-edge-data",
+          "state": "EdgeData"
+        }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "docs.page.header",
+      "owner": "@notrelix/docs-web",
+      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "stories": [
+        { "id": "docs-page-surfaces--header-default", "state": "Default" },
+        { "id": "docs-page-surfaces--header-edge-data", "state": "EdgeData" }
+      ],
+      "requiredStates": ["Default", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "docs.comments",
+      "owner": "@notrelix/docs-web",
+      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "stories": [
+        { "id": "docs-page-surfaces--comments-default", "state": "Default" },
+        { "id": "docs-page-surfaces--comments-empty", "state": "Empty" },
+        { "id": "docs-page-surfaces--comments-edge-data", "state": "EdgeData" }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "docs.history",
+      "owner": "@notrelix/docs-web",
+      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "stories": [
+        { "id": "docs-page-surfaces--history-default", "state": "Default" },
+        { "id": "docs-page-surfaces--history-empty", "state": "Empty" },
+        { "id": "docs-page-surfaces--history-edge-data", "state": "EdgeData" }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}

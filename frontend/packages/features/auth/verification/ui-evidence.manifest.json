@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "auth.login",
+      "owner": "@notrelix/features-auth",
+      "pureEntry": "src/web/components/auth-form-surfaces.tsx",
+      "stories": [
+        { "id": "auth-auth-form-surfaces--login-default", "state": "Default" },
+        { "id": "auth-auth-form-surfaces--login-pending", "state": "Loading" },
+        { "id": "auth-auth-form-surfaces--login-error", "state": "EdgeData" }
+      ],
+      "requiredStates": ["Default", "Loading", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "auth.register",
+      "owner": "@notrelix/features-auth",
+      "pureEntry": "src/web/components/auth-form-surfaces.tsx",
+      "stories": [
+        { "id": "auth-auth-form-surfaces--register-default", "state": "Default" },
+        { "id": "auth-auth-form-surfaces--register-pending", "state": "Loading" },
+        { "id": "auth-auth-form-surfaces--register-error", "state": "EdgeData" }
+      ],
+      "requiredStates": ["Default", "Loading", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "auth.forgot-password",
+      "owner": "@notrelix/features-auth",
+      "pureEntry": "src/web/components/auth-form-surfaces.tsx",
+      "stories": [
+        {
+          "id": "auth-auth-form-surfaces--forgot-email-default",
+          "state": "Default"
+        },
+        { "id": "auth-auth-form-surfaces--forgot-otp-default", "state": "EdgeData" },
+        {
+          "id": "auth-auth-form-surfaces--forgot-success-default",
+          "state": "ReadOnly"
+        }
+      ],
+      "requiredStates": ["Default", "EdgeData", "ReadOnly"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}

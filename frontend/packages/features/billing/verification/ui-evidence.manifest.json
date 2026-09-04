@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "billing.page",
+      "owner": "@notrelix/features-billing",
+      "pureEntry": "src/web/billing-page.tsx",
+      "stories": [
+        { "id": "billing-billing-page--default", "state": "Default" },
+        { "id": "billing-billing-page--empty", "state": "Empty" },
+        { "id": "billing-billing-page--edge-data", "state": "EdgeData" }
+      ],
+      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionTests": [
+        "src/web/__tests__/billing-page.interaction.component.test.tsx"
+      ],
+      "notApplicableStates": []
+    }
+  ]
+}
