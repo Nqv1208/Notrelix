@@ -1,9 +1,11 @@
 namespace Notrelix.Architecture.Tests.ApplicationLayer;
 
 /// <summary>
-/// APP-PATH-001..004: Enforces canonical module-first Application layout.
+/// APP-PATH-001..007: Enforces canonical Application layout.
 /// Canonical: Features/{Context}/{Module}/Commands|Queries/{UseCase}/
 /// Forbidden: Features/{Context}/Commands|Queries/{Module}/ (legacy)
+/// Public surfaces: Features/{Context}/Public/{PublishedCapability}/
+///   (capability-first; technical buckets are frozen legacy debt only, see §0.1A)
 /// </summary>
 public class CanonicalPathArchitectureTests
 {
@@ -70,6 +72,108 @@ public class CanonicalPathArchitectureTests
 
         violations.Should().BeEmpty(
             "all handler files must be under Commands/ or Queries/ subdirectories");
+    }
+
+    [Fact]
+    public void APP_PATH_006_New_Public_Surfaces_Are_Capability_First_No_Technical_Bucket_Growth()
+    {
+        var featuresPath = GetFeaturesPath();
+
+        var forbiddenBuckets = new[]
+        {
+            "Commands", "Queries", "Facts", "Actions",
+            "Contracts", "DTOs", "Services", "Common"
+        };
+
+        var frozenLegacyBaseline = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["Billing"] = new[] { "Facts" },
+            ["Identity"] = new[] { "Facts", "Queries" },
+            ["Integrations"] = new[] { "Commands" },
+            ["WorkManagement"] = new[] { "Commands", "Queries" }
+        };
+
+        var violations = new List<string>();
+
+        foreach (var contextDir in Directory.GetDirectories(featuresPath))
+        {
+            var contextName = Path.GetFileName(contextDir);
+            var publicDir = Path.Combine(contextDir, "Public");
+            if (!Directory.Exists(publicDir))
+                continue;
+
+            foreach (var surfaceDir in Directory.GetDirectories(publicDir))
+            {
+                var surfaceName = Path.GetFileName(surfaceDir);
+                if (!forbiddenBuckets.Contains(surfaceName))
+                    continue;
+
+                var isFrozenLegacy =
+                    frozenLegacyBaseline.TryGetValue(contextName, out var frozenBuckets)
+                    && frozenBuckets.Contains(surfaceName);
+
+                if (!isFrozenLegacy)
+                {
+                    violations.Add($"Features/{contextName}/Public/{surfaceName}");
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "Application Public surfaces must be capability-first " +
+            "(Features/{Context}/Public/{PublishedCapability}/). Top-level technical buckets " +
+            "(Commands/Queries/Facts/Actions/Contracts/DTOs/Services/Common) are non-canonical " +
+            "per backend-team-architecture-closure spec §0.1A. Frozen legacy debt is limited to " +
+            "Billing/Facts, Identity/{Facts,Queries}, Integrations/Commands, " +
+            "WorkManagement/{Commands,Queries} and must shrink when each owning milestone normalizes " +
+            "its Public surface, never grow.");
+    }
+
+    [Fact]
+    public void APP_PATH_007_Accounts_Public_Surface_Is_Canonical_Capability_First()
+    {
+        var featuresPath = GetFeaturesPath();
+        var accountsPublic = Path.Combine(featuresPath, "Accounts", "Public");
+
+        var requiredTopology = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["Membership"] = new[]
+            {
+                "IAccountMembershipFacts.cs",
+                "AccountMembershipAdmissionFact.cs",
+                "IAccountMembershipActions.cs"
+            },
+            ["PersonalAccountProvisioning"] = new[]
+            {
+                "IAccountProvisioningActions.cs",
+                "PersonalAccountProvisioningResult.cs"
+            }
+        };
+
+        var presentSurfaceDirs = Directory.Exists(accountsPublic)
+            ? Directory.GetDirectories(accountsPublic).Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal)
+            : new HashSet<string>(StringComparer.Ordinal);
+
+        var missingSurfaces = requiredTopology.Keys
+            .Where(surface => !presentSurfaceDirs.Contains(surface))
+            .ToList();
+
+        missingSurfaces.Should().BeEmpty(
+            "Accounts/Public must expose published capabilities per tac-v26 execution-status §0.4A: " +
+            "Membership/{IAccountMembershipFacts,AccountMembershipAdmissionFact,IAccountMembershipActions} " +
+            "and PersonalAccountProvisioning/{IAccountProvisioningActions,PersonalAccountProvisioningResult}. " +
+            "Technical-bucket Public/Commands|Queries|Facts layout is non-canonical for Accounts.");
+
+        foreach (var (capability, files) in requiredTopology)
+        {
+            foreach (var file in files)
+            {
+                var expectedPath = Path.Combine(accountsPublic, capability, file);
+                File.Exists(expectedPath).Should().BeTrue(
+                    $"Accounts/Public/{capability}/{file} is required by tac-v26 execution-status §0.4A " +
+                    "canonical capability-first layout.");
+            }
+        }
     }
 
     private static string GetFeaturesPath()
