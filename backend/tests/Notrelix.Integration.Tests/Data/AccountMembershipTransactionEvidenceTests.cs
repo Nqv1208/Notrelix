@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Domain.Accounts.Members;
@@ -203,8 +204,26 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         await contextA.SaveChangesAsync();
 
         var secondCommit = async () => await contextB.SaveChangesAsync();
-        await secondCommit.Should().ThrowAsync<DbUpdateException>(
-            "the unique account_id/user_id invariant must reject the stale concurrent duplicate");
+        var thrown = await secondCommit.Should().ThrowAsync<DbUpdateException>(
+            "a PostgreSQL unique constraint on (AccountId, UserId) must reject the stale concurrent duplicate");
+
+        var pg = thrown.Which.InnerException as PostgresException;
+        pg.Should().NotBeNull(
+            "the rejection must originate from PostgreSQL itself, not an EF-side save failure");
+
+        // Invitee acceptance persists both an AccountMember row and an account-level
+        // AccessGrant (workspace_id IS NULL). Single-membership per (AccountId, UserId)
+        // is therefore enforced by two complementary unique constraints; which one fires
+        // first in a concurrent batch depends on EF insert order and is not the protected
+        // contract. Assert the rejection comes from one of them — never from the
+        // workspace-scoped grant index (ux_access_grants_account_workspace_user) or any
+        // unrelated constraint.
+        pg!.ConstraintName.Should().BeOneOf(
+            "ux_access_grants_account_user_account_level",
+            "idx_account_members_account_user",
+            "the concurrent duplicate must be rejected by an (AccountId, UserId) " +
+            "single-membership constraint (account-level grant index or account member index), " +
+            "never by the workspace-scoped grant index or any unrelated constraint");
 
         await using var verify = _db.CreateContext(SystemTenant());
         var members = await verify.AccountMembers
