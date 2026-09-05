@@ -2126,7 +2126,11 @@ Stop implementation if:
 
 ---
 
-# 169. Executable evidence
+# 169. FE-STATE-085 — Pilot verification preserves state authority
+
+An isolated UI seam receives semantic models and typed callbacks; it does not create a second query cache, transport client, or mutation owner. The runtime view owns Work Management hooks and adapts mutations to presentation callbacks. Focused pilot proof must cover scoped query keys, loading/error mapping, optimistic success and rollback, conflict behavior where the contract exposes it, in-flight scope transitions, realtime duplicate/out-of-order recovery, and mapper/request shapes. If the public contract lacks version or conflict semantics, record that case as authority-backed not applicable rather than inventing fields.
+
+# 170. Executable evidence
 
 Primary current evidence:
 
