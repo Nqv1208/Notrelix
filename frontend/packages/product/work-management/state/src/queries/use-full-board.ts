@@ -4,9 +4,16 @@ import { useWorkManagementServices } from "../services";
 
 export function useFullBoard(boardId?: string, workspaceId?: string) {
   const { boards } = useWorkManagementServices();
+  const resolvedBoardId = boardId ?? "pending";
+  const resolvedWorkspaceId = workspaceId ?? "pending";
   const query = useQuery({
-    queryKey: wmQueryKeys.fullBoard(workspaceId!, boardId ?? "pending"),
-    queryFn: () => boards.getFullBoard(boardId!, { workspaceId: workspaceId! }),
+    queryKey: wmQueryKeys.fullBoard(resolvedWorkspaceId, resolvedBoardId),
+    queryFn: () => {
+      if (!boardId || !workspaceId) {
+        throw new Error("boardId and workspaceId are required to load a board");
+      }
+      return boards.getFullBoard(boardId, { workspaceId });
+    },
     enabled: Boolean(boardId && workspaceId),
     staleTime: 10_000,
   });
