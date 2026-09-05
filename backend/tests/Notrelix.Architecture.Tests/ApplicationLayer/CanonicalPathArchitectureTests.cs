@@ -93,9 +93,10 @@ public class CanonicalPathArchitectureTests
             "Contracts", "DTOs", "Services", "Common"
         };
 
-        // Exact frozen legacy baseline: every file currently under a technical-bucket
-        // Public surface. Shrink entries here only when the owning milestone normalizes
-        // the surface; the gate enforces both directions (no growth, no silent shrink).
+        // Exact frozen legacy baseline: every .cs file (recursively) currently under a
+        // technical-bucket Public surface. Shrink entries here only when the owning
+        // milestone normalizes the surface; the gate enforces both directions (no growth,
+        // no silent shrink), including descendants that rely on nesting to hide.
         var frozenLegacyBaseline = new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
             ["Billing/Public/Facts"] = new[] { "IBillingCapabilityFacts.cs" },
@@ -140,8 +141,8 @@ public class CanonicalPathArchitectureTests
                 relativeSurface.Replace('/', Path.DirectorySeparatorChar));
 
             var actualFiles = Directory.Exists(surfaceDir)
-                ? Directory.GetFiles(surfaceDir, "*.cs", SearchOption.TopDirectoryOnly)
-                    .Select(Path.GetFileName)
+                ? Directory.GetFiles(surfaceDir, "*.cs", SearchOption.AllDirectories)
+                    .Select(f => Path.GetRelativePath(surfaceDir, f))
                     .ToArray()
                 : Array.Empty<string>();
 
