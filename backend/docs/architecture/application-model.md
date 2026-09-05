@@ -155,8 +155,21 @@ ReadModels/
 Mapping/
 Permissions/
 Cache/
-Services/
 ```
+
+Use `Commands/`/`Queries/` only for real CQRS request flows. For smaller
+modules, decompose by semantic sub-capability only when a part has independent
+lifecycle or reason-to-change; otherwise colocate implementations at the module
+root.
+
+Do not create `Services/`, `Helpers/`, `Managers/`, or `Utils/` folders merely
+to classify classes by implementation role. Class role (`...Service` and the
+like) and folder taxonomy are independent concerns: `Provisioning/AccountProvisioningService.cs`
+is canonical, while `Provisioning/Services/AccountProvisioningService.cs` is not.
+
+Remaining `Services/` folders in existing modules are legacy source debt owned
+by those modules and must be migrated by their owning context over time; they
+are not a target convention for new code.
 
 This layout communicates semantic ownership and use-case intent.
 
