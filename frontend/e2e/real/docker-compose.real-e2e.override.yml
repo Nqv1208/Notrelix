@@ -6,7 +6,7 @@ services:
       - "0.0.0.0:55432:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: notrelix-real-e2e-postgres
+      POSTGRES_PASSWORD: ${REAL_E2E_POSTGRES_PASSWORD:-real-e2e-postgres-password}
       POSTGRES_DB: notrelix_real_e2e
     volumes:
       - real_e2e_postgres_init:/docker-entrypoint-initdb.d
@@ -21,7 +21,7 @@ services:
     command:
       - redis-server
       - --requirepass
-      - notrelix-real-e2e-redis
+      - ${REAL_E2E_REDIS_PASSWORD:-real-e2e-redis-password}
       - --appendonly
       - "no"
 
@@ -34,14 +34,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8000
-      ConnectionStrings__NotrelixDb: Host=postgres;Port=5432;Database=notrelix_real_e2e;Username=postgres;Password=notrelix-real-e2e-postgres
-      ConnectionStrings__Redis: redis:6379,password=notrelix-real-e2e-redis
+      ConnectionStrings__NotrelixDb: Host=postgres;Port=5432;Database=notrelix_real_e2e;Username=postgres;Password=${REAL_E2E_POSTGRES_PASSWORD:-real-e2e-postgres-password}
+      ConnectionStrings__Redis: redis:6379,password=${REAL_E2E_REDIS_PASSWORD:-real-e2e-redis-password}
       Database__MigrateOnStartup: "true"
       SeedData__Enabled: "true"
       SeedData__RunOnStartup: "true"
       SeedData__Profile: Small
       SeedData__ResetBeforeSeed: "false"
-      JwtSettings__SecretKey: notrelix-real-e2e-secret-key-at-least-thirty-two-chars
+      JwtSettings__SecretKey: ${REAL_E2E_JWT_SECRET:-real-e2e-jwt-secret-at-least-thirty-two-chars}
       JwtSettings__Issuer: http://127.0.0.1:58000
       JwtSettings__Audience: http://127.0.0.1:5173
       Cors__AllowedOrigins__0: http://127.0.0.1:5173
