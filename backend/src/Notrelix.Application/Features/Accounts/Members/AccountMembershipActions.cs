@@ -3,7 +3,7 @@ using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 
-namespace Notrelix.Application.Features.Accounts.Members.Services;
+namespace Notrelix.Application.Features.Accounts.Members;
 
 /// <summary>
 /// Producer-owned implementation of the Accounts public membership target

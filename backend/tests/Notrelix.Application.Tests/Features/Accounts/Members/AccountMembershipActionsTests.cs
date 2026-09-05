@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Features.Accounts.Members.Services;
+using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 using BusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;

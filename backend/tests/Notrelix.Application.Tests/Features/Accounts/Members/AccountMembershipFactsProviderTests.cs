@@ -1,4 +1,4 @@
-using Notrelix.Application.Features.Accounts.Members.Services;
+using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Tests.Features.Identity;
 using Notrelix.Domain.Accounts.Accounts;
 

@@ -61,7 +61,7 @@ public class CommonPublicSignaturePurityArchitectureTests
     [Fact]
     public void GrantProjectionContracts_AreOwnedByTheirContexts()
     {
-        typeof(Notrelix.Application.Features.Accounts.Members.Services.IAccountGrantProjectionService)
+        typeof(Notrelix.Application.Features.Accounts.Members.IAccountGrantProjectionService)
             .Should().NotBeNull();
         typeof(Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceGrantProjectionService)
             .Should().NotBeNull();

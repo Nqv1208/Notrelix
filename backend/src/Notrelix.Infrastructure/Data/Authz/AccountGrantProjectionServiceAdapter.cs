@@ -1,4 +1,4 @@
-using Notrelix.Application.Features.Accounts.Members.Services;
+using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Domain.Accounts.Members;
 
 namespace Notrelix.Infrastructure.Data.Authz;

@@ -9,7 +9,7 @@ using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Accounts.Members.Services;
+using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;

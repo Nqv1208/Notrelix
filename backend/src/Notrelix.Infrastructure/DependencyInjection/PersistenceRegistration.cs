@@ -1,5 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Accounts.Members.Services;
+using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;

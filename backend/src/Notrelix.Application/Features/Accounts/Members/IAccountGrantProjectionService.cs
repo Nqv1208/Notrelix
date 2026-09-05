@@ -1,6 +1,6 @@
 using Notrelix.Domain.Accounts.Members;
 
-namespace Notrelix.Application.Features.Accounts.Members.Services;
+namespace Notrelix.Application.Features.Accounts.Members;
 
 /// <summary>
 /// Accounts-owned grant projection seam. Keeps the authz.access_grants
