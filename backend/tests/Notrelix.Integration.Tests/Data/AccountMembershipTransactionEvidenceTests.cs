@@ -171,4 +171,48 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
             "duplicate invitation acceptance must not create a second account membership");
         members.Single().Status.Should().Be(AccountMemberStatus.Active);
     }
+
+    [Fact]
+    public async Task ConcurrentDuplicateMembershipCreation_DatabaseAllowsOnlyOneMembership()
+    {
+        var accountId = Guid.CreateVersion7();
+        var userId = Guid.CreateVersion7();
+        var invitedBy = Guid.CreateVersion7();
+
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            seed.Accounts.Add(CreateActiveAccount(accountId));
+            await seed.SaveChangesAsync();
+        }
+
+        await using var contextA = _db.CreateContext(SystemTenant());
+        await using var contextB = _db.CreateContext(SystemTenant());
+        var actionsA = new AccountMembershipActions(
+            contextA,
+            new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(contextA)));
+        var actionsB = new AccountMembershipActions(
+            contextB,
+            new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(contextB)));
+
+        // Both requests observe "not a member" before either transaction commits.
+        await actionsA.EnsureWorkspaceInviteeMembershipAsync(
+            accountId, userId, invitedBy, FixedTime, CancellationToken.None);
+        await actionsB.EnsureWorkspaceInviteeMembershipAsync(
+            accountId, userId, invitedBy, FixedTime, CancellationToken.None);
+
+        await contextA.SaveChangesAsync();
+
+        var secondCommit = async () => await contextB.SaveChangesAsync();
+        await secondCommit.Should().ThrowAsync<DbUpdateException>(
+            "the unique account_id/user_id invariant must reject the stale concurrent duplicate");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var members = await verify.AccountMembers
+            .Where(m => m.AccountId == accountId && m.UserId == userId)
+            .ToListAsync();
+
+        members.Should().ContainSingle(
+            "concurrent duplicate acceptance must never persist two memberships");
+        members.Single().Status.Should().Be(AccountMemberStatus.Active);
+    }
 }
