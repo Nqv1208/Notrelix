@@ -222,7 +222,10 @@ export function WorkspaceCompactHeaderSurface({
         <Badge variant="secondary" className="rounded-full capitalize">
           {workspace.plan}
         </Badge>
-        <Separator orientation="vertical" className="mx-1 hidden h-6 md:block" />
+        <Separator
+          orientation="vertical"
+          className="mx-1 hidden h-6 md:block"
+        />
         <Button variant="ghost" size="sm" className="rounded-full">
           <Sparkles className="size-4" />
           AI suggestions
@@ -250,19 +253,24 @@ export function WorkspaceCompactHeaderSurface({
               </Avatar>
             ))}
           </div>
-          <Button
-            size="sm"
-            className="rounded-full"
-            onClick={onInvite}
-          >
+          <Button size="sm" className="rounded-full" onClick={onInvite}>
             <UserPlus className="size-4 mr-2" />
             Invite
           </Button>
-          <Button variant="outline" size="sm" className="bg-card" onClick={onShare}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-card"
+            onClick={onShare}
+          >
             <Share2 className="size-4" />
             Share
           </Button>
-          <Button variant="ghost" size="icon" aria-label="More workspace actions">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="More workspace actions"
+          >
             <MoreHorizontal className="size-4" />
           </Button>
         </div>
@@ -471,16 +479,19 @@ export function WorkspaceDashboardSurface({
   const isLoading = status === "loading";
   const stats = [
     { key: "pages", label: "Pages", icon: FileText, value: pageCount },
-    { key: "boards", label: "Active Boards", icon: LayoutGrid, value: boardCount },
+    {
+      key: "boards",
+      label: "Active Boards",
+      icon: LayoutGrid,
+      value: boardCount,
+    },
     { key: "members", label: "Team Members", icon: Users, value: memberCount },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">
-          {workspaceName}
-        </h2>
+        <h2 className="text-2xl font-bold tracking-tight">{workspaceName}</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Here&apos;s what&apos;s happening in your workspace.
         </p>
@@ -522,9 +533,7 @@ export function WorkspaceDashboardSurface({
             ))}
           </div>
         ) : activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">
-            No activity yet.
-          </p>
+          <p className="text-sm text-muted-foreground py-4">No activity yet.</p>
         ) : (
           <div className="space-y-1">
             {activities.slice(0, 7).map((item, i) => (

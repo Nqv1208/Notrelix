@@ -50,9 +50,7 @@ export const DirectoryDefault: Story = {
 
 export const DirectoryEmpty: Story = {
   render: () => (
-    <WorkspaceDirectorySurface
-      workspaces={workspaceDirectoryEmptyScenario()}
-    />
+    <WorkspaceDirectorySurface workspaces={workspaceDirectoryEmptyScenario()} />
   ),
   tags: ["fui-surface--workspace.directory", "fui-state--Empty"],
 };
@@ -106,9 +104,7 @@ export const ViewTabsEdgeData: Story = {
 
 export const InvitationsDefault: Story = {
   render: () => (
-    <PendingInvitationsMenuSurface
-      invitations={invitationsDefaultScenario()}
-    />
+    <PendingInvitationsMenuSurface invitations={invitationsDefaultScenario()} />
   ),
   tags: ["fui-surface--workspace.pending-invitations", "fui-state--Default"],
 };

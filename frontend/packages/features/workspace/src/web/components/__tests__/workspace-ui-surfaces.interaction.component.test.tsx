@@ -78,9 +78,7 @@ describe("workspace web pure surfaces", () => {
     fireEvent.click(screen.getByRole("button", { name: "Invite" }));
     expect(onInvite).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /Product/ }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /Product/ }));
     fireEvent.click(
       screen.getByRole("button", { name: /Copy workspace link/ }),
     );
@@ -110,7 +108,9 @@ describe("workspace web pure surfaces", () => {
 
   it("renders the empty invitations state without query providers", () => {
     renderPureUi(
-      <PendingInvitationsMenuSurface invitations={invitationsEmptyScenario()} />,
+      <PendingInvitationsMenuSurface
+        invitations={invitationsEmptyScenario()}
+      />,
     );
 
     fireEvent.click(

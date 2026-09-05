@@ -32,24 +32,24 @@ A row is recorded here only when:
 
 ## Work Management remaining product UI
 
-| owner                           | surface                       | source                                                                     | reason                                                                                              |
-| ------------------------------- | ----------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `@notrelix/work-management-web` | Board layout shell/toolbar    | `packages/product/work-management/web/src/components/board-layout/*.tsx`   | owns query/view composition; extracting a pure layout surface requires a dedicated seam decision     |
-| `@notrelix/work-management-web` | Board workspace composition   | `packages/product/work-management/web/src/components/board-workspace-view-content.tsx` | owns query/view composition at baseline; not yet split into a pure composition surface             |
+| owner                           | surface                     | source                                                                                 | reason                                                                                           |
+| ------------------------------- | --------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `@notrelix/work-management-web` | Board layout shell/toolbar  | `packages/product/work-management/web/src/components/board-layout/*.tsx`               | owns query/view composition; extracting a pure layout surface requires a dedicated seam decision |
+| `@notrelix/work-management-web` | Board workspace composition | `packages/product/work-management/web/src/components/board-workspace-view-content.tsx` | owns query/view composition at baseline; not yet split into a pure composition surface           |
 
 ## Workspace remaining feature UI
 
-| owner                       | surface                      | source                                                                   | reason                                                                                              |
-| --------------------------- | ---------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| owner                          | surface                      | source                                                                            | reason                                                                                                    |
+| ------------------------------ | ---------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `@notrelix/features-workspace` | Workspace contextual toolbar | `packages/features/workspace/src/web/components/workspace-contextual-toolbar.tsx` | mostly-pure toolbar; not yet promoted to a standalone manifest row (covered surfaces do not yet claim it) |
 
 ## Account / Governance / Integrations
 
-| owner                        | surface      | terminal reason                                                                                            |
-| ---------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
-| `@notrelix/features-account` | Account UI   | `NOT_APPLICABLE` — package has web hooks only at baseline; no UI component source under `src/web`.         |
-| `@notrelix/features-governance` | Governance UI | `NOT_APPLICABLE` — package has web hooks only at baseline; no UI component source under `src/web`.         |
-| `@notrelix/features-integrations` | Integrations UI | `NOT_APPLICABLE` — package has web hooks only at baseline; no UI component source under `src/web`.      |
+| owner                             | surface         | terminal reason                                                                                    |
+| --------------------------------- | --------------- | -------------------------------------------------------------------------------------------------- |
+| `@notrelix/features-account`      | Account UI      | `NOT_APPLICABLE` — package has web hooks only at baseline; no UI component source under `src/web`. |
+| `@notrelix/features-governance`   | Governance UI   | `NOT_APPLICABLE` — package has web hooks only at baseline; no UI component source under `src/web`. |
+| `@notrelix/features-integrations` | Integrations UI | `NOT_APPLICABLE` — package has web hooks only at baseline; no UI component source under `src/web`. |
 
 ## Follow-up contract
 
