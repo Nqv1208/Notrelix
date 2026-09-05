@@ -62,18 +62,24 @@ public class CanonicalPathArchitectureTests
             var relativePath = Path.GetRelativePath(featuresPath, file);
             var parts = relativePath.Split(Path.DirectorySeparatorChar);
 
-            var hasCommandsOrQueries = parts.Any(p =>
-                p is "Commands" or "Queries");
+            // Canonical handler position:
+            //   Features/{Context}/{Module}/Commands|Queries/{UseCase}/
+            // Public/, Ports/, CrossContext/ are boundary roles, not CQRS modules.
+            var hasCanonicalPosition =
+                parts.Length >= 4
+                && parts[1] is not ("Public" or "Ports" or "CrossContext")
+                && parts[2] is "Commands" or "Queries";
 
-            if (!hasCommandsOrQueries)
+            if (!hasCanonicalPosition)
             {
                 violations.Add(relativePath);
             }
         }
 
         violations.Should().BeEmpty(
-            "all handler files must be under Commands/ or Queries/ subdirectories " +
-            "(application-model.md §5); Services/ and Abstractions/ are not handler containers");
+            "handler files must be at Features/{Context}/{Module}/Commands|Queries/{UseCase}/ " +
+            "(application-model.md §5); Services/, Abstractions/, and Commands|Queries nested inside " +
+            "Public/, Ports/, or CrossContext/ are not handler containers");
     }
 
     [Fact]
