@@ -124,8 +124,8 @@ export function AuthLoginFormSurface({
       </div>
 
       {serverError ? (
-        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-foreground">
+          <AlertCircle className="size-4 shrink-0 mt-0.5 text-destructive" />
           <span>{serverError}</span>
         </div>
       ) : null}
@@ -321,8 +321,8 @@ export function AuthRegisterFormSurface({
       </div>
 
       {serverError ? (
-        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-foreground">
+          <AlertCircle className="size-4 shrink-0 mt-0.5 text-destructive" />
           <span>{serverError}</span>
         </div>
       ) : null}
@@ -645,8 +645,8 @@ export function AuthForgotPasswordFormSurface({
       </div>
 
       {serverError ? (
-        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-foreground">
+          <AlertCircle className="size-4 shrink-0 mt-0.5 text-destructive" />
           <span>{serverError}</span>
         </div>
       ) : null}
