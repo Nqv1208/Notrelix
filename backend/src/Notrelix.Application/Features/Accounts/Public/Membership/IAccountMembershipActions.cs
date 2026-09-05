@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Accounts.Public.Commands;
+namespace Notrelix.Application.Features.Accounts.Public.Membership;
 
 /// <summary>
 /// Producer-owned public target action for Accounts membership mutation.

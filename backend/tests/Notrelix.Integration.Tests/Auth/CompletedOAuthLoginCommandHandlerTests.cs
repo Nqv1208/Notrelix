@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Provisioning;
-using Notrelix.Application.Features.Accounts.Public.Commands;
+using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;

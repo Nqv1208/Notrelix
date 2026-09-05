@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Accounts.Public.Facts;
+namespace Notrelix.Application.Features.Accounts.Public.Membership;
 
 /// <summary>
 /// Producer-owned public fact describing whether an account can admit a

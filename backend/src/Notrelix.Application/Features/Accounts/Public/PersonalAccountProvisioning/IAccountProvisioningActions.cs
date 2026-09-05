@@ -1,6 +1,4 @@
-using Notrelix.Application.Features.Accounts.Public.Facts;
-
-namespace Notrelix.Application.Features.Accounts.Public.Commands;
+namespace Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 
 /// <summary>
 /// Producer-owned public provisioning action for personal Account creation.

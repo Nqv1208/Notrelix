@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Accounts.Public.Facts;
+namespace Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 
 /// <summary>
 /// Stable Accounts-owned result of the personal Account provisioning action.

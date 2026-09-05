@@ -1,8 +1,7 @@
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Events.Identity;
-using Notrelix.Application.Features.Accounts.Public.Commands;
-using Notrelix.Application.Features.Accounts.Public.Facts;
+using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Domain.Identity.Users;
 

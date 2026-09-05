@@ -1,6 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
-using Notrelix.Application.Features.Accounts.Public.Commands;
+using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 

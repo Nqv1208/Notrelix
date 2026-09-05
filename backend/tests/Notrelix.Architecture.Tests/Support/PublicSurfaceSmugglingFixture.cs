@@ -1,7 +1,7 @@
 namespace Notrelix.Application.Features.Accounts.Public;
 
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Features.Accounts.Public.Facts;
+using Notrelix.Application.Features.Accounts.Public.Membership;
 
 /// <summary>
 /// Isolated, deliberately-violating architecture fixture (backend/tests/AGENTS.md

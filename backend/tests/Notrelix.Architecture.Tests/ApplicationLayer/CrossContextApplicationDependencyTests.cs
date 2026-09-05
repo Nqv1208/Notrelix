@@ -49,7 +49,7 @@ public class CrossContextApplicationDependencyTests : ArchitectureTestBase
     // Baseline is empty since the BOUND-TX-002 migration: AcceptInvitation
     // (Workspaces) now requests the Account-side mutation through the
     // producer-owned Accounts Public target action
-    // (Features.Accounts.Public.Commands.IAccountMembershipActions) instead of
+    // (Features.Accounts.Public.Membership.IAccountMembershipActions) instead of
     // the foreign private Accounts abstraction. The shared request transaction
     // remains a reviewed exception (BOUND-TX-002); no producer-internal
     // Application reference is active anywhere.

@@ -1,5 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Accounts.Public.Commands;
+using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 

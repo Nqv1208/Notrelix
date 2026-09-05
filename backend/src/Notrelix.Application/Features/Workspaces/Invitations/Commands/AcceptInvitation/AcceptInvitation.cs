@@ -1,7 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
-using Notrelix.Application.Features.Accounts.Public.Commands;
-using Notrelix.Application.Features.Accounts.Public.Queries;
+using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;

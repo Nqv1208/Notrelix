@@ -248,7 +248,7 @@ public class PublicSemanticContractArchitectureTests
         // producer awareness means Identity.Public may reference only its own
         // surface, never Accounts.Public (exact reviewed exceptions only).
         ClassifyPurity(
-                typeof(Notrelix.Application.Features.Accounts.Public.Facts.AccountMembershipAdmissionFact),
+                typeof(Notrelix.Application.Features.Accounts.Public.Membership.AccountMembershipAdmissionFact),
                 ownProducer: "Identity")
             .Should().NotBeNull("foreign producer Public contracts are denied by default");
     }
@@ -257,7 +257,7 @@ public class PublicSemanticContractArchitectureTests
     public void Gate_Allows_OwnProducerPublicContract()
     {
         ClassifyPurity(
-                typeof(Notrelix.Application.Features.Accounts.Public.Facts.AccountMembershipAdmissionFact),
+                typeof(Notrelix.Application.Features.Accounts.Public.Membership.AccountMembershipAdmissionFact),
                 ownProducer: "Accounts")
             .Should().BeNull("a producer may reference its own Public surface");
     }
@@ -293,11 +293,11 @@ public class PublicSemanticContractArchitectureTests
     {
         // Legitimate own-Public semantic surfaces (actions/facts/queries) must pass.
         ClassifyPurity(
-                typeof(Notrelix.Application.Features.Accounts.Public.Commands.IAccountMembershipActions),
+                typeof(Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipActions),
                 ownProducer: "Accounts")
             .Should().BeNull("an own-Public action surface is a semantic contract");
         ClassifyPurity(
-                typeof(Notrelix.Application.Features.Accounts.Public.Queries.IAccountMembershipFacts),
+                typeof(Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts),
                 ownProducer: "Accounts")
             .Should().BeNull("an own-Public read-query surface is a semantic contract");
     }

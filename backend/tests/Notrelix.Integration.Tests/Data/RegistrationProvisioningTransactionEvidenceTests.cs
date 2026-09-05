@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Features.Accounts.Provisioning;
-using Notrelix.Application.Features.Accounts.Public.Commands;
+using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data;

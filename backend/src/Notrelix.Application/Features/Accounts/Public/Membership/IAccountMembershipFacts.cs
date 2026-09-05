@@ -1,6 +1,4 @@
-using Notrelix.Application.Features.Accounts.Public.Facts;
-
-namespace Notrelix.Application.Features.Accounts.Public.Queries;
+namespace Notrelix.Application.Features.Accounts.Public.Membership;
 
 /// <summary>
 /// Producer-owned public query surface for stable Accounts membership

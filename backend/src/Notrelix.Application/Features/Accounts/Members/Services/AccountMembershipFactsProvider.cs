@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Accounts.Public.Facts;
-using Notrelix.Application.Features.Accounts.Public.Queries;
+using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Domain.Accounts.Accounts;
 
 namespace Notrelix.Application.Features.Accounts.Members.Services;
