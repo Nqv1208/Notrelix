@@ -63,11 +63,17 @@ public class CanonicalPathArchitectureTests
             var parts = relativePath.Split(Path.DirectorySeparatorChar);
 
             // Canonical handler position:
-            //   Features/{Context}/{Module}/Commands|Queries/{UseCase}/
-            // Public/, Ports/, CrossContext/ are boundary roles, not CQRS modules.
+            //   Features/{Context}/{Module}/Commands|Queries/{UseCase}/{Handler}.cs
+            // Public/, Ports/, CrossContext/, Services/, Abstractions/ are boundary
+            // or technical roles, not CQRS modules; a real UseCase folder is required.
             var hasCanonicalPosition =
-                parts.Length >= 4
-                && parts[1] is not ("Public" or "Ports" or "CrossContext")
+                parts.Length >= 5
+                && parts[1] is not (
+                    "Public"
+                    or "Ports"
+                    or "CrossContext"
+                    or "Services"
+                    or "Abstractions")
                 && parts[2] is "Commands" or "Queries";
 
             if (!hasCanonicalPosition)
