@@ -6,6 +6,7 @@ namespace Notrelix.Application.Events.Automation;
 /// in the same outbox transaction; the n8n HTTP call happens in the consumer after commit.
 /// <see cref="ExecutionId"/> is the stable external idempotency/correlation identity.
 /// </summary>
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("automation.n8n-dispatch-requested", Version = 1)]
 public sealed record N8nDispatchRequestedV1(
     Guid EventId,

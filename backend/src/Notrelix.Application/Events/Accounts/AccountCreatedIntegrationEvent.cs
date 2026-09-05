@@ -1,5 +1,6 @@
 namespace Notrelix.Application.Events.Accounts;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Account)]
 [EventName("account.created", Version = 1)]
 public sealed record AccountCreatedIntegrationEvent(
     Guid EventId,

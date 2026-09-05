@@ -1,6 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
-using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
@@ -32,7 +32,7 @@ public sealed class CompleteOAuthLoginCommandHandler
     private readonly IOAuthProviderClient _providerClient;
     private readonly IOAuthOptionsProvider _optionsProvider;
     private readonly IIdentityDbContext _identityContext;
-    private readonly IAccountProvisioningService _provisioningService;
+    private readonly IAccountProvisioningActions _provisioningActions;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IMfaChallengeStore _challengeStore;
     private readonly IPasswordHasher _passwordHasher;
@@ -45,7 +45,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         IOAuthProviderClient providerClient,
         IOAuthOptionsProvider optionsProvider,
         IIdentityDbContext identityContext,
-        IAccountProvisioningService provisioningService,
+        IAccountProvisioningActions provisioningActions,
         IAuthSessionIssuer sessionIssuer,
         IMfaChallengeStore challengeStore,
         IPasswordHasher passwordHasher,
@@ -57,7 +57,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         _providerClient = providerClient;
         _optionsProvider = optionsProvider;
         _identityContext = identityContext;
-        _provisioningService = provisioningService;
+        _provisioningActions = provisioningActions;
         _sessionIssuer = sessionIssuer;
         _challengeStore = challengeStore;
         _passwordHasher = passwordHasher;
@@ -204,7 +204,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         _identityContext.Users.Add(user);
 
         var accountName = $"{displayName}'s Account";
-        var provisioning = await _provisioningService.ProvisionPersonalAccountAsync(
+        var provisioning = await _provisioningActions.ProvisionPersonalAccountAsync(
             user.Id,
             displayName,
             now,

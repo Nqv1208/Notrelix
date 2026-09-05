@@ -30,6 +30,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
             Name: domainEvent.Title,
@@ -44,6 +45,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardRenamedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
             OldName: domainEvent.OldTitle,
@@ -59,6 +61,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardArchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
             CorrelationId: domainEvent.EventId,
@@ -72,6 +75,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardUnarchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
             CorrelationId: domainEvent.EventId,
@@ -85,6 +89,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardItemCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ItemId: domainEvent.ItemId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -100,6 +105,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardItemFieldValueChangedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ItemId: domainEvent.ItemId,
             BoardId: domainEvent.BoardId,
             FieldId: domainEvent.FieldId,
@@ -117,6 +123,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardItemRenamedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ItemId: domainEvent.ItemId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -133,6 +140,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardItemMovedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ItemId: domainEvent.ItemId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -149,6 +157,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardItemArchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ItemId: domainEvent.ItemId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -163,6 +172,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardFieldCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             FieldId: domainEvent.FieldId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -179,6 +189,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardFieldUpdatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             FieldId: domainEvent.FieldId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -193,6 +204,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardFieldDeletedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             FieldId: domainEvent.FieldId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -207,6 +219,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardViewCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ViewId: domainEvent.ViewId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -222,6 +235,7 @@ public sealed class BoardEventMapper :
     {
         return new BoardViewDeletedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ViewId: domainEvent.ViewId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -236,6 +250,7 @@ public sealed class BoardEventMapper :
     {
         return new LabelCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             LabelId: domainEvent.LabelId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -251,6 +266,7 @@ public sealed class BoardEventMapper :
     {
         return new LabelUpdatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             LabelId: domainEvent.LabelId,
             BoardId: Guid.Empty,
             WorkspaceId: domainEvent.WorkspaceId,
@@ -265,6 +281,7 @@ public sealed class BoardEventMapper :
     {
         return new ChecklistCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ChecklistId: domainEvent.ChecklistId,
             ItemId: domainEvent.ItemId,
             BoardId: Guid.Empty,
@@ -281,6 +298,7 @@ public sealed class BoardEventMapper :
     {
         return new ChecklistItemToggledIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             ChecklistId: domainEvent.ChecklistId,
             ChecklistItemId: domainEvent.ItemId,
             ItemId: Guid.Empty,

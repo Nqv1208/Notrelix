@@ -4,6 +4,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Domain.Workspaces.Invitations;
 
 namespace Notrelix.Application.Tests.Features.Workspaces;
@@ -13,7 +14,7 @@ public abstract class WorkspaceHandlerTestBase
     protected readonly Mock<IWorkspaceDbContext> DbContextMock = new();
     protected readonly Mock<ICurrentRequestContext> RequestContextMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();
-    protected readonly Mock<IAccessGrantProjectionService> GrantProjectionMock = new();
+    protected readonly Mock<IWorkspaceGrantProjectionService> GrantProjectionMock = new();
 
     protected readonly Guid TestAccountId = Guid.CreateVersion7();
     protected readonly Guid TestWorkspaceId = Guid.CreateVersion7();

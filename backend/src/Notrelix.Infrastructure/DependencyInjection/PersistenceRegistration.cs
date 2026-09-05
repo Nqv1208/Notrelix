@@ -1,10 +1,7 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Accounts.Services;
-using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Identity.Abstractions;
-using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
@@ -12,13 +9,13 @@ using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
+using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Interceptors;
-using Notrelix.Infrastructure.Data.ReadPorts.Collaboration;
-using Notrelix.Infrastructure.Data.ReadPorts.Identity;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Events;
 using Notrelix.Infrastructure.Options;
@@ -98,7 +95,9 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<IAccountAccessEvaluator, AccountAccessEvaluator>();
         services.AddScoped<ITenantBootstrapStore, TenantBootstrapStore>();
-        services.AddScoped<IAccessGrantProjectionService, AccessGrantProjectionService>();
+        services.AddScoped<AccessGrantProjectionService>();
+        services.AddScoped<IAccountGrantProjectionService, AccountGrantProjectionServiceAdapter>();
+        services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
@@ -108,14 +107,12 @@ public static class PersistenceRegistration
 
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
-        // Application services (ports in Application, adapters in Infrastructure)
-        services.AddScoped<IIdentityUserLookupService, IdentityUserLookupService>();
-        services.AddScoped<IAccountMembershipProvisioner, AccountMembershipProvisioner>();
-        services.AddScoped<IAccountStatusReader, AccountStatusReader>();
+        // Cross-context runtime bindings live in CrossContextRegistration
+        // (AddCrossContextBindings) — see CrossContextRegistration.cs.
 
-        // Cross-context read ports (spec 5.1)
-        services.AddScoped<IWorkManagementCollaborationReadPort, WorkManagementCollaborationReadPort>();
-        services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadPort>();
+        // Analytics-owned placement projection maintenance
+        services.AddScoped<
+            Notrelix.Application.Features.Analytics.Placements.Services.WorkspaceWorkItemPlacementService>();
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, Notrelix.Infrastructure.Messaging.EventTypeRegistry>();

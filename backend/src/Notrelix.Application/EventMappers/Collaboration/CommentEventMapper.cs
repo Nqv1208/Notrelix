@@ -10,6 +10,7 @@ public sealed class CommentEventMapper :
     {
         return new CommentCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             CommentId: domainEvent.CommentId,
             WorkspaceId: domainEvent.WorkspaceId,
             TargetType: domainEvent.Target.Kind.ToString(),
@@ -27,6 +28,7 @@ public sealed class CommentEventMapper :
     {
         return new MentionCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             MentionId: domainEvent.MentionId,
             WorkspaceId: domainEvent.WorkspaceId,
             TargetType: domainEvent.Source.Kind.ToString(),

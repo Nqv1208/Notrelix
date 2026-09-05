@@ -1,5 +1,6 @@
 namespace Notrelix.Application.Events.Identity;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.None)]
 [EventName("user.deactivated", Version = 1)]
 public sealed record UserDeactivatedIntegrationEvent(
     Guid EventId,

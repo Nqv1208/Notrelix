@@ -131,17 +131,22 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     }
 
     /// <summary>
-    /// Broker redelivery path for a previously failed dispatch: returns a failed
-    /// execution to Queued so the same durable intent can be retried without
-    /// creating a new execution identity.
+    /// Automation-owned retry semantic for a failed dispatch attempt: the
+    /// execution records the attempt evidence and returns to Queued so a later
+    /// Automation attempt can run against the same execution identity.
+    /// AttemptCount grows with every recorded attempt.
     /// </summary>
-    public void RequeueForRedelivery(DateTimeOffset requeuedAt)
+    public void RecordRetryableDispatchFailure(string error, DateTimeOffset attemptedAt)
     {
-        if (Status != AutomationExecutionStatus.Failed)
-            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotStartUnlessQueued, "Only failed executions can be re-queued.");
+        if (Status != AutomationExecutionStatus.Running)
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotStartUnlessQueued, "A retryable dispatch failure can only be recorded from a running attempt.");
+        if (string.IsNullOrWhiteSpace(error))
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_ErrorRequiredOnFail, "Error must not be empty when a retryable dispatch failure is recorded.");
+
         Status = AutomationExecutionStatus.Queued;
-        FinishedAt = null;
-        ApplyAuditUpdate(PrepareAuditUpdate(null, requeuedAt));
+        Error = error;
+        AttemptCount++;
+        ApplyAuditUpdate(PrepareAuditUpdate(null, attemptedAt));
         IncrementVersion();
     }
 

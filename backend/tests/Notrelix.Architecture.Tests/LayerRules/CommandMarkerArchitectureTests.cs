@@ -123,6 +123,11 @@ public class CommandMarkerArchitectureTests
         ["SendWelcomeEmailCommand"] = new("SendWelcomeEmailCommand", AllowlistClassification.SystemCommand,
             "System command triggered by user registration — no workspace context exists yet (WorkspaceId => null)",
             "Keep as-is; system command with null workspace scope"),
+        ["WorkItemActionIdentity"] = new("WorkItemActionIdentity", AllowlistClassification.Intentional,
+            "WorkManagement Public target-action parameter record — an explicit scope fact for " +
+            "cross-context callers, not a pipeline command; it never dispatches through the " +
+            "request pipeline or its scope behaviors",
+            "Keep as-is; producer Public contract, not a pipeline request"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingRequirePermission = new()

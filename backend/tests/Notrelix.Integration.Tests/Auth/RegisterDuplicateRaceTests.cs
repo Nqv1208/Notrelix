@@ -104,7 +104,7 @@ public class RegisterDuplicateRaceTests : IAsyncLifetime
 
         return new RegisterCommandHandler(
             context,
-            new AccountProvisioningService(context, new AccessGrantProjectionService(context)),
+            new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))),
             passwordHasher,
             sessionIssuer,
             dateTimeProvider,

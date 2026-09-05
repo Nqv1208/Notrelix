@@ -432,8 +432,6 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
                 sp.GetRequiredService<TimeProvider>()));
-        services.AddScoped<IAccessGrantProjectionService>(sp =>
-            new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>()));
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<global::Notrelix.Application.Common.Tenancy.ITenantBootstrapStore, TenantBootstrapStore>();
         services.AddScoped<ExecutionContextClass>();

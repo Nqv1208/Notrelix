@@ -1,9 +1,12 @@
 namespace Notrelix.Architecture.Tests.ApplicationLayer;
 
 /// <summary>
-/// APP-PATH-001..004: Enforces canonical module-first Application layout.
+/// APP-PATH-001..007: Enforces canonical Application layout.
 /// Canonical: Features/{Context}/{Module}/Commands|Queries/{UseCase}/
 /// Forbidden: Features/{Context}/Commands|Queries/{Module}/ (legacy)
+/// Public surfaces: Features/{Context}/Public/{PublishedCapability}/
+///   (capability-first; technical buckets are exact frozen legacy debt only,
+///   see application-model.md §5)
 /// </summary>
 public class CanonicalPathArchitectureTests
 {
@@ -59,17 +62,163 @@ public class CanonicalPathArchitectureTests
             var relativePath = Path.GetRelativePath(featuresPath, file);
             var parts = relativePath.Split(Path.DirectorySeparatorChar);
 
-            var hasCommandsOrQueries = parts.Any(p =>
-                p is "Commands" or "Queries" or "Abstractions" or "Services");
+            // Canonical handler position:
+            //   Features/{Context}/{Module}/Commands|Queries/{UseCase}/{Handler}.cs
+            // Public/, Ports/, CrossContext/, Services/, Abstractions/ are boundary
+            // or technical roles, not CQRS modules; a real UseCase folder is required.
+            var hasCanonicalPosition =
+                parts.Length >= 5
+                && parts[1] is not (
+                    "Public"
+                    or "Ports"
+                    or "CrossContext"
+                    or "Services"
+                    or "Abstractions")
+                && parts[2] is "Commands" or "Queries";
 
-            if (!hasCommandsOrQueries)
+            if (!hasCanonicalPosition)
             {
                 violations.Add(relativePath);
             }
         }
 
         violations.Should().BeEmpty(
-            "all handler files must be under Commands/ or Queries/ subdirectories");
+            "handler files must be at Features/{Context}/{Module}/Commands|Queries/{UseCase}/ " +
+            "(application-model.md §5); Services/, Abstractions/, and Commands|Queries nested inside " +
+            "Public/, Ports/, or CrossContext/ are not handler containers");
+    }
+
+    [Fact]
+    public void APP_PATH_006_Public_Technical_Buckets_Are_Exact_Frozen_Legacy_Baseline()
+    {
+        var featuresPath = GetFeaturesPath();
+
+        var forbiddenBuckets = new[]
+        {
+            "Commands", "Queries", "Facts", "Actions",
+            "Contracts", "DTOs", "Services", "Common"
+        };
+
+        // Exact frozen legacy baseline: every .cs file (recursively) currently under a
+        // technical-bucket Public surface. Shrink entries here only when the owning
+        // milestone normalizes the surface; the gate enforces both directions (no growth,
+        // no silent shrink), including descendants that rely on nesting to hide.
+        var frozenLegacyBaseline = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["Billing/Public/Facts"] = new[] { "IBillingCapabilityFacts.cs" },
+            ["Identity/Public/Facts"] = new[] { "IdentityUserFact.cs" },
+            ["Identity/Public/Queries"] = new[] { "IIdentityUserFacts.cs" },
+            ["Integrations/Public/Commands"] = new[] { "IN8nWebhookActions.cs" },
+            ["WorkManagement/Public/Commands"] = new[] { "IWorkItemActions.cs" },
+            ["WorkManagement/Public/Queries"] = new[] { "IWorkItemProjectionSource.cs" }
+        };
+
+        var violations = new List<string>();
+
+        // 1. Capability-first rule: no NEW top-level technical bucket under any Public surface.
+        foreach (var contextDir in Directory.GetDirectories(featuresPath))
+        {
+            var contextName = Path.GetFileName(contextDir);
+            var publicDir = Path.Combine(contextDir, "Public");
+            if (!Directory.Exists(publicDir))
+                continue;
+
+            foreach (var surfaceDir in Directory.GetDirectories(publicDir))
+            {
+                var surfaceName = Path.GetFileName(surfaceDir);
+                if (!forbiddenBuckets.Contains(surfaceName))
+                    continue;
+
+                var relativeSurface = $"{contextName}/Public/{surfaceName}";
+                if (!frozenLegacyBaseline.ContainsKey(relativeSurface))
+                {
+                    violations.Add(
+                        $"Features/{relativeSurface} is a new technical bucket; Public must be " +
+                        "capability-first (Features/{Context}/Public/{PublishedCapability}/).");
+                }
+            }
+        }
+
+        // 2. Frozen legacy baseline must equal the actual tree exactly, in both directions.
+        foreach (var (relativeSurface, baselineFiles) in frozenLegacyBaseline)
+        {
+            var surfaceDir = Path.Combine(
+                featuresPath,
+                relativeSurface.Replace('/', Path.DirectorySeparatorChar));
+
+            var actualFiles = Directory.Exists(surfaceDir)
+                ? Directory.GetFiles(surfaceDir, "*.cs", SearchOption.AllDirectories)
+                    .Select(f => Path.GetRelativePath(surfaceDir, f))
+                    .ToArray()
+                : Array.Empty<string>();
+
+            foreach (var unexpected in actualFiles.Except(baselineFiles))
+            {
+                violations.Add($"Features/{relativeSurface}/{unexpected} exceeds the frozen legacy baseline.");
+            }
+
+            foreach (var missing in baselineFiles.Except(actualFiles))
+            {
+                violations.Add(
+                    $"Features/{relativeSurface}/{missing} is missing; normalize the surface and shrink " +
+                    "the frozen baseline in this gate when the owning milestone migrates it.");
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "Application Public surfaces must be capability-first " +
+            "(Features/{Context}/Public/{PublishedCapability}/) per application-model.md §5. Existing " +
+            "technical-bucket Public paths are frozen exact debt: they may only shrink through an " +
+            "explicit baseline update in this gate alongside the owning milestone's normalization, " +
+            "and must never grow.");
+    }
+
+    [Fact]
+    public void APP_PATH_007_Accounts_Public_Surface_Is_Canonical_Capability_First()
+    {
+        var featuresPath = GetFeaturesPath();
+        var accountsPublic = Path.Combine(featuresPath, "Accounts", "Public");
+
+        var requiredTopology = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["Membership"] = new[]
+            {
+                "IAccountMembershipFacts.cs",
+                "AccountMembershipAdmissionFact.cs",
+                "IAccountMembershipActions.cs"
+            },
+            ["PersonalAccountProvisioning"] = new[]
+            {
+                "IAccountProvisioningActions.cs",
+                "PersonalAccountProvisioningResult.cs"
+            }
+        };
+
+        var presentSurfaceDirs = Directory.Exists(accountsPublic)
+            ? Directory.GetDirectories(accountsPublic).Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal)
+            : new HashSet<string>(StringComparer.Ordinal);
+
+        var missingSurfaces = requiredTopology.Keys
+            .Where(surface => !presentSurfaceDirs.Contains(surface))
+            .ToList();
+
+        missingSurfaces.Should().BeEmpty(
+            "Accounts/Public must expose published capabilities per application-model.md §5 " +
+            "(capability-first Public grammar): " +
+            "Membership/{IAccountMembershipFacts,AccountMembershipAdmissionFact,IAccountMembershipActions} " +
+            "and PersonalAccountProvisioning/{IAccountProvisioningActions,PersonalAccountProvisioningResult}. " +
+            "Technical-bucket Public/Commands|Queries|Facts layout is non-canonical for Accounts.");
+
+        foreach (var (capability, files) in requiredTopology)
+        {
+            foreach (var file in files)
+            {
+                var expectedPath = Path.Combine(accountsPublic, capability, file);
+                File.Exists(expectedPath).Should().BeTrue(
+                    $"Accounts/Public/{capability}/{file} is required by application-model.md §5 " +
+                    "capability-first Public layout.");
+            }
+        }
     }
 
     private static string GetFeaturesPath()

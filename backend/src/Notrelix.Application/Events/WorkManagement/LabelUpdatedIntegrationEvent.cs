@@ -1,8 +1,10 @@
 namespace Notrelix.Application.Events.WorkManagement;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("label.updated", Version = 1)]
 public sealed record LabelUpdatedIntegrationEvent(
     Guid EventId,
+    Guid? AccountId,
     Guid LabelId,
     Guid BoardId,
     Guid? WorkspaceId,
@@ -16,7 +18,7 @@ public sealed record LabelUpdatedIntegrationEvent(
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,
-    accountId: null,
+    accountId: AccountId,
     workspaceId: WorkspaceId,
     actorUserId: ActorUserId,
     causationId: CausationId,

@@ -32,5 +32,6 @@ public enum PermissionAction
     ManageBoard,
     ViewPage,
     UpdatePage,
-    DeletePage
+    DeletePage,
+    ManageAccount
 }

@@ -38,7 +38,7 @@ public static class EventManifestGenerator
             .ToList();
 
         return new EventManifestModel(
-            SchemaVersion: 1,
+            SchemaVersion: 2,
             Description: "Global backend baseline for PUBLIC integration-event contracts. Generated from ContractRegistrySetup/ConsumerRegistrySetup via production serializer conventions — do not hand-edit.",
             Contracts: rows);
     }
@@ -105,7 +105,8 @@ public static class EventManifestGenerator
                 differences.Add($"'{expected.Name}' v{expected.Version}: deprecated flag changed");
 
             if (expected.Scope.CarriesAccountId != actualRow.Scope.CarriesAccountId
-                || expected.Scope.CarriesWorkspaceId != actualRow.Scope.CarriesWorkspaceId)
+                || expected.Scope.CarriesWorkspaceId != actualRow.Scope.CarriesWorkspaceId
+                || !string.Equals(expected.Scope.TenantScope, actualRow.Scope.TenantScope, StringComparison.Ordinal))
                 differences.Add($"'{expected.Name}' v{expected.Version}: scope metadata changed");
 
             CompareProperties(expected.SerializedProperties, actualRow.SerializedProperties, expected, differences);
@@ -295,8 +296,10 @@ public static class EventManifestGenerator
     private static ScopeMetadata BuildScope(Type type)
     {
         var parameterNames = GetPrimaryConstructorParameterNames(type);
+        var tenantScope = type.GetCustomAttribute<IntegrationEventTenantScopeAttribute>()?.Scope.ToString() ?? "Missing";
 
         return new ScopeMetadata(
+            TenantScope: tenantScope,
             CarriesAccountId: parameterNames.Contains("accountId", StringComparer.OrdinalIgnoreCase),
             CarriesWorkspaceId: parameterNames.Contains("workspaceId", StringComparer.OrdinalIgnoreCase));
     }
@@ -338,7 +341,7 @@ public sealed record ContractRow(
     IReadOnlyList<ClassifiedField> SensitiveFields,
     IReadOnlyList<ConsumerSummary> Consumers);
 
-public sealed record ScopeMetadata(bool CarriesAccountId, bool CarriesWorkspaceId);
+public sealed record ScopeMetadata(string TenantScope, bool CarriesAccountId, bool CarriesWorkspaceId);
 
 public sealed record SerializedProperty(string Name, string Type, bool Nullable);
 

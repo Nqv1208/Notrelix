@@ -125,9 +125,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 
         if (isAccount)
         {
+            var isAdmin = string.Equals(role, "Admin", StringComparison.Ordinal);
             if (permission.Action == PermissionAction.ViewWorkspace
-                || permission.Action == PermissionAction.CreateWorkspace
-                && string.Equals(role, "Admin", StringComparison.Ordinal))
+                || (isAdmin && permission.Action == PermissionAction.CreateWorkspace)
+                || (isAdmin && permission.Action == PermissionAction.ManageAccount))
             {
                 return AccessDecision.Allow();
             }

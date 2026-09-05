@@ -8,6 +8,7 @@ using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
@@ -158,8 +159,9 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
-        services.AddScoped<IAccessGrantProjectionService>(sp =>
-            new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>()));
+        services.AddScoped<IWorkspaceGrantProjectionService>(sp =>
+            new WorkspaceGrantProjectionServiceAdapter(
+                new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>())));
 
         services.AddSingleton<IOptions<RlsOptions>>(Options.Create(new RlsOptions
         {
