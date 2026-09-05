@@ -168,6 +168,15 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
         }
         catch
         {
+            // Failure atomicity: the command/DataSession rollback does NOT clear the
+            // shared scoped ApplicationDbContext ChangeTracker, so the failed pipeline's
+            // tracked entities (e.g. an Added Workspace/Member and the domain events
+            // mapped to outbox rows) are still pending in this same context. The claim
+            // removal SaveChanges below must affect ONLY that removal — never silently
+            // flush and re-commit the rolled-back writes. Detach every tracked entry
+            // first so the cleanup SaveChanges cannot partially persist the failure.
+            DetachAllTrackedEntries(_db);
+
             var claim = await _db.Set<MessagingProcessedEvent>()
                 .FirstOrDefaultAsync(e => e.EventId == integrationEvent.EventId
                     && e.ConsumerName == consumerName, context.CancellationToken);
@@ -177,6 +186,14 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
                 await _db.SaveChangesAsync(context.CancellationToken);
             }
             throw;
+        }
+    }
+
+    private static void DetachAllTrackedEntries(DbContext db)
+    {
+        foreach (var entry in db.ChangeTracker.Entries().ToList())
+        {
+            entry.State = EntityState.Detached;
         }
     }
 

@@ -13,6 +13,7 @@ using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Identity.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 
 namespace Notrelix.Integration.Tests.Messaging;
 
@@ -31,7 +32,10 @@ namespace Notrelix.Integration.Tests.Messaging;
 public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLifetime
 {
     private const string WorkspaceProvisionEndpoint = "notrelix-identity-registration-completed-workspace-provision-v1";
+    private const string WelcomeEmailEndpoint = "notrelix-identity-registration-completed-welcome-email-v1";
     private const string RegistrationMessageName = "identity.registration-completed";
+    private const string WorkspaceCreatedMessageName = "workspace.created";
+    private const string WorkspaceMemberAddedMessageName = "workspace.member.added";
 
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
@@ -121,6 +125,118 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         recorder.LastIsSystem.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task Registration_WhenWorkspaceConsumerFails_RegistrationRemainsCommittedAndFailureIsEvidencedByDeliveryDedupRuntime()
+    {
+        var graph = new RegistrationGraph(Guid.CreateVersion7(), Guid.CreateVersion7());
+        var recorder = new TenantObservationRecorder();
+        var workspaceFailures = new WorkspaceConsumerFailureObservations();
+        await using var provider = BuildProvider(recorder, workspaceFailures);
+
+        var hostedServices = provider.GetServices<IHostedService>().ToArray();
+        foreach (var hosted in hostedServices)
+        {
+            await hosted.StartAsync(CancellationToken.None);
+        }
+
+        try
+        {
+            await RegisterAsync(provider, graph);
+            recorder.Reset();
+
+            graph.UserId.Should().NotBeNull();
+            var outbox = await WaitForOutboxAsync(graph.AccountId);
+            outbox.Should().NotBeNull(
+                "registration must commit its integration event to the producer outbox before the consumer outcome is known");
+            var outboxId = outbox!.Id;
+            var eventId = outbox.EventId;
+
+            // Failure is evidenced through the production delivery/dedup runtime owner,
+            // not durable outbox failure accounting: the dispatcher marks the outbox
+            // row Processed at publish time (consumer outcome unknown), and a failed
+            // consumer attempt is handled by the DeduplicationConsumeFilter which
+            // keeps the claim removable for redelivery. Positive evidence that the
+            // consumer actually ran through the real pipeline is the injected mutation
+            // failure being reached while the producer outbox stays durably Processed.
+            var consumerFailureObserved = await WaitForAsync(async () =>
+            {
+                if (!workspaceFailures.WasInvoked)
+                    return false;
+
+                await using var probe = _db.CreateContext(SystemTenant());
+                return await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+                    .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");
+            });
+
+            consumerFailureObserved.Should().BeTrue(
+                "the real consumer pipeline must reach the injected Workspaces-side mutation failure while the producer outbox remains durably Processed");
+
+            // The injected projection fails on every attempt, so the real consumer
+            // retry policy must run to exhaustion (1 initial attempt + 3 retries =
+            // 4 invocations) and then stop. If an attempt had short-circuited on an
+            // idempotent AlreadyExisted (the un-fixed partial commit), the projection
+            // would no longer be reached and fewer than 4 invocations would result.
+            var retriesExhausted = await WaitForRetriesExhaustedAsync(workspaceFailures, expected: 4);
+            retriesExhausted.Should().BeTrue(
+                "the consumer retry policy must run to exhaustion when the injected projection keeps failing");
+
+            await using var probe = _db.CreateContext(SystemTenant());
+
+            workspaceFailures.InvocationCount.Should().Be(4,
+                "exactly 1 initial attempt + 3 retries must be invoked; a rolled-back attempt must never be retried as an idempotent AlreadyExisted success");
+
+            (await probe.Users.IgnoreQueryFilters()
+                .AnyAsync(u => u.Id == graph.UserId!.Value)).Should().BeTrue(
+                "Identity registration is already committed and must not roll back");
+            (await probe.Accounts.IgnoreQueryFilters()
+                .AnyAsync(a => a.Id == graph.AccountId)).Should().BeTrue(
+                "Accounts provisioning is already committed and must not roll back");
+            (await probe.AccountMembers.IgnoreQueryFilters()
+                .AnyAsync(m => m.AccountId == graph.AccountId && m.UserId == graph.UserId!.Value)).Should().BeTrue(
+                "the registered Owner AccountMember is committed and must not roll back");
+
+            (await probe.Workspaces.IgnoreQueryFilters()
+                .CountAsync(w => w.AccountId == graph.AccountId && w.IsPersonal)).Should().Be(0,
+                "the failing consumer transaction must not partially persist a Workspace");
+            (await probe.WorkspaceMembers.IgnoreQueryFilters()
+                .AnyAsync(m => m.AccountId == graph.AccountId && m.UserId == graph.UserId!.Value)).Should().BeFalse(
+                "the failing consumer transaction must not partially persist a WorkspaceMember");
+            (await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+                .CountAsync(m => m.AccountId == graph.AccountId
+                    && (m.MessageName == WorkspaceCreatedMessageName
+                        || m.MessageName == WorkspaceMemberAddedMessageName))).Should().Be(0,
+                "the failing consumer transaction must not enroll workspace-created / workspace-member-added outbox rows");
+
+            (await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+                .AnyAsync(m => m.Id == outboxId && m.Status == "Processed")).Should().BeTrue(
+                "producer delivery state must remain durably Processed for retry/dead-letter policy");
+            (await probe.Set<MessagingProcessedEvent>().IgnoreQueryFilters()
+                .CountAsync(p => p.EventId == eventId && p.ConsumerName == WorkspaceProvisionEndpoint)).Should().Be(0,
+                "the failed consumer/dedup attempts must leave no claim — Succeeded is never reached and the claim stays removable so redelivery/recovery can re-try");
+            (await probe.Set<MessagingProcessedEvent>().IgnoreQueryFilters()
+                .Where(p => p.EventId == eventId && p.ConsumerName == WelcomeEmailEndpoint)
+                .Select(p => p.Status)
+                .FirstOrDefaultAsync()).Should().Be("Succeeded",
+                "the welcome email consumer must process independently of the failing workspace consumer");
+            (await probe.Database.SqlQueryRaw<int>(
+                    "SELECT COUNT(*)::int AS \"Value\" FROM ops.idempotency_records WHERE state = 'Completed'")
+                .FirstOrDefaultAsync()).Should().Be(0,
+                "every workspace-provisioning attempt must roll back its raw-SQL idempotency start inside the failed data-session transaction; none may complete");
+        }
+        finally
+        {
+            foreach (var hosted in hostedServices.Reverse())
+            {
+                await hosted.StopAsync(CancellationToken.None);
+            }
+        }
+
+        recorder.ObservedAccountSet.Should().BeTrue(
+            "tenant restoration must still occur before the failing consumer mutation");
+        recorder.LastAccountId.Should().Be(graph.AccountId);
+        recorder.LastIsSystem.Should().BeFalse();
+    }
+
     private async Task<Guid> RegisterAsync(ServiceProvider provider, RegistrationGraph graph)
     {
         var email = $"chain-reg-{Guid.NewGuid():N}@example.com";
@@ -172,7 +288,9 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         return account.Id;
     }
 
-    private ServiceProvider BuildProvider(TenantObservationRecorder recorder)
+    private ServiceProvider BuildProvider(
+        TenantObservationRecorder recorder,
+        WorkspaceConsumerFailureObservations? workspaceFailures = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -230,6 +348,21 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         builder.Services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
 
         builder.AddApplicationServices();
+
+        builder.Services.AddSingleton(workspaceFailures ?? new WorkspaceConsumerFailureObservations());
+
+        if (workspaceFailures is not null)
+        {
+            // Failure injection is deliberately below the consumer and inside
+            // Workspaces mutation ownership. Outbox, broker, tenant restoration,
+            // dedup and WorkspaceProvisioningConsumer remain production code.
+            // The shared observations object records the only durable trace the
+            // runtime exposes for a failed consumer attempt: the mutation was
+            // reached and its dedup claim never completed.
+            builder.Services.AddScoped<
+                IWorkspaceGrantProjectionService,
+                FailingWorkspaceGrantProjectionService>();
+        }
 
         return builder.Services.BuildServiceProvider();
     }
@@ -302,6 +435,40 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         }
 
         return false;
+    }
+
+    private static async Task<bool> WaitForRetriesExhaustedAsync(
+        WorkspaceConsumerFailureObservations observations,
+        int expected,
+        int stablePolls = 4,
+        int timeoutSeconds = 40)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+        var stableStreak = 0;
+        var lastCount = -1;
+
+        while (DateTime.UtcNow < deadline)
+        {
+            var count = observations.InvocationCount;
+            if (count == lastCount)
+            {
+                stableStreak++;
+            }
+            else
+            {
+                stableStreak = 0;
+                lastCount = count;
+            }
+
+            if (count == expected && stableStreak >= stablePolls)
+            {
+                return true;
+            }
+
+            await Task.Delay(250);
+        }
+
+        return observations.InvocationCount == expected && stableStreak >= stablePolls;
     }
 
     private static FakeCurrentTenantContext SystemTenant()
@@ -387,5 +554,82 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
         public void SetWorkspace(Guid accountId, Guid workspaceId, Guid? userId) => _inner.SetWorkspace(accountId, workspaceId, userId);
         public void SetSystem() => _inner.SetSystem();
         public void Clear() => _inner.Clear();
+    }
+
+    private sealed class WorkspaceConsumerFailureObservations
+    {
+        private readonly object _gate = new();
+        private readonly List<string> _invocationTimestamps = new();
+
+        public bool WasInvoked => InvocationCount > 0;
+        public int InvocationCount
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _invocationTimestamps.Count;
+                }
+            }
+        }
+
+        public IReadOnlyList<string> InvocationTimestamps
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _invocationTimestamps.ToArray();
+                }
+            }
+        }
+
+        public void RecordInvocation()
+        {
+            lock (_gate)
+            {
+                _invocationTimestamps.Add(DateTimeOffset.UtcNow.ToString("O"));
+            }
+        }
+    }
+
+    private sealed class FailingWorkspaceGrantProjectionService
+        : IWorkspaceGrantProjectionService
+    {
+        private readonly WorkspaceConsumerFailureObservations _observations;
+
+        public FailingWorkspaceGrantProjectionService(
+            WorkspaceConsumerFailureObservations observations)
+        {
+            _observations = observations;
+        }
+
+        public Task SyncWorkspaceMemberGrantAsync(
+            Guid accountId,
+            Guid workspaceId,
+            Guid userId,
+            Notrelix.Domain.Workspaces.Members.WorkspaceRole role,
+            DateTimeOffset now,
+            CancellationToken ct) =>
+            Throw(accountId, workspaceId, userId, ct);
+
+        public Task RevokeWorkspaceMemberGrantAsync(
+            Guid accountId,
+            Guid workspaceId,
+            Guid userId,
+            DateTimeOffset now,
+            CancellationToken ct) =>
+            Throw(accountId, workspaceId, userId, ct);
+
+        private Task Throw(
+            Guid accountId,
+            Guid workspaceId,
+            Guid userId,
+            CancellationToken ct)
+        {
+            _observations.RecordInvocation();
+            throw new InvalidOperationException(
+                "injected Workspaces-side projection failure");
+        }
     }
 }
