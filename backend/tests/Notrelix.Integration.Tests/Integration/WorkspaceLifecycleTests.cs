@@ -37,7 +37,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
         var requestContext = MockRequestContext(userId, Guid.NewGuid());
         var clock = MockClock(now);
 
-        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, clock.Object, new AccessGrantProjectionService(context));
+        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, clock.Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
         var command = new CreateWorkspaceCommand("Integration Workspace", "Phase 3 test", false);
 
         var result = await handler.Handle(command, default);
@@ -62,7 +62,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
 
         var requestContext = MockRequestContext(userId, Guid.NewGuid());
 
-        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, MockClock(now).Object, new AccessGrantProjectionService(context));
+        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, MockClock(now).Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
         var command = new CreateWorkspaceCommand("Personal Tasks", null, true);
 
         var result = await handler.Handle(command, default);
@@ -85,7 +85,7 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
 
         var requestContext = MockRequestContext(userId, Guid.NewGuid());
 
-        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, MockClock(now).Object, new AccessGrantProjectionService(context));
+        var handler = new CreateWorkspaceCommandHandler(context, requestContext.Object, MockClock(now).Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
         var command = new CreateWorkspaceCommand("Team Space", null, false);
 
         var result = await handler.Handle(command, default);

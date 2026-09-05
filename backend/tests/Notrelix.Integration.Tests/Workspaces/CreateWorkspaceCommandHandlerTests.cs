@@ -46,7 +46,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         _requestContextMock.Setup(r => r.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _requestContextMock.Object, _dateTimeMock.Object, new AccessGrantProjectionService(context));
+        var handler = new CreateWorkspaceCommandHandler(context, _requestContextMock.Object, _dateTimeMock.Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
         var command = new CreateWorkspaceCommand("Awesome Project", "A great software project", false);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -73,7 +73,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         _requestContextMock.Setup(r => r.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _requestContextMock.Object, _dateTimeMock.Object, new AccessGrantProjectionService(context));
+        var handler = new CreateWorkspaceCommandHandler(context, _requestContextMock.Object, _dateTimeMock.Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
         var command = new CreateWorkspaceCommand("My Personal Tasks", null, true);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -106,7 +106,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         context.Workspaces.Add(existingWorkspace);
         await context.SaveChangesAsync();
 
-        var handler = new CreateWorkspaceCommandHandler(context, _requestContextMock.Object, _dateTimeMock.Object, new AccessGrantProjectionService(context));
+        var handler = new CreateWorkspaceCommandHandler(context, _requestContextMock.Object, _dateTimeMock.Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
         var command = new CreateWorkspaceCommand("Awesome Project", "A duplicate project name", false);
 
         var result = await handler.Handle(command, CancellationToken.None);

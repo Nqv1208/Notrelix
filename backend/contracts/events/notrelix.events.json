@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "description": "Global backend baseline for PUBLIC integration-event contracts. Generated from ContractRegistrySetup/ConsumerRegistrySetup via production serializer conventions \u2014 do not hand-edit.",
   "contracts": [
     {
@@ -11,6 +11,7 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
+        "tenantScope": "Account",
         "carriesAccountId": true,
         "carriesWorkspaceId": false
       },
@@ -87,105 +88,6 @@
       ]
     },
     {
-      "name": "automation.board-item-member-assigned",
-      "version": 1,
-      "clrType": "Notrelix.Application.Events.Automation.BoardItemMemberAssignedForAutomationIntegrationEvent",
-      "producerContext": "Automation",
-      "classification": "Business",
-      "compatibility": "Backward",
-      "deprecated": false,
-      "scope": {
-        "carriesAccountId": false,
-        "carriesWorkspaceId": false
-      },
-      "serializedProperties": [
-        {
-          "name": "accountIdValue",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "workspaceIdValue",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "itemId",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "assignedUserId",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "assignedBy",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "eventId",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "sourceEventId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "messageName",
-          "type": "string",
-          "nullable": false
-        },
-        {
-          "name": "schemaVersion",
-          "type": "int",
-          "nullable": false
-        },
-        {
-          "name": "accountId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "workspaceId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "actorUserId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "correlationId",
-          "type": "Guid",
-          "nullable": false
-        },
-        {
-          "name": "causationId",
-          "type": "Guid?",
-          "nullable": true
-        },
-        {
-          "name": "occurredAt",
-          "type": "DateTimeOffset",
-          "nullable": false
-        }
-      ],
-      "piiFields": [],
-      "sensitiveFields": [],
-      "consumers": [
-        {
-          "name": "BoardItemMemberAssignedForAutomationConsumer",
-          "context": "Automation",
-          "maturity": "Implemented"
-        }
-      ]
-    },
-    {
       "name": "automation.n8n-dispatch-requested",
       "version": 1,
       "clrType": "Notrelix.Application.Events.Automation.N8nDispatchRequestedV1",
@@ -194,6 +96,7 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
+        "tenantScope": "Workspace",
         "carriesAccountId": false,
         "carriesWorkspaceId": false
       },
@@ -288,7 +191,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -367,7 +271,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -456,7 +361,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -545,7 +451,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -644,7 +551,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -733,7 +641,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -812,7 +721,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -906,7 +816,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -990,7 +901,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1074,7 +986,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1158,7 +1071,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1252,7 +1166,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1346,7 +1261,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1435,7 +1351,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1519,7 +1436,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1613,7 +1531,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1712,7 +1631,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1811,7 +1731,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -1915,7 +1836,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -2014,7 +1936,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -2103,6 +2026,7 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
+        "tenantScope": "None",
         "carriesAccountId": false,
         "carriesWorkspaceId": false
       },
@@ -2219,6 +2143,7 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
+        "tenantScope": "Account",
         "carriesAccountId": true,
         "carriesWorkspaceId": false
       },
@@ -2334,6 +2259,7 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
+        "tenantScope": "None",
         "carriesAccountId": false,
         "carriesWorkspaceId": false
       },
@@ -2407,13 +2333,13 @@
       "piiFields": [
         {
           "property": "email",
-          "purpose": "Deliver the welcome communication to the newly registered account owner.",
-          "justification": "SendWelcomeEmailConsumer performs delivery semantics and cannot resolve the address from stable IDs without a private Identity read, which is forbidden for downstream contexts."
+          "purpose": "Preserve the accepted v2 registration telemetry payload.",
+          "justification": "UserRegisteredConsumer is a non-tenant Identity telemetry consumer; the field remains in v2 for backward compatibility and is not used for Account/Workspace mutation."
         },
         {
           "property": "displayName",
-          "purpose": "Personalize the welcome communication with the chosen display identity.",
-          "justification": "SendWelcomeEmailConsumer renders the greeting using the display name captured at registration; no approved read contract exists for post-registration display-name lookup by consumers."
+          "purpose": "Preserve the accepted v2 registration telemetry payload.",
+          "justification": "UserRegisteredConsumer is a non-tenant Identity telemetry consumer; the field remains in v2 for backward compatibility and is not used for Account/Workspace mutation."
         }
       ],
       "sensitiveFields": [],
@@ -2434,7 +2360,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -2523,7 +2450,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -2607,7 +2535,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -2711,7 +2640,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -2790,7 +2720,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -2879,6 +2810,7 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
+        "tenantScope": "None",
         "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
@@ -2993,7 +2925,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3082,7 +3015,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Account",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3166,7 +3100,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Account",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3255,7 +3190,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3339,6 +3275,7 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
+        "tenantScope": "None",
         "carriesAccountId": false,
         "carriesWorkspaceId": false
       },
@@ -3410,6 +3347,106 @@
       ]
     },
     {
+      "name": "work-management.board-item-member-assigned",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemMemberAssignedIntegrationEvent",
+      "producerContext": "WorkManagement",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": false,
+        "carriesWorkspaceId": false
+      },
+      "serializedProperties": [
+        {
+          "name": "accountIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "workspaceIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "itemId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "assignedUserId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "assignedBy",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "BoardItemMemberAssignedAutomationConsumer",
+          "context": "Automation",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
       "name": "workspace.archived",
       "version": 1,
       "clrType": "Notrelix.Application.Events.Workspaces.WorkspaceArchivedIntegrationEvent",
@@ -3418,7 +3455,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3492,7 +3530,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3581,7 +3620,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3670,7 +3710,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3749,7 +3790,8 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
-        "carriesAccountId": false,
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
         "carriesWorkspaceId": true
       },
       "serializedProperties": [
@@ -3823,6 +3865,7 @@
       "compatibility": "Backward",
       "deprecated": false,
       "scope": {
+        "tenantScope": "Account",
         "carriesAccountId": true,
         "carriesWorkspaceId": true
       },

@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Rls;
@@ -217,6 +218,134 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
             .Select(e => e.Status)
             .FirstOrDefaultAsync();
         status.Should().Be("Succeeded");
+    }
+
+    [Fact]
+    public async Task CommandOwnedConsumerFailureAfterClaim_ClaimRemovedSoRetrySucceeds()
+    {
+        // Command-dispatching consumers (e.g. WorkspaceProvisioningConsumer) must
+        // not be wrapped in the dedup transaction (their MediatR command opens its
+        // own data-session transaction). On effect failure the "Processing" claim
+        // must still be removed so unique-constraint dedup does not block retry.
+        var eventId = Guid.NewGuid();
+        var consumerName = "notrelix-identity-registration-completed-workspace-provision-v1";
+        _consumerExecutionCount = 0;
+
+        var integrationEvent = new TestIntegrationEvent
+        {
+            EventId = eventId,
+            MessageName = "identity.registration-completed",
+            SchemaVersion = 1,
+            AccountId = Guid.NewGuid(),
+            ActorUserId = Guid.NewGuid()
+        };
+
+        // First delivery - the command-owned consumer throws; claim must be removed.
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            DeliverMessageInNewScope(integrationEvent, consumerName, shouldThrow: true));
+
+        var (context1, _, _) = CreateFixture();
+        var rowsAfterFail = await context1.Set<MessagingProcessedEvent>()
+            .CountAsync(e => e.EventId == eventId && e.ConsumerName == consumerName);
+        rowsAfterFail.Should().Be(0, "claim must be removed so the message can be retried");
+
+        // Second delivery - succeeds; exactly one Succeeded row.
+        await DeliverMessageInNewScope(integrationEvent, consumerName, shouldThrow: false);
+
+        var (context2, _, _) = CreateFixture();
+        var rows = await context2.Set<MessagingProcessedEvent>()
+            .Where(e => e.EventId == eventId && e.ConsumerName == consumerName)
+            .ToListAsync();
+        rows.Count.Should().Be(1);
+        rows[0].Status.Should().Be("Succeeded");
+    }
+
+    [Fact]
+    public async Task CommandOwnedConsumerFailure_DoesNotFlushRolledBackTrackedCommandChanges()
+    {
+        // A command-owned consumer's MediatR command opens its own data-session
+        // transaction on the shared scoped ApplicationDbContext. When that
+        // transaction rolls back, its Added aggregates remain tracked in the
+        // ChangeTracker. The dedup failure-path claim cleanup must remove ONLY
+        // the claim — it must never re-commit the rolled-back command writes by
+        // flushing the still-tracked entities on its own SaveChanges.
+        // Regression for the workspace-provisioning partial-commit defect found
+        // by M4 phase-04 runtime proof.
+        var eventId = Guid.NewGuid();
+        var consumerName = "notrelix-identity-registration-completed-workspace-provision-v1";
+        var accountId = Guid.NewGuid();
+        _consumerExecutionCount = 0;
+
+        var integrationEvent = new TestIntegrationEvent
+        {
+            EventId = eventId,
+            MessageName = "identity.registration-completed",
+            SchemaVersion = 1,
+            AccountId = accountId,
+            ActorUserId = Guid.NewGuid()
+        };
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+
+        var context = _db.CreateContext(tenant);
+        var dateTimeProvider = new DateTimeProvider();
+        var store = new MessageDeduplicationStore(context, dateTimeProvider, new MetricsService());
+        var rls = new RlsSessionContext(
+            context,
+            Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
+            tenant);
+
+        var logger = new Mock<ILogger<DeduplicationConsumeFilter<TestIntegrationEvent>>>();
+        var filter = new DeduplicationConsumeFilter<TestIntegrationEvent>(
+            store, context, rls, dateTimeProvider, logger.Object);
+
+        var consumeContext = new Mock<ConsumeContext<TestIntegrationEvent>>();
+        consumeContext.Setup(x => x.Message).Returns(integrationEvent);
+        consumeContext.Setup(x => x.CancellationToken).Returns(CancellationToken.None);
+
+        var receiveContext = new Mock<ReceiveContext>();
+        receiveContext.Setup(x => x.InputAddress).Returns(new Uri($"queue:{consumerName}"));
+        consumeContext.Setup(x => x.ReceiveContext).Returns(receiveContext.Object);
+
+        // The consumer pipeline adds a personal Workspace (tracked as Added) to
+        // the shared context and THEN fails — mirroring the provisioning shape
+        // where the rolled-back DataSession left its aggregate in the tracker.
+        Workspace? createdWorkspace = null;
+        var next = new Mock<IPipe<ConsumeContext<TestIntegrationEvent>>>();
+        next.Setup(x => x.Send(It.IsAny<ConsumeContext<TestIntegrationEvent>>()))
+            .Callback(() =>
+            {
+                lock (_lock)
+                {
+                    _consumerExecutionCount++;
+                }
+
+                createdWorkspace = Workspace.Create(
+                    accountId, Guid.NewGuid(), "Account's Workspace", "account-workspace",
+                    DateTimeOffset.UtcNow, isPersonal: true);
+                context.Workspaces.Add(createdWorkspace);
+            })
+            .ThrowsAsync(new InvalidOperationException("injected command pipeline failure"));
+
+        try
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                filter.Send(consumeContext.Object, next.Object));
+        }
+        finally
+        {
+            tenant.Clear();
+        }
+
+        _consumerExecutionCount.Should().Be(1);
+
+        (await context.Set<MessagingProcessedEvent>()
+            .CountAsync(e => e.EventId == eventId && e.ConsumerName == consumerName))
+            .Should().Be(0, "claim must be removed so the message can be retried");
+
+        (await context.Workspaces.CountAsync(w => w.Id == createdWorkspace!.Id))
+            .Should().Be(0, "failure-path claim cleanup must not flush rolled-back tracked command entities");
     }
 
     [Fact]

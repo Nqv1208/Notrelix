@@ -15,6 +15,7 @@ public sealed class WorkspaceEventMapper :
     {
         return new WorkspaceCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             WorkspaceId: domainEvent.WorkspaceId,
             Name: domainEvent.Name,
             Slug: domainEvent.Slug,
@@ -30,6 +31,7 @@ public sealed class WorkspaceEventMapper :
     {
         return new WorkspaceMemberAddedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             WorkspaceId: domainEvent.WorkspaceId,
             UserId: domainEvent.UserId,
             Role: domainEvent.Role.ToString(),
@@ -44,6 +46,7 @@ public sealed class WorkspaceEventMapper :
     {
         return new WorkspaceMemberRemovedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             WorkspaceId: domainEvent.WorkspaceId,
             UserId: domainEvent.UserId,
             CorrelationId: domainEvent.EventId,
@@ -57,6 +60,7 @@ public sealed class WorkspaceEventMapper :
     {
         return new WorkspaceArchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             WorkspaceId: domainEvent.WorkspaceId,
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.ArchivedBy,
@@ -68,6 +72,7 @@ public sealed class WorkspaceEventMapper :
     {
         return new WorkspaceUnarchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             WorkspaceId: domainEvent.WorkspaceId,
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.UnarchivedBy,
@@ -79,6 +84,7 @@ public sealed class WorkspaceEventMapper :
     {
         return new SpaceCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             WorkspaceId: domainEvent.WorkspaceId,
             SpaceId: domainEvent.SpaceId,
             Name: domainEvent.Name,
@@ -93,6 +99,7 @@ public sealed class WorkspaceEventMapper :
     {
         return new TeamCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             WorkspaceId: domainEvent.WorkspaceId,
             TeamId: domainEvent.TeamId,
             Name: domainEvent.Name,

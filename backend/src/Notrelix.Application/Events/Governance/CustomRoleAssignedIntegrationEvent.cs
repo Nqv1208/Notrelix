@@ -1,8 +1,10 @@
 namespace Notrelix.Application.Events.Governance;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("governance.role.assigned", Version = 1)]
 public sealed record CustomRoleAssignedIntegrationEvent(
     Guid EventId,
+    Guid? AccountId,
     Guid RoleId,
     Guid? WorkspaceId,
     string RoleName,
@@ -17,7 +19,7 @@ public sealed record CustomRoleAssignedIntegrationEvent(
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,
-    accountId: null,
+    accountId: AccountId,
     workspaceId: WorkspaceId,
     actorUserId: ActorUserId,
     causationId: CausationId,

@@ -6,6 +6,35 @@
     "version": "v1"
   },
   "paths": {
+    "/api/v1/accounts/rename": {
+      "put": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Rename the current account",
+        "operationId": "Accounts.RenameAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/admin/outbox/stats": {
       "get": {
         "tags": [
@@ -13358,6 +13387,16 @@
   },
   "components": {
     "schemas": {
+      "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
         "type": "object",
         "properties": {
@@ -15177,7 +15216,8 @@
           27,
           28,
           29,
-          30
+          30,
+          31
         ],
         "type": "integer",
         "format": "int32"

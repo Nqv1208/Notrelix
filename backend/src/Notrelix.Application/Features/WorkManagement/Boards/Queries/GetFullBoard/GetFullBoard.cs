@@ -2,7 +2,7 @@ using System.Text.Json;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 

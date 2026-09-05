@@ -2,7 +2,18 @@ using System.Reflection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Diagnostics;
+using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.Membership;
+using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Common.Integrations.N8n;
+using Notrelix.Application.Features.Automation.Executions.Services;
+using Notrelix.Application.Features.Billing.Entitlements.Services;
+using Notrelix.Application.Features.Billing.Public.Facts;
+using Notrelix.Application.Features.Identity.Public.Queries;
+using Notrelix.Application.Features.Identity.Users.Services;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.Mfa.Services;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
@@ -84,7 +95,24 @@ public static class DependencyInjection
         services.AddScoped<IMfaCodeVerifier, MfaCodeVerifier>();
 
         // Accounts-owned onboarding provisioning (spec 5.2)
-        services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
+        services.AddScoped<IAccountProvisioningActions, AccountProvisioningService>();
+
+        // Producer-owned public semantic facts (real consumers only)
+        services.AddScoped<IIdentityUserFacts, IdentityUserFactsProvider>();
+        services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();
+
+        // Producer-owned public target actions (Accounts membership mutation)
+        services.AddScoped<IAccountMembershipActions, AccountMembershipActions>();
+
+        // Producer-owned public target actions (WorkManagement item mutations)
+        services.AddScoped<MoveBoardItemUseCase>();
+        services.AddScoped<IWorkItemActions, WorkItemActions>();
+
+        // Producer-owned public capability surface (Billing)
+        services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();
+
+        // Automation-owned dispatch use case (process progression)
+        services.AddScoped<N8nDispatchUseCase>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

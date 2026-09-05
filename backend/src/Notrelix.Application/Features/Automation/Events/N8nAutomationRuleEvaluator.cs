@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Events.Automation;
+using Notrelix.Application.Events.WorkManagement;
 
 namespace Notrelix.Application.Features.Automation.Events;
 
@@ -27,7 +28,7 @@ public sealed class N8nAutomationRuleEvaluator
     }
 
     public async Task ExecuteAsync(
-        BoardItemMemberAssignedForAutomationIntegrationEvent integrationEvent,
+        BoardItemMemberAssignedIntegrationEvent integrationEvent,
         CancellationToken cancellationToken)
     {
         // The integration event carries authoritative account/workspace scope;

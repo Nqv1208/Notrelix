@@ -1,8 +1,10 @@
 namespace Notrelix.Application.Events.WorkManagement;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("board_item.moved", Version = 1)]
 public sealed record BoardItemMovedIntegrationEvent(
     Guid EventId,
+    Guid? AccountId,
     Guid ItemId,
     Guid BoardId,
     Guid? WorkspaceId,
@@ -18,7 +20,7 @@ public sealed record BoardItemMovedIntegrationEvent(
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,
-    accountId: null,
+    accountId: AccountId,
     workspaceId: WorkspaceId,
     actorUserId: ActorUserId,
     causationId: CausationId,

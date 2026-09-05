@@ -1,13 +1,90 @@
 [
   {
+    "requestType": "Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount.RenameAccountCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount.RenameAccountCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Analytics.Placements.Commands.RebuildWorkspacePlacements.RebuildWorkspacePlacementsCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Analytics.Placements.Commands.RebuildWorkspacePlacements.RebuildWorkspacePlacementsCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements.GetWorkspacePlacementsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements.GetWorkspacePlacementsQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Automation.Executions.Commands.HandleN8nCallback.HandleN8nCallbackCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -25,11 +102,15 @@
   {
     "requestType": "Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions.GetAutomationExecutionsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -46,12 +127,14 @@
   {
     "requestType": "Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule.CreateAutomationRuleCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -69,12 +152,14 @@
   {
     "requestType": "Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled.SetAutomationRuleEnabledCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -92,11 +177,15 @@
   {
     "requestType": "Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations.GetWorkspaceAutomationsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -113,11 +202,15 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity.GetResourceActivityQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -134,12 +227,14 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -157,12 +252,14 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment.DeleteAttachmentCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -180,11 +277,15 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments.GetBoardItemAttachmentsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -201,12 +302,14 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment.CreateCommentCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -224,12 +327,14 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment.DeleteCommentCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -247,12 +352,14 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment.ResolveCommentCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -270,12 +377,14 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment.UpdateCommentCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -293,11 +402,15 @@
   {
     "requestType": "Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments.GetCommentsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -314,12 +427,14 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks.BatchUpdateBlocksCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -337,12 +452,14 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock.CreateBlockCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -360,12 +477,14 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock.DeleteBlockCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -383,12 +502,14 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Commands.ReorderBlocks.ReorderBlocksCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -406,12 +527,14 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock.UpdateBlockCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -429,11 +552,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Blocks.Queries.GetPageBlocks.GetPageBlocksQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -450,11 +577,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.ArchivePage.ArchivePageCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -471,12 +602,14 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.CreatePage.CreatePageCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -494,12 +627,14 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.DeletePage.DeletePageCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -517,11 +652,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.MovePage.MovePageCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -538,11 +677,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.PublishPage.PublishPageCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -559,11 +702,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.SetPageDeadline.SetPageDeadlineCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -580,12 +727,14 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage.UpdatePageCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -603,11 +752,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Queries.GetPage.GetPageQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -624,11 +777,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Queries.GetPageBreadcrumb.GetPageBreadcrumbQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -645,11 +802,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Queries.GetPageHistory.GetPageHistoryQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -666,11 +827,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Queries.GetPageTree.GetPageTreeQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -687,11 +852,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Queries.GetWorkspacePages.GetWorkspacePagesQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -708,11 +877,15 @@
   {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Queries.SearchPages.SearchPagesQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -729,12 +902,14 @@
   {
     "requestType": "Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission.GrantResourcePermissionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -752,12 +927,14 @@
   {
     "requestType": "Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission.RevokeResourcePermissionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -775,11 +952,15 @@
   {
     "requestType": "Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetResourcePermissions.GetResourcePermissionsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -796,12 +977,14 @@
   {
     "requestType": "Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink.CreateShareLinkCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -819,12 +1002,14 @@
   {
     "requestType": "Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink.DisableShareLinkCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -849,7 +1034,7 @@
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -874,7 +1059,7 @@
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -898,7 +1083,9 @@
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -922,7 +1109,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -946,7 +1133,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -970,7 +1159,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -995,7 +1184,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1020,7 +1209,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1045,7 +1234,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1069,7 +1258,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1092,7 +1283,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1116,7 +1309,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1141,7 +1334,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1166,7 +1359,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1191,7 +1384,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1216,7 +1409,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1240,7 +1433,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1264,7 +1459,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1289,7 +1484,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1314,7 +1509,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1338,7 +1533,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1361,7 +1558,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1385,7 +1584,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1410,7 +1609,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1435,7 +1634,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1460,7 +1659,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1485,7 +1684,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1510,7 +1709,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1535,7 +1734,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1560,7 +1759,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1584,7 +1783,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1608,7 +1809,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1633,7 +1834,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1657,7 +1858,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1681,7 +1884,7 @@
       "ITokenScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1706,7 +1909,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1731,7 +1934,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -1749,11 +1952,15 @@
   {
     "requestType": "Notrelix.Application.Features.Integrations.Calendar.Commands.ConnectCalendar.ConnectCalendarCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1770,11 +1977,15 @@
   {
     "requestType": "Notrelix.Application.Features.Integrations.Calendar.Commands.DisconnectCalendar.DisconnectCalendarCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1791,11 +2002,15 @@
   {
     "requestType": "Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook.HandleCalendarWebhookCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1812,11 +2027,15 @@
   {
     "requestType": "Notrelix.Application.Features.Integrations.Calendar.Commands.TriggerCalendarSync.TriggerCalendarSyncCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "INoDataRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1833,12 +2052,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.ApproveApprovalRequest.ApproveApprovalRequestCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -1856,12 +2077,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.CancelApprovalRequest.CancelApprovalRequestCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -1879,12 +2102,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.CreateApprovalRequest.CreateApprovalRequestCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -1902,12 +2127,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.DeleteApprovalRequest.DeleteApprovalRequestCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -1925,12 +2152,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.RejectApprovalRequest.RejectApprovalRequestCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -1948,12 +2177,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Commands.RestoreApprovalRequest.RestoreApprovalRequestCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -1971,11 +2202,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListApprovalRequests.ListApprovalRequestsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -1992,12 +2227,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption.AddFieldOptionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2015,12 +2252,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField.CreateBoardFieldCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2038,12 +2277,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField.DeleteBoardFieldCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2061,12 +2302,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RemoveFieldOption.RemoveFieldOptionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2084,12 +2327,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields.ReorderBoardFieldsCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2107,12 +2352,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderFieldOptions.ReorderFieldOptionsCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2130,12 +2377,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField.UpdateBoardFieldCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2153,12 +2402,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption.UpdateFieldOptionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2176,12 +2427,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup.ArchiveBoardGroupCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2199,12 +2452,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup.CreateBoardGroupCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2222,12 +2477,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DeleteBoardGroup.DeleteBoardGroupCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2245,12 +2502,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup.DuplicateBoardGroupCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2268,12 +2527,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups.ReorderBoardGroupsCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2291,12 +2552,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup.UnarchiveBoardGroupCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2314,12 +2577,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup.UpdateBoardGroupCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2337,12 +2602,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem.ArchiveBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2360,12 +2627,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember.AssignBoardItemMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2373,7 +2642,7 @@
     "requiresFeature": false,
     "expectedVersion": false,
     "idempotent": true,
-    "realtime": true,
+    "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
@@ -2383,12 +2652,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue.ClearFieldValueCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2406,12 +2677,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CompleteBoardItem.CompleteBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2429,12 +2702,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem.CreateBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2442,7 +2717,7 @@
     "requiresFeature": false,
     "expectedVersion": false,
     "idempotent": true,
-    "realtime": true,
+    "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
@@ -2452,12 +2727,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DeleteBoardItem.DeleteBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2475,12 +2752,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem.DuplicateBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2498,12 +2777,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem.LinkPageToBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2521,12 +2802,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem.MoveBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2534,7 +2817,7 @@
     "requiresFeature": false,
     "expectedVersion": false,
     "idempotent": true,
-    "realtime": true,
+    "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
@@ -2544,12 +2827,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RestoreBoardItem.RestoreBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2567,12 +2852,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemDueDate.SetBoardItemDueDateCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2590,12 +2877,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnarchiveBoardItem.UnarchiveBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2613,12 +2902,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnassignBoardItemMember.UnassignBoardItemMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2636,12 +2927,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnlinkPageFromBoardItem.UnlinkPageFromBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2659,12 +2952,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem.UpdateBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2682,12 +2977,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue.UpdateBoardItemFieldValueCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2695,7 +2992,7 @@
     "requiresFeature": false,
     "expectedVersion": false,
     "idempotent": true,
-    "realtime": true,
+    "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
@@ -2705,12 +3002,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues.UpdateBoardItemFieldValuesCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2728,12 +3027,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus.UpdateBoardItemStatusCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2751,11 +3052,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem.GetBoardItemQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -2772,12 +3077,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItems.GetBoardItemsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "IRlsReadRequest"
+      "IReadRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2795,11 +3102,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.GetMyBoardItemsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -2816,11 +3127,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.ListBoardItemLinksQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -2837,12 +3152,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardPreferences.Commands.CreateOrUpdateBoardPreference.CreateOrUpdateBoardPreferenceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2860,12 +3177,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardPreferences.Commands.UpdateBoardPreferenceFilters.UpdateBoardPreferenceFiltersCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2883,12 +3202,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardPreferences.Commands.UpdateBoardPreferenceGroup.UpdateBoardPreferenceGroupCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2906,12 +3227,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardPreferences.Commands.UpdateBoardPreferenceSorts.UpdateBoardPreferenceSortsCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2929,11 +3252,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardPreferences.Queries.GetBoardPreference.GetBoardPreferenceQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -2950,11 +3277,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema.GetBoardSchemaQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -2962,7 +3293,7 @@
     "expectedVersion": false,
     "idempotent": false,
     "realtime": false,
-    "authorizedCache": true,
+    "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema.GetBoardSchemaQueryHandler"
@@ -2971,12 +3302,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.ArchiveBoardView.ArchiveBoardViewCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2994,12 +3327,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.CreateBoardView.CreateBoardViewCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3007,7 +3342,7 @@
     "requiresFeature": false,
     "expectedVersion": false,
     "idempotent": true,
-    "realtime": true,
+    "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
@@ -3017,12 +3352,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView.DeleteBoardViewCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3040,12 +3377,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RenameBoardView.RenameBoardViewCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3063,12 +3402,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RestoreBoardView.RestoreBoardViewCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3086,12 +3427,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView.SaveBoardViewCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3099,7 +3442,7 @@
     "requiresFeature": false,
     "expectedVersion": false,
     "idempotent": true,
-    "realtime": true,
+    "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
@@ -3109,12 +3452,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetDefaultView.SetDefaultViewCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3132,12 +3477,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UnarchiveBoardView.UnarchiveBoardViewCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3155,12 +3502,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig.UpdateBoardViewConfigCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3168,7 +3517,7 @@
     "requiresFeature": false,
     "expectedVersion": false,
     "idempotent": true,
-    "realtime": true,
+    "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
@@ -3178,11 +3527,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardViews.Queries.GetBoardView.GetBoardViewQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -3199,12 +3552,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember.AddBoardMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3222,12 +3577,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard.ArchiveBoardCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3245,12 +3602,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug.CreateBoardBySlugCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -3268,12 +3627,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace.CreateBoardInWorkspaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3281,7 +3642,7 @@
     "requiresFeature": false,
     "expectedVersion": false,
     "idempotent": true,
-    "realtime": true,
+    "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
@@ -3291,12 +3652,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.DeleteBoard.DeleteBoardCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3314,12 +3677,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember.RemoveBoardMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3337,12 +3702,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.RestoreBoard.RestoreBoardCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3360,12 +3727,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard.UnarchiveBoardCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3383,12 +3752,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard.UpdateBoardCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3406,12 +3777,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole.UpdateBoardMemberRoleCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3429,12 +3802,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardVisibility.UpdateBoardVisibilityCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3452,12 +3827,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard.GetBoardQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "IRlsReadRequest"
+      "IReadRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3466,7 +3843,7 @@
     "expectedVersion": false,
     "idempotent": false,
     "realtime": false,
-    "authorizedCache": true,
+    "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard.GetBoardQueryHandler"
@@ -3475,11 +3852,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers.GetBoardMembersQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -3496,11 +3877,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards.GetBoardsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -3517,11 +3902,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardsBySlug.GetBoardsBySlugQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -3538,11 +3927,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard.GetFullBoardQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -3559,12 +3952,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklist.CreateChecklistCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3582,12 +3977,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklistItem.CreateChecklistItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3605,12 +4002,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklist.DeleteChecklistCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3628,12 +4027,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem.DeleteChecklistItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3651,11 +4052,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem.ToggleChecklistItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -3672,12 +4077,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist.UpdateChecklistCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3695,12 +4102,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem.UpdateChecklistItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3718,11 +4127,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Checklists.Queries.GetChecklists.GetChecklistsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -3739,12 +4152,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.FieldOptions.Commands.CreateFieldOption.CreateFieldOptionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3762,12 +4177,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.FieldOptions.Commands.DeleteFieldOption.DeleteFieldOptionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3785,12 +4202,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.FieldOptions.Commands.ReorderFieldOptions.ReorderFieldOptionsCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3808,12 +4227,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.FieldOptions.Commands.UpdateFieldOption.UpdateFieldOptionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3831,12 +4252,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.AddFormQuestion.AddFormQuestionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3854,12 +4277,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.CloseForm.CloseFormCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3877,12 +4302,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.CreateForm.CreateFormCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3900,12 +4327,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteForm.DeleteFormCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3923,12 +4352,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteFormSubmission.DeleteFormSubmissionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3946,12 +4377,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.MarkFormSubmissionAsSpam.MarkFormSubmissionAsSpamCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3969,12 +4402,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.ProcessFormSubmission.ProcessFormSubmissionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -3992,12 +4427,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.PublishForm.PublishFormCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4015,12 +4452,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission.RejectFormSubmissionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4038,12 +4477,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.RestoreForm.RestoreFormCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4061,12 +4502,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormDetails.UpdateFormDetailsCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4084,12 +4527,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormQuestion.UpdateFormQuestionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4107,11 +4552,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Queries.ListFormSubmissions.ListFormSubmissionsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4128,11 +4577,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Queries.ListForms.ListFormsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4149,12 +4602,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink.CreateBoardItemLinkCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4172,12 +4627,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.DeleteBoardItemLink.DeleteBoardItemLinkCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4195,12 +4652,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem.AddLabelToBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4218,12 +4677,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Labels.Commands.CreateLabel.CreateLabelCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4241,12 +4702,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Labels.Commands.DeleteLabel.DeleteLabelCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4264,12 +4727,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Labels.Commands.RemoveLabelFromBoardItem.RemoveLabelFromBoardItemCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4287,12 +4752,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Labels.Commands.UpdateLabel.UpdateLabelCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4310,11 +4777,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Labels.Queries.GetLabels.GetLabelsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4331,12 +4802,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Relations.Commands.CreateBoardRelation.CreateBoardRelationCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4354,12 +4827,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Relations.Commands.DeleteBoardRelation.DeleteBoardRelationCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4377,12 +4852,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Relations.Commands.PauseBoardRelation.PauseBoardRelationCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4400,12 +4877,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Relations.Commands.ResumeBoardRelation.ResumeBoardRelationCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4423,11 +4902,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Relations.Queries.ListBoardRelations.ListBoardRelationsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4444,12 +4927,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Templates.Commands.ArchiveBoardTemplate.ArchiveBoardTemplateCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4467,12 +4952,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Templates.Commands.CreateBoardFromTemplate.CreateBoardFromTemplateCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4490,12 +4977,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Templates.Commands.CreateBoardTemplate.CreateBoardTemplateCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4513,12 +5002,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Templates.Commands.DeleteBoardTemplate.DeleteBoardTemplateCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4536,12 +5027,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Templates.Commands.PublishBoardTemplate.PublishBoardTemplateCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4559,11 +5052,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Templates.Queries.ListBoardTemplates.ListBoardTemplatesQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4580,12 +5077,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Commands.CreateSavedFilter.CreateSavedFilterCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4603,12 +5102,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Commands.DeleteSavedFilter.DeleteSavedFilterCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4626,12 +5127,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Commands.RenameSavedFilter.RenameSavedFilterCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4649,12 +5152,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Commands.RestoreSavedFilter.RestoreSavedFilterCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4672,12 +5177,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterFilters.UpdateSavedFilterFiltersCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4695,12 +5202,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterGroup.UpdateSavedFilterGroupCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4718,12 +5227,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterSorts.UpdateSavedFilterSortsCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4741,12 +5252,14 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterVisibility.UpdateSavedFilterVisibilityCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4764,11 +5277,15 @@
   {
     "requestType": "Notrelix.Application.Features.WorkManagement.Views.Queries.ListSavedFilters.ListSavedFiltersQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IResourceScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4792,7 +5309,7 @@
       "ITokenScopedRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": true,
@@ -4810,12 +5327,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelInvitation.CancelInvitationCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4833,12 +5352,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Commands.ChangeInvitationRole.ChangeInvitationRoleCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -4863,7 +5384,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -4881,12 +5402,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember.InviteMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": true,
@@ -4904,12 +5427,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendInvitation.ResendInvitationCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": true,
@@ -4933,7 +5458,9 @@
     "scopeMarkers": [
       "ITokenScopedRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4950,11 +5477,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations.GetUserPendingInvitationsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4971,11 +5502,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations.GetWorkspaceInvitationsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -4992,12 +5527,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember.ActivateMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5015,12 +5552,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Members.Commands.AddMember.AddMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": true,
@@ -5038,12 +5577,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember.RemoveMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5061,12 +5602,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember.SuspendMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5084,12 +5627,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole.UpdateMemberRoleCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5107,11 +5652,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers.GetWorkspaceMembersQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5135,7 +5684,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -5153,12 +5702,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings.UpdateWorkspaceSettingsCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5176,11 +5727,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings.GetWorkspaceSettingsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5197,12 +5752,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace.ArchiveSpaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5220,12 +5777,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceType.ChangeSpaceTypeCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5243,12 +5802,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceVisibility.ChangeSpaceVisibilityCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5266,12 +5827,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.CreateSpace.CreateSpaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": true,
@@ -5289,12 +5852,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.DeleteSpace.DeleteSpaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5312,12 +5877,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.RenameSpace.RenameSpaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5335,12 +5902,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.RestoreSpace.RestoreSpaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5358,12 +5927,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.UnarchiveSpace.UnarchiveSpaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5381,12 +5952,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Commands.UpdateSpaceDescription.UpdateSpaceDescriptionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5404,11 +5977,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.GetSpaceQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5425,11 +6002,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetWorkspaceSpaces.GetWorkspaceSpacesQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5446,12 +6027,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember.AddTeamMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5469,12 +6052,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.ArchiveTeam.ArchiveTeamCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5492,12 +6077,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.ChangeTeamMemberRole.ChangeTeamMemberRoleCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5515,12 +6102,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam.CreateTeamCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": true,
@@ -5538,12 +6127,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.DeleteTeam.DeleteTeamCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5561,12 +6152,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.RemoveTeamMember.RemoveTeamMemberCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5584,12 +6177,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.RenameTeam.RenameTeamCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5607,12 +6202,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.RestoreTeam.RestoreTeamCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5630,12 +6227,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.UnarchiveTeam.UnarchiveTeamCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5653,12 +6252,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Commands.UpdateTeamDescription.UpdateTeamDescriptionCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5676,11 +6277,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.GetTeamQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5697,11 +6302,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeams.GetWorkspaceTeamsQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5718,11 +6327,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity.GetWorkspaceActivityQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5739,11 +6352,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.GetWorkspaceDashboardQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5760,12 +6377,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace.ArchiveWorkspaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5783,12 +6402,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace.CreateWorkspaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IAccountRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": true,
@@ -5806,12 +6427,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspace.DeleteWorkspaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5829,12 +6452,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace.RestoreWorkspaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5852,12 +6477,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership.TransferOwnershipCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5875,12 +6502,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.UnarchiveWorkspace.UnarchiveWorkspaceCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5898,12 +6527,14 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile.UpdateWorkspaceProfileCommand",
     "kind": "Command",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "ITransactionalRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -5921,11 +6552,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetAccountWorkspaces.GetAccountWorkspacesQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IAccountRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5948,7 +6583,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5965,11 +6602,15 @@
   {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace.GetWorkspaceQuery",
     "kind": "Query",
-    "principalMarkers": [],
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
     "scopeMarkers": [
       "IWorkspaceRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
@@ -5992,7 +6633,9 @@
     "scopeMarkers": [
       "IGlobalRequest"
     ],
-    "dataMarkers": [],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,

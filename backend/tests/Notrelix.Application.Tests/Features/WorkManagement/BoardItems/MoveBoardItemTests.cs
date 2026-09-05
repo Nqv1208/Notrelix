@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
@@ -12,9 +13,8 @@ public class MoveBoardItemTests : WorkManagementHandlerTestBase
     {
         _currentUserMock.Setup(c => c.UserId).Returns(TestUserId);
         _handler = new MoveBoardItemCommandHandler(
-            DbContextMock.Object,
-            _currentUserMock.Object,
-            DateTimeProviderMock.Object);
+            new MoveBoardItemUseCase(DbContextMock.Object, DateTimeProviderMock.Object),
+            _currentUserMock.Object);
     }
 
     [Fact]

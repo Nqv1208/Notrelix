@@ -209,8 +209,8 @@ public class HandlerDataPortGateTests : ArchitectureTestBase
             ["GetFullBoardQueryHandler"] = ("IWorkManagementCollaborationReadPort", ["ICollaborationDbContext"]),
             ["GetBoardItemQueryHandler"] = ("IWorkManagementCollaborationReadPort", ["ICollaborationDbContext"]),
             ["GetBootstrapQueryHandler"] = ("IIdentityBootstrapReadPort", ["IAccountDbContext", "IWorkspaceDbContext"]),
-            ["RegisterCommandHandler"] = ("IAccountProvisioningService", ["IAccountDbContext"]),
-            ["CompleteOAuthLoginCommandHandler"] = ("IAccountProvisioningService", ["IAccountDbContext"]),
+            ["RegisterCommandHandler"] = ("IAccountProvisioningActions", ["IAccountDbContext"]),
+            ["CompleteOAuthLoginCommandHandler"] = ("IAccountProvisioningActions", ["IAccountDbContext"]),
         };
 
         var violations = new List<string>();
@@ -251,5 +251,67 @@ public class HandlerDataPortGateTests : ArchitectureTestBase
 
         violations.Should().BeEmpty(
             "handlers express required permission through request markers; authorization behavior owns the decision");
+    }
+
+    [Fact]
+    public void TAC_IA_007_SameTeam_Boundary_Proven_For_IAccountProvisioningActions()
+    {
+        // TAC-IA-007: When the same team provides a seam over a public-seams
+        // contract, the same-team seam MUST prove ownership, contract, and
+        // boundary. IAccountProvisioningActions is owned by Accounts (producer)
+        // and called by Identity registration (same team). The interface lives
+        // in Accounts/Public/Commands/; the implementation lives in Accounts/
+        // Provisioning/; DI wires it in the Application composition root.
+        //
+        // This test proves:
+        // 1. The interface type exists in the Accounts context (ownership).
+        // 2. The interface is implemented by exactly one type (contract).
+        // 3. The implementing type lives in the Accounts context (boundary).
+        // 4. No Identity handler injects it via the Accounts-specific DbContext
+        //    (same-team contract, not cross-team data port).
+
+        // 1. Interface exists in Accounts context.
+        var interfaceType = ApplicationAssembly
+            .GetTypes()
+            .FirstOrDefault(t => t.Name == "IAccountProvisioningActions");
+
+        interfaceType.Should().NotBeNull(
+            "IAccountProvisioningActions must exist as the public-seams contract for personal Account provisioning");
+
+        interfaceType!.Namespace.Should().Contain("Accounts",
+            "the interface must be owned by the Accounts context");
+
+        // 2. Exactly one concrete implementation exists.
+        var implementations = ApplicationAssembly
+            .GetTypes()
+            .Where(t => interfaceType.IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+            .ToList();
+
+        implementations.Should().HaveCount(1,
+            "IAccountProvisioningActions must have exactly one implementation (AccountProvisioningService)");
+
+        // 3. The implementation lives in the Accounts context.
+        var implementationType = implementations[0];
+
+        implementationType.Namespace.Should().Contain("Accounts",
+            "the implementation must live in the Accounts context");
+
+        // 4. No Identity handler directly injects the Accounts DbContext.
+        // Identity handlers that call IAccountProvisioningActions must not
+        // bypass the public-seams contract by injecting IAccountDbContext.
+        var identityHandlerTypes = GetHandlerTypes()
+            .Where(t => t.Namespace?.Contains("Identity") == true)
+            .ToList();
+
+        var identityHandlersWithAccountDbContext = identityHandlerTypes
+            .SelectMany(h => h.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
+            .SelectMany(c => c.GetParameters())
+            .Where(p => p.ParameterType.Name == "IAccountDbContext")
+            .Select(p => $"{p.Member.DeclaringType?.FullName}:{p.ParameterType.Name}")
+            .ToList();
+
+        identityHandlersWithAccountDbContext.Should().BeEmpty(
+            "Identity handlers must not inject IAccountDbContext directly; " +
+            "they must use IAccountProvisioningActions (same-team contract, not cross-team data port)");
     }
 }

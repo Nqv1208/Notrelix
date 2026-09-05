@@ -1,4 +1,6 @@
 
+using Notrelix.Application.Features.Integrations.Public.Commands;
+
 namespace Notrelix.Infrastructure.Integrations.Providers;
 
 public sealed class NoopN8nClient : IN8nClient
@@ -10,10 +12,10 @@ public sealed class NoopN8nClient : IN8nClient
         _logger = logger;
     }
 
-    public Task<N8nTriggerResult> TriggerWebhookAsync(
+    public Task<N8nWebhookDispatchResult> TriggerWebhookAsync(
         string webhookPath, string payload, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("N8n dispatch skipped (integration disabled): {Path}", webhookPath);
-        return Task.FromResult(new N8nTriggerResult(true, 204, null, null));
+        return Task.FromResult(new N8nWebhookDispatchResult(N8nWebhookOutcome.Succeeded, null));
     }
 }

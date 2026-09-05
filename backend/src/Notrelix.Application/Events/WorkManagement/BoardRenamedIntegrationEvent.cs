@@ -1,8 +1,10 @@
 namespace Notrelix.Application.Events.WorkManagement;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("board.renamed", Version = 1)]
 public sealed record BoardRenamedIntegrationEvent(
     Guid EventId,
+    Guid? AccountId,
     Guid BoardId,
     Guid? WorkspaceId,
     string OldName,
@@ -17,7 +19,7 @@ public sealed record BoardRenamedIntegrationEvent(
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,
-    accountId: null,
+    accountId: AccountId,
     workspaceId: WorkspaceId,
     actorUserId: ActorUserId,
     causationId: CausationId,

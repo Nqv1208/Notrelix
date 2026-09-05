@@ -1,5 +1,6 @@
-using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Common.Requests.Execution;
+using Notrelix.Application.Common.Requests.Gates;
+using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
 
@@ -36,6 +37,9 @@ public static class AccessControlCharacterizationTests
         "EvaluateAsync_InactiveOrOutOfWindowRule_IsIgnored",
         "EvaluateAsync_AccountScope_ShouldAllowOwnerForAllAccountActions",
         "EvaluateAsync_AccountScope_AdminBaseline_AllowsCreateWorkspaceWithoutRule",
+        "EvaluateAsync_AccountScope_Owner_AllowsManageAccountWithoutRule",
+        "EvaluateAsync_AccountScope_AdminBaseline_AllowsManageAccountWithoutRule",
+        "EvaluateAsync_AccountScope_Member_DeniesManageAccountWithoutRule",
         "EvaluateAsync_AccountScope_ShouldDenyNonMembers",
         "EvaluateAsync_AccountScope_ShouldDenySuspendedMembers",
         "RequiredAndEmailVerified_AllowsRequest",
@@ -257,6 +261,43 @@ public sealed class AccessPolicyEngineCharacterizationTests
             AccountPermissionRequest(PermissionAction.CreateWorkspace));
 
         decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_AccountScope_Owner_AllowsManageAccountWithoutRule()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
+            Facts(accountMemberRole: "Owner"),
+            AccountPermissionRequest(PermissionAction.ManageAccount));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_AccountScope_AdminBaseline_AllowsManageAccountWithoutRule()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
+            Facts(accountMemberRole: "Admin"),
+            AccountPermissionRequest(PermissionAction.ManageAccount));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void EvaluateAsync_AccountScope_Member_DeniesManageAccountWithoutRule()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
+            Facts(accountMemberRole: "Member"),
+            AccountPermissionRequest(PermissionAction.ManageAccount));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden,
+            "ManageAccount must not be granted to a plain Member through the account Admin fallback");
     }
 
     [Fact]

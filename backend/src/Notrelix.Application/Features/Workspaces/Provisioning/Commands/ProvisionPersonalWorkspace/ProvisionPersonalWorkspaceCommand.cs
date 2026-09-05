@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;
 
@@ -40,12 +41,12 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
 {
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IDateTimeProvider _clock;
-    private readonly IAccessGrantProjectionService _grantProjection;
+    private readonly IWorkspaceGrantProjectionService _grantProjection;
 
     public ProvisionPersonalWorkspaceCommandHandler(
         IWorkspaceDbContext workspaceContext,
         IDateTimeProvider clock,
-        IAccessGrantProjectionService grantProjection)
+        IWorkspaceGrantProjectionService grantProjection)
     {
         _workspaceContext = workspaceContext;
         _clock = clock;

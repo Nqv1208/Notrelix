@@ -1,5 +1,6 @@
 namespace Notrelix.Application.Events.Workspaces;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Account)]
 [EventName("workspaces.invitation-delivery-requested", Version = 1)]
 [EventPiiField("RecipientEmail",
     Purpose = "Address the workspace invitation email to the invitee.",

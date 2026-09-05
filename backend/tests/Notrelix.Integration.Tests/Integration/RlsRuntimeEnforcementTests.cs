@@ -301,7 +301,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         clock.Setup(c => c.UtcNow).Returns(FixedTime);
 
         var handler = new CreateWorkspaceCommandHandler(
-            context, requestContext.Object, clock.Object, new AccessGrantProjectionService(context));
+            context, requestContext.Object, clock.Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
 
         var result = await handler.Handle(new CreateWorkspaceCommand("Runtime Grant Workspace", null, false), default);
         result.Succeeded.Should().BeTrue();

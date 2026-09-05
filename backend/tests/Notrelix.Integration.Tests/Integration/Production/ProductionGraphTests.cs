@@ -8,6 +8,14 @@ using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Entitlements;
+using Notrelix.Application.Features.Accounts.Public.Membership;
+using Notrelix.Application.Features.Identity.Public.Queries;
+using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Features.Automation.Executions.Services;
+using Notrelix.Application.Features.Billing.Public.Facts;
+using Notrelix.Application.Features.Integrations.N8n.Providers;
+using Notrelix.Application.Features.Integrations.Public.Commands;
+using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Storage;
@@ -81,13 +89,25 @@ public sealed class ProductionGraphTests : IAsyncLifetime
 
         services.GetRequiredService<IAuditService>().Should().NotBeNull();
 
+        // Producer-owned public semantic surfaces resolve in production DI.
+        services.GetRequiredService<IIdentityUserFacts>().Should().NotBeNull();
+        services.GetRequiredService<IAccountMembershipFacts>().Should().NotBeNull();
+        services.GetRequiredService<IAccountMembershipActions>().Should().NotBeNull();
+        services.GetRequiredService<IWorkItemActions>().Should().NotBeNull();
+        services.GetRequiredService<IBillingCapabilityFacts>().Should().NotBeNull();
+
         // Single request-authorization authority: the pure policy engine.
         services.GetRequiredService<IAccessPolicyEvaluator>().Should().BeOfType<AccessPolicyEngine>();
 
         // Durable automation graph: evaluator + narrow network adapter are
         // registered for the outbox/broker consumer path.
         services.GetRequiredService<IN8nClient>().Should().NotBeNull();
+        services.GetRequiredService<IN8nWebhookActions>().Should().NotBeNull();
         services.GetRequiredService<N8nAutomationRuleEvaluator>().Should().NotBeNull();
+        services.GetRequiredService<N8nDispatchUseCase>().Should().NotBeNull();
+        services.GetRequiredService<
+            Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>()
+            .Should().BeOfType<WorkItemActionAdapter>();
     }
 
     [Fact]

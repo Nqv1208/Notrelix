@@ -10,6 +10,7 @@ public sealed class SubscriptionEventMapper :
     {
         return new SubscriptionChangedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             SubscriptionId: domainEvent.SubscriptionId,
             WorkspaceId: domainEvent.WorkspaceId,
             PreviousPlanId: domainEvent.OldPlanId,
@@ -24,6 +25,7 @@ public sealed class SubscriptionEventMapper :
     {
         return new SubscriptionCanceledIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             SubscriptionId: domainEvent.SubscriptionId,
             WorkspaceId: domainEvent.WorkspaceId,
             EffectiveAt: domainEvent.OccurredAt,

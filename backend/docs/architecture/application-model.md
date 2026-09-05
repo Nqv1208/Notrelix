@@ -155,8 +155,49 @@ ReadModels/
 Mapping/
 Permissions/
 Cache/
-Services/
 ```
+
+Use `Commands/`/`Queries/` only for real CQRS request flows. For smaller
+modules, decompose by semantic sub-capability only when a part has independent
+lifecycle or reason-to-change; otherwise colocate implementations at the module
+root.
+
+Do not create `Services/`, `Helpers/`, `Managers/`, or `Utils/` folders merely
+to classify classes by implementation role. Class role (`...Service` and the
+like) and folder taxonomy are independent concerns: `Provisioning/AccountProvisioningService.cs`
+is canonical, while `Provisioning/Services/AccountProvisioningService.cs` is not.
+
+Remaining `Services/` folders in existing modules are legacy source debt owned
+by those modules and must be migrated by their owning context over time; they
+are not a target convention for new code.
+
+Cross-context surfaces follow the producer/consumer grammar:
+
+```text
+Features/{Context}/Public/{PublishedCapability}/   producer-owned published semantic surface
+Features/{Context}/Ports/{Producer}/               consumer-owned port interface
+Features/{Context}/CrossContext/{Producer}/        in-context ACL / adapter
+```
+
+`Public/` is producer-owned: the first directory below it is the published
+capability, never a technical artifact type. It is not a second CQRS layer;
+`Commands`/`Queries`/`Facts`/`Actions`/`Contracts`/`DTOs`/`Services`/`Common`
+under `Public/` are non-canonical for new code. `Ports/` and `CrossContext/`
+are consumer-owned: `Ports/` declares an interface the consumer implements
+through an Infrastructure adapter, and `CrossContext/` holds a pure in-context
+ACL used to translate a foreign capability into local semantics.
+
+Canonical examples:
+
+```text
+Accounts/Public/Membership, Accounts/Public/PersonalAccountProvisioning
+Automation/Ports/WorkManagement, Identity/Ports/Bootstrap,
+WorkManagement/Ports/Collaboration          (consumer ports)
+Automation/CrossContext/WorkManagement      (in-context ACL)
+```
+
+See `backend-overview.md` §74A reference pack map for the full cross-context
+mechanism inventory.
 
 This layout communicates semantic ownership and use-case intent.
 

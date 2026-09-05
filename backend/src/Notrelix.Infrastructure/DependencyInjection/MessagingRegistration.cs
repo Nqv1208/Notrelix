@@ -18,7 +18,7 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Documents.PageEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Collaboration.CommentEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Billing.SubscriptionEventMapper>();
-        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Automation.AutomationEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemMemberAssignedEventMapper>();
         services.AddScoped<IIntegrationEventMapper, CompositeIntegrationEventMapper>();
 
         // Integration event catalog (immutable, throws on unknown types).

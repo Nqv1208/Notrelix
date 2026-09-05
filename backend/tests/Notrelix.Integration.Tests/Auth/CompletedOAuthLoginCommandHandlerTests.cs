@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Provisioning;
+using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
@@ -67,14 +69,15 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         Mock<IPasswordHasher> passwordHasher,
         Mock<IDateTimeProvider> dateTimeProvider,
         Mock<IIntegrationEventCollector> eventCollector,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        IAccountProvisioningActions? provisioningService = null)
     {
         return new CompleteOAuthLoginCommandHandler(
             stateStore.Object,
             providerClient.Object,
             optionsProvider.Object,
             context,
-            new AccountProvisioningService(context, new AccessGrantProjectionService(context)),
+            provisioningService ?? new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))),
             sessionIssuer.Object,
             Mock.Of<IMfaChallengeStore>(),
             passwordHasher.Object,
@@ -347,6 +350,9 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
                 User = new UserDto { Id = Guid.NewGuid(), Email = "newuser@example.com", Name = "New OAuth User" }
             });
         mocks.DateTimeProvider.Setup(x => x.UtcNow).Returns(() => now);
+        IIntegrationEvent? captured = null;
+        mocks.EventCollector.Setup(x => x.Add(It.IsAny<IIntegrationEvent>()))
+            .Callback<IIntegrationEvent>(e => captured = e);
 
         var handler = CreateHandler(mocks.StateStore, mocks.ProviderClient, mocks.OptionsProvider,
             mocks.SessionIssuer, mocks.PasswordHasher, mocks.DateTimeProvider, mocks.EventCollector, context);
@@ -369,12 +375,50 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         account.Should().NotBeNull();
         account!.Name.Should().Be("New OAuth User's Account");
 
+        captured.Should().BeOfType<IdentityRegistrationCompletedIntegrationEventV1>()
+            .Which.AccountId.Should().Be(account.Id);
+
         var member = await context.AccountMembers.FirstOrDefaultAsync(m => m.UserId == user.Id);
         member.Should().NotBeNull();
 
         var linked = await context.OAuthAccounts
             .FirstOrDefaultAsync(a => a.UserId == user.Id && a.Provider == OAuthProvider.Google);
         linked.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Handle_WhenProvisioningFails_DoesNotEmitRegistrationCompleted()
+    {
+        await using var context = _db.CreateContext();
+        var now = DateTimeOffset.UtcNow;
+
+        var mocks = CreateMocks();
+        mocks.StateStore.Setup(x => x.ConsumeAsync("test-state", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ValidState);
+        mocks.ProviderClient.Setup(x => x.RedeemCodeAsync(
+                OAuthProvider.Google, It.IsAny<OAuthCodeRedemptionRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExternalOAuthProfile(OAuthProvider.Google, "google-sub-fail",
+                "fail@example.com", true, "Fail User", null, EmptyProfile));
+        mocks.PasswordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("sentinel-hash");
+        mocks.DateTimeProvider.Setup(x => x.UtcNow).Returns(() => now);
+
+        var provisioning = new Mock<IAccountProvisioningActions>();
+        provisioning.Setup(s => s.ProvisionPersonalAccountAsync(
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("provisioning failed"));
+
+        var handler = CreateHandler(mocks.StateStore, mocks.ProviderClient, mocks.OptionsProvider,
+            mocks.SessionIssuer, mocks.PasswordHasher, mocks.DateTimeProvider, mocks.EventCollector, context, provisioning.Object);
+
+        var act = () => handler.Handle(new CompleteOAuthLoginCommand
+        {
+            Provider = OAuthProvider.Google,
+            Code = "auth-code",
+            State = "test-state"
+        }, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        mocks.EventCollector.Verify(c => c.Add(It.IsAny<IIntegrationEvent>()), Times.Never);
     }
 
     [Fact]
