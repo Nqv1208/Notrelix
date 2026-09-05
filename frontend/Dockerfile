@@ -29,9 +29,13 @@ FROM ${NGINX_BASE_IMAGE} AS production
 # v3.24 repository already publishes the fixed 3.5.8-r0 and no upstream image
 # rebuild exists yet. Exact-version pinning keeps builds reproducible; remove
 # this layer once the base-image lock advances past the fixed revision.
+#
+# CVE-2026-66046 (HIGH): the same digest ships libexpat 2.8.2-r0 while alpine
+# v3.24 publishes the fixed 2.8.4-r0. Pin it explicitly for the same reason.
 RUN apk add --no-cache \
     libcrypto3=3.5.8-r0 \
-    libssl3=3.5.8-r0
+    libssl3=3.5.8-r0 \
+    libexpat=2.8.4-r0
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.
