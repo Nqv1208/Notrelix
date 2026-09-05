@@ -150,7 +150,9 @@ function resolveImport(
 ): { readonly filePaths: string[]; readonly packageName?: string } {
   const { specifier } = edge;
   if (specifier.startsWith(".")) {
-    const filePath = resolveAsFileOrIndex(resolve(dirname(importerPath), specifier));
+    const filePath = resolveAsFileOrIndex(
+      resolve(dirname(importerPath), specifier),
+    );
     return { filePaths: filePath ? [filePath] : [] };
   }
   if (specifier.startsWith("@notrelix/")) {
@@ -168,28 +170,46 @@ function resolveImport(
 }
 
 function collectNamedBindings(clause: ts.ImportClause): string[] | undefined {
-  if (!clause.namedBindings || !ts.isNamedImports(clause.namedBindings)) return undefined;
-  return clause.namedBindings.elements.map((element) => element.propertyName?.text ?? element.name.text);
+  if (!clause.namedBindings || !ts.isNamedImports(clause.namedBindings))
+    return undefined;
+  return clause.namedBindings.elements.map(
+    (element) => element.propertyName?.text ?? element.name.text,
+  );
 }
 
-function collectExportNames(clause: ts.NamedExportBindings): string[] | undefined {
+function collectExportNames(
+  clause: ts.NamedExportBindings,
+): string[] | undefined {
   if (!ts.isNamedExports(clause)) return undefined;
-  return clause.elements.map((element) => element.propertyName?.text ?? element.name.text);
+  return clause.elements.map(
+    (element) => element.propertyName?.text ?? element.name.text,
+  );
 }
 
 function collectImports(sourceFile: ts.SourceFile): ImportEdge[] {
   const imports: ImportEdge[] = [];
   for (const statement of sourceFile.statements) {
-    if (ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)) {
+    if (
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier)
+    ) {
       imports.push({
         specifier: statement.moduleSpecifier.text,
-        names: statement.importClause ? collectNamedBindings(statement.importClause) : undefined,
+        names: statement.importClause
+          ? collectNamedBindings(statement.importClause)
+          : undefined,
       });
     }
-    if (ts.isExportDeclaration(statement) && statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)) {
+    if (
+      ts.isExportDeclaration(statement) &&
+      statement.moduleSpecifier &&
+      ts.isStringLiteral(statement.moduleSpecifier)
+    ) {
       imports.push({
         specifier: statement.moduleSpecifier.text,
-        names: statement.exportClause ? collectExportNames(statement.exportClause) : undefined,
+        names: statement.exportClause
+          ? collectExportNames(statement.exportClause)
+          : undefined,
       });
     }
   }
@@ -210,16 +230,26 @@ function resolveNamedBarrelExports(
   );
   const matches: string[] = [];
   for (const statement of sourceFile.statements) {
-    if (!ts.isExportDeclaration(statement) || !statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) {
+    if (
+      !ts.isExportDeclaration(statement) ||
+      !statement.moduleSpecifier ||
+      !ts.isStringLiteral(statement.moduleSpecifier)
+    ) {
       continue;
     }
 
     const exportedNames = statement.exportClause
       ? collectExportNames(statement.exportClause)
       : undefined;
-    if (exportedNames && !exportedNames.some((name) => importedNames.includes(name))) continue;
+    if (
+      exportedNames &&
+      !exportedNames.some((name) => importedNames.includes(name))
+    )
+      continue;
 
-    const resolved = resolveAsFileOrIndex(resolve(dirname(barrelPath), statement.moduleSpecifier.text));
+    const resolved = resolveAsFileOrIndex(
+      resolve(dirname(barrelPath), statement.moduleSpecifier.text),
+    );
     if (resolved) matches.push(resolved);
   }
   return [...new Set(matches)];

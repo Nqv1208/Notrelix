@@ -7,8 +7,7 @@ import type {
 } from "../core/types/workspace";
 
 export function workspaceSummary(
-  overrides: Partial<WorkspaceSummary> &
-    Pick<WorkspaceSummary, "id" | "name">,
+  overrides: Partial<WorkspaceSummary> & Pick<WorkspaceSummary, "id" | "name">,
 ): WorkspaceSummary {
   return {
     slug: overrides.slug ?? overrides.id,
@@ -70,8 +69,7 @@ export function workspaceInvitation(
 }
 
 export function workspaceActivityItem(
-  overrides: Partial<WorkspaceActivityItem> &
-    Pick<WorkspaceActivityItem, "id">,
+  overrides: Partial<WorkspaceActivityItem> & Pick<WorkspaceActivityItem, "id">,
 ): WorkspaceActivityItem {
   return {
     actor: overrides.actor ?? "Ada Lovelace",

@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { Button, Input } from "@notrelix/ui-web";
 import { FileText, Filter, LayoutGrid, Search } from "lucide-react";
-import type {
-  SearchResult,
-  SearchResultType,
-} from "../core/search-model";
+import type { SearchResult, SearchResultType } from "../core/search-model";
 import { RESULT_TYPES } from "../core/search-model";
 
 export interface SearchResultsSurfaceProps {
@@ -59,13 +56,19 @@ export function SearchResultsSurface({
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onSearchChange(inputValue.trim(), activeTypes)}
+            onKeyDown={(e) =>
+              e.key === "Enter" &&
+              onSearchChange(inputValue.trim(), activeTypes)
+            }
             placeholder="Search pages, boards, tasks..."
             aria-label="Search query"
             className="pl-9"
           />
         </div>
-        <Button onClick={() => onSearchChange(inputValue.trim(), activeTypes)} size="sm">
+        <Button
+          onClick={() => onSearchChange(inputValue.trim(), activeTypes)}
+          size="sm"
+        >
           Search
         </Button>
       </div>

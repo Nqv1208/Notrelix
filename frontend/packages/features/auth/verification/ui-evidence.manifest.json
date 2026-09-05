@@ -22,8 +22,14 @@
       "owner": "@notrelix/features-auth",
       "pureEntry": "src/web/components/auth-form-surfaces.tsx",
       "stories": [
-        { "id": "auth-auth-form-surfaces--register-default", "state": "Default" },
-        { "id": "auth-auth-form-surfaces--register-pending", "state": "Loading" },
+        {
+          "id": "auth-auth-form-surfaces--register-default",
+          "state": "Default"
+        },
+        {
+          "id": "auth-auth-form-surfaces--register-pending",
+          "state": "Loading"
+        },
         { "id": "auth-auth-form-surfaces--register-error", "state": "EdgeData" }
       ],
       "requiredStates": ["Default", "Loading", "EdgeData"],
@@ -42,7 +48,10 @@
           "id": "auth-auth-form-surfaces--forgot-email-default",
           "state": "Default"
         },
-        { "id": "auth-auth-form-surfaces--forgot-otp-default", "state": "EdgeData" },
+        {
+          "id": "auth-auth-form-surfaces--forgot-otp-default",
+          "state": "EdgeData"
+        },
         {
           "id": "auth-auth-form-surfaces--forgot-success-default",
           "state": "ReadOnly"
