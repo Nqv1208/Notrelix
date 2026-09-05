@@ -62,7 +62,7 @@ public class CanonicalPathArchitectureTests
             var parts = relativePath.Split(Path.DirectorySeparatorChar);
 
             var hasCommandsOrQueries = parts.Any(p =>
-                p is "Commands" or "Queries" or "Abstractions" or "Services");
+                p is "Commands" or "Queries");
 
             if (!hasCommandsOrQueries)
             {
@@ -71,11 +71,12 @@ public class CanonicalPathArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            "all handler files must be under Commands/ or Queries/ subdirectories");
+            "all handler files must be under Commands/ or Queries/ subdirectories " +
+            "(application-model.md §5); Services/ and Abstractions/ are not handler containers");
     }
 
     [Fact]
-    public void APP_PATH_006_New_Public_Surfaces_Are_Capability_First_No_Technical_Bucket_Growth()
+    public void APP_PATH_006_Public_Technical_Buckets_Are_Exact_Frozen_Legacy_Baseline()
     {
         var featuresPath = GetFeaturesPath();
 
