@@ -1,8 +1,14 @@
 import { expect, type Page } from "@playwright/test";
 
 export const realUsers = {
-  admin: { email: "admin@notrelix.com", password: "Notrelix@123" },
-  guest: { email: "user4@notrelix.io", password: "Notrelix@123" },
+  admin: {
+    email: process.env.REAL_E2E_ADMIN_EMAIL ?? "admin@notrelix.test",
+    password: process.env.REAL_E2E_ADMIN_PASSWORD ?? "real-e2e-admin-password",
+  },
+  guest: {
+    email: process.env.REAL_E2E_GUEST_EMAIL ?? "guest@notrelix.test",
+    password: process.env.REAL_E2E_GUEST_PASSWORD ?? "real-e2e-guest-password",
+  },
 } as const;
 
 export async function signIn(

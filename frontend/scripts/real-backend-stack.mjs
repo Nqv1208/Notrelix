@@ -23,8 +23,10 @@ export const realBackend = {
 
 const composeEnv = {
   ...process.env,
-  POSTGRES_PASSWORD: "notrelix-real-e2e-postgres",
-  REDIS_PASSWORD: "notrelix-real-e2e-redis",
+  POSTGRES_PASSWORD:
+    process.env.REAL_E2E_POSTGRES_PASSWORD ?? "real-e2e-postgres-password",
+  REDIS_PASSWORD:
+    process.env.REAL_E2E_REDIS_PASSWORD ?? "real-e2e-redis-password",
   POSTGRES_PORT: "55432",
   REDIS_PORT: "56379",
   BACKEND_PORT: "58000",
