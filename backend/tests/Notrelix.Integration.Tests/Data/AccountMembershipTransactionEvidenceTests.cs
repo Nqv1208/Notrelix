@@ -212,18 +212,17 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
             "the rejection must originate from PostgreSQL itself, not an EF-side save failure");
 
         // Invitee acceptance persists both an AccountMember row and an account-level
-        // AccessGrant (workspace_id IS NULL). Single-membership per (AccountId, UserId)
-        // is therefore enforced by two complementary unique constraints; which one fires
-        // first in a concurrent batch depends on EF insert order and is not the protected
-        // contract. Assert the rejection comes from one of them — never from the
-        // workspace-scoped grant index (ux_access_grants_account_workspace_user) or any
-        // unrelated constraint.
+        // AccessGrant (workspace_id IS NULL). The concurrent duplicate may therefore be
+        // rejected either by the authoritative AccountMember uniqueness invariant
+        // (idx_account_members_account_user) or by the account-level grant projection
+        // uniqueness invariant (ux_access_grants_account_user_account_level); which
+        // constraint surfaces first is persistence ordering, not part of the contract.
         pg!.ConstraintName.Should().BeOneOf(
             "ux_access_grants_account_user_account_level",
             "idx_account_members_account_user",
-            "the concurrent duplicate must be rejected by an (AccountId, UserId) " +
-            "single-membership constraint (account-level grant index or account member index), " +
-            "never by the workspace-scoped grant index or any unrelated constraint");
+            "the concurrent duplicate must be rejected by AccountMember uniqueness or " +
+            "account-level grant projection uniqueness — never by the workspace-scoped grant " +
+            "index or any unrelated constraint");
 
         await using var verify = _db.CreateContext(SystemTenant());
         var members = await verify.AccountMembers
@@ -233,5 +232,12 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
         members.Should().ContainSingle(
             "concurrent duplicate acceptance must never persist two memberships");
         members.Single().Status.Should().Be(AccountMemberStatus.Active);
+
+        var grants = await verify.AccessGrants
+            .Where(g => g.AccountId == accountId && g.UserId == userId && g.WorkspaceId == null)
+            .ToListAsync();
+
+        grants.Should().ContainSingle(
+            "concurrent duplicate acceptance must never persist two account-level grants");
     }
 }
