@@ -37,6 +37,8 @@
     "check:ui-evidence": "pnpm storybook:web:build && tsx tooling/storybook/web/src/evidence/check-ui-evidence.ts",
     "e2e": "playwright test --config playwright.config.ts",
     "e2e:mock": "playwright test --config playwright.mock.config.ts",
+    "e2e:real": "node ./scripts/run-real-e2e.mjs",
+    "e2e:real:test": "playwright test --config playwright.real.config.ts",
     "e2e:marketing": "playwright test --config playwright.marketing.config.ts",
     "e2e:report": "playwright show-report",
     "codegen": "turbo codegen",
