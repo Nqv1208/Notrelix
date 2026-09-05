@@ -9,7 +9,10 @@ import { readWebRuntimeEnvironment } from "./config/read-runtime-environment";
 import { createWebApplicationServices } from "./composition/application-services";
 import { AppProviders } from "./providers/app-providers";
 import { router } from "./router";
-import { sanitizeInternalReturnUrl } from "./routing/sanitize-return-url";
+import {
+  isSignedOutRoute,
+  sanitizeInternalReturnUrl,
+} from "./routing/sanitize-return-url";
 import "./styles/globals.css";
 
 /**
@@ -52,6 +55,7 @@ async function init(): Promise<void> {
 
   const services = createWebApplicationServices(runtime, {
     navigateToSignedOut: () => {
+      if (isSignedOutRoute(window.location.pathname)) return;
       const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
       const redirectPath = sanitizeInternalReturnUrl(currentUrl);
       void router.navigate({
