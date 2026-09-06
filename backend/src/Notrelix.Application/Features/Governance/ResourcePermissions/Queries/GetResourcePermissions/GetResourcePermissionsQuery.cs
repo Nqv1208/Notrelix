@@ -13,7 +13,7 @@ public record GetResourcePermissionsQuery(
     PermissionAction IRequirePermission.Action => Kind.Value switch
     {
         "work-management.board" => PermissionAction.ManageBoardPermission,
-        "documents.page" => PermissionAction.SharePage,
+        "documents.page" => PermissionAction.ManagePagePermission,
         _ => PermissionAction.ManageWorkspace
     };
     ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
@@ -57,7 +57,6 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
                 p.SubjectId,
                 p.Level,
                 p.CreatedBy,
-                p.IsDeleted,
                 p.DeletedAt
             })
             .ToListAsync(cancellationToken);
@@ -72,7 +71,7 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
                 p.SubjectId,
                 p.Level.ToString(),
                 p.CreatedBy,
-                p.IsDeleted,
+                p.DeletedAt != null,
                 p.DeletedAt))
             .ToList();
 

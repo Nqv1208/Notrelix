@@ -10,18 +10,25 @@ public record GrantResourcePermissionCommand(
     string SubjectType,
     Guid SubjectId,
     string Level,
-    DateTime? ExpiresAt = null) : ICommand<Result<ResourcePermissionDto>>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IWriteRequest
+    DateTime? ExpiresAt = null) : ICommand<Result<ResourcePermissionDto>>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IRequireGrantPermission, IRequirePermissionTarget, IWriteRequest
 {
     internal ResourceKind Kind => ParseKind(ResourceKind);
 
     PermissionAction IRequirePermission.Action => Kind.Value switch
     {
         "work-management.board" => PermissionAction.ManageBoardPermission,
-        "documents.page" => PermissionAction.SharePage,
+        "documents.page" => PermissionAction.ManagePagePermission,
         _ => PermissionAction.ManageWorkspace
     };
     ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
+
+    PermissionLevel IRequireGrantPermission.RequestedLevel =>
+        Enum.TryParse<PermissionLevel>(Level, true, out var level) ? level : PermissionLevel.None;
+
+    string? IRequirePermissionTarget.TargetSubjectType => SubjectType;
+    Guid? IRequirePermissionTarget.TargetSubjectId => SubjectId;
+    Guid? IRequirePermissionTarget.TargetPermissionId => null;
 
     private static ResourceKind ParseKind(string value) =>
         global::Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(value, out var kind)
@@ -62,6 +69,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         var accountId = _requestContext.RequireAccountId();
         var actorId = _requestContext.UserId;
         var kind = request.Kind;
+        var now = _dateTimeProvider.UtcNow;
 
         var existingPermission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId &&
@@ -70,36 +78,34 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
                                       p.SubjectType == subjectType &&
                                       p.SubjectId == request.SubjectId, cancellationToken);
 
-        var granterPermission = await _context.ResourcePermissions
-            .Where(p => p.WorkspaceId == workspaceId &&
-                        p.ResourceKind == kind &&
-                        p.ResourceId == request.ResourceId &&
-                        p.SubjectType == PermissionSubjectType.User &&
-                        p.SubjectId == actorId &&
-                        !p.IsDeleted)
-            .OrderByDescending(p => p.Level)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var granterLevel = granterPermission?.Level ?? PermissionLevel.None;
-
+        ResourcePermission permission;
         if (existingPermission != null)
         {
-            _context.ResourcePermissions.Remove(existingPermission);
+            if (existingPermission.Level == level)
+            {
+                permission = existingPermission;
+            }
+            else
+            {
+                existingPermission.ChangeLevel(level, actorId, now);
+                permission = existingPermission;
+            }
         }
+        else
+        {
+            permission = ResourcePermission.Grant(
+                accountId,
+                workspaceId,
+                kind,
+                request.ResourceId,
+                subjectType,
+                request.SubjectId,
+                level,
+                actorId,
+                now);
 
-        var permission = ResourcePermission.Grant(
-            accountId,
-            workspaceId,
-            kind,
-            request.ResourceId,
-            subjectType,
-            request.SubjectId,
-            level,
-            granterLevel,
-            actorId,
-            _dateTimeProvider.UtcNow);
-
-        _context.ResourcePermissions.Add(permission);
+            _context.ResourcePermissions.Add(permission);
+        }
 
         await _auditService.RecordAsync(
             workspaceId,
