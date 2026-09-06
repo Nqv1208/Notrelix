@@ -55,7 +55,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
             AttachmentType.Document, FileMetadata.Create("a.pdf", 10, "application/pdf"), AccountId, now));
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadAdapter(context);
+        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context));
         var counts = await sut.GetCountsAsync([firstItem, secondItem], CancellationToken.None);
 
         counts[firstItem].Should().Be(new WorkItemCollaborationCounts(2, 1));
@@ -69,7 +69,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
 
-        var sut = new WorkManagementCollaborationReadAdapter(context);
+        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context));
         var counts = await sut.GetCountsAsync([Guid.NewGuid()], CancellationToken.None);
 
         counts.Values.Single().Should().Be(new WorkItemCollaborationCounts(0, 0));
@@ -91,7 +91,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
         context.Comments.Add(deleted);
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadAdapter(context);
+        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context));
         var counts = await sut.GetCountsAsync([item], CancellationToken.None);
 
         counts[item].CommentCount.Should().Be(1);
@@ -112,7 +112,7 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
             JsonContent("board comment"), AccountId, now));
         await context.SaveChangesAsync();
 
-        var sut = new WorkManagementCollaborationReadAdapter(context);
+        var sut = new WorkManagementCollaborationReadAdapter(new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context));
         var counts = await sut.GetCountsAsync([item], CancellationToken.None);
 
         counts[item].CommentCount.Should().Be(0);
