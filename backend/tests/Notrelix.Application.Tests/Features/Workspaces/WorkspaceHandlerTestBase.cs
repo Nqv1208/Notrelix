@@ -132,13 +132,15 @@ internal class TestAsyncQueryProvider<T> : IAsyncQueryProvider
 
     public IQueryable CreateQuery(Expression expression)
     {
-        var queryable = _inner.CreateQuery<T>(expression);
+        var rewritten = new EfToLinqExpressionVisitor().Visit(expression);
+        var queryable = _inner.CreateQuery<T>(rewritten);
         return new TestAsyncEnumerable<T>(queryable);
     }
 
     public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
     {
-        var queryable = _inner.CreateQuery<TElement>(expression);
+        var rewritten = new EfToLinqExpressionVisitor().Visit(expression);
+        var queryable = _inner.CreateQuery<TElement>(rewritten);
         return new TestAsyncEnumerable<TElement>(queryable);
     }
 
@@ -167,7 +169,8 @@ internal class TestAsyncQueryProvider<T> : IAsyncQueryProvider
 
     private Task<TResult> ExecuteSync<TResult>(Expression expression)
     {
-        var result = _inner.Execute(expression);
+        var rewritten = new EfToLinqExpressionVisitor().Visit(expression);
+        var result = _inner.Execute(rewritten);
         return Task.FromResult((TResult)result!);
     }
 }
@@ -189,4 +192,18 @@ internal class TestAsyncEnumerable<T> : IAsyncEnumerable<T>, IQueryable<T>
         => new TestAsyncEnumerator<T>(_queryable.GetEnumerator());
     public IEnumerator<T> GetEnumerator() => _queryable.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => _queryable.GetEnumerator();
+}
+
+internal class EfToLinqExpressionVisitor : ExpressionVisitor
+{
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        if (node.Method.DeclaringType == typeof(EntityFrameworkQueryableExtensions) &&
+            node.Method.Name == nameof(EntityFrameworkQueryableExtensions.AsNoTracking))
+        {
+            return Visit(node.Arguments[0]);
+        }
+
+        return base.VisitMethodCall(node);
+    }
 }

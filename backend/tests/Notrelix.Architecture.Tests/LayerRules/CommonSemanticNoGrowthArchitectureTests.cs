@@ -76,6 +76,15 @@ public class CommonSemanticNoGrowthArchitectureTests
         new HashSet<string>(StringComparer.Ordinal)
         {
             "Notrelix.Application.Common.Security.AccessPermissionRule",
+            // TAC-WG-FLOW-04 grant/revoke seam: these request markers carry only
+            // technical primitives (int rank, Guid?, string?) — the Governance
+            // PermissionLevel vocabulary maps to an integer rank at the
+            // Governance feature boundary, so no BC type appears in the Common
+            // public signature and these stay technical pipeline plumbing,
+            // not new business vocabulary.
+            "Notrelix.Application.Common.Requests.Security.IRequireGrantPermission",
+            "Notrelix.Application.Common.Requests.Security.IRequireRevokePermission",
+            "Notrelix.Application.Common.Requests.Security.IRequirePermissionTarget",
         };
 
     /// <summary>

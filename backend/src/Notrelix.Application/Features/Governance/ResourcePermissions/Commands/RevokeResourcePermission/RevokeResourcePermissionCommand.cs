@@ -6,18 +6,24 @@ namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.
 public record RevokeResourcePermissionCommand(
     string ResourceKind,
     Guid ResourceId,
-    Guid PermissionId) : ICommand<Result>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IWriteRequest
+    Guid PermissionId) : ICommand<Result>, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IRequireRevokePermission, IRequirePermissionTarget, IWriteRequest
 {
     internal ResourceKind Kind => ParseKind(ResourceKind);
 
     PermissionAction IRequirePermission.Action => Kind.Value switch
     {
         "work-management.board" => PermissionAction.ManageBoardPermission,
-        "documents.page" => PermissionAction.SharePage,
+        "documents.page" => PermissionAction.ManagePagePermission,
         _ => PermissionAction.ManageWorkspace
     };
     ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
+
+    Guid IRequireRevokePermission.TargetPermissionId => PermissionId;
+
+    string? IRequirePermissionTarget.TargetSubjectType => null;
+    Guid? IRequirePermissionTarget.TargetSubjectId => null;
+    Guid? IRequirePermissionTarget.TargetPermissionId => PermissionId;
 
     private static ResourceKind ParseKind(string value) =>
         global::Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(value, out var kind)
@@ -64,7 +70,7 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
 
         var actorId = _requestContext.UserId;
 
-        _context.ResourcePermissions.Remove(permission);
+        permission.Revoke(actorId, _dateTimeProvider.UtcNow);
 
         await _auditService.RecordAsync(
             workspaceId,

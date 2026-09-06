@@ -33,5 +33,8 @@ public enum PermissionAction
     ViewPage,
     UpdatePage,
     DeletePage,
-    ManageAccount
+    ManageAccount,
+    CreatePage,
+    ManagePagePermission,
+    CreateComment
 }

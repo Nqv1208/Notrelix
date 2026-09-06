@@ -14,6 +14,8 @@ public sealed record AccessFacts(
     IReadOnlyList<AccessPermissionRule> PermissionRules,
     bool HasActiveSubscription,
     string? SubscriptionTier,
-    bool FeatureEnabled);
+    bool FeatureEnabled,
+    int? ActiveResourcePermissionRank,
+    int? TargetPermissionRank);
 
 public sealed record AccessPermissionRule(int Priority, string Effect);
