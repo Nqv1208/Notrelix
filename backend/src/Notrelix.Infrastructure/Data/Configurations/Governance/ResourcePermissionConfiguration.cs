@@ -35,13 +35,13 @@ public class ResourcePermissionConfiguration : IEntityTypeConfiguration<Resource
         builder.HasIndex(x => new { x.ResourceKind, x.ResourceId }).HasDatabaseName("idx_resource_permissions_resource");
         builder.HasIndex(x => x.SubjectId).HasDatabaseName("idx_resource_permissions_subject_id");
         builder.HasIndex(x => new
-            {
-                x.WorkspaceId,
-                x.ResourceKind,
-                x.ResourceId,
-                x.SubjectType,
-                x.SubjectId
-            })
+        {
+            x.WorkspaceId,
+            x.ResourceKind,
+            x.ResourceId,
+            x.SubjectType,
+            x.SubjectId
+        })
             .HasFilter("deleted_at IS NULL")
             .IsUnique()
             .HasDatabaseName("uq_resource_permissions_active_subject");

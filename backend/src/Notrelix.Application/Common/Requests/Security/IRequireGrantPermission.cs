@@ -1,5 +1,3 @@
-using Notrelix.Domain.Governance.Permissions;
-
 namespace Notrelix.Application.Common.Requests.Security;
 
 /// <summary>

@@ -9,7 +9,6 @@ using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Execution;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
@@ -46,7 +45,6 @@ using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
-using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
 using AppValidation = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.Integration.Tests.Governance;
