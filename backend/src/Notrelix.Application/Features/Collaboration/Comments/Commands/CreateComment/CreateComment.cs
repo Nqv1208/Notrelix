@@ -14,7 +14,7 @@ public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, s
     private const string BoardItemKind = "work-management.board-item";
     private const string PageKind = "documents.page";
 
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    public PermissionAction Action => PermissionAction.CreateComment;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind, ResourceId);
 }
 
