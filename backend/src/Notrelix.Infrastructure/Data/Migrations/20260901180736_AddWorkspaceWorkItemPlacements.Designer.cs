@@ -3533,6 +3533,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("ResourceKind", "ResourceId")
                         .HasDatabaseName("idx_resource_permissions_resource");
 
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "SubjectType", "SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_resource_permissions_active_subject")
+                        .HasFilter("deleted_at IS NULL");
+
                     b.ToTable("resource_permissions", "governance");
                 });
 

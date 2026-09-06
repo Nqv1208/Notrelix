@@ -34,11 +34,24 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 table: "workspace_work_item_placements",
                 columns: new[] { "workspace_id", "item_id" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_resource_permissions_active_subject",
+                schema: "governance",
+                table: "resource_permissions",
+                columns: new[] { "workspace_id", "resource_type", "resource_id", "subject_type", "subject_id" },
+                unique: true,
+                filter: "deleted_at IS NULL");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropIndex(
+                name: "uq_resource_permissions_active_subject",
+                schema: "governance",
+                table: "resource_permissions");
+
             migrationBuilder.DropTable(
                 name: "workspace_work_item_placements",
                 schema: "reporting");
