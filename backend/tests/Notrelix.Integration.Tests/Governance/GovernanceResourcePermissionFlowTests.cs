@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Npgsql;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -197,6 +198,72 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "expiration is not supported for resource permissions");
     }
 
+    [Fact]
+    public async Task Concurrent_Grants_ForSameActiveSubject_RaceOnUniqueIndex()
+    {
+        // Stale-read race: both transactions must observe the absent row
+        // BEFORE either commits, then the unique active-subject index must
+        // reject the second insert at the database, not in application code.
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        var now = DateTimeOffset.UtcNow;
+        var barrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var kind = ResourceKind.Create("documents.page");
+
+        async Task<Exception?> InsertWithinTransaction(Guid txUserId)
+        {
+            await using var context = _db.CreateContext(SystemTenant());
+            await using var tx = await context.Database.BeginTransactionAsync();
+            // Both transactions read the absence of an active row first.
+            var absent = !await context.ResourcePermissions
+                .AnyAsync(p => p.WorkspaceId == workspaceId
+                            && p.ResourceKind == kind
+                            && p.ResourceId == pageId
+                            && p.SubjectType == PermissionSubjectType.User
+                            && p.SubjectId == memberId
+                            && p.DeletedAt == null);
+            if (!absent)
+            {
+                return new InvalidOperationException("row already visible before insert");
+            }
+
+            context.ResourcePermissions.Add(ResourcePermission.Grant(
+                accountId, workspaceId, kind, pageId,
+                PermissionSubjectType.User, memberId, PermissionLevel.Viewer, txUserId, now));
+            try
+            {
+                await context.SaveChangesAsync();
+                await barrier.Task; // hold the transaction open until both inserted
+                await tx.CommitAsync();
+                return null;
+            }
+            catch (Exception failure)
+            {
+                return failure;
+            }
+        }
+
+        var firstTask = Task.Run(() => InsertWithinTransaction(ownerId));
+        var secondTask = Task.Run(() => InsertWithinTransaction(Guid.NewGuid()));
+
+        await Task.Delay(500);
+        barrier.TrySetResult();
+
+        var outcomes = await Task.WhenAll(firstTask, secondTask);
+        var failures = outcomes.Where(o => o is not null).ToArray();
+
+        failures.Should().HaveCount(1, "exactly one concurrent insert may commit the active row");
+        failures.Single().Should().BeOfType<DbUpdateException>();
+        var postgres = ((DbUpdateException)failures.Single()!).InnerException as PostgresException;
+        postgres.Should().NotBeNull("the race must be rejected by PostgreSQL");
+        postgres!.SqlState.Should().Be("23505");
+        postgres.ConstraintName.Should().Be("uq_resource_permissions_active_subject");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.ResourcePermissions.CountAsync(p => p.WorkspaceId == workspaceId
+            && p.ResourceId == pageId && p.SubjectId == memberId && p.DeletedAt == null))
+            .Should().Be(1, "exactly one active permission row survives the race");
+    }
+
     // ── 41E — GetResourcePermissions ─────────────────────────────────────────
 
     [Fact]
@@ -262,7 +329,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     // ── 41F — Canonical authorization pipeline routing ───────────────────────
 
     [Fact]
-    public async Task MoveBoardItem_MemberWithWorkspaceRole_Allows()
+    public async Task MoveBoardItem_Owner_Allows()
     {
         var (accountId, ownerId, _, boardId, _) = await SeedBoardStackAsync();
 
@@ -277,6 +344,32 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
             await scope.ServiceProvider.GetRequiredService<ISender>()
                 .Send(new MoveBoardItemCommand(itemId, groupId, 1.0d));
+        }
+    }
+
+    [Fact]
+    public async Task MoveBoardItem_WorkspaceMember_IsDenied_UntilItemScopeDecision()
+    {
+        // Board-item resources have no audience facts in the canonical query,
+        // so the canonical pipeline denies ordinary members for MoveItem. This
+        // freezes the current observable contract; granting members item
+        // moves is a separate product decision, not a pipeline change.
+        var (accountId, _, _, boardId, memberId) = await SeedBoardStackAsync();
+
+        using var provider = CreateProvider(accountId, memberId);
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+        var groupId = await ResolveOtherGroupIdAsync(boardId);
+
+        using (var scope = provider.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+                .Set($"gov-move-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
+
+            var act = () => scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new MoveBoardItemCommand(itemId, groupId, 1.0d));
+
+            await act.Should().ThrowAsync<AppForbidden>(
+                "the canonical pipeline currently denies member item moves; no second evaluator may bypass it");
         }
     }
 
@@ -307,7 +400,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateComment_OnPage_MemberWithWorkspaceRole_Allows()
+    public async Task CreateComment_OnPage_Owner_Allows()
     {
         var (accountId, ownerId, _, pageId, _) = await SeedPageStackAsync();
 
@@ -316,6 +409,19 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             CreateCommentCommand.ForPage(pageId, "Hello page", null));
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateComment_OnPage_WorkspaceMember_Allows()
+    {
+        var (accountId, _, _, pageId, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, memberId);
+        var result = await SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForPage(pageId, "Hello page", null));
+
+        result.Succeeded.Should().BeTrue(
+            "commenting on a workspace-visible page is a usage right, not ACL management");
     }
 
     [Fact]
@@ -329,6 +435,34 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             CreateCommentCommand.ForPage(pageId, "Hello page", null));
 
         await act.Should().ThrowAsync<AppForbidden>("page-scoped actions are denied for non-members");
+    }
+
+    [Fact]
+    public async Task CreateComment_OnBoardItem_Owner_Allows()
+    {
+        var (accountId, ownerId, _, boardId, _) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var result = await SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateComment_OnBoardItem_Outsider_IsDenied()
+    {
+        var (accountId, _, _, boardId, _) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+        var outsider = Guid.NewGuid();
+
+        using var provider = CreateProvider(accountId, outsider);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
+
+        await act.Should().ThrowAsync<Exception>(
+            "board-item comments are not granted to non-members; assert the observed deny outcome");
     }
 
     // ── composition -----------------------------------------------------------
