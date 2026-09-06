@@ -410,10 +410,14 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         services.AddSingleton<PipelineMetrics>();
         services.AddSingleton<IAccessPolicyEvaluator, AccessPolicyEngine>();
+        services.AddScoped<
+            global::Notrelix.Application.Features.Documents.Public.PageAuthorization.IPageAuthorizationFacts,
+            global::Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts>();
         services.AddScoped<IAccessFactsProvider>(sp =>
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
-                sp.GetRequiredService<TimeProvider>()));
+                sp.GetRequiredService<TimeProvider>(),
+                sp.GetRequiredService<global::Notrelix.Application.Features.Documents.Public.PageAuthorization.IPageAuthorizationFacts>()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
 
         services.AddScoped<IResourceLocator, ResourceLocator>();

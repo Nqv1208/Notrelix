@@ -5,6 +5,7 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Common.Requests.Gates;
 using Notrelix.Application.Common.Requests.Security;
+using Notrelix.Application.Features.Documents.Public.PageAuthorization;
 
 namespace Notrelix.Infrastructure.Data.Authz;
 
@@ -14,11 +15,16 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
 
     private readonly ApplicationDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
+    private readonly IPageAuthorizationFacts _pageAuthorizationFacts;
 
-    public PostgresAccessFactsProvider(ApplicationDbContext dbContext, TimeProvider timeProvider)
+    public PostgresAccessFactsProvider(
+        ApplicationDbContext dbContext,
+        TimeProvider timeProvider,
+        IPageAuthorizationFacts pageAuthorizationFacts)
     {
         _dbContext = dbContext;
         _timeProvider = timeProvider;
+        _pageAuthorizationFacts = pageAuthorizationFacts;
     }
 
     public async Task<AccessFacts> ResolveAsync(
@@ -48,48 +54,81 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             throw new SecurityMisconfigurationException("Access facts require the active data-session connection.");
         }
 
-        await using var command = connection.CreateCommand();
-        command.CommandText = Sql;
-        command.Transaction = _dbContext.Database.CurrentTransaction?.GetDbTransaction()
-            ?? throw new SecurityMisconfigurationException("Access facts require the active data-session transaction.");
-        Add(command, "user_id", context.UserId, NpgsqlDbType.Uuid);
-        Add(command, "account_id", context.AccountId, NpgsqlDbType.Uuid);
-        Add(command, "workspace_id", context.WorkspaceId, NpgsqlDbType.Uuid);
-        Add(command, "resource_type", resource?.Kind.Value, NpgsqlDbType.Text);
-        Add(command, "resource_id", resource?.ResourceId, NpgsqlDbType.Uuid);
-        Add(command, "resource_was_located", context.Resource is not null, NpgsqlDbType.Boolean);
-        Add(command, "action", permission?.Action.ToString(), NpgsqlDbType.Text);
-        Add(command, "target_subject_type", target?.TargetSubjectType, NpgsqlDbType.Text);
-        Add(command, "target_subject_id", target?.TargetSubjectId, NpgsqlDbType.Uuid);
-        Add(command, "target_permission_id", target?.TargetPermissionId, NpgsqlDbType.Uuid);
-        Add(command, "feature_code", feature?.FeatureCode, NpgsqlDbType.Text);
-        Add(command, "feature_amount", feature?.Amount ?? 0, NpgsqlDbType.Integer);
-        Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
-
-        await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
-        if (!await reader.ReadAsync(cancellationToken))
+        AccessFacts facts;
+        await using (var command = connection.CreateCommand())
         {
-            throw new SecurityMisconfigurationException("Access facts query returned no row.");
+            command.CommandText = Sql;
+            command.Transaction = _dbContext.Database.CurrentTransaction?.GetDbTransaction()
+                ?? throw new SecurityMisconfigurationException("Access facts require the active data-session transaction.");
+            Add(command, "user_id", context.UserId, NpgsqlDbType.Uuid);
+            Add(command, "account_id", context.AccountId, NpgsqlDbType.Uuid);
+            Add(command, "workspace_id", context.WorkspaceId, NpgsqlDbType.Uuid);
+            Add(command, "resource_type", resource?.Kind.Value, NpgsqlDbType.Text);
+            Add(command, "resource_id", resource?.ResourceId, NpgsqlDbType.Uuid);
+            Add(command, "resource_was_located", context.Resource is not null, NpgsqlDbType.Boolean);
+            Add(command, "action", permission?.Action.ToString(), NpgsqlDbType.Text);
+            Add(command, "target_subject_type", target?.TargetSubjectType, NpgsqlDbType.Text);
+            Add(command, "target_subject_id", target?.TargetSubjectId, NpgsqlDbType.Uuid);
+            Add(command, "target_permission_id", target?.TargetPermissionId, NpgsqlDbType.Uuid);
+            Add(command, "feature_code", feature?.FeatureCode, NpgsqlDbType.Text);
+            Add(command, "feature_amount", feature?.Amount ?? 0, NpgsqlDbType.Integer);
+            Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
+
+            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
+            if (!await reader.ReadAsync(cancellationToken))
+            {
+                throw new SecurityMisconfigurationException("Access facts query returned no row.");
+            }
+
+            var rules = JsonSerializer.Deserialize<AccessPermissionRule[]>(reader.GetString(10), JsonOptions) ?? [];
+            facts = new AccessFacts(
+                reader.GetBoolean(0),
+                reader.GetBoolean(1),
+                reader.GetBoolean(2),
+                NullableString(reader, 3),
+                reader.GetBoolean(4),
+                NullableString(reader, 5),
+                reader.GetBoolean(6),
+                NullableString(reader, 7),
+                NullableString(reader, 8),
+                reader.GetBoolean(9),
+                rules,
+                reader.GetBoolean(11),
+                NullableString(reader, 12),
+                reader.GetBoolean(13),
+                NullableInt(reader, 14),
+                NullableInt(reader, 15));
         }
 
-        var rules = JsonSerializer.Deserialize<AccessPermissionRule[]>(reader.GetString(10), JsonOptions) ?? [];
-        return new AccessFacts(
-            reader.GetBoolean(0),
-            reader.GetBoolean(1),
-            reader.GetBoolean(2),
-            NullableString(reader, 3),
-            reader.GetBoolean(4),
-            NullableString(reader, 5),
-            reader.GetBoolean(6),
-            NullableString(reader, 7),
-            NullableString(reader, 8),
-            reader.GetBoolean(9),
-            rules,
-            reader.GetBoolean(11),
-            NullableString(reader, 12),
-            reader.GetBoolean(13),
-            NullableInt(reader, 14),
-            NullableInt(reader, 15));
+        // Page lifecycle/visibility are Documents-owned facts, composed here
+        // through the producer's published authorization contract instead of
+        // reading Documents persistence in the shared authz SQL.
+        if (resource?.Kind.Value == "documents.page")
+        {
+            facts = await ComposePageFactsAsync(facts, resource, context.WorkspaceId, cancellationToken);
+        }
+
+        return facts;
+    }
+
+    private async Task<AccessFacts> ComposePageFactsAsync(
+        AccessFacts facts,
+        ResourceRef resource,
+        Guid? workspaceId,
+        CancellationToken cancellationToken)
+    {
+        var page = await _pageAuthorizationFacts.ResolveAsync(resource.ResourceId, cancellationToken);
+        var pageInScope = page is not null
+            && workspaceId.HasValue
+            && page.WorkspaceId == workspaceId.Value;
+
+        return page is not null && pageInScope && page.Exists
+            ? facts with
+            {
+                ResourceExists = page.IsActive,
+                ResourceAudience = page.IsActive ? page.Visibility : null,
+            }
+            : facts with { ResourceExists = false, ResourceAudience = null };
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

@@ -23,9 +23,6 @@ public static class AccessFactsQuery
             WHEN @resource_type = 'work-management.board' THEN EXISTS (
               SELECT 1 FROM work.boards b WHERE b.id = @resource_id
                 AND b.workspace_id = @workspace_id AND b.deleted_at IS NULL AND b.is_archived = false)
-            WHEN @resource_type = 'documents.page' THEN EXISTS (
-              SELECT 1 FROM docs.pages p WHERE p.id = @resource_id
-                AND p.workspace_id = @workspace_id AND p.deleted_at IS NULL AND p.status != 'Archived')
             WHEN @resource_type = 'workspaces.workspace' THEN EXISTS (
               SELECT 1 FROM workspace.workspaces w WHERE w.id = @resource_id AND w.deleted_at IS NULL)
             ELSE @resource_was_located
@@ -34,9 +31,6 @@ public static class AccessFactsQuery
             WHEN @resource_type = 'work-management.board' THEN (
               SELECT b.visibility FROM work.boards b WHERE b.id = @resource_id
                 AND b.workspace_id = @workspace_id AND b.deleted_at IS NULL AND b.is_archived = false LIMIT 1)
-            WHEN @resource_type = 'documents.page' THEN (
-              SELECT p.visibility FROM docs.pages p WHERE p.id = @resource_id
-                AND p.workspace_id = @workspace_id AND p.deleted_at IS NULL AND p.status != 'Archived' LIMIT 1)
           END,
           CASE WHEN @resource_type = 'work-management.board' THEN (
             SELECT bm.role FROM work.board_members bm

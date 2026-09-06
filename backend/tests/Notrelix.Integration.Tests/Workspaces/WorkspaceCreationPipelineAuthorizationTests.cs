@@ -227,7 +227,8 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
             sp.GetRequiredService<EvaluationCountingDecisionStore>().Wrap(
                 new PostgresAccessFactsProvider(
                     sp.GetRequiredService<ApplicationDbContext>(),
-                    sp.GetRequiredService<TimeProvider>())));
+                    sp.GetRequiredService<TimeProvider>(),
+                    new PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>()))));
 
         // Production pipeline nesting: DataSessionBehavior (outer) → AccessControlBehavior (inner),
         // matching the canonical frozen behavior order.
