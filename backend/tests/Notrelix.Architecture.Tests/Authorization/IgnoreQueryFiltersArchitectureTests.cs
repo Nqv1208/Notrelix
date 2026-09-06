@@ -89,6 +89,10 @@ public class IgnoreQueryFiltersArchitectureTests
         ["ResourceLocator.cs"] = new("ResourceLocator.cs", AllowlistClassification.InfrastructureBootstrap,
             "Resource locator bypasses EF query filter to resolve resource tenant context before RLS is set",
             "Keep as InfrastructureBootstrap — resolver runs before RLS session is established"),
+
+        ["PostgresPageAuthorizationFacts.cs"] = new("PostgresPageAuthorizationFacts.cs", AllowlistClassification.InfrastructureBootstrap,
+            "Documents-owned page authorization facts must see deleted/archived pages so the engine can resolve NotFound instead of exposing them as live resources",
+            "Keep as InfrastructureBootstrap — facts resolution runs before RLS session is established"),
         ["EmailTemplateMaterialization.cs"] = new("EmailTemplateMaterialization.cs", AllowlistClassification.Intentional,
             "Email template materialization bypasses EF query filter to resolve templates across tenant boundaries",
             "Keep as Intentional — cross-tenant template resolution"),
