@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 using FluentValidation;
 using MediatR;
@@ -11,7 +9,6 @@ using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;

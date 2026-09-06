@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Public.PageAuthorization;
 
