@@ -199,14 +199,17 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     public async Task Concurrent_Grants_ForSameActiveSubject_RaceOnUniqueIndex()
     {
         // Stale-read race: both transactions must observe the absent row
-        // BEFORE either commits, then the unique active-subject index must
+        // BEFORE either inserts, then the unique active-subject index must
         // reject the second insert at the database, not in application code.
         var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
         var now = DateTimeOffset.UtcNow;
-        var barrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstAbsent = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondAbsent = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBarrier = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var kind = ResourceKind.Create("documents.page");
 
-        async Task<Exception?> InsertWithinTransaction(Guid txUserId)
+        async Task<Exception?> InsertWithinTransaction(
+            Guid txUserId, TaskCompletionSource<bool> absenceReported)
         {
             await using var context = _db.CreateContext(SystemTenant());
             await using var tx = await context.Database.BeginTransactionAsync();
@@ -223,13 +226,17 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 return new InvalidOperationException("row already visible before insert");
             }
 
+            // Synchronize on the observed absence itself: no transaction may
+            // insert until both have read the row as absent.
+            absenceReported.TrySetResult(true);
+            await releaseBarrier.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
             context.ResourcePermissions.Add(ResourcePermission.Grant(
                 accountId, workspaceId, kind, pageId,
                 PermissionSubjectType.User, memberId, PermissionLevel.Viewer, txUserId, now));
             try
             {
                 await context.SaveChangesAsync();
-                await barrier.Task; // hold the transaction open until both inserted
                 await tx.CommitAsync();
                 return null;
             }
@@ -239,11 +246,12 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             }
         }
 
-        var firstTask = Task.Run(() => InsertWithinTransaction(ownerId));
-        var secondTask = Task.Run(() => InsertWithinTransaction(Guid.NewGuid()));
+        var firstTask = Task.Run(() => InsertWithinTransaction(ownerId, firstAbsent));
+        var secondTask = Task.Run(() => InsertWithinTransaction(Guid.NewGuid(), secondAbsent));
 
-        await Task.Delay(500);
-        barrier.TrySetResult();
+        await Task.WhenAll(firstAbsent.Task, secondAbsent.Task)
+            .WaitAsync(TimeSpan.FromSeconds(10));
+        releaseBarrier.TrySetResult(true);
 
         var outcomes = await Task.WhenAll(firstTask, secondTask);
         var failures = outcomes.Where(o => o is not null).ToArray();
@@ -458,8 +466,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var act = () => SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
 
-        await act.Should().ThrowAsync<Exception>(
-            "board-item comments are not granted to non-members; assert the observed deny outcome");
+        await act.Should().ThrowAsync<AppForbidden>(
+            "board-item comments are not granted to non-members; the canonical pipeline denies them");
     }
 
     // ── composition -----------------------------------------------------------
