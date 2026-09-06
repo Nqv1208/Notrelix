@@ -1,14 +1,23 @@
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle } from "lucide-react";
-import { Button } from "@notrelix/ui-web";
-import { Skeleton } from "@notrelix/ui-web";
 import { Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
-import { useCard } from "@notrelix/work-management-state";
+import {
+  useCard,
+  useCardActivity,
+  useCardComments,
+  useCardFiles,
+  useCreateCardUpdate,
+  useDeleteCard,
+  useDeleteCardUpdate,
+  useDuplicateCard,
+  useUpdateCard,
+  useUpdateCardUpdate,
+  useUpdateFieldValue,
+} from "@notrelix/work-management-state";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { useIsMobile } from "@notrelix/ui-web";
-import { TaskDetailHeader } from "./task-detail-header";
-import { TaskDetailTabs } from "./task-detail-tabs";
+import { TaskDetailPanelSurface } from "./task-detail-panel-surface";
+import { defaultTaskDetailCapabilities } from "./task-detail-types";
 
 export function TaskDetailPanel({
   board,
@@ -48,7 +57,7 @@ export function TaskDetailPanel({
     return (
       <Sheet
         open={open}
-        onOpenChange={(nextOpen: any) => {
+        onOpenChange={(nextOpen: boolean) => {
           if (!nextOpen) onClose();
         }}
       >
@@ -94,15 +103,37 @@ function TaskDetailPanelContent({
 }) {
   const { card, isLoading, error } = useCard(cardId, board.workspaceId);
 
-  if (isLoading) return <TaskDetailPanelSkeleton />;
-  if (error || !card) return <TaskDetailPanelError onClose={onClose} />;
+  if (isLoading)
+    return (
+      <TaskDetailPanelSurface
+        status="loading"
+        board={board}
+        card={null}
+        capabilities={defaultTaskDetailCapabilities}
+        callbacks={emptyCallbacks(onClose)}
+      />
+    );
+  if (error || !card)
+    return (
+      <TaskDetailPanelSurface
+        status="error"
+        board={board}
+        card={null}
+        capabilities={defaultTaskDetailCapabilities}
+        callbacks={emptyCallbacks(onClose)}
+      />
+    );
 
   return (
-    <TaskDetailBody board={board} card={card as CardDetail} onClose={onClose} />
+    <TaskDetailReadyContainer
+      board={board}
+      card={card as CardDetail}
+      onClose={onClose}
+    />
   );
 }
 
-function TaskDetailBody({
+function TaskDetailReadyContainer({
   board,
   card,
   onClose,
@@ -111,49 +142,70 @@ function TaskDetailBody({
   card: CardDetail;
   onClose: () => void;
 }) {
+  const files = useCardFiles(card.id, card.workspaceId);
+  const activity = useCardActivity(card.id, card.workspaceId);
+  const updates = useCardComments(card.id, card.workspaceId);
+  const updateCard = useUpdateCard(card.boardId, card.workspaceId);
+  const deleteCard = useDeleteCard(card.boardId, card.workspaceId);
+  const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
+  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
+  const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
+  const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
+  const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-popover">
-      <TaskDetailHeader
-        key={card.id}
-        board={board}
-        card={card}
-        onClose={onClose}
-      />
-      <TaskDetailTabs card={card} />
-    </div>
+    <TaskDetailPanelSurface
+      status="ready"
+      board={board}
+      card={card}
+      capabilities={defaultTaskDetailCapabilities}
+      detailData={{
+        files: files.data ?? card.files,
+        filesLoading: files.isLoading,
+        activity: activity.data ?? card.activity,
+        activityLoading: activity.isLoading,
+        activityFetching: activity.isFetching,
+        updates: updates.data ?? card.updates,
+        updatesLoading: updates.isLoading,
+      }}
+      callbacks={{
+        onClose,
+        onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+        onToggleWatch: () => undefined,
+        onDuplicate: (cardId) => duplicateCard.mutate(cardId),
+        onArchive: (cardId) => {
+          deleteCard.mutate(cardId);
+          onClose();
+        },
+        onUpdateFieldValue: (payload) => updateFieldValue.mutate(payload),
+        onRefreshActivity: () => {
+          void activity.refetch();
+        },
+        onCreateUpdate: (input, options) =>
+          createUpdate.mutate(input, {
+            onSuccess: options?.onSuccess,
+          }),
+        onUpdateUpdate: (updateId, body) =>
+          updateUpdate.mutate({ updateId, body }),
+        onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
+        onSelectTab: () => undefined,
+      }}
+    />
   );
 }
 
-function TaskDetailPanelSkeleton() {
-  return (
-    <div className="flex h-full w-full flex-col gap-4 bg-popover p-4">
-      <Skeleton className="h-10 rounded-lg" />
-      <Skeleton className="h-20 rounded-lg" />
-      <Skeleton className="h-9 rounded-lg" />
-      <Skeleton className="h-40 rounded-lg" />
-    </div>
-  );
-}
-
-function TaskDetailPanelError({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-popover p-6 text-center">
-      <AlertCircle className="mb-3 size-8 text-destructive" />
-      <h2 className="text-sm font-semibold text-foreground">
-        Task unavailable
-      </h2>
-      <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-        This task could not be loaded or no longer exists.
-      </p>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="mt-4 bg-card"
-        onClick={onClose}
-      >
-        Close panel
-      </Button>
-    </div>
-  );
+function emptyCallbacks(onClose: () => void) {
+  return {
+    onClose,
+    onRenameTitle: () => undefined,
+    onToggleWatch: () => undefined,
+    onDuplicate: () => undefined,
+    onArchive: () => undefined,
+    onUpdateFieldValue: () => undefined,
+    onRefreshActivity: () => undefined,
+    onCreateUpdate: () => undefined,
+    onUpdateUpdate: () => undefined,
+    onDeleteUpdate: () => undefined,
+    onSelectTab: () => undefined,
+  };
 }

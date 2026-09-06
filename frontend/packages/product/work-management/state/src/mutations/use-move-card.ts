@@ -10,10 +10,10 @@ import { useWorkManagementServices } from "../services";
 
 let moveCardCommandSequence = 0;
 
-export function useMoveCard(boardId: string, workspaceId?: string) {
+export function useMoveCard(boardId: string, workspaceId: string) {
   const queryClient = useQueryClient();
   const { cards } = useWorkManagementServices();
-  const queryKey = wmQueryKeys.fullBoard(workspaceId!, boardId);
+  const queryKey = wmQueryKeys.fullBoard(workspaceId, boardId);
 
   return useMutation({
     mutationFn: (payload: MoveCardInput) =>

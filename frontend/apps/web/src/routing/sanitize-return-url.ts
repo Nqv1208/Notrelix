@@ -9,3 +9,7 @@ export function sanitizeInternalReturnUrl(input: string): string {
   if (input.includes(":\\") || input.includes(":/")) return "/";
   return input;
 }
+
+export function isSignedOutRoute(pathname: string): boolean {
+  return pathname === "/sign-in" || pathname === "/sign-up";
+}

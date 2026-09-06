@@ -5,7 +5,12 @@ import {
   getChecklistProgress,
 } from "./table-utils";
 
-import { useState } from "react";
+import {
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 import {
   CalendarDays,
   FileText,
@@ -27,41 +32,81 @@ import {
 import { Input } from "@notrelix/ui-web";
 import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
 import { Progress } from "@notrelix/ui-web";
-import {
-  useUpdateCard,
-  useUpdateFieldValue,
-} from "@notrelix/work-management-state";
 import type {
   Board,
   BoardMember,
   Card,
   FieldDefinition,
   FieldOption,
+  UpdateCardInput,
 } from "@notrelix/work-management-core";
 import { cn } from "@notrelix/ui-web";
 import { Calendar } from "@notrelix/ui-web";
+
+export type TableFieldValueUpdate = {
+  cardId: string;
+  fieldDefinitionId: string;
+  value: unknown;
+};
 
 export function TableCell({
   board,
   card,
   field,
   onOpenDetail,
+  onUpdateCard,
+  onUpdateFieldValue,
 }: {
   board: Board;
   card: Card;
   field: FieldDefinition;
   onOpenDetail: () => void;
+  onUpdateCard: (cardId: string, patch: UpdateCardInput) => void;
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
 }) {
   const semantic = getFieldSemantic(field);
   if (semantic === "title")
-    return <TitleCell card={card} field={field} onOpenDetail={onOpenDetail} />;
+    return (
+      <TitleCell
+        card={card}
+        field={field}
+        onOpenDetail={onOpenDetail}
+        onUpdateCard={onUpdateCard}
+      />
+    );
   if (field.fieldType === "person")
-    return <OwnerCell board={board} card={card} field={field} />;
-  if (field.fieldType === "date") return <DateCell card={card} field={field} />;
+    return (
+      <OwnerCell
+        board={board}
+        card={card}
+        field={field}
+        onUpdateFieldValue={onUpdateFieldValue}
+      />
+    );
+  if (field.fieldType === "date")
+    return (
+      <DateCell
+        card={card}
+        field={field}
+        onUpdateFieldValue={onUpdateFieldValue}
+      />
+    );
   if (field.fieldType === "timeline")
-    return <TimelineCell card={card} field={field} />;
+    return (
+      <TimelineCell
+        card={card}
+        field={field}
+        onUpdateFieldValue={onUpdateFieldValue}
+      />
+    );
   if (field.fieldType === "checkbox")
-    return <CheckboxCell card={card} field={field} />;
+    return (
+      <CheckboxCell
+        card={card}
+        field={field}
+        onUpdateFieldValue={onUpdateFieldValue}
+      />
+    );
   if (field.fieldType === "linked_page")
     return (
       <LinkedDocCell
@@ -86,25 +131,33 @@ export function TableCell({
         field={field}
         value={value}
         options={field.options}
+        onUpdateFieldValue={onUpdateFieldValue}
       />
     );
   }
 
-  return <TextFieldCell card={card} field={field} />;
+  return (
+    <TextFieldCell
+      card={card}
+      field={field}
+      onUpdateFieldValue={onUpdateFieldValue}
+    />
+  );
 }
 
 function TitleCell({
   card,
   field,
   onOpenDetail,
+  onUpdateCard,
 }: {
   card: Card;
   field: FieldDefinition;
   onOpenDetail: () => void;
+  onUpdateCard: (cardId: string, patch: UpdateCardInput) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(card.title);
-  const updateCard = useUpdateCard(card.boardId, card.workspaceId);
 
   function commit() {
     const next = value.trim();
@@ -113,7 +166,7 @@ function TitleCell({
       setValue(card.title);
       return;
     }
-    updateCard.mutate({ cardId: card.id, patch: { title: next } });
+    onUpdateCard(card.id, { title: next });
   }
 
   if (editing) {
@@ -122,10 +175,14 @@ function TitleCell({
         autoFocus
         className="h-8 border-0 bg-muted px-2 shadow-none focus-visible:ring-1"
         value={value}
-        onClick={(event: any) => event.stopPropagation()}
-        onChange={(event: any) => setValue(event.target.value)}
+        onClick={(event: MouseEvent<HTMLInputElement>) =>
+          event.stopPropagation()
+        }
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          setValue(event.target.value)
+        }
         onBlur={commit}
-        onKeyDown={(event: any) => {
+        onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
           if (event.key === "Enter") commit();
           if (event.key === "Escape") {
             setValue(card.title);
@@ -151,7 +208,7 @@ function TitleCell({
           type="button"
           className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover/row:opacity-100 shrink-0"
           aria-label={`Edit ${card.title}`}
-          onClick={(event: any) => {
+          onClick={(event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
             setEditing(true);
           }}
@@ -183,19 +240,20 @@ function OwnerCell({
   board,
   card,
   field,
+  onUpdateFieldValue,
 }: {
   board: Board;
   card: Card;
   field: FieldDefinition;
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
 }) {
-  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
   const selectedUserIds = new Set(card.members.map((member) => member.userId));
 
   function toggleMember(member: BoardMember) {
     const next = new Set(selectedUserIds);
     if (next.has(member.userId)) next.delete(member.userId);
     else next.add(member.userId);
-    updateFieldValue.mutate({
+    onUpdateFieldValue({
       cardId: card.id,
       fieldDefinitionId: field.id,
       value: Array.from(next),
@@ -208,7 +266,9 @@ function OwnerCell({
         <button
           type="button"
           className="flex max-w-full items-center gap-2 text-left"
-          onClick={(event: any) => event.stopPropagation()}
+          onClick={(event: MouseEvent<HTMLButtonElement>) =>
+            event.stopPropagation()
+          }
         >
           {card.members.length > 0 ? (
             <>
@@ -242,7 +302,7 @@ function OwnerCell({
       <PopoverContent
         align="start"
         className="w-64 p-2"
-        onClick={(event: any) => event.stopPropagation()}
+        onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}
       >
         <div className="px-2 py-1 text-xs font-semibold uppercase text-muted-foreground">
           Owners
@@ -282,13 +342,14 @@ function SelectCell({
   field,
   value,
   options,
+  onUpdateFieldValue,
 }: {
   card: Card;
   field: FieldDefinition;
   value?: string;
   options: FieldOption[];
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
 }) {
-  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
   const option = options.find((item) => item.id === value);
 
   return (
@@ -297,7 +358,9 @@ function SelectCell({
         <button
           type="button"
           className="max-w-full text-left"
-          onClick={(event: any) => event.stopPropagation()}
+          onClick={(event: MouseEvent<HTMLButtonElement>) =>
+            event.stopPropagation()
+          }
           aria-label={`${field.name}: ${option?.label ?? "Empty"}`}
         >
           {option ? (
@@ -317,13 +380,13 @@ function SelectCell({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        onClick={(event: any) => event.stopPropagation()}
+        onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}
       >
         {options.map((item) => (
           <DropdownMenuItem
             key={item.id}
             onClick={() =>
-              updateFieldValue.mutate({
+              onUpdateFieldValue({
                 cardId: card.id,
                 fieldDefinitionId: field.id,
                 value: item.id,
@@ -342,8 +405,15 @@ function SelectCell({
   );
 }
 
-function DateCell({ card, field }: { card: Card; field: FieldDefinition }) {
-  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
+function DateCell({
+  card,
+  field,
+  onUpdateFieldValue,
+}: {
+  card: Card;
+  field: FieldDefinition;
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
+}) {
   const rawValue =
     typeof card.fieldValues[field.id] === "string"
       ? String(card.fieldValues[field.id])
@@ -351,7 +421,7 @@ function DateCell({ card, field }: { card: Card; field: FieldDefinition }) {
   const selectedDate = rawValue ? new Date(rawValue) : undefined;
 
   const handleSelect = (date: Date | undefined) => {
-    updateFieldValue.mutate({
+    onUpdateFieldValue({
       cardId: card.id,
       fieldDefinitionId: field.id,
       value: date ? date.toISOString() : null,
@@ -365,11 +435,11 @@ function DateCell({ card, field }: { card: Card; field: FieldDefinition }) {
           type="button"
           className={cn(
             "inline-flex items-center gap-2 rounded px-2 py-1 text-sm transition hover:bg-muted",
-            rawValue
-              ? "text-foreground font-medium"
-              : "text-muted-foreground/60",
+            rawValue ? "text-foreground font-medium" : "text-muted-foreground",
           )}
-          onClick={(event: any) => event.stopPropagation()}
+          onClick={(event: MouseEvent<HTMLButtonElement>) =>
+            event.stopPropagation()
+          }
         >
           <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
           <span className="truncate">{formatDate(rawValue)}</span>
@@ -378,7 +448,7 @@ function DateCell({ card, field }: { card: Card; field: FieldDefinition }) {
       <PopoverContent
         align="start"
         className="w-auto p-0"
-        onClick={(event: any) => event.stopPropagation()}
+        onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}
       >
         <div className="flex flex-col">
           <Calendar
@@ -405,8 +475,15 @@ function DateCell({ card, field }: { card: Card; field: FieldDefinition }) {
   );
 }
 
-function TimelineCell({ card, field }: { card: Card; field: FieldDefinition }) {
-  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
+function TimelineCell({
+  card,
+  field,
+  onUpdateFieldValue,
+}: {
+  card: Card;
+  field: FieldDefinition;
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
+}) {
   const value =
     (card.fieldValues[field.id] as
       { start?: string; end?: string } | undefined) ?? {};
@@ -414,13 +491,13 @@ function TimelineCell({ card, field }: { card: Card; field: FieldDefinition }) {
   return (
     <div
       className="flex min-w-0 items-center gap-1"
-      onClick={(event: any) => event.stopPropagation()}
+      onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}
     >
       <Input
         type="date"
         value={toDateInputValue(value.start)}
-        onChange={(event: any) =>
-          updateFieldValue.mutate({
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          onUpdateFieldValue({
             cardId: card.id,
             fieldDefinitionId: field.id,
             value: { ...value, start: event.target.value },
@@ -432,8 +509,8 @@ function TimelineCell({ card, field }: { card: Card; field: FieldDefinition }) {
       <Input
         type="date"
         value={toDateInputValue(value.end)}
-        onChange={(event: any) =>
-          updateFieldValue.mutate({
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          onUpdateFieldValue({
             cardId: card.id,
             fieldDefinitionId: field.id,
             value: { ...value, end: event.target.value },
@@ -446,14 +523,23 @@ function TimelineCell({ card, field }: { card: Card; field: FieldDefinition }) {
   );
 }
 
-function CheckboxCell({ card, field }: { card: Card; field: FieldDefinition }) {
-  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
+function CheckboxCell({
+  card,
+  field,
+  onUpdateFieldValue,
+}: {
+  card: Card;
+  field: FieldDefinition;
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
+}) {
   return (
     <Checkbox
       checked={Boolean(card.fieldValues[field.id])}
-      onClick={(event: any) => event.stopPropagation()}
+      onClick={(event: MouseEvent<HTMLButtonElement>) =>
+        event.stopPropagation()
+      }
       onCheckedChange={(checked) =>
-        updateFieldValue.mutate({
+        onUpdateFieldValue({
           cardId: card.id,
           fieldDefinitionId: field.id,
           value: Boolean(checked),
@@ -467,19 +553,20 @@ function CheckboxCell({ card, field }: { card: Card; field: FieldDefinition }) {
 function TextFieldCell({
   card,
   field,
+  onUpdateFieldValue,
 }: {
   card: Card;
   field: FieldDefinition;
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(String(card.fieldValues[field.id] ?? ""));
-  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
 
   function commit() {
     setEditing(false);
     const next = value.trim();
     if (next === String(card.fieldValues[field.id] ?? "")) return;
-    updateFieldValue.mutate({
+    onUpdateFieldValue({
       cardId: card.id,
       fieldDefinitionId: field.id,
       value: next,
@@ -491,10 +578,14 @@ function TextFieldCell({
       <Input
         autoFocus
         value={value}
-        onChange={(event: any) => setValue(event.target.value)}
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          setValue(event.target.value)
+        }
         onBlur={commit}
-        onClick={(event: any) => event.stopPropagation()}
-        onKeyDown={(event: any) => {
+        onClick={(event: MouseEvent<HTMLInputElement>) =>
+          event.stopPropagation()
+        }
+        onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
           if (event.key === "Enter") commit();
           if (event.key === "Escape") {
             setValue(String(card.fieldValues[field.id] ?? ""));
@@ -511,7 +602,7 @@ function TextFieldCell({
     <button
       type="button"
       className="min-w-0 truncate text-left text-sm text-foreground/80 hover:text-foreground transition-colors"
-      onClick={(event: any) => {
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
         setEditing(true);
       }}

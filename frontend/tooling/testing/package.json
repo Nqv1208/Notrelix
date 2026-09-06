@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -23,6 +27,8 @@
     "jsdom": "catalog:",
     "@playwright/test": "^1.50.0",
     "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "@notrelix/eslint-config": "workspace:*"

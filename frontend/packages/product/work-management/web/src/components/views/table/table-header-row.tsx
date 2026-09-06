@@ -7,44 +7,33 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@notrelix/ui-web";
-import {
-  useDeleteColumn,
-  useUpdateColumn,
-} from "@notrelix/work-management-state";
 import type { BoardTableColumn } from "@notrelix/work-management-core";
 
 export function TableHeaderRow({
-  boardId,
-  workspaceId,
   columns,
   gridTemplate,
   isAllSelected,
   onToggleAll,
   onResizeColumn,
   onHideColumn,
+  onRenameColumn,
+  onDeleteColumn,
 }: {
-  boardId: string;
-  workspaceId: string;
   columns: BoardTableColumn[];
   gridTemplate: string;
   isAllSelected: boolean;
   onToggleAll: () => void;
   onResizeColumn: (columnId: string, width: number) => void;
   onHideColumn: (columnId: string) => void;
+  onRenameColumn: (columnId: string, name: string) => void;
+  onDeleteColumn: (columnId: string) => void;
 }) {
-  const updateColumn = useUpdateColumn(boardId, workspaceId);
-  const deleteColumn = useDeleteColumn(boardId, workspaceId);
-
   return (
     <div
-      role="row"
       className="grid min-h-[44px] border-b border-border bg-table-header text-[11px] font-semibold tracking-wider text-muted-foreground uppercase"
       style={{ gridTemplateColumns: gridTemplate }}
     >
-      <div
-        role="columnheader"
-        className="sticky left-0 z-30 flex items-center gap-2 border-r border-border bg-table-header px-3"
-      >
+      <div className="sticky left-0 z-30 flex items-center gap-2 border-r border-border bg-table-header px-3">
         <Checkbox
           checked={isAllSelected}
           onCheckedChange={onToggleAll}
@@ -55,7 +44,6 @@ export function TableHeaderRow({
       {columns.map((column) => (
         <div
           key={column.id}
-          role="columnheader"
           className="group/header relative flex min-w-0 items-center justify-between border-r border-border px-3"
         >
           <span className="truncate">{column.field.name}</span>
@@ -78,11 +66,7 @@ export function TableHeaderRow({
                         "Column name",
                         column.field.name,
                       );
-                      if (name?.trim())
-                        updateColumn.mutate({
-                          columnId: column.id,
-                          name: name.trim(),
-                        });
+                      if (name?.trim()) onRenameColumn(column.id, name.trim());
                     }}
                   >
                     Rename column
@@ -92,7 +76,7 @@ export function TableHeaderRow({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive"
-                    onClick={() => deleteColumn.mutate(column.id)}
+                    onClick={() => onDeleteColumn(column.id)}
                   >
                     Delete column
                   </DropdownMenuItem>
@@ -103,11 +87,7 @@ export function TableHeaderRow({
           </div>
         </div>
       ))}
-      <div
-        role="columnheader"
-        aria-label="Actions column spacing"
-        className="border-r border-border"
-      />
+      <div className="border-r border-border" />
     </div>
   );
 }

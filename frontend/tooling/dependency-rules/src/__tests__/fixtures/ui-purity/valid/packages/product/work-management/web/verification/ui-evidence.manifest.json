@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "work-management.valid",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/valid-entry.tsx",
+      "stories": [
+        { "id": "work-management-valid--default", "state": "Default" }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    }
+  ]
+}

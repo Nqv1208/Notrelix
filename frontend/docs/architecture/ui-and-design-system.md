@@ -2120,7 +2120,21 @@ Stop implementation if:
 
 ---
 
-# 166. Executable evidence
+# 166. FE-UI-083 — Product stories stay beside their product owners
+
+The central web Storybook is the renderer and discovery host; it is not the semantic owner of product examples. Product stories live beside the product components they demonstrate and are discovered through the locked owner-local globs for `packages/ui/web`, `packages/product/*/web`, and `packages/features/*`. A reusable surface must be renderable from typed deterministic fixtures without booting the application, mock backend, QueryClient, auth/session provider, router, or network transport. Runtime containers remain integration-owned when extracting a presentation seam would move server-state authority.
+
+Pure UI verification data has three layers:
+
+```text
+Fixture -> Scenario -> Local Interaction Controller
+```
+
+A fixture constructs one deterministic entity or value. A scenario composes a complete renderable presentation state for one surface. A local interaction controller mutates cloned in-memory scenario state through the same presentation callbacks as production containers. None of these layers emulates HTTP, cache invalidation, authentication, backend persistence, retries, RLS, or the application mock backend.
+
+Critical UI coverage is declared by an owner-local `verification/ui-evidence.manifest.json`. Built Storybook tags bind exactly one `fui-surface--<id>` and one `fui-state--<State>` to each evidence story. The manifest owns required states/checks; story source owns the example; `frontend/tooling/storybook/web/src/evidence/check-ui-evidence.ts` validates the collected Storybook index.
+
+# 167. Executable evidence
 
 Primary current evidence:
 

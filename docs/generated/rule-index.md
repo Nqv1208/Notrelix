@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2663
+Rule count: 2668
 
 ## Namespace summary
 
@@ -62,16 +62,16 @@ Rule count: 2663
 | `DEL-OWN` | 40 |
 | `DEL-REL` | 41 |
 | `DOC` | 18 |
-| `FE-API` | 60 |
+| `FE-API` | 61 |
 | `FE-ARCH` | 72 |
 | `FE-ARCH-CHG` | 74 |
 | `FE-DEC` | 35 |
-| `FE-DEP` | 79 |
+| `FE-DEP` | 80 |
 | `FE-HOST` | 79 |
 | `FE-RT` | 68 |
-| `FE-STATE` | 81 |
-| `FE-TST` | 78 |
-| `FE-UI` | 80 |
+| `FE-STATE` | 82 |
+| `FE-TST` | 79 |
+| `FE-UI` | 81 |
 | `GOV` | 24 |
 | `ID` | 18 |
 | `INFRA-CTR` | 70 |
@@ -1264,6 +1264,7 @@ Rule count: 2663
 | `FE-API-058` | `FE-API` | Missing producer contract is a stop condition | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-API-059` | `FE-API` | Contract disagreement is not fixed by whichever side is easier to edit | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-API-060` | `FE-API` | CSRF debt must be closed before relying on enabled protection | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
+| `FE-API-064` | `FE-API` | Generated DTOs stop at validated mapping boundaries | [`frontend/docs/architecture/api-and-contracts.md`](../../frontend/docs/architecture/api-and-contracts.md) |
 | `FE-ARCH-001` | `FE-ARCH` | Frontend is a client platform, not a second backend | [`frontend/docs/architecture/frontend-overview.md`](../../frontend/docs/architecture/frontend-overview.md) |
 | `FE-ARCH-002` | `FE-ARCH` | Backend contract precedes durable client behavior | [`frontend/docs/architecture/frontend-overview.md`](../../frontend/docs/architecture/frontend-overview.md) |
 | `FE-ARCH-003` | `FE-ARCH` | Host framework split is intentional | [`frontend/docs/architecture/frontend-overview.md`](../../frontend/docs/architecture/frontend-overview.md) |
@@ -1524,6 +1525,7 @@ Rule count: 2663
 | `FE-DEP-077` | `FE-DEP` | Creator owns disposal unless a narrower lifecycle contract says otherwise | [`frontend/docs/architecture/dependency-boundaries.md`](../../frontend/docs/architecture/dependency-boundaries.md) |
 | `FE-DEP-078` | `FE-DEP` | Importing a package should not secretly start the application | [`frontend/docs/architecture/dependency-boundaries.md`](../../frontend/docs/architecture/dependency-boundaries.md) |
 | `FE-DEP-079` | `FE-DEP` | Architecture permission does not transfer semantic ownership | [`frontend/docs/architecture/dependency-boundaries.md`](../../frontend/docs/architecture/dependency-boundaries.md) |
+| `FE-DEP-081` | `FE-DEP` | Verification-only imports are least privilege | [`frontend/docs/architecture/dependency-boundaries.md`](../../frontend/docs/architecture/dependency-boundaries.md) |
 | `FE-HOST-001` | `FE-HOST` | Apps are composition roots | [`frontend/docs/architecture/hosts-composition-routing.md`](../../frontend/docs/architecture/hosts-composition-routing.md) |
 | `FE-HOST-002` | `FE-HOST` | Host framework differences remain host-local | [`frontend/docs/architecture/hosts-composition-routing.md`](../../frontend/docs/architecture/hosts-composition-routing.md) |
 | `FE-HOST-003` | `FE-HOST` | Environment is normalized before runtime construction | [`frontend/docs/architecture/hosts-composition-routing.md`](../../frontend/docs/architecture/hosts-composition-routing.md) |
@@ -1752,6 +1754,7 @@ Rule count: 2663
 | `FE-STATE-079` | `FE-STATE` | State authority change is consequential | [`frontend/docs/architecture/state-query-mutations.md`](../../frontend/docs/architecture/state-query-mutations.md) |
 | `FE-STATE-080` | `FE-STATE` | Do not wrap every query API for hypothetical replacement | [`frontend/docs/architecture/state-query-mutations.md`](../../frontend/docs/architecture/state-query-mutations.md) |
 | `FE-STATE-081` | `FE-STATE` | Existing cache behavior is not automatic precedent | [`frontend/docs/architecture/state-query-mutations.md`](../../frontend/docs/architecture/state-query-mutations.md) |
+| `FE-STATE-085` | `FE-STATE` | Pilot verification preserves state authority | [`frontend/docs/architecture/state-query-mutations.md`](../../frontend/docs/architecture/state-query-mutations.md) |
 | `FE-TST-001` | `FE-TST` | Test the protected property at the cheapest reliable seam | [`frontend/docs/architecture/testing-and-quality-gates.md`](../../frontend/docs/architecture/testing-and-quality-gates.md) |
 | `FE-TST-002` | `FE-TST` | Command name is not the architecture | [`frontend/docs/architecture/testing-and-quality-gates.md`](../../frontend/docs/architecture/testing-and-quality-gates.md) |
 | `FE-TST-003` | `FE-TST` | Every governed Vitest file belongs to one explicit suite class | [`frontend/docs/architecture/testing-and-quality-gates.md`](../../frontend/docs/architecture/testing-and-quality-gates.md) |
@@ -1830,6 +1833,7 @@ Rule count: 2663
 | `FE-TST-076` | `FE-TST` | CI must not silently mutate dependency resolution | [`frontend/docs/architecture/testing-and-quality-gates.md`](../../frontend/docs/architecture/testing-and-quality-gates.md) |
 | `FE-TST-077` | `FE-TST` | Diagnostic artifacts do not become authority | [`frontend/docs/architecture/testing-and-quality-gates.md`](../../frontend/docs/architecture/testing-and-quality-gates.md) |
 | `FE-TST-078` | `FE-TST` | Test-foundation changes follow architecture-change policy | [`frontend/docs/architecture/testing-and-quality-gates.md`](../../frontend/docs/architecture/testing-and-quality-gates.md) |
+| `FE-TST-082` | `FE-TST` | Fixture, application mock, shell, and real E2E prove different properties | [`frontend/docs/architecture/testing-and-quality-gates.md`](../../frontend/docs/architecture/testing-and-quality-gates.md) |
 | `FE-UI-001` | `FE-UI` | Design semantics are centralized before component styling | [`frontend/docs/architecture/ui-and-design-system.md`](../../frontend/docs/architecture/ui-and-design-system.md) |
 | `FE-UI-002` | `FE-UI` | Tokens are framework-neutral | [`frontend/docs/architecture/ui-and-design-system.md`](../../frontend/docs/architecture/ui-and-design-system.md) |
 | `FE-UI-003` | `FE-UI` | Primitive and semantic token roles are distinct | [`frontend/docs/architecture/ui-and-design-system.md`](../../frontend/docs/architecture/ui-and-design-system.md) |
@@ -1910,6 +1914,7 @@ Rule count: 2663
 | `FE-UI-078` | `FE-UI` | Existing hard-coded visual value is not precedent | [`frontend/docs/architecture/ui-and-design-system.md`](../../frontend/docs/architecture/ui-and-design-system.md) |
 | `FE-UI-079` | `FE-UI` | Marketing expressiveness and product clarity have different motion/density budgets | [`frontend/docs/architecture/ui-and-design-system.md`](../../frontend/docs/architecture/ui-and-design-system.md) |
 | `FE-UI-080` | `FE-UI` | Performance optimization preserves accessible semantics | [`frontend/docs/architecture/ui-and-design-system.md`](../../frontend/docs/architecture/ui-and-design-system.md) |
+| `FE-UI-083` | `FE-UI` | Product stories stay beside their product owners | [`frontend/docs/architecture/ui-and-design-system.md`](../../frontend/docs/architecture/ui-and-design-system.md) |
 | `GOV-001` | `GOV` | Backend authorization is final | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-002` | `GOV` | Authorization happens before protected data leaks | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-003` | `GOV` | Commercial entitlement does not directly grant resource permission | [`docs/product/governance.md`](../product/governance.md) |

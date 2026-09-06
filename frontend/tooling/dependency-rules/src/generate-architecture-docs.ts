@@ -116,15 +116,16 @@ export function generateArchitectureDocs(): string {
     "",
     `Package count: ${sorted.length}`,
     "",
-    "| Relative path | Package | Layer | Freeze scope | Allowed internal imports |",
-    "|:---|:---|:---|:---|:---|",
+    "| Relative path | Package | Layer | Freeze scope | Allowed internal imports | Verification-only internal imports |",
+    "|:---|:---|:---|:---|:---|:---|",
   ];
 
   for (const entry of sorted) {
     lines.push(
       `| \`${entry.relativePath}\` | \`${entry.packageName}\` | ` +
         `\`${entry.layer}\` | \`${entry.freezeScope}\` | ` +
-        `${renderAllowedImports(entry.allowedInternalImports)} |`,
+        `${renderAllowedImports(entry.allowedInternalImports)} | ` +
+        `${renderAllowedImports(entry.allowedVerificationInternalImports)} |`,
     );
   }
 

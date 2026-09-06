@@ -36,12 +36,12 @@ export function getGroupToneClass(title: string) {
 
 export function getChecklistProgress(card: Card) {
   const total = card.checklists.reduce(
-    (count: any, checklist: any) => count + checklist.items.length,
+    (count, checklist) => count + checklist.items.length,
     0,
   );
   const done = card.checklists.reduce(
-    (count: any, checklist: any) =>
-      count + checklist.items.filter((item: any) => item.isDone).length,
+    (count, checklist) =>
+      count + checklist.items.filter((item) => item.isDone).length,
     0,
   );
   return total === 0 ? 0 : Math.round((done / total) * 100);

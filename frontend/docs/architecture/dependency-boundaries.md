@@ -2163,7 +2163,11 @@ Stop before coding if:
 
 ---
 
-# 162. Executable evidence
+# 162. FE-DEP-081 — Verification-only imports are least privilege
+
+Production source remains governed only by `allowedInternalImports`. A file is verification-only only when its path contains `/__tests__/`, `.test.`, `.spec.`, `.stories.`, or `/verification/`; those files may additionally use the package's `allowedVerificationInternalImports`. Such dependencies MUST be declared in `devDependencies`, never `dependencies` or `peerDependencies`. The executable owner of this distinction is `frontend/tooling/dependency-rules/src/architecture-manifest.ts` and its checkers.
+
+# 163. Executable evidence
 
 Primary executable sources/gates:
 
