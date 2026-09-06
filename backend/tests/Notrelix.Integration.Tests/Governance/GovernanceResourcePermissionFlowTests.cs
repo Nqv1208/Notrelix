@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -8,6 +10,7 @@ using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
@@ -23,6 +26,8 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Relations.DTOs;
+using Notrelix.Application.Features.WorkManagement.Relations.Queries.ListBoardRelations;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
@@ -94,6 +99,23 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task WorkspaceMember_OnWorkspaceVisibleBoard_WithoutMembershipOrAcl_Allows()
+    {
+        var (accountId, _, _, boardId, memberId) = await SeedBoardStackAsync();
+
+        // Board.Create defaults to Workspace visibility; the member has no
+        // board_members row and no governance.resource_permissions row. The
+        // canonical facts query must still report the board's Workspace
+        // audience so the engine keeps the pre-existing member baseline.
+        using var provider = CreateProvider(accountId, memberId);
+        var result = await SendAsync<Result<List<BoardRelationDto>>>(provider,
+            new ListBoardRelationsQuery(boardId));
+
+        result.Succeeded.Should().BeTrue(
+            "a workspace member on a workspace-visible board was allowed before the page facts change");
+    }
+
+    [Fact]
     public async Task Grant_OnBoard_ByNonOwnerWithNoResourceLevel_IsForbidden()
     {
         var (accountId, ownerId, _, boardId, memberId) = await SeedBoardStackAsync();
@@ -148,8 +170,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     [Fact]
     public async Task Grant_OnPage_SameSubjectAndLevel_ReplacesWithoutDuplicate()
     {
-        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
-        await SeedWorkspaceMemberAsync(accountId, workspaceId, memberId, WorkspaceRole.Member);
+        var (accountId, ownerId, _, pageId, memberId) = await SeedPageStackAsync();
 
         using var provider = CreateProvider(accountId, ownerId);
 
@@ -182,7 +203,6 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     public async Task Get_OnPage_ReturnsGovernanceStateOnly_InWorkspaceScope()
     {
         var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
-        await SeedWorkspaceMemberAsync(accountId, workspaceId, memberId, WorkspaceRole.Member);
         await SeedResourcePermissionAsync(accountId, workspaceId, "documents.page", pageId, memberId, PermissionLevel.Commenter);
 
         using var provider = CreateProvider(accountId, ownerId);
@@ -213,8 +233,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     [Fact]
     public async Task Get_AsWorkspaceMember_OnWorkspacePage_Allows()
     {
-        var (accountId, _, workspaceId, pageId, memberId) = await SeedPageStackAsync();
-        await SeedWorkspaceMemberAsync(accountId, workspaceId, memberId, WorkspaceRole.Member);
+        var (accountId, _, _, pageId, memberId) = await SeedPageStackAsync();
 
         using var provider = CreateProvider(accountId, memberId);
         var result = await SendAsync<Result<List<ResourcePermissionDto>>>(provider,
@@ -422,6 +441,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<MoveBoardItemCommand, BoardItemSlimDto>,
             MoveBoardItemCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<ListBoardRelationsQuery, Result<List<BoardRelationDto>>>,
+            ListBoardRelationsQueryHandler>();
 
         return services.BuildServiceProvider();
     }
@@ -452,10 +474,15 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         seed.AccountMembers.Add(AccountMember.Create(account.Id, owner.Id, AccountRole.Owner, owner.Id, now));
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, owner.Id, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, owner.Id, now));
         seed.Boards.Add(board);
         seed.BoardGroups.Add(group);
         seed.BoardItems.Add(item);
         await seed.SaveChangesAsync();
+
+        await SyncAccessGrantsAsync(
+            account.Id, workspace.Id,
+            (owner.Id, WorkspaceRole.Owner), (member.Id, WorkspaceRole.Member));
 
         return (account.Id, owner.Id, workspace.Id, board.Id, member.Id);
     }
@@ -478,10 +505,33 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         seed.AccountMembers.Add(AccountMember.Create(account.Id, owner.Id, AccountRole.Owner, owner.Id, now));
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, owner.Id, WorkspaceRole.Owner, owner.Id, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, member.Id, WorkspaceRole.Member, owner.Id, now));
         seed.Pages.Add(page);
         await seed.SaveChangesAsync();
 
+        await SyncAccessGrantsAsync(
+            account.Id, workspace.Id,
+            (owner.Id, WorkspaceRole.Owner), (member.Id, WorkspaceRole.Member));
+
         return (account.Id, owner.Id, workspace.Id, page.Id, member.Id);
+    }
+
+    /// <summary>
+    /// Production creates authz.access_grants rows through the membership
+    /// command projection; seeding rows directly skips it, so this helper
+    /// restores the projection the RLS policies authorize on.
+    /// </summary>
+    private async Task SyncAccessGrantsAsync(Guid accountId, Guid workspaceId, params (Guid UserId, WorkspaceRole Role)[] members)
+    {
+        var now = DateTimeOffset.UtcNow;
+        await using var seed = _db.CreateContext(SystemTenant());
+        var projection = new AccessGrantProjectionService(seed);
+        foreach (var (userId, role) in members)
+        {
+            await projection.SyncWorkspaceMemberGrantAsync(accountId, workspaceId, userId, role, now, CancellationToken.None);
+        }
+
+        await seed.SaveChangesAsync();
     }
 
     private async Task SeedWorkspaceMemberAsync(Guid accountId, Guid workspaceId, Guid userId, WorkspaceRole role)
