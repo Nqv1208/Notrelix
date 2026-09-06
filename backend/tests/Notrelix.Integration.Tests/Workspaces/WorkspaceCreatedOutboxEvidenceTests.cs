@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.EventMappers.Workspaces;
-using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Messaging;

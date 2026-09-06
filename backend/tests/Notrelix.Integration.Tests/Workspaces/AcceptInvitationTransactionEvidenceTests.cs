@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests;
-using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Members;
 using Notrelix.Application.Features.Identity.Users.Services;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
@@ -205,7 +204,7 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             async ct =>
             {
                 var result = await handler.Handle(new AcceptInvitationCommand(graph.RawToken), ct);
-result.Succeeded.Should().BeTrue();
+                result.Succeeded.Should().BeTrue();
                 throw new InvalidOperationException("workspace-side failure after handler");
             },
             CancellationToken.None);

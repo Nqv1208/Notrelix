@@ -1,11 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Identity.Public.Facts;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 using Notrelix.Domain.Workspaces.Invitations;
-using Notrelix.Domain.Workspaces.Members;
-using Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 
