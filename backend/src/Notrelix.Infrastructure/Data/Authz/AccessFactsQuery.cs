@@ -23,13 +23,16 @@ public static class AccessFactsQuery
             WHEN @resource_type = 'work-management.board' THEN EXISTS (
               SELECT 1 FROM work.boards b WHERE b.id = @resource_id
                 AND b.workspace_id = @workspace_id AND b.deleted_at IS NULL AND b.is_archived = false)
+            WHEN @resource_type = 'documents.page' THEN EXISTS (
+              SELECT 1 FROM docs.pages p WHERE p.id = @resource_id
+                AND p.workspace_id = @workspace_id AND p.deleted_at IS NULL AND p.status != 'Archived')
             WHEN @resource_type = 'workspaces.workspace' THEN EXISTS (
               SELECT 1 FROM workspace.workspaces w WHERE w.id = @resource_id AND w.deleted_at IS NULL)
             ELSE @resource_was_located
           END,
-          CASE WHEN @resource_type = 'work-management.board' THEN (
-            SELECT b.visibility FROM work.boards b WHERE b.id = @resource_id
-              AND b.deleted_at IS NULL AND b.is_archived = false LIMIT 1) END,
+          CASE WHEN @resource_type = 'documents.page' THEN (
+            SELECT p.visibility FROM docs.pages p WHERE p.id = @resource_id
+              AND p.deleted_at IS NULL AND p.status != 'Archived' LIMIT 1) END,
           CASE WHEN @resource_type = 'work-management.board' THEN (
             SELECT bm.role FROM work.board_members bm
               WHERE bm.board_id = @resource_id AND bm.user_id = @user_id LIMIT 1) END,
@@ -70,6 +73,33 @@ public static class AccessFactsQuery
               FROM billing.entitlements e
              WHERE e.account_id = @account_id AND e.feature_code = @feature_code
              ORDER BY e.created_at DESC LIMIT 1
-          ), false) END
+          ), false) END,
+          CASE WHEN @resource_type IS NOT NULL THEN (
+            SELECT rp.permission_level FROM governance.resource_permissions rp
+             WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
+               AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
+               AND rp.subject_type = 'User' AND rp.subject_id = @user_id
+               AND rp.deleted_at IS NULL
+             ORDER BY CASE rp.permission_level
+               WHEN 'Owner' THEN 6 WHEN 'Manager' THEN 5 WHEN 'Editor' THEN 4
+               WHEN 'Commenter' THEN 3 WHEN 'Viewer' THEN 2 ELSE 1 END DESC
+             LIMIT 1) END,
+          CASE
+            WHEN @target_permission_id IS NOT NULL THEN (
+              SELECT rp.permission_level FROM governance.resource_permissions rp
+               WHERE rp.id = @target_permission_id
+                 AND rp.workspace_id = @workspace_id AND rp.deleted_at IS NULL LIMIT 1)
+            WHEN @target_subject_id IS NOT NULL THEN (
+              SELECT rp.permission_level FROM governance.resource_permissions rp
+               WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
+                 AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
+                 AND rp.subject_type = @target_subject_type AND rp.subject_id = @target_subject_id
+                 AND rp.deleted_at IS NULL
+               ORDER BY CASE rp.permission_level
+                 WHEN 'Owner' THEN 6 WHEN 'Manager' THEN 5 WHEN 'Editor' THEN 4
+                 WHEN 'Commenter' THEN 3 WHEN 'Viewer' THEN 2 ELSE 1 END DESC
+               LIMIT 1)
+            ELSE NULL
+          END
     """;
 }

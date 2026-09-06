@@ -5,6 +5,7 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Common.Requests.Gates;
 using Notrelix.Application.Common.Requests.Security;
+using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Infrastructure.Data.Authz;
 
@@ -34,6 +35,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
         }
 
         var permission = request as IRequirePermission;
+        var target = request as IRequirePermissionTarget;
         var resource = permission?.Resource ?? context.Resource;
         if (descriptor.Scope == ApplicationScopeKind.Account && resource is null && context.AccountId.HasValue)
         {
@@ -58,6 +60,9 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
         Add(command, "resource_id", resource?.ResourceId, NpgsqlDbType.Uuid);
         Add(command, "resource_was_located", context.Resource is not null, NpgsqlDbType.Boolean);
         Add(command, "action", permission?.Action.ToString(), NpgsqlDbType.Text);
+        Add(command, "target_subject_type", target?.TargetSubjectType, NpgsqlDbType.Text);
+        Add(command, "target_subject_id", target?.TargetSubjectId, NpgsqlDbType.Uuid);
+        Add(command, "target_permission_id", target?.TargetPermissionId, NpgsqlDbType.Uuid);
         Add(command, "feature_code", feature?.FeatureCode, NpgsqlDbType.Text);
         Add(command, "feature_amount", feature?.Amount ?? 0, NpgsqlDbType.Integer);
         Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
@@ -83,13 +88,26 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             rules,
             reader.GetBoolean(11),
             NullableString(reader, 12),
-            reader.GetBoolean(13));
+            reader.GetBoolean(13),
+            NullablePermissionLevel(reader, 14),
+            NullablePermissionLevel(reader, 15));
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private static string? NullableString(System.Data.Common.DbDataReader reader, int ordinal) =>
         reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+
+    private static PermissionLevel? NullablePermissionLevel(System.Data.Common.DbDataReader reader, int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+        {
+            return null;
+        }
+
+        var value = reader.GetString(ordinal);
+        return Enum.TryParse<PermissionLevel>(value, true, out var level) ? level : null;
+    }
 
     private static void Add(
         System.Data.Common.DbCommand command,

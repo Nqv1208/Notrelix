@@ -120,7 +120,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 
         if (firstPriority.Any(rule => string.Equals(rule.Effect, "Allow", StringComparison.OrdinalIgnoreCase)))
         {
-            return AccessDecision.Allow();
+            return GrantAwareAllow(request, facts, role);
         }
 
         if (isAccount)
@@ -163,13 +163,69 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
-            return AccessDecision.Allow();
+            return GrantAwareAllow(request, facts, role);
+        }
+
+        if (permission.Resource?.Kind.Value == "documents.page")
+        {
+            if (!facts.ResourceExists)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+            }
+
+            var restricted = !string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal);
+            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
+            if ((restricted || guest)
+                && facts.ResourceMemberRole is null
+                && !facts.HasExplicitResourcePermission)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+            }
+
+            return GrantAwareAllow(request, facts, role);
         }
 
         return permission.Action is PermissionAction.ViewWorkspace or PermissionAction.ViewBoard or PermissionAction.ViewMembers
             ? AccessDecision.Allow()
             : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
     }
+
+    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role)
+    {
+        if (request is IRequireGrantPermission grant)
+        {
+            var authority = EffectiveGrantAuthority(facts, role);
+            var ceiling = grant.RequestedLevel;
+            if (facts.TargetPermissionLevel is { } existingLevel && existingLevel > ceiling)
+            {
+                ceiling = existingLevel;
+            }
+
+            return PermissionRules.CanGrant(authority, ceiling)
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to grant this permission level.");
+        }
+
+        if (request is IRequireRevokePermission)
+        {
+            if (facts.TargetPermissionLevel is null)
+            {
+                return AccessDecision.Allow();
+            }
+
+            var authority = EffectiveGrantAuthority(facts, role);
+            return PermissionRules.CanGrant(authority, facts.TargetPermissionLevel.Value)
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to revoke this permission level.");
+        }
+
+        return AccessDecision.Allow();
+    }
+
+    private static PermissionLevel EffectiveGrantAuthority(AccessFacts facts, string? role) =>
+        string.Equals(role, "Owner", StringComparison.Ordinal)
+            ? PermissionLevel.Owner
+            : facts.ActiveResourcePermissionLevel ?? PermissionLevel.None;
 
     private static bool MeetsMinimumTier(string? actualTier, string? minimumTier)
     {
