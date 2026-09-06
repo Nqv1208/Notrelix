@@ -23,8 +23,12 @@ public record GrantResourcePermissionCommand(
     ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
 
-    PermissionLevel IRequireGrantPermission.RequestedLevel =>
-        Enum.TryParse<PermissionLevel>(Level, true, out var level) ? level : PermissionLevel.None;
+    // Governance owns the level vocabulary and its rank mapping; the pipeline
+    // seam compares technical integer ranks only. The mapping mirrors the
+    // PermissionLevel enum ordering: None=0, Viewer=1, Commenter=2, Editor=3,
+    // Manager=4, Owner=5.
+    int IRequireGrantPermission.RequestedPermissionRank =>
+        Enum.TryParse<PermissionLevel>(Level, true, out var level) ? (int)level : 0;
 
     string? IRequirePermissionTarget.TargetSubjectType => SubjectType;
     Guid? IRequirePermissionTarget.TargetSubjectId => SubjectId;

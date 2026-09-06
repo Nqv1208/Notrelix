@@ -231,16 +231,32 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Get_AsWorkspaceMember_OnWorkspacePage_Allows()
+    public async Task Get_OrdinaryMember_OnWorkspacePage_IsForbidden()
     {
         var (accountId, _, _, pageId, memberId) = await SeedPageStackAsync();
+
+        // Workspace visibility grants page access, never ACL management; the
+        // member has no explicit resource permission.
+        using var provider = CreateProvider(accountId, memberId);
+        var act = () => SendAsync<Result<List<ResourcePermissionDto>>>(provider,
+            new GetResourcePermissionsQuery("documents.page", pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "ordinary workspace members must not read the ACL of a page");
+    }
+
+    [Fact]
+    public async Task Get_ManagerLevelMember_OnWorkspacePage_IsAllowed()
+    {
+        var (accountId, _, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        await SeedResourcePermissionAsync(accountId, workspaceId, "documents.page", pageId, memberId, PermissionLevel.Manager);
 
         using var provider = CreateProvider(accountId, memberId);
         var result = await SendAsync<Result<List<ResourcePermissionDto>>>(provider,
             new GetResourcePermissionsQuery("documents.page", pageId));
 
         result.Succeeded.Should().BeTrue(
-            "a workspace page is visible to members; ManagePagePermission flows through the same page branch as boards");
+            "an active Manager-level resource permission authorizes ACL management");
     }
 
     // ── 41F — Canonical authorization pipeline routing ───────────────────────

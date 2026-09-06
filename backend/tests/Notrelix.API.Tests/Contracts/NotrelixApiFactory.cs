@@ -273,8 +273,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                         HasActiveSubscription: true,
                         SubscriptionTier: "Test",
                         FeatureEnabled: true,
-                        ActiveResourcePermissionLevel: PermissionLevel.Owner,
-                        TargetPermissionLevel: null));
+                        ActiveResourcePermissionRank: (int)PermissionLevel.Owner,
+                        TargetPermissionRank: null));
                 return mock.Object;
             });
 

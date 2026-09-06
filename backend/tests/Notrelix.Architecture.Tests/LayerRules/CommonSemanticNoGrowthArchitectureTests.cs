@@ -76,6 +76,15 @@ public class CommonSemanticNoGrowthArchitectureTests
         new HashSet<string>(StringComparer.Ordinal)
         {
             "Notrelix.Application.Common.Security.AccessPermissionRule",
+            // TAC-WG-FLOW-04 grant/revoke seam: these request markers carry only
+            // technical primitives (int rank, Guid?, string?) — the Governance
+            // PermissionLevel vocabulary maps to an integer rank at the
+            // Governance feature boundary, so no BC type appears in the Common
+            // public signature and these stay technical pipeline plumbing,
+            // not new business vocabulary.
+            "Notrelix.Application.Common.Requests.Security.IRequireGrantPermission",
+            "Notrelix.Application.Common.Requests.Security.IRequireRevokePermission",
+            "Notrelix.Application.Common.Requests.Security.IRequirePermissionTarget",
         };
 
     /// <summary>
@@ -100,14 +109,6 @@ public class CommonSemanticNoGrowthArchitectureTests
         new HashSet<string>(StringComparer.Ordinal)
         {
             "Notrelix.Application.Common.Requests.Security.IRequirePermission",
-            // TAC-WG-FLOW-04: grant/revoke request markers extend the governed
-            // DEBT-COMMON-001 authorization seam (same Requests/Security folder,
-            // same WG-REF-002 engine contract). They expose Governance-owned
-            // permission vocabulary and may only be removed with the same
-            // governed permission-seam migration as IRequirePermission.
-            "Notrelix.Application.Common.Requests.Security.IRequireGrantPermission",
-            "Notrelix.Application.Common.Requests.Security.IRequireRevokePermission",
-            "Notrelix.Application.Common.Requests.Security.IRequirePermissionTarget",
         };
 
     [Fact]

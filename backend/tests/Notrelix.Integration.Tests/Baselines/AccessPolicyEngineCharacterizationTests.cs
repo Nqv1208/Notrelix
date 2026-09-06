@@ -514,6 +514,22 @@ public sealed class AccessPolicyEngineCharacterizationTests
     [Fact]
     public void Revoke_UnknownTargetLevel_FallsThroughToHandler()
     {
+        // An actor with management authority falls through when the target
+        // permission is no longer active, so the handler resolves NotFound.
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Restricted",
+                hasExplicitResourcePermission: true, activeResourcePermissionLevel: PermissionLevel.Manager,
+                targetPermissionLevel: null),
+            RevokeRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page"), PermissionLevel.Viewer));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void Revoke_UnknownTargetLevel_WithoutAuthority_IsForbidden()
+    {
         var decision = Engine.Evaluate(
             Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
             Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
@@ -521,7 +537,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
                 hasExplicitResourcePermission: true, targetPermissionLevel: null),
             RevokeRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page"), PermissionLevel.Viewer));
 
-        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
     }
 
     [Fact]
@@ -534,6 +550,138 @@ public sealed class AccessPolicyEngineCharacterizationTests
             PermissionRequest(PermissionAction.ViewPage, ResourceKind.Create("documents.page")));
 
         decision.Kind.Should().Be(AccessDecisionKind.NotFound);
+    }
+
+    [Fact]
+    public void Owner_NonExistentResource_IsNotFound_BeforeOwnerFastPath()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Owner", resourceExists: false, resourceAudience: "Workspace"),
+            PermissionRequest(PermissionAction.ViewBoard, ResourceKind.Create("work-management.board")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.NotFound);
+    }
+
+    // ── ACL management authority ─────────────────────────────────────────────
+
+    [Fact]
+    public void GetPermissions_WorkspaceMemberWithoutExplicitAuthority_IsForbidden()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace"),
+            PermissionRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void GetPermissions_EditorAuthority_IsForbidden()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace",
+                activeResourcePermissionLevel: PermissionLevel.Editor),
+            PermissionRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void GetPermissions_ManagerAuthority_IsAllowed()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace",
+                activeResourcePermissionLevel: PermissionLevel.Manager),
+            PermissionRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void GetPermissions_ExplicitPermissionRuleAllow_IsAllowed()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace",
+                rules: [new AccessPermissionRule(100, "Allow")]),
+            PermissionRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page")));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void Grant_EditorAuthority_ManagementGate_Denies_EvenBelowCeiling()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace",
+                activeResourcePermissionLevel: PermissionLevel.Editor),
+            GrantRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page"), PermissionLevel.Viewer));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void Grant_ManagerAuthority_BelowCeiling_IsAllowed()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace",
+                activeResourcePermissionLevel: PermissionLevel.Manager),
+            GrantRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page"), PermissionLevel.Editor));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void Grant_ManagerAuthority_RequestingOwner_IsForbidden()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace",
+                activeResourcePermissionLevel: PermissionLevel.Manager),
+            GrantRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page"), PermissionLevel.Owner));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void Revoke_ManagerAuthority_TargetManager_IsAllowed()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace",
+                activeResourcePermissionLevel: PermissionLevel.Manager,
+                targetPermissionLevel: PermissionLevel.Manager),
+            RevokeRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page"), PermissionLevel.Manager));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Allowed);
+    }
+
+    [Fact]
+    public void Revoke_ManagerAuthority_TargetOwner_IsForbidden()
+    {
+        var decision = Engine.Evaluate(
+            Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource, RequiresPermission: true),
+            Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Resource),
+            Facts(workspaceMemberRole: "Member", resourceExists: true, resourceAudience: "Workspace",
+                activeResourcePermissionLevel: PermissionLevel.Manager,
+                targetPermissionLevel: PermissionLevel.Owner),
+            RevokeRequest(PermissionAction.ManagePagePermission, ResourceKind.Create("documents.page"), PermissionLevel.Owner));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -570,8 +718,8 @@ public sealed class AccessPolicyEngineCharacterizationTests
         hasActiveSubscription,
         subscriptionTier,
         featureEnabled,
-        activeResourcePermissionLevel,
-        targetPermissionLevel);
+        activeResourcePermissionLevel is null ? null : (int)activeResourcePermissionLevel,
+        targetPermissionLevel is null ? null : (int)targetPermissionLevel);
 
     private static ExecutionContextSnapshot Context(
         ApplicationPrincipalKind principal,
@@ -633,7 +781,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
     private sealed record GrantRequestFixture(
         PermissionAction Action,
         ResourceRef? Resource,
-        PermissionLevel RequestedLevel,
+        int RequestedPermissionRank,
         string? TargetSubjectType = null,
         Guid? TargetSubjectId = null) : IRequirePermission, IRequireGrantPermission, IRequirePermissionTarget
     {
@@ -654,7 +802,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
         new GrantRequestFixture(
             action,
             resourceKind is null ? null : ResourceRef.Create(resourceKind.Value, Guid.NewGuid()),
-            requestedLevel);
+            (int)requestedLevel);
 
     private static object RevokeRequest(PermissionAction action, ResourceKind? resourceKind, PermissionLevel _) =>
         new RevokeRequestFixture(

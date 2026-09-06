@@ -5,7 +5,6 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Common.Requests.Gates;
 using Notrelix.Application.Common.Requests.Security;
-using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Infrastructure.Data.Authz;
 
@@ -89,8 +88,8 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             reader.GetBoolean(11),
             NullableString(reader, 12),
             reader.GetBoolean(13),
-            NullablePermissionLevel(reader, 14),
-            NullablePermissionLevel(reader, 15));
+            NullableInt(reader, 14),
+            NullableInt(reader, 15));
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -98,16 +97,8 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
     private static string? NullableString(System.Data.Common.DbDataReader reader, int ordinal) =>
         reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
 
-    private static PermissionLevel? NullablePermissionLevel(System.Data.Common.DbDataReader reader, int ordinal)
-    {
-        if (reader.IsDBNull(ordinal))
-        {
-            return null;
-        }
-
-        var value = reader.GetString(ordinal);
-        return Enum.TryParse<PermissionLevel>(value, true, out var level) ? level : null;
-    }
+    private static int? NullableInt(System.Data.Common.DbDataReader reader, int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
 
     private static void Add(
         System.Data.Common.DbCommand command,

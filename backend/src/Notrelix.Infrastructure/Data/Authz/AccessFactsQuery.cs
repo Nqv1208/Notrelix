@@ -80,29 +80,38 @@ public static class AccessFactsQuery
              ORDER BY e.created_at DESC LIMIT 1
           ), false) END,
           CASE WHEN @resource_type IS NOT NULL THEN (
-            SELECT rp.permission_level FROM governance.resource_permissions rp
+            SELECT CASE rp.permission_level
+              WHEN 'Owner' THEN 5 WHEN 'Manager' THEN 4 WHEN 'Editor' THEN 3
+              WHEN 'Commenter' THEN 2 WHEN 'Viewer' THEN 1 ELSE 0 END
+            FROM governance.resource_permissions rp
              WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
                AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
                AND rp.subject_type = 'User' AND rp.subject_id = @user_id
                AND rp.deleted_at IS NULL
              ORDER BY CASE rp.permission_level
-               WHEN 'Owner' THEN 6 WHEN 'Manager' THEN 5 WHEN 'Editor' THEN 4
-               WHEN 'Commenter' THEN 3 WHEN 'Viewer' THEN 2 ELSE 1 END DESC
+               WHEN 'Owner' THEN 5 WHEN 'Manager' THEN 4 WHEN 'Editor' THEN 3
+               WHEN 'Commenter' THEN 2 WHEN 'Viewer' THEN 1 ELSE 0 END DESC
              LIMIT 1) END,
           CASE
             WHEN @target_permission_id IS NOT NULL THEN (
-              SELECT rp.permission_level FROM governance.resource_permissions rp
+              SELECT CASE rp.permission_level
+                WHEN 'Owner' THEN 5 WHEN 'Manager' THEN 4 WHEN 'Editor' THEN 3
+                WHEN 'Commenter' THEN 2 WHEN 'Viewer' THEN 1 ELSE 0 END
+              FROM governance.resource_permissions rp
                WHERE rp.id = @target_permission_id
                  AND rp.workspace_id = @workspace_id AND rp.deleted_at IS NULL LIMIT 1)
             WHEN @target_subject_id IS NOT NULL THEN (
-              SELECT rp.permission_level FROM governance.resource_permissions rp
+              SELECT CASE rp.permission_level
+                WHEN 'Owner' THEN 5 WHEN 'Manager' THEN 4 WHEN 'Editor' THEN 3
+                WHEN 'Commenter' THEN 2 WHEN 'Viewer' THEN 1 ELSE 0 END
+              FROM governance.resource_permissions rp
                WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
                  AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
                  AND rp.subject_type = @target_subject_type AND rp.subject_id = @target_subject_id
                  AND rp.deleted_at IS NULL
                ORDER BY CASE rp.permission_level
-                 WHEN 'Owner' THEN 6 WHEN 'Manager' THEN 5 WHEN 'Editor' THEN 4
-                 WHEN 'Commenter' THEN 3 WHEN 'Viewer' THEN 2 ELSE 1 END DESC
+                 WHEN 'Owner' THEN 5 WHEN 'Manager' THEN 4 WHEN 'Editor' THEN 3
+                 WHEN 'Commenter' THEN 2 WHEN 'Viewer' THEN 1 ELSE 0 END DESC
                LIMIT 1)
             ELSE NULL
           END

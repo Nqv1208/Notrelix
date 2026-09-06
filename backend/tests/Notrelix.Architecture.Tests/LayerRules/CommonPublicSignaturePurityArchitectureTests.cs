@@ -16,8 +16,6 @@ public class CommonPublicSignaturePurityArchitectureTests
         new HashSet<string>(StringComparer.Ordinal)
         {
             "Notrelix.Application.Common.Requests.Security.IRequirePermission -> Notrelix.Domain.Governance.Permissions.PermissionAction (BC business type)",
-            "Notrelix.Application.Common.Requests.Security.IRequireGrantPermission -> Notrelix.Domain.Governance.Permissions.PermissionLevel (BC business type)",
-            "Notrelix.Application.Common.Security.AccessFacts -> Notrelix.Domain.Governance.Permissions.PermissionLevel (BC business type)",
             "Notrelix.Application.Common.Security.Auth.AuthSessionIssuer -> Notrelix.Application.Features.Identity.Abstractions.IIdentityDbContext (BC-owned Application contract)",
             "Notrelix.Application.Common.Security.Auth.AuthSessionIssuer -> Notrelix.Domain.Identity.Users.User (BC business type)",
             "Notrelix.Application.Common.Security.Auth.IAuthSessionIssuer -> Notrelix.Domain.Identity.Users.User (BC business type)",
