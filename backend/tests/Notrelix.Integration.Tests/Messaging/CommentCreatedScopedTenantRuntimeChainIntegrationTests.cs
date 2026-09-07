@@ -1,9 +1,11 @@
+using System.Text.Json;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Events.Collaboration;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -17,6 +19,7 @@ using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Projections.Activity;
 using Notrelix.Infrastructure.Identity.Services;
+using Notrelix.Infrastructure.Messaging;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -68,8 +71,11 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
         Guid outboxEventId;
         try
         {
-            await CreateCommentAsync(provider, graph);
+            // Reset BEFORE the mutation: once the commit lands, the background
+            // dispatcher may consume the fact at any moment, and resetting the
+            // recorder afterwards would race against real delivery evidence.
             recorder.Reset();
+            await CreateCommentAsync(provider, graph);
 
             var outbox = await WaitForOutboxAsync(graph);
             outbox.Should().NotBeNull();
@@ -96,6 +102,27 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
 
             var dedupCompleted = await WaitForDedupSucceededAsync(outboxEventId, ActivityConsumerEndpoint);
             dedupCompleted.Should().BeTrue();
+
+            // Duplicate delivery of the SAME business event: the exact outward
+            // event is deserialized from the committed outbox with the
+            // production serializer and republished with the same business
+            // EventId — the dedup identity of the consume pipeline.
+            var duplicate = DeserializeOutboxEvent(outbox);
+            await provider.GetRequiredService<IIntegrationEventBus>()
+                .PublishAsync((CommentCreatedIntegrationEvent)duplicate);
+            await WaitForRedeliveryAsync(outboxEventId, ActivityConsumerEndpoint);
+
+            await using var midProbe = _db.CreateContext(SystemTenant());
+            (await midProbe.Set<WorkspaceActivityLogRecord>()
+                .IgnoreQueryFilters()
+                .CountAsync(a => a.SourceEventId == outboxEventId)).Should().Be(1,
+                "redelivering the same business event must not duplicate the logical activity");
+            (await midProbe.Set<MessagingProcessedEvent>()
+                .IgnoreQueryFilters()
+                .CountAsync(p => p.EventId == outboxEventId
+                    && p.ConsumerName == ActivityConsumerEndpoint
+                    && p.Status == "Succeeded")).Should().Be(1,
+                "the dedup identity stays coherent: one succeeded delivery, the duplicate skipped");
         }
         finally
         {
@@ -122,6 +149,34 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             "a Workspace-scoped integration event must not execute its consumer as System");
         recorder.ClearedAfterWorkspace.Should().BeTrue(
             "TenantContextConsumeFilter must clear tenant state after consume completion");
+    }
+
+    /// <summary>
+    /// Deserializes the committed outbox payload with the production
+    /// serializer exactly as the OutboxDispatcher does (CamelCase naming plus
+    /// the (messageName, schemaVersion) catalog identity) — never a
+    /// hand-built copy of the event.
+    /// </summary>
+    private static IIntegrationEvent DeserializeOutboxEvent(MessagingOutboxMessage message)
+    {
+        var catalog = new IntegrationEventCatalog();
+        var eventType = catalog.Resolve(new EventContractKey(message.MessageName, message.SchemaVersion));
+        return message.PayloadJson.Deserialize(eventType, OutboxSerializerOptions)
+            .Should().BeAssignableTo<IIntegrationEvent>().Which;
+    }
+
+    private static readonly JsonSerializerOptions OutboxSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    private async Task<bool> WaitForRedeliveryAsync(Guid eventId, string consumerName)
+    {
+        // Give the duplicate delivery a bounded window to arrive and be
+        // skipped by the dedup filter; the redelivery attempt itself never
+        // produces a second Succeeded row.
+        await Task.Delay(1500);
+        return true;
     }
 
     private sealed record CommentGraph(

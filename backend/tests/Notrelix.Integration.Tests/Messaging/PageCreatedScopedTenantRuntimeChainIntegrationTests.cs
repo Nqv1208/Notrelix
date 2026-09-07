@@ -82,9 +82,12 @@ public sealed class PageCreatedScopedTenantRuntimeChainIntegrationTests : IAsync
         Guid outboxEventId;
         try
         {
+            // Reset BEFORE the mutation: once the commit lands, the background
+            // dispatcher may consume the fact at any moment, and resetting the
+            // recorder afterwards would race against real delivery evidence.
+            recorder.Reset();
             var pageId = await CreatePageAsync(provider, graph);
             pageId.Should().NotBeEmpty();
-            recorder.Reset();
 
             var outbox = await WaitForOutboxAsync(graph);
             outbox.Should().NotBeNull();
