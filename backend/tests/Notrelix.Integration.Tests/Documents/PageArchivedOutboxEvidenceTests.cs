@@ -118,8 +118,15 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
         outbox.WorkspaceId.Should().Be(graph.WorkspaceId);
     }
 
+    /// <summary>
+    /// Companion to the constraint-failure proof — an explicit transaction
+    /// rollback after a successful SaveChanges. This is NOT a database
+    /// failure proof (the database never failed); it documents that an
+    /// aborted transaction discards both the page mutation and its staged
+    /// outward delivery. State is asserted from a fresh committed context.
+    /// </summary>
     [Fact]
-    public async Task RolledBackArchiveMutation_NoCommittedOutwardDelivery()
+    public async Task ManualTransactionRollback_DiscardsPageMutationAndStagedOutbox()
     {
         var graph = await SeedWorkspaceAsync();
 
@@ -134,6 +141,62 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
 
         (await CountArchivedOutboxAsync(graph.WorkspaceId)).Should().Be(0,
             "a rolled-back archive mutation must leave no committed outward delivery");
+    }
+
+    /// <summary>
+    /// TAC-DC-FLOW-02 failure matrix — a REAL deterministic database failure
+    /// inside the same SaveChanges batch as the archive mutation and its
+    /// outward enrollment: a duplicate workspace-membership insert violates
+    /// the unique index (same failure class as the slug-race proof), the
+    /// PostgresException aborts the actual SaveChanges transaction, and a
+    /// fresh committed context proves the page stays Active with zero outward
+    /// facts. No manual rollback, no synthetic failure.
+    /// </summary>
+    [Fact]
+    public async Task RealDbConstraintFailure_AbortsArchiveMutationAndOutboxEnrollment()
+    {
+        var graph = await SeedWorkspaceAsync();
+        Guid pageId;
+
+        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
+        {
+            var page = NewActivePage(graph);
+            context.Pages.Add(page);
+            context.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
+                graph.AccountId, graph.WorkspaceId, graph.AuthorId,
+                Domain.Workspaces.Members.WorkspaceRole.Owner, graph.AuthorId, Now));
+            await context.SaveChangesAsync();
+            pageId = page.Id;
+        }
+
+        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
+        {
+            var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
+            page.Archive(graph.AuthorId, Now);
+
+            // Deterministic PostgreSQL failure inside the SAME SaveChanges:
+            // the unique index idx_workspace_members_workspace_user rejects
+            // the duplicate (workspace_id, user_id) row, aborting the whole
+            // batch — the archive update, the DomainEventLog row, and the
+            // staged page.archived outbox entry share one fate.
+            context.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
+                graph.AccountId, graph.WorkspaceId, graph.AuthorId,
+                Domain.Workspaces.Members.WorkspaceRole.Owner, graph.AuthorId, Now));
+
+            var act = () => context.SaveChangesAsync();
+            var thrown = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+            var pg = thrown.InnerException.Should().BeAssignableTo<Npgsql.PostgresException>().Which;
+            pg.ConstraintName.Should().Be(
+                "idx_workspace_members_workspace_user",
+                "the failure must originate from PostgreSQL, not an EF-side save error");
+        }
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
+            .Should().Be(PageStatus.Active,
+            "the failed save must leave the committed lifecycle state Active");
+        (await CountArchivedOutboxAsync(graph.WorkspaceId)).Should().Be(0,
+            "no outward fact may survive a failed enrollment inside the commit");
     }
 
     [Fact]
@@ -153,46 +216,6 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
 
         (await CountArchivedOutboxAsync(graph.WorkspaceId)).Should().Be(1,
             "the documented archive no-op must not emit a second fact");
-    }
-
-    /// <summary>
-    /// TAC-DC-FLOW-02 failure matrix — a persistence failure after the
-    /// aggregate mutation aborts the whole request transaction: the page
-    /// stays Active in committed state and no outward fact survives. State
-    /// is asserted from a fresh committed context, never from the tracked
-    /// (in-memory archived) instance.
-    /// </summary>
-    [Fact]
-    public async Task PersistenceFailure_AfterArchiveMutation_RollsBackPageAndOutbox()
-    {
-        var graph = await SeedWorkspaceAsync();
-        Guid pageId;
-
-        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
-        {
-            var page = NewActivePage(graph);
-            context.Pages.Add(page);
-            await context.SaveChangesAsync();
-            pageId = page.Id;
-        }
-
-        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
-        await using (var transaction = await context.Database.BeginTransactionAsync())
-        {
-            var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
-            page.Archive(graph.AuthorId, Now);
-            await context.SaveChangesAsync();
-
-            // The handler-side mutation succeeded; the commit itself fails.
-            await transaction.RollbackAsync();
-        }
-
-        await using var verify = _db.CreateContext(SystemTenant());
-        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
-            .Should().Be(PageStatus.Active,
-            "an aborted commit must leave the committed lifecycle state Active");
-        (await CountArchivedOutboxAsync(graph.WorkspaceId)).Should().Be(0,
-            "no outward fact may survive an aborted commit");
     }
 
     /// <summary>
