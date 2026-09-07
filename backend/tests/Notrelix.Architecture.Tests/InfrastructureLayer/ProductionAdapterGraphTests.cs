@@ -185,7 +185,7 @@ public class ProductionAdapterGraphTests
                     services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadAdapter>();
                     services.AddScoped<IWorkActionPort, WorkItemActionAdapter>();
                     services.AddScoped<
-                        Notrelix.Application.Features.WorkManagement.Public.Queries.IWorkItemProjectionSource,
+                        Notrelix.Application.Features.WorkManagement.Public.ItemPlacement.IWorkItemProjectionSource,
                         WorkItemProjectionSourceAdapter>();
                     services.AddScoped<
                         Notrelix.Infrastructure.Messaging.Consumers.Analytics.IWorkItemProjectionSourceAdapter,

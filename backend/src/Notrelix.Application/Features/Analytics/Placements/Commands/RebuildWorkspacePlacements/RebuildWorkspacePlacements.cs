@@ -1,6 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Analytics.Placements.Services;
-using Notrelix.Application.Features.WorkManagement.Public.Queries;
+using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 
 namespace Notrelix.Application.Features.Analytics.Placements.Commands.RebuildWorkspacePlacements;
 

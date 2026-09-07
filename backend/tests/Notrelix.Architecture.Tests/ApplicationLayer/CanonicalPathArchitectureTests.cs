@@ -109,10 +109,10 @@ public class CanonicalPathArchitectureTests
             ["Identity/Public/Facts"] = new[] { "IdentityUserFact.cs" },
             ["Identity/Public/Queries"] = new[] { "IIdentityUserFacts.cs" },
             ["Integrations/Public/Commands"] = new[] { "IN8nWebhookActions.cs" },
-            // WorkManagement/Public/Commands was removed when M6 WM-FLOW-03
-            // normalized the surface to the published capability
-            // Public/ItemMovement; Public/Queries follows under WM-FLOW-05.
-            ["WorkManagement/Public/Queries"] = new[] { "IWorkItemProjectionSource.cs" }
+            // WorkManagement/Public/Commands and WorkManagement/Public/Queries
+            // were removed when M6 normalized their surfaces to the published
+            // capabilities Public/ItemMovement (WM-FLOW-03) and
+            // Public/ItemPlacement (WM-FLOW-05).
         };
 
         var violations = new List<string>();

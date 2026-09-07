@@ -1,3 +1,4 @@
+using Notrelix.Application.EventMappers.WorkManagement;
 
 namespace Notrelix.Application.Tests.Events.WorkManagement;
 

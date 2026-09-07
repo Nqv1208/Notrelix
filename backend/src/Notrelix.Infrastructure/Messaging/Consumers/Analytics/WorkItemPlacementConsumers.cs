@@ -1,6 +1,6 @@
 using Notrelix.Application.Events.WorkManagement;
 using Notrelix.Application.Features.Analytics.Placements.Services;
-using Notrelix.Application.Features.WorkManagement.Public.Queries;
+using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 

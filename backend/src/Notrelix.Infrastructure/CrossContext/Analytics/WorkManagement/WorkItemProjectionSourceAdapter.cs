@@ -1,5 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Public.Queries;
+using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 
 namespace Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
