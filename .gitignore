@@ -27,3 +27,6 @@ skills-lock.json
 # macOS
 .DS_Store
 **/.DS_Store
+
+# Runtime artifacts (DataProtection keys, local exports)
+**/App_Data/
