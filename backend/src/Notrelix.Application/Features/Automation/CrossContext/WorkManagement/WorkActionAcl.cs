@@ -21,7 +21,9 @@ public static class WorkActionAcl
                 OperationId: executionId,
                 AccountId: automationPrincipal.AccountId,
                 WorkspaceId: automationPrincipal.WorkspaceId,
-                ExecutorUserId: automationPrincipal.ExecutorUserId),
+                ExecutorUserId: automationPrincipal.ExecutorUserId,
+                CorrelationId: automationPrincipal.CorrelationId ?? executionId,
+                CausationId: automationPrincipal.CausationId),
             ItemId: itemId,
             NewGroupId: targetGroupId);
 }

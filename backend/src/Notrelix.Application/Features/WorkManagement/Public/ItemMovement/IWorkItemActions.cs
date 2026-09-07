@@ -3,8 +3,9 @@ namespace Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 /// <summary>
 /// Caller-owned operation identity for a WorkManagement public item action.
 /// Carries the account/workspace scope, the executor principal, the producer
-/// dedup key, and correlation/causation for attribution. The producer validates
-/// scope and executor authority and owns OperationId dedup; retries with the
+/// dedup key, and correlation/causation for attribution. The producer
+/// authoritatively locates the resource, evaluates the canonical MoveItem
+/// decision for the executor, and owns OperationId dedup; retries with the
 /// same operation and payload replay one logical mutation, conflicting
 /// payloads fail deterministically.
 /// </summary>
@@ -13,7 +14,8 @@ public sealed record WorkItemActionIdentity(
     Guid AccountId,
     Guid WorkspaceId,
     Guid ExecutorUserId,
-    Guid? CorrelationId = null);
+    Guid? CorrelationId = null,
+    Guid? CausationId = null);
 
 /// <summary>
 /// Request semantic for the producer-owned move-item action. Contains only

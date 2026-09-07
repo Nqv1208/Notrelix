@@ -1,29 +1,30 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
-using Notrelix.Application.Features.Workspaces.Public.Membership;
 
 using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 
 /// <summary>
-/// TAC-WM-006 — the WorkManagement Public move action behaves identically to
-/// the HTTP command because both delegate to the single producer-local use
-/// case: valid moves succeed, unknown items/groups are semantic not-found,
-/// cross-board groups are rejected, and the explicit execution principal from
-/// the caller is honored.
+/// TAC-WM-006 — the WorkManagement Public move action is governed by the
+/// canonical MoveItem authorization before anything else, then delegates to
+/// the single producer-local use case: valid moves succeed, unknown items and
+/// scope/authorization failures are rejected before the dedup store, a
+/// completed operation replays its stored result, and a conflicting payload
+/// fails deterministically.
 /// </summary>
 public class WorkItemActionsTests : WorkManagementHandlerTestBase
 {
-    private readonly Mock<IWorkspaceMembershipFacts> MembershipFactsMock = new();
+    private readonly Mock<IWorkItemActionAuthorizer> AuthorizerMock = new();
     private readonly Mock<IIdempotencyStore> IdempotencyStoreMock = new();
     private readonly WorkItemActions _sut;
 
     public WorkItemActionsTests()
     {
-        MembershipFactsMock
-            .Setup(f => f.ResolveAsync(TestAccountId, TestWorkspaceId, TestUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new WorkspaceMembershipFact(TestAccountId, TestWorkspaceId, TestUserId, IsActiveMember: true));
+        AuthorizerMock
+            .Setup(a => a.AuthorizeMoveItemAsync(
+                It.IsAny<WorkItemActionIdentity>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         IdempotencyStoreMock
             .Setup(s => s.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.Started, null, null));
@@ -31,7 +32,7 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
         _sut = new WorkItemActions(
             new MoveBoardItemUseCase(DbContextMock.Object, DateTimeProviderMock.Object),
             DbContextMock.Object,
-            MembershipFactsMock.Object,
+            AuthorizerMock.Object,
             IdempotencyStoreMock.Object);
     }
 
@@ -44,6 +45,28 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
                 ExecutorUserId: TestUserId),
             itemId,
             targetGroupId);
+
+    [Fact]
+    public async Task MoveItem_CanonicalAuthorizationDenies_NeverReachesDedupStoreOrMutation()
+    {
+        var itemId = Guid.CreateVersion7();
+        var groupId = Guid.CreateVersion7();
+        AuthorizerMock
+            .Setup(a => a.AuthorizeMoveItemAsync(
+                It.IsAny<WorkItemActionIdentity>(), itemId, groupId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ForbiddenException("You do not have permission to perform this action."));
+
+        await _sut.Invoking(s => s.MoveItemAsync(MoveRequest(itemId, groupId), CancellationToken.None))
+            .Should().ThrowAsync<ForbiddenException>(
+                "the canonical MoveItem decision governs the public action");
+
+        IdempotencyStoreMock.Verify(
+            s => s.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<CancellationToken>()),
+            Times.Never, "a deny must never begin a dedup record");
+        IdempotencyStoreMock.Verify(
+            s => s.CompleteAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never, "a deny must never complete a dedup record");
+    }
 
     [Fact]
     public async Task MoveItem_ValidRequest_MovesItemToTargetGroup()
@@ -108,9 +131,11 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
         SetupBoardGroups(group);
         SetupBoardItems(item);
         var outsider = Guid.CreateVersion7();
-        MembershipFactsMock
-            .Setup(f => f.ResolveAsync(TestAccountId, TestWorkspaceId, outsider, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new WorkspaceMembershipFact(TestAccountId, TestWorkspaceId, outsider, IsActiveMember: false));
+        AuthorizerMock
+            .Setup(a => a.AuthorizeMoveItemAsync(
+                It.Is<WorkItemActionIdentity>(i => i.ExecutorUserId == outsider),
+                item.Id, group.Id, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ForbiddenException("The executor is not an active member of the workspace."));
 
         await _sut.Invoking(s => s.MoveItemAsync(
                 new WorkItemMoveRequest(
@@ -120,7 +145,56 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
                     group.Id),
                 CancellationToken.None))
             .Should().ThrowAsync<ForbiddenException>(
-                "the executor must be an active workspace member");
+                "the canonical authorization denies the non-member executor");
+        IdempotencyStoreMock.Verify(
+            s => s.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<CancellationToken>()),
+            Times.Never, "a denied executor must never begin a dedup record");
+    }
+
+    [Fact]
+    public async Task MoveItem_SameOperationIdDifferentExecutor_IsDeterministicConflict()
+    {
+        var board = CreateBoard();
+        var group = BoardGroup.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Group",
+            Color.Create("#00FF00"), FractionalIndex.Create("a0"), TestUserId, TestNow);
+        var item = CreateBoardItem(boardId: board.Id, groupId: group.Id);
+        SetupBoards(board);
+        SetupBoardGroups(group);
+        SetupBoardItems(item);
+        var operationId = Guid.CreateVersion7();
+        var otherExecutor = Guid.CreateVersion7();
+
+        // The first executor's operation committed with this fingerprint.
+        IdempotencyStoreMock
+            .Setup(s => s.BeginAsync(It.Is<IdempotencyIdentity>(i => i.RequestHash == Sha256($"{item.Id:N}:{group.Id:N}:{TestUserId:N}")), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyBeginResult(
+                IdempotencyBeginStatus.Completed,
+                System.Text.Json.JsonSerializer.Serialize(new WorkItemMoveResult(item.Id, group.Id, "a0")),
+                nameof(WorkItemMoveResult)));
+
+        // A second actor reusing the same OperationId over the same item and
+        // target is an actor-swap: deterministic conflict, never a replay of
+        // someone else's move.
+        IdempotencyStoreMock
+            .Setup(s => s.BeginAsync(It.Is<IdempotencyIdentity>(i => i.RequestHash == Sha256($"{item.Id:N}:{group.Id:N}:{otherExecutor:N}")), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.PayloadMismatch, null, null));
+
+        AuthorizerMock
+            .Setup(a => a.AuthorizeMoveItemAsync(
+                It.Is<WorkItemActionIdentity>(i => i.ExecutorUserId == otherExecutor),
+                item.Id, group.Id, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await _sut.Invoking(s => s.MoveItemAsync(
+                new WorkItemMoveRequest(
+                    new WorkItemActionIdentity(
+                        operationId, TestAccountId, TestWorkspaceId, otherExecutor),
+                    item.Id,
+                    group.Id),
+                CancellationToken.None))
+            .Should().ThrowAsync<WorkItemOperationConflictException>(
+                "the executor is part of the execution semantics");
     }
 
     [Fact]
@@ -162,7 +236,7 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
         var operationId = Guid.CreateVersion7();
         var executedForItem = Guid.CreateVersion7();
         IdempotencyStoreMock
-            .Setup(s => s.BeginAsync(It.Is<IdempotencyIdentity>(i => i.RequestHash == Sha256($"{executedForItem:N}:{group.Id:N}")), It.IsAny<CancellationToken>()))
+            .Setup(s => s.BeginAsync(It.Is<IdempotencyIdentity>(i => i.RequestHash == Sha256($"{executedForItem:N}:{group.Id:N}:{TestUserId:N}")), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new IdempotencyBeginResult(
                 IdempotencyBeginStatus.Completed,
                 System.Text.Json.JsonSerializer.Serialize(new WorkItemMoveResult(executedForItem, group.Id, "a0")),
@@ -171,7 +245,7 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
         // The store reports a hash mismatch between the executed payload and
         // this conflicting retry.
         IdempotencyStoreMock
-            .Setup(s => s.BeginAsync(It.Is<IdempotencyIdentity>(i => i.RequestHash == Sha256($"{item.Id:N}:{group.Id:N}")), It.IsAny<CancellationToken>()))
+            .Setup(s => s.BeginAsync(It.Is<IdempotencyIdentity>(i => i.RequestHash == Sha256($"{item.Id:N}:{group.Id:N}:{TestUserId:N}")), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.PayloadMismatch, null, null));
 
         await _sut.Invoking(s => s.MoveItemAsync(MoveRequest(item.Id, group.Id, operationId), CancellationToken.None))

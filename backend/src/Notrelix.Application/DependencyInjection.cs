@@ -107,6 +107,7 @@ public static class DependencyInjection
         // Producer-owned public target actions (WorkManagement item mutations)
         services.AddScoped<MoveBoardItemUseCase>();
         services.AddScoped<IWorkItemActions, WorkItemActions>();
+        services.AddScoped<IWorkItemActionAuthorizer, WorkItemActionAuthorizer>();
 
         // Producer-owned public capability surface (Billing)
         services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();

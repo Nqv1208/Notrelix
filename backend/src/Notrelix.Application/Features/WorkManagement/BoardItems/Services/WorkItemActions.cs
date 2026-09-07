@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
-using Notrelix.Application.Features.Workspaces.Public.Membership;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
@@ -21,18 +20,18 @@ public sealed class WorkItemActions : IWorkItemActions
 
     private readonly MoveBoardItemUseCase _useCase;
     private readonly IWorkManagementDbContext _context;
-    private readonly IWorkspaceMembershipFacts _membershipFacts;
+    private readonly IWorkItemActionAuthorizer _authorizer;
     private readonly IIdempotencyStore _idempotencyStore;
 
     public WorkItemActions(
         MoveBoardItemUseCase useCase,
         IWorkManagementDbContext context,
-        IWorkspaceMembershipFacts membershipFacts,
+        IWorkItemActionAuthorizer authorizer,
         IIdempotencyStore idempotencyStore)
     {
         _useCase = useCase;
         _context = context;
-        _membershipFacts = membershipFacts;
+        _authorizer = authorizer;
         _idempotencyStore = idempotencyStore;
     }
 
@@ -41,6 +40,12 @@ public sealed class WorkItemActions : IWorkItemActions
         CancellationToken cancellationToken)
     {
         var execution = request.Execution;
+
+        // Canonical authorization comes first: the public target action is
+        // governed by the exact same MoveItem decision as the HTTP command.
+        // A deny must never reach the dedup store or the mutation.
+        await _authorizer.AuthorizeMoveItemAsync(
+            execution, request.ItemId, request.NewGroupId, cancellationToken);
 
         var item = await _context.BoardItems
             .FirstOrDefaultAsync(i => i.Id == request.ItemId, cancellationToken)
@@ -52,24 +57,16 @@ public sealed class WorkItemActions : IWorkItemActions
             throw new ForbiddenException("The item does not belong to the declared workspace.");
         }
 
-        // Target-owned executor authority: the executor must be an active
-        // workspace member, checked through the Workspaces-owned membership
-        // facts contract — never the caller's claim alone.
-        var membership = await _membershipFacts.ResolveAsync(
-            execution.AccountId, execution.WorkspaceId, execution.ExecutorUserId, cancellationToken);
-        if (membership is not { IsActiveMember: true })
-        {
-            throw new ForbiddenException("The executor is not an active member of the workspace.");
-        }
-
         // Producer-owned OperationId dedup. Begin participates in the caller's
         // transaction so the dedup record and the Work mutation commit or roll
-        // back together.
+        // back together. The executor belongs to the execution semantics: a
+        // retry by a different actor is a deterministic conflict, never a
+        // replay of someone else's move.
         var identity = new IdempotencyIdentity(
             Operation: MoveOperation,
             Scope: $"account:{execution.AccountId:N}:workspace:{execution.WorkspaceId:N}",
             KeyHash: Sha256($"move-item:{execution.OperationId:N}"),
-            RequestHash: Sha256($"{request.ItemId:N}:{request.NewGroupId:N}"));
+            RequestHash: Sha256($"{request.ItemId:N}:{request.NewGroupId:N}:{execution.ExecutorUserId:N}"));
 
         var begin = await _idempotencyStore.BeginAsync(identity, cancellationToken);
         switch (begin.Status)
