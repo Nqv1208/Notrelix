@@ -72,27 +72,27 @@
           {
             "state": "Loading",
             "reason": "Search results render resolved query data passed by the workspace shell; query loading presentation is owned by the shell.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Search results render resolved query data passed by the workspace shell; query error presentation is owned by the shell.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "Results render a bounded result list; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for search results at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for search results at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -107,6 +107,18 @@
       "interactionCases": [
         {
           "id": "render",
+          "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "select",
+          "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
           "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
         }
       ]

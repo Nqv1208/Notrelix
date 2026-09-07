@@ -53,17 +53,17 @@ function renderTaskDetail(
 }
 
 describe("TaskDetailPanelSurface interactions", () => {
-  it("renders loading state without QueryClient", () => {
+  it("FUI[wm.task-detail.panel:panel] renders loading state without QueryClient", () => {
     renderTaskDetail(taskDetailLoadingScenario());
     expect(screen.getByLabelText("Loading task details")).toBeTruthy();
   });
 
-  it("renders unavailable state without QueryClient", () => {
+  it("FUI[wm.task-detail.panel:unavailable] renders unavailable state without QueryClient", () => {
     renderTaskDetail(taskDetailUnavailableScenario());
     expect(screen.getByText("Task unavailable")).toBeTruthy();
   });
 
-  it("renders ready state without QueryClient", () => {
+  it("FUI[wm.task-detail.panel:ready] renders ready state without QueryClient", () => {
     renderTaskDetail();
     expect(
       screen.getByRole("textbox", { name: "Edit task title" }),
@@ -73,7 +73,7 @@ describe("TaskDetailPanelSurface interactions", () => {
     ).toBeTruthy();
   });
 
-  it("closes from Escape and the close button through injected callback", () => {
+  it("FUI[wm.task-detail.panel:close] closes from Escape and the close button through injected callback", () => {
     const { callbacks } = renderTaskDetail();
 
     fireEvent.keyDown(screen.getByLabelText("Task detail panel"), {
@@ -84,7 +84,7 @@ describe("TaskDetailPanelSurface interactions", () => {
     expect(callbacks.onClose).toHaveBeenCalledTimes(2);
   });
 
-  it("routes title edits and tab changes through local callbacks", () => {
+  it("FUI[wm.task-detail.panel:edit] routes title edits and tab changes through local callbacks", () => {
     const { callbacks } = renderTaskDetail();
     const title = screen.getByRole("textbox", { name: "Edit task title" });
 
@@ -98,7 +98,7 @@ describe("TaskDetailPanelSurface interactions", () => {
     expect(callbacks.onSelectTab).toHaveBeenCalledWith("files");
   });
 
-  it("submits updates through injected composer callback", () => {
+  it("FUI[wm.task-detail.panel:submit] submits updates through injected composer callback", () => {
     const { callbacks } = renderTaskDetail();
 
     fireEvent.change(screen.getByRole("textbox", { name: "Write an update" }), {
@@ -117,7 +117,7 @@ describe("TaskDetailPanelSurface interactions", () => {
     );
   });
 
-  it("keeps read-only critical actions disabled", () => {
+  it("FUI[wm.task-detail.panel:readonly] keeps read-only critical actions disabled", () => {
     renderTaskDetail(taskDetailDefaultScenario(), {
       capabilities: viewerCapabilities,
       activeTab: "updates" as CardDetailTab,

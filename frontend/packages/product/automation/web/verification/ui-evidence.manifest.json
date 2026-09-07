@@ -66,27 +66,27 @@
           {
             "state": "Loading",
             "reason": "Automation rules render resolved rule data passed by the workspace shell; query loading presentation is owned by the shell.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Automation rules render resolved rule data passed by the workspace shell; query error presentation is owned by the shell.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "Rules render a bounded rule list; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for automation rules at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for automation rules at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -101,6 +101,14 @@
       "interactionCases": [
         {
           "id": "render",
+          "testFile": "src/components/__tests__/automations-tab.interaction.component.test.tsx"
+        },
+        {
+          "id": "toggle",
+          "testFile": "src/components/__tests__/automations-tab.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
           "testFile": "src/components/__tests__/automations-tab.interaction.component.test.tsx"
         }
       ]

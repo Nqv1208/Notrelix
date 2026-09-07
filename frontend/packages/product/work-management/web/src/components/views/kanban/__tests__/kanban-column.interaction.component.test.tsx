@@ -23,7 +23,7 @@ function renderColumn(onRename = vi.fn()) {
 }
 
 describe("KanbanColumn interactions", () => {
-  it("renames on Enter", () => {
+  it("FUI[wm.kanban.column:column] renames on Enter", () => {
     const onRename = renderColumn();
     fireEvent.doubleClick(screen.getByRole("heading", { name: "Column 1" }));
     const input = screen.getByDisplayValue("Column 1");
@@ -32,7 +32,7 @@ describe("KanbanColumn interactions", () => {
     expect(onRename).toHaveBeenCalledWith("Renamed");
   });
 
-  it("cancels rename on Escape", () => {
+  it("FUI[wm.kanban.column:escape] cancels rename on Escape", () => {
     const onRename = renderColumn();
     fireEvent.doubleClick(screen.getByRole("heading", { name: "Column 1" }));
     const input = screen.getByDisplayValue("Column 1");

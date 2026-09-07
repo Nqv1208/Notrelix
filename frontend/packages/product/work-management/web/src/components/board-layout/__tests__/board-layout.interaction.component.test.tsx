@@ -84,6 +84,28 @@ describe("ViewTabs interactions", () => {
   });
 });
 
+
+describe("Board layout keyboard semantics", () => {
+  it("FUI[wm.board-layout.view-tabs:keyboard] keeps native keyboard operability for focusable tab buttons", () => {
+    const onViewChange = vi.fn();
+    renderPureUi(<ViewTabs activeView="kanban" onViewChange={onViewChange} />);
+    const tab = screen.getByRole("button", { name: /Table/ });
+    tab.focus();
+    expect(document.activeElement).toBe(tab);
+    expect(tab.tagName).toBe("BUTTON");
+    fireEvent.click(tab);
+    expect(onViewChange).toHaveBeenCalledWith("table");
+  });
+
+  it("FUI[wm.board-layout.view-tabs:escape] closes the AddView menu on Escape", () => {
+    renderPureUi(<AddViewMenu onAddView={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Add view" }));
+    expect(screen.getByText("Board")).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByText("Board")).toBeNull();
+  });
+});
+
 describe("AddViewMenu interactions", () => {
   it("FUI[wm.board-layout.view-tabs:add] toggles the local menu and emits a view type", () => {
     const onAddView = vi.fn();

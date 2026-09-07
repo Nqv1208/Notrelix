@@ -10,8 +10,11 @@ if (!reportPath) {
   process.exit(1);
 }
 
-const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const frontendRoot = process.argv[3]
+  ? resolve(process.argv[3])
+  : resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const manifestFileName = "ui-evidence.manifest.json";
+const CASE_MARKER_PATTERN = /FUI\[([A-Za-z0-9._-]+):([A-Za-z0-9._-]+)\]/g;
 
 function walkDirectories(root) {
   if (!existsSync(root)) return [];
@@ -41,35 +44,52 @@ function manifestPaths() {
   );
 }
 
-function requiredInteractionTests() {
-  const required = new Set();
+function requiredCases() {
+  const required = new Map();
   for (const manifestPath of manifestPaths()) {
-    const ownerRoot = dirname(dirname(manifestPath));
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     for (const surface of manifest.surfaces ?? []) {
       if (!surface.checks?.includes("interaction")) continue;
+      const declared = new Set();
       for (const interactionCase of surface.interactionCases ?? []) {
-        required.add(resolve(ownerRoot, interactionCase.testFile));
+        const marker = `${surface.surfaceId}:${interactionCase.id}`;
+        declared.add(marker);
+        required.set(marker, { manifestPath, testFile: interactionCase.testFile });
+      }
+      if (declared.size === 0) {
+        console.error(
+          `UI interaction coverage: surface ${surface.surfaceId} declares zero interaction cases.`,
+        );
+        process.exit(1);
       }
     }
   }
   return required;
 }
 
-function collectExecutedPassingFiles(report) {
-  const files = new Set();
+function collectReportFacts(report) {
+  const passingMarkers = new Map();
+  const failedOrSkipped = [];
   function visit(value) {
     if (!value || typeof value !== "object") return;
-    const candidatePath = value.filepath ?? value.name ?? value.file;
-    const assertions = value.assertionResults ?? value.tests ?? value.tasks;
-    const hasPassingTest =
-      Array.isArray(assertions) &&
-      assertions.some((item) => {
-        const status = item.status ?? item.result?.state;
-        return status === "passed" || status === "pass";
-      });
-    if (typeof candidatePath === "string" && hasPassingTest) {
-      files.add(resolve(frontendRoot, candidatePath));
+    if (Array.isArray(value.assertionResults)) {
+      for (const assertion of value.assertionResults) {
+        const title = assertion.title ?? assertion.fullName ?? "";
+        const status = assertion.status;
+        const markers = [...title.matchAll(CASE_MARKER_PATTERN)].map(
+          (match) => `${match[1]}:${match[2]}`,
+        );
+        if (markers.length > 0 && status !== "passed") {
+          failedOrSkipped.push(`${status}: ${title}`);
+        }
+        for (const marker of markers) {
+          if (status === "passed") {
+            const occurrences = passingMarkers.get(marker) ?? [];
+            occurrences.push(title);
+            passingMarkers.set(marker, occurrences);
+          }
+        }
+      }
     }
     for (const child of Object.values(value)) {
       if (Array.isArray(child)) child.forEach(visit);
@@ -77,7 +97,7 @@ function collectExecutedPassingFiles(report) {
     }
   }
   visit(report);
-  return files;
+  return { passingMarkers, failedOrSkipped };
 }
 
 let report;
@@ -90,24 +110,45 @@ try {
   process.exit(1);
 }
 
-const required = requiredInteractionTests();
+const required = requiredCases();
 if (required.size === 0) {
   console.error(
-    "UI interaction coverage: zero manifest-declared interaction tests.",
+    "UI interaction coverage: zero manifest-declared interaction cases.",
   );
   process.exit(1);
 }
 
-const executed = collectExecutedPassingFiles(report);
-const missing = [...required].filter((path) => !executed.has(path));
+const { passingMarkers, failedOrSkipped } = collectReportFacts(report);
 
-if (missing.length > 0) {
-  console.error("UI interaction coverage: missing executed passing tests:");
-  for (const path of missing)
-    console.error(`- ${relative(frontendRoot, path)}`);
+const errors = [];
+
+for (const title of failedOrSkipped) {
+  errors.push(`required case marker assertion is not passing: ${title}`);
+}
+
+for (const marker of required.keys()) {
+  const occurrences = passingMarkers.get(marker);
+  if (!occurrences || occurrences.length === 0) {
+    errors.push(`missing passing case marker: FUI[${marker}]`);
+  } else if (occurrences.length > 1) {
+    errors.push(
+      `duplicate passing case marker: FUI[${marker}] (${occurrences.length} assertions)`,
+    );
+  }
+}
+
+for (const marker of passingMarkers.keys()) {
+  if (!required.has(marker)) {
+    errors.push(`unknown case marker in report: FUI[${marker}]`);
+  }
+}
+
+if (errors.length > 0) {
+  console.error("UI interaction coverage: drift detected:");
+  for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
 
 console.log(
-  `UI interaction coverage: ${required.size} manifest-declared test files executed.`,
+  `UI interaction coverage: ${required.size} manifest-declared interaction cases satisfied by exact passing markers.`,
 );

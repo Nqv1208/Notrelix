@@ -70,17 +70,17 @@
           {
             "state": "Loading",
             "reason": "The shell renders whatever child view content it receives; per-view loading presentation is owned by the dedicated loading surfaces.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "The shell renders whatever child view content it receives; per-view error presentation is owned by the dedicated unavailable surfaces.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "The shell composes static chrome around child content and carries no data-driven values of its own.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -132,12 +132,12 @@
           {
             "state": "EdgeData",
             "reason": "The toolbar renders a short board title and fixed action controls; long-text and Unicode edges are exercised by the data surfaces it composes.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for the board toolbar at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -207,12 +207,12 @@
           {
             "state": "EdgeData",
             "reason": "The tab set is a fixed constant list of view types, not data-driven text; there are no data-shape edges to stress.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for board view tabs at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -235,6 +235,14 @@
         },
         {
           "id": "add",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "escape",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
         }
       ]
@@ -427,6 +435,10 @@
         {
           "id": "board",
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "move",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
         }
       ]
     },
@@ -493,12 +505,12 @@
           {
             "state": "Loading",
             "reason": "Column content arrives already resolved from the board query; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Column content arrives already resolved from the board query; board-level fetch failure is owned by wm.kanban.unavailable.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -513,6 +525,10 @@
       "interactionCases": [
         {
           "id": "column",
+          "testFile": "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
+        },
+        {
+          "id": "escape",
           "testFile": "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
         }
       ]
@@ -569,32 +585,32 @@
           {
             "state": "Loading",
             "reason": "A card renders synchronously from resolved board data; board-level loading is owned by wm.kanban.loading.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Empty",
             "reason": "An empty board is evidenced by wm.kanban.board Empty; a card always carries at least a title.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Board-level fetch failure is evidenced by wm.kanban.unavailable Error.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "High-density board input is evidenced by wm.kanban.board HighDensity with the documented 8x40 cardinality.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for kanban cards at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -654,12 +670,12 @@
           {
             "state": "EdgeData",
             "reason": "Sort options are a fixed label set; there is no data-driven text edge to stress.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for the kanban toolbar at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -705,7 +721,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -745,7 +761,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default board presentation is owned by wm.kanban.board.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -860,7 +876,7 @@
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the main table at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -875,6 +891,18 @@
       "interactionCases": [
         {
           "id": "table",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "create",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edit",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "group",
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
         }
       ]
@@ -906,7 +934,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the loading skeleton presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -946,7 +974,7 @@
           {
             "state": "Default",
             "reason": "This surface renders exclusively the error presentation; Default table presentation is owned by wm.table.main.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1042,12 +1070,12 @@
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for the calendar board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the calendar board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1143,12 +1171,12 @@
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for the timeline board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the timeline board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1163,6 +1191,10 @@
       "interactionCases": [
         {
           "id": "timeline",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-view.component.test.tsx"
+        },
+        {
+          "id": "density",
           "testFile": "src/components/views/timeline/__tests__/board-timeline-view.component.test.tsx"
         }
       ]
@@ -1258,7 +1290,7 @@
           {
             "state": "Error",
             "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -1273,6 +1305,30 @@
       "interactionCases": [
         {
           "id": "panel",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "unavailable",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "ready",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "close",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edit",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "submit",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "readonly",
           "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
         }
       ]

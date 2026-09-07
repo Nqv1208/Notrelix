@@ -565,6 +565,7 @@ function validateSurface(
   );
 
   const interactionCases: UiEvidenceInteractionCase[] = [];
+  const seenCaseIds = new Set<string>();
   if (!Array.isArray(value.interactionCases)) {
     diagnostics.push(`${path}.interactionCases must be an array`);
   } else {
@@ -576,6 +577,18 @@ function validateSurface(
       }
       rejectUnknownFields(diagnostics, item, itemPath, ["id", "testFile"]);
       const idOk = requireString(diagnostics, item.id, `${itemPath}.id`);
+      if (idOk) {
+        const id = item.id as string;
+        if (seenCaseIds.has(id)) {
+          diagnostics.push(`${itemPath} duplicate interaction case id ${id}`);
+        }
+        seenCaseIds.add(id);
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
+          diagnostics.push(
+            `${itemPath} case id ${id} must be kebab-case user-visible behavior`,
+          );
+        }
+      }
       const testFileOk = validateOwnerLocalPath(
         diagnostics,
         item.testFile,

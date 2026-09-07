@@ -5,7 +5,7 @@ import { KanbanBoard } from "../kanban-board";
 import { getKanbanCardMove } from "../kanban-dnd";
 
 describe("KanbanBoard interactions", () => {
-  it("submits a card through the injected callback", () => {
+  it("FUI[wm.kanban.board:board] submits a card through the injected callback", () => {
     const scenario = kanbanDefaultScenario();
     const onCreateCard = vi.fn();
     renderPureUi(
@@ -41,7 +41,7 @@ describe("KanbanBoard interactions", () => {
     expect(Number.isFinite(onCreateCard.mock.calls[0]?.[2])).toBe(true);
   });
 
-  it("computes representative card move positions from drag-end data", () => {
+  it("FUI[wm.kanban.board:move] computes representative card move positions from drag-end data", () => {
     const scenario = kanbanDefaultScenario();
     const active = scenario.columns[0]!.cards[0]!;
     const over = scenario.columns[1]!.cards[0]!;

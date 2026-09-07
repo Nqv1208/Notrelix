@@ -56,7 +56,7 @@ function renderTable(
 }
 
 describe("MainTableSurface interactions", () => {
-  it("opens rows by pointer and keyboard through injected callbacks", () => {
+  it("FUI[wm.table.main:table] opens rows by pointer and keyboard through injected callbacks", () => {
     const { props } = renderTable();
     const row = screen.getByLabelText(/Table card 1\.1 in Group 1/i);
 
@@ -68,7 +68,7 @@ describe("MainTableSurface interactions", () => {
     expect(props.onOpenDetail).toHaveBeenCalledWith("table-card-default-1-1");
   });
 
-  it("submits a new task through the injected create callback", () => {
+  it("FUI[wm.table.main:create] submits a new task through the injected create callback", () => {
     const { scenario, props } = renderTable();
     const input = screen.getByRole("textbox", { name: /Add task to Group 1/i });
 
@@ -85,7 +85,7 @@ describe("MainTableSurface interactions", () => {
     ).toBe(true);
   });
 
-  it("commits a representative title edit through the injected update callback", () => {
+  it("FUI[wm.table.main:edit] commits a representative title edit through the injected update callback", () => {
     const { props } = renderTable();
 
     fireEvent.click(
@@ -100,7 +100,7 @@ describe("MainTableSurface interactions", () => {
     });
   });
 
-  it("commits a group rename through the injected group callback", () => {
+  it("FUI[wm.table.main:group] commits a group rename through the injected group callback", () => {
     const { scenario, props } = renderTable();
 
     fireEvent.doubleClick(screen.getByRole("heading", { name: "Group 1" }));

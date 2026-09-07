@@ -3,6 +3,7 @@ import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 
 import {
   docsCommentsDefaultScenario,
+  docsHistoryDefaultScenario,
   docsPageScreenDefaultScenario,
   docsPageScreenEmptyScenario,
   docsPageTreeDefaultScenario,
@@ -13,9 +14,10 @@ import {
   DocPageScreenSurface,
   DocPageTreeSurface,
 } from "../doc-page-surfaces";
+import { DocHistorySurface } from "../doc-page-history-surface";
 
 describe("docs web pure surfaces", () => {
-  it("renders the composed document screen from deterministic fixture data", () => {
+  it("FUI[docs.page.screen:render] renders the composed document screen from deterministic fixture data", () => {
     renderPureUi(<DocPageScreenSurface {...docsPageScreenDefaultScenario()} />);
 
     expect(
@@ -28,7 +30,7 @@ describe("docs web pure surfaces", () => {
     ).toBeTruthy();
   });
 
-  it("routes page tree create actions through injected callbacks", () => {
+  it("FUI[docs.page.tree:render] routes page tree create actions through injected callbacks", () => {
     const onAddPage = vi.fn();
 
     renderPureUi(
@@ -49,7 +51,7 @@ describe("docs web pure surfaces", () => {
     expect(onAddPage).toHaveBeenNthCalledWith(2, "page-operating-plan");
   });
 
-  it("routes header favorite/share/actions through injected callbacks", () => {
+  it("FUI[docs.page.header:render] routes header favorite/share/actions through injected callbacks", () => {
     const onToggleFavorite = vi.fn();
     const onShare = vi.fn();
     const onAction = vi.fn();
@@ -75,7 +77,7 @@ describe("docs web pure surfaces", () => {
     expect(onAction).toHaveBeenCalledWith("Export");
   });
 
-  it("routes comment composition and deletion through injected callbacks", () => {
+  it("FUI[docs.comments:render] routes comment composition and deletion through injected callbacks", () => {
     const onCreateComment = vi.fn();
     const onDeleteComment = vi.fn();
 
@@ -96,6 +98,14 @@ describe("docs web pure surfaces", () => {
 
     expect(onCreateComment).toHaveBeenCalledWith("Ready for review");
     expect(onDeleteComment).toHaveBeenCalledWith("comment-1");
+  });
+
+  it("FUI[docs.history:render] renders the history surface from deterministic fixture data", () => {
+    renderPureUi(
+      <DocHistorySurface history={docsHistoryDefaultScenario()} />,
+    );
+
+    expect(screen.getByText(/History \(\d+\)/)).toBeTruthy();
   });
 
   it("renders the empty document state without state/query providers", () => {

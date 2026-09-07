@@ -8,7 +8,7 @@ import {
 import { NotificationBellSurface } from "../notification-bell-surface";
 
 describe("notifications web pure surface", () => {
-  it("renders notifications from deterministic fixtures", () => {
+  it("FUI[notifications.bell:render] renders notifications from deterministic fixtures", () => {
     renderPureUi(
       <NotificationBellSurface
         notifications={notificationsDefaultScenario()}
@@ -22,7 +22,7 @@ describe("notifications web pure surface", () => {
     expect(screen.getByText("New comment on Operating plan")).toBeTruthy();
   });
 
-  it("routes mark-read and archive through injected callbacks", () => {
+  it("FUI[notifications.bell:actions] routes mark-read and archive through injected callbacks", () => {
     const onMarkRead = vi.fn();
     const onArchive = vi.fn();
 
@@ -47,7 +47,7 @@ describe("notifications web pure surface", () => {
     expect(onArchive).toHaveBeenCalledWith("notif-mention");
   });
 
-  it("routes mark-all-read through the injected callback", () => {
+  it("FUI[notifications.bell:mark-all] routes mark-all-read through the injected callback", () => {
     const onMarkAllRead = vi.fn();
 
     renderPureUi(
@@ -64,7 +64,7 @@ describe("notifications web pure surface", () => {
     expect(onMarkAllRead).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the empty notifications state without query providers", () => {
+  it("FUI[notifications.bell:empty] renders the empty notifications state without query providers", () => {
     renderPureUi(
       <NotificationBellSurface notifications={notificationsEmptyScenario()} />,
     );

@@ -25,7 +25,7 @@ beforeAll(() => {
 });
 
 describe("ui-web critical surfaces", () => {
-  it("renders submit state variants without application providers", () => {
+  it("FUI[ui-web.forms.submit-state:submit] renders submit state variants without application providers", () => {
     render(<UiWebSubmitStateSurface />);
 
     expect(screen.getByRole("button", { name: "Save changes" })).toBeDefined();
@@ -37,7 +37,7 @@ describe("ui-web critical surfaces", () => {
     ).toHaveProperty("disabled", true);
   });
 
-  it("supports basic form control interactions", () => {
+  it("FUI[ui-web.primitives.form-controls:form-controls] supports basic form control interactions", () => {
     render(<UiWebFormControlsSurface />);
 
     const email = screen.getByLabelText("Email") as HTMLInputElement;
@@ -55,7 +55,7 @@ describe("ui-web critical surfaces", () => {
     expect(screen.getByRole("switch", { name: "Notifications" })).toBeDefined();
   });
 
-  it("supports tab navigation primitives", () => {
+  it("FUI[ui-web.primitives.navigation:navigation] supports tab navigation primitives", () => {
     render(<UiWebNavigationPrimitivesSurface />);
 
     expect(screen.getByRole("tab", { name: "Overview" })).toBeDefined();
@@ -64,14 +64,14 @@ describe("ui-web critical surfaces", () => {
     expect(screen.getAllByText("Boards").length).toBeGreaterThan(0);
   });
 
-  it("opens overlay primitives from deterministic triggers", () => {
+  it("FUI[ui-web.primitives.overlays:overlays] opens overlay primitives from deterministic triggers", () => {
     render(<UiWebOverlayPrimitivesSurface />);
 
     fireEvent.click(screen.getByRole("button", { name: "Open dialog" }));
     expect(screen.getByRole("dialog", { name: "Create board" })).toBeDefined();
   });
 
-  it("supports disclosure and toggle data-display primitives", () => {
+  it("FUI[ui-web.primitives.data-display:data-display] supports disclosure and toggle data-display primitives", () => {
     render(<UiWebDataDisplayPrimitivesSurface />);
 
     fireEvent.click(screen.getByRole("button", { name: "What is tracked?" }));

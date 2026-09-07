@@ -3,7 +3,7 @@ import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 import { KanbanToolbar } from "../kanban-toolbar";
 
 describe("KanbanToolbar interactions", () => {
-  it("emits search and create callbacks", () => {
+  it("FUI[wm.kanban.toolbar:toolbar] emits search and create callbacks", () => {
     const onSearchChange = vi.fn();
     const onAddColumn = vi.fn();
     const onCreateCard = vi.fn();

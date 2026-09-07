@@ -8,14 +8,14 @@ import {
 import { AutomationsTab } from "../automations-tab";
 
 describe("AutomationsTab interactions", () => {
-  it("renders automation rules from reusable testing fixtures", () => {
+  it("FUI[automation.rules.tab:render] renders automation rules from reusable testing fixtures", () => {
     renderPureUi(<AutomationsTab rules={automationRulesDefaultScenario()} />);
 
     expect(screen.getByText('When card status goes to "Done"')).toBeTruthy();
     expect(screen.getByText("When card has urgent priority")).toBeTruthy();
   });
 
-  it("routes create and toggle interactions through injected callbacks", () => {
+  it("FUI[automation.rules.tab:toggle] routes create and toggle interactions through injected callbacks", () => {
     const onCreateRule = vi.fn();
     const onToggleRule = vi.fn();
 
@@ -40,7 +40,7 @@ describe("AutomationsTab interactions", () => {
     expect(onCreateRule).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the empty state without state/query providers", () => {
+  it("FUI[automation.rules.tab:empty] renders the empty state without state/query providers", () => {
     renderPureUi(<AutomationsTab rules={automationRulesEmptyScenario()} />);
 
     expect(

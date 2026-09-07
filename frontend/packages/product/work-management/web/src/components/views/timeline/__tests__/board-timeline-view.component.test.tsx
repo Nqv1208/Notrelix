@@ -12,7 +12,7 @@ describe("BoardTimelineView", () => {
     vi.useRealTimers();
   });
 
-  it("uses fixed referenceDate for stable bar placement", () => {
+  it("FUI[wm.timeline.board:timeline] uses fixed referenceDate for stable bar placement", () => {
     const scenario = timelineEdgeScenario();
     const referenceDate = fixedClock();
 
@@ -46,7 +46,7 @@ describe("BoardTimelineView", () => {
     }).toEqual(firstStyle);
   });
 
-  it("keeps the existing visible-item cap for high density input", () => {
+  it("FUI[wm.timeline.board:density] keeps the existing visible-item cap for high density input", () => {
     const scenario = timelineDenseScenario();
 
     renderPureUi(

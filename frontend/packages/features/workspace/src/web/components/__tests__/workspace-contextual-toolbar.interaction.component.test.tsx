@@ -39,9 +39,10 @@ describe("WorkspaceContextualToolbar interactions", () => {
     expect(onAction).toHaveBeenCalledWith("sort");
     expect(onAction).toHaveBeenCalledWith("group");
     expect(onAction).toHaveBeenCalledWith("settings");
+    expect(onAction).toHaveBeenCalledTimes(5);
   });
 
-  it("FUI[workspace.contextual-toolbar:action] emits timeline mode actions", () => {
+  it("FUI[workspace.contextual-toolbar:timeline-actions] emits timeline mode actions", () => {
     const onAction = vi.fn();
     renderPureUi(
       <WorkspaceContextualToolbar
@@ -61,7 +62,7 @@ describe("WorkspaceContextualToolbar interactions", () => {
     expect(onAction).toHaveBeenCalledWith("settings");
   });
 
-  it("FUI[workspace.contextual-toolbar:action] emits dashboard mode actions", () => {
+  it("FUI[workspace.contextual-toolbar:dashboard-actions] emits dashboard mode actions", () => {
     const onAction = vi.fn();
     renderPureUi(
       <WorkspaceContextualToolbar
@@ -79,7 +80,7 @@ describe("WorkspaceContextualToolbar interactions", () => {
     expect(onAction).toHaveBeenCalledWith("ai-summary");
   });
 
-  it("FUI[workspace.contextual-toolbar:action] emits calendar mode today action", () => {
+  it("FUI[workspace.contextual-toolbar:calendar-actions] emits calendar mode today action", () => {
     const onAction = vi.fn();
     renderPureUi(
       <WorkspaceContextualToolbar
@@ -108,7 +109,7 @@ describe("WorkspaceContextualToolbar interactions", () => {
     expect(week.getAttribute("data-state")).toBe("on");
   });
 
-  it("FUI[workspace.contextual-toolbar:local] emits doc mode add-block action", () => {
+  it("FUI[workspace.contextual-toolbar:doc-actions] emits doc mode add-block action", () => {
     const onAction = vi.fn();
     renderPureUi(
       <WorkspaceContextualToolbar

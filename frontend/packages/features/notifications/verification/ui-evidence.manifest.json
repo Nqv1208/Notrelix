@@ -72,27 +72,27 @@
           {
             "state": "Loading",
             "reason": "The bell renders resolved notification data passed by the workspace header; query loading presentation is owned by the header.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "The bell renders resolved notification data passed by the workspace header; query error presentation is owned by the header.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "HighDensity",
             "reason": "Notifications render a bounded popover list; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for notifications at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for notifications at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -107,6 +107,18 @@
       "interactionCases": [
         {
           "id": "render",
+          "testFile": "src/web/components/__tests__/notification-bell-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "actions",
+          "testFile": "src/web/components/__tests__/notification-bell-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "mark-all",
+          "testFile": "src/web/components/__tests__/notification-bell-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
           "testFile": "src/web/components/__tests__/notification-bell-surface.interaction.component.test.tsx"
         }
       ]

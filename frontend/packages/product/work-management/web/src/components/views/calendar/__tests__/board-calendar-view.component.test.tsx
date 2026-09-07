@@ -11,7 +11,7 @@ describe("BoardCalendarView", () => {
     vi.useRealTimers();
   });
 
-  it("renders a fixed reference week independent from system date", () => {
+  it("FUI[wm.calendar.board:calendar] renders a fixed reference week independent from system date", () => {
     const scenario = calendarDefaultScenario();
     const referenceDate = fixedClock();
 

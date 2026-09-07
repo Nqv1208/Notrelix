@@ -6,7 +6,7 @@ import { kanbanDefaultScenario } from "@notrelix/work-management-testing";
 import { KanbanCard } from "../kanban-card";
 
 describe("KanbanCard interactions", () => {
-  it("opens by pointer and keyboard without bubbling nested actions", () => {
+  it("FUI[wm.kanban.card:card] opens by pointer and keyboard without bubbling nested actions", () => {
     const scenario = kanbanDefaultScenario();
     const card = scenario.columns[0]!.cards[0]!;
     const onOpenDetails = vi.fn();

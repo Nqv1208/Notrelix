@@ -84,17 +84,17 @@
           {
             "state": "Success",
             "reason": "A successful login navigates to the workspace shell; there is no inline success presentation.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "Login inputs are standard email/password fields; long-text and Unicode edges are exercised by the register flow's shared input controls.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -109,6 +109,10 @@
       "interactionCases": [
         {
           "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigation",
           "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
         }
       ]
@@ -166,17 +170,17 @@
           {
             "state": "Success",
             "reason": "A successful registration navigates into the product; there is no inline success presentation.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "Register inputs are standard profile fields; the forgot-password EdgeData story exercises long-text and Unicode edges on shared controls.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -251,22 +255,22 @@
           {
             "state": "Loading",
             "reason": "Each step renders synchronously from local step state; no async loading presentation exists between steps.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "Error",
             "reason": "Step transitions are local; submission failure presentation is owned by the login/register Error evidence.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "EdgeData",
             "reason": "Shared input controls receive their long-text and Unicode edge evidence from the login/register surface stories.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           },
           {
             "state": "ReadOnly",
             "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
           }
         ]
       },
@@ -281,6 +285,10 @@
       "interactionCases": [
         {
           "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "reset",
           "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
         }
       ]

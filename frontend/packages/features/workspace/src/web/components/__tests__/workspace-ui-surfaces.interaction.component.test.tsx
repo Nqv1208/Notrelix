@@ -18,7 +18,7 @@ import {
 } from "../workspace-ui-surfaces";
 
 describe("workspace web pure surfaces", () => {
-  it("renders the workspace directory from deterministic fixtures", () => {
+  it("FUI[workspace.directory:render] renders the workspace directory from deterministic fixtures", () => {
     renderPureUi(
       <WorkspaceDirectorySurface
         workspaces={workspaceDirectoryDefaultScenario()}
@@ -30,7 +30,7 @@ describe("workspace web pure surfaces", () => {
     expect(screen.getByText("Enterprise Rollout")).toBeTruthy();
   });
 
-  it("routes workspace opening through the injected callback", () => {
+  it("FUI[workspace.directory:open] routes workspace opening through the injected callback", () => {
     const onOpenWorkspace = vi.fn();
 
     renderPureUi(
@@ -45,7 +45,7 @@ describe("workspace web pure surfaces", () => {
     expect(onOpenWorkspace).toHaveBeenCalledWith("ws-product");
   });
 
-  it("routes view selection through the injected callback", () => {
+  it("FUI[workspace.view-tabs:render] routes view selection through the injected callback", () => {
     const onSelectView = vi.fn();
 
     renderPureUi(
@@ -63,7 +63,7 @@ describe("workspace web pure surfaces", () => {
     );
   });
 
-  it("routes compact header actions through injected callbacks", () => {
+  it("FUI[workspace.compact-header:render] routes compact header actions through injected callbacks", () => {
     const onCopyLink = vi.fn();
     const onInvite = vi.fn();
 
@@ -85,7 +85,7 @@ describe("workspace web pure surfaces", () => {
     expect(onCopyLink).toHaveBeenCalledTimes(1);
   });
 
-  it("accepts pending invitations through the injected callback", () => {
+  it("FUI[workspace.pending-invitations:render] accepts pending invitations through the injected callback", () => {
     const onAccept = vi.fn();
 
     renderPureUi(
@@ -106,7 +106,7 @@ describe("workspace web pure surfaces", () => {
     );
   });
 
-  it("renders the empty invitations state without query providers", () => {
+  it("FUI[workspace.pending-invitations:empty] renders the empty invitations state without query providers", () => {
     renderPureUi(
       <PendingInvitationsMenuSurface
         invitations={invitationsEmptyScenario()}
@@ -120,7 +120,7 @@ describe("workspace web pure surfaces", () => {
     expect(screen.getByText("No pending invitations")).toBeTruthy();
   });
 
-  it("renders the workspace dashboard from deterministic fixtures", () => {
+  it("FUI[workspace.dashboard:render] renders the workspace dashboard from deterministic fixtures", () => {
     renderPureUi(<WorkspaceDashboardSurface {...dashboardDefaultScenario()} />);
 
     expect(screen.getByText("Product")).toBeTruthy();

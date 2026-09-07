@@ -14,7 +14,7 @@ import {
 } from "../auth-form-surfaces";
 
 describe("auth web pure surfaces", () => {
-  it("submits login credentials through the injected callback", () => {
+  it("FUI[auth.login:submit] submits login credentials through the injected callback", () => {
     const onSubmit = vi.fn();
 
     renderPureUi(
@@ -38,7 +38,7 @@ describe("auth web pure surfaces", () => {
     });
   });
 
-  it("routes the login navigation callbacks without router providers", () => {
+  it("FUI[auth.login:navigation] routes the login navigation callbacks without router providers", () => {
     const onForgotPassword = vi.fn();
     const onRegister = vi.fn();
 
@@ -57,7 +57,7 @@ describe("auth web pure surfaces", () => {
     expect(onRegister).toHaveBeenCalledTimes(1);
   });
 
-  it("submits register credentials through the injected callback", () => {
+  it("FUI[auth.register:submit] submits register credentials through the injected callback", () => {
     const onSubmit = vi.fn();
 
     renderPureUi(
@@ -89,7 +89,7 @@ describe("auth web pure surfaces", () => {
     });
   });
 
-  it("sends the forgot-password email through the injected callback", () => {
+  it("FUI[auth.forgot-password:submit] sends the forgot-password email through the injected callback", () => {
     const onSendCode = vi.fn();
 
     renderPureUi(
@@ -109,7 +109,7 @@ describe("auth web pure surfaces", () => {
     expect(onSendCode).toHaveBeenCalledWith("owner@notrelix.dev");
   });
 
-  it("resets the password from the OTP step through the injected callback", () => {
+  it("FUI[auth.forgot-password:reset] resets the password from the OTP step through the injected callback", () => {
     const onResetPassword = vi.fn();
 
     renderPureUi(

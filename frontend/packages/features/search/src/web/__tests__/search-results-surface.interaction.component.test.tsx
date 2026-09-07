@@ -8,7 +8,7 @@ import {
 import { SearchResultsSurface } from "../search-results-surface";
 
 describe("search web pure surface", () => {
-  it("renders search results from deterministic fixtures", () => {
+  it("FUI[search.results:render] renders search results from deterministic fixtures", () => {
     renderPureUi(
       <SearchResultsSurface
         query="plan"
@@ -23,7 +23,7 @@ describe("search web pure surface", () => {
     expect(screen.getByText("Migration risks")).toBeTruthy();
   });
 
-  it("routes opening a result through the injected callback", () => {
+  it("FUI[search.results:select] routes opening a result through the injected callback", () => {
     const onOpenResult = vi.fn();
 
     renderPureUi(
@@ -43,7 +43,7 @@ describe("search web pure surface", () => {
     );
   });
 
-  it("toggles result types through the injected callback", () => {
+  it("FUI[search.results:filter] toggles result types through the injected callback", () => {
     const onSearchChange = vi.fn();
 
     renderPureUi(
@@ -61,7 +61,7 @@ describe("search web pure surface", () => {
     expect(onSearchChange).toHaveBeenCalledWith("plan", ["board", "task"]);
   });
 
-  it("renders the empty search state without API effects", () => {
+  it("FUI[search.results:empty] renders the empty search state without API effects", () => {
     renderPureUi(
       <SearchResultsSurface
         query=""

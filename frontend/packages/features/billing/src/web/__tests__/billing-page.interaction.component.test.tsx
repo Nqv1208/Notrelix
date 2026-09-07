@@ -9,7 +9,7 @@ import {
 import { BillingPage } from "../billing-page";
 
 describe("billing web pure surface", () => {
-  it("renders the billing page from deterministic fixtures", () => {
+  it("FUI[billing.page:render] renders the billing page from deterministic fixtures", () => {
     renderPureUi(<BillingPage {...billingPageDefaultScenario()} />);
 
     expect(screen.getByRole("heading", { name: "Billing" })).toBeTruthy();
@@ -17,7 +17,7 @@ describe("billing web pure surface", () => {
     expect(screen.getByText("Upgrade Plan")).toBeTruthy();
   });
 
-  it("marks the current plan as current across tiers", () => {
+  it("FUI[billing.page:current] marks the current plan as current across tiers", () => {
     renderPureUi(<BillingPage {...billingPageFreeScenario()} />);
 
     expect(screen.getByText("Free forever")).toBeTruthy();

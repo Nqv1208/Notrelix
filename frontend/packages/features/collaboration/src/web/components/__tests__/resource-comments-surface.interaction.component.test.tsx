@@ -8,7 +8,7 @@ import {
 import { ResourceCommentsSurface } from "../resource-comments-surface";
 
 describe("collaboration web pure surface", () => {
-  it("renders comments from deterministic fixtures", () => {
+  it("FUI[collaboration.comments:render] renders comments from deterministic fixtures", () => {
     renderPureUi(
       <ResourceCommentsSurface
         comments={resourceCommentsDefaultScenario()}
@@ -21,7 +21,7 @@ describe("collaboration web pure surface", () => {
     ).toBeTruthy();
   });
 
-  it("routes comment creation and deletion through injected callbacks", () => {
+  it("FUI[collaboration.comments:submit] routes comment creation and deletion through injected callbacks", () => {
     const onCreateComment = vi.fn();
     const onDeleteComment = vi.fn();
 
@@ -46,7 +46,7 @@ describe("collaboration web pure surface", () => {
     expect(onDeleteComment).toHaveBeenCalledWith("comment-2");
   });
 
-  it("renders the empty comments state without query providers", () => {
+  it("FUI[collaboration.comments:empty] renders the empty comments state without query providers", () => {
     renderPureUi(
       <ResourceCommentsSurface
         comments={resourceCommentsEmptyScenario()}
