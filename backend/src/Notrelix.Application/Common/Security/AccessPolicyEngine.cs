@@ -199,6 +199,20 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return ManageAwareAllow(permission, request, facts, role);
         }
 
+        // M2G intended policy: page creation is a workspace usage right —
+        // the DC-FLOW-01 actor is the authenticated workspace member, not
+        // workspace management. Guests are excluded; explicit permission
+        // rules still deny-first above. Other workspace-scoped actions keep
+        // the fall-through contract.
+        if (permission.Resource?.Kind.Value == "workspaces.workspace"
+            && permission.Action == PermissionAction.CreatePage)
+        {
+            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
+            return guest
+                ? AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.")
+                : AccessDecision.Allow();
+        }
+
         // M2G intended policy: commenting on a board item is a usage right
         // decided by the target resource kind, not a mechanical copy of the
         // ManageBoard authority mapping. Board items carry no per-item

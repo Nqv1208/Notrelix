@@ -406,6 +406,35 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CreatePage_WorkspaceMember_Allows()
+    {
+        // M2G intended policy: page creation is a workspace usage right for
+        // authenticated members — the DC-FLOW-01 actor is the workspace member.
+        var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, memberId);
+        var result = await SendAsync<Result<Guid>>(provider,
+            new CreatePageCommand(workspaceId, "Member Page", null));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreatePage_Guest_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var guest = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, guest, WorkspaceRole.Guest);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
+
+        using var provider = CreateProvider(accountId, guest);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            new CreatePageCommand(workspaceId, "Guest Page", null));
+
+        await act.Should().ThrowAsync<AppForbidden>("guests are excluded from workspace page creation");
+    }
+
+    [Fact]
     public async Task CreateComment_OnPage_Owner_Allows()
     {
         var (accountId, ownerId, _, pageId, _) = await SeedPageStackAsync();
