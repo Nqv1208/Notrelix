@@ -18,12 +18,14 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Messaging;
 
 /// <summary>
-/// TAC-DC-FLOW-01 — proves the required production runtime owner chain for
-/// the page fact: CreatePage through the canonical pipeline -> page.created
-/// outbox -> dispatcher -> MassTransit receive pipeline ->
-/// TenantContextConsumeFilter -> DeduplicationConsumeFilter -> real
-/// PageCreated consumer registration path with tenant restoration observed,
-/// and the committed fact projected through the runtime.
+/// TAC-FRZ-018 tenant-envelope transport/runtime proof for the page-created
+/// fact: CreatePage through the canonical pipeline -> page.created outbox ->
+/// dispatcher -> MassTransit receive pipeline -> TenantContextConsumeFilter
+/// -> dedup -> the registered consumer endpoint under the restored Workspace
+/// tenant. This is NOT business-flow evidence: the registered
+/// page-created consumer is a log-only stub, which DC-FLOW-07 excludes from
+/// business evidence. Business proof for the page fact lives in the
+/// producer-side outbox evidence and the pinning architecture gates.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]

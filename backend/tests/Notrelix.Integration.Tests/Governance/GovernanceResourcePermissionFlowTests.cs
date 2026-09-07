@@ -778,6 +778,75 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         return id;
     }
 
+    [Fact]
+    public async Task CreateComment_OnMissingPage_IsNotFound_WithoutPersistence()
+    {
+        // TAC-DC-004 (page section): missing target → defined failure.
+        var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForPage(Guid.CreateVersion7(), "Ghost page comment", null));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "the page section requires its own missing-target proof");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == ownerId)).Should().BeFalse(
+            "no comment may persist for a missing target");
+    }
+
+    [Fact]
+    public async Task CreateComment_OnMissingBoardItem_IsNotFound_WithoutPersistence()
+    {
+        // TAC-DC-004 (board-item section): missing target → defined failure.
+        var (accountId, ownerId, _, _, _) = await SeedBoardStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(Guid.CreateVersion7(), "Ghost item comment", null));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "the board-item section requires its own missing-target proof");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == ownerId)).Should().BeFalse(
+            "no comment may persist for a missing target");
+    }
+
+    [Fact]
+    public async Task CreateComment_OnCrossScopePage_IsNotFound()
+    {
+        // TAC-DC-006 (page section): cross-scope target reference fails and
+        // cross-tenant existence must not leak through Forbidden.
+        var (accountA, _, _, pageA, _) = await SeedPageStackAsync();
+        var (_, _, _, pageB, _) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountA, Guid.NewGuid());
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForPage(pageB, "Cross-tenant page comment", null));
+
+        await act.Should().ThrowAsync<AppNotFound>();
+    }
+
+    [Fact]
+    public async Task CreateComment_OnCrossScopeBoardItem_IsNotFound()
+    {
+        // TAC-DC-006 (board-item section): cross-scope target reference fails
+        // and cross-tenant existence must not leak through Forbidden.
+        var (accountA, _, _, boardA, _) = await SeedBoardStackAsync();
+        var (_, _, _, boardB, _) = await SeedBoardStackAsync();
+        var itemB = await ResolveBoardItemIdAsync(boardB);
+
+        using var provider = CreateProvider(accountA, Guid.NewGuid());
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemB, "Cross-tenant item comment", null));
+
+        await act.Should().ThrowAsync<AppNotFound>();
+    }
+
     // ── composition -----------------------------------------------------------
 
     private static async Task<T> SendAsync<T>(ServiceProvider provider, object request)
