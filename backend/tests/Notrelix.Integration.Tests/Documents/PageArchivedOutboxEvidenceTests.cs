@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.EventMappers.Documents;
+using Notrelix.Domain.Common;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Documents.Pages.Events;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Messaging;
@@ -151,5 +153,107 @@ public sealed class PageArchivedOutboxEvidenceTests : IAsyncLifetime
 
         (await CountArchivedOutboxAsync(graph.WorkspaceId)).Should().Be(1,
             "the documented archive no-op must not emit a second fact");
+    }
+
+    /// <summary>
+    /// TAC-DC-FLOW-02 failure matrix — a persistence failure after the
+    /// aggregate mutation aborts the whole request transaction: the page
+    /// stays Active in committed state and no outward fact survives. State
+    /// is asserted from a fresh committed context, never from the tracked
+    /// (in-memory archived) instance.
+    /// </summary>
+    [Fact]
+    public async Task PersistenceFailure_AfterArchiveMutation_RollsBackPageAndOutbox()
+    {
+        var graph = await SeedWorkspaceAsync();
+        Guid pageId;
+
+        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
+        {
+            var page = NewActivePage(graph);
+            context.Pages.Add(page);
+            await context.SaveChangesAsync();
+            pageId = page.Id;
+        }
+
+        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
+        await using (var transaction = await context.Database.BeginTransactionAsync())
+        {
+            var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
+            page.Archive(graph.AuthorId, Now);
+            await context.SaveChangesAsync();
+
+            // The handler-side mutation succeeded; the commit itself fails.
+            await transaction.RollbackAsync();
+        }
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
+            .Should().Be(PageStatus.Active,
+            "an aborted commit must leave the committed lifecycle state Active");
+        (await CountArchivedOutboxAsync(graph.WorkspaceId)).Should().Be(0,
+            "no outward fact may survive an aborted commit");
+    }
+
+    /// <summary>
+    /// TAC-DC-FLOW-02 failure matrix — an outward-enrollment failure inside
+    /// the interceptor chain fails the actual SaveChanges: the mutation never
+    /// commits and no partial outward delivery exists. This is the real
+    /// interceptor path, not a synthetic failure after commit.
+    /// </summary>
+    [Fact]
+    public async Task OutboxEnrollmentFailure_FailsTheCommit_AndKeepsPageActive()
+    {
+        var graph = await SeedWorkspaceAsync();
+        Guid pageId;
+
+        await using (var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor()))
+        {
+            var page = NewActivePage(graph);
+            context.Pages.Add(page);
+            await context.SaveChangesAsync();
+            pageId = page.Id;
+        }
+
+        var failingInterceptor = new DomainEventInterceptor(
+            new FixedClock(Now),
+            new EventTypeRegistry(),
+            ClassificationPolicy.CreateBuilder().Build(),
+            DeliveryPolicy.CreateBuilder().Build(),
+            new FailingArchivedEventMapper(),
+            new IntegrationEventCollector());
+
+        await using (var context = _db.CreateContext(SystemTenant(), failingInterceptor))
+        {
+            var page = await context.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId);
+            page.Archive(graph.AuthorId, Now);
+
+            var act = () => context.SaveChangesAsync();
+            await act.Should().ThrowAsync<InvalidOperationException>(
+                "outward enrollment runs inside the SaveChanges chain, so its failure aborts the commit");
+        }
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
+            .Should().Be(PageStatus.Active,
+            "a failed enrollment must leave the committed lifecycle state Active");
+        (await CountArchivedOutboxAsync(graph.WorkspaceId)).Should().Be(0,
+            "no outward fact may exist when enrollment fails inside the commit");
+    }
+
+    private sealed class FailingArchivedEventMapper : IIntegrationEventMapper<PageArchivedDomainEvent, Notrelix.Application.Events.Documents.PageArchivedIntegrationEvent>
+    {
+        public Notrelix.Application.Events.Documents.PageArchivedIntegrationEvent? Map(PageArchivedDomainEvent domainEvent) =>
+            throw new InvalidOperationException("synthetic enrollment failure inside the interceptor chain");
+
+        IReadOnlyList<IntegrationEventMapping> IIntegrationEventMapper.Map(IDomainEvent domainEvent)
+        {
+            if (domainEvent is PageArchivedDomainEvent archived)
+            {
+                Map(archived);
+            }
+
+            return [];
+        }
     }
 }
