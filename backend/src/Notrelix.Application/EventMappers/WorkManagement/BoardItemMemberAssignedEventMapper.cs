@@ -12,13 +12,14 @@ public sealed class BoardItemMemberAssignedEventMapper
 {
     public override BoardItemMemberAssignedIntegrationEvent Map(Domain.WorkManagement.Items.Events.BoardItemMemberAssignedDomainEvent domainEvent) =>
         new(
-            Guid.CreateVersion7(),
-            domainEvent.AccountId,
-            domainEvent.WorkspaceId,
-            domainEvent.ItemId,
-            domainEvent.UserId,
-            domainEvent.AssignedBy,
-            domainEvent.EventId,
-            domainEvent.EventId,
+            EventId: Guid.CreateVersion7(),
+            AccountIdValue: domainEvent.AccountId,
+            WorkspaceIdValue: domainEvent.WorkspaceId,
+            ItemId: domainEvent.ItemId,
+            AssignedUserId: domainEvent.UserId,
+            AssignedBy: domainEvent.AssignedBy,
+            CorrelationId: domainEvent.EventId,
+            SourceEventId: domainEvent.EventId,
+            CausationId: null,
             OccurredAt: domainEvent.OccurredAt);
 }
