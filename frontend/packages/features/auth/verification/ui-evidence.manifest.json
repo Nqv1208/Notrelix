@@ -1,68 +1,161 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-auth",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/web/components/auth-form-surfaces.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Retained re-export barrel so stories/tests/fixtures keep one import path; individual form surfaces are registered separately."
+      },
+      {
+        "path": "src/web/components/auth-provider.tsx",
+        "category": "provider",
+        "reason": "Session/session-storage provider that renders no standalone visual surface."
+      },
+      {
+        "path": "src/web/components/login-form.tsx",
+        "category": "container",
+        "reason": "Container composing AuthLoginFormSurface with account-scoped session actions."
+      },
+      {
+        "path": "src/web/components/register-form.tsx",
+        "category": "container",
+        "reason": "Container composing AuthRegisterFormSurface with account-scoped session actions."
+      },
+      {
+        "path": "src/web/components/forgot-password-form.tsx",
+        "category": "container",
+        "reason": "Container composing AuthForgotPasswordFormSurface with account-scoped recovery actions."
+      }
+    ]
+  },
   "surfaces": [
     {
       "surfaceId": "auth.login",
       "owner": "@notrelix/features-auth",
-      "pureEntry": "src/web/components/auth-form-surfaces.tsx",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-login-form-surface.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "auth-auth-form-surfaces--login-default", "state": "Default" },
-        { "id": "auth-auth-form-surfaces--login-pending", "state": "Loading" },
-        { "id": "auth-auth-form-surfaces--login-error", "state": "EdgeData" }
+        {
+          "id": "auth-auth-form-surfaces--login-default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--login-pending",
+          "state": "Loading",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "auth-auth-form-surfaces--login-error",
+          "state": "Error",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "Loading", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "auth.register",
       "owner": "@notrelix/features-auth",
-      "pureEntry": "src/web/components/auth-form-surfaces.tsx",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-register-form-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "auth-auth-form-surfaces--register-default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "auth-auth-form-surfaces--register-pending",
-          "state": "Loading"
+          "state": "Loading",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
-        { "id": "auth-auth-form-surfaces--register-error", "state": "EdgeData" }
+        {
+          "id": "auth-auth-form-surfaces--register-error",
+          "state": "Error",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "Loading", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "auth.forgot-password",
       "owner": "@notrelix/features-auth",
-      "pureEntry": "src/web/components/auth-form-surfaces.tsx",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-forgot-password-form-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "auth-auth-form-surfaces--forgot-email-default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "auth-auth-form-surfaces--forgot-otp-default",
-          "state": "EdgeData"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "auth-auth-form-surfaces--forgot-success-default",
-          "state": "ReadOnly"
+          "state": "Success",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "EdgeData", "ReadOnly"],
+      "stateCoverage": {
+        "required": ["Default", "Success"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": false,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

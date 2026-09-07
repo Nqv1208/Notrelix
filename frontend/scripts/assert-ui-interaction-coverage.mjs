@@ -48,8 +48,8 @@ function requiredInteractionTests() {
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     for (const surface of manifest.surfaces ?? []) {
       if (!surface.checks?.includes("interaction")) continue;
-      for (const testPath of surface.interactionTests ?? []) {
-        required.add(resolve(ownerRoot, testPath));
+      for (const interactionCase of surface.interactionCases ?? []) {
+        required.add(resolve(ownerRoot, interactionCase.testFile));
       }
     }
   }

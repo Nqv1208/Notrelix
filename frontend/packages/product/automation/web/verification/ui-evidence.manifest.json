@@ -1,21 +1,50 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "owner": "@notrelix/automation-web",
+  "inventory": { "excludedSources": [] },
   "surfaces": [
     {
       "surfaceId": "automation.rules.tab",
       "owner": "@notrelix/automation-web",
+      "surfaceKind": "data",
       "pureEntry": "src/components/automations-tab.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "automation-automations-tab--default", "state": "Default" },
-        { "id": "automation-automations-tab--empty", "state": "Empty" },
-        { "id": "automation-automations-tab--edge-data", "state": "EdgeData" }
+        {
+          "id": "automation-automations-tab--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "automation-automations-tab--empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "automation-automations-tab--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/__tests__/automations-tab.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/__tests__/automations-tab.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

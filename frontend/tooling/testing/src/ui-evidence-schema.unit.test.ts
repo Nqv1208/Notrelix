@@ -2,25 +2,42 @@ import { describe, expect, it } from "vitest";
 import { validateUiEvidenceManifest } from "./ui-evidence-schema";
 
 const validManifest = {
-  schemaVersion: 1,
+  schemaVersion: 2,
+  owner: "@notrelix/work-management-web",
+  inventory: { excludedSources: [] },
   surfaces: [
     {
       surfaceId: "wm.kanban.board",
       owner: "@notrelix/work-management-web",
+      surfaceKind: "data",
       pureEntry: "src/components/views/kanban/kanban-board.tsx",
+      coveredSources: [],
       stories: [
-        { id: "work-management-kanban-board--default", state: "Default" },
-      ],
-      requiredStates: ["Default"],
-      checks: ["interaction", "a11y", "visual", "purity"],
-      interactionTests: [
-        "src/components/views/kanban/kanban-board.component.test.tsx",
-      ],
-      notApplicableStates: [
         {
-          state: "ReadOnly",
-          reason: "No product-authoritative read-only contract exists.",
-          authority: "docs/product/work-management.md",
+          id: "work-management-kanban-board--default",
+          state: "Default",
+          visualTargets: [{ viewport: "desktop", theme: "light" }],
+        },
+      ],
+      stateCoverage: {
+        required: ["Default"],
+        delegated: [],
+        notApplicable: [
+          {
+            state: "ReadOnly",
+            reason: "No product-authoritative read-only contract exists.",
+            authority: "docs/product/work-management.md",
+          },
+        ],
+      },
+      responsive: false,
+      themeAware: false,
+      checks: ["interaction", "a11y", "visual", "purity"],
+      interactionCases: [
+        {
+          id: "board",
+          testFile:
+            "src/components/views/kanban/kanban-board.interaction.component.test.tsx",
         },
       ],
     },
@@ -28,30 +45,51 @@ const validManifest = {
 };
 
 describe("validateUiEvidenceManifest", () => {
-  it("accepts schemaVersion 1 manifests with owner-local interaction tests", () => {
+  it("accepts schemaVersion 2 manifests with owner-local paths", () => {
     expect(validateUiEvidenceManifest(validManifest).ok).toBe(true);
   });
 
-  it("rejects unknown state/check, missing N/A authority and bad interaction paths", () => {
+  it("rejects schemaVersion 1", () => {
     const result = validateUiEvidenceManifest({
       schemaVersion: 1,
+      surfaces: [],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics).toContain("schemaVersion must be 2");
+  });
+
+  it("rejects unknown state/check, traversal, missing N/A authority and bad interaction paths", () => {
+    const result = validateUiEvidenceManifest({
+      schemaVersion: 2,
+      owner: "@notrelix/work-management-web",
+      inventory: { excludedSources: [] },
       surfaces: [
         {
           surfaceId: "bad",
           owner: "@notrelix/work-management-web",
+          surfaceKind: "data",
           pureEntry: "../bad.tsx",
-          stories: [{ id: "story", state: "Mystery" }],
-          requiredStates: ["Default"],
+          coveredSources: [],
+          stories: [
+            { id: "story", state: "Mystery", visualTargets: [] },
+          ],
+          stateCoverage: {
+            required: ["Default"],
+            delegated: [],
+            notApplicable: [{ state: "ReadOnly", reason: "" }],
+          },
+          responsive: false,
+          themeAware: false,
           checks: ["network"],
-          interactionTests: ["bad.test.ts"],
-          notApplicableStates: [{ state: "ReadOnly", reason: "" }],
+          interactionCases: [{ id: "x", testFile: "bad.test.ts" }],
         },
       ],
     });
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.join("\n")).toContain("Mystery");
-    expect(result.diagnostics.join("\n")).toContain("network");
+    expect(result.diagnostics.join("\n")).toContain("stories[0].state must be one of");
+    expect(result.diagnostics.join("\n")).toContain("checks[0] must be one of");
     expect(result.diagnostics.join("\n")).toContain("authority");
     expect(result.diagnostics.join("\n")).toContain("pureEntry");
   });
@@ -61,15 +99,62 @@ describe("validateUiEvidenceManifest", () => {
     manifest.surfaces.push({
       ...structuredClone(validManifest.surfaces[0]),
       surfaceId: "wm.kanban.card",
+      checks: ["a11y"],
     });
-    manifest.surfaces[1].checks = ["a11y"];
 
     const result = validateUiEvidenceManifest(manifest);
 
     expect(result.ok).toBe(false);
     expect(result.diagnostics.join("\n")).toContain("duplicate story id");
     expect(result.diagnostics.join("\n")).toContain(
-      "interactionTests must be empty",
+      "interactionCases must be empty",
     );
+  });
+
+  it("rejects story states outside stateCoverage.required", () => {
+    const manifest = structuredClone(validManifest);
+    manifest.surfaces[0].stories.push({
+      id: "work-management-kanban-board--empty",
+      state: "Empty",
+      visualTargets: [{ viewport: "desktop", theme: "light" }],
+    });
+
+    const result = validateUiEvidenceManifest(manifest);
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.join("\n")).toContain(
+      "state Empty is not in stateCoverage.required",
+    );
+  });
+
+  it("rejects generic exclusion reasons and visual policy violations", () => {
+    const manifest = structuredClone(validManifest);
+    manifest.inventory.excludedSources.push({
+      path: "src/components/views/kanban/kanban-view.tsx",
+      category: "container",
+      reason: "covered elsewhere",
+    });
+    manifest.surfaces[0].stories[0].visualTargets = [];
+    manifest.surfaces[0].responsive = true;
+
+    const result = validateUiEvidenceManifest(manifest);
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.join("\n")).toContain("must be concrete");
+    expect(result.diagnostics.join("\n")).toContain("must declare visualTargets");
+  });
+
+  it("enforces responsive Default targets only for responsive surfaces", () => {
+    const responsiveManifest = structuredClone(validManifest);
+    responsiveManifest.surfaces[0].responsive = true;
+    responsiveManifest.surfaces[0].stories[0].visualTargets = [
+      { viewport: "desktop", theme: "light" },
+    ];
+
+    const result = validateUiEvidenceManifest(responsiveManifest);
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.join("\n")).toContain("mobile/light");
+    expect(result.diagnostics.join("\n")).toContain("tablet/light");
   });
 });

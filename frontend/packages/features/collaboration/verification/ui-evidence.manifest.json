@@ -1,30 +1,58 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-collaboration",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/web/components/resource-comments.tsx",
+        "category": "container",
+        "reason": "Container composing ResourceCommentsSurface with resource-scoped comment state."
+      }
+    ]
+  },
   "surfaces": [
     {
       "surfaceId": "collaboration.comments",
       "owner": "@notrelix/features-collaboration",
+      "surfaceKind": "data",
       "pureEntry": "src/web/components/resource-comments-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "collaboration-resource-comments--default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "collaboration-resource-comments--empty",
-          "state": "Empty"
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "collaboration-resource-comments--edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/resource-comments-surface.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/components/__tests__/resource-comments-surface.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

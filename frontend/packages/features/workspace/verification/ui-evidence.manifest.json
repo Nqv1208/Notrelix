@@ -1,118 +1,270 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-workspace",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/web/components/dashboard/active-boards.tsx",
+        "category": "container",
+        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
+      },
+      {
+        "path": "src/web/components/dashboard/activity-feed.tsx",
+        "category": "container",
+        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
+      },
+      {
+        "path": "src/web/components/dashboard/pinned-docs.tsx",
+        "category": "container",
+        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
+      },
+      {
+        "path": "src/web/components/dashboard/upcoming-deadlines.tsx",
+        "category": "container",
+        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
+      },
+      {
+        "path": "src/web/components/dashboard/workspace-overview.tsx",
+        "category": "container",
+        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
+      },
+      {
+        "path": "src/web/components/pending-invitations-menu.tsx",
+        "category": "container",
+        "reason": "Container composing PendingInvitationsMenuSurface with workspace-scoped invitation actions."
+      },
+      {
+        "path": "src/web/components/workspace-add-view-menu.tsx",
+        "category": "container",
+        "reason": "Menu container composed into view-management actions; not an evidence surface at baseline."
+      },
+      {
+        "path": "src/web/components/workspace-compact-header.tsx",
+        "category": "container",
+        "reason": "Container composing WorkspaceCompactHeaderSurface with workspace-scoped header actions."
+      },
+      {
+        "path": "src/web/components/workspace-contextual-toolbar.tsx",
+        "category": "container",
+        "reason": "Presentation owner registered and evidenced directly per FUIR-LOCK-13 (Wave 2); excluded from the Wave 1 baseline registration."
+      },
+      {
+        "path": "src/web/components/workspace-directory.tsx",
+        "category": "container",
+        "reason": "Container composing WorkspaceDirectorySurface with workspace query/actions."
+      },
+      {
+        "path": "src/web/components/workspace-view-tabs.tsx",
+        "category": "container",
+        "reason": "Container composing WorkspaceViewTabsSurface with workspace view-selection state."
+      },
+      {
+        "path": "src/web/components/workspace-ui-surfaces.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Retained re-export barrel so stories/tests/fixtures keep one import path; individual workspace surfaces are registered separately."
+      }
+    ]
+  },
   "surfaces": [
     {
       "surfaceId": "workspace.directory",
       "owner": "@notrelix/features-workspace",
-      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/components/workspace-directory-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "workspace-workspace-ui-surfaces--directory-default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--directory-empty",
-          "state": "Empty"
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "workspace-workspace-ui-surfaces--directory-edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "workspace.compact-header",
       "owner": "@notrelix/features-workspace",
-      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/web/components/workspace-compact-header-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "workspace-workspace-ui-surfaces--compact-header-default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         }
       ],
-      "requiredStates": ["Default"],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "workspace.view-tabs",
       "owner": "@notrelix/features-workspace",
-      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/web/components/workspace-view-tabs-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "workspace-workspace-ui-surfaces--view-tabs-default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--view-tabs-empty",
-          "state": "Empty"
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "workspace-workspace-ui-surfaces--view-tabs-edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "workspace.pending-invitations",
       "owner": "@notrelix/features-workspace",
-      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/components/workspace-pending-invitations-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "workspace-workspace-ui-surfaces--invitations-default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--invitations-empty",
-          "state": "Empty"
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty"],
+      "stateCoverage": {
+        "required": ["Default", "Empty"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "workspace.dashboard",
       "owner": "@notrelix/features-workspace",
-      "pureEntry": "src/web/components/workspace-ui-surfaces.tsx",
+      "surfaceKind": "composition",
+      "pureEntry": "src/web/components/workspace-dashboard-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "workspace-workspace-ui-surfaces--dashboard-default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--dashboard-empty",
-          "state": "Empty"
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "workspace-workspace-ui-surfaces--dashboard-loading",
-          "state": "Loading"
+          "state": "Loading",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "Loading"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "Loading"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

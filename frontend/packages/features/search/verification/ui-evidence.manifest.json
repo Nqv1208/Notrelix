@@ -1,21 +1,58 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-search",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/web/search-results-view.tsx",
+        "category": "container",
+        "reason": "Container composing SearchResultsSurface with workspace-scoped search state."
+      }
+    ]
+  },
   "surfaces": [
     {
       "surfaceId": "search.results",
       "owner": "@notrelix/features-search",
+      "surfaceKind": "data",
       "pureEntry": "src/web/search-results-surface.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "search-search-results--default", "state": "Default" },
-        { "id": "search-search-results--empty", "state": "Empty" },
-        { "id": "search-search-results--edge-data", "state": "EdgeData" }
+        {
+          "id": "search-search-results--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "search-search-results--empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "search-search-results--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

@@ -1,91 +1,255 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "owner": "@notrelix/docs-web",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/components/doc-page-surfaces.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Retained re-export barrel so stories/tests/fixtures keep one import path; individual page surfaces are registered separately."
+      },
+      {
+        "path": "src/components/doc-page-screen.tsx",
+        "category": "container",
+        "reason": "Container composing DocPageScreenSurface with document query state."
+      },
+      {
+        "path": "src/components/doc-page-tree.tsx",
+        "category": "container",
+        "reason": "Container composing DocPageTreeSurface with page-tree navigation state."
+      },
+      {
+        "path": "src/components/doc-page-header.tsx",
+        "category": "container",
+        "reason": "Container composing DocPageHeaderSurface with document actions."
+      },
+      {
+        "path": "src/components/doc-comments.tsx",
+        "category": "container",
+        "reason": "Container composing DocPageCommentsSurface with comment state."
+      },
+      {
+        "path": "src/components/doc-history.tsx",
+        "category": "container",
+        "reason": "Container composing DocPageHistorySurface with document history state."
+      }
+    ]
+  },
   "surfaces": [
     {
       "surfaceId": "docs.page.screen",
       "owner": "@notrelix/docs-web",
-      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/doc-page-screen-surface.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "docs-page-surfaces--page-screen-default", "state": "Default" },
-        { "id": "docs-page-surfaces--page-screen-empty", "state": "Empty" },
+        {
+          "id": "docs-page-surfaces--page-screen-default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-screen-empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
         {
           "id": "docs-page-surfaces--page-screen-edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
-        { "id": "docs-page-surfaces--page-screen-loading", "state": "Loading" }
+        {
+          "id": "docs-page-surfaces--page-screen-loading",
+          "state": "Loading",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData", "Loading"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData", "Loading"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "docs.page.tree",
       "owner": "@notrelix/docs-web",
-      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/doc-page-tree-surface.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "docs-page-surfaces--page-tree-default", "state": "Default" },
-        { "id": "docs-page-surfaces--page-tree-empty", "state": "Empty" },
+        {
+          "id": "docs-page-surfaces--page-tree-default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--page-tree-empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
         {
           "id": "docs-page-surfaces--page-tree-edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "docs.page.header",
       "owner": "@notrelix/docs-web",
-      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "surfaceKind": "shell",
+      "pureEntry": "src/components/doc-page-header-surface.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "docs-page-surfaces--header-default", "state": "Default" },
-        { "id": "docs-page-surfaces--header-edge-data", "state": "EdgeData" }
+        {
+          "id": "docs-page-surfaces--header-default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--header-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "docs.comments",
       "owner": "@notrelix/docs-web",
-      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/doc-page-comments-surface.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "docs-page-surfaces--comments-default", "state": "Default" },
-        { "id": "docs-page-surfaces--comments-empty", "state": "Empty" },
-        { "id": "docs-page-surfaces--comments-edge-data", "state": "EdgeData" }
+        {
+          "id": "docs-page-surfaces--comments-default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--comments-empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "docs-page-surfaces--comments-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "docs.history",
       "owner": "@notrelix/docs-web",
-      "pureEntry": "src/components/doc-page-surfaces.tsx",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/doc-page-history-surface.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "docs-page-surfaces--history-default", "state": "Default" },
-        { "id": "docs-page-surfaces--history-empty", "state": "Empty" },
-        { "id": "docs-page-surfaces--history-edge-data", "state": "EdgeData" }
+        {
+          "id": "docs-page-surfaces--history-default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "docs-page-surfaces--history-empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "docs-page-surfaces--history-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/__tests__/doc-page-surfaces.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

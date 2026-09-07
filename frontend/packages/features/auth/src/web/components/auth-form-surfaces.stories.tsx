@@ -48,7 +48,7 @@ export const LoginPending: Story = {
 
 export const LoginError: Story = {
   render: () => <AuthLoginFormSurface {...authLoginErrorScenario()} />,
-  tags: ["fui-surface--auth.login", "fui-state--EdgeData"],
+  tags: ["fui-surface--auth.login", "fui-state--Error"],
 };
 
 export const RegisterDefault: Story = {
@@ -63,7 +63,7 @@ export const RegisterPending: Story = {
 
 export const RegisterError: Story = {
   render: () => <AuthRegisterFormSurface {...authRegisterErrorScenario()} />,
-  tags: ["fui-surface--auth.register", "fui-state--EdgeData"],
+  tags: ["fui-surface--auth.register", "fui-state--Error"],
 };
 
 export const ForgotEmailDefault: Story = {
@@ -77,12 +77,12 @@ export const ForgotOtpDefault: Story = {
   render: () => (
     <AuthForgotPasswordFormSurface {...authForgotOtpDefaultScenario()} />
   ),
-  tags: ["fui-surface--auth.forgot-password", "fui-state--EdgeData"],
+  tags: ["fui-surface--auth.forgot-password", "fui-state--Default"],
 };
 
 export const ForgotSuccessDefault: Story = {
   render: () => (
     <AuthForgotPasswordFormSurface {...authForgotSuccessDefaultScenario()} />
   ),
-  tags: ["fui-surface--auth.forgot-password", "fui-state--ReadOnly"],
+  tags: ["fui-surface--auth.forgot-password", "fui-state--Success"],
 };

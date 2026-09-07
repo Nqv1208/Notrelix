@@ -67,7 +67,7 @@ export function uiEvidenceTargets(
     for (const surface of validation.manifest.surfaces) {
       if (!surface.checks.includes(check)) continue;
       for (const story of surface.stories) {
-        if (!surface.requiredStates.includes(story.state)) continue;
+        if (!surface.stateCoverage.required.includes(story.state)) continue;
         targets.push({
           surfaceId: surface.surfaceId,
           storyId: story.id,

@@ -1,30 +1,58 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-notifications",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/web/components/notification-bell.tsx",
+        "category": "container",
+        "reason": "Container composing NotificationBellSurface with account-scoped notification state."
+      }
+    ]
+  },
   "surfaces": [
     {
       "surfaceId": "notifications.bell",
       "owner": "@notrelix/features-notifications",
+      "surfaceKind": "data",
       "pureEntry": "src/web/components/notification-bell-surface.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "notifications-notification-bell--default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "notifications-notification-bell--empty",
-          "state": "Empty"
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "notifications-notification-bell--edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/web/components/__tests__/notification-bell-surface.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/components/__tests__/notification-bell-surface.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

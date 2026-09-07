@@ -1,270 +1,539 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "owner": "@notrelix/work-management-web",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/components/board-layout/board-layout-shell.tsx",
+        "category": "container",
+        "reason": "Board layout shell registered and evidenced directly per FUIR-LOCK-11 (Wave 2); excluded from the Wave 1 baseline registration."
+      },
+      {
+        "path": "src/components/board-layout/board-toolbar.tsx",
+        "category": "container",
+        "reason": "Board toolbar registered and evidenced directly per FUIR-LOCK-11 (Wave 2); excluded from the Wave 1 baseline registration."
+      },
+      {
+        "path": "src/components/board-layout/view-tabs.tsx",
+        "category": "container",
+        "reason": "Board view tabs registered and evidenced directly per FUIR-LOCK-11 (Wave 2); excluded from the Wave 1 baseline registration."
+      },
+      {
+        "path": "src/components/board-workspace-view-content.tsx",
+        "category": "container",
+        "reason": "Stateful adapter owning useFullBoard and stateful view containers; receives a pure presentation seam per FUIR-LOCK-12 (Wave 2)."
+      },
+      {
+        "path": "src/components/card-detail/task-detail-panel.tsx",
+        "category": "container",
+        "reason": "Container composing TaskDetailPanelSurface with card-detail state and actions."
+      },
+      {
+        "path": "src/components/views/kanban/kanban-filter-menu.tsx",
+        "category": "container",
+        "reason": "View filtering container registered with board layout surfaces per FUIR-LOCK-11 (Wave 2); excluded from the Wave 1 baseline registration."
+      },
+      {
+        "path": "src/components/views/kanban/kanban-view.tsx",
+        "category": "container",
+        "reason": "Stateful view adapter owning kanban board query state and composing registered board surfaces."
+      },
+      {
+        "path": "src/components/views/table/main-table-view.tsx",
+        "category": "container",
+        "reason": "Stateful view adapter owning table main query state and composing registered table surfaces."
+      }
+    ]
+  },
   "surfaces": [
     {
       "surfaceId": "wm.kanban.board",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
       "pureEntry": "src/components/views/kanban/kanban-board.tsx",
+      "coveredSources": [
+        "src/components/views/kanban/kanban-add-card.tsx",
+        "src/components/views/kanban/kanban-add-column.tsx",
+        "src/components/views/kanban/kanban-card-detail-panel.tsx",
+        "src/components/views/kanban/kanban-empty-state.tsx"
+      ],
       "stories": [
-        { "id": "work-management-kanban-board--default", "state": "Default" },
-        { "id": "work-management-kanban-board--empty", "state": "Empty" },
+        {
+          "id": "work-management-kanban-board--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "work-management-kanban-board--empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
         {
           "id": "work-management-kanban-board--edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-kanban-board--high-density",
-          "state": "HighDensity"
+          "state": "HighDensity",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData", "HighDensity"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative Kanban capability contract exists at this baseline.",
+            "authority": "docs/product/work-management.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative Kanban read-only contract exists at this baseline.",
+            "authority": "docs/product/work-management.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": [
+      "interactionCases": [
         {
-          "state": "PermissionLimited",
-          "reason": "No product-authoritative Kanban capability contract exists at this baseline.",
-          "authority": "docs/product/work-management.md"
-        },
-        {
-          "state": "ReadOnly",
-          "reason": "No product-authoritative Kanban read-only contract exists at this baseline.",
-          "authority": "docs/product/work-management.md"
+          "id": "board",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
         }
       ]
     },
     {
       "surfaceId": "wm.kanban.column",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
       "pureEntry": "src/components/views/kanban/kanban-column.tsx",
+      "coveredSources": ["src/components/views/kanban/kanban-column-menu.tsx"],
       "stories": [
-        { "id": "work-management-kanban-column--default", "state": "Default" },
-        { "id": "work-management-kanban-column--empty", "state": "Empty" },
+        {
+          "id": "work-management-kanban-column--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "work-management-kanban-column--empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
         {
           "id": "work-management-kanban-column--edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "column",
+          "testFile": "src/components/views/kanban/__tests__/kanban-column.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "wm.kanban.card",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
+      "coveredSources": ["src/components/views/kanban/kanban-card-menu.tsx"],
       "stories": [
-        { "id": "work-management-kanban-card--default", "state": "Default" },
-        { "id": "work-management-kanban-card--edge-data", "state": "EdgeData" }
+        {
+          "id": "work-management-kanban-card--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Default", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/views/kanban/__tests__/kanban-card.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "card",
+          "testFile": "src/components/views/kanban/__tests__/kanban-card.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "wm.kanban.toolbar",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
       "pureEntry": "src/components/views/kanban/kanban-toolbar.tsx",
+      "coveredSources": ["src/components/views/kanban/kanban-sort-menu.tsx"],
       "stories": [
-        { "id": "work-management-kanban-toolbar--default", "state": "Default" }
+        {
+          "id": "work-management-kanban-toolbar--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        }
       ],
-      "requiredStates": ["Default"],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "toolbar",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "wm.kanban.loading",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "feedback",
       "pureEntry": "src/components/views/kanban/kanban-skeleton.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "work-management-kanban-loading--loading", "state": "Loading" }
+        {
+          "id": "work-management-kanban-loading--loading",
+          "state": "Loading",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Loading"],
+      "stateCoverage": {
+        "required": ["Loading"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["a11y", "visual", "purity"],
-      "interactionTests": [],
-      "notApplicableStates": []
+      "interactionCases": []
     },
     {
       "surfaceId": "wm.kanban.unavailable",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "feedback",
       "pureEntry": "src/components/views/kanban/kanban-unavailable-state.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "work-management-kanban-unavailable--error", "state": "Error" }
+        {
+          "id": "work-management-kanban-unavailable--error",
+          "state": "Error",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Error"],
+      "stateCoverage": {
+        "required": ["Error"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["a11y", "visual", "purity"],
-      "interactionTests": [],
-      "notApplicableStates": []
+      "interactionCases": []
     },
     {
       "surfaceId": "wm.table.main",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
       "pureEntry": "src/components/views/table/main-table-surface.tsx",
+      "coveredSources": [
+        "src/components/views/table/table-add-task-row.tsx",
+        "src/components/views/table/table-cell.tsx",
+        "src/components/views/table/table-group-section.tsx",
+        "src/components/views/table/table-header-row.tsx",
+        "src/components/views/table/table-row.tsx",
+        "src/components/views/table/table-scroll-container.tsx",
+        "src/components/views/table/table-sticky-header.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-table-main-table--default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
-        { "id": "work-management-table-main-table--empty", "state": "Empty" },
+        {
+          "id": "work-management-table-main-table--empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
         {
           "id": "work-management-table-main-table--edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-table-main-table--high-density",
-          "state": "HighDensity"
+          "state": "HighDensity",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-table-main-table--read-only",
-          "state": "ReadOnly"
+          "state": "ReadOnly",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": [
-        "Default",
-        "Empty",
-        "EdgeData",
-        "HighDensity",
-        "ReadOnly"
-      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "table",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "wm.table.loading",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "feedback",
       "pureEntry": "src/components/views/table/main-table-skeleton.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "work-management-table-loading--loading", "state": "Loading" }
+        {
+          "id": "work-management-table-loading--loading",
+          "state": "Loading",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Loading"],
+      "stateCoverage": {
+        "required": ["Loading"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["a11y", "visual", "purity"],
-      "interactionTests": [],
-      "notApplicableStates": []
+      "interactionCases": []
     },
     {
       "surfaceId": "wm.table.unavailable",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "feedback",
       "pureEntry": "src/components/views/table/main-table-error.tsx",
+      "coveredSources": [],
       "stories": [
-        { "id": "work-management-table-unavailable--error", "state": "Error" }
+        {
+          "id": "work-management-table-unavailable--error",
+          "state": "Error",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
       ],
-      "requiredStates": ["Error"],
+      "stateCoverage": {
+        "required": ["Error"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["a11y", "visual", "purity"],
-      "interactionTests": [],
-      "notApplicableStates": []
+      "interactionCases": []
     },
     {
       "surfaceId": "wm.calendar.board",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
       "pureEntry": "src/components/views/calendar/board-calendar-view.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "work-management-calendar-board-calendar--default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "work-management-calendar-board-calendar--empty",
-          "state": "Empty"
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-calendar-board-calendar--edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-calendar-board-calendar--high-density",
-          "state": "HighDensity"
+          "state": "HighDensity",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData", "HighDensity"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/views/calendar/__tests__/board-calendar-view.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "calendar",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-view.component.test.tsx"
+        }
+      ]
     },
     {
       "surfaceId": "wm.timeline.board",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
       "pureEntry": "src/components/views/timeline/board-timeline-view.tsx",
+      "coveredSources": [],
       "stories": [
         {
           "id": "work-management-timeline-board-timeline--default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "work-management-timeline-board-timeline--empty",
-          "state": "Empty"
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-timeline-board-timeline--edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": ["Default", "Empty", "EdgeData"],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "HighDensity",
+            "reason": "Timeline intentionally caps visible cards at 10; high-density input is covered by component evidence rather than a distinct visual state.",
+            "authority": "frontend-ui-construction.plan.md FUIC-WU-078"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/views/timeline/__tests__/board-timeline-view.component.test.tsx"
-      ],
-      "notApplicableStates": [
+      "interactionCases": [
         {
-          "state": "HighDensity",
-          "reason": "Timeline intentionally caps visible cards at 10; high-density input is covered by component evidence rather than a distinct visual state.",
-          "authority": "frontend-ui-construction.plan.md FUIC-WU-078"
+          "id": "timeline",
+          "testFile": "src/components/views/timeline/__tests__/board-timeline-view.component.test.tsx"
         }
       ]
     },
     {
       "surfaceId": "wm.task-detail.panel",
       "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
       "pureEntry": "src/components/card-detail/task-detail-panel-surface.tsx",
+      "coveredSources": [
+        "src/components/card-detail/task-activity-tab.tsx",
+        "src/components/card-detail/task-detail-empty-state.tsx",
+        "src/components/card-detail/task-detail-header.tsx",
+        "src/components/card-detail/task-detail-tabs.tsx",
+        "src/components/card-detail/task-files-tab.tsx",
+        "src/components/card-detail/task-updates-tab.tsx",
+        "src/components/card-detail/update-composer.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-task-detail-panel--default",
-          "state": "Default"
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
         },
         {
           "id": "work-management-task-detail-panel--loading",
-          "state": "Loading"
+          "state": "Loading",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-task-detail-panel--unavailable",
-          "state": "Unavailable"
+          "state": "Unavailable",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-task-detail-panel--edge-data",
-          "state": "EdgeData"
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         },
         {
           "id": "work-management-task-detail-panel--read-only",
-          "state": "ReadOnly"
+          "state": "ReadOnly",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
         }
       ],
-      "requiredStates": [
-        "Default",
-        "Loading",
-        "Unavailable",
-        "EdgeData",
-        "ReadOnly"
-      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Unavailable", "EdgeData", "ReadOnly"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionTests": [
-        "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
-      ],
-      "notApplicableStates": []
+      "interactionCases": [
+        {
+          "id": "panel",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

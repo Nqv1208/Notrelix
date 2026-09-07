@@ -1,9 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import {
-  discoverUiEvidenceManifests,
-  resolveFrontendRootFromHere,
-} from "./manifest-discovery";
+import { discoverUiEvidenceManifests, resolveFrontendRootFromHere } from "./manifest-discovery";
+import { enumerateGovernedSources } from "./governed-source-enumerator";
 
 interface StorybookIndex {
   entries?: Record<string, { id: string; tags?: string[] }>;
@@ -36,9 +34,7 @@ export function checkUiEvidence(
   diagnostics.push(...discovery.diagnostics);
 
   if (discovery.manifests.length === 0) {
-    diagnostics.push(
-      "no schemaVersion 1 UI evidence manifests were discovered",
-    );
+    diagnostics.push("no UI evidence manifests were discovered");
   }
 
   const index = loadStorybookIndex(indexPath);
@@ -48,12 +44,50 @@ export function checkUiEvidence(
     );
   }
 
+  interface ClassificationEntry {
+    absPath: string;
+    displayPath: string;
+    ownerRoot: string;
+    owner: string;
+    role: "pureEntry" | "coveredSource" | "excludedSource";
+    surfaceId?: string;
+    manifestPath: string;
+  }
+
+  const classificationEntries: ClassificationEntry[] = [];
   const registeredSurfaces = new Set<string>();
   const requiredBindings = new Set<string>();
   const requiredStoryIds = new Set<string>();
+  const storyExpectations = new Map<string, { surfaceId: string; state: string }>();
+  const ownerRoots = new Set<string>();
   let requiredStateCount = 0;
 
   for (const discovered of discovery.manifests) {
+    const ownerRoot = discovered.ownerRoot;
+    ownerRoots.add(ownerRoot);
+
+    const register = (
+      role: ClassificationEntry["role"],
+      relativePath: string,
+      surfaceId?: string,
+    ): void => {
+      const absPath = join(ownerRoot, relativePath);
+      classificationEntries.push({
+        absPath,
+        displayPath: relativePath,
+        ownerRoot,
+        owner: discovered.manifest.owner,
+        role,
+        surfaceId,
+        manifestPath: relative(frontendRoot, discovered.manifestPath),
+      });
+      if (!existsSync(absPath)) {
+        diagnostics.push(
+          `${relative(frontendRoot, discovered.manifestPath)}: missing ${role} ${relativePath}`,
+        );
+      }
+    };
+
     for (const surface of discovered.manifest.surfaces) {
       if (registeredSurfaces.has(surface.surfaceId)) {
         diagnostics.push(
@@ -62,28 +96,90 @@ export function checkUiEvidence(
       }
       registeredSurfaces.add(surface.surfaceId);
 
-      const pureEntryPath = join(discovered.ownerRoot, surface.pureEntry);
-      if (!existsSync(pureEntryPath)) {
+      if (surface.stories.length === 0) {
         diagnostics.push(
-          `${relative(frontendRoot, discovered.manifestPath)}: missing pureEntry ${surface.pureEntry}`,
+          `${relative(frontendRoot, discovered.manifestPath)}: surface ${surface.surfaceId} has no stories`,
         );
       }
 
-      for (const interactionTest of surface.interactionTests) {
-        if (!existsSync(join(discovered.ownerRoot, interactionTest))) {
+      register("pureEntry", surface.pureEntry, surface.surfaceId);
+      for (const coveredSource of surface.coveredSources) {
+        register("coveredSource", coveredSource, surface.surfaceId);
+      }
+      for (const interactionCase of surface.interactionCases) {
+        const absPath = join(ownerRoot, interactionCase.testFile);
+        if (!existsSync(absPath)) {
           diagnostics.push(
-            `${relative(frontendRoot, discovered.manifestPath)}: missing interaction test ${interactionTest}`,
+            `${relative(frontendRoot, discovered.manifestPath)}: missing interaction test ${interactionCase.testFile}`,
           );
         }
       }
 
-      for (const state of surface.requiredStates) {
+      for (const state of surface.stateCoverage.required) {
         requiredStateCount += 1;
         requiredBindings.add(`${surface.surfaceId}::${state}`);
       }
       for (const story of surface.stories) {
         requiredStoryIds.add(story.id);
+        requiredBindings.add(`${surface.surfaceId}::${story.state}`);
+        if (storyExpectations.has(story.id)) {
+          diagnostics.push(`duplicate manifest story id: ${story.id}`);
+        }
+        storyExpectations.set(story.id, {
+          surfaceId: surface.surfaceId,
+          state: story.state,
+        });
       }
+    }
+
+    for (const excluded of discovered.manifest.inventory.excludedSources) {
+      register("excludedSource", excluded.path);
+    }
+  }
+
+  const governedByOwner = new Map<string, string>();
+  for (const ownerRoot of ownerRoots) {
+    const enumeration = enumerateGovernedSources(ownerRoot);
+    diagnostics.push(...enumeration.diagnostics);
+    for (const source of enumeration.sources) {
+      governedByOwner.set(join(ownerRoot, source), ownerRoot);
+    }
+  }
+
+  for (const entry of classificationEntries) {
+    const owningRoot = governedByOwner.get(entry.absPath);
+    if (owningRoot && owningRoot !== entry.ownerRoot) {
+      diagnostics.push(
+        `${relative(frontendRoot, entry.manifestPath)}: ${entry.displayPath} is governed by a different owner and cannot be claimed by ${entry.owner}`,
+      );
+    }
+  }
+
+  const classificationByPath = new Map<string, ClassificationEntry[]>();
+  for (const entry of classificationEntries) {
+    const entries = classificationByPath.get(entry.absPath) ?? [];
+    entries.push(entry);
+    classificationByPath.set(entry.absPath, entries);
+  }
+
+  for (const [absPath, entries] of classificationByPath) {
+    if (entries.length <= 1) continue;
+    if (!governedByOwner.has(absPath)) continue;
+    const owners = [...new Set(entries.map((entry) => entry.owner))];
+    const surfaces = [...new Set(entries.map((entry) => entry.surfaceId).filter(Boolean))];
+    diagnostics.push(
+      `source ${relative(frontendRoot, absPath)} is classified ${entries.length} times (owners: ${owners.join(", ")}${
+        surfaces.length > 0 ? `; surfaces: ${surfaces.join(", ")}` : ""
+      })`,
+    );
+  }
+
+  for (const absPath of governedByOwner.keys()) {
+    const entries = classificationByPath.get(absPath) ?? [];
+    if (entries.length === 0) {
+      diagnostics.push(
+        `unclassified governed source: ${relative(frontendRoot, absPath)}`,
+      );
     }
   }
 
@@ -95,6 +191,19 @@ export function checkUiEvidence(
         diagnostics.push(`duplicate collected story id: ${story.id}`);
       }
       seenStoryIds.add(story.id);
+
+      const expectation = storyExpectations.get(story.id);
+      if (expectation) {
+        const tags = story.tags ?? [];
+        if (
+          !tags.includes(`${SURFACE_TAG_PREFIX}${expectation.surfaceId}`) ||
+          !tags.includes(`${STATE_TAG_PREFIX}${expectation.state}`)
+        ) {
+          diagnostics.push(
+            `story ${story.id} must bind surface ${expectation.surfaceId} state ${expectation.state}`,
+          );
+        }
+      }
     }
 
     const tags = story.tags ?? [];
@@ -120,19 +229,21 @@ export function checkUiEvidence(
     }
 
     const binding = `${surfaceId}::${state}`;
-    if (seenBindings.has(binding)) {
-      diagnostics.push(`duplicate collected binding: ${binding}`);
+    if (!requiredBindings.has(binding) && !seenBindings.has(binding)) {
+      diagnostics.push(`unregistered collected binding: ${binding}`);
     }
     seenBindings.add(binding);
   }
 
   for (const binding of requiredBindings) {
-    if (!seenBindings.has(binding))
+    if (!seenBindings.has(binding)) {
       diagnostics.push(`missing collected binding: ${binding}`);
+    }
   }
   for (const storyId of requiredStoryIds) {
-    if (!seenStoryIds.has(storyId))
+    if (!seenStoryIds.has(storyId)) {
       diagnostics.push(`missing collected story id: ${storyId}`);
+    }
   }
 
   return {
