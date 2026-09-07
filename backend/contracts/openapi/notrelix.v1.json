@@ -1369,6 +1369,44 @@
         ]
       }
     },
+    "/api/v1/pages/{pageId}/archive": {
+      "post": {
+        "tags": [
+          "Documents.Pages",
+          "Documents.Pages"
+        ],
+        "summary": "Archive a page",
+        "operationId": "Documents.Pages.ArchivePage",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/pages/{pageId}/breadcrumb": {
       "get": {
         "tags": [
@@ -13435,6 +13473,14 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "mentionedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -15220,7 +15266,8 @@
           31,
           32,
           33,
-          34
+          34,
+          35
         ],
         "type": "integer",
         "format": "int32"
