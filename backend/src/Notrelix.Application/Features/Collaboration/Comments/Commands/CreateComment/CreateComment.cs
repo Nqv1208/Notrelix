@@ -58,7 +58,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
 
         _context.Comments.Add(comment);
 
-        foreach (var mentionedUserId in DistinctMentionedUsers(request.MentionedUserIds, userId))
+        foreach (var mentionedUserId in DistinctMentionedUsers(request.MentionedUserIds))
         {
             var mention = Mention.Create(
                 accountId,
@@ -74,7 +74,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         return Result<Guid>.Success(comment.Id);
     }
 
-    private static IEnumerable<Guid> DistinctMentionedUsers(IReadOnlyList<Guid>? mentionedUserIds, Guid actorUserId)
+    private static IEnumerable<Guid> DistinctMentionedUsers(IReadOnlyList<Guid>? mentionedUserIds)
     {
         if (mentionedUserIds is null || mentionedUserIds.Count == 0)
         {
@@ -82,7 +82,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         }
 
         return mentionedUserIds
-            .Where(id => id != Guid.Empty && id != actorUserId)
+            .Where(id => id != Guid.Empty)
             .Distinct();
     }
 }

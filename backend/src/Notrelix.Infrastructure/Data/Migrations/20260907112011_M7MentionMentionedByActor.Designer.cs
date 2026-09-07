@@ -2614,7 +2614,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("MentionedId")
                         .HasDatabaseName("idx_mentions_mentioned_user_id");
 
-                    b.ToTable("mentions", "collab");
+                    b.ToTable("mentions", "collab", t =>
+                        {
+                            t.HasCheckConstraint(
+                                "ck_mentions_mentioned_by_user_id_present",
+                                "mentioned_by_user_id <> '00000000-0000-0000-0000-000000000000'");
+                        });
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Presence.PresenceSession", b =>

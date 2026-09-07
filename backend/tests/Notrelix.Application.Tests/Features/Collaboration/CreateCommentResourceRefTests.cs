@@ -60,19 +60,21 @@ public class CreateCommentResourceRefTests
     }
 
     [Fact]
-    public async Task CommentWithDuplicateOrSelfMentions_CollapsesToDistinctNonSelfMentions()
+    public async Task CommentWithDuplicateMentions_CollapsesToDistinctAggregates()
     {
+        // M7 normalization is identity-only: empty ids are rejected, distinct
+        // ids collapse — the authority does not forbid a self-mention, so the
+        // producer must not silently drop one.
         var (sut, _, mentions, _) = CreateSut();
         var mentionedUser = Guid.CreateVersion7();
-        var authorId = _requestContextMock.Object.UserId;
 
         var result = await sut.Handle(
-            CreateCommentCommand.ForBoardItem(Guid.CreateVersion7(), "hello", null, [mentionedUser, mentionedUser, authorId, Guid.Empty]),
+            CreateCommentCommand.ForBoardItem(Guid.CreateVersion7(), "hello", null, [mentionedUser, mentionedUser, Guid.Empty]),
             CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         mentions.Verify(m => m.Add(It.IsAny<Mention>()), Times.Once,
-            "duplicate ids collapse, the mentioner themself is a no-op, and empty ids are rejected before the aggregate");
+            "duplicate ids collapse and empty ids are rejected before the aggregate");
     }
 
     [Fact]

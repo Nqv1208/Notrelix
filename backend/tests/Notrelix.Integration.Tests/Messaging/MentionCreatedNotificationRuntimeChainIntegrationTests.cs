@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,7 @@ using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Identity.Services;
+using Notrelix.Infrastructure.Messaging;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -64,6 +66,10 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
     {
         var accountId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
+        // The happy-path mention target is a real Identity user with an active
+        // workspace membership — target validity itself is an accepted debt
+        // (M7-DC-MENTION-TARGET-VALIDITY), but the evidence must not rely on a
+        // random Guid as if that were the normalized production shape.
         var mentionedUserId = Guid.NewGuid();
         var content = $"mention chain {Guid.NewGuid():N}";
         var now = DateTimeOffset.UtcNow;
@@ -77,9 +83,13 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             FractionalIndex.Create("a0"), ownerId, now);
 
         await using var seed = _db.CreateContext(SystemTenant());
+        seed.Users.Add(Domain.Identity.Users.User.Create(
+            $"mention-{Guid.NewGuid():N}@example.com", "Mention Target", "hashed", now, true));
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
             accountId, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner, ownerId, now));
+        seed.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
+            accountId, workspace.Id, mentionedUserId, Domain.Workspaces.Members.WorkspaceRole.Member, ownerId, now));
         seed.Boards.Add(board);
         seed.BoardGroups.Add(group);
         seed.BoardItems.Add(item);
@@ -154,6 +164,15 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
 
             var dispatcherCompleted = await WaitForOutboxProcessedAsync(outbox.Id);
             dispatcherCompleted.Should().BeTrue();
+
+            // Duplicate delivery of the SAME business event: the exact outward
+            // event is deserialized from the committed outbox with the
+            // production serializer and republished with the same business
+            // EventId — the dedup identity of the consume pipeline.
+            var duplicate = DeserializeOutboxEvent(outbox);
+            await provider.GetRequiredService<IIntegrationEventBus>()
+                .PublishAsync(duplicate);
+            await Task.Delay(1500);
         }
         finally
         {
@@ -168,7 +187,14 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             .IgnoreQueryFilters()
             .CountAsync(n => n.SourceEventId == outboxEventId
                 && n.WorkspaceId == graph.WorkspaceId)).Should().Be(1,
-            "exactly one logical notification survives the chain");
+            "exactly one logical notification survives the chain including the redelivery");
+
+        (await probe.Set<MessagingProcessedEvent>()
+            .IgnoreQueryFilters()
+            .CountAsync(p => p.EventId == outboxEventId
+                && p.ConsumerName == NotificationConsumerEndpoint
+                && p.Status == "Succeeded")).Should().Be(1,
+            "the dedup identity stays coherent: one succeeded delivery, the duplicate skipped");
 
         var recipient = await probe.Set<NotificationRecipientRecord>()
             .IgnoreQueryFilters()
@@ -177,6 +203,85 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         recipient!.AccountId.Should().Be(graph.AccountId, "the recipient carries the authoritative account, not Guid.Empty");
         recipient.RecipientUserId.Should().Be(graph.MentionedUserId);
     }
+
+    [Fact]
+    public async Task MentionCreated_CrossTenantIsolation_NotificationStaysInOwningTenant()
+    {
+        var graphA = await SeedMentionStackAsync();
+        var graphB = await SeedMentionStackAsync();
+        await using var provider = BuildProvider(graphA);
+
+        var hostedServices = provider.GetServices<IHostedService>().ToArray();
+        foreach (var hosted in hostedServices)
+        {
+            await hosted.StartAsync(CancellationToken.None);
+        }
+
+        Guid outboxEventId;
+        try
+        {
+            await CreateCommentWithMentionAsync(provider, graphA);
+            var outbox = await WaitForOutboxAsync(graphA, "mention.created");
+            outbox.Should().NotBeNull();
+            outboxEventId = outbox!.EventId;
+
+            (await WaitForNotificationAsync(outboxEventId, graphA)).Should().NotBeNull();
+            (await WaitForDedupSucceededAsync(outboxEventId, NotificationConsumerEndpoint)).Should().BeTrue();
+        }
+        finally
+        {
+            foreach (var hosted in hostedServices.Reverse())
+            {
+                await hosted.StopAsync(CancellationToken.None);
+            }
+        }
+
+        // The consumer adopts only the event's own tenant: the owning
+        // workspace holds exactly one notification with the authoritative
+        // envelope, and the foreign workspace/account identity holds nothing.
+        await using var probe = _db.CreateContext(SystemTenant());
+        (await probe.Set<NotificationItemRecord>()
+            .IgnoreQueryFilters()
+            .CountAsync(n => n.SourceEventId == outboxEventId
+                && n.WorkspaceId == graphA.WorkspaceId
+                && n.AccountId == graphA.AccountId)).Should().Be(1);
+
+        (await probe.Set<NotificationItemRecord>()
+            .IgnoreQueryFilters()
+            .CountAsync(n => n.WorkspaceId == graphB.WorkspaceId
+                || n.AccountId == graphB.AccountId)).Should().Be(0,
+            "no notification may exist under the foreign tenant identity");
+
+        (await probe.Set<NotificationRecipientRecord>()
+            .IgnoreQueryFilters()
+            .AnyAsync(r => r.RecipientUserId == graphB.MentionedUserId
+                || r.AccountId == graphB.AccountId)).Should().BeFalse(
+            "no recipient row may carry the foreign tenant identity");
+
+        (await probe.Set<MessagingOutboxMessage>()
+            .IgnoreQueryFilters()
+            .CountAsync(m => m.MessageName == "mention.created"
+                && (m.WorkspaceId == graphB.WorkspaceId || m.AccountId == graphB.AccountId))).Should().Be(0,
+            "the foreign tenant stages no mention facts of its own");
+    }
+
+    /// <summary>
+    /// Deserializes the committed outbox payload with the production
+    /// serializer exactly as the OutboxDispatcher does (CamelCase naming plus
+    /// the (messageName, schemaVersion) catalog identity).
+    /// </summary>
+    private IIntegrationEvent DeserializeOutboxEvent(MessagingOutboxMessage message)
+    {
+        var catalog = new IntegrationEventCatalog();
+        var eventType = catalog.Resolve(new EventContractKey(message.MessageName, message.SchemaVersion));
+        return message.PayloadJson.Deserialize(eventType, OutboxSerializerOptions)
+            .Should().BeAssignableTo<IIntegrationEvent>().Which;
+    }
+
+    private static readonly JsonSerializerOptions OutboxSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
 
     private ServiceProvider BuildProvider(MentionGraph graph)
     {

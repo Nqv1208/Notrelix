@@ -8,7 +8,14 @@ public class MentionConfiguration : IEntityTypeConfiguration<Mention>
 {
     public void Configure(EntityTypeBuilder<Mention> builder)
     {
-        builder.ToTable("mentions", DbSchemas.Collab);
+        builder.ToTable("mentions", DbSchemas.Collab, table =>
+        {
+            // Mirrors the Domain aggregate guard: a persisted mention always
+            // carries a real trusted actor, never the empty-Guid sentinel.
+            table.HasCheckConstraint(
+                "ck_mentions_mentioned_by_user_id_present",
+                "mentioned_by_user_id <> '00000000-0000-0000-0000-000000000000'");
+        });
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
