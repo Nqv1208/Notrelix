@@ -17,6 +17,7 @@ public class MentionConfiguration : IEntityTypeConfiguration<Mention>
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.Type).HasColumnName("type").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.MentionedId).HasColumnName("mentioned_user_id").IsRequired();
+        builder.Property(x => x.MentionedByUserId).HasColumnName("mentioned_by_user_id").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
 
         builder.OwnsOne(x => x.Source, source =>

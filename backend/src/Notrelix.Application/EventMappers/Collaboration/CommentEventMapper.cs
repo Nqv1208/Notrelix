@@ -34,9 +34,9 @@ public sealed class CommentEventMapper :
             TargetType: domainEvent.Source.Kind.Value,
             TargetId: domainEvent.Source.ResourceId,
             MentionedUserId: domainEvent.MentionedId,
-            MentionedByUserId: domainEvent.MentionedId,
+            MentionedByUserId: domainEvent.MentionedByUserId,
             CorrelationId: domainEvent.EventId,
-            ActorUserId: null,
+            ActorUserId: domainEvent.MentionedByUserId,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
         );

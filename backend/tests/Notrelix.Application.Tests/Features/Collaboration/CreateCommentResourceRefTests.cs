@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Collaboration.Mentions;
 
 namespace Notrelix.Application.Tests.Features.Collaboration;
 
@@ -27,18 +28,57 @@ public class CreateCommentResourceRefTests
         _clockMock.Setup(c => c.UtcNow).Returns(TestNow);
     }
 
-    private (CreateCommentCommandHandler Handler, Mock<DbSet<Comment>> Comments, Mock<ICollaborationDbContext> ContextMock) CreateSut()
+    private (CreateCommentCommandHandler Handler, Mock<DbSet<Comment>> Comments, Mock<DbSet<Mention>> Mentions, Mock<ICollaborationDbContext> ContextMock) CreateSut()
     {
         var comments = TestDbSet.Create<Comment>();
+        var mentions = TestDbSet.Create<Mention>();
         var contextMock = new Mock<ICollaborationDbContext>();
         contextMock.Setup(c => c.Comments).Returns(comments.Object);
-        return (new CreateCommentCommandHandler(contextMock.Object, _requestContextMock.Object, _clockMock.Object), comments, contextMock);
+        contextMock.Setup(c => c.PageMentions).Returns(mentions.Object);
+        return (new CreateCommentCommandHandler(contextMock.Object, _requestContextMock.Object, _clockMock.Object), comments, mentions, contextMock);
+    }
+
+    [Fact]
+    public async Task CommentWithExplicitMentionedUsers_CreatesMentionAggregates_InTheSameUnitOfWork()
+    {
+        var (sut, _, mentions, _) = CreateSut();
+        var mentionedUser = Guid.CreateVersion7();
+        var authorId = _requestContextMock.Object.UserId;
+        var workspaceId = _requestContextMock.Object.RequireWorkspaceId();
+        var boardItemId = Guid.CreateVersion7();
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForBoardItem(boardItemId, "hello", null, [mentionedUser]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        mentions.Verify(m => m.Add(It.Is<Mention>(mention =>
+            mention.MentionedId == mentionedUser &&
+            mention.MentionedByUserId == authorId &&
+            mention.WorkspaceId == workspaceId &&
+            mention.Type == MentionType.User)), Times.Once);
+    }
+
+    [Fact]
+    public async Task CommentWithDuplicateOrSelfMentions_CollapsesToDistinctNonSelfMentions()
+    {
+        var (sut, _, mentions, _) = CreateSut();
+        var mentionedUser = Guid.CreateVersion7();
+        var authorId = _requestContextMock.Object.UserId;
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForBoardItem(Guid.CreateVersion7(), "hello", null, [mentionedUser, mentionedUser, authorId, Guid.Empty]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        mentions.Verify(m => m.Add(It.IsAny<Mention>()), Times.Once,
+            "duplicate ids collapse, the mentioner themself is a no-op, and empty ids are rejected before the aggregate");
     }
 
     [Fact]
     public async Task ForBoardItem_StoresCanonicalResourceRef_ThroughCollaborationContextOnly()
     {
-        var (sut, comments, _) = CreateSut();
+        var (sut, comments, _, _) = CreateSut();
         var boardItemId = Guid.CreateVersion7();
 
         var result = await sut.Handle(CreateCommentCommand.ForBoardItem(boardItemId, "hello", null), CancellationToken.None);
@@ -53,7 +93,7 @@ public class CreateCommentResourceRefTests
     [Fact]
     public async Task Reply_WithUnknownParent_FailsWithoutForeignLookup()
     {
-        var (sut, comments, _) = CreateSut();
+        var (sut, comments, _, _) = CreateSut();
 
         await sut.Invoking(s => s.Handle(
                 CreateCommentCommand.ForBoardItem(Guid.CreateVersion7(), "orphan reply", Guid.CreateVersion7()),
