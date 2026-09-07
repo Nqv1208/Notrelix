@@ -199,6 +199,28 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return ManageAwareAllow(permission, request, facts, role);
         }
 
+        // M2G intended policy: commenting on a board item is a usage right
+        // decided by the target resource kind, not a mechanical copy of the
+        // ManageBoard authority mapping. Board items carry no per-item
+        // audience fact, so guests need explicit access evidence on the item
+        // itself. Other board-item actions keep the fall-through contract.
+        if (permission.Resource?.Kind.Value == "work-management.board-item"
+            && permission.Action == PermissionAction.CreateComment)
+        {
+            if (!facts.ResourceExists)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+            }
+
+            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
+            if (guest && !facts.HasExplicitResourcePermission)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+            }
+
+            return GrantAwareAllow(request, facts, role);
+        }
+
         return permission.Action is PermissionAction.ViewWorkspace or PermissionAction.ViewBoard or PermissionAction.ViewMembers
             ? AccessDecision.Allow()
             : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");

@@ -48,6 +48,7 @@ using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
+using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
 using AppValidation = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.Integration.Tests.Governance;
@@ -449,6 +450,57 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var itemId = await ResolveBoardItemIdAsync(boardId);
 
         using var provider = CreateProvider(accountId, ownerId);
+        var result = await SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateComment_OnBoardItem_WorkspaceMember_Allows()
+    {
+        // M2G intended policy: commenting on a board item is a usage right
+        // for workspace members, decided by the target resource kind through
+        // the one canonical pipeline — no second evaluator.
+        var (accountId, _, _, boardId, memberId) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+
+        using var provider = CreateProvider(accountId, memberId);
+        var result = await SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateComment_OnBoardItem_Guest_WithoutExplicitAccess_IsDenied()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+        var guest = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, guest, WorkspaceRole.Guest);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
+
+        using var provider = CreateProvider(accountId, guest);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "board items carry no per-item audience fact, so guests without explicit access are hidden");
+    }
+
+    [Fact]
+    public async Task CreateComment_OnBoardItem_Guest_WithResourcePermission_Allows()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+        var guest = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, guest, WorkspaceRole.Guest);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "work-management.board-item", itemId, guest, PermissionLevel.Commenter);
+
+        using var provider = CreateProvider(accountId, guest);
         var result = await SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
 
