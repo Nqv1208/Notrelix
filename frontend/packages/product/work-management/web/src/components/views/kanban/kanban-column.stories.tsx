@@ -15,6 +15,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 const callbacks = {
   onOpenDetails: noOp,
+            onCopyCardLink: noOp,
   onRename: noOp,
   onColorChange: noOp,
   onDelete: noOp,

@@ -13,7 +13,7 @@ const meta = {
 } satisfies Meta<typeof KanbanCard>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-const callbacks = { onOpenDetails: noOp, onDuplicate: noOp, onDelete: noOp };
+const callbacks = { onOpenDetails: noOp, onCopyLink: noOp, onDuplicate: noOp, onDelete: noOp };
 
 export const Default: Story = {
   args: {

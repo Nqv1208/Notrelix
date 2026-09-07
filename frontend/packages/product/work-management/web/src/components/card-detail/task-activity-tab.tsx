@@ -27,11 +27,15 @@ export function TaskActivityTab({
   isLoading,
   isFetching,
   onRefresh,
+  onAiFilter,
+  onExport,
 }: {
   activity: readonly CardActivity[];
   isLoading: boolean;
   isFetching: boolean;
   onRefresh: () => void;
+  onAiFilter?: () => void;
+  onExport?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [person, setPerson] = useState<string | null>(null);
@@ -95,7 +99,12 @@ export function TaskActivityTab({
               </Command>
             </PopoverContent>
           </Popover>
-          <Button variant="outline" size="sm" className="bg-card">
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-card"
+            onClick={onAiFilter}
+          >
             <Bot className="size-4" />
             AI filter
           </Button>
@@ -114,6 +123,7 @@ export function TaskActivityTab({
             variant="ghost"
             size="icon-sm"
             aria-label="Export activity log"
+            onClick={onExport}
           >
             <Download className="size-4" />
           </Button>

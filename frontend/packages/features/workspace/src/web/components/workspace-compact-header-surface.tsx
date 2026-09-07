@@ -33,6 +33,8 @@ export interface WorkspaceCompactHeaderSurfaceProps {
   onInvite?: () => void;
   onShare?: () => void;
   onFavorite?: () => void;
+  onQuickAction?: (action: "ai-suggestions" | "automate" | "agents") => void;
+  onMoreActions?: () => void;
 }
 
 export function WorkspaceCompactHeaderSurface({
@@ -43,6 +45,8 @@ export function WorkspaceCompactHeaderSurface({
   onInvite,
   onShare,
   onFavorite,
+  onQuickAction,
+  onMoreActions,
 }: WorkspaceCompactHeaderSurfaceProps) {
   const [open, setOpen] = useState(false);
 
@@ -112,15 +116,30 @@ export function WorkspaceCompactHeaderSurface({
           orientation="vertical"
           className="mx-1 hidden h-6 md:block"
         />
-        <Button variant="ghost" size="sm" className="rounded-full">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full"
+          onClick={() => onQuickAction?.("ai-suggestions")}
+        >
           <Sparkles className="size-4" />
           AI suggestions
         </Button>
-        <Button variant="ghost" size="sm" className="rounded-full">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full"
+          onClick={() => onQuickAction?.("automate")}
+        >
           <Workflow className="size-4" />
           Automate
         </Button>
-        <Button variant="ghost" size="sm" className="rounded-full">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full"
+          onClick={() => onQuickAction?.("agents")}
+        >
           <Bot className="size-4" />
           Agents
         </Button>
@@ -156,6 +175,7 @@ export function WorkspaceCompactHeaderSurface({
             variant="ghost"
             size="icon"
             aria-label="More workspace actions"
+            onClick={onMoreActions}
           >
             <MoreHorizontal className="size-4" />
           </Button>

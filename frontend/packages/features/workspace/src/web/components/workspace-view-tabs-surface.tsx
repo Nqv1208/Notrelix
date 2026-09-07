@@ -8,6 +8,7 @@ export interface WorkspaceViewTabsSurfaceProps {
   activeViewId?: string;
   onSelectView?: (view: WorkspaceView) => void;
   onAddView?: () => void;
+  onMoreActions?: () => void;
 }
 
 export function WorkspaceViewTabsSurface({
@@ -15,6 +16,7 @@ export function WorkspaceViewTabsSurface({
   activeViewId,
   onSelectView,
   onAddView,
+  onMoreActions,
 }: WorkspaceViewTabsSurfaceProps) {
   return (
     <div className="border-b border-border bg-card">
@@ -55,7 +57,12 @@ export function WorkspaceViewTabsSurface({
           <Plus className="size-4" />
           <span className="sr-only sm:not-sr-only">Add view</span>
         </Button>
-        <Button variant="ghost" size="icon" aria-label="More view actions">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="More view actions"
+          onClick={onMoreActions}
+        >
           <MoreHorizontal className="size-4" />
         </Button>
       </div>

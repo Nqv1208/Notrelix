@@ -10,6 +10,7 @@ function renderColumn(onRename = vi.fn()) {
       board={scenario.board}
       group={scenario.columns[0]!}
       onOpenDetails={vi.fn()}
+            onCopyCardLink={vi.fn()}
       onRename={onRename}
       onColorChange={vi.fn()}
       onDelete={vi.fn()}

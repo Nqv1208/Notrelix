@@ -23,6 +23,7 @@ export function KanbanBoard({
   onRenameColumn,
   onColorChangeColumn,
   onDeleteColumn,
+  onCopyCardLink,
   onDuplicateCard,
   onDeleteCard,
   onCreateCard,
@@ -36,6 +37,7 @@ export function KanbanBoard({
   onRenameColumn: (listId: string, title: string) => void;
   onColorChangeColumn: (listId: string, color: string) => void;
   onDeleteColumn: (listId: string) => void;
+  onCopyCardLink: (cardId: string) => void;
   onDuplicateCard: (cardId: string) => void;
   onDeleteCard: (cardId: string) => void;
   onCreateCard: (listId: string, title: string, position: number) => void;
@@ -73,6 +75,7 @@ export function KanbanBoard({
             onRename={(title) => onRenameColumn(group.id, title)}
             onColorChange={(color) => onColorChangeColumn(group.id, color)}
             onDelete={() => onDeleteColumn(group.id)}
+            onCopyCardLink={onCopyCardLink}
             onDuplicateCard={onDuplicateCard}
             onDeleteCard={onDeleteCard}
             onCreateCard={(title) => {

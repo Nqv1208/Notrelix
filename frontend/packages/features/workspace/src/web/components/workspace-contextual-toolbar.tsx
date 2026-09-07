@@ -3,11 +3,9 @@ import {
   Bot,
   CalendarDays,
   ChevronDown,
-  EyeOff,
   Filter,
   Group,
   ListPlus,
-  MoreHorizontal,
   Search,
   Settings2,
   UserRound,
@@ -18,82 +16,181 @@ import type {
   WorkspaceViewType,
 } from "../../core/types/workspace";
 
+export type WorkspaceToolbarAction =
+  | "new-task"
+  | "add-block"
+  | "add-widget"
+  | "today"
+  | "person"
+  | "filter"
+  | "sort"
+  | "hide"
+  | "group"
+  | "more"
+  | "settings"
+  | "sync"
+  | "refresh"
+  | "ai-summary";
+
+interface WorkspaceContextualToolbarProps {
+  activeType: WorkspaceViewType;
+  activeView?: WorkspaceView;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  onAction?: (action: WorkspaceToolbarAction) => void;
+}
+
 export function WorkspaceContextualToolbar({
   activeType,
   activeView,
-}: {
-  activeType: WorkspaceViewType;
-  activeView?: WorkspaceView;
-}) {
+  searchQuery,
+  onSearchChange,
+  onAction,
+}: WorkspaceContextualToolbarProps) {
   if (activeType === "table") return null;
   if (activeType === "doc")
-    return <DocToolbar pageId={activeView?.target.pageId ?? ""} />;
-  if (activeType === "kanban") return <KanbanToolbar />;
-  if (activeType === "calendar") return <CalendarToolbar />;
-  if (activeType === "timeline") return <TimelineToolbar />;
-  if (activeType === "dashboard") return <DashboardToolbar />;
-  return <TableToolbar />;
+    return (
+      <DocToolbar
+        pageId={activeView?.target.pageId ?? ""}
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        onAction={onAction}
+      />
+    );
+  if (activeType === "kanban")
+    return (
+      <KanbanToolbar
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        onAction={onAction}
+      />
+    );
+  if (activeType === "calendar")
+    return (
+      <CalendarToolbar
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        onAction={onAction}
+      />
+    );
+  if (activeType === "timeline")
+    return (
+      <TimelineToolbar
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        onAction={onAction}
+      />
+    );
+  if (activeType === "dashboard")
+    return (
+      <DashboardToolbar
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        onAction={onAction}
+      />
+    );
+  return null;
 }
 
-function SearchBox({ placeholder = "Search" }: { placeholder?: string }) {
+function SearchBox({
+  placeholder = "Search",
+  value,
+  onChange,
+}: {
+  placeholder?: string;
+  value?: string;
+  onChange?: (query: string) => void;
+}) {
   return (
     <div className="relative hidden min-w-[180px] sm:block">
       <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         className="h-9 rounded-full bg-card pl-8"
         placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
       />
     </div>
   );
 }
 
-function TableToolbar() {
+function KanbanToolbar({
+  searchQuery,
+  onSearchChange,
+  onAction,
+}: Pick<
+  WorkspaceContextualToolbarProps,
+  "searchQuery" | "onSearchChange" | "onAction"
+>) {
   return (
     <ToolbarShell>
-      <Button size="sm" className="rounded-full">
-        <ListPlus className="size-4" />
-        New task
-      </Button>
-      <SearchBox placeholder="Search tasks" />
-      <ToolbarButton icon={UserRound} label="Person" />
-      <ToolbarButton icon={Filter} label="Filter" />
-      <ToolbarButton icon={ArrowDownUp} label="Sort" />
-      <ToolbarButton icon={EyeOff} label="Hide" />
-      <ToolbarButton icon={Group} label="Group by" />
-      <ToolbarButton icon={MoreHorizontal} label="More" compact />
+      <SearchBox
+        placeholder="Search cards"
+        value={searchQuery}
+        onChange={onSearchChange}
+      />
+      <ToolbarButton icon={UserRound} label="Person" action="person" onAction={onAction} />
+      <ToolbarButton icon={Filter} label="Filter" action="filter" onAction={onAction} />
+      <ToolbarButton icon={ArrowDownUp} label="Sort" action="sort" onAction={onAction} />
+      <ToolbarButton
+        icon={Group}
+        label="Group by status"
+        action="group"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={Settings2}
+        label="Board settings"
+        action="settings"
+        onAction={onAction}
+      />
     </ToolbarShell>
   );
 }
 
-function KanbanToolbar() {
+function DocToolbar({
+  pageId: _pageId,
+  searchQuery,
+  onSearchChange,
+  onAction,
+}: { pageId: string } & Pick<
+  WorkspaceContextualToolbarProps,
+  "searchQuery" | "onSearchChange" | "onAction"
+>) {
   return (
     <ToolbarShell>
-      <SearchBox placeholder="Search cards" />
-      <ToolbarButton icon={UserRound} label="Person" />
-      <ToolbarButton icon={Filter} label="Filter" />
-      <ToolbarButton icon={ArrowDownUp} label="Sort" />
-      <ToolbarButton icon={Group} label="Group by status" />
-      <ToolbarButton icon={Settings2} label="Board settings" />
-    </ToolbarShell>
-  );
-}
-
-function DocToolbar({ pageId: _pageId }: { pageId: string }) {
-  return (
-    <ToolbarShell>
-      <Button size="sm" className="rounded-full">
+      <Button
+        size="sm"
+        className="rounded-full"
+        onClick={() => onAction?.("add-block")}
+      >
         <ListPlus className="size-4" />
         Add block
       </Button>
-      <SearchBox placeholder="Search in doc" />
+      <SearchBox
+        placeholder="Search in doc"
+        value={searchQuery}
+        onChange={onSearchChange}
+      />
     </ToolbarShell>
   );
 }
 
-function CalendarToolbar() {
+function CalendarToolbar({
+  searchQuery,
+  onSearchChange,
+  onAction,
+}: Pick<
+  WorkspaceContextualToolbarProps,
+  "searchQuery" | "onSearchChange" | "onAction"
+>) {
   return (
     <ToolbarShell>
-      <Button size="sm" className="rounded-full">
+      <Button
+        size="sm"
+        className="rounded-full"
+        onClick={() => onAction?.("today")}
+      >
         <CalendarDays className="size-4" />
         Today
       </Button>
@@ -112,38 +209,70 @@ function CalendarToolbar() {
           Day
         </ToggleGroupItem>
       </ToggleGroup>
-      <ToolbarButton icon={Filter} label="Filter" />
-      <ToolbarButton icon={ArrowDownUp} label="Sync" />
-      <ToolbarButton icon={Settings2} label="Settings" />
+      <ToolbarButton icon={Filter} label="Filter" action="filter" onAction={onAction} />
+      <ToolbarButton icon={ArrowDownUp} label="Sync" action="sync" onAction={onAction} />
+      <ToolbarButton icon={Settings2} label="Settings" action="settings" onAction={onAction} />
     </ToolbarShell>
   );
 }
 
-function TimelineToolbar() {
+function TimelineToolbar({
+  searchQuery,
+  onSearchChange,
+  onAction,
+}: Pick<
+  WorkspaceContextualToolbarProps,
+  "searchQuery" | "onSearchChange" | "onAction"
+>) {
   return (
     <ToolbarShell>
-      <Button size="sm" className="rounded-full">
+      <Button
+        size="sm"
+        className="rounded-full"
+        onClick={() => onAction?.("today")}
+      >
         <CalendarDays className="size-4" />
         Today
       </Button>
-      <ToolbarButton icon={UserRound} label="Person" />
-      <ToolbarButton icon={Filter} label="Filter" />
-      <ToolbarButton icon={Group} label="Group by list" />
-      <ToolbarButton icon={Settings2} label="Timeline settings" />
+      <ToolbarButton icon={UserRound} label="Person" action="person" onAction={onAction} />
+      <ToolbarButton icon={Filter} label="Filter" action="filter" onAction={onAction} />
+      <ToolbarButton
+        icon={Group}
+        label="Group by list"
+        action="group"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={Settings2}
+        label="Timeline settings"
+        action="settings"
+        onAction={onAction}
+      />
     </ToolbarShell>
   );
 }
 
-function DashboardToolbar() {
+function DashboardToolbar({
+  searchQuery,
+  onSearchChange,
+  onAction,
+}: Pick<
+  WorkspaceContextualToolbarProps,
+  "searchQuery" | "onSearchChange" | "onAction"
+>) {
   return (
     <ToolbarShell>
-      <Button size="sm" className="rounded-full">
+      <Button
+        size="sm"
+        className="rounded-full"
+        onClick={() => onAction?.("add-widget")}
+      >
         <ListPlus className="size-4" />
         Add widget
       </Button>
-      <ToolbarButton icon={Filter} label="Filter" />
-      <ToolbarButton icon={ArrowDownUp} label="Refresh" />
-      <ToolbarButton icon={Bot} label="AI summary" />
+      <ToolbarButton icon={Filter} label="Filter" action="filter" onAction={onAction} />
+      <ToolbarButton icon={ArrowDownUp} label="Refresh" action="refresh" onAction={onAction} />
+      <ToolbarButton icon={Bot} label="AI summary" action="ai-summary" onAction={onAction} />
     </ToolbarShell>
   );
 }
@@ -160,13 +289,22 @@ function ToolbarButton({
   icon: Icon,
   label,
   compact,
+  action,
+  onAction,
 }: {
   icon: typeof Search;
   label: string;
   compact?: boolean;
+  action: WorkspaceToolbarAction;
+  onAction?: (action: WorkspaceToolbarAction) => void;
 }) {
   return (
-    <Button variant="ghost" size="sm" className="rounded-full">
+    <Button
+      variant="ghost"
+      size="sm"
+      className="rounded-full"
+      onClick={() => onAction?.(action)}
+    >
       <Icon className="size-4" />
       {!compact ? <span className="hidden sm:inline">{label}</span> : null}
       {!compact ? (

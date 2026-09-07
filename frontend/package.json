@@ -34,6 +34,7 @@
     "test:ui:visual": "playwright test --config playwright.storybook.config.ts --grep visual",
     "test:ui:freeze": "playwright test --config playwright.storybook.config.ts --workers=1",
     "check:ui-purity": "tsx tooling/dependency-rules/src/check-ui-purity.ts",
+    "check:ui-actions": "tsx tooling/dependency-rules/src/check-ui-actions.ts",
     "check:ui-evidence": "pnpm storybook:web:build && tsx tooling/storybook/web/src/evidence/check-ui-evidence.ts",
     "e2e": "playwright test --config playwright.config.ts",
     "e2e:mock": "playwright test --config playwright.mock.config.ts",

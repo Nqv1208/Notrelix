@@ -1,14 +1,22 @@
-import { Skeleton } from "@notrelix/ui-web";
 import { useFullBoard } from "@notrelix/work-management-state";
 import { MainTableView } from "./views/table/main-table-view";
 import { BoardCalendarView } from "./views/calendar/board-calendar-view";
 import { KanbanView } from "./views/kanban/kanban-view";
 import { BoardTimelineView } from "./views/timeline/board-timeline-view";
-import { ErrorState, NotFoundState } from "@notrelix/ui-web";
+import {
+  BoardWorkspaceSurface,
+  type BoardWorkspaceSurfaceStatus,
+} from "./board-workspace-surface";
 
 type WorkspaceView = { type: string; name?: string };
 
-export function BoardScreen(props: any) {
+export interface BoardScreenProps {
+  workspaceId: string;
+  boardId: string;
+  view: WorkspaceView;
+}
+
+export function BoardScreen(props: BoardScreenProps) {
   return <BoardWorkspaceViewContent {...props} />;
 }
 
@@ -16,11 +24,7 @@ export function BoardWorkspaceViewContent({
   workspaceId,
   boardId,
   view,
-}: {
-  workspaceId: string;
-  boardId: string;
-  view: WorkspaceView;
-}) {
+}: BoardScreenProps) {
   if (view.type === "table")
     return <MainTableView boardId={boardId} workspaceId={workspaceId} />;
   if (view.type === "kanban")
@@ -47,7 +51,12 @@ export function BoardWorkspaceViewContent({
         mode="timeline"
       />
     );
-  return <UnsupportedBoardView view={view} />;
+  return (
+    <BoardWorkspaceSurface
+      status="unsupported"
+      unsupportedViewName={view.name ?? view.type}
+    />
+  );
 }
 
 function BoardFullDataView({
@@ -64,50 +73,30 @@ function BoardFullDataView({
     workspaceId,
   );
 
-  if (isLoading) return <ViewSkeleton rows={mode === "kanban" ? 4 : 6} />;
-  if (error || !board) {
+  if (isLoading)
     return (
-      <div className="p-4 sm:p-6">
-        <ErrorState
-          error={error}
-          title="Bảng công việc không khả dụng"
-          description="Bảng công việc có thể đã bị di chuyển, lưu trữ hoặc bạn không có quyền truy cập."
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full overflow-auto p-4 sm:p-6">
-      {mode === "kanban" ? (
-        <KanbanView boardId={board.id} workspaceId={workspaceId} />
-      ) : null}
-      {mode === "calendar" ? <BoardCalendarView groups={groups} /> : null}
-      {mode === "timeline" ? <BoardTimelineView groups={groups} /> : null}
-    </div>
-  );
-}
-
-function ViewSkeleton({ rows }: { rows: number }) {
-  return (
-    <div className="p-4 sm:p-6">
-      <div className="rounded-2xl border border-border bg-card p-4">
-        <Skeleton className="mb-4 h-10 rounded-xl" />
-        {Array.from({ length: rows }).map((_, index) => (
-          <Skeleton key={index} className="mb-2 h-12 rounded-xl last:mb-0" />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function UnsupportedBoardView({ view }: { view: WorkspaceView }) {
-  return (
-    <div className="p-4 sm:p-6">
-      <NotFoundState
-        title={`${view.name} không phải là chế độ xem bảng`}
-        description="Vui lòng sử dụng các tab workspace để mở chế độ xem bảng hoặc chuyển sang phần Tài liệu."
+      <BoardWorkspaceSurface
+        status="loading"
+        skeletonRows={mode === "kanban" ? 4 : 6}
       />
-    </div>
+    );
+  if (error || !board)
+    return <BoardWorkspaceSurface status="error" error={error} />;
+
+  return (
+    <BoardWorkspaceSurface
+      status="ready"
+      viewContent={
+        mode === "kanban" ? (
+          <KanbanView boardId={board.id} workspaceId={workspaceId} />
+        ) : mode === "calendar" ? (
+          <BoardCalendarView groups={groups} />
+        ) : (
+          <BoardTimelineView groups={groups} />
+        )
+      }
+    />
   );
 }
+
+export type { BoardWorkspaceSurfaceStatus };

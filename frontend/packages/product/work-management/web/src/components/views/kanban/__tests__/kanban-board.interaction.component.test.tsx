@@ -13,6 +13,7 @@ describe("KanbanBoard interactions", () => {
         board={scenario.board}
         columns={scenario.columns}
         onOpenDetails={vi.fn()}
+            onCopyCardLink={vi.fn()}
         onMoveCard={vi.fn()}
         onReorderColumns={vi.fn()}
         onAdd={vi.fn()}

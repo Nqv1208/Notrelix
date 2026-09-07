@@ -44,11 +44,6 @@
         "reason": "Container composing WorkspaceCompactHeaderSurface with workspace-scoped header actions."
       },
       {
-        "path": "src/web/components/workspace-contextual-toolbar.tsx",
-        "category": "container",
-        "reason": "Presentation owner registered and evidenced directly per FUIR-LOCK-13 (Wave 2); excluded from the Wave 1 baseline registration."
-      },
-      {
         "path": "src/web/components/workspace-directory.tsx",
         "category": "container",
         "reason": "Container composing WorkspaceDirectorySurface with workspace query/actions."
@@ -66,6 +61,47 @@
     ]
   },
   "surfaces": [
+    {
+      "surfaceId": "workspace.contextual-toolbar",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/web/components/workspace-contextual-toolbar.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-contextual-toolbar--kanban-mode",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "search",
+          "testFile": "src/web/components/__tests__/workspace-contextual-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "action",
+          "testFile": "src/web/components/__tests__/workspace-contextual-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "local",
+          "testFile": "src/web/components/__tests__/workspace-contextual-toolbar.interaction.component.test.tsx"
+        }
+      ]
+    },
     {
       "surfaceId": "workspace.directory",
       "owner": "@notrelix/features-workspace",

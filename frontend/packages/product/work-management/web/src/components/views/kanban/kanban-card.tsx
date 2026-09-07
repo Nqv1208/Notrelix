@@ -49,12 +49,14 @@ export function KanbanCard({
   board: _board,
   card,
   onOpenDetails,
+  onCopyLink,
   onDuplicate,
   onDelete,
 }: {
   board: Board;
   card: Card;
   onOpenDetails: (cardId: string) => void;
+  onCopyLink: (cardId: string) => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
@@ -153,7 +155,7 @@ export function KanbanCard({
           onClick={(e) => e.stopPropagation()}
         >
           <KanbanCardMenu
-            cardId={card.id}
+            onCopyLink={() => onCopyLink(card.id)}
             onDuplicate={onDuplicate}
             onDelete={onDelete}
           >

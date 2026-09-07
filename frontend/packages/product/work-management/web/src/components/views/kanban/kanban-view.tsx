@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { toast } from "sonner";
 import {
   useBoardKanban,
   useSelectedCardPanel,
@@ -100,6 +101,11 @@ export function KanbanView({
             }}
             onReorderColumns={(updated) => {
               reorderColumns.mutate(updated);
+            }}
+            onCopyCardLink={(cardId) => {
+              const link = `${window.location.origin}${window.location.pathname}?taskId=${cardId}`;
+              void navigator.clipboard.writeText(link);
+              toast.success("Card link copied to clipboard.");
             }}
             onAdd={(title) => {
               const lastPos = columns.at(-1)?.position;

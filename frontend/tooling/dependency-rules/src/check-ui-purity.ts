@@ -186,6 +186,60 @@ function collectExportNames(
   );
 }
 
+interface DynamicImportEdge {
+  readonly specifier: string | undefined;
+  readonly kind: "dynamic-import" | "require";
+}
+
+function collectDynamicModuleEdges(sourceFile: ts.SourceFile): DynamicImportEdge[] {
+  const edges: DynamicImportEdge[] = [];
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword
+    ) {
+      const argument = node.arguments[0];
+      edges.push({
+        specifier: argument && ts.isStringLiteral(argument) ? argument.text : undefined,
+        kind: "dynamic-import",
+      });
+    } else if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "require" &&
+      node.arguments.length === 1
+    ) {
+      const argument = node.arguments[0];
+      edges.push({
+        specifier: argument && ts.isStringLiteral(argument) ? argument.text : undefined,
+        kind: "require",
+      });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return edges;
+}
+
+const FORBIDDEN_SIDE_EFFECT_PATTERNS: ReadonlyArray<[RegExp, string]> = [
+  [/\bdocument\s*\.\s*cookie\b/, "document.cookie"],
+  [/\bnavigator\s*\.\s*clipboard\b/, "navigator.clipboard"],
+  [/\bhistory\s*\.\s*(pushState|replaceState|back|forward|go)\b/, "history navigation"],
+  [/\bwindow\s*\.\s*location\s*\.\s*(href|assign|replace|reload)\s*=/, "window.location mutation"],
+  [/\bwindow\s*\.\s*location\s*=\s*[^=]/, "window.location reassignment"],
+  [/\blocation\s*\.\s*(href|assign|replace|reload)\s*=/, "location mutation"],
+] as const;
+
+function collectSideEffectViolations(
+  sourceText: string,
+): ReadonlyArray<{ name: string }> {
+  const violations: { name: string }[] = [];
+  for (const [pattern, name] of FORBIDDEN_SIDE_EFFECT_PATTERNS) {
+    if (pattern.test(sourceText)) violations.push({ name });
+  }
+  return violations;
+}
+
 function collectImports(sourceFile: ts.SourceFile): ImportEdge[] {
   const imports: ImportEdge[] = [];
   for (const statement of sourceFile.statements) {
@@ -312,6 +366,14 @@ function checkSourcePurity(
     }
   }
 
+  for (const { name } of collectSideEffectViolations(sourceText)) {
+    violations.push({
+      code: "FORBIDDEN_SOURCE",
+      message: `${toRelative(rootDir, resolved)} performs forbidden browser side effect ${name}`,
+      chain,
+    });
+  }
+
   const sourceFile = ts.createSourceFile(
     resolved,
     sourceText,
@@ -319,6 +381,48 @@ function checkSourcePurity(
     false,
     ts.ScriptKind.TSX,
   );
+
+  for (const edge of collectDynamicModuleEdges(sourceFile)) {
+    if (edge.specifier === undefined) {
+      violations.push({
+        code: "UNRESOLVED_IMPORT",
+        message: `${toRelative(rootDir, resolved)} ${edge.kind === "dynamic-import" ? "dynamically imports" : "requires"} a non-literal module; pure UI ownership cannot be resolved`,
+        chain,
+      });
+      continue;
+    }
+    const dynamicImport = resolveImport(rootDir, resolved, {
+      specifier: edge.specifier,
+    });
+    if (dynamicImport.filePaths.length === 0) {
+      if (isForbiddenImport(edge.specifier)) {
+        violations.push({
+          code: "FORBIDDEN_IMPORT",
+          message: `${toRelative(rootDir, resolved)} dynamically imports forbidden pure UI dependency ${isForbiddenImport(edge.specifier)}`,
+          chain: [...chain, edge.specifier],
+        });
+      }
+      continue;
+    }
+    for (const importedFile of dynamicImport.filePaths) {
+      if (!existsSync(importedFile)) {
+        violations.push({
+          code: "UNRESOLVED_IMPORT",
+          message: `${toRelative(rootDir, resolved)} dynamically imports unresolved source ${edge.specifier}`,
+          chain: [...chain, edge.specifier],
+        });
+        continue;
+      }
+      checkSourcePurity(
+        rootDir,
+        importedFile,
+        [...chain, toRelative(rootDir, importedFile)],
+        visited,
+        violations,
+      );
+    }
+  }
+
   for (const edge of collectImports(sourceFile)) {
     const { specifier } = edge;
     const forbiddenImport = isForbiddenImport(specifier);

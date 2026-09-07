@@ -17,6 +17,7 @@ describe("KanbanCard interactions", () => {
             board={scenario.board}
             card={card}
             onOpenDetails={onOpenDetails}
+            onCopyLink={vi.fn()}
             onDuplicate={vi.fn()}
             onDelete={vi.fn()}
           />

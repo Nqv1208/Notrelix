@@ -4,21 +4,6 @@
   "inventory": {
     "excludedSources": [
       {
-        "path": "src/components/board-layout/board-layout-shell.tsx",
-        "category": "container",
-        "reason": "Board layout shell registered and evidenced directly per FUIR-LOCK-11 (Wave 2); excluded from the Wave 1 baseline registration."
-      },
-      {
-        "path": "src/components/board-layout/board-toolbar.tsx",
-        "category": "container",
-        "reason": "Board toolbar registered and evidenced directly per FUIR-LOCK-11 (Wave 2); excluded from the Wave 1 baseline registration."
-      },
-      {
-        "path": "src/components/board-layout/view-tabs.tsx",
-        "category": "container",
-        "reason": "Board view tabs registered and evidenced directly per FUIR-LOCK-11 (Wave 2); excluded from the Wave 1 baseline registration."
-      },
-      {
         "path": "src/components/board-workspace-view-content.tsx",
         "category": "container",
         "reason": "Stateful adapter owning useFullBoard and stateful view containers; receives a pure presentation seam per FUIR-LOCK-12 (Wave 2)."
@@ -31,7 +16,7 @@
       {
         "path": "src/components/views/kanban/kanban-filter-menu.tsx",
         "category": "container",
-        "reason": "View filtering container registered with board layout surfaces per FUIR-LOCK-11 (Wave 2); excluded from the Wave 1 baseline registration."
+        "reason": "Unconsumed Kanban filter presentation menu with no registered consumer surface at this baseline; classified rather than silently registered."
       },
       {
         "path": "src/components/views/kanban/kanban-view.tsx",
@@ -46,6 +31,163 @@
     ]
   },
   "surfaces": [
+    {
+      "surfaceId": "wm.board-layout.shell",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "shell",
+      "pureEntry": "src/components/board-layout/board-layout-shell.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-board-layout-shell--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["a11y", "visual", "purity"],
+      "interactionCases": []
+    },
+    {
+      "surfaceId": "wm.board-layout.toolbar",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/board-layout/board-toolbar.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-board-layout-toolbar--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "filter",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "view",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "search",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-view",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.board-layout.view-tabs",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/board-layout/view-tabs.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-board-layout-view-tabs--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "select",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "active",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.board-workspace.surface",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/components/board-workspace-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-board-workspace-surface--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "work-management-board-workspace-surface--loading",
+          "state": "Loading",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "work-management-board-workspace-surface--error-state",
+          "state": "Error",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "work-management-board-workspace-surface--unsupported-view",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["a11y", "visual", "purity"],
+      "interactionCases": []
+    },
     {
       "surfaceId": "wm.kanban.board",
       "owner": "@notrelix/work-management-web",
