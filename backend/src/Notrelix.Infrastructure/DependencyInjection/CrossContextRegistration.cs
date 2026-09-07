@@ -1,7 +1,7 @@
 using Notrelix.Application.Features.Automation.Ports.WorkManagement;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
-using Notrelix.Application.Features.WorkManagement.Public.Queries;
+using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
 using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
 using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;

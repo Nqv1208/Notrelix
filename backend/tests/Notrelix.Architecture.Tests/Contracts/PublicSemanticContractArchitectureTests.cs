@@ -309,7 +309,7 @@ public class PublicSemanticContractArchitectureTests
         // as persistence. Task<IReadOnlyList<T>> / IEnumerable<T> are legitimate
         // semantic result shapes and are not strong persistence evidence.
         ClassifyPurity(
-                typeof(Notrelix.Application.Features.WorkManagement.Public.Queries.IWorkItemProjectionSource),
+                typeof(Notrelix.Application.Features.WorkManagement.Public.ItemPlacement.IWorkItemProjectionSource),
                 ownProducer: "WorkManagement")
             .Should().BeNull(
                 "a semantic enumerable read-query surface is not persistence and must pass");

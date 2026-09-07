@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.WorkManagement.Public.Queries;
+namespace Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 
 /// <summary>
 /// Producer-owned minimal placement snapshot for one Work item. Returns only

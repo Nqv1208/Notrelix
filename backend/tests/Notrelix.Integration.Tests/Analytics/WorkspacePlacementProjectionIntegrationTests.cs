@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Events.WorkManagement;
 using Notrelix.Application.Features.Analytics.Placements.Services;
-using Notrelix.Application.Features.WorkManagement.Public.Queries;
+using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Messaging.Consumers.Analytics;
@@ -202,5 +202,56 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
 
         var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
         row.GroupId.Should().Be(groupId);
+    }
+
+    /// <summary>
+    /// TAC-WM-010 / WM-FLOW-05 chain proof: Analytics consumer → producer Public
+    /// ItemPlacement contract → WorkManagement-owned implementation → Work
+    /// DbContext → producer snapshot. The rebuild authority stays the Work
+    /// producer source; Analytics never reads the Work DbContext directly.
+    /// </summary>
+    [Fact]
+    public async Task Rebuild_ThroughPublicItemPlacementContract_KeepsWorkAsProducerAuthority()
+    {
+        var accountId = Guid.CreateVersion7();
+        var ownerId = Guid.CreateVersion7();
+        var workspace = Domain.Workspaces.Workspaces.Workspace.Create(accountId, ownerId, "WM05 WS", $"wm05-{Guid.NewGuid():N}", Now);
+        var board = Domain.WorkManagement.Boards.Board.Create(accountId, workspace.Id, ownerId, "Board", null, Now);
+        var groupA = Domain.WorkManagement.BoardGroups.BoardGroup.Create(accountId, workspace.Id, board.Id, "A", Domain.SharedKernel.Color.Create("#808080"), Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
+        var groupB = Domain.WorkManagement.BoardGroups.BoardGroup.Create(accountId, workspace.Id, board.Id, "B", Domain.SharedKernel.Color.Create("#00FF00"), Domain.SharedKernel.Ordering.FractionalIndex.Create("a1"), ownerId, Now);
+        var item = Domain.WorkManagement.Items.BoardItem.CreateRoot(accountId, workspace.Id, board.Id, groupA.Id, "Task", Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
+
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            seed.Workspaces.Add(workspace);
+            seed.Boards.Add(board);
+            seed.BoardGroups.Add(groupA);
+            seed.BoardGroups.Add(groupB);
+            seed.BoardItems.Add(item);
+            await seed.SaveChangesAsync();
+        }
+
+        // The producer-owned snapshot flows through the published contract,
+        // implemented against the Work producer's own DbContext.
+        IWorkItemProjectionSource producerSource =
+            new WorkItemProjectionSourceAdapter(_db.CreateContext(SystemTenant()));
+        var snapshot = await producerSource.GetWorkspacePlacementsAsync(workspace.Id, CancellationToken.None);
+
+        snapshot.Should().ContainSingle(s => s.ItemId == item.Id);
+        var live = snapshot.Single(s => s.ItemId == item.Id);
+        live.GroupId.Should().Be(groupA.Id, "the producer snapshot is the rebuild authority");
+
+        // Analytics rebuilds its projection from that producer-owned snapshot.
+        var (context, service) = CreateService();
+        await service.ApplyPlacementAsync(accountId, workspace.Id, item.Id, board.Id, groupB.Id, false, Now.UtcTicks, Now, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        await service.RebuildWorkspaceAsync(workspace.Id, snapshot, CancellationToken.None);
+        await context.SaveChangesAsync();
+
+        var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspace.Id && p.ItemId == item.Id);
+        row.GroupId.Should().Be(groupA.Id, "the rebuild restores the Work producer truth over drifted Analytics state");
+        row.BoardId.Should().Be(board.Id);
     }
 }

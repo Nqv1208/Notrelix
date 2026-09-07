@@ -2,11 +2,17 @@ namespace Notrelix.Application.Features.Automation.Ports.WorkManagement;
 
 /// <summary>
 /// Automation-owned execution principal for a target Work Management action:
-/// the workflow supplies the exact user/scope the target should enforce.
+/// the workflow supplies the exact account/scope/user the target should
+/// enforce, plus the upstream correlation/causation for attribution. When the
+/// upstream has no correlation, the target binds the execution id; causation
+/// is never fabricated.
 /// </summary>
 public sealed record AutomationPrincipal(
+    Guid AccountId,
     Guid ExecutorUserId,
-    Guid WorkspaceId);
+    Guid WorkspaceId,
+    Guid? CorrelationId = null,
+    Guid? CausationId = null);
 
 /// <summary>
 /// Automation-owned semantic port for driving a Work Management item action.

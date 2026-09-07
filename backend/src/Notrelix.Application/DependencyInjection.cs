@@ -7,7 +7,7 @@ using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
-using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 using Notrelix.Application.Common.Integrations.N8n;
 using Notrelix.Application.Features.Automation.Executions.Services;
 using Notrelix.Application.Features.Billing.Entitlements.Services;
@@ -107,6 +107,7 @@ public static class DependencyInjection
         // Producer-owned public target actions (WorkManagement item mutations)
         services.AddScoped<MoveBoardItemUseCase>();
         services.AddScoped<IWorkItemActions, WorkItemActions>();
+        services.AddScoped<IWorkItemActionAuthorizer, WorkItemActionAuthorizer>();
 
         // Producer-owned public capability surface (Billing)
         services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();

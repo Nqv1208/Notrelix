@@ -10,7 +10,7 @@ using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Entitlements;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Identity.Public.Queries;
-using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 using Notrelix.Application.Features.Automation.Executions.Services;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Application.Features.Integrations.N8n.Providers;
