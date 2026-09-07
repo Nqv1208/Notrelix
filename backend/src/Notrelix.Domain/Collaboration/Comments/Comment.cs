@@ -44,7 +44,7 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         };
 
         comment.SetAuditOnCreate(createdBy, createdAt);
-        comment.RaiseDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
+        comment.RaiseDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, comment.Content, createdAt));
 
         return comment;
     }
