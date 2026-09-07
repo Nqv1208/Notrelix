@@ -584,7 +584,7 @@
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "INoDataRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,

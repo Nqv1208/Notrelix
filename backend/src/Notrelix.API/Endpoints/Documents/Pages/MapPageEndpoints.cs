@@ -24,6 +24,7 @@ public static class MapPageEndpoints
 
         pageGroup.MapGetPage();
         pageGroup.MapUpdatePage();
+        pageGroup.MapArchivePage();
         pageGroup.MapDeletePage();
         pageGroup.MapGetPageBreadcrumb();
         pageGroup.MapGetPageHistory();

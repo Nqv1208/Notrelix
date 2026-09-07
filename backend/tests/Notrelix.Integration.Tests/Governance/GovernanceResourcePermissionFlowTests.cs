@@ -16,6 +16,7 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.ArchivePage;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
@@ -551,6 +552,97 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "board-item comments are not granted to non-members; the canonical pipeline denies them");
     }
 
+    [Fact]
+    public async Task ArchivePage_Owner_Allows_AndCommitsLifecycle()
+    {
+        var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        result.Succeeded.Should().BeTrue();
+        await using var probe = _db.CreateContext(SystemTenant());
+        (await probe.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
+            .Should().Be(PageStatus.Archived);
+    }
+
+    [Fact]
+    public async Task ArchivePage_WorkspaceMember_OnWorkspaceVisiblePage_Allows()
+    {
+        var (accountId, _, _, _, memberId) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+
+        using var provider = CreateProvider(accountId, memberId);
+        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ArchivePage_Guest_IsDenied()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var guest = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, guest, WorkspaceRole.Guest);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
+
+        using var provider = CreateProvider(accountId, guest);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "guests without explicit page access are hidden from the lifecycle mutation");
+    }
+
+    [Fact]
+    public async Task ArchivePage_Outsider_IsForbidden()
+    {
+        var (accountId, _, _, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var outsider = Guid.NewGuid();
+
+        using var provider = CreateProvider(accountId, outsider);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "the canonical pipeline denies non-members before any page mutation");
+    }
+
+    [Fact]
+    public async Task ArchivePage_AlreadyArchived_IsNotFound_ByResourceLifecycle()
+    {
+        // The canonical policy engine treats an archived page as a
+        // non-existing resource before any authority fast-path, so a second
+        // archive request fails closed instead of double-mutating. Outward
+        // event evidence lives in PageArchivedOutboxEvidenceTests.
+        var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
+
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "an archived page is a lifecycle-closed resource for further mutations");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
+            .Should().Be(PageStatus.Archived);
+    }
+
+    private async Task<Guid> ResolvePageIdAsync()
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        var id = await context.Pages
+            .IgnoreQueryFilters()
+            .Select(p => p.Id)
+            .FirstOrDefaultAsync();
+        id.Should().NotBeEmpty("expected a seeded page");
+        return id;
+    }
+
     // ── composition -----------------------------------------------------------
 
     private static async Task<T> SendAsync<T>(ServiceProvider provider, object request)
@@ -602,6 +694,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddTransient<IValidator<GetResourcePermissionsQuery>, GetResourcePermissionsQueryValidator>();
         services.AddTransient<IValidator<CreatePageCommand>, CreatePageCommandValidator>();
         services.AddTransient<IValidator<CreateCommentCommand>, CreateCommentCommandValidator>();
+        services.AddTransient<IValidator<ArchivePageCommand>, ArchivePageCommandValidator>();
 
         // Canonical frozen pipeline, outermost-to-innermost order.
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ExceptionMappingBehavior<,>));
@@ -674,6 +767,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<CreatePageCommand, Result<Guid>>,
             CreatePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<ArchivePageCommand, Result>,
+            ArchivePageCommandHandler>();
         services.AddScoped<
             IRequestHandler<CreateCommentCommand, Result<Guid>>,
             CreateCommentCommandHandler>();

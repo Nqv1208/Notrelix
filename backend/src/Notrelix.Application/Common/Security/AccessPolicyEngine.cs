@@ -196,6 +196,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
+            // M2G extension (reviewer-approved): ArchivePage carries its own
+            // Governance vocabulary — not ManageBoard, and not
+            // ManagePagePermission (ACL management). Page lifecycle
+            // mutations remain ManageAwareAllow: managers or above.
             return ManageAwareAllow(permission, request, facts, role);
         }
 
