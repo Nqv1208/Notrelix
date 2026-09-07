@@ -42,21 +42,55 @@
           "id": "work-management-board-layout-shell--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": [
+          "Default"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The shell renders whatever child view content it receives; per-view loading presentation is owned by the dedicated loading surfaces.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "The shell renders whatever child view content it receives; per-view error presentation is owned by the dedicated unavailable surfaces.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The shell composes static chrome around child content and carries no data-driven values of its own.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["a11y", "visual", "purity"],
+      "checks": [
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": []
     },
     {
@@ -70,21 +104,51 @@
           "id": "work-management-board-layout-toolbar--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": [
+          "Default"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "The toolbar renders a short board title and fixed action controls; long-text and Unicode edges are exercised by the data surfaces it composes.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for the board toolbar at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "filter",
@@ -115,21 +179,51 @@
           "id": "work-management-board-layout-view-tabs--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": [
+          "Default"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "The tab set is a fixed constant list of view types, not data-driven text; there are no data-shape edges to stress.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for board view tabs at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "select",
@@ -156,36 +250,72 @@
           "id": "work-management-board-workspace-surface--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "work-management-board-workspace-surface--loading",
           "state": "Loading",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-board-workspace-surface--error-state",
           "state": "Error",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-board-workspace-surface--unsupported-view",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "EdgeData"
+        ],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["a11y", "visual", "purity"],
+      "checks": [
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": []
     },
     {
@@ -204,31 +334,74 @@
           "id": "work-management-kanban-board--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "work-management-kanban-board--empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-kanban-board--edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-kanban-board--high-density",
           "state": "HighDensity",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
-        "delegated": [],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData",
+          "HighDensity"
+        ],
+        "delegated": [
+          {
+            "state": "Loading",
+            "surfaceId": "wm.kanban.loading",
+            "targetState": "Loading"
+          },
+          {
+            "state": "Error",
+            "surfaceId": "wm.kanban.unavailable",
+            "targetState": "Error"
+          }
+        ],
         "notApplicable": [
           {
             "state": "PermissionLimited",
@@ -244,7 +417,12 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "board",
@@ -257,37 +435,81 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/views/kanban/kanban-column.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-column-menu.tsx"],
+      "coveredSources": [
+        "src/components/views/kanban/kanban-column-menu.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-kanban-column--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "work-management-kanban-column--empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-kanban-column--edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "Column content arrives already resolved from the board query; board-level loading is owned by wm.kanban.loading.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Column content arrives already resolved from the board query; board-level fetch failure is owned by wm.kanban.unavailable.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "column",
@@ -300,32 +522,90 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-card-menu.tsx"],
+      "coveredSources": [
+        "src/components/views/kanban/kanban-card-menu.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-kanban-card--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "work-management-kanban-card--edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "EdgeData"],
+        "required": [
+          "Default",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "A card renders synchronously from resolved board data; board-level loading is owned by wm.kanban.loading.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Empty",
+            "reason": "An empty board is evidenced by wm.kanban.board Empty; a card always carries at least a title.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Board-level fetch failure is evidenced by wm.kanban.unavailable Error.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "High-density board input is evidenced by wm.kanban.board HighDensity with the documented 8x40 cardinality.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for kanban cards at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for kanban cards at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "card",
@@ -338,27 +618,59 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/views/kanban/kanban-toolbar.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-sort-menu.tsx"],
+      "coveredSources": [
+        "src/components/views/kanban/kanban-sort-menu.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-kanban-toolbar--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": [
+          "Default"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "Sort options are a fixed label set; there is no data-driven text edge to stress.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for the kanban toolbar at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "toolbar",
@@ -376,17 +688,34 @@
         {
           "id": "work-management-kanban-loading--loading",
           "state": "Loading",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Loading"],
+        "required": [
+          "Loading"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Default",
+            "reason": "This surface renders exclusively the loading skeleton presentation; Default board presentation is owned by wm.kanban.board.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["a11y", "visual", "purity"],
+      "checks": [
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": []
     },
     {
@@ -399,17 +728,34 @@
         {
           "id": "work-management-kanban-unavailable--error",
           "state": "Error",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Error"],
+        "required": [
+          "Error"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Default",
+            "reason": "This surface renders exclusively the error presentation; Default board presentation is owned by wm.kanban.board.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["a11y", "visual", "purity"],
+      "checks": [
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": []
     },
     {
@@ -431,41 +777,101 @@
           "id": "work-management-table-main-table--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "work-management-table-main-table--empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-table-main-table--edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-table-main-table--high-density",
           "state": "HighDensity",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-table-main-table--read-only",
           "state": "ReadOnly",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
-        "delegated": [],
-        "notApplicable": []
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData",
+          "HighDensity",
+          "ReadOnly"
+        ],
+        "delegated": [
+          {
+            "state": "Loading",
+            "surfaceId": "wm.table.loading",
+            "targetState": "Loading"
+          },
+          {
+            "state": "Error",
+            "surfaceId": "wm.table.unavailable",
+            "targetState": "Error"
+          }
+        ],
+        "notApplicable": [
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for the main table at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "table",
@@ -483,17 +889,34 @@
         {
           "id": "work-management-table-loading--loading",
           "state": "Loading",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Loading"],
+        "required": [
+          "Loading"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Default",
+            "reason": "This surface renders exclusively the loading skeleton presentation; Default table presentation is owned by wm.table.main.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["a11y", "visual", "purity"],
+      "checks": [
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": []
     },
     {
@@ -506,17 +929,34 @@
         {
           "id": "work-management-table-unavailable--error",
           "state": "Error",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Error"],
+        "required": [
+          "Error"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Default",
+            "reason": "This surface renders exclusively the error presentation; Default table presentation is owned by wm.table.main.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["a11y", "visual", "purity"],
+      "checks": [
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": []
     },
     {
@@ -530,36 +970,95 @@
           "id": "work-management-calendar-board-calendar--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "work-management-calendar-board-calendar--empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-calendar-board-calendar--edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-calendar-board-calendar--high-density",
           "state": "HighDensity",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
-        "delegated": [],
-        "notApplicable": []
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData",
+          "HighDensity"
+        ],
+        "delegated": [
+          {
+            "state": "Loading",
+            "surfaceId": "wm.board-workspace.surface",
+            "targetState": "Loading"
+          },
+          {
+            "state": "Error",
+            "surfaceId": "wm.board-workspace.surface",
+            "targetState": "Error"
+          }
+        ],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for the calendar board view at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for the calendar board view at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "calendar",
@@ -578,37 +1077,89 @@
           "id": "work-management-timeline-board-timeline--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "work-management-timeline-board-timeline--empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-timeline-board-timeline--edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
-        "delegated": [],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
+        "delegated": [
+          {
+            "state": "Loading",
+            "surfaceId": "wm.board-workspace.surface",
+            "targetState": "Loading"
+          },
+          {
+            "state": "Error",
+            "surfaceId": "wm.board-workspace.surface",
+            "targetState": "Error"
+          }
+        ],
         "notApplicable": [
           {
             "state": "HighDensity",
             "reason": "Timeline intentionally caps visible cards at 10; high-density input is covered by component evidence rather than a distinct visual state.",
             "authority": "frontend-ui-construction.plan.md FUIC-WU-078"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for the timeline board view at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for the timeline board view at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           }
         ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "timeline",
@@ -635,41 +1186,90 @@
           "id": "work-management-task-detail-panel--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "work-management-task-detail-panel--loading",
           "state": "Loading",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-task-detail-panel--unavailable",
           "state": "Unavailable",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-task-detail-panel--edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "work-management-task-detail-panel--read-only",
           "state": "ReadOnly",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Unavailable", "EdgeData", "ReadOnly"],
+        "required": [
+          "Default",
+          "Loading",
+          "Unavailable",
+          "EdgeData",
+          "ReadOnly"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Error",
+            "reason": "Fetch failures render the dedicated Unavailable presentation evidenced by the Unavailable story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "panel",

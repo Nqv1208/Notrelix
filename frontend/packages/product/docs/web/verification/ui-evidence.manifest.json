@@ -47,36 +47,79 @@
           "id": "docs-page-surfaces--page-screen-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "docs-page-surfaces--page-screen-empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "docs-page-surfaces--page-screen-edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "docs-page-surfaces--page-screen-loading",
           "state": "Loading",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "Loading"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData",
+          "Loading"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Error",
+            "reason": "Document fetch failure is surfaced through the workspace shell error boundary; the screen renders Loading, Empty, and ready presentations.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -95,31 +138,68 @@
           "id": "docs-page-surfaces--page-tree-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "docs-page-surfaces--page-tree-empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "docs-page-surfaces--page-tree-edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for the page tree at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -138,26 +218,62 @@
           "id": "docs-page-surfaces--header-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "docs-page-surfaces--header-edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "EdgeData"],
+        "required": [
+          "Default",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The header renders resolved page metadata passed by the page screen; loading presentation is owned by docs.page.screen.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "The header renders resolved page metadata passed by the page screen; fetch failure presentation is owned by the workspace shell error boundary.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -176,31 +292,88 @@
           "id": "docs-page-surfaces--comments-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "docs-page-surfaces--comments-empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "docs-page-surfaces--comments-edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "Comments render resolved thread data passed by the page screen; query loading presentation is owned by the page screen.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Comments render resolved thread data passed by the page screen; query error presentation is owned by the page screen.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "Comments render a scrollable thread without a density cap; high-density input is exercised by the EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for page comments at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for page comments at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -219,31 +392,88 @@
           "id": "docs-page-surfaces--history-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "docs-page-surfaces--history-empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "docs-page-surfaces--history-edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "History renders resolved revision data passed by the page screen; query loading presentation is owned by the page screen.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "History renders resolved revision data passed by the page screen; query error presentation is owned by the page screen.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "History renders a bounded revision list; high-density input is exercised by the EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for page history at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for page history at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",

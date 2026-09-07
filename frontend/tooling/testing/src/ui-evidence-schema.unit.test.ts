@@ -28,6 +28,36 @@ const validManifest = {
             reason: "No product-authoritative read-only contract exists.",
             authority: "docs/product/work-management.md",
           },
+          {
+            state: "Loading",
+            reason: "Board-level loading is owned by wm.kanban.loading.",
+            authority: "docs/product/work-management.md",
+          },
+          {
+            state: "Error",
+            reason: "Board-level fetch failure is owned by wm.kanban.unavailable.",
+            authority: "docs/product/work-management.md",
+          },
+          {
+            state: "HighDensity",
+            reason: "High-density board input is evidenced at board level.",
+            authority: "docs/product/work-management.md",
+          },
+          {
+            state: "Empty",
+            reason: "An empty board is a distinct board-level story.",
+            authority: "docs/product/work-management.md",
+          },
+          {
+            state: "EdgeData",
+            reason: "Edge-value input is a distinct board-level story.",
+            authority: "docs/product/work-management.md",
+          },
+          {
+            state: "PermissionLimited",
+            reason: "No permission-limited capability contract exists.",
+            authority: "docs/product/work-management.md",
+          },
         ],
       },
       responsive: false,
@@ -156,5 +186,124 @@ describe("validateUiEvidenceManifest", () => {
     expect(result.ok).toBe(false);
     expect(result.diagnostics.join("\n")).toContain("mobile/light");
     expect(result.diagnostics.join("\n")).toContain("tablet/light");
+  });
+
+  it("requires every surface-kind universe state to be accounted (TST-052)", () => {
+    const manifest = structuredClone(validManifest);
+    manifest.surfaces[0].stateCoverage.notApplicable =
+      manifest.surfaces[0].stateCoverage.notApplicable.filter(
+        (entry) => entry.state !== "Loading",
+      );
+
+    const result = validateUiEvidenceManifest(manifest);
+
+    expect(result.diagnostics.join("\n")).toContain(
+      "surfaceKind data state Loading must be required, delegated, or notApplicable",
+    );
+  });
+
+  it("passes when a universe state is delegated to a valid sibling (TST-054)", () => {
+    const manifest = structuredClone(validManifest);
+    manifest.surfaces.push({
+      ...structuredClone(validManifest.surfaces[0]),
+      surfaceId: "wm.kanban.loading",
+      surfaceKind: "feedback",
+      stories: [],
+      checks: ["purity"],
+      interactionCases: [],
+      stateCoverage: {
+        required: ["Loading"],
+        delegated: [],
+        notApplicable: [
+          {
+            state: "Default",
+            reason: "Loading-only presentation; Default is owned by the board.",
+            authority: "docs/product/work-management.md",
+          },
+        ],
+      },
+    });
+    manifest.surfaces[0].stateCoverage.notApplicable =
+      manifest.surfaces[0].stateCoverage.notApplicable.filter(
+        (entry) => entry.state !== "Loading",
+      );
+    manifest.surfaces[0].stateCoverage.delegated.push({
+      state: "Loading",
+      surfaceId: "wm.kanban.loading",
+      targetState: "Loading",
+    });
+
+    const result = validateUiEvidenceManifest(manifest);
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects delegation to a missing/cross-owner surface or absent target state (TST-054)", () => {
+    const missingSurface = structuredClone(validManifest);
+    missingSurface.surfaces[0].stateCoverage.delegated.push({
+      state: "Loading",
+      surfaceId: "wm.does.not.exist",
+      targetState: "Loading",
+    });
+    expect(
+      validateUiEvidenceManifest(missingSurface).diagnostics.join("\n"),
+    ).toContain("missing or cross-owner surface");
+
+    const absentTarget = structuredClone(validManifest);
+    absentTarget.surfaces[0].stateCoverage.notApplicable =
+      absentTarget.surfaces[0].stateCoverage.notApplicable.filter(
+        (entry) => entry.state !== "Loading",
+      );
+    absentTarget.surfaces[0].stateCoverage.delegated.push({
+      state: "Loading",
+      surfaceId: "wm.kanban.loading",
+      targetState: "Loading",
+    });
+    absentTarget.surfaces.push({
+      ...structuredClone(validManifest.surfaces[0]),
+      surfaceId: "wm.kanban.loading",
+      surfaceKind: "feedback",
+      stateCoverage: { required: ["Loading"], delegated: [], notApplicable: [] },
+    });
+    absentTarget.surfaces[0].stateCoverage.delegated.push({
+      state: "Error",
+      surfaceId: "wm.kanban.loading",
+      targetState: "Error",
+    });
+    const absentResult = validateUiEvidenceManifest(absentTarget);
+    expect(absentResult.diagnostics.join("\n")).toContain(
+      "state Error which is not required by the target",
+    );
+  });
+
+  it("rejects N/A entries with generic reasons (TST-055)", () => {
+    const manifest = structuredClone(validManifest);
+    manifest.surfaces[0].stateCoverage.notApplicable.push({
+      state: "Loading",
+      reason: "covered elsewhere",
+      authority: "docs/product/work-management.md",
+    });
+
+    const result = validateUiEvidenceManifest(manifest);
+
+    expect(result.diagnostics.join("\n")).toContain(
+      "notApplicable Loading reason must be concrete",
+    );
+  });
+
+  it("rejects a state accounted in two buckets", () => {
+    const manifest = structuredClone(validManifest);
+    manifest.surfaces[0].stateCoverage.notApplicable.push({
+      state: "Default",
+      reason: "Already the Default story.",
+      authority: "docs/product/work-management.md",
+    });
+
+    const result = validateUiEvidenceManifest(manifest);
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.join("\n")).toContain(
+      "state Default is both required and notApplicable",
+    );
   });
 });

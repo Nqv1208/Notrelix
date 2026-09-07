@@ -122,6 +122,69 @@ describe("Work Management verification fixtures and scenarios", () => {
     expect(taskDetailUnavailableScenario().error).toBe("Task unavailable");
     expect(taskDetailEdgeScenario().card?.title).toContain("very long");
   });
+
+  it("keeps repeated scenario calls deep-equal but fresh per call (TST-058)", () => {
+    const first = kanbanDefaultUiScenario();
+    const second = kanbanDefaultUiScenario();
+
+    expect(first).toEqual(second);
+    expect(first.data.columns).not.toBe(second.data.columns);
+    expect(first.data.columns[0]).not.toBe(second.data.columns[0]);
+    expect(first.capabilities).toBe(ownerCapabilities);
+  });
+
+  it("gives every Empty scenario a truly empty collection (TST-059)", () => {
+    expect(kanbanDefaultUiScenario()).toBeTruthy();
+    expect(
+      createKanbanScenario({ seed: "empty", columnCount: 0, cardsPerColumn: 0 })
+        .columns,
+    ).toHaveLength(0);
+    expect(tableEmptyScenario().groups).toHaveLength(0);
+    expect(calendarEmptyScenario().groups).toHaveLength(0);
+    expect(timelineEmptyScenario().groups).toHaveLength(0);
+  });
+
+  it("loads EdgeData scenarios with long text, Unicode and missing optional edges (TST-060)", () => {
+    const edgeCards = [
+      ...tableEdgeScenario().groups.flatMap((group) => group.cards),
+      ...calendarEdgeScenario().groups.flatMap((group) => group.cards),
+      ...timelineEdgeScenario().groups.flatMap((group) => group.cards),
+    ];
+    expect(edgeCards.length).toBeGreaterThan(0);
+
+    const kanbanEdge = createKanbanScenario({
+      seed: "edge",
+      edgeProfile: "combined",
+    });
+    const titles = kanbanEdge.columns.flatMap((group) =>
+      group.cards.map((card) => card.title),
+    );
+    expect(titles.some((title) => title.length > 60)).toBe(true);
+    expect(titles.some((title) => /[^\u0000-\u007F]/.test(title))).toBe(true);
+    expect(
+      kanbanEdge.columns
+        .flatMap((group) => group.cards)
+        .some((card) => card.dueDate === undefined || card.priority === undefined),
+    ).toBe(true);
+  });
+
+  it("produces documented exact HighDensity cardinalities repeatedly (TST-061)", () => {
+    expect(
+      createKanbanScenario({ seed: "dense", columnCount: 8, cardsPerColumn: 40 })
+        .columns,
+    ).toHaveLength(8);
+    expect(
+      createKanbanScenario({ seed: "dense", columnCount: 8, cardsPerColumn: 40 })
+        .columns.flatMap((group) => group.cards),
+    ).toHaveLength(320);
+    expect(
+      createKanbanScenario({ seed: "dense", columnCount: 8, cardsPerColumn: 40 })
+        .columns.flatMap((group) => group.cards),
+    ).toHaveLength(320);
+    expect(tableDenseScenario().groups.flatMap((group) => group.cards)).toHaveLength(
+      300,
+    );
+  });
 });
 
 describe("Work Management local UI controllers", () => {

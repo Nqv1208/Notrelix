@@ -639,6 +639,38 @@ function validateSurface(
       );
     }
   }
+  const notApplicableStates = new Set<string>(
+    stateCoverage.notApplicable.map((entry) => entry.state),
+  );
+  for (const state of notApplicableStates) {
+    if (requiredStateSet.has(state)) {
+      diagnostics.push(
+        `${path} state ${state} is both required and notApplicable`,
+      );
+    }
+  }
+  for (const entry of stateCoverage.notApplicable) {
+    if (isGenericExclusionReason(entry.reason)) {
+      diagnostics.push(
+        `${path} notApplicable ${entry.state} reason must be concrete, not a generic placeholder (SPEC §9.1)`,
+      );
+    }
+  }
+
+  const universe =
+    UI_EVIDENCE_SURFACE_KIND_STATE_UNIVERSES[surface.surfaceKind] ?? [];
+  const accounted = new Set<string>([
+    ...requiredStateSet,
+    ...stateCoverage.delegated.map((entry) => entry.state),
+    ...notApplicableStates,
+  ]);
+  for (const state of universe) {
+    if (!accounted.has(state)) {
+      diagnostics.push(
+        `${path} surfaceKind ${surface.surfaceKind} state ${state} must be required, delegated, or notApplicable (SPEC §9.3)`,
+      );
+    }
+  }
 
   const hasInteraction = surface.checks.includes("interaction");
   if (hasInteraction && surface.interactionCases.length === 0) {
@@ -755,16 +787,37 @@ export function validateUiEvidenceManifest(
 
   const surfaceIds = new Set<string>();
   const storyIds = new Set<string>();
+  const surfaceByOwnerAndId = new Map<string, UiEvidenceSurface>();
   for (const surface of surfaces) {
     if (surfaceIds.has(surface.surfaceId)) {
       diagnostics.push(`duplicate surfaceId ${surface.surfaceId}`);
     }
     surfaceIds.add(surface.surfaceId);
+    surfaceByOwnerAndId.set(`${surface.owner}::${surface.surfaceId}`, surface);
     for (const story of surface.stories) {
       if (storyIds.has(story.id)) {
         diagnostics.push(`duplicate story id ${story.id}`);
       }
       storyIds.add(story.id);
+    }
+  }
+
+  for (const surface of surfaces) {
+    for (const delegated of surface.stateCoverage.delegated) {
+      const targetSurface = surfaceByOwnerAndId.get(
+        `${surface.owner}::${delegated.surfaceId}`,
+      );
+      if (!targetSurface) {
+        diagnostics.push(
+          `surfaces[${surface.surfaceId}] delegates ${delegated.state} to missing or cross-owner surface ${delegated.surfaceId}`,
+        );
+        continue;
+      }
+      if (!targetSurface.stateCoverage.required.includes(delegated.targetState)) {
+        diagnostics.push(
+          `surfaces[${surface.surfaceId}] delegates ${delegated.state} to surface ${delegated.surfaceId} state ${delegated.targetState} which is not required by the target`,
+        );
+      }
     }
   }
 

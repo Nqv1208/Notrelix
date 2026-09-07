@@ -72,21 +72,51 @@
           "id": "workspace-contextual-toolbar--kanban-mode",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": [
+          "Default"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "Toolbar controls are fixed actions with a short search box; long-text and Unicode edges are exercised by the data surfaces each view owns.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for the contextual toolbar at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "search",
@@ -113,31 +143,88 @@
           "id": "workspace-workspace-ui-surfaces--directory-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--directory-empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--directory-edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The directory renders resolved workspace summaries passed by its parent; query loading presentation is owned by the workspace shell.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "The directory renders resolved workspace summaries passed by its parent; query error presentation is owned by the workspace shell.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "The directory renders an unordered workspace grid without a density cap; high-density input is exercised by the EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for the workspace directory at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for the workspace directory at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -156,21 +243,61 @@
           "id": "workspace-workspace-ui-surfaces--compact-header-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": [
+          "Default"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The header renders resolved workspace and member data passed by its parent; query loading presentation is owned by the workspace shell.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "The header renders resolved workspace and member data passed by its parent; query error presentation is owned by the workspace shell.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The header renders workspace name, plan badge, and member avatars; long-text and Unicode edges are exercised by the directory EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for the compact header at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -189,31 +316,68 @@
           "id": "workspace-workspace-ui-surfaces--view-tabs-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--view-tabs-empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--view-tabs-edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for workspace view tabs at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -232,26 +396,82 @@
           "id": "workspace-workspace-ui-surfaces--invitations-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--invitations-empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty"],
+        "required": [
+          "Default",
+          "Empty"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "Invitations render resolved data passed by its parent; query loading presentation is owned by the workspace shell.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Invitations render resolved data passed by its parent; query error presentation is owned by the workspace shell.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "Invitations render a bounded popover list; high-density input is exercised by the EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for pending invitations at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for pending invitations at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "Invitations render bounded inviter/workspace name strings; long-text and Unicode edge input is exercised by the directory EdgeData story.",
+            "authority": "docs/product/workspaces.md"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
@@ -270,31 +490,73 @@
           "id": "workspace-workspace-ui-surfaces--dashboard-default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--dashboard-empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "workspace-workspace-ui-surfaces--dashboard-loading",
           "state": "Loading",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "Loading"],
+        "required": [
+          "Default",
+          "Empty",
+          "Loading"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Error",
+            "reason": "Dashboard widgets render resolved summary data passed by their parent; query error presentation is owned by the workspace shell.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "Dashboard widgets render bounded counts and short activity strings; long-text and Unicode edges are exercised by the directory EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",

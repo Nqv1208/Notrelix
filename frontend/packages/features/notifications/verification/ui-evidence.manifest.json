@@ -22,31 +22,88 @@
           "id": "notifications-notification-bell--default",
           "state": "Default",
           "visualTargets": [
-            { "viewport": "mobile", "theme": "light" },
-            { "viewport": "tablet", "theme": "light" },
-            { "viewport": "desktop", "theme": "light" },
-            { "viewport": "desktop", "theme": "dark" }
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
           ]
         },
         {
           "id": "notifications-notification-bell--empty",
           "state": "Empty",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         },
         {
           "id": "notifications-notification-bell--edge-data",
           "state": "EdgeData",
-          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData"],
+        "required": [
+          "Default",
+          "Empty",
+          "EdgeData"
+        ],
         "delegated": [],
-        "notApplicable": []
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The bell renders resolved notification data passed by the workspace header; query loading presentation is owned by the header.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "The bell renders resolved notification data passed by the workspace header; query error presentation is owned by the header.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "Notifications render a bounded popover list; high-density input is exercised by the EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for notifications at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for notifications at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
       },
       "responsive": true,
       "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
+      "checks": [
+        "interaction",
+        "a11y",
+        "visual",
+        "purity"
+      ],
       "interactionCases": [
         {
           "id": "render",
