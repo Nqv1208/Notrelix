@@ -196,10 +196,20 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            // M2G extension (reviewer-approved): ArchivePage carries its own
-            // Governance vocabulary — not ManageBoard, and not
-            // ManagePagePermission (ACL management). Page lifecycle
-            // mutations remain ManageAwareAllow: managers or above.
+            // M2G extension (reviewer-approved): page lifecycle mutation
+            // authority is distinct from page visibility — a workspace-visible
+            // page only proves the actor can see the resource, not archive it.
+            // ArchivePage requires an active page ResourcePermission of at
+            // least Manager (owners pass the earlier fast-path, explicit
+            // permission rules were evaluated above). It carries its own
+            // Governance vocabulary: neither ManageBoard nor
+            // ManagePagePermission (ACL management).
+            if (permission.Action == PermissionAction.ArchivePage
+                && (facts.ActiveResourcePermissionRank ?? 0) < ManagerRank)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            }
+
             return ManageAwareAllow(permission, request, facts, role);
         }
 

@@ -568,15 +568,150 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ArchivePage_WorkspaceMember_OnWorkspaceVisiblePage_Allows()
+    public async Task ArchivePage_WorkspaceMember_OnWorkspaceVisiblePage_IsForbidden()
     {
+        // M2G extension: page visibility is not lifecycle mutation authority.
+        // A workspace-visible page only proves the member can see it —
+        // ArchivePage requires an active page ResourcePermission of at least
+        // Manager (or the workspace Owner fast-path).
         var (accountId, _, _, _, memberId) = await SeedPageStackAsync();
         var pageId = await ResolvePageIdAsync();
 
         using var provider = CreateProvider(accountId, memberId);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "visibility grants reading, not page lifecycle mutation authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_PageManagerLevelPermission_Allows()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var manager = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
+
+        using var provider = CreateProvider(accountId, manager);
         var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ArchivePage_PageEditorLevelPermission_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var editor = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, editor, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (editor, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, editor, PermissionLevel.Editor);
+
+        using var provider = CreateProvider(accountId, editor);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "Editor rank is below the Manager threshold for page lifecycle authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_PageViewerLevelPermission_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var viewer = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, viewer, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (viewer, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, viewer, PermissionLevel.Viewer);
+
+        using var provider = CreateProvider(accountId, viewer);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>("Viewer rank cannot archive");
+    }
+
+    [Fact]
+    public async Task ArchivePage_WorkspaceAdmin_WithoutPageManagerAuthority_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var admin = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, admin, WorkspaceRole.Admin);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (admin, WorkspaceRole.Admin));
+
+        using var provider = CreateProvider(accountId, admin);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "workspace Admin is not a default page lifecycle manager");
+    }
+
+    [Fact]
+    public async Task ArchivePage_ExplicitAllowRule_Allows()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var member = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Allow);
+
+        using var provider = CreateProvider(accountId, member);
+        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        result.Succeeded.Should().BeTrue(
+            "an applicable explicit Allow rule grants the lifecycle authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_ExplicitDenyRule_IsForbidden_EvenForManager()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var manager = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, manager, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Deny);
+
+        using var provider = CreateProvider(accountId, manager);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "an applicable explicit Deny rule overrides the Manager-rank authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_WrongTenant_IsNotFound_AndTargetStaysActive()
+    {
+        // Cross-tenant resource existence must not leak through Forbidden:
+        // a page from workspace B addressed from a workspace-A context is
+        // hidden from lifecycle mutations entirely.
+        var (accountA, _, workspaceA, _, memberA) = await SeedPageStackAsync();
+        var (_, _, workspaceB, pageB, _) = await SeedPageStackAsync();
+        workspaceA.Should().NotBe(workspaceB);
+
+        using var provider = CreateProvider(accountA, memberA);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageB));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "a cross-tenant page must be hidden from lifecycle mutations");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageB)).Status
+            .Should().Be(PageStatus.Active,
+            "the wrong-tenant mutation must leave the foreign page untouched");
     }
 
     [Fact]
@@ -867,6 +1002,32 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             await projection.SyncWorkspaceMemberGrantAsync(accountId, workspaceId, userId, role, now, CancellationToken.None);
         }
 
+        await seed.SaveChangesAsync();
+    }
+
+    private async Task SeedPermissionRuleAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid subjectId,
+        PermissionAction action,
+        string resourceKind,
+        Guid resourceId,
+        PermissionEffect effect)
+    {
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.PermissionRules.Add(PermissionRule.Create(
+            accountId,
+            workspaceId,
+            PermissionScopeType.Page,
+            ResourceKind.Create(resourceKind),
+            resourceId,
+            PermissionSubjectType.User,
+            subjectId,
+            null,
+            action,
+            effect,
+            subjectId,
+            DateTimeOffset.UtcNow));
         await seed.SaveChangesAsync();
     }
 
