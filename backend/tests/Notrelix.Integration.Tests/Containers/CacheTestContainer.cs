@@ -34,7 +34,14 @@ public sealed class CacheTestContainer : IAsyncLifetime
     {
         await new DatabaseReset(PostgresConnectionString).ResetAsync();
 
-        using var redis = await ConnectionMultiplexer.ConnectAsync(RedisConnectionString);
+        var options = new ConfigurationOptions
+        {
+            EndPoints = { RedisConnectionString },
+            AllowAdmin = true, // FLUSHDB requires admin-mode commands.
+            ConnectRetry = 3,
+            ConnectTimeout = 10_000,
+        };
+        using var redis = await ConnectionMultiplexer.ConnectAsync(options);
         await redis.GetDatabase().ExecuteAsync("FLUSHDB");
     }
 
