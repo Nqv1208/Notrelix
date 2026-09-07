@@ -101,6 +101,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.ResourceSummary.ICollaborationResourceSummary,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary>();
+        services.AddScoped<global::Notrelix.Application.Features.Workspaces.Public.Membership.IWorkspaceMembershipFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.Membership.PostgresWorkspaceMembershipFacts>();
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();

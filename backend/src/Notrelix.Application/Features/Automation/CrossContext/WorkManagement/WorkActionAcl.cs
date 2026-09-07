@@ -1,5 +1,5 @@
 using Notrelix.Application.Features.Automation.Ports.WorkManagement;
-using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 
 namespace Notrelix.Application.Features.Automation.CrossContext.WorkManagement;
 
@@ -19,6 +19,7 @@ public static class WorkActionAcl
         new(
             new WorkItemActionIdentity(
                 OperationId: executionId,
+                AccountId: automationPrincipal.AccountId,
                 WorkspaceId: automationPrincipal.WorkspaceId,
                 ExecutorUserId: automationPrincipal.ExecutorUserId),
             ItemId: itemId,

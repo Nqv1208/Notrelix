@@ -7,7 +7,7 @@ using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
-using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 using Notrelix.Application.Common.Integrations.N8n;
 using Notrelix.Application.Features.Automation.Executions.Services;
 using Notrelix.Application.Features.Billing.Entitlements.Services;

@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Automation.Ports.WorkManagement;
+using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -88,6 +89,12 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         seed.BoardItems.Add(item);
         await seed.SaveChangesAsync();
 
+        await using var grant = _db.CreateContext(SystemTenant());
+        var projection = new Notrelix.Infrastructure.Data.Authz.AccessGrantProjectionService(grant);
+        await projection.SyncWorkspaceMemberGrantAsync(
+            accountId, workspace.Id, executorUser.Id, WorkspaceRole.Member, Now, CancellationToken.None);
+        await grant.SaveChangesAsync();
+
         return new ChainGraph(accountId, workspace.Id, item.Id, board.Id, sourceGroup.Id, targetGroup.Id, executorUser.Id);
     }
 
@@ -102,7 +109,17 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         clockMock.Setup(c => c.UtcNow).Returns(Now);
         var workItemActions = new Application.Features.WorkManagement.BoardItems.Services.MoveBoardItemUseCase(
             workContext, clockMock.Object);
-        var actions = new Application.Features.WorkManagement.BoardItems.Services.WorkItemActions(workItemActions);
+        var idempotencyStore = new Notrelix.Infrastructure.Operations.Idempotency.EfIdempotencyStore(
+            workContext,
+            System.TimeProvider.System,
+            Microsoft.Extensions.Options.Options.Create(
+                new Notrelix.Application.Common.Idempotency.IdempotencyOptions()));
+        var membershipFacts = new Notrelix.Infrastructure.CrossContext.Workspaces.Membership.PostgresWorkspaceMembershipFacts(workContext);
+        var actions = new Application.Features.WorkManagement.BoardItems.Services.WorkItemActions(
+            workItemActions,
+            workContext,
+            membershipFacts,
+            idempotencyStore);
         return (new WorkItemActionAdapter(actions), workContext);
     }
 
@@ -113,21 +130,72 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         var (port, workContext) = CreatePort(graph);
         var executionId = Guid.CreateVersion7();
 
+        await using var tx = await workContext.Database.BeginTransactionAsync();
         var result = await port.MoveItemAsync(
             graph.ItemId, graph.TargetGroupId, executionId,
-            new AutomationPrincipal(graph.ExecutorUserId, graph.WorkspaceId),
+            new AutomationPrincipal(graph.AccountId, graph.ExecutorUserId, graph.WorkspaceId),
             CancellationToken.None);
+        await workContext.SaveChangesAsync();
+        await tx.CommitAsync();
 
         result.ItemId.Should().Be(graph.ItemId);
         result.GroupId.Should().Be(graph.TargetGroupId);
-
-        // Delivery pipeline commit (dedup filter owns the transaction).
-        await workContext.SaveChangesAsync();
 
         // Verify through a fresh producer-owned read.
         await using var verify = _db.CreateContext(SystemTenant());
         var item = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
         item.GroupId.Should().Be(graph.TargetGroupId);
+    }
+
+    [Fact]
+    public async Task AutomationMoveItem_SameOperationIdAndPayload_ReplaysWithoutSecondMutation()
+    {
+        var graph = await SeedChainAsync();
+        var (port, workContext) = CreatePort(graph);
+        var executionId = Guid.CreateVersion7();
+
+        await using var tx = await workContext.Database.BeginTransactionAsync();
+        var first = await port.MoveItemAsync(
+            graph.ItemId, graph.TargetGroupId, executionId,
+            new AutomationPrincipal(graph.AccountId, graph.ExecutorUserId, graph.WorkspaceId),
+            CancellationToken.None);
+        await workContext.SaveChangesAsync();
+
+        var second = await port.MoveItemAsync(
+            graph.ItemId, graph.TargetGroupId, executionId,
+            new AutomationPrincipal(graph.AccountId, graph.ExecutorUserId, graph.WorkspaceId),
+            CancellationToken.None);
+
+        second.Should().Be(first, "the duplicate retries one logical move through the committed dedup record");
+        await tx.CommitAsync();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var item = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
+        item.GroupId.Should().Be(graph.TargetGroupId);
+        item.Version.Should().Be(2, "exactly one move mutation: creation seeds version 1, one move increments to 2");
+    }
+
+    [Fact]
+    public async Task AutomationMoveItem_SameOperationIdDifferentPayload_IsDeterministicConflict()
+    {
+        var graph = await SeedChainAsync();
+        var (port, workContext) = CreatePort(graph);
+        var executionId = Guid.CreateVersion7();
+
+        await using var tx = await workContext.Database.BeginTransactionAsync();
+        await port.MoveItemAsync(
+            graph.ItemId, graph.TargetGroupId, executionId,
+            new AutomationPrincipal(graph.AccountId, graph.ExecutorUserId, graph.WorkspaceId),
+            CancellationToken.None);
+        await workContext.SaveChangesAsync();
+
+        var conflicting = () => port.MoveItemAsync(
+            graph.ItemId, graph.SourceGroupId, executionId,
+            new AutomationPrincipal(graph.AccountId, graph.ExecutorUserId, graph.WorkspaceId),
+            CancellationToken.None);
+
+        await conflicting.Should().ThrowAsync<WorkItemOperationConflictException>();
+        await tx.RollbackAsync();
     }
 
     [Fact]
@@ -137,9 +205,10 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         var (port, workContext) = CreatePort(graph);
         var unrelatedGroup = Guid.CreateVersion7();
 
+        await using var tx = await workContext.Database.BeginTransactionAsync();
         var act = () => port.MoveItemAsync(
             graph.ItemId, unrelatedGroup, Guid.CreateVersion7(),
-            new AutomationPrincipal(graph.ExecutorUserId, graph.WorkspaceId),
+            new AutomationPrincipal(graph.AccountId, graph.ExecutorUserId, graph.WorkspaceId),
             CancellationToken.None);
 
         // The Work producer rejects the mutation as a business failure; the
@@ -147,7 +216,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         // delivery mechanism must not treat it as transport retry.
         await act.Should().ThrowAsync<Application.Common.Exceptions.NotFoundException>();
 
-        await workContext.SaveChangesAsync();
+        await tx.RollbackAsync();
 
         await using var verify = _db.CreateContext(SystemTenant());
         var item = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);

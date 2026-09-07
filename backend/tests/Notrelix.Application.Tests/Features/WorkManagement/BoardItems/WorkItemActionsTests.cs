@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
-using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
+using Notrelix.Application.Features.Workspaces.Public.Membership;
 
 using Notrelix.Domain.SharedKernel.Ordering;
 
@@ -14,16 +15,33 @@ namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 /// </summary>
 public class WorkItemActionsTests : WorkManagementHandlerTestBase
 {
+    private readonly Mock<IWorkspaceMembershipFacts> MembershipFactsMock = new();
+    private readonly Mock<IIdempotencyStore> IdempotencyStoreMock = new();
     private readonly WorkItemActions _sut;
 
     public WorkItemActionsTests()
     {
-        _sut = new WorkItemActions(new MoveBoardItemUseCase(DbContextMock.Object, DateTimeProviderMock.Object));
+        MembershipFactsMock
+            .Setup(f => f.ResolveAsync(TestAccountId, TestWorkspaceId, TestUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkspaceMembershipFact(TestAccountId, TestWorkspaceId, TestUserId, IsActiveMember: true));
+        IdempotencyStoreMock
+            .Setup(s => s.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.Started, null, null));
+
+        _sut = new WorkItemActions(
+            new MoveBoardItemUseCase(DbContextMock.Object, DateTimeProviderMock.Object),
+            DbContextMock.Object,
+            MembershipFactsMock.Object,
+            IdempotencyStoreMock.Object);
     }
 
-    private WorkItemMoveRequest MoveRequest(Guid itemId, Guid targetGroupId) =>
+    private WorkItemMoveRequest MoveRequest(Guid itemId, Guid targetGroupId, Guid? operationId = null) =>
         new(
-            new WorkItemActionIdentity(Guid.CreateVersion7(), TestWorkspaceId, Guid.CreateVersion7()),
+            new WorkItemActionIdentity(
+                OperationId: operationId ?? Guid.CreateVersion7(),
+                AccountId: TestAccountId,
+                WorkspaceId: TestWorkspaceId,
+                ExecutorUserId: TestUserId),
             itemId,
             targetGroupId);
 
@@ -59,19 +77,108 @@ public class WorkItemActionsTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public async Task MoveItem_GroupOnDifferentBoard_ThrowsNotFound()
+    public async Task MoveItem_ItemOutsideDeclaredWorkspace_IsForbidden()
     {
-        var board = CreateBoard();
-        var otherBoard = CreateBoard();
-        var targetGroup = BoardGroup.Create(
-            TestAccountId, TestWorkspaceId, otherBoard.Id, "Other Board Group",
+        var otherWorkspaceId = Guid.CreateVersion7();
+        var board = CreateBoard(workspaceId: otherWorkspaceId);
+        var group = BoardGroup.Create(
+            TestAccountId, otherWorkspaceId, board.Id, "Other Workspace Group",
             Color.Create("#00FF00"), FractionalIndex.Create("a0"), TestUserId, TestNow);
-        var item = CreateBoardItem(boardId: board.Id);
-        SetupBoards(board, otherBoard);
-        SetupBoardGroups(targetGroup);
+        var item = BoardItem.CreateRoot(
+            TestAccountId, otherWorkspaceId, board.Id, group.Id,
+            "Foreign Item", FractionalIndex.Create("a0"), TestUserId, TestNow);
+        SetupBoards(board);
+        SetupBoardGroups(group);
         SetupBoardItems(item);
 
-        await _sut.Invoking(s => s.MoveItemAsync(MoveRequest(item.Id, targetGroup.Id), CancellationToken.None))
-            .Should().ThrowAsync<NotFoundException>();
+        await _sut.Invoking(s => s.MoveItemAsync(MoveRequest(item.Id, group.Id), CancellationToken.None))
+            .Should().ThrowAsync<ForbiddenException>(
+                "the item's workspace must match the declared execution workspace");
     }
+
+    [Fact]
+    public async Task MoveItem_NonMemberExecutor_IsForbidden()
+    {
+        var board = CreateBoard();
+        var group = BoardGroup.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Group",
+            Color.Create("#00FF00"), FractionalIndex.Create("a0"), TestUserId, TestNow);
+        var item = CreateBoardItem(boardId: board.Id, groupId: group.Id);
+        SetupBoards(board);
+        SetupBoardGroups(group);
+        SetupBoardItems(item);
+        var outsider = Guid.CreateVersion7();
+        MembershipFactsMock
+            .Setup(f => f.ResolveAsync(TestAccountId, TestWorkspaceId, outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkspaceMembershipFact(TestAccountId, TestWorkspaceId, outsider, IsActiveMember: false));
+
+        await _sut.Invoking(s => s.MoveItemAsync(
+                new WorkItemMoveRequest(
+                    new WorkItemActionIdentity(
+                        Guid.CreateVersion7(), TestAccountId, TestWorkspaceId, outsider),
+                    item.Id,
+                    group.Id),
+                CancellationToken.None))
+            .Should().ThrowAsync<ForbiddenException>(
+                "the executor must be an active workspace member");
+    }
+
+    [Fact]
+    public async Task MoveItem_CompletedOperationId_WithSamePayload_ReplaysResult()
+    {
+        var board = CreateBoard();
+        var group = BoardGroup.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Group",
+            Color.Create("#00FF00"), FractionalIndex.Create("a0"), TestUserId, TestNow);
+        var item = CreateBoardItem(boardId: board.Id, groupId: group.Id);
+        SetupBoards(board);
+        SetupBoardGroups(group);
+        SetupBoardItems(item);
+        var operationId = Guid.CreateVersion7();
+        var replayed = new WorkItemMoveResult(item.Id, group.Id, "a0");
+        IdempotencyStoreMock
+            .Setup(s => s.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyBeginResult(
+                IdempotencyBeginStatus.Completed,
+                System.Text.Json.JsonSerializer.Serialize(replayed),
+                nameof(WorkItemMoveResult)));
+
+        var result = await _sut.MoveItemAsync(MoveRequest(item.Id, group.Id, operationId), CancellationToken.None);
+
+        result.Should().Be(replayed, "a committed duplicate replays the stored result");
+    }
+
+    [Fact]
+    public async Task MoveItem_CompletedOperationId_WithConflictingPayload_FailsDeterministically()
+    {
+        var board = CreateBoard();
+        var group = BoardGroup.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Group",
+            Color.Create("#00FF00"), FractionalIndex.Create("a0"), TestUserId, TestNow);
+        var item = CreateBoardItem(boardId: board.Id, groupId: group.Id);
+        SetupBoards(board);
+        SetupBoardGroups(group);
+        SetupBoardItems(item);
+        var operationId = Guid.CreateVersion7();
+        var executedForItem = Guid.CreateVersion7();
+        IdempotencyStoreMock
+            .Setup(s => s.BeginAsync(It.Is<IdempotencyIdentity>(i => i.RequestHash == Sha256($"{executedForItem:N}:{group.Id:N}")), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyBeginResult(
+                IdempotencyBeginStatus.Completed,
+                System.Text.Json.JsonSerializer.Serialize(new WorkItemMoveResult(executedForItem, group.Id, "a0")),
+                nameof(WorkItemMoveResult)));
+
+        // The store reports a hash mismatch between the executed payload and
+        // this conflicting retry.
+        IdempotencyStoreMock
+            .Setup(s => s.BeginAsync(It.Is<IdempotencyIdentity>(i => i.RequestHash == Sha256($"{item.Id:N}:{group.Id:N}")), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.PayloadMismatch, null, null));
+
+        await _sut.Invoking(s => s.MoveItemAsync(MoveRequest(item.Id, group.Id, operationId), CancellationToken.None))
+            .Should().ThrowAsync<WorkItemOperationConflictException>(
+                "the same OperationId with a different payload is a deterministic conflict");
+    }
+
+    private static string Sha256(string value) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(value)));
 }

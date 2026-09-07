@@ -2,9 +2,10 @@ namespace Notrelix.Application.Features.Automation.Ports.WorkManagement;
 
 /// <summary>
 /// Automation-owned execution principal for a target Work Management action:
-/// the workflow supplies the exact user/scope the target should enforce.
+/// the workflow supplies the exact account/scope/user the target should enforce.
 /// </summary>
 public sealed record AutomationPrincipal(
+    Guid AccountId,
     Guid ExecutorUserId,
     Guid WorkspaceId);
 

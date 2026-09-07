@@ -1,5 +1,5 @@
 using Notrelix.Application.Features.Automation.Ports.WorkManagement;
-using Notrelix.Application.Features.WorkManagement.Public.Commands;
+using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 
 namespace Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
 
