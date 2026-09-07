@@ -44,6 +44,7 @@ using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
@@ -637,6 +638,23 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ArchivePage_PageCommenterLevelPermission_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var commenter = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, commenter, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (commenter, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, commenter, PermissionLevel.Commenter);
+
+        using var provider = CreateProvider(accountId, commenter);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>("Commenter rank cannot archive");
+    }
+
+    [Fact]
     public async Task ArchivePage_WorkspaceAdmin_WithoutPageManagerAuthority_IsForbidden()
     {
         var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
@@ -712,6 +730,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageB)).Status
             .Should().Be(PageStatus.Active,
             "the wrong-tenant mutation must leave the foreign page untouched");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "page.archived"
+                && (m.WorkspaceId == workspaceA || m.WorkspaceId == workspaceB))).Should().BeFalse(
+            "no page.archived fact may be staged by the wrong-tenant request");
     }
 
     [Fact]
@@ -782,7 +804,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     public async Task CreateComment_OnMissingPage_IsNotFound_WithoutPersistence()
     {
         // TAC-DC-004 (page section): missing target → defined failure.
-        var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
 
         using var provider = CreateProvider(accountId, ownerId);
         var act = () => SendAsync<Result<Guid>>(provider,
@@ -793,15 +815,19 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await using var verify = _db.CreateContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
-            .AnyAsync(c => c.WorkspaceId == ownerId)).Should().BeFalse(
+            .AnyAsync(c => c.WorkspaceId == workspaceId)).Should().BeFalse(
             "no comment may persist for a missing target");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "comment.created"
+                && m.WorkspaceId == workspaceId)).Should().BeFalse(
+            "no outward fact may be staged for a missing target");
     }
 
     [Fact]
     public async Task CreateComment_OnMissingBoardItem_IsNotFound_WithoutPersistence()
     {
         // TAC-DC-004 (board-item section): missing target → defined failure.
-        var (accountId, ownerId, _, _, _) = await SeedBoardStackAsync();
+        var (accountId, ownerId, workspaceId, _, _) = await SeedBoardStackAsync();
 
         using var provider = CreateProvider(accountId, ownerId);
         var act = () => SendAsync<Result<Guid>>(provider,
@@ -812,8 +838,12 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         await using var verify = _db.CreateContext(SystemTenant());
         (await verify.Comments.IgnoreQueryFilters()
-            .AnyAsync(c => c.WorkspaceId == ownerId)).Should().BeFalse(
+            .AnyAsync(c => c.WorkspaceId == workspaceId)).Should().BeFalse(
             "no comment may persist for a missing target");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "comment.created"
+                && m.WorkspaceId == workspaceId)).Should().BeFalse(
+            "no outward fact may be staged for a missing target");
     }
 
     [Fact]
@@ -821,14 +851,24 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     {
         // TAC-DC-006 (page section): cross-scope target reference fails and
         // cross-tenant existence must not leak through Forbidden.
-        var (accountA, _, _, pageA, _) = await SeedPageStackAsync();
+        // The actor is a legitimate member of tenant A (not a random Guid),
+        // proving a real tenant-A member cannot address a tenant-B page.
+        var (accountA, _, workspaceA, _, memberA) = await SeedPageStackAsync();
         var (_, _, _, pageB, _) = await SeedPageStackAsync();
 
-        using var provider = CreateProvider(accountA, Guid.NewGuid());
+        using var provider = CreateProvider(accountA, memberA);
         var act = () => SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForPage(pageB, "Cross-tenant page comment", null));
 
         await act.Should().ThrowAsync<AppNotFound>();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
+            "no comment may persist for a cross-scope target");
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageB)).Status
+            .Should().Be(PageStatus.Active,
+            "the foreign page must remain untouched");
     }
 
     [Fact]
@@ -836,15 +876,20 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     {
         // TAC-DC-006 (board-item section): cross-scope target reference fails
         // and cross-tenant existence must not leak through Forbidden.
-        var (accountA, _, _, boardA, _) = await SeedBoardStackAsync();
+        var (accountA, _, workspaceA, _, memberA) = await SeedBoardStackAsync();
         var (_, _, _, boardB, _) = await SeedBoardStackAsync();
         var itemB = await ResolveBoardItemIdAsync(boardB);
 
-        using var provider = CreateProvider(accountA, Guid.NewGuid());
+        using var provider = CreateProvider(accountA, memberA);
         var act = () => SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForBoardItem(itemB, "Cross-tenant item comment", null));
 
         await act.Should().ThrowAsync<AppNotFound>();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
+            "no comment may persist for a cross-scope target");
     }
 
     // ── composition -----------------------------------------------------------
