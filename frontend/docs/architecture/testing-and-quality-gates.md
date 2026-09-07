@@ -705,7 +705,7 @@ pnpm test:ui:freeze
 
 runs the Storybook UI Playwright suite.
 
-CI `ui-foundation` uses this command.
+CI `ui-foundation` runs `check:ui-purity`, then `check:ui-evidence`, then this command.
 
 ---
 
@@ -1146,6 +1146,8 @@ Current `validate:fast` executes:
 codegen drift
 architecture
 architecture docs
+UI purity
+UI evidence
 test taxonomy
 lint coverage
 typecheck
@@ -1167,12 +1169,16 @@ It currently does not include every:
 integration
 mobile
 generator
-UI
+browser UI freeze
 host build
 E2E
 ```
 
 gate.
+
+`check:ui-purity` and `check:ui-evidence` ARE local `validate:fast` members.
+
+The Storybook browser suite `test:ui:freeze` is not; it remains a CI-only `ui-foundation` member.
 
 Do not report full frontend verification from `validate:fast`.
 

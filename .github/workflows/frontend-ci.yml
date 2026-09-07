@@ -143,6 +143,8 @@ jobs:
       - name: Renderer/package version contract
         run: |
           actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "1.61.1" ]]
+      - run: pnpm check:ui-purity
+      - run: pnpm check:ui-evidence
       - run: pnpm test:ui:freeze
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
