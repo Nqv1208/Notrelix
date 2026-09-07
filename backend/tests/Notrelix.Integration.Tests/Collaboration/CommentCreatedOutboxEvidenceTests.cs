@@ -154,4 +154,38 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
         var outbox = await SingleCommentOutboxAsync(graph.WorkspaceId);
         outbox.Should().BeNull("a rolled-back comment mutation must leave no committed outward delivery");
     }
+
+    /// <summary>
+    /// TAC-XPK-009 — ResourceRef→Collaboration flow: the foreign Work target
+    /// is referenced by stable identity only. Commenting leaves the target
+    /// BoardItem aggregate byte-for-byte unchanged — no Work aggregate
+    /// mutation or navigation exists anywhere in the Collaboration path.
+    /// </summary>
+    [Fact]
+    public async Task CommentOnForeignBoardItem_TargetAggregateUnchanged()
+    {
+        var graph = await SeedBoardItemStackAsync();
+
+        long beforeVersion;
+        string beforeName;
+        DateTimeOffset? beforeUpdatedAt;
+        await using (var snapshot = _db.CreateContext(SystemTenant()))
+        {
+            var item = await snapshot.BoardItems.AsNoTracking().SingleAsync(i => i.Id == graph.ItemId);
+            beforeVersion = item.Version;
+            beforeName = item.Name;
+            beforeUpdatedAt = item.UpdatedAt;
+        }
+
+        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        context.Comments.Add(NewCommentFact(graph));
+        await context.SaveChangesAsync();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var itemAfter = await verify.BoardItems.AsNoTracking().SingleAsync(i => i.Id == graph.ItemId);
+        itemAfter.Version.Should().Be(beforeVersion);
+        itemAfter.Name.Should().Be(beforeName);
+        itemAfter.UpdatedAt.Should().Be(beforeUpdatedAt);
+        itemAfter.DomainEvents.Should().BeEmpty("the Work aggregate owns no part of the comment mutation");
+    }
 }
