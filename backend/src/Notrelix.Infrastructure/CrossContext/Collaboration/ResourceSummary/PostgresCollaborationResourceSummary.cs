@@ -17,11 +17,11 @@ public sealed class PostgresCollaborationResourceSummary : ICollaborationResourc
         _context = context;
     }
 
-    public async Task<IReadOnlyDictionary<Guid, CollaborationResourceSummaryFact>> GetSummariesAsync(
+    public async Task<IReadOnlyDictionary<(string Kind, Guid ResourceId), CollaborationResourceSummaryFact>> GetSummariesAsync(
         IReadOnlyCollection<(string Kind, Guid ResourceId)> resources,
         CancellationToken cancellationToken)
     {
-        var summaries = new Dictionary<Guid, CollaborationResourceSummaryFact>(resources.Count);
+        var summaries = new Dictionary<(string Kind, Guid ResourceId), CollaborationResourceSummaryFact>(resources.Count);
         if (resources.Count == 0)
         {
             return summaries;
@@ -53,7 +53,7 @@ public sealed class PostgresCollaborationResourceSummary : ICollaborationResourc
 
             foreach (var id in ids)
             {
-                summaries[id] = new CollaborationResourceSummaryFact(
+                summaries[(kind, id)] = new CollaborationResourceSummaryFact(
                     id,
                     kind,
                     commentCounts.GetValueOrDefault(id),

@@ -117,4 +117,44 @@ public class WorkManagementCollaborationReadAdapterTests : IAsyncLifetime
 
         counts[item].CommentCount.Should().Be(0);
     }
+
+    [Fact]
+    public async Task ResourceSummary_SameGuidDifferentKinds_ProduceIndependentSummaries()
+    {
+        // The shared GUID across two resource kinds is a collision regression:
+        // the summary boundary must key by the full (kind, id) identity so two
+        // different resources never overwrite each other.
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
+        var now = DateTimeOffset.UtcNow;
+
+        var sharedId = Guid.NewGuid();
+        var boardItemRef = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), sharedId, WorkspaceId);
+        context.Comments.Add(Comment.Create(AccountId, WorkspaceId, boardItemRef, JsonContent("item comment"), AccountId, now));
+        context.Comments.Add(Comment.Create(
+            AccountId, WorkspaceId,
+            ResourceRef.Create(ResourceKind.Create("documents.page"), sharedId, WorkspaceId),
+            JsonContent("page comment"), AccountId, now));
+        context.Comments.Add(Comment.Create(
+            AccountId, WorkspaceId,
+            ResourceRef.Create(ResourceKind.Create("documents.page"), sharedId, WorkspaceId),
+            JsonContent("page comment two"), AccountId, now));
+        context.Attachments.Add(Attachment.Create(
+            AccountId, WorkspaceId,
+            ResourceRef.Create(ResourceKind.Create("documents.page"), sharedId, WorkspaceId),
+            AttachmentType.Document, FileMetadata.Create("p.pdf", 10, "application/pdf"), AccountId, now));
+        await context.SaveChangesAsync();
+
+        var source = new Notrelix.Infrastructure.CrossContext.Collaboration.ResourceSummary.PostgresCollaborationResourceSummary(context);
+        var summaries = await source.GetSummariesAsync(
+            [("work-management.board-item", sharedId), ("documents.page", sharedId)],
+            CancellationToken.None);
+
+        summaries.Keys.Should().HaveCount(2, "two distinct resources share the id but not the identity");
+        summaries[("work-management.board-item", sharedId)].CommentCount.Should().Be(1);
+        summaries[("work-management.board-item", sharedId)].AttachmentCount.Should().Be(0);
+        summaries[("documents.page", sharedId)].CommentCount.Should().Be(2);
+        summaries[("documents.page", sharedId)].AttachmentCount.Should().Be(1);
+    }
 }

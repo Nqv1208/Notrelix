@@ -1,7 +1,4 @@
-using Notrelix.Application.Common.Context;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Execution;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 

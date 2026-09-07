@@ -39,7 +39,7 @@ public sealed class WorkManagementCollaborationReadAdapter : IWorkManagementColl
 
         foreach (var itemId in itemIds)
         {
-            var summary = summaries.GetValueOrDefault(itemId);
+            var summary = summaries.GetValueOrDefault((BoardItemKindValue, itemId));
             counts[itemId] = summary is null
                 ? new WorkItemCollaborationCounts(0, 0)
                 : new WorkItemCollaborationCounts(summary.CommentCount, summary.AttachmentCount);
