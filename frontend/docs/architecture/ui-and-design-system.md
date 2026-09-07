@@ -1109,6 +1109,26 @@ contrast for every component.
 
 Use automated/manual checks at rendered component level.
 
+Operative brand pair in the web host (`apps/web/src/styles/globals.css`):
+
+```text
+--primary: oklch(0.5 0.2 250)
+--primary-foreground: oklch(0.985 0 0)
+≈ 5.6:1 white-on-primary (AA)
+```
+
+Updated 2026-09 because the previous `oklch(0.62 0.2 250)` measured ≈ 3.4:1 on
+solid-primary controls and failed axe `color-contrast` (serious). The light pair must
+hold WCAG AA both ways for small text: white-on-primary ≥ 4.5:1 and primary-on-background
+≥ 4.5:1. `bg-primary/80` hover fades toward `--background` below AA; hover is transient
+and not gate-enforced, but future primary changes must re-check the resting and hover
+pairs. Drift note: `packages/ui/tokens/themes/light.ts` still declares
+`oklch(0.58 0.23 285)`; the web renderer/storybook operatively use the globals.css value.
+Align the token package with the web host as part of token-ownership work; do not regress
+below AA. Visual baselines are linux-renderer pinned (`visual-baseline.lock.json`), so a
+primary change requires regenerating affected linux baselines in the CI `ui-foundation`
+job, not locally.
+
 ---
 
 # 77. Keyboard

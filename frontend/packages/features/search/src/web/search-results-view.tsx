@@ -110,9 +110,10 @@ export function SearchResultsView({
           <button
             key={t.value}
             onClick={() => toggleType(t.value)}
+            aria-pressed={activeTypes.includes(t.value)}
             className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
               activeTypes.includes(t.value)
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary/15 text-foreground font-semibold"
                 : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
