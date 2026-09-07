@@ -1,7 +1,9 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Models;
@@ -13,9 +15,11 @@ using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure;
+using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Identity.Services;
+using Notrelix.Infrastructure.Observability.Metrics;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -67,10 +71,12 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         var accountId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
         // The happy-path mention target is a real Identity user with an active
-        // workspace membership — target validity itself is an accepted debt
-        // (M7-DC-MENTION-TARGET-VALIDITY), but the evidence must not rely on a
-        // random Guid as if that were the normalized production shape.
-        var mentionedUserId = Guid.NewGuid();
+        // workspace membership — the seeded Identity user's own aggregate Id
+        // is the mentioned user, not a detached random Guid. Target validity
+        // itself remains an accepted debt (M7-DC-MENTION-TARGET-VALIDITY).
+        var mentionedUser = Domain.Identity.Users.User.Create(
+            $"mention-{Guid.NewGuid():N}@example.com", "Mention Target", "hashed", DateTimeOffset.UtcNow, true);
+        var mentionedUserId = mentionedUser.Id;
         var content = $"mention chain {Guid.NewGuid():N}";
         var now = DateTimeOffset.UtcNow;
         var workspace = Workspace.Create(accountId, ownerId, "DC Mention WS", $"mention-{Guid.NewGuid():N}", now);
@@ -83,8 +89,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             FractionalIndex.Create("a0"), ownerId, now);
 
         await using var seed = _db.CreateContext(SystemTenant());
-        seed.Users.Add(Domain.Identity.Users.User.Create(
-            $"mention-{Guid.NewGuid():N}@example.com", "Mention Target", "hashed", now, true));
+        seed.Users.Add(mentionedUser);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
             accountId, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner, ownerId, now));
@@ -172,7 +177,8 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             var duplicate = DeserializeOutboxEvent(outbox);
             await provider.GetRequiredService<IIntegrationEventBus>()
                 .PublishAsync(duplicate);
-            await Task.Delay(1500);
+            (await WaitForSecondClaimAsync(outboxEventId, NotificationConsumerEndpoint)).Should().BeTrue(
+                "the duplicate delivery must actually reach the DeduplicationConsumeFilter and attempt a second claim");
         }
         finally
         {
@@ -338,7 +344,43 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         builder.Services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         builder.AddApplicationServices();
 
+        // Recording decorator over the production dedup store (scoped like the
+        // production registration — the store's ApplicationDbContext is
+        // tenant-scoped and must not become a captive singleton dependency).
+        builder.Services.Replace(
+            ServiceDescriptor.Scoped<IMessageDeduplicationStore>(sp =>
+                new RecordingDeduplicationStore(
+                    new MessageDeduplicationStore(
+                        sp.GetRequiredService<ApplicationDbContext>(),
+                        sp.GetRequiredService<IDateTimeProvider>(),
+                        sp.GetRequiredService<MetricsService>()))));
+
         return builder.Services.BuildServiceProvider();
+    }
+
+
+    /// <summary>
+    /// Waits until the dedup store records a SECOND claim attempt for the
+    /// (eventId, consumer) identity — the observable signature of a real
+    /// duplicate delivery reaching the DeduplicationConsumeFilter. The
+    /// consumer's own business dedup key cannot mask the platform filter:
+    /// two claim attempts with one succeeded row prove the platform skipped
+    /// the second delivery before the consumer ever ran.
+    /// </summary>
+    private static async Task<bool> WaitForSecondClaimAsync(Guid eventId, string consumerName, int timeoutSeconds = 30)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (RecordingDeduplicationStore.ClaimAttempts(eventId, consumerName) >= 2)
+            {
+                return true;
+            }
+
+            await Task.Delay(200);
+        }
+
+        return false;
     }
 
     private async Task<MessagingOutboxMessage?> WaitForOutboxAsync(MentionGraph graph, string messageName)
@@ -420,4 +462,41 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         tenant.SetSystem();
         return tenant;
     }
+
+    /// <summary>
+    /// Full-delegating decorator around the production dedup store that records
+    /// claim attempts per (eventId, consumer) so the duplicate-delivery proof can
+    /// observe that a redelivery actually reached the filter. The decorator never
+    /// changes the store's own decisions.
+    /// </summary>
+    internal sealed class RecordingDeduplicationStore(IMessageDeduplicationStore inner) : IMessageDeduplicationStore
+    {
+        private static readonly ConcurrentDictionary<(Guid EventId, string ConsumerName), int> Claims = new();
+
+        public static int ClaimAttempts(Guid eventId, string consumerName) =>
+            Claims.TryGetValue((eventId, consumerName), out var count) ? count : 0;
+
+        public static void Reset() => Claims.Clear();
+
+        public Task<bool> IsProcessedAsync(Guid messageId, string consumerName, CancellationToken cancellationToken) =>
+            inner.IsProcessedAsync(messageId, consumerName, cancellationToken);
+
+        public async Task<bool> TryClaimProcessingAsync(
+            Guid messageId,
+            string consumerName,
+            string messageName,
+            int messageVersion,
+            Guid? sourceEventId,
+            Guid? workspaceId,
+            CancellationToken cancellationToken)
+        {
+            Claims.AddOrUpdate((messageId, consumerName), 1, (_, count) => count + 1);
+            return await inner.TryClaimProcessingAsync(
+                messageId, consumerName, messageName, messageVersion, sourceEventId, workspaceId, cancellationToken);
+        }
+
+        public void MarkSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
+            inner.MarkSucceeded(messageId, consumerName, processedAt);
+    }
+
 }

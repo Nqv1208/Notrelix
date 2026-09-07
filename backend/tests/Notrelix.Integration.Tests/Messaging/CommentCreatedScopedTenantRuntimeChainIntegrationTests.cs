@@ -1,11 +1,12 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Events.Collaboration;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -19,6 +20,7 @@ using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Projections.Activity;
 using Notrelix.Infrastructure.Identity.Services;
+using Notrelix.Infrastructure.Observability.Metrics;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -106,11 +108,14 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             // Duplicate delivery of the SAME business event: the exact outward
             // event is deserialized from the committed outbox with the
             // production serializer and republished with the same business
-            // EventId — the dedup identity of the consume pipeline.
+            // EventId — the dedup identity of the consume pipeline. The proof
+            // observes the second real claim attempt reaching the dedup
+            // filter, not a hoped-for delivery.
             var duplicate = DeserializeOutboxEvent(outbox);
             await provider.GetRequiredService<IIntegrationEventBus>()
-                .PublishAsync((CommentCreatedIntegrationEvent)duplicate);
-            await WaitForRedeliveryAsync(outboxEventId, ActivityConsumerEndpoint);
+                .PublishAsync(duplicate);
+            (await WaitForSecondClaimAsync(outboxEventId, ActivityConsumerEndpoint)).Should().BeTrue(
+                "the duplicate delivery must actually reach the DeduplicationConsumeFilter and attempt a second claim");
 
             await using var midProbe = _db.CreateContext(SystemTenant());
             (await midProbe.Set<WorkspaceActivityLogRecord>()
@@ -170,13 +175,25 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private async Task<bool> WaitForRedeliveryAsync(Guid eventId, string consumerName)
+    /// <summary>
+    /// Waits until the dedup store records a SECOND claim attempt for the
+    /// (eventId, consumer) identity — the observable signature of a real
+    /// duplicate delivery reaching the DeduplicationConsumeFilter.
+    /// </summary>
+    private static async Task<bool> WaitForSecondClaimAsync(Guid eventId, string consumerName, int timeoutSeconds = 30)
     {
-        // Give the duplicate delivery a bounded window to arrive and be
-        // skipped by the dedup filter; the redelivery attempt itself never
-        // produces a second Succeeded row.
-        await Task.Delay(1500);
-        return true;
+        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (RecordingDeduplicationStore.ClaimAttempts(eventId, consumerName) >= 2)
+            {
+                return true;
+            }
+
+            await Task.Delay(200);
+        }
+
+        return false;
     }
 
     private sealed record CommentGraph(
@@ -287,6 +304,19 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
 
         builder.Services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         builder.AddApplicationServices();
+
+        // Wrap the production dedup store with a recording decorator so the
+        // duplicate-delivery proof observes real claim attempts instead of
+        // assuming a delayed publish reached the filter. Scoped like the
+        // production registration — the store's ApplicationDbContext is
+        // tenant-scoped and must not become a captive singleton dependency.
+        builder.Services.Replace(
+            ServiceDescriptor.Scoped<IMessageDeduplicationStore>(sp =>
+                new RecordingDeduplicationStore(
+                    new MessageDeduplicationStore(
+                        sp.GetRequiredService<ApplicationDbContext>(),
+                        sp.GetRequiredService<IDateTimeProvider>(),
+                        sp.GetRequiredService<MetricsService>()))));
 
         builder.Services.AddScoped<IActivityProjectionDbContext>(sp =>
             new ActivityProjectionTenantProbe(
@@ -500,4 +530,42 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             return _inner.SaveChangesAsync(cancellationToken);
         }
     }
+
+    /// <summary>
+    /// Full-delegating decorator around the production dedup store that records
+    /// claim attempts per (eventId, consumer) so the duplicate-delivery proof can
+    /// observe that a redelivery actually reached the filter — no sleeping, no
+    /// hoping. The static registry is per-test-class keyed by identity and the
+    /// decorator never changes the store's own decisions.
+    /// </summary>
+    internal sealed class RecordingDeduplicationStore(IMessageDeduplicationStore inner) : IMessageDeduplicationStore
+    {
+        private static readonly ConcurrentDictionary<(Guid EventId, string ConsumerName), int> Claims = new();
+
+        public static int ClaimAttempts(Guid eventId, string consumerName) =>
+            Claims.TryGetValue((eventId, consumerName), out var count) ? count : 0;
+
+        public static void Reset() => Claims.Clear();
+
+        public Task<bool> IsProcessedAsync(Guid messageId, string consumerName, CancellationToken cancellationToken) =>
+            inner.IsProcessedAsync(messageId, consumerName, cancellationToken);
+
+        public async Task<bool> TryClaimProcessingAsync(
+            Guid messageId,
+            string consumerName,
+            string messageName,
+            int messageVersion,
+            Guid? sourceEventId,
+            Guid? workspaceId,
+            CancellationToken cancellationToken)
+        {
+            Claims.AddOrUpdate((messageId, consumerName), 1, (_, count) => count + 1);
+            return await inner.TryClaimProcessingAsync(
+                messageId, consumerName, messageName, messageVersion, sourceEventId, workspaceId, cancellationToken);
+        }
+
+        public void MarkSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
+            inner.MarkSucceeded(messageId, consumerName, processedAt);
+    }
+
 }
