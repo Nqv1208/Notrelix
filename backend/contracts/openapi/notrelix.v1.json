@@ -6,6 +6,35 @@
     "version": "v1"
   },
   "paths": {
+    "/api/v1/accounts/rename": {
+      "put": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Rename the current account",
+        "operationId": "Accounts.RenameAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/admin/outbox/stats": {
       "get": {
         "tags": [
@@ -1310,6 +1339,44 @@
         ],
         "summary": "Delete a page",
         "operationId": "Documents.Pages.DeletePage",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/pages/{pageId}/archive": {
+      "post": {
+        "tags": [
+          "Documents.Pages",
+          "Documents.Pages"
+        ],
+        "summary": "Archive a page",
+        "operationId": "Documents.Pages.ArchivePage",
         "parameters": [
           {
             "name": "pageId",
@@ -13358,6 +13425,16 @@
   },
   "components": {
     "schemas": {
+      "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
         "type": "object",
         "properties": {
@@ -13395,6 +13472,14 @@
           "parentCommentId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "mentionedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
             "nullable": true
           }
         },
@@ -15177,7 +15262,12 @@
           27,
           28,
           29,
-          30
+          30,
+          31,
+          32,
+          33,
+          34,
+          35
         ],
         "type": "integer",
         "format": "int32"

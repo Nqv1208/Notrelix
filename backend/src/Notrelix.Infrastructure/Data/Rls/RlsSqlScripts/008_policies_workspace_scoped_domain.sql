@@ -65,6 +65,7 @@ SELECT ops.apply_scoped_business_policies('reporting', 'dashboards', true);
 SELECT ops.apply_scoped_business_policies('reporting', 'dashboard_widgets', true);
 SELECT ops.apply_scoped_business_policies('reporting', 'dashboard_sources', true);
 SELECT ops.apply_scoped_business_policies('reporting', 'reporting_snapshots', true);
+SELECT ops.apply_scoped_business_policies('reporting', 'workspace_work_item_placements', true);
 SELECT ops.apply_scoped_business_policies('billing', 'billing_customers', true);
 SELECT ops.apply_catalog_policies('billing', 'plans');
 SELECT ops.apply_catalog_policies('billing', 'plan_prices');

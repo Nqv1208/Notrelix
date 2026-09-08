@@ -27,8 +27,13 @@ export function KanbanSortMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8">
-          <ArrowUpDown className="mr-2 size-4" />
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          aria-label={`Sort cards by ${labels[activeSort]}`}
+        >
+          <ArrowUpDown className="mr-2 size-4" aria-hidden="true" />
           {labels[activeSort]}
         </Button>
       </DropdownMenuTrigger>

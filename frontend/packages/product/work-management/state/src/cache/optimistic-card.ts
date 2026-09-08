@@ -54,6 +54,32 @@ export function createOptimisticCard(
   };
 }
 
+export function addOptimisticCard(
+  fullBoard: FullBoardResponse | undefined,
+  payload: CreateCardInput,
+  id: string,
+): FullBoardResponse | undefined {
+  if (!fullBoard) return fullBoard;
+  const targetExists = fullBoard.groups.some(
+    (group) => group.id === payload.listId,
+  );
+  if (!targetExists) return fullBoard;
+  const optimisticCard = createOptimisticCard(fullBoard, payload, id);
+  return {
+    ...fullBoard,
+    groups: fullBoard.groups.map((group) =>
+      group.id === payload.listId
+        ? {
+            ...group,
+            cards: [...group.cards, optimisticCard].sort(
+              (left, right) => left.position - right.position,
+            ),
+          }
+        : group,
+    ),
+  };
+}
+
 export function statusForGroup(groupTitle: string): string {
   const normalized = groupTitle.toLowerCase();
   if (normalized.includes("working")) return "status-working";

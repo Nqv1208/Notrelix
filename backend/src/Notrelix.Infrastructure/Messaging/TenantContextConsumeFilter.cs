@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Notrelix.Infrastructure.Messaging;
 
 public sealed class TenantContextConsumeFilter<T> : IFilter<ConsumeContext<T>>
@@ -27,32 +29,7 @@ public sealed class TenantContextConsumeFilter<T> : IFilter<ConsumeContext<T>>
 
         try
         {
-            if (integrationEvent.AccountId.HasValue)
-            {
-                if (integrationEvent.AccountId.Value == Guid.Empty)
-                {
-                    throw new InvalidOperationException(
-                        $"Integration event {integrationEvent.MessageName} ({integrationEvent.EventId}) " +
-                        "has an empty AccountId. Events must carry a valid account identifier.");
-                }
-
-                if (!integrationEvent.WorkspaceId.HasValue)
-                {
-                    _tenant.SetAccount(integrationEvent.AccountId.Value, integrationEvent.ActorUserId);
-                }
-                else
-                {
-                    _tenant.SetWorkspace(
-                        integrationEvent.AccountId.Value,
-                        integrationEvent.WorkspaceId.Value,
-                        integrationEvent.ActorUserId);
-                }
-            }
-            else
-            {
-                _tenant.SetSystem();
-            }
-
+            ApplyDeclaredTenantScope(integrationEvent);
             await next.Send(context);
         }
         finally
@@ -64,5 +41,58 @@ public sealed class TenantContextConsumeFilter<T> : IFilter<ConsumeContext<T>>
     public void Probe(ProbeContext context)
     {
         context.CreateFilterScope("tenantContextConsumeFilter");
+    }
+
+    private void ApplyDeclaredTenantScope(IIntegrationEvent integrationEvent)
+    {
+        var scope = integrationEvent.GetType()
+            .GetCustomAttribute<IntegrationEventTenantScopeAttribute>()
+            ?.Scope;
+
+        switch (scope)
+        {
+            case IntegrationEventTenantScope.Workspace:
+                RequireAccountId(integrationEvent, scope.Value);
+                RequireWorkspaceId(integrationEvent, scope.Value);
+                _tenant.SetWorkspace(
+                    integrationEvent.AccountId!.Value,
+                    integrationEvent.WorkspaceId!.Value,
+                    integrationEvent.ActorUserId);
+                return;
+
+            case IntegrationEventTenantScope.Account:
+                RequireAccountId(integrationEvent, scope.Value);
+                _tenant.SetAccount(integrationEvent.AccountId!.Value, integrationEvent.ActorUserId);
+                return;
+
+            case IntegrationEventTenantScope.None:
+                _tenant.SetSystem();
+                return;
+
+            default:
+                throw new IntegrationEventTenantEnvelopeException(
+                    $"Integration event {integrationEvent.MessageName} ({integrationEvent.EventId}) " +
+                    "is missing an explicit IntegrationEventTenantScope classification.");
+        }
+    }
+
+    private static void RequireAccountId(IIntegrationEvent integrationEvent, IntegrationEventTenantScope scope)
+    {
+        if (integrationEvent.AccountId is null || integrationEvent.AccountId == Guid.Empty)
+        {
+            throw new IntegrationEventTenantEnvelopeException(
+                $"Integration event {integrationEvent.MessageName} ({integrationEvent.EventId}) " +
+                $"is classified {scope} but does not carry a non-empty AccountId.");
+        }
+    }
+
+    private static void RequireWorkspaceId(IIntegrationEvent integrationEvent, IntegrationEventTenantScope scope)
+    {
+        if (integrationEvent.WorkspaceId is null || integrationEvent.WorkspaceId == Guid.Empty)
+        {
+            throw new IntegrationEventTenantEnvelopeException(
+                $"Integration event {integrationEvent.MessageName} ({integrationEvent.EventId}) " +
+                $"is classified {scope} but does not carry a non-empty WorkspaceId.");
+        }
     }
 }

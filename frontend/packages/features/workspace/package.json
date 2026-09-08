@@ -47,6 +47,8 @@
     "react-dom": "^19.0.0",
     "sonner": "^2.0.0",
     "typescript": "^5.0.0",
+    "@notrelix/testing": "workspace:*",
+    "@storybook/react": "8.6.17",
     "@notrelix/eslint-config": "workspace:*"
   }
 }

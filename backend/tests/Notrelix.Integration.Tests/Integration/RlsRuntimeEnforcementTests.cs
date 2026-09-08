@@ -10,6 +10,7 @@ using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
+using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Domain.Builders;
@@ -278,6 +279,79 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
     }
 
     /// <summary>
+    /// M7-DC — notification tenant isolation at the RLS runtime layer: a
+    /// mention notification belongs to workspace A; the application role
+    /// under a workspace-B session context cannot observe it, while a member
+    /// granted workspace A can. On this schema the SELECT policy is
+    /// p_app_select_workspace (ops.has_workspace_access over
+    /// authz.access_grants) because notification_recipients uses
+    /// recipient_user_id, not user_id.
+    /// </summary>
+    [Fact]
+    public async Task NotificationItems_TenantIsolation_BCannotObserveA()
+    {
+        await SeedNotificationAsync(AccountA, WsA1, UserId);
+
+        // User A is a granted member of workspace A.
+        await SeedGrantAsync(AccountA, WsA1);
+
+        // User B belongs to workspace B only — no workspace access to A: the
+        // notification must be invisible.
+        var userB = Guid.Parse("00000000-0000-0000-0000-00000000BB02");
+        await SeedGrantAsync(AccountB, WsB1, userB);
+
+        var seenByB = await QueryScalarsAsAppRoleAsync(
+            $"SELECT title FROM notifications.notification_items WHERE source_event_id = '{NotificationSourceEventId}'",
+            userId: userB);
+
+        seenByB.Should().BeEmpty(
+            "a workspace-B session must not observe workspace-A's notification");
+
+        var seenByA = await QueryScalarsAsAppRoleAsync(
+            $"SELECT title FROM notifications.notification_items WHERE source_event_id = '{NotificationSourceEventId}'",
+            userId: UserId);
+
+        seenByA.Should().BeEquivalentTo(["Mention notification A1"],
+            "a granted workspace-A member observes the workspace notification");
+    }
+
+    private static readonly Guid NotificationSourceEventId =
+        Guid.Parse("A0000000-0000-0000-0000-00000000EE01");
+
+    private async Task SeedNotificationAsync(Guid accountId, Guid workspaceId, Guid recipientUserId)
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var notification = NotificationItemRecord.Create(
+            accountId: accountId,
+            workspaceId: workspaceId,
+            sourceContext: "collaboration",
+            notificationType: "mention.created",
+            severity: NotificationSeverity.Info,
+            title: "Mention notification A1",
+            createdAt: FixedTime,
+            actorUserId: Guid.Parse("00000000-0000-0000-0000-00000000BB03"),
+            sourceEventId: NotificationSourceEventId,
+            subjectType: "Mention",
+            subjectId: Guid.Parse("A0000000-0000-0000-0000-00000000EE02"),
+            resourceType: "work-management.board-item",
+            resourceId: Guid.Parse("A0000000-0000-0000-0000-00000000AA11"),
+            body: "You were mentioned in a work-management.board-item.",
+            deduplicationKey: "mention-created:rls-probe");
+
+        context.NotificationItems.Add(notification);
+        context.NotificationRecipients.Add(NotificationRecipientRecord.Create(
+            accountId: accountId,
+            notificationId: notification.Id,
+            workspaceId: workspaceId,
+            recipientUserId: recipientUserId,
+            createdAt: FixedTime));
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
     /// IA-PLAN-STOP-015 resolution proof: a membership mutation executed through the
     /// production handler + AccessGrantProjectionService writes authz.access_grants
     /// synchronously, and the RLS predicate built from that grant is enforced for the
@@ -301,7 +375,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         clock.Setup(c => c.UtcNow).Returns(FixedTime);
 
         var handler = new CreateWorkspaceCommandHandler(
-            context, requestContext.Object, clock.Object, new AccessGrantProjectionService(context));
+            context, requestContext.Object, clock.Object, new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)));
 
         var result = await handler.Handle(new CreateWorkspaceCommand("Runtime Grant Workspace", null, false), default);
         result.Succeeded.Should().BeTrue();

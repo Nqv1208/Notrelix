@@ -1,5 +1,6 @@
 namespace Notrelix.Application.Events.Identity;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Account)]
 [EventName("identity.registration-completed", Version = 1)]
 [EventPiiField("Email",
     Purpose = "Deliver the welcome communication and identify the account contact.",
@@ -29,7 +30,8 @@ public sealed record IdentityRegistrationCompletedIntegrationEventV1(
     workspaceId: null,
     actorUserId: ActorUserId,
     causationId: CausationId,
-    occurredAt: OccurredAt)
+    occurredAt: OccurredAt,
+    requireAccountId: true)
 {
     public Guid AccountIdValue => AccountId!.Value;
 }

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/automation-web",
+  "inventory": {
+    "excludedSources": []
+  },
+  "surfaces": [
+    {
+      "surfaceId": "automation.rules.tab",
+      "owner": "@notrelix/automation-web",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/automations-tab.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "automation-automations-tab--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "automation-automations-tab--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "automation-automations-tab--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "Automation rules render resolved rule data passed by the workspace shell; query loading presentation is owned by the shell.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Automation rules render resolved rule data passed by the workspace shell; query error presentation is owned by the shell.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "Rules render a bounded rule list; high-density input is exercised by the EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for automation rules at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for automation rules at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/components/__tests__/automations-tab.interaction.component.test.tsx"
+        },
+        {
+          "id": "toggle",
+          "testFile": "src/components/__tests__/automations-tab.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/__tests__/automations-tab.interaction.component.test.tsx"
+        }
+      ]
+    }
+  ]
+}

@@ -11,6 +11,7 @@ public sealed class PermissionEventMapper :
     {
         return new ResourcePermissionGrantedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             PermissionId: domainEvent.PermissionId,
             WorkspaceId: domainEvent.WorkspaceId,
             ResourceKind: domainEvent.ResourceKind.ToString(),
@@ -29,6 +30,7 @@ public sealed class PermissionEventMapper :
     {
         return new ResourcePermissionRevokedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             PermissionId: domainEvent.PermissionId,
             WorkspaceId: domainEvent.WorkspaceId,
             ResourceKind: domainEvent.ResourceKind.ToString(),
@@ -46,6 +48,7 @@ public sealed class PermissionEventMapper :
     {
         return new CustomRoleAssignedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             RoleId: domainEvent.RoleId,
             WorkspaceId: domainEvent.WorkspaceId,
             RoleName: string.Empty,

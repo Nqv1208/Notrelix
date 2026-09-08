@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-collaboration",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/web/components/resource-comments.tsx",
+        "category": "container",
+        "reason": "Container composing ResourceCommentsSurface with resource-scoped comment state."
+      }
+    ]
+  },
+  "surfaces": [
+    {
+      "surfaceId": "collaboration.comments",
+      "owner": "@notrelix/features-collaboration",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/components/resource-comments-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "collaboration-resource-comments--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "collaboration-resource-comments--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "collaboration-resource-comments--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "Comments render resolved thread data passed by the document surface; query loading presentation is owned by the document screen.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Comments render resolved thread data passed by the document surface; query error presentation is owned by the document screen.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "Comments render a scrollable thread without a density cap; high-density input is exercised by the EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for resource comments at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for resource comments at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/components/__tests__/resource-comments-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "submit",
+          "testFile": "src/web/components/__tests__/resource-comments-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/web/components/__tests__/resource-comments-surface.interaction.component.test.tsx"
+        }
+      ]
+    }
+  ]
+}

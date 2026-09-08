@@ -27,6 +27,7 @@ public class SystemContextUsageTests
         "RestoreTeam.cs",
         "TenantBootstrapStore.cs",
         "ResourceLocator.cs",
+        "PostgresPageAuthorizationFacts.cs",
         "EmailTemplateMaterialization.cs",
         "EmailVerificationTokenIssuer.cs",
         "ActiveVerificationTokenLocker.cs",

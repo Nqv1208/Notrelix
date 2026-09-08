@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-auth",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/web/components/auth-form-surfaces.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Retained re-export barrel so stories/tests/fixtures keep one import path; individual form surfaces are registered separately."
+      },
+      {
+        "path": "src/web/components/auth-provider.tsx",
+        "category": "provider",
+        "reason": "Session/session-storage provider that renders no standalone visual surface."
+      },
+      {
+        "path": "src/web/components/login-form.tsx",
+        "category": "container",
+        "reason": "Container composing AuthLoginFormSurface with account-scoped session actions."
+      },
+      {
+        "path": "src/web/components/register-form.tsx",
+        "category": "container",
+        "reason": "Container composing AuthRegisterFormSurface with account-scoped session actions."
+      },
+      {
+        "path": "src/web/components/forgot-password-form.tsx",
+        "category": "container",
+        "reason": "Container composing AuthForgotPasswordFormSurface with account-scoped recovery actions."
+      }
+    ]
+  },
+  "surfaces": [
+    {
+      "surfaceId": "auth.login",
+      "owner": "@notrelix/features-auth",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-login-form-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "auth-auth-form-surfaces--login-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--login-pending",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--login-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "A successful login navigates to the workspace shell; there is no inline success presentation.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "Login inputs are standard email/password fields; long-text and Unicode edges are exercised by the register flow's shared input controls.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigation",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "auth.register",
+      "owner": "@notrelix/features-auth",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-register-form-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "auth-auth-form-surfaces--register-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--register-pending",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--register-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "A successful registration navigates into the product; there is no inline success presentation.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "Register inputs are standard profile fields; the forgot-password EdgeData story exercises long-text and Unicode edges on shared controls.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "auth.forgot-password",
+      "owner": "@notrelix/features-auth",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/components/auth-forgot-password-form-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "auth-auth-form-surfaces--forgot-email-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--forgot-otp-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--forgot-success-default",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Success"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "Each step renders synchronously from local step state; no async loading presentation exists between steps.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Step transitions are local; submission failure presentation is owned by the login/register Error evidence.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "Shared input controls receive their long-text and Unicode edge evidence from the login/register surface stories.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Read-only presentation does not apply to an authenticated-out form; disabled states are covered by input semantics.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "reset",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    }
+  ]
+}

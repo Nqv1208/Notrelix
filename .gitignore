@@ -27,3 +27,10 @@ skills-lock.json
 # macOS
 .DS_Store
 **/.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Runtime artifacts (DataProtection keys, local exports)
+**/App_Data/

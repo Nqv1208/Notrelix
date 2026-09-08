@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Integrations.Public.Commands;
 using Notrelix.Infrastructure.Integrations.Providers;
 using Notrelix.Infrastructure.Options;
 
@@ -38,6 +39,10 @@ public static class IntegrationsRegistration
         {
             services.AddTransient<IN8nClient, NoopN8nClient>();
         }
+
+        // Integrations-owned public webhook action (producer-owned surface)
+        services.AddScoped<IN8nWebhookActions>(sp =>
+            new N8nWebhookActions(sp.GetRequiredService<IN8nClient>()));
 
         return services;
     }

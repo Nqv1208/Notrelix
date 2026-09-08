@@ -1,4 +1,4 @@
-using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
+using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
 namespace Notrelix.Application.Tests.Features.Identity.Auth.Queries;

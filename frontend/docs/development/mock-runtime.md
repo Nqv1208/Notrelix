@@ -25,7 +25,7 @@ review_on:
 
 # Web Mock Backend Architecture (v3)
 
-The Notrelix Web application can run fully offline without a backend service by injecting `@notrelix/dev-mock-backend` at the composition root (`apps/web/src/main.tsx`).
+The Notrelix Web application can run fully offline without a backend service by injecting `@notrelix/dev-mock-backend` at the composition root (`apps/web/src/main.tsx`). This is application simulation, not pure UI verification data authority.
 
 ```text
 UI -> Features/Hooks -> NotrelixClient -> Injected MockFetch -> OperationRegistry -> Context Handlers -> MockStore
@@ -43,6 +43,16 @@ UI -> Features/Hooks -> NotrelixClient -> Injected MockFetch -> OperationRegistr
 1. **HTTP Seam**: Real `createNotrelixClient` from `@notrelix/contracts` configured with `fetchImpl: mockFetch(store)`.
 2. **Realtime Seam**: Real `createAppRuntime` from `@notrelix/runtime-web` configured with `createRealtimeClient: () => createMockRealtimeTransport()`. Zero browser WebSockets are created.
 3. **Transport Security**: Closed-world routing. Unmapped requests throw `MockUnhandledOperationError` and fail closed (never fallback to real network).
+
+## Pure UI Construction Boundary
+
+Pure UI construction uses `frontend/docs/development/ui-construction.md`.
+
+```text
+Fixture -> Scenario -> Local Interaction Controller -> Pure UI -> Storybook evidence
+```
+
+That path does not import `@notrelix/dev-mock-backend`, boot application services, create QueryClient/auth/runtime providers, or require backend/API availability. Application mock E2E is useful integration evidence after a container is wired, but it is not an exit gate for UI DONE.
 
 ## Environment Variables
 

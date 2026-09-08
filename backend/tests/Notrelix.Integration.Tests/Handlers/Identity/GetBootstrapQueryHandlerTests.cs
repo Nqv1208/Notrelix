@@ -3,7 +3,7 @@ using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Infrastructure.Data.ReadPorts.Identity;
+using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -37,7 +37,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
         var currentUser = new FakeCurrentUser { UserId = Guid.NewGuid() };
-        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadAdapter(context, context, context), currentUser);
 
         var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
@@ -58,7 +58,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         var currentUser = new FakeCurrentUser { UserId = user.Id };
-        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadAdapter(context, context, context), currentUser);
 
         var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
@@ -88,7 +88,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         var currentUser = new FakeCurrentUser { UserId = user.Id };
-        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadAdapter(context, context, context), currentUser);
 
         var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
@@ -117,7 +117,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         var currentUser = new FakeCurrentUser { UserId = user.Id };
-        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadAdapter(context, context, context), currentUser);
 
         var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
@@ -140,7 +140,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         var currentUser = new FakeCurrentUser { UserId = user.Id };
-        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadAdapter(context, context, context), currentUser);
 
         var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
@@ -170,7 +170,7 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         var currentUser = new FakeCurrentUser { UserId = caller.Id };
-        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadPort(context, context, context), currentUser);
+        var handler = new GetBootstrapQueryHandler(new IdentityBootstrapReadAdapter(context, context, context), currentUser);
 
         var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 

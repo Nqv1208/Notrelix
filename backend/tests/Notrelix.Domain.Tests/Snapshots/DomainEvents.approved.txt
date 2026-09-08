@@ -262,6 +262,7 @@ collaboration.attachment-deleted|1|Notrelix.Domain.Collaboration.Attachments.Eve
 collaboration.attachment-restored|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentRestoredDomainEvent|Workspace|AttachmentId|System.Guid|False
 collaboration.attachment-restored|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentRestoredDomainEvent|Workspace|RestoredBy|System.Guid|False
 collaboration.comment-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Workspace|CommentId|System.Guid|False
+collaboration.comment-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Workspace|Content|System.String|False
 collaboration.comment-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Workspace|CreatedBy|System.Guid|False
 collaboration.comment-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False
 collaboration.comment-deleted|1|Notrelix.Domain.Collaboration.Comments.Events.CommentDeletedDomainEvent|Workspace|CommentId|System.Guid|False
@@ -269,6 +270,7 @@ collaboration.comment-deleted|1|Notrelix.Domain.Collaboration.Comments.Events.Co
 collaboration.comment-reopened|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|Workspace|CommentId|System.Guid|False
 collaboration.comment-reopened|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|Workspace|ReopenedBy|System.Guid|False
 collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|CommentId|System.Guid|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|Content|System.String|False
 collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|CreatedBy|System.Guid|False
 collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|ParentCommentId|System.Guid|False
 collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False
@@ -279,6 +281,7 @@ collaboration.comment-restored|1|Notrelix.Domain.Collaboration.Comments.Events.C
 collaboration.comment-updated|1|Notrelix.Domain.Collaboration.Comments.Events.CommentUpdatedDomainEvent|Workspace|CommentId|System.Guid|False
 collaboration.comment-updated|1|Notrelix.Domain.Collaboration.Comments.Events.CommentUpdatedDomainEvent|Workspace|UpdatedBy|System.Guid|False
 collaboration.mention-created|1|Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Workspace|MentionId|System.Guid|False
+collaboration.mention-created|1|Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Workspace|MentionedByUserId|System.Guid|False
 collaboration.mention-created|1|Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Workspace|MentionedId|System.Guid|False
 collaboration.mention-created|1|Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Workspace|Source|Notrelix.Domain.SharedKernel.ResourceRef|False
 collaboration.presence-updated|1|Notrelix.Domain.Collaboration.Presence.Events.PresenceUpdatedDomainEvent|Workspace|Status|Notrelix.Domain.Collaboration.Presence.PresenceStatus|False

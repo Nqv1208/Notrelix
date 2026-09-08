@@ -8,5 +8,6 @@ public sealed record CommentReplyCreatedDomainEvent(
     Guid ParentCommentId,
     ResourceRef Target,
     Guid CreatedBy,
+    string Content,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

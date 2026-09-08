@@ -23,12 +23,15 @@ public abstract record IntegrationEvent : IIntegrationEvent
         Guid? workspaceId = null,
         Guid? actorUserId = null,
         Guid? causationId = null,
-        DateTimeOffset? occurredAt = null)
+        DateTimeOffset? occurredAt = null,
+        bool requireAccountId = false)
     {
         if (eventId == Guid.Empty)
             throw new ArgumentException("EventId cannot be empty.", nameof(eventId));
         if (correlationId == Guid.Empty)
             throw new ArgumentException("CorrelationId cannot be empty.", nameof(correlationId));
+        if (requireAccountId && (accountId is null || accountId == Guid.Empty))
+            throw new ArgumentException("Account-scoped events require a non-empty AccountId.", nameof(accountId));
 
         EventId = eventId;
         MessageName = messageName;

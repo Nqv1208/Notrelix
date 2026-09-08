@@ -7,5 +7,6 @@ public sealed record MentionCreatedDomainEvent(
     Guid MentionId,
     ResourceRef Source,
     Guid MentionedId,
+    Guid MentionedByUserId,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

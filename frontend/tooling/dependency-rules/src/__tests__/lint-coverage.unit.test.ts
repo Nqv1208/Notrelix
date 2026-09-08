@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkLintCoverage } from "../../../../scripts/assert-lint-coverage.mjs";
+import { checkLintCoverage } from "../../../../scripts/assert-lint-coverage";
 
 let currentRoot: string | null = null;
 
@@ -84,5 +84,14 @@ describe("assert-lint-coverage", () => {
 
     expect(result.ok).toBe(false);
     expect(result.missing[0]?.path).toBe("packages/product/freeze/core");
+  });
+
+  it("fails closed when the resolved manifest has zero packages", () => {
+    const result = checkLintCoverage(createFixtureRoot(), []);
+
+    expect(result.ok).toBe(false);
+    expect(result.missing[0]?.reason).toBe(
+      "manifest resolved with zero packages",
+    );
   });
 });

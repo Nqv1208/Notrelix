@@ -26,7 +26,6 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         PermissionSubjectType subjectType,
         Guid subjectId,
         PermissionLevel level,
-        PermissionLevel granterLevel,
         Guid grantedBy,
         DateTimeOffset grantedAt,
         PermissionEffect effect = PermissionEffect.Allow,
@@ -37,9 +36,6 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(resourceId);
         Guard.NotEmpty(subjectId);
         Guard.NotEmpty(accountId);
-
-        if (!PermissionRules.CanGrant(granterLevel, level))
-            throw new BusinessRuleException(GovernanceRuleCodes.Governance_Permission_CannotGrantHigherThanGranter, "Cannot grant a permission level higher than the granter's own level.");
 
         var permission = new ResourcePermission
         {

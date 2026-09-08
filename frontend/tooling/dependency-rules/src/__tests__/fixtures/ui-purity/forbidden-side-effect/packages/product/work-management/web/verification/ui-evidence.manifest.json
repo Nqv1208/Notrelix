@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/work-management-web",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/cookie.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Helper fixture rendered through entry.tsx; registered as excluded so only the entry composes the surface."
+      },
+      {
+        "path": "src/location.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Helper fixture rendered through entry.tsx; registered as excluded so only the entry composes the surface."
+      },
+      {
+        "path": "src/history.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Helper fixture rendered through entry.tsx; registered as excluded so only the entry composes the surface."
+      }
+    ]
+  },
+  "surfaces": [
+    {
+      "surfaceId": "wm.purity.side-effect",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/entry.tsx",
+      "coveredSources": [],
+      "stories": [],
+      "stateCoverage": { "required": [], "delegated": [], "notApplicable": [] },
+      "responsive": false,
+      "themeAware": false,
+      "checks": ["purity"],
+      "interactionCases": []
+    }
+  ]
+}

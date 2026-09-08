@@ -1,8 +1,10 @@
 namespace Notrelix.Application.Events.Workspaces;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("workspace.created", Version = 1)]
 public sealed record WorkspaceCreatedIntegrationEvent(
     Guid EventId,
+    Guid? AccountId,
     Guid? WorkspaceId,
     string Name,
     string Slug,
@@ -17,7 +19,7 @@ public sealed record WorkspaceCreatedIntegrationEvent(
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,
-    accountId: null,
+    accountId: AccountId,
     workspaceId: WorkspaceId,
     actorUserId: ActorUserId,
     causationId: CausationId,

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/work-management-web",
+  "inventory": { "excludedSources": [] },
+  "surfaces": [
+    {
+      "surfaceId": "wm.actions.dead-imported",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "composition",
+      "pureEntry": "src/actions.tsx",
+      "coveredSources": [],
+      "stories": [],
+      "stateCoverage": { "required": [], "delegated": [], "notApplicable": [] },
+      "responsive": false,
+      "themeAware": false,
+      "checks": ["purity"],
+      "interactionCases": []
+    }
+  ]
+}

@@ -21,6 +21,7 @@ using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemDueDate;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
@@ -424,9 +425,11 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         services.AddScoped<IAccessFactsProvider>(sp =>
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
-                sp.GetRequiredService<TimeProvider>()));
-        services.AddScoped<IAccessGrantProjectionService>(sp =>
-            new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>()));
+                sp.GetRequiredService<TimeProvider>(),
+                new PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>())));
+        services.AddScoped<IWorkspaceGrantProjectionService>(sp =>
+            new WorkspaceGrantProjectionServiceAdapter(
+                new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>())));
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<global::Notrelix.Application.Common.Tenancy.ITenantBootstrapStore, TenantBootstrapStore>();

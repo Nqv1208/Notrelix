@@ -1,8 +1,10 @@
 namespace Notrelix.Application.Events.Collaboration;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("comment.created", Version = 1)]
 public sealed record CommentCreatedIntegrationEvent(
     Guid EventId,
+    Guid? AccountId,
     Guid CommentId,
     Guid? WorkspaceId,
     string TargetType,
@@ -12,14 +14,15 @@ public sealed record CommentCreatedIntegrationEvent(
     Guid CorrelationId,
     Guid? ActorUserId = null,
     Guid? CausationId = null,
-    DateTimeOffset OccurredAt = default
+    DateTimeOffset OccurredAt = default,
+    Guid? ParentCommentId = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "comment.created",
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,
-    accountId: null,
+    accountId: AccountId,
     workspaceId: WorkspaceId,
     actorUserId: ActorUserId,
     causationId: CausationId,

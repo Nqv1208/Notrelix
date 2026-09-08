@@ -24,9 +24,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pgcrypto");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Notrelix.Application.Features.Accounts.Abstractions.Records.AccountSettingRecord", b =>
@@ -904,6 +901,54 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("dashboard_widgets", "reporting");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Analytics.Placements.WorkspaceWorkItemPlacementProjection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<DateTimeOffset>("LastOccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_occurred_at");
+
+                    b.Property<long>("SourceRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_revision");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_workspace_work_item_placements");
+
+                    b.HasIndex("WorkspaceId", "ItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_work_item_placements_workspace_item");
+
+                    b.ToTable("workspace_work_item_placements", "reporting");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1241,6 +1286,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("Status")
                         .HasDatabaseName("idx_automation_executions_status");
+
+                    b.HasIndex("RuleId", "TriggerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_automation_executions_rule_trigger")
+                        .HasFilter("trigger_id IS NOT NULL");
 
                     b.ToTable("automation_executions", "automation");
                 });
@@ -3480,6 +3530,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("ResourceKind", "ResourceId")
                         .HasDatabaseName("idx_resource_permissions_resource");
 
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "SubjectType", "SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_resource_permissions_active_subject")
+                        .HasFilter("deleted_at IS NULL");
+
                     b.ToTable("resource_permissions", "governance");
                 });
 
@@ -4628,6 +4683,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("email_confirmed_at");
 
+                    b.Property<bool>("HasPasswordCredential")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("has_password_credential");
+
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
@@ -4648,12 +4709,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
-
-                    b.Property<bool>("HasPasswordCredential")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("has_password_credential");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -8896,6 +8951,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_outbox_messages_partition_key_created_at")
                         .HasFilter("\"partition_key\" IS NOT NULL");
 
+                    b.HasIndex("StreamKey", "StreamVersion")
+                        .IsUnique()
+                        .HasDatabaseName("ix_outbox_messages_stream_key_stream_version")
+                        .HasFilter("\"stream_key\" IS NOT NULL AND \"stream_version\" IS NOT NULL");
+
                     b.HasIndex("WorkspaceId", "CreatedAt")
                         .IsDescending(false, true)
                         .HasDatabaseName("ix_outbox_messages_workspace_id_created_at")
@@ -8912,11 +8972,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("Status", "NextAttemptAt", "CreatedAt")
                         .HasDatabaseName("ix_outbox_messages_status_next_attempt_at_created_at")
                         .HasFilter("\"status\" IN ('Pending', 'Failed')");
-
-                    b.HasIndex("StreamKey", "StreamVersion")
-                        .IsUnique()
-                        .HasDatabaseName("ix_outbox_messages_stream_key_stream_version")
-                        .HasFilter("\"stream_key\" IS NOT NULL AND \"stream_version\" IS NOT NULL");
 
                     b.HasIndex("StreamKey", "StreamVersion", "Status")
                         .HasDatabaseName("ix_outbox_messages_stream_key_stream_version_status")

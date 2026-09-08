@@ -696,6 +696,37 @@ WGREQ030
 
 No duplicate member, role assignment or privilege grant.
 
+## 37A. WG-TST-INV-INT-002 — membership event reuse across membership sources
+
+Requirements:
+
+```text
+WGREQ030
+```
+
+The Workspaces-owned membership fact is a single event family
+`workspace.member.added` v1, staged through the shared
+`WorkspaceMember.Create` factory regardless of membership source:
+
+```text
+CreateWorkspace (owner member via WorkspaceFactory.CreateWithOwner)
+AcceptInvitation (invited member via WorkspaceMember.Create)
+```
+
+Reuse is proven by the production-graph outbox evidence:
+
+```text
+- WorkspaceCreatedOutboxEvidenceTests: owner-member creation stages
+  exactly one workspace.created and one workspace.member.added;
+  rollback leaves zero of both.
+- AcceptInvitationTransactionEvidenceTests: a no-op, already-member
+  acceptance completes the invitation without staging a second
+  workspace.member.added.
+```
+
+The invariant: a membership fact is emitted once per distinct membership
+creation; an acceptance that creates no new membership emits no new fact.
+
 ## 38. WG-TST-INV-CONC-001 — accept vs revoke race
 
 Requirements:

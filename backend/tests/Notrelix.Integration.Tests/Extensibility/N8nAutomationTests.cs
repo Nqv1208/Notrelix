@@ -1,4 +1,5 @@
 using Notrelix.Application.Events.Automation;
+using Notrelix.Application.Events.WorkManagement;
 using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Automation.Rules;
@@ -71,7 +72,7 @@ public class N8nAutomationTests : IAsyncLifetime
 
         var domainEvent = new BoardItemMemberAssignedDomainEvent(
             accountId, workspace.Id, item.Id, assignedUserId, ownerId, Now);
-        var integrationEvent = new BoardItemMemberAssignedForAutomationIntegrationEvent(
+        var integrationEvent = new BoardItemMemberAssignedIntegrationEvent(
             Guid.NewGuid(),
             domainEvent.AccountId,
             domainEvent.WorkspaceId,

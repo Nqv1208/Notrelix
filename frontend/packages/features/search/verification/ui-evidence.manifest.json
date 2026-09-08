@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-search",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/web/search-results-view.tsx",
+        "category": "container",
+        "reason": "Container composing SearchResultsSurface with workspace-scoped search state."
+      }
+    ]
+  },
+  "surfaces": [
+    {
+      "surfaceId": "search.results",
+      "owner": "@notrelix/features-search",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/search-results-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "search-search-results--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "search-search-results--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "search-search-results--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "Search results render resolved query data passed by the workspace shell; query loading presentation is owned by the shell.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Search results render resolved query data passed by the workspace shell; query error presentation is owned by the shell.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "Results render a bounded result list; high-density input is exercised by the EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "No product-authoritative read-only contract exists for search results at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "No product-authoritative permission-limited capability contract exists for search results at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "select",
+          "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/web/__tests__/search-results-surface.interaction.component.test.tsx"
+        }
+      ]
+    }
+  ]
+}

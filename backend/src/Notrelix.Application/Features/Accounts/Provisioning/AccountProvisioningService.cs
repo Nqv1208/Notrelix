@@ -1,4 +1,6 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Accounts.Members;
+using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 
@@ -7,14 +9,14 @@ namespace Notrelix.Application.Features.Accounts.Provisioning;
 /// <summary>
 /// Creates the personal Account and its owner AccountMember on the Accounts
 /// DbContext. Does not save or commit — the request transaction commits both
-/// Identity and Accounts atomically.
+/// Identity and Accounts atomically (BOUND-TX-004).
 /// </summary>
-public sealed class AccountProvisioningService : IAccountProvisioningService
+public sealed class AccountProvisioningService : IAccountProvisioningActions
 {
     private readonly IAccountDbContext _context;
-    private readonly IAccessGrantProjectionService _grantProjection;
+    private readonly IAccountGrantProjectionService _grantProjection;
 
-    public AccountProvisioningService(IAccountDbContext context, IAccessGrantProjectionService grantProjection)
+    public AccountProvisioningService(IAccountDbContext context, IAccountGrantProjectionService grantProjection)
     {
         _context = context;
         _grantProjection = grantProjection;

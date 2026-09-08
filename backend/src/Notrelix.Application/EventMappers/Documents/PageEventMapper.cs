@@ -10,6 +10,7 @@ public sealed class PageEventMapper :
     {
         return new PageCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             PageId: domainEvent.PageId,
             WorkspaceId: domainEvent.WorkspaceId,
             Title: domainEvent.Title,
@@ -25,6 +26,7 @@ public sealed class PageEventMapper :
     {
         return new PageArchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
             PageId: domainEvent.PageId,
             WorkspaceId: domainEvent.WorkspaceId,
             CorrelationId: domainEvent.EventId,

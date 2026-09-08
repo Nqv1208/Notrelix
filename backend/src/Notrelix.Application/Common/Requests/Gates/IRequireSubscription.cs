@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Common.Requests;
+namespace Notrelix.Application.Common.Requests.Gates;
 
 /// <summary>
 /// Marker for requests that require an active subscription.

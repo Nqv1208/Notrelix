@@ -901,6 +901,54 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("dashboard_widgets", "reporting");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Analytics.Placements.WorkspaceWorkItemPlacementProjection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<DateTimeOffset>("LastOccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_occurred_at");
+
+                    b.Property<long>("SourceRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_revision");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_workspace_work_item_placements");
+
+                    b.HasIndex("WorkspaceId", "ItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_work_item_placements_workspace_item");
+
+                    b.ToTable("workspace_work_item_placements", "reporting");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2539,6 +2587,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<Guid>("MentionedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mentioned_by_user_id");
+
                     b.Property<Guid>("MentionedId")
                         .HasColumnType("uuid")
                         .HasColumnName("mentioned_user_id");
@@ -2559,7 +2611,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("MentionedId")
                         .HasDatabaseName("idx_mentions_mentioned_user_id");
 
-                    b.ToTable("mentions", "collab");
+                    b.ToTable("mentions", "collab", t =>
+                        {
+                            t.HasCheckConstraint(
+                                "ck_mentions_mentioned_by_user_id_present",
+                                "mentioned_by_user_id <> '00000000-0000-0000-0000-000000000000'");
+                        });
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Presence.PresenceSession", b =>
@@ -3481,6 +3538,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("ResourceKind", "ResourceId")
                         .HasDatabaseName("idx_resource_permissions_resource");
+
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "SubjectType", "SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_resource_permissions_active_subject")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("resource_permissions", "governance");
                 });

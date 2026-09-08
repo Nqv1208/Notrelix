@@ -1,8 +1,10 @@
 namespace Notrelix.Application.Events.WorkManagement;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.Workspace)]
 [EventName("board_field.updated", Version = 1)]
 public sealed record BoardFieldUpdatedIntegrationEvent(
     Guid EventId,
+    Guid? AccountId,
     Guid FieldId,
     Guid BoardId,
     Guid? WorkspaceId,
@@ -16,7 +18,7 @@ public sealed record BoardFieldUpdatedIntegrationEvent(
     schemaVersion: 1,
     correlationId: CorrelationId,
     sourceEventId: null,
-    accountId: null,
+    accountId: AccountId,
     workspaceId: WorkspaceId,
     actorUserId: ActorUserId,
     causationId: CausationId,

@@ -251,7 +251,6 @@ public class UseCaseSecurityClassificationTests
         ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
         ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
         ["UpdatePageCommand"] = new("UpdatePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
         ["DeletePageCommand"] = new("DeletePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
     };

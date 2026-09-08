@@ -22,8 +22,6 @@ export const defaultTableViewConfig: ViewConfig = {
   sortBy: [],
 };
 
-// Type might be System.Void or a DTO? The previous code expects BoardViewDtoApi. We'll use any and assert.
-
 type SaveBoardViewOp = "WorkManagement.BoardViews.Save";
 type SaveBoardViewBody = OperationRequestBody<SaveBoardViewOp>;
 
@@ -50,7 +48,9 @@ export function createBoardApi(client: NotrelixClient) {
     async getBoardView(
       boardId: string,
     ): Promise<{ viewMode: ViewMode; viewConfig: ViewConfig }> {
-      const view = await api.get<any>(endpoints.boardViews.detail(boardId));
+      const view = await api.get<BoardViewDtoApi>(
+        endpoints.boardViews.detail(boardId),
+      );
       return parseBoardView(view);
     },
 

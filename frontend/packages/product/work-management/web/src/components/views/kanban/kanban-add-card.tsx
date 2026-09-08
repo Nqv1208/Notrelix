@@ -2,27 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { Button } from "@notrelix/ui-web";
 import { Input } from "@notrelix/ui-web";
-import { useCreateCard } from "@notrelix/work-management-state";
 import type { BoardGroup } from "@notrelix/work-management-core";
-import { generatePosition } from "@notrelix/work-management-core";
 
 export function KanbanAddCard({
-  boardId,
-  workspaceId,
   group,
   isAdding,
   onToggleAdding,
+  onSubmit,
 }: {
-  boardId: string;
-  workspaceId: string;
   group: BoardGroup;
   isAdding?: boolean;
   onToggleAdding?: (adding: boolean) => void;
+  onSubmit: (title: string) => void;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const createCard = useCreateCard(boardId, workspaceId);
 
   const isOpen = isAdding ?? internalOpen;
   const setIsOpen = onToggleAdding ?? setInternalOpen;
@@ -34,12 +29,7 @@ export function KanbanAddCard({
   function submit() {
     const nextTitle = title.trim();
     if (!nextTitle) return;
-    const lastPosition = group.cards.at(-1)?.position;
-    createCard.mutate({
-      listId: group.id,
-      title: nextTitle,
-      position: generatePosition(lastPosition, undefined),
-    });
+    onSubmit(nextTitle);
     setTitle("");
     requestAnimationFrame(() => inputRef.current?.focus());
   }

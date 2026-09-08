@@ -2,6 +2,7 @@ using System.Text.Json;
 
 namespace Notrelix.Application.Common.Realtime;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.None)]
 [EventName("realtime.resource-changed", Version = 1)]
 public sealed record RealtimeResourceChangedV1 : IntegrationEvent
 {

@@ -1109,6 +1109,26 @@ contrast for every component.
 
 Use automated/manual checks at rendered component level.
 
+Operative brand pair in the web host (`apps/web/src/styles/globals.css`):
+
+```text
+--primary: oklch(0.5 0.2 250)
+--primary-foreground: oklch(0.985 0 0)
+≈ 5.6:1 white-on-primary (AA)
+```
+
+Updated 2026-09 because the previous `oklch(0.62 0.2 250)` measured ≈ 3.4:1 on
+solid-primary controls and failed axe `color-contrast` (serious). The light pair must
+hold WCAG AA both ways for small text: white-on-primary ≥ 4.5:1 and primary-on-background
+≥ 4.5:1. `bg-primary/80` hover fades toward `--background` below AA; hover is transient
+and not gate-enforced, but future primary changes must re-check the resting and hover
+pairs. Drift note: `packages/ui/tokens/themes/light.ts` still declares
+`oklch(0.58 0.23 285)`; the web renderer/storybook operatively use the globals.css value.
+Align the token package with the web host as part of token-ownership work; do not regress
+below AA. Visual baselines are linux-renderer pinned (`visual-baseline.lock.json`), so a
+primary change requires regenerating affected linux baselines in the CI `ui-foundation`
+job, not locally.
+
 ---
 
 # 77. Keyboard
@@ -2120,7 +2140,21 @@ Stop implementation if:
 
 ---
 
-# 166. Executable evidence
+# 166. FE-UI-083 — Product stories stay beside their product owners
+
+The central web Storybook is the renderer and discovery host; it is not the semantic owner of product examples. Product stories live beside the product components they demonstrate and are discovered through the locked owner-local globs for `packages/ui/web`, `packages/product/*/web`, and `packages/features/*`. A reusable surface must be renderable from typed deterministic fixtures without booting the application, mock backend, QueryClient, auth/session provider, router, or network transport. Runtime containers remain integration-owned when extracting a presentation seam would move server-state authority.
+
+Pure UI verification data has three layers:
+
+```text
+Fixture -> Scenario -> Local Interaction Controller
+```
+
+A fixture constructs one deterministic entity or value. A scenario composes a complete renderable presentation state for one surface. A local interaction controller mutates cloned in-memory scenario state through the same presentation callbacks as production containers. None of these layers emulates HTTP, cache invalidation, authentication, backend persistence, retries, RLS, or the application mock backend.
+
+Critical UI coverage is declared by an owner-local `verification/ui-evidence.manifest.json`. Built Storybook tags bind exactly one `fui-surface--<id>` and one `fui-state--<State>` to each evidence story. The manifest owns required states/checks; story source owns the example; `frontend/tooling/storybook/web/src/evidence/check-ui-evidence.ts` validates the collected Storybook index.
+
+# 167. Executable evidence
 
 Primary current evidence:
 

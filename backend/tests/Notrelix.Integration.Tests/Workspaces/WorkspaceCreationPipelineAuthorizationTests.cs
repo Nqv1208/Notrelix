@@ -8,6 +8,7 @@ using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
@@ -114,6 +115,45 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task CreateWorkspace_WhenEmailUnconfirmed_IsDeniedDespiteOwnerRole()
+    {
+        // The frozen baseline allows Owner CreateWorkspace (proven above), but
+        // CreateWorkspaceCommand also requires a verified email. An Owner with an
+        // unconfirmed email must be denied by the pipeline BEFORE any handler
+        // effect, proving IRequireVerifiedEmail is enforced as its own gate.
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create($"unconfirmed-{Guid.NewGuid():N}@example.com", "Unconfirmed Owner", "hashed", now, true);
+        var actorId = user.Id;
+        var account = Account.Create("Unconfirmed Account", $"unconfirmed-{Guid.NewGuid():N}", AccountType.Team, actorId, now);
+        var accountId = account.Id;
+
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            seed.Users.Add(user);
+            seed.Accounts.Add(account);
+            seed.AccountMembers.Add(AccountMember.Create(accountId, actorId, AccountRole.Owner, actorId, now));
+            await seed.SaveChangesAsync();
+        }
+
+        using var provider = CreatePipelineProvider(accountId, actorId);
+        var sender = provider.GetRequiredService<ISender>();
+        var evaluations = provider.GetRequiredService<EvaluationCountingDecisionStore>();
+        var command = new CreateWorkspaceCommand("Unconfirmed Owner WS", null, false);
+
+        var act = () => sender.Send(command);
+
+        var assertion = await act.Should().ThrowAsync<AppForbidden>(
+            "an Owner with an unconfirmed email must still be denied by the verified-email gate");
+
+        evaluations.EvaluationCount.Should().Be(1,
+            "the verified-email denial performs one evaluation and never reaches the handler");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        verify.Workspaces.Any(w => w.Name == "Unconfirmed Owner WS").Should().BeFalse(
+            "a denied request must leave no durable side effects");
+    }
+
     /// <summary>
     /// Composes the production MediatR pipeline slice: the REAL DataSessionBehavior
     /// and REAL AccessControlBehavior registered exactly as production does, delegating to
@@ -158,8 +198,9 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
-        services.AddScoped<IAccessGrantProjectionService>(sp =>
-            new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>()));
+        services.AddScoped<IWorkspaceGrantProjectionService>(sp =>
+            new WorkspaceGrantProjectionServiceAdapter(
+                new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>())));
 
         services.AddSingleton<IOptions<RlsOptions>>(Options.Create(new RlsOptions
         {
@@ -186,7 +227,8 @@ public class WorkspaceCreationPipelineAuthorizationTests : IAsyncLifetime
             sp.GetRequiredService<EvaluationCountingDecisionStore>().Wrap(
                 new PostgresAccessFactsProvider(
                     sp.GetRequiredService<ApplicationDbContext>(),
-                    sp.GetRequiredService<TimeProvider>())));
+                    sp.GetRequiredService<TimeProvider>(),
+                    new PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>()))));
 
         // Production pipeline nesting: DataSessionBehavior (outer) → AccessControlBehavior (inner),
         // matching the canonical frozen behavior order.

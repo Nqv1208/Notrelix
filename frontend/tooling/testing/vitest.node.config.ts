@@ -6,6 +6,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "../../apps/web/src"),
+      "@notrelix/testing": path.resolve(__dirname, "./index.ts"),
     },
   },
   test: {

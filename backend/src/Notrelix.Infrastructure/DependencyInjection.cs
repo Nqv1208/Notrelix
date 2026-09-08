@@ -14,6 +14,7 @@ public static class DependencyInjection
         IHostEnvironment? environment = null)
     {
         services.AddPersistence(configuration);
+        services.AddCrossContextBindings();
         services.AddMessaging(configuration);
         services.AddBackgroundJobs(configuration);
         services.AddCaching(configuration, environment);

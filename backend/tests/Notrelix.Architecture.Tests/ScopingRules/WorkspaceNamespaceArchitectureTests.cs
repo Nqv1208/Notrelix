@@ -110,13 +110,15 @@ public class WorkspaceNamespaceArchitectureTests
             "BoardItem command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["UpdateBoardItemStatusCommand"] = new("UpdateBoardItemStatusCommand", AllowlistClassification.LegacyGap,
             "BoardItem command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
+        ["WorkItemActionIdentity"] = new("WorkItemActionIdentity", AllowlistClassification.Intentional,
+            "WorkManagement Public target-action parameter record — explicit scope fact for " +
+            "cross-context callers, not a pipeline command",
+            "Keep as-is; producer Public contract, not a pipeline request"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingWorkspaceRequest = new()
     {
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
-            "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
             "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
             "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
@@ -144,13 +146,15 @@ public class WorkspaceNamespaceArchitectureTests
             "BoardItem command — missing IRequirePermission", "Add IRequirePermission"),
         ["UpdateBoardItemStatusCommand"] = new("UpdateBoardItemStatusCommand", AllowlistClassification.LegacyGap,
             "BoardItem command — missing IRequirePermission", "Add IRequirePermission"),
+        ["WorkItemActionIdentity"] = new("WorkItemActionIdentity", AllowlistClassification.Intentional,
+            "WorkManagement Public target-action parameter record — authorization is supplied " +
+            "explicitly by the caller's execution principal, not by pipeline permission markers",
+            "Keep as-is; producer Public contract, not a pipeline request"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingPermission = new()
     {
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
-            "Page command — missing IRequirePermission", "Add IRequirePermission"),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
             "Page command — missing IRequirePermission", "Add IRequirePermission"),
         ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
             "Page command — missing IRequirePermission", "Add IRequirePermission"),

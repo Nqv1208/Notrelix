@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Requests.Execution;
+using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
@@ -271,7 +272,9 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                         PermissionRules: Array.Empty<AccessPermissionRule>(),
                         HasActiveSubscription: true,
                         SubscriptionTier: "Test",
-                        FeatureEnabled: true));
+                        FeatureEnabled: true,
+                        ActiveResourcePermissionRank: (int)PermissionLevel.Owner,
+                        TargetPermissionRank: null));
                 return mock.Object;
             });
 

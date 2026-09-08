@@ -95,9 +95,6 @@ public class CommandMarkerArchitectureTests
         ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.MigrationPending,
             "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
             "Implement the bounded feature with IWriteRequest when product work resumes"),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.MigrationPending,
-            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
-            "Implement the bounded feature with IWriteRequest when product work resumes"),
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.MigrationPending,
             "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
             "Implement the bounded feature with IWriteRequest when product work resumes"),
@@ -123,6 +120,11 @@ public class CommandMarkerArchitectureTests
         ["SendWelcomeEmailCommand"] = new("SendWelcomeEmailCommand", AllowlistClassification.SystemCommand,
             "System command triggered by user registration — no workspace context exists yet (WorkspaceId => null)",
             "Keep as-is; system command with null workspace scope"),
+        ["WorkItemActionIdentity"] = new("WorkItemActionIdentity", AllowlistClassification.Intentional,
+            "WorkManagement Public target-action parameter record — an explicit scope fact for " +
+            "cross-context callers, not a pipeline command; it never dispatches through the " +
+            "request pipeline or its scope behaviors",
+            "Keep as-is; producer Public contract, not a pipeline request"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingRequirePermission = new()

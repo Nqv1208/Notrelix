@@ -1,12 +1,13 @@
 namespace Notrelix.Application.Events.Identity;
 
+[IntegrationEventTenantScope(IntegrationEventTenantScope.None)]
 [EventName("identity.user-registered", Version = 2)]
 [EventPiiField("Email",
-    Purpose = "Deliver the welcome communication to the newly registered account owner.",
-    ConsumerJustification = "SendWelcomeEmailConsumer performs delivery semantics and cannot resolve the address from stable IDs without a private Identity read, which is forbidden for downstream contexts.")]
+    Purpose = "Preserve the accepted v2 registration telemetry payload.",
+    ConsumerJustification = "UserRegisteredConsumer is a non-tenant Identity telemetry consumer; the field remains in v2 for backward compatibility and is not used for Account/Workspace mutation.")]
 [EventPiiField("DisplayName",
-    Purpose = "Personalize the welcome communication with the chosen display identity.",
-    ConsumerJustification = "SendWelcomeEmailConsumer renders the greeting using the display name captured at registration; no approved read contract exists for post-registration display-name lookup by consumers.")]
+    Purpose = "Preserve the accepted v2 registration telemetry payload.",
+    ConsumerJustification = "UserRegisteredConsumer is a non-tenant Identity telemetry consumer; the field remains in v2 for backward compatibility and is not used for Account/Workspace mutation.")]
 public sealed record UserRegisteredIntegrationEvent(
     Guid EventId,
     Guid UserId,

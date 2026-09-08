@@ -8,6 +8,7 @@ interface BoardToolbarProps {
   onViewChange: (viewType: string) => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
+  onFilter?: () => void;
 }
 
 export function BoardToolbar({
@@ -16,6 +17,7 @@ export function BoardToolbar({
   onViewChange,
   searchQuery = "",
   onSearchChange,
+  onFilter,
 }: BoardToolbarProps) {
   return (
     <div className="flex items-center gap-3 border-b px-4 py-2">
@@ -45,6 +47,8 @@ export function BoardToolbar({
         variant="ghost"
         size="icon"
         className="h-7 w-7 text-muted-foreground hover:text-foreground"
+        aria-label="Filter board"
+        onClick={onFilter}
       >
         <Filter className="h-3.5 w-3.5" />
       </Button>

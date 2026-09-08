@@ -14,9 +14,8 @@ public sealed class UserRegisteredConsumer : IConsumer<UserRegisteredIntegration
     public Task Consume(ConsumeContext<UserRegisteredIntegrationEvent> context)
     {
         _logger.LogInformation(
-            "[Identity] UserRegistered: UserId={UserId}, Email={Email}",
-            context.Message.UserId,
-            context.Message.Email);
+            "[Identity] UserRegistered: UserId={UserId}",
+            context.Message.UserId);
         return Task.CompletedTask;
     }
 }

@@ -32,6 +32,10 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@notrelix/testing": "workspace:*",
+    "@notrelix/work-management-testing": "workspace:*",
+    "@storybook/react": "8.6.17",
+    "@testing-library/react": "^16.0.0",
     "typescript": "^5.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

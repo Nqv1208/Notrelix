@@ -1828,6 +1828,57 @@ Stop and require an explicit architecture decision if:
 
 ---
 
+# 74A. Reference Architecture Pack map
+
+Every bounded context has an executable reference implementation in source.
+Future feature work copies the mechanism, never the business names:
+
+```text
+local vertical slice / pipeline-first  → WorkManagement CreateBoardInWorkspace
+producer Public fact (direct read)     → Identity.Public IIdentityUserFacts,
+                                         Accounts.Public IAccountMembershipFacts
+producer Public target action          → Accounts.Public IAccountMembershipActions,
+                                         WorkManagement.Public IWorkItemActions
+consumer Port + Infrastructure adapter → WorkManagement Ports/Collaboration,
+                                         Automation Ports/WorkManagement
+pure ACL                               → Automation CrossContext/WorkManagement
+                                         WorkActionAcl
+Integration Event (producer-owned)     → WorkManagement
+                                         BoardItemMemberAssignedIntegrationEvent,
+                                         Workspaces WorkspaceMemberAddedIntegrationEvent
+projection (consumer-owned)            → Analytics WorkspaceWorkItemPlacementProjection
+                                         + WorkManagement.Public IWorkItemProjectionSource
+                                         rebuild contract
+process (durable workflow state)       → AutomationExecution + Application-owned
+                                         N8nDispatchUseCase; broker consumer stays thin
+ResourceRef (foreign target identity)  → Collaboration CreateComment.ForBoardItem
+                                         over Domain.SharedKernel.ResourceRef
+provider Port + adapter                → Integrations Public IN8nWebhookActions
+                                         + Ports/Providers IN8nClient
+                                         + Infrastructure N8nClient adapter
+capability/entitlement read            → Billing.Public IBillingCapabilityFacts
+                                         (consumer: CreateAutomationRule)
+transaction exception                  → BOUND-TX-002: Accounts↔Workspaces
+                                         shared request transaction (AcceptInvitation)
+```
+
+Copy rules:
+
+```text
+copy  — ownership reasoning, folder role, contract direction, adapter
+        direction, event ownership, transaction rules, test strategy
+never — foreign DbContext access, Common business vocabulary, plan-tier
+        branching in consumers, consumer-coupled event naming, a second
+        process state model, a parallel authorization stack
+```
+
+Enforcement lives in the architecture gates (ARCH-BC-001..008, STN-ARCH-001..008)
+plus the pack gates (Events/AutomationProcessReference, Contracts
+PublicSemanticContract, PlatformReferenceCompleteness). A new cross-context
+interaction that cannot classify into the mechanisms above is a stop condition.
+
+---
+
 # 75. Executable evidence
 
 Primary evidence:
