@@ -459,3 +459,25 @@ test:web:guarded (vitest.web.config.json): 21 test files, 80 passed, 0 failed, 0
 parser:          UI interaction coverage: 74 manifest-declared interaction cases satisfied by exact passing markers.
                  Zero-test guard: 80 tests executed.
 ```
+
+## 11.6 Wave 5 checkpoint — Responsive/theme/a11y/zero-network closure
+
+```text
+commit: 8e2b551 (rebaseline + cleanup), ef6286b (authority files)
+FUIR-WU-050 Terminal:   IMPLEMENTED_VERIFIED (mobile 390x844 / tablet 768x1024 / desktop
+                        1440x900 + light/dark theme IDs centralized in ui-visual-registry;
+                        visual runner consumes IDs)
+FUIR-WU-051 Terminal:   IMPLEMENTED_VERIFIED (theme-adapter.ts applies Web root class/data
+                        contract from fui-theme param, not backgrounds)
+FUIR-WU-052 Terminal:   IMPLEMENTED_VERIFIED (a11y/network/visual runners driven by
+                        uiEvidenceVisualTargets; network guard active)
+FUIR-WU-053 Terminal:   IMPLEMENTED_VERIFIED (89 legacy linux snapshots deleted; 206 new-style
+                        viewport--theme linux snapshots tracked; second-run freeze zero git-diff)
+
+Gate evidence:
+
+unit (node vitest):   ui-visual-registry 3, theme-adapter 2  (import path corrected)
+test:ui:a11y:          104 passed (1.3m local)
+test:ui:freeze:        410 passed (4.9m, second clean run — zero snapshot drift)
+tracked-snapshot audit: 206 viewport/theme linux pngs (darwin ignored), 89 legacy removed
+```
