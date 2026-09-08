@@ -56,6 +56,7 @@
     "mock:freeze:check": "node ./scripts/check-mock-freeze.mjs",
     "mock:contract": "pnpm test:node:guarded && pnpm mock:freeze:check",
     "e2e:mock:count": "node ./scripts/assert-playwright-mock-count.mjs test-results/mock-e2e-results.json",
+    "validate:ui": "pnpm check:architecture && pnpm check:ui-purity && pnpm check:ui-actions && pnpm check:ui-evidence && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:web:guarded && pnpm test:ui:freeze",
     "validate:fast": "pnpm codegen:check && pnpm check:architecture && pnpm check:architecture-docs && pnpm check:ui-purity && pnpm check:ui-evidence && pnpm check:test-taxonomy && pnpm check:lint-coverage && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:node:guarded && pnpm test:web:guarded && pnpm mock:freeze:check",
     "validate": "pnpm validate:fast && pnpm test:integration:guarded && pnpm test:mobile:guarded && pnpm test:generators:guarded",
     "production:startup": "node ./scripts/check-production-startup.mjs",
