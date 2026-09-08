@@ -84,7 +84,8 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         RecordingSecretStore? customSecretStore = null,
         Guid? actingUserId = null,
         string actorEmail = "cal-owner@example.com",
-        string actorName = "Cal Owner")
+        string actorName = "Cal Owner",
+        bool productionSecretStore = false)
     {
         var actor = actingUserId ?? stack.OwnerId;
         var tenant = new FakeCurrentTenantContext();
@@ -115,9 +116,27 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
 
         // Real handler; the physical secret store uses an in-memory fake to
         // observe store/revoke behavior deterministically.
-        var secretStore = customSecretStore ?? new RecordingSecretStore();
-        services.AddSingleton<RecordingSecretStore>(_ => secretStore);
-        services.AddSingleton<IIntegrationSecretStore>(sp => sp.GetRequiredService<RecordingSecretStore>());
+        if (productionSecretStore)
+        {
+            // The real DataProtection-backed physical store is exercised so
+            // the atomicity proof covers the production staging behavior,
+            // not a stand-in.
+            var dataProtection = Microsoft.AspNetCore.DataProtection
+                .DataProtectionProvider.Create("Notrelix.Integration.Tests.CalendarSecrets");
+            services.AddSingleton<Notrelix.Application.Common.Security.ISecretEncryptor>(
+                new Notrelix.Infrastructure.Security.Encryption.SecretEncryptor(dataProtection));
+            services.AddScoped<IIntegrationSecretStore>(sp =>
+                new Notrelix.Infrastructure.Security.Secrets.DataProtectionIntegrationSecretStore(
+                    sp.GetRequiredService<ApplicationDbContext>(),
+                    sp.GetRequiredService<Notrelix.Application.Common.Security.ISecretEncryptor>(),
+                    sp.GetRequiredService<IDateTimeProvider>()));
+        }
+        else
+        {
+            var secretStore = customSecretStore ?? new RecordingSecretStore();
+            services.AddSingleton<RecordingSecretStore>(_ => secretStore);
+            services.AddSingleton<IIntegrationSecretStore>(sp => sp.GetRequiredService<RecordingSecretStore>());
+        }
 
         // Production parity: ONE scoped ApplicationDbContext shared by the
         // IIntegrationDbContext seam, the DataSession commit, and the secret
@@ -408,11 +427,18 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
     /// rolled-back workflow leaves no committed row of any kind — atomicity
     /// instead of compensation (frozen).
     /// </summary>
+    /// <summary>
+    /// TAC-AI-FLOW-05 — the connect workflow's commit fate. The production
+    /// DataProtection secret store stages the encrypted blob on the same
+    /// scoped context as the aggregates; SaveChanges executes the actual
+    /// INSERTs and the explicit transaction rollback aborts them all: no
+    /// blob, no connection, no secret version, no calendar binding.
+    /// </summary>
     [Fact]
     public async Task ConnectWorkflow_RolledBack_CommitsNoRowOfAnyKind()
     {
         var stack = await SeedWorkspaceAsync();
-        await using var provider = CreateProvider(stack);
+        await using var provider = CreateProvider(stack, productionSecretStore: true);
         await using var scope = provider.CreateAsyncScope();
 
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -421,17 +447,26 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         (await scope.ServiceProvider.GetRequiredService<ConnectCalendarCommandHandler>()
             .Handle(NewConnectCommand(stack), CancellationToken.None)).Succeeded.Should().BeTrue();
 
+        // The handler stages; the request data session commits. Without an
+        // actual SaveChanges the workflow never reaches the database and the
+        // rollback would prove nothing.
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        // Rows ARE visible inside the transaction (the INSERTs really
+        // happened), before the abort discards them.
+        (await context.CalendarIntegrations.IgnoreQueryFilters()
+            .AnyAsync(ci => ci.WorkspaceId == stack.WorkspaceId)).Should().BeTrue(
+            "the staged binding must be visible before the abort");
+
         await transaction.RollbackAsync(CancellationToken.None);
 
         await using var verify = _db.CreateContext(SystemTenant());
-        (await verify.IntegrationSecretBlobs.IgnoreQueryFilters()
-            .CountAsync(b => !b.Revoked)).Should().Be(0,
+        (await verify.IntegrationSecretBlobs.IgnoreQueryFilters().AnyAsync()).Should().BeFalse(
             "no physical secret may survive the aborted workflow");
         (await verify.IntegrationConnections.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == stack.WorkspaceId)).Should().BeFalse(
             "no connection may survive the aborted workflow");
-        (await verify.IntegrationSecretVersions.IgnoreQueryFilters()
-            .AnyAsync(sv => sv.ConnectionId == stack.WorkspaceId)).Should().BeFalse(
+        (await verify.IntegrationSecretVersions.IgnoreQueryFilters().AnyAsync()).Should().BeFalse(
             "no secret version may survive the aborted workflow");
         (await verify.CalendarIntegrations.IgnoreQueryFilters()
             .AnyAsync(ci => ci.WorkspaceId == stack.WorkspaceId)).Should().BeFalse(

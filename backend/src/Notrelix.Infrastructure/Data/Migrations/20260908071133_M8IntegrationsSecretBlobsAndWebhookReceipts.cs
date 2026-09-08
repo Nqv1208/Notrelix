@@ -39,6 +39,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     external_event_id = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     payload_hash = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    protected_payload = table.Column<string>(type: "text", nullable: true),
                     received_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     processed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),

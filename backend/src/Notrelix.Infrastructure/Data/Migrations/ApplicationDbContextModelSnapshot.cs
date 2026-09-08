@@ -8772,6 +8772,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("payload_hash");
 
+                    b.Property<string>("ProtectedPayload")
+                        .HasColumnType("text")
+                        .HasColumnName("protected_payload");
+
                     b.Property<DateTimeOffset?>("ProcessedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");

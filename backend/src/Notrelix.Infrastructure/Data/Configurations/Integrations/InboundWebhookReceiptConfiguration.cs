@@ -19,6 +19,7 @@ public class InboundWebhookReceiptConfiguration : IEntityTypeConfiguration<Inbou
         builder.Property(x => x.Provider).HasColumnName("provider").IsRequired().HasMaxLength(50);
         builder.Property(x => x.ExternalEventId).HasColumnName("external_event_id").IsRequired().HasMaxLength(256);
         builder.Property(x => x.PayloadHash).HasColumnName("payload_hash").IsRequired().HasMaxLength(128);
+        builder.Property(x => x.ProtectedPayload).HasColumnName("protected_payload");
         builder.Property(x => x.ReceivedAt).HasColumnName("received_at");
         builder.Property(x => x.Status).HasColumnName("status").IsRequired().HasMaxLength(20);
         builder.Property(x => x.ProcessedAt).HasColumnName("processed_at");

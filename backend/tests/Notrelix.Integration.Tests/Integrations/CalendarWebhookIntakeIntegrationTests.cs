@@ -54,9 +54,27 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
     {
         var scopeTenant = tenant ?? SystemTenant();
         var context = _db.CreateContext(scopeTenant);
+        // The verification secret is configuration-backed (never a source
+        // constant in production); the test supplies it through the same
+        // options contract the deployment uses.
+        var options = Microsoft.Extensions.Options.Options.Create(new Notrelix.Infrastructure.Options.CalendarWebhookOptions
+        {
+            Providers = new Dictionary<string, Notrelix.Infrastructure.Options.CalendarWebhookOptions.CalendarWebhookProviderOptions>
+            {
+                [Provider] = new() { Enabled = true, SharedSecret = ProviderSecret },
+            },
+        });
+        // Payload protection uses the real purpose-scoped envelope contract;
+        // the key material itself is exercised by the Security suite.
+        var encryptor = new Mock<Notrelix.Application.Common.Security.ISecretEncryptor>();
+        encryptor.Setup(e => e.Protect(Moq.It.IsAny<string>(), Moq.It.IsAny<string>()))
+            .Returns<string, string>((plain, purpose) => $"protected:{purpose}:{plain}");
+        encryptor.Setup(e => e.Unprotect(Moq.It.IsAny<string>(), Moq.It.IsAny<string>()))
+            .Returns<string, string>((cipher, _) => cipher[(cipher.IndexOf(':') + 1)..][(cipher.IndexOf(':') + 1)..]);
+
         return new HandleCalendarWebhookCommandHandler(
-            new CalendarWebhookVerifier(new FixedClock(Now)),
-            new CalendarWebhookIntake(context, new FixedClock(Now)),
+            new CalendarWebhookVerifier(new FixedClock(Now), options),
+            new CalendarWebhookIntake(context, encryptor.Object, new FixedClock(Now)),
             new FixedClock(Now));
     }
 
@@ -76,6 +94,12 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         var receipt = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .SingleAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId);
         receipt.Status.Should().Be("Processed");
+        receipt.PayloadHash.Should().Be(
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(body))),
+            "the payload hash is SHA-256 over the exact verified raw bytes");
+        receipt.ProtectedPayload.Should().NotBeNullOrEmpty(
+            "the raw payload is persisted protected, not plaintext");
+        receipt.ProtectedPayload.Should().NotBe(body);
     }
 
     [Fact]
@@ -136,6 +160,33 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .CountAsync(r => r.ExternalEventId == externalEventId && r.Status == "Processed"))
             .Should().Be(1, "exactly one processed receipt survives the duplicate delivery");
+    }
+
+    [Fact]
+    public async Task ConcurrentDuplicateClaims_ResolveToExactlyOneAcceptedReceipt()
+    {
+        var externalEventId = Guid.NewGuid().ToString();
+        var (body, signature, timestamp) = SignedCallback(externalEventId, Now);
+
+        // Two deliveries of the SAME callback run concurrently on separate
+        // scopes/connections: the unique identity constraint is the dedup
+        // authority — exactly one INSERT wins, the loser classifies as a
+        // duplicate without an error path.
+        var first = CreateHandler();
+        var second = CreateHandler();
+        var command = new HandleCalendarWebhookCommand(Provider, signature, timestamp, body);
+
+        var results = await Task.WhenAll(
+            first.Handle(command, CancellationToken.None),
+            second.Handle(command, CancellationToken.None));
+
+        results.Should().OnlyContain(r => r.Succeeded,
+            "the loser of the claim race must not surface an error to the provider");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
+            .CountAsync(r => r.ExternalEventId == externalEventId && r.Status == "Processed"))
+            .Should().Be(1, "exactly one processed receipt survives concurrent delivery");
     }
 
     private static FakeCurrentTenantContext SystemTenant()

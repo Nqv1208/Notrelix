@@ -1,3 +1,5 @@
+using Notrelix.Infrastructure.Data.Abstractions;
+
 namespace Notrelix.Infrastructure.Data.Integrations;
 
 /// <summary>
@@ -8,6 +10,11 @@ namespace Notrelix.Infrastructure.Data.Integrations;
 /// for bounded operational diagnostics only — never business processing
 /// state. Forbidden by TAC-GATE-024: this is NOT WebhookDelivery (outbound)
 /// and NOT InboundWebhookEvent (frozen Domain legacy gap).
+///
+/// The payload hash is SHA-256 over the exact verified raw bytes (the same
+/// bytes the signature was verified against — never a re-serialization); the
+/// raw payload itself is persisted only encrypted at rest. The (provider,
+/// external event id) unique index is the dedup authority.
 /// </summary>
 public class InboundWebhookReceipt
 {
@@ -15,6 +22,7 @@ public class InboundWebhookReceipt
     public string Provider { get; private set; } = null!;
     public string ExternalEventId { get; private set; } = null!;
     public string PayloadHash { get; private set; } = null!;
+    public string? ProtectedPayload { get; private set; }
     public DateTimeOffset ReceivedAt { get; private set; }
     public string Status { get; private set; } = null!;
     public DateTimeOffset? ProcessedAt { get; private set; }
@@ -26,6 +34,7 @@ public class InboundWebhookReceipt
         string provider,
         string externalEventId,
         string payloadHash,
+        string? protectedPayload,
         DateTimeOffset receivedAt)
     {
         if (string.IsNullOrWhiteSpace(provider))
@@ -41,6 +50,7 @@ public class InboundWebhookReceipt
             Provider = provider,
             ExternalEventId = externalEventId,
             PayloadHash = payloadHash,
+            ProtectedPayload = protectedPayload,
             ReceivedAt = receivedAt,
             Status = "Captured"
         };
@@ -62,15 +72,22 @@ public class InboundWebhookReceipt
 
     /// <summary>
     /// A rejected callback (bad signature/timestamp) is recorded as Rejected
-    /// for bounded diagnostics — never business processing state.
+    /// for bounded diagnostics — never business processing state. The
+    /// synthetic event id keeps rejected rows outside the claim identity.
     /// </summary>
     public static InboundWebhookReceipt CaptureRejected(
         string provider,
         string payloadHash,
+        string? protectedPayload,
         string reason,
         DateTimeOffset receivedAt)
     {
-        var receipt = Capture(provider, $"rejected:{Guid.CreateVersion7()}", payloadHash, receivedAt);
+        var receipt = Capture(
+            provider,
+            $"rejected:{Guid.CreateVersion7()}",
+            payloadHash,
+            protectedPayload,
+            receivedAt);
         receipt.Status = "Rejected";
         receipt.FailureReason = reason;
         return receipt;

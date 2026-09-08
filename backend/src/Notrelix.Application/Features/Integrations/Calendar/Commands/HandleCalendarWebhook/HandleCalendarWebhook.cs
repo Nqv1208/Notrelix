@@ -42,15 +42,19 @@ public class HandleCalendarWebhookCommandHandler : IRequestHandler<HandleCalenda
         {
             await _intake.RecordRejectedAsync(
                 request.Provider,
+                request.RawBody,
                 verification.FailureReason ?? "verification failed",
                 _clock.UtcNow,
                 cancellationToken);
             return Result.Failure("integrations.webhook.rejected");
         }
 
+        // AI-FLOW-07 is frozen intake-only: the accepted/processed technical
+        // receipt is the effect; a duplicate claim is an idempotent no-op.
         await _intake.AcceptAsync(
             request.Provider,
             verification.ExternalEventId!,
+            request.RawBody,
             _clock.UtcNow,
             cancellationToken);
         return Result.Success();
