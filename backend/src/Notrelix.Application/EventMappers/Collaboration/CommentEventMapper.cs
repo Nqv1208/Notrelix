@@ -4,6 +4,7 @@ namespace Notrelix.Application.EventMappers.Collaboration;
 
 public sealed class CommentEventMapper :
     IntegrationEventMapperBase<CommentCreatedDomainEvent, CommentCreatedIntegrationEvent>,
+    IIntegrationEventMapper<CommentReplyCreatedDomainEvent, CommentCreatedIntegrationEvent>,
     IIntegrationEventMapper<MentionCreatedDomainEvent, MentionCreatedIntegrationEvent>
 {
     public override CommentCreatedIntegrationEvent? Map(CommentCreatedDomainEvent domainEvent)
@@ -21,6 +22,28 @@ public sealed class CommentEventMapper :
             ActorUserId: domainEvent.CreatedBy,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
+        );
+    }
+
+    public CommentCreatedIntegrationEvent? Map(CommentReplyCreatedDomainEvent domainEvent)
+    {
+        // M7 freeze: a reply is a created-comment fact on the canonical
+        // "comment.created" identity — the same outward stream as the root,
+        // carrying its parent identity. It is not a local-only detail.
+        return new CommentCreatedIntegrationEvent(
+            EventId: Guid.CreateVersion7(),
+            AccountId: domainEvent.AccountId,
+            CommentId: domainEvent.CommentId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            TargetType: domainEvent.Target.Kind.Value,
+            TargetId: domainEvent.Target.ResourceId,
+            AuthorId: domainEvent.CreatedBy,
+            Body: domainEvent.Content,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.CreatedBy,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt,
+            ParentCommentId: domainEvent.ParentCommentId
         );
     }
 
@@ -44,6 +67,11 @@ public sealed class CommentEventMapper :
 
     IReadOnlyList<IntegrationEventMapping> IIntegrationEventMapper.Map(IDomainEvent domainEvent)
     {
+        if (domainEvent is CommentReplyCreatedDomainEvent e0)
+        {
+            var mappedReply = Map(e0);
+            if (mappedReply is not null) return [new IntegrationEventMapping(mappedReply)];
+        }
         if (domainEvent is CommentCreatedDomainEvent e1)
         {
             var mapped = Map(e1);

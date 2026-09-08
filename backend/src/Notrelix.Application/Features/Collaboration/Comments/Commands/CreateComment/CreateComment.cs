@@ -49,7 +49,9 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         {
             var parentComment = await _context.Comments
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value && !c.IsDeleted, ct)
+                // DeletedAt is the mapped soft-delete column on Comment
+                // (IsDeleted is a Domain-only flag ignored in EF mapping).
+                .FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value && c.DeletedAt == null, ct)
                 ?? throw new NotFoundException(nameof(Comment), request.ParentCommentId.Value);
 
             var parentContext = ParentCommentContext.Create(parentComment.AccountId, parentComment.WorkspaceId, parentComment.Id, parentComment.Target, parentComment.IsDeleted);

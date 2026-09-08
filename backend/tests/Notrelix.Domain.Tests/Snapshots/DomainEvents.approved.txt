@@ -270,6 +270,7 @@ collaboration.comment-deleted|1|Notrelix.Domain.Collaboration.Comments.Events.Co
 collaboration.comment-reopened|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|Workspace|CommentId|System.Guid|False
 collaboration.comment-reopened|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|Workspace|ReopenedBy|System.Guid|False
 collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|CommentId|System.Guid|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|Content|System.String|False
 collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|CreatedBy|System.Guid|False
 collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|ParentCommentId|System.Guid|False
 collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False

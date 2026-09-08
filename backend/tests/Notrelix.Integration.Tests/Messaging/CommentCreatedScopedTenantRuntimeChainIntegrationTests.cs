@@ -157,6 +157,96 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
     }
 
     /// <summary>
+    /// M7 freeze — a successful reply is the same canonical outward fact:
+    /// CommentReplyCreatedDomainEvent maps onto comment.created with the
+    /// exact ParentCommentId, and the activity consumer projects it like any
+    /// created comment. Root and reply both reach the stream.
+    /// </summary>
+    [Fact]
+    public async Task CommentReply_MapsOntoCanonicalCommentCreated_WithExactParentIdentity()
+    {
+        var graph = await SeedBoardItemStackAsync();
+        await using var provider = BuildProvider(new TenantObservationRecorder(), graph);
+
+        var hostedServices = provider.GetServices<IHostedService>().ToArray();
+        foreach (var hosted in hostedServices)
+        {
+            await hosted.StartAsync(CancellationToken.None);
+        }
+
+        try
+        {
+            Guid rootCommentId;
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Context.IExecutionContextAccessor>()
+                    .SetUser(graph.AuthorId, "chain-author@example.com", "Chain Author");
+                var root = await scope.ServiceProvider.GetRequiredService<ISender>()
+                    .Send(CreateCommentCommand.ForBoardItem(graph.ItemId, graph.Content, null), CancellationToken.None);
+                ((Result<Guid>)root).Succeeded.Should().BeTrue();
+                rootCommentId = ((Result<Guid>)root).Data;
+            }
+
+            var replyContent = $"reply content {Guid.NewGuid():N}";
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                scope.ServiceProvider.GetRequiredService<Notrelix.Application.Common.Context.IExecutionContextAccessor>()
+                    .SetUser(graph.AuthorId, "chain-author@example.com", "Chain Author");
+                var reply = await scope.ServiceProvider.GetRequiredService<ISender>()
+                    .Send(CreateCommentCommand.ForBoardItem(graph.ItemId, replyContent, rootCommentId), CancellationToken.None);
+                ((Result<Guid>)reply).Succeeded.Should().BeTrue();
+            }
+
+            var rootOutbox = await WaitForCommentOutboxWithParentAsync(graph, null);
+            var replyOutbox = await WaitForCommentOutboxWithParentAsync(graph, rootCommentId);
+            rootOutbox.Should().NotBeNull("the root comment stages the canonical outward fact");
+            replyOutbox.Should().NotBeNull("the reply stages the same canonical outward fact with its parent identity");
+
+            rootOutbox!.PayloadJson.RootElement.GetProperty("parentCommentId").ValueKind
+                .Should().Be(JsonValueKind.Null, "the root comment carries no parent identity");
+            replyOutbox!.PayloadJson.RootElement.GetProperty("parentCommentId").GetGuid()
+                .Should().Be(rootCommentId);
+
+            (await WaitForActivityAsync(rootOutbox.EventId, graph.WorkspaceId)).Should().NotBeNull();
+            (await WaitForActivityAsync(replyOutbox.EventId, graph.WorkspaceId)).Should().NotBeNull(
+                "the reply reaches the activity projection like any created comment");
+        }
+        finally
+        {
+            foreach (var hosted in hostedServices.Reverse())
+            {
+                await hosted.StopAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    private async Task<MessagingOutboxMessage?> WaitForCommentOutboxWithParentAsync(
+        CommentGraph graph,
+        Guid? parentCommentId)
+    {
+        MessagingOutboxMessage? found = null;
+        var completed = await WaitForAsync(async () =>
+        {
+            await using var probe = _db.CreateContext(SystemTenant());
+            var candidates = await probe.Set<MessagingOutboxMessage>()
+                .IgnoreQueryFilters()
+                .Where(m => m.MessageName == "comment.created"
+                    && m.AccountId == graph.AccountId
+                    && m.WorkspaceId == graph.WorkspaceId)
+                .ToListAsync();
+            found = candidates.FirstOrDefault(m =>
+                (parentCommentId is null
+                    ? m.PayloadJson.RootElement.TryGetProperty("parentCommentId", out var pc)
+                        && pc.ValueKind == JsonValueKind.Null
+                    : m.PayloadJson.RootElement.TryGetProperty("parentCommentId", out var pr)
+                        && pr.GetGuid() == parentCommentId.Value));
+            return found is not null;
+        });
+
+        return completed ? found : null;
+    }
+
+    /// <summary>
     /// Deserializes the committed outbox payload with the production
     /// serializer exactly as the OutboxDispatcher does (CamelCase naming plus
     /// the (messageName, schemaVersion) catalog identity) — never a

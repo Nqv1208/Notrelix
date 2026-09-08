@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Collaboration.Comments.Events;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 
@@ -247,4 +248,30 @@ public class CommentTests
 
         comment.DomainEvents.Should().BeEmpty();
     }
+
+    [Fact]
+    public void CreateReply_ShouldRaiseEvent_CarryingParentAndContentFacts()
+    {
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), workspaceId);
+        var parent = Comment.Create(accountId, workspaceId, target, "Parent", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var parentContext = ParentCommentContext.Create(parent.AccountId, parent.WorkspaceId, parent.Id, parent.Target, parent.IsDeleted);
+        var createdBy = Guid.NewGuid();
+
+        var reply = Comment.CreateReply(accountId, workspaceId, target, "  Reply fact  ", createdBy, DateTimeOffset.UtcNow, parentContext);
+
+        var domainEvent = reply.DomainEvents
+            .OfType<CommentReplyCreatedDomainEvent>()
+            .Should().ContainSingle().Which;
+        domainEvent.AccountId.Should().Be(accountId);
+        domainEvent.WorkspaceId.Should().Be(workspaceId);
+        domainEvent.CommentId.Should().Be(reply.Id);
+        domainEvent.ParentCommentId.Should().Be(parent.Id);
+        domainEvent.Target.Should().Be(target);
+        domainEvent.CreatedBy.Should().Be(createdBy);
+        domainEvent.Content.Should().Be("Reply fact",
+            "the reply's owned content fact must travel on the Domain event so the producer maps the real body");
+    }
+
 }
