@@ -17,7 +17,8 @@ public static class CalendarEndpoints
 
         workspaceGroup.MapResourcePost("/connections", ConnectAsync)
             .WithName("Integrations.Calendar.Connect")
-            .WithSummary("Connect a calendar provider to the workspace");
+            .WithSummary("Connect a calendar provider to the workspace")
+            .Produces<Guid>(StatusCodes.Status201Created);
 
         var calendarGroup = app
             .MapGroup("/api/v1/calendar-integrations/{integrationId:guid}")
@@ -26,7 +27,8 @@ public static class CalendarEndpoints
 
         calendarGroup.MapResourceDelete("/", DisconnectAsync)
             .WithName("Integrations.Calendar.Disconnect")
-            .WithSummary("Disconnect a calendar integration");
+            .WithSummary("Disconnect a calendar integration")
+            .Produces(StatusCodes.Status204NoContent);
 
         var webhookGroup = app
             .MapGroup("/api/v1/integrations/calendar/webhooks/{provider}")
@@ -41,7 +43,7 @@ public static class CalendarEndpoints
         return app;
     }
 
-    private static async Task<IResult> WebhookAsync(string provider, HttpRequest request, HandleCalendarWebhookCommandHandler handler, CancellationToken cancellationToken)
+    private static async Task<IResult> WebhookAsync(string provider, HttpRequest request, ISender sender, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(request.Body);
         var rawBody = await reader.ReadToEndAsync(cancellationToken);
@@ -49,7 +51,9 @@ public static class CalendarEndpoints
         var signature = request.Headers["X-Calendar-Signature"].FirstOrDefault() ?? string.Empty;
         var timestamp = request.Headers["X-Calendar-Timestamp"].FirstOrDefault() ?? string.Empty;
 
-        var result = await handler.Handle(
+        // The callback travels the canonical request pipeline (validation,
+        // descriptors, contracts) — not a direct handler invocation.
+        var result = await sender.Send(
             new HandleCalendarWebhookCommand(provider, signature, timestamp, rawBody),
             cancellationToken);
 

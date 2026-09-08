@@ -41,6 +41,12 @@ public static class IntegrationsRegistration
         }
 
         // Integrations-owned public webhook action (producer-owned surface)
+        services.AddOptions<CalendarWebhookOptions>()
+            .Bind(configuration.GetSection(CalendarWebhookOptions.SectionName))
+            .Validate(
+                options => options.Providers.All(entry => !entry.Value.Enabled || !string.IsNullOrWhiteSpace(entry.Value.SharedSecret)),
+                "An enabled calendar webhook provider requires a configured shared secret.")
+            .ValidateOnStart();
         services.AddScoped<Notrelix.Application.Features.Integrations.Public.Webhooks.ICalendarWebhookVerifier, Notrelix.Infrastructure.Integrations.Webhooks.CalendarWebhookVerifier>();
         services.AddScoped<Notrelix.Application.Features.Integrations.Public.Webhooks.ICalendarWebhookIntake, Notrelix.Infrastructure.Integrations.Webhooks.CalendarWebhookIntake>();
         services.AddScoped<IN8nWebhookActions>(sp =>

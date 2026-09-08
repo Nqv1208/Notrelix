@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using Notrelix.Application.Features.Integrations.Public.Webhooks;
+using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure.Integrations.Webhooks;
 
@@ -14,10 +16,12 @@ public sealed class CalendarWebhookVerifier : ICalendarWebhookVerifier
     public const int MaxTimestampAgeMinutes = 5;
 
     private readonly IDateTimeProvider _clock;
+    private readonly CalendarWebhookOptions _options;
 
-    public CalendarWebhookVerifier(IDateTimeProvider clock)
+    public CalendarWebhookVerifier(IDateTimeProvider clock, IOptions<CalendarWebhookOptions> options)
     {
         _clock = clock;
+        _options = options.Value;
     }
 
     public Task<CalendarWebhookVerification> VerifyAsync(
@@ -46,16 +50,16 @@ public sealed class CalendarWebhookVerifier : ICalendarWebhookVerifier
                 false, "Timestamp outside the replay window.", null));
         }
 
-        // Provider secret resolution: for M8 the Google/Outlook verification
-        // uses a symmetric shared secret per provider from configuration.
-        // (Provider SDK asymmetric verification lands with real provider
-        // credentials.)
-        var secret = ProviderSecrets.GetValueOrDefault(provider.ToLowerInvariant());
-        if (secret is null)
+        // Provider secret resolution is configuration-backed: an unknown or
+        // disabled provider verifies nothing (fail closed, no implicit trust).
+        var providerOptions = _options.Providers.GetValueOrDefault(provider);
+        if (providerOptions is not { Enabled: true } || string.IsNullOrWhiteSpace(providerOptions.SharedSecret))
         {
             return Task.FromResult(new CalendarWebhookVerification(
-                false, $"Unknown calendar provider '{provider}'.", null));
+                false, $"Calendar provider '{provider}' is not configured for verified intake.", null));
         }
+
+        var secret = providerOptions.SharedSecret;
 
         var expected = Convert.ToHexString(
             new HMACSHA256(Encoding.UTF8.GetBytes(secret))
@@ -92,9 +96,4 @@ public sealed class CalendarWebhookVerifier : ICalendarWebhookVerifier
         return Task.FromResult(new CalendarWebhookVerification(true, null, externalEventId));
     }
 
-    private static readonly Dictionary<string, string> ProviderSecrets = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["google"] = "calendar-google-webhook-secret",
-        ["outlook"] = "calendar-outlook-webhook-secret",
-    };
 }
