@@ -20,8 +20,6 @@ const SCAN_ROOTS = [
   "packages/product/work-management/testing/src/support",
 ];
 
-const SCAN_DIR_NAMES = new Set(["verification"]);
-
 export interface FixtureDeterminismViolation {
   readonly message: string;
 }

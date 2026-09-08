@@ -22,7 +22,7 @@ describe("frontend-ci ui-foundation lane", () => {
   const workflow = readFileSync(workflowPath, "utf8");
 
   it("keeps one ui-foundation job owning the UI contract (TST-114)", () => {
-    const jobCount = (workflow.match(/^  ui-foundation:/gm) ?? []).length;
+    const jobCount = (workflow.match(/^ {2}ui-foundation:/gm) ?? []).length;
     expect(jobCount).toBe(1);
     const block = workflow.split("  build-web:")[0]!;
     expect(block).toContain("ui-foundation:");
@@ -53,7 +53,7 @@ function extractJobBlock(workflow: string): string {
   const start = workflow.indexOf(marker);
   expect(start).toBeGreaterThanOrEqual(0);
   const tail = workflow.slice(start + marker.length);
-  const nextJob = tail.search(/\n  [^ ]/);
+  const nextJob = tail.search(/\n {2}[^ ]/);
   const end = nextJob > 0 ? start + marker.length + nextJob : workflow.length;
   return workflow.slice(start, end);
 }
