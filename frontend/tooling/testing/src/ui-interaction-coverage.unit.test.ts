@@ -58,15 +58,6 @@ function runGuard(report) {
   });
 }
 
-const manifest = {
-  entries: {
-    one: {
-      id: "one",
-      tags: ["fui-surface--a.surface", "fui-state--Default"],
-    },
-  },
-};
-
 function report(assertions) {
   return {
     numTotalTests: assertions.length,
