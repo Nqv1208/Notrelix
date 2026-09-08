@@ -160,7 +160,7 @@ describe("Work Management verification fixtures and scenarios", () => {
       group.cards.map((card) => card.title),
     );
     expect(titles.some((title) => title.length > 60)).toBe(true);
-    expect(titles.some((title) => /[^\u0000-\u007F]/.test(title))).toBe(true);
+    expect(titles.some((title) => /[\u0080-\uFFFF]/.test(title))).toBe(true);
     expect(
       kanbanEdge.columns
         .flatMap((group) => group.cards)
