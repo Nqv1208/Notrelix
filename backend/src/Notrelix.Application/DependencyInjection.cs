@@ -112,8 +112,10 @@ public static class DependencyInjection
         // Producer-owned public capability surface (Billing)
         services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();
 
-        // Automation-owned dispatch use case (process progression)
+        // Automation-owned dispatch use cases (process progression)
         services.AddScoped<N8nDispatchUseCase>();
+        services.AddScoped<
+            global::Notrelix.Application.Features.Automation.Executions.Services.AutomationMoveItemUseCase>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);
