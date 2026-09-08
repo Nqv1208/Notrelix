@@ -15,7 +15,7 @@
     "format": "turbo format",
     "format:check": "prettier --check .",
     "check:test-taxonomy": "node ./scripts/check-test-taxonomy.mjs",
-    "check:lint-coverage": "node ./scripts/assert-lint-coverage.mjs",
+    "check:lint-coverage": "tsx ./scripts/assert-lint-coverage.ts",
     "test": "pnpm test:node && pnpm test:web && pnpm test:integration && pnpm test:mobile",
     "test:node": "vitest run --config tooling/testing/vitest.node.config.ts",
     "test:web": "vitest run --config tooling/testing/vitest.web.config.ts",
