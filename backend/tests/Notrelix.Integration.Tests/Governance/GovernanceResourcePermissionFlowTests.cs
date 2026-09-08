@@ -913,6 +913,93 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         itemAfter.Name.Should().Be(itemNameBefore);
     }
 
+    /// <summary>
+    /// M7 RESOURCE-SCOPE freeze — same account, two real workspaces. The
+    /// resource-scoped request follows the authoritative resource location:
+    /// a workspace-W2 member comments on a W2 board item with the request
+    /// context selected to W1, the locator adopts W2, and authorization
+    /// evaluates W2 facts. Not a cross-account hide (that path is separate).
+    /// </summary>
+    private async Task<(Guid AccountId, Guid W1, Guid W2, Guid W2ItemId, Guid W2MemberId)> SeedTwoWorkspacesOneAccountAsync()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var ownerId = Guid.NewGuid();
+        var w2MemberId = Guid.NewGuid();
+        var account = Account.Create("Gov Two-WS Account", $"gov-{Guid.NewGuid():N}", AccountType.Team, ownerId, now);
+        var w1 = Workspace.Create(account.Id, ownerId, "Gov W1", $"gov-w1-{Guid.NewGuid():N}", now);
+        var w2 = Workspace.Create(account.Id, ownerId, "Gov W2", $"gov-w2-{Guid.NewGuid():N}", now);
+        var board = Board.Create(account.Id, w2.Id, ownerId, "Gov W2 Board", null, now);
+        var group = BoardGroup.Create(
+            account.Id, w2.Id, board.Id, "Todo",
+            Color.Create("#808080"), FractionalIndex.Create("a0"), ownerId, now);
+        var item = BoardItem.CreateRoot(
+            account.Id, w2.Id, board.Id, group.Id, "Task",
+            FractionalIndex.Create("a0"), ownerId, now);
+
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.Accounts.Add(account);
+        seed.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, now));
+        seed.Workspaces.Add(w1);
+        seed.Workspaces.Add(w2);
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, w1.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, w1.Id, w2MemberId, WorkspaceRole.Member, ownerId, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, w2.Id, w2MemberId, WorkspaceRole.Member, ownerId, now));
+        seed.Boards.Add(board);
+        seed.BoardGroups.Add(group);
+        seed.BoardItems.Add(item);
+        await seed.SaveChangesAsync();
+
+        await SyncAccessGrantsAsync(
+            account.Id, w1.Id, (ownerId, WorkspaceRole.Owner), (w2MemberId, WorkspaceRole.Member));
+        await SyncAccessGrantsAsync(
+            account.Id, w2.Id, (w2MemberId, WorkspaceRole.Member));
+
+        return (account.Id, w1.Id, w2.Id, item.Id, w2MemberId);
+    }
+
+    [Fact]
+    public async Task CreateComment_SameAccount_CrossWorkspace_MemberOfTarget_Allows_AndPersistsUnderTargetWorkspace()
+    {
+        var (accountId, w1, w2, w2ItemId, w2MemberId) = await SeedTwoWorkspacesOneAccountAsync();
+
+        // Request context selects W1; the target lives in W2. The locator is
+        // the authority: execution adopts W2 and W2 facts decide the outcome.
+        using var provider = CreateProvider(accountId, w2MemberId, w1);
+        var result = await SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(w2ItemId, "Cross-workspace comment", null));
+
+        result.Succeeded.Should().BeTrue(
+            "a W2 member may comment on a W2 item even with W1 selected — the locator is the authority");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var stored = await verify.Comments.IgnoreQueryFilters()
+            .SingleAsync(c => c.Target.ResourceId == w2ItemId);
+        stored.WorkspaceId.Should().Be(w2,
+            "the persisted comment belongs to the located target workspace");
+        stored.CreatedBy.Should().Be(w2MemberId);
+    }
+
+    [Fact]
+    public async Task CreateComment_SameAccount_CrossWorkspace_WithoutTargetAuthority_IsForbidden()
+    {
+        var (accountId, w1, _, w2ItemId, w2MemberId) = await SeedTwoWorkspacesOneAccountAsync();
+
+        // An outsider to W2 (same account) is denied by the canonical W2
+        // policy — same account never auto-allows.
+        var outsider = Guid.NewGuid();
+        using var provider = CreateProvider(accountId, outsider, w1);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(w2ItemId, "Outsider comment", null));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "same-account membership does not imply W2 authority");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.Target.ResourceId == w2ItemId)).Should().BeFalse(
+            "no comment may persist for the denied cross-workspace reference");
+    }
+
     // ── composition -----------------------------------------------------------
 
     private static async Task<T> SendAsync<T>(ServiceProvider provider, object request)
@@ -923,10 +1010,14 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         return (response as T)!;
     }
 
-    private ServiceProvider CreateProvider(Guid accountId, Guid userId)
+    private ServiceProvider CreateProvider(Guid accountId, Guid userId, Guid? selectedWorkspaceId = null)
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetAccount(accountId, userId);
+        if (selectedWorkspaceId.HasValue)
+        {
+            tenant.SetWorkspace(accountId, selectedWorkspaceId.Value, userId);
+        }
 
         var requestContextMock = new Mock<ICurrentRequestContext>();
         requestContextMock.Setup(r => r.UserId).Returns(userId);
