@@ -481,3 +481,65 @@ test:ui:a11y:          104 passed (1.3m local)
 test:ui:freeze:        410 passed (4.9m, second clean run — zero snapshot drift)
 tracked-snapshot audit: 206 viewport/theme linux pngs (darwin ignored), 89 legacy removed
 ```
+
+## 11.7 Wave 6 checkpoint — UI-only developer and CI lane
+
+```text
+commit: 32d82d76 (validate:ui + command-graph checker + ui-construction guide +
+                   ui-foundation check:ui-actions), 00f96a50/bcb280c4 (typecheck + lint
+                   fixes for validate:ui exit 0), 2b9f4395 (prettier wave 6 files)
+FUIR-WU-060 Terminal:   IMPLEMENTED_VERIFIED (frontend/package.json adds validate:ui with the
+                        exact SPEC §15 composition; validate/validate:fast unchanged)
+FUIR-WU-061 Terminal:   IMPLEMENTED_VERIFIED (ui-construction.md documents manifest v2, source
+                        classification, state universes, action contract, FUI case markers,
+                        responsive/theme policy, pnpm validate:ui, and mock-integration
+                        deferral)
+FUIR-WU-062 Terminal:   IMPLEMENTED_VERIFIED (frontend-ci.yml ui-foundation runs check:ui-purity,
+                        check:ui-actions, check:ui-evidence, test:ui:freeze with pinned
+                        renderer; test:web:guarded interaction coverage already guaranteed by
+                        upstream required web-tests job at same SHA)
+FUIR-WU-063 Terminal:   IMPLEMENTED_VERIFIED (check-command-graph.ts resolves pnpm scripts
+                        recursively and rejects forbidden codegen/mock/real/backend/docker
+                        commands; negative fixtures prove multi-level indirection is caught)
+
+Tests (node vitest, tooling/dependency-rules):
+  check-command-graph.unit.test.ts: 5/5 (TST-110 positive+missing-required, TST-111, TST-116,
+                                        transitive resolution)
+  ci-ui-lane.unit.test.ts:          3/3 (TST-114 one ui-foundation job + pinned renderer +
+                                        UI checks, TST-115 no integration deps)
+```
+
+## 11.8 Wave 7 — Final candidate-SHA certification
+
+```text
+candidate SHA: 2b9f4395 (branch feature/web-app)
+command:       pnpm validate:ui (frontend/), single clean run, exit 0
+log:           /tmp/validate-ui6.log
+
+Stage evidence (in order):
+  check:architecture   All architecture rules passed clean with 0 violations.
+  check:ui-purity      Pure UI check valid: 42 entries.
+  check:ui-actions     UI actions check valid: 119 registered sources.
+  check:ui-evidence    UI evidence valid: 42 surfaces, 96 required states.
+  typecheck            Tasks: 43 successful, 43 total.
+  lint                 Tasks: 44 successful, 44 total.
+  format:check         All matched files use Prettier code style!
+  test:web:guarded     Zero-test guard: 80 tests executed; UI interaction coverage:
+                       74 manifest-declared interaction cases satisfied by exact passing
+                       markers.
+  test:ui:freeze       410 passed (4.6m) — a11y + visual + network full manifest run.
+
+FUIR-TST-112 PASS:  validate:ui exits 0 on candidate SHA 2b9f4395.
+FUIR-TST-120 PASS:  final UI command pass (same run, exit 0).
+```
+
+## 12. Verdict
+
+```text
+UI_READY_FOR_PRODUCT_DEVELOPMENT_AND_UI_TESTING
+```
+
+All 8 waves (0–7) reached their terminal state. The UI-only lane (`pnpm validate:ui`)
+and the CI `ui-foundation` job enforce the same contract without application
+integration dependencies. Remaining integration work (mock/real E2E, codegen,
+backend) is explicitly deferred and is not required evidence for UI DONE.
