@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -84,9 +84,12 @@ export function checkFixtureDeterminism(
   const violations: FixtureDeterminismViolation[] = [];
   const files = collectSourceFiles(rootDir);
   for (const filePath of files) {
-    if (!existsSync(filePath)) continue;
-    if (!statSync(filePath).isFile()) continue;
-    const sourceText = readFileSync(filePath, "utf8");
+    let sourceText: string;
+    try {
+      sourceText = readFileSync(filePath, "utf8");
+    } catch {
+      continue;
+    }
     for (const [pattern, name] of FORBIDDEN_PATTERNS) {
       if (pattern.test(sourceText)) {
         violations.push({
