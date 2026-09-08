@@ -3251,6 +3251,136 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/calendar/connections": {
+      "post": {
+        "tags": [
+          "Integrations.Calendar"
+        ],
+        "summary": "Connect a calendar provider to the workspace",
+        "operationId": "Integrations.Calendar.Connect",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Integrations.Calendar.Requests.ConnectCalendarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/calendar-integrations/{integrationId}": {
+      "delete": {
+        "tags": [
+          "Integrations.Calendar"
+        ],
+        "summary": "Disconnect a calendar integration",
+        "operationId": "Integrations.Calendar.Disconnect",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/integrations/calendar/webhooks/{provider}": {
+      "post": {
+        "tags": [
+          "Integrations.Calendar"
+        ],
+        "summary": "Verified provider webhook callback intake",
+        "operationId": "Integrations.Calendar.HandleWebhook",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook.HandleCalendarWebhookCommandHandler"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/boards/{boardId}/approvals": {
       "post": {
         "tags": [
@@ -13695,6 +13825,29 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Integrations.Calendar.Requests.ConnectCalendarRequest": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "nullable": true
+          },
+          "accessToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "providerAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "syncDirection": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.WorkManagement.Approvals.Requests.ApprovalStepRequest": {
         "type": "object",
         "properties": {
@@ -15087,6 +15240,10 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook.HandleCalendarWebhookCommandHandler": {
+        "type": "object",
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields.ReorderBoardFieldsCommand": {
         "type": "object",
         "properties": {
@@ -15267,7 +15424,8 @@
           32,
           33,
           34,
-          35
+          35,
+          36
         ],
         "type": "integer",
         "format": "int32"
