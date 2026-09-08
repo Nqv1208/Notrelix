@@ -196,7 +196,57 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
+            // M2G extension (reviewer-approved): page lifecycle mutation
+            // authority is distinct from page visibility — a workspace-visible
+            // page only proves the actor can see the resource, not archive it.
+            // ArchivePage requires an active page ResourcePermission of at
+            // least Manager (owners pass the earlier fast-path, explicit
+            // permission rules were evaluated above). It carries its own
+            // Governance vocabulary: neither ManageBoard nor
+            // ManagePagePermission (ACL management).
+            if (permission.Action == PermissionAction.ArchivePage
+                && (facts.ActiveResourcePermissionRank ?? 0) < ManagerRank)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+            }
+
             return ManageAwareAllow(permission, request, facts, role);
+        }
+
+        // M2G intended policy: page creation is a workspace usage right —
+        // the DC-FLOW-01 actor is the authenticated workspace member, not
+        // workspace management. Guests are excluded; explicit permission
+        // rules still deny-first above. Other workspace-scoped actions keep
+        // the fall-through contract.
+        if (permission.Resource?.Kind.Value == "workspaces.workspace"
+            && permission.Action == PermissionAction.CreatePage)
+        {
+            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
+            return guest
+                ? AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.")
+                : AccessDecision.Allow();
+        }
+
+        // M2G intended policy: commenting on a board item is a usage right
+        // decided by the target resource kind, not a mechanical copy of the
+        // ManageBoard authority mapping. Board items carry no per-item
+        // audience fact, so guests need explicit access evidence on the item
+        // itself. Other board-item actions keep the fall-through contract.
+        if (permission.Resource?.Kind.Value == "work-management.board-item"
+            && permission.Action == PermissionAction.CreateComment)
+        {
+            if (!facts.ResourceExists)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+            }
+
+            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
+            if (guest && !facts.HasExplicitResourcePermission)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+            }
+
+            return GrantAwareAllow(request, facts, role);
         }
 
         return permission.Action is PermissionAction.ViewWorkspace or PermissionAction.ViewBoard or PermissionAction.ViewMembers

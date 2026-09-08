@@ -14,7 +14,8 @@ public sealed record CommentCreatedIntegrationEvent(
     Guid CorrelationId,
     Guid? ActorUserId = null,
     Guid? CausationId = null,
-    DateTimeOffset OccurredAt = default
+    DateTimeOffset OccurredAt = default,
+    Guid? ParentCommentId = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "comment.created",

@@ -35,6 +35,7 @@ public enum PermissionAction
     DeletePage,
     ManageAccount,
     CreatePage,
+    ArchivePage,
     ManagePagePermission,
     CreateComment
 }

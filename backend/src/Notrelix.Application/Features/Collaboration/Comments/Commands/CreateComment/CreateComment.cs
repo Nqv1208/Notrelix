@@ -3,13 +3,13 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
-public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+public record CreateCommentCommand(ResourceKind ResourceKind, Guid ResourceId, string ContentMd, Guid? ParentCommentId, IReadOnlyList<Guid>? MentionedUserIds = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    public static CreateCommentCommand ForBoardItem(Guid boardItemId, string contentMd, Guid? parentCommentId)
-        => new(ResourceKind.Create(BoardItemKind), boardItemId, contentMd, parentCommentId);
+    public static CreateCommentCommand ForBoardItem(Guid boardItemId, string contentMd, Guid? parentCommentId, IReadOnlyList<Guid>? mentionedUserIds = null)
+        => new(ResourceKind.Create(BoardItemKind), boardItemId, contentMd, parentCommentId, mentionedUserIds);
 
-    public static CreateCommentCommand ForPage(Guid pageId, string contentMd, Guid? parentCommentId)
-        => new(ResourceKind.Create(PageKind), pageId, contentMd, parentCommentId);
+    public static CreateCommentCommand ForPage(Guid pageId, string contentMd, Guid? parentCommentId, IReadOnlyList<Guid>? mentionedUserIds = null)
+        => new(ResourceKind.Create(PageKind), pageId, contentMd, parentCommentId, mentionedUserIds);
 
     private const string BoardItemKind = "work-management.board-item";
     private const string PageKind = "documents.page";
@@ -49,7 +49,9 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         {
             var parentComment = await _context.Comments
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value && !c.IsDeleted, ct)
+                // DeletedAt is the mapped soft-delete column on Comment
+                // (IsDeleted is a Domain-only flag ignored in EF mapping).
+                .FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value && c.DeletedAt == null, ct)
                 ?? throw new NotFoundException(nameof(Comment), request.ParentCommentId.Value);
 
             var parentContext = ParentCommentContext.Create(parentComment.AccountId, parentComment.WorkspaceId, parentComment.Id, parentComment.Target, parentComment.IsDeleted);
@@ -57,6 +59,32 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         }
 
         _context.Comments.Add(comment);
+
+        foreach (var mentionedUserId in DistinctMentionedUsers(request.MentionedUserIds))
+        {
+            var mention = Mention.Create(
+                accountId,
+                workspaceId,
+                target,
+                MentionType.User,
+                mentionedUserId,
+                userId,
+                now);
+            _context.PageMentions.Add(mention);
+        }
+
         return Result<Guid>.Success(comment.Id);
+    }
+
+    private static IEnumerable<Guid> DistinctMentionedUsers(IReadOnlyList<Guid>? mentionedUserIds)
+    {
+        if (mentionedUserIds is null || mentionedUserIds.Count == 0)
+        {
+            return [];
+        }
+
+        return mentionedUserIds
+            .Where(id => id != Guid.Empty)
+            .Distinct();
     }
 }

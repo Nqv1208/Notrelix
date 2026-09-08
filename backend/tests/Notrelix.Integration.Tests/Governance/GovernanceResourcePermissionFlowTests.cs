@@ -16,6 +16,7 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.ArchivePage;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
@@ -43,11 +44,13 @@ using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
+using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
 using AppValidation = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.Integration.Tests.Governance;
@@ -405,6 +408,35 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CreatePage_WorkspaceMember_Allows()
+    {
+        // M2G intended policy: page creation is a workspace usage right for
+        // authenticated members — the DC-FLOW-01 actor is the workspace member.
+        var (accountId, _, workspaceId, _, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, memberId);
+        var result = await SendAsync<Result<Guid>>(provider,
+            new CreatePageCommand(workspaceId, "Member Page", null));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreatePage_Guest_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var guest = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, guest, WorkspaceRole.Guest);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
+
+        using var provider = CreateProvider(accountId, guest);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            new CreatePageCommand(workspaceId, "Guest Page", null));
+
+        await act.Should().ThrowAsync<AppForbidden>("guests are excluded from workspace page creation");
+    }
+
+    [Fact]
     public async Task CreateComment_OnPage_Owner_Allows()
     {
         var (accountId, ownerId, _, pageId, _) = await SeedPageStackAsync();
@@ -456,6 +488,57 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CreateComment_OnBoardItem_WorkspaceMember_Allows()
+    {
+        // M2G intended policy: commenting on a board item is a usage right
+        // for workspace members, decided by the target resource kind through
+        // the one canonical pipeline — no second evaluator.
+        var (accountId, _, _, boardId, memberId) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+
+        using var provider = CreateProvider(accountId, memberId);
+        var result = await SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateComment_OnBoardItem_Guest_WithoutExplicitAccess_IsDenied()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+        var guest = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, guest, WorkspaceRole.Guest);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
+
+        using var provider = CreateProvider(accountId, guest);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "board items carry no per-item audience fact, so guests without explicit access are hidden");
+    }
+
+    [Fact]
+    public async Task CreateComment_OnBoardItem_Guest_WithResourcePermission_Allows()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+        var guest = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, guest, WorkspaceRole.Guest);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "work-management.board-item", itemId, guest, PermissionLevel.Commenter);
+
+        using var provider = CreateProvider(accountId, guest);
+        var result = await SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemId, "Hello item", null));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task CreateComment_OnBoardItem_Outsider_IsDenied()
     {
         var (accountId, _, _, boardId, _) = await SeedBoardStackAsync();
@@ -470,6 +553,453 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             "board-item comments are not granted to non-members; the canonical pipeline denies them");
     }
 
+    [Fact]
+    public async Task ArchivePage_Owner_Allows_AndCommitsLifecycle()
+    {
+        var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        result.Succeeded.Should().BeTrue();
+        await using var probe = _db.CreateContext(SystemTenant());
+        (await probe.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
+            .Should().Be(PageStatus.Archived);
+    }
+
+    [Fact]
+    public async Task ArchivePage_WorkspaceMember_OnWorkspaceVisiblePage_IsForbidden()
+    {
+        // M2G extension: page visibility is not lifecycle mutation authority.
+        // A workspace-visible page only proves the member can see it —
+        // ArchivePage requires an active page ResourcePermission of at least
+        // Manager (or the workspace Owner fast-path).
+        var (accountId, _, _, _, memberId) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+
+        using var provider = CreateProvider(accountId, memberId);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "visibility grants reading, not page lifecycle mutation authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_PageManagerLevelPermission_Allows()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var manager = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
+
+        using var provider = CreateProvider(accountId, manager);
+        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ArchivePage_PageEditorLevelPermission_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var editor = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, editor, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (editor, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, editor, PermissionLevel.Editor);
+
+        using var provider = CreateProvider(accountId, editor);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "Editor rank is below the Manager threshold for page lifecycle authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_PageViewerLevelPermission_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var viewer = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, viewer, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (viewer, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, viewer, PermissionLevel.Viewer);
+
+        using var provider = CreateProvider(accountId, viewer);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>("Viewer rank cannot archive");
+    }
+
+    [Fact]
+    public async Task ArchivePage_PageCommenterLevelPermission_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var commenter = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, commenter, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (commenter, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, commenter, PermissionLevel.Commenter);
+
+        using var provider = CreateProvider(accountId, commenter);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>("Commenter rank cannot archive");
+    }
+
+    [Fact]
+    public async Task ArchivePage_WorkspaceAdmin_WithoutPageManagerAuthority_IsForbidden()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var admin = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, admin, WorkspaceRole.Admin);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (admin, WorkspaceRole.Admin));
+
+        using var provider = CreateProvider(accountId, admin);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "workspace Admin is not a default page lifecycle manager");
+    }
+
+    [Fact]
+    public async Task ArchivePage_ExplicitAllowRule_Allows()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var member = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, member, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (member, WorkspaceRole.Member));
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, member, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Allow);
+
+        using var provider = CreateProvider(accountId, member);
+        var result = await SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        result.Succeeded.Should().BeTrue(
+            "an applicable explicit Allow rule grants the lifecycle authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_ExplicitDenyRule_IsForbidden_EvenForManager()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var manager = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, manager, WorkspaceRole.Member);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (manager, WorkspaceRole.Member));
+        await SeedResourcePermissionAsync(
+            accountId, workspaceId, "documents.page", pageId, manager, PermissionLevel.Manager);
+        await SeedPermissionRuleAsync(
+            accountId, workspaceId, manager, PermissionAction.ArchivePage,
+            "documents.page", pageId, PermissionEffect.Deny);
+
+        using var provider = CreateProvider(accountId, manager);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "an applicable explicit Deny rule overrides the Manager-rank authority");
+    }
+
+    [Fact]
+    public async Task ArchivePage_WrongTenant_IsNotFound_AndTargetStaysActive()
+    {
+        // Cross-tenant resource existence must not leak through Forbidden:
+        // a page from workspace B addressed from a workspace-A context is
+        // hidden from lifecycle mutations entirely.
+        var (accountA, _, workspaceA, _, memberA) = await SeedPageStackAsync();
+        var (_, _, workspaceB, pageB, _) = await SeedPageStackAsync();
+        workspaceA.Should().NotBe(workspaceB);
+
+        using var provider = CreateProvider(accountA, memberA);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageB));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "a cross-tenant page must be hidden from lifecycle mutations");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageB)).Status
+            .Should().Be(PageStatus.Active,
+            "the wrong-tenant mutation must leave the foreign page untouched");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "page.archived"
+                && (m.WorkspaceId == workspaceA || m.WorkspaceId == workspaceB))).Should().BeFalse(
+            "no page.archived fact may be staged by the wrong-tenant request");
+    }
+
+    [Fact]
+    public async Task ArchivePage_Guest_IsDenied()
+    {
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var guest = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, guest, WorkspaceRole.Guest);
+        await SyncAccessGrantsAsync(accountId, workspaceId, (guest, WorkspaceRole.Guest));
+
+        using var provider = CreateProvider(accountId, guest);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "guests without explicit page access are hidden from the lifecycle mutation");
+    }
+
+    [Fact]
+    public async Task ArchivePage_Outsider_IsForbidden()
+    {
+        var (accountId, _, _, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+        var outsider = Guid.NewGuid();
+
+        using var provider = CreateProvider(accountId, outsider);
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "the canonical pipeline denies non-members before any page mutation");
+    }
+
+    [Fact]
+    public async Task ArchivePage_AlreadyArchived_IsNotFound_ByResourceLifecycle()
+    {
+        // The canonical policy engine treats an archived page as a
+        // non-existing resource before any authority fast-path, so a second
+        // archive request fails closed instead of double-mutating. Outward
+        // event evidence lives in PageArchivedOutboxEvidenceTests.
+        var (accountId, ownerId, _, _, _) = await SeedPageStackAsync();
+        var pageId = await ResolvePageIdAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        (await SendAsync<Result>(provider, new ArchivePageCommand(pageId))).Succeeded.Should().BeTrue();
+
+        var act = () => SendAsync<Result>(provider, new ArchivePageCommand(pageId));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "an archived page is a lifecycle-closed resource for further mutations");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageId)).Status
+            .Should().Be(PageStatus.Archived);
+    }
+
+    private async Task<Guid> ResolvePageIdAsync()
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        var id = await context.Pages
+            .IgnoreQueryFilters()
+            .Select(p => p.Id)
+            .FirstOrDefaultAsync();
+        id.Should().NotBeEmpty("expected a seeded page");
+        return id;
+    }
+
+    [Fact]
+    public async Task CreateComment_OnMissingPage_IsNotFound_WithoutPersistence()
+    {
+        // TAC-DC-004 (page section): missing target → defined failure.
+        var (accountId, ownerId, workspaceId, _, _) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForPage(Guid.CreateVersion7(), "Ghost page comment", null));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "the page section requires its own missing-target proof");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == workspaceId)).Should().BeFalse(
+            "no comment may persist for a missing target");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "comment.created"
+                && m.WorkspaceId == workspaceId)).Should().BeFalse(
+            "no outward fact may be staged for a missing target");
+    }
+
+    [Fact]
+    public async Task CreateComment_OnMissingBoardItem_IsNotFound_WithoutPersistence()
+    {
+        // TAC-DC-004 (board-item section): missing target → defined failure.
+        var (accountId, ownerId, workspaceId, _, _) = await SeedBoardStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(Guid.CreateVersion7(), "Ghost item comment", null));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "the board-item section requires its own missing-target proof");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == workspaceId)).Should().BeFalse(
+            "no comment may persist for a missing target");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "comment.created"
+                && m.WorkspaceId == workspaceId)).Should().BeFalse(
+            "no outward fact may be staged for a missing target");
+    }
+
+    [Fact]
+    public async Task CreateComment_OnCrossScopePage_IsNotFound()
+    {
+        // TAC-DC-006 (page section): cross-scope target reference fails and
+        // cross-tenant existence must not leak through Forbidden.
+        // The actor is a legitimate member of tenant A (not a random Guid),
+        // proving a real tenant-A member cannot address a tenant-B page.
+        var (accountA, _, workspaceA, _, memberA) = await SeedPageStackAsync();
+        var (_, _, _, pageB, _) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountA, memberA);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForPage(pageB, "Cross-tenant page comment", null));
+
+        await act.Should().ThrowAsync<AppNotFound>();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
+            "no comment may persist for a cross-scope target");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "comment.created"
+                && m.WorkspaceId == workspaceA)).Should().BeFalse(
+            "no outward fact may be staged for a cross-scope target");
+        (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageB)).Status
+            .Should().Be(PageStatus.Active,
+            "the foreign page must remain untouched");
+    }
+
+    [Fact]
+    public async Task CreateComment_OnCrossScopeBoardItem_IsNotFound()
+    {
+        // TAC-DC-006 (board-item section): cross-scope target reference fails
+        // and cross-tenant existence must not leak through Forbidden.
+        var (accountA, _, workspaceA, _, memberA) = await SeedBoardStackAsync();
+        var (_, _, _, boardB, _) = await SeedBoardStackAsync();
+        var itemB = await ResolveBoardItemIdAsync(boardB);
+
+        long itemVersionBefore;
+        string itemNameBefore;
+        await using (var snapshot = _db.CreateContext(SystemTenant()))
+        {
+            var item = await snapshot.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == itemB);
+            itemVersionBefore = item.Version;
+            itemNameBefore = item.Name;
+        }
+
+        using var provider = CreateProvider(accountA, memberA);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(itemB, "Cross-tenant item comment", null));
+
+        await act.Should().ThrowAsync<AppNotFound>();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
+            "no comment may persist for a cross-scope target");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "comment.created"
+                && m.WorkspaceId == workspaceA)).Should().BeFalse(
+            "no outward fact may be staged for a cross-scope target");
+        var itemAfter = await verify.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == itemB);
+        itemAfter.Version.Should().Be(itemVersionBefore,
+            "the foreign board item must remain untouched");
+        itemAfter.Name.Should().Be(itemNameBefore);
+    }
+
+    /// <summary>
+    /// M7 RESOURCE-SCOPE freeze — same account, two real workspaces. The
+    /// resource-scoped request follows the authoritative resource location:
+    /// a workspace-W2 member comments on a W2 board item with the request
+    /// context selected to W1, the locator adopts W2, and authorization
+    /// evaluates W2 facts. Not a cross-account hide (that path is separate).
+    /// </summary>
+    private async Task<(Guid AccountId, Guid W1, Guid W2, Guid W2ItemId, Guid W2MemberId)> SeedTwoWorkspacesOneAccountAsync()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var ownerId = Guid.NewGuid();
+        var w2MemberId = Guid.NewGuid();
+        var account = Account.Create("Gov Two-WS Account", $"gov-{Guid.NewGuid():N}", AccountType.Team, ownerId, now);
+        var w1 = Workspace.Create(account.Id, ownerId, "Gov W1", $"gov-w1-{Guid.NewGuid():N}", now);
+        var w2 = Workspace.Create(account.Id, ownerId, "Gov W2", $"gov-w2-{Guid.NewGuid():N}", now);
+        var board = Board.Create(account.Id, w2.Id, ownerId, "Gov W2 Board", null, now);
+        var group = BoardGroup.Create(
+            account.Id, w2.Id, board.Id, "Todo",
+            Color.Create("#808080"), FractionalIndex.Create("a0"), ownerId, now);
+        var item = BoardItem.CreateRoot(
+            account.Id, w2.Id, board.Id, group.Id, "Task",
+            FractionalIndex.Create("a0"), ownerId, now);
+
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.Accounts.Add(account);
+        seed.AccountMembers.Add(AccountMember.Create(account.Id, ownerId, AccountRole.Owner, ownerId, now));
+        seed.Workspaces.Add(w1);
+        seed.Workspaces.Add(w2);
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, w1.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, w1.Id, w2MemberId, WorkspaceRole.Member, ownerId, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, w2.Id, w2MemberId, WorkspaceRole.Member, ownerId, now));
+        seed.Boards.Add(board);
+        seed.BoardGroups.Add(group);
+        seed.BoardItems.Add(item);
+        await seed.SaveChangesAsync();
+
+        await SyncAccessGrantsAsync(
+            account.Id, w1.Id, (ownerId, WorkspaceRole.Owner), (w2MemberId, WorkspaceRole.Member));
+        await SyncAccessGrantsAsync(
+            account.Id, w2.Id, (w2MemberId, WorkspaceRole.Member));
+
+        return (account.Id, w1.Id, w2.Id, item.Id, w2MemberId);
+    }
+
+    [Fact]
+    public async Task CreateComment_SameAccount_CrossWorkspace_MemberOfTarget_Allows_AndPersistsUnderTargetWorkspace()
+    {
+        var (accountId, w1, w2, w2ItemId, w2MemberId) = await SeedTwoWorkspacesOneAccountAsync();
+
+        // Request context selects W1; the target lives in W2. The locator is
+        // the authority: execution adopts W2 and W2 facts decide the outcome.
+        using var provider = CreateProvider(accountId, w2MemberId, w1);
+        var result = await SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(w2ItemId, "Cross-workspace comment", null));
+
+        result.Succeeded.Should().BeTrue(
+            "a W2 member may comment on a W2 item even with W1 selected — the locator is the authority");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var stored = await verify.Comments.IgnoreQueryFilters()
+            .SingleAsync(c => c.Target.ResourceId == w2ItemId);
+        stored.WorkspaceId.Should().Be(w2,
+            "the persisted comment belongs to the located target workspace");
+        stored.CreatedBy.Should().Be(w2MemberId);
+    }
+
+    [Fact]
+    public async Task CreateComment_SameAccount_CrossWorkspace_WithoutTargetAuthority_IsForbidden()
+    {
+        var (accountId, w1, _, w2ItemId, w2MemberId) = await SeedTwoWorkspacesOneAccountAsync();
+
+        // An outsider to W2 (same account) is denied by the canonical W2
+        // policy — same account never auto-allows.
+        var outsider = Guid.NewGuid();
+        using var provider = CreateProvider(accountId, outsider, w1);
+        var act = () => SendAsync<Result<Guid>>(provider,
+            CreateCommentCommand.ForBoardItem(w2ItemId, "Outsider comment", null));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "same-account membership does not imply W2 authority");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.Target.ResourceId == w2ItemId)).Should().BeFalse(
+            "no comment may persist for the denied cross-workspace reference");
+    }
+
     // ── composition -----------------------------------------------------------
 
     private static async Task<T> SendAsync<T>(ServiceProvider provider, object request)
@@ -480,10 +1010,14 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         return (response as T)!;
     }
 
-    private ServiceProvider CreateProvider(Guid accountId, Guid userId)
+    private ServiceProvider CreateProvider(Guid accountId, Guid userId, Guid? selectedWorkspaceId = null)
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetAccount(accountId, userId);
+        if (selectedWorkspaceId.HasValue)
+        {
+            tenant.SetWorkspace(accountId, selectedWorkspaceId.Value, userId);
+        }
 
         var requestContextMock = new Mock<ICurrentRequestContext>();
         requestContextMock.Setup(r => r.UserId).Returns(userId);
@@ -521,6 +1055,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddTransient<IValidator<GetResourcePermissionsQuery>, GetResourcePermissionsQueryValidator>();
         services.AddTransient<IValidator<CreatePageCommand>, CreatePageCommandValidator>();
         services.AddTransient<IValidator<CreateCommentCommand>, CreateCommentCommandValidator>();
+        services.AddTransient<IValidator<ArchivePageCommand>, ArchivePageCommandValidator>();
 
         // Canonical frozen pipeline, outermost-to-innermost order.
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ExceptionMappingBehavior<,>));
@@ -593,6 +1128,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<CreatePageCommand, Result<Guid>>,
             CreatePageCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<ArchivePageCommand, Result>,
+            ArchivePageCommandHandler>();
         services.AddScoped<
             IRequestHandler<CreateCommentCommand, Result<Guid>>,
             CreateCommentCommandHandler>();
@@ -690,6 +1228,32 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             await projection.SyncWorkspaceMemberGrantAsync(accountId, workspaceId, userId, role, now, CancellationToken.None);
         }
 
+        await seed.SaveChangesAsync();
+    }
+
+    private async Task SeedPermissionRuleAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid subjectId,
+        PermissionAction action,
+        string resourceKind,
+        Guid resourceId,
+        PermissionEffect effect)
+    {
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.PermissionRules.Add(PermissionRule.Create(
+            accountId,
+            workspaceId,
+            PermissionScopeType.Page,
+            ResourceKind.Create(resourceKind),
+            resourceId,
+            PermissionSubjectType.User,
+            subjectId,
+            null,
+            action,
+            effect,
+            subjectId,
+            DateTimeOffset.UtcNow));
         await seed.SaveChangesAsync();
     }
 

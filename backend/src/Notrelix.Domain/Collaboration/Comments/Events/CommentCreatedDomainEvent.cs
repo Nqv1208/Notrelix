@@ -7,5 +7,6 @@ public sealed record CommentCreatedDomainEvent(
     Guid CommentId,
     ResourceRef Target,
     Guid CreatedBy,
+    string Content,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

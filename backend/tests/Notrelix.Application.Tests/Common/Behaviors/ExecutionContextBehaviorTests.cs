@@ -92,6 +92,51 @@ public sealed class ExecutionContextBehaviorTests
         fixture.ExecutionContext.Snapshot.Should().BeNull();
     }
 
+    /// <summary>
+    /// M7 freeze characterization: a resource located in a DIFFERENT account
+    /// than the selected request context is hidden, not denied — the behavior
+    /// throws NotFound, never adopts the foreign tenant, and the rest of the
+    /// pipeline never executes. Cross-tenant existence must not leak through
+    /// a Forbidden-vs-NotFound distinction for every resource-scoped request.
+    /// </summary>
+    [Fact]
+    public async Task Resource_request_located_in_another_account_is_hidden_and_never_adopts_foreign_tenant()
+    {
+        var fixture = CreateFixture<ResourceRequest>();
+        var selectedAccountId = Guid.NewGuid();
+        var foreignAccountId = Guid.NewGuid();
+        var foreignWorkspaceId = Guid.NewGuid();
+        var nextCalled = false;
+
+        fixture.Tenant.SetupGet(context => context.AccountId).Returns(selectedAccountId);
+        fixture.Locator
+            .Setup(locator => locator.LocateAsync(
+                It.IsAny<ResourceRef>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ResourceLocation(
+                ResourceKind.Create("documents.page"), Guid.NewGuid(), foreignAccountId, foreignWorkspaceId));
+
+        var act = () => fixture.Behavior.Handle(
+            new ResourceRequest(ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid())),
+            _ =>
+            {
+                nextCalled = true;
+                return Task.FromResult("ok");
+            },
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+        nextCalled.Should().BeFalse(
+            "the cross-account hide must reject before the rest of the pipeline ever runs");
+
+        fixture.ExecutionContext.Snapshot.Should().BeNull(
+            "the foreign resource must never produce an execution snapshot");
+        fixture.Tenant.Verify(
+            tenant => tenant.SetWorkspace(
+                foreignAccountId, It.IsAny<Guid>(), It.IsAny<Guid?>()),
+            Times.Never,
+            "the foreign tenant must never be adopted");
+    }
+
     private static Fixture<TRequest> CreateFixture<TRequest>() where TRequest : IRequest<string>
     {
         var userId = Guid.NewGuid();

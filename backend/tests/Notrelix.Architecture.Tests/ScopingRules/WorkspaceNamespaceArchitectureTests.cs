@@ -120,8 +120,6 @@ public class WorkspaceNamespaceArchitectureTests
     {
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
             "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
-            "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
             "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.LegacyGap,
@@ -157,8 +155,6 @@ public class WorkspaceNamespaceArchitectureTests
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingPermission = new()
     {
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
-            "Page command — missing IRequirePermission", "Add IRequirePermission"),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
             "Page command — missing IRequirePermission", "Add IRequirePermission"),
         ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
             "Page command — missing IRequirePermission", "Add IRequirePermission"),

@@ -106,6 +106,16 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
                         throw new AppNotFoundException(resource.Kind.ToString(), resource.ResourceId);
                     }
 
+                    // Cross-account resources are hidden, not denied: existence
+                    // must not leak through a Forbidden-vs-NotFound distinction
+                    // (M7 freeze). The locator resolves by stable identity with
+                    // filters bypassed, so the account binding is enforced here
+                    // before any tenant context is adopted.
+                    if (accountId.HasValue && location.AccountId != accountId.Value)
+                    {
+                        throw new AppNotFoundException(resource.Kind.ToString(), resource.ResourceId);
+                    }
+
                     accountId = location.AccountId;
                     workspaceId = location.WorkspaceId;
                     _tenant.SetWorkspace(location.AccountId, location.WorkspaceId, actorId);

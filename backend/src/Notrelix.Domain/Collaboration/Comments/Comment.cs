@@ -44,7 +44,7 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         };
 
         comment.SetAuditOnCreate(createdBy, createdAt);
-        comment.RaiseDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
+        comment.RaiseDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, comment.Content, createdAt));
 
         return comment;
     }
@@ -96,7 +96,7 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         comment.SetAuditOnCreate(createdBy, createdAt);
         comment.RaiseDomainEvent(new CommentReplyCreatedDomainEvent(
-            accountId, workspaceId, comment.Id, parentContext.ParentCommentId, target, createdBy, createdAt));
+            accountId, workspaceId, comment.Id, parentContext.ParentCommentId, target, createdBy, comment.Content, createdAt));
 
         return comment;
     }

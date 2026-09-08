@@ -22,9 +22,11 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
         var msg = context.Message;
         var now = DateTimeOffset.UtcNow;
 
-        if (msg.WorkspaceId is null)
+        if (msg.WorkspaceId is null || msg.AccountId is null || msg.AccountId == Guid.Empty)
         {
-            _logger.LogWarning("MentionCreated event {MentionId} has no WorkspaceId, skipping notification", msg.MentionId);
+            _logger.LogWarning(
+                "MentionCreated event {MentionId} has no authoritative AccountId/WorkspaceId envelope, skipping notification",
+                msg.MentionId);
             return;
         }
 
@@ -42,7 +44,7 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
         }
 
         var notificationItem = NotificationItemRecord.Create(
-            accountId: Guid.Empty,
+            accountId: msg.AccountId.Value,
             workspaceId: msg.WorkspaceId.Value,
             sourceContext: "collaboration",
             notificationType: "mention.created",
@@ -61,7 +63,7 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
         _context.NotificationItems.Add(notificationItem);
 
         var recipient = NotificationRecipientRecord.Create(
-            accountId: Guid.Empty,
+            accountId: msg.AccountId.Value,
             notificationId: notificationItem.Id,
             workspaceId: msg.WorkspaceId.Value,
             recipientUserId: msg.MentionedUserId,
