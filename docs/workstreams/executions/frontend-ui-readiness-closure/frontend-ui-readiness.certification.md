@@ -420,3 +420,24 @@ check:ui-actions:     valid, 119 registered sources
 check:ui-purity:      valid, 42 entries
 check:ui-fixtures:    valid, 27 fixture/scenario/controller files
 ```
+
+## 11.4 Wave 3 checkpoint — State semantics and deterministic verification data
+
+```text
+FUIR-WU-030 Terminal:   IMPLEMENTED_VERIFIED (submit error→Error, success→Success, EdgeData reserved
+                        for data-shape stress; vocab enforced by schema state union + story-state check)
+FUIR-WU-031 Terminal:   IMPLEMENTED_VERIFIED (surface-kind universe accounting in ui-evidence-schema:
+                        every universe state must be required/delegated/N/A; generic N/A reasons rejected)
+FUIR-WU-032 Terminal:   IMPLEMENTED_VERIFIED (no Math.random/new Date/Date.now/crypto.randomUUID in any
+                        owner verification source; check-ui-fixtures deterministic scan 27 files green)
+FUIR-WU-033 Terminal:   IMPLEMENTED_VERIFIED (scenario cardinality/edge semantics covered by
+                        check:ui-fixtures + guarded tests)
+
+Gate evidence:
+
+unit (node vitest):   ui-evidence-schema 12, ui-test-time 1, check-ui-evidence 8,
+                      ui-interaction-coverage 6, governed-source-enumerator + 2      = 18 passed
+check:ui-evidence:    valid, 42 surfaces, 96 required states (semantics + kind policy enforced)
+check:ui-fixtures:    valid, 27 fixture/scenario/controller files
+forbidden-ndet scan:  NO_FORBIDDEN_NDET_IN_VERIFICATION
+```
