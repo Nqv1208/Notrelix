@@ -1689,7 +1689,11 @@ Stop implementation if:
 
 ---
 
-# 126. Executable evidence
+# 126. FE-API-064 — Generated DTOs stop at validated mapping boundaries
+
+Generated transport types may enter product state only through an approved API adapter/mapper. Product components, semantic fixtures, caches, and optimistic state MUST use client semantic models rather than generated DTOs or handwritten duplicates. `any`, `as any`, `as unknown as`, and unconstrained response records are forbidden on critical read/mutation boundaries; uncertain input stays `unknown` until explicitly validated or mapped. A producer mismatch is routed as contract drift rather than hidden by an unsafe cast.
+
+# 127. Executable evidence
 
 Primary current evidence:
 

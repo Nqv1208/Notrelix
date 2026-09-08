@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/ui-web",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/theme/theme-provider.tsx",
+        "category": "provider",
+        "reason": "Provides the Web light/dark theme context; renders no standalone visual surface."
+      }
+    ]
+  },
+  "surfaces": [
+    {
+      "surfaceId": "ui-web.brand.logo",
+      "owner": "@notrelix/ui-web",
+      "surfaceKind": "primitive",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "coveredSources": ["src/components/brand/notrelix-logo.tsx"],
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--brand-logo",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "The logo renders a fixed brand wordmark and icon with no data-driven text or optional edges.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["a11y", "visual", "purity"],
+      "interactionCases": []
+    },
+    {
+      "surfaceId": "ui-web.feedback.states",
+      "owner": "@notrelix/ui-web",
+      "surfaceKind": "feedback",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "coveredSources": [
+        "src/components/feedback/access-denied-state.tsx",
+        "src/components/feedback/empty-state.tsx",
+        "src/components/feedback/error-state.tsx",
+        "src/components/feedback/forbidden-state.tsx",
+        "src/components/feedback/loading-state.tsx",
+        "src/components/feedback/mock-disabled-state.tsx",
+        "src/components/feedback/not-found-state.tsx",
+        "src/components/feedback/upgrade-required-state.tsx"
+      ],
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--feedback-states",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["a11y", "visual", "purity"],
+      "interactionCases": []
+    },
+    {
+      "surfaceId": "ui-web.forms.submit-state",
+      "owner": "@notrelix/ui-web",
+      "surfaceKind": "form",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "coveredSources": ["src/components/forms/submit-state.tsx"],
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--submit-state",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The pending presentation is exercised by the Default story's pending control variant.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "Submission failure presentation is owned by the calling form flow (see auth surfaces); the control only swaps its pending label.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Success",
+            "reason": "Submission success presentation is owned by the calling form flow (see auth surfaces); the control only swaps its pending label.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "The control renders fixed label strings; long-text and Unicode edges are exercised by the form-controls EdgeData story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Read-only submission is represented by the disabled control variant shown in the Default story.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "ui-web.primitives.form-controls",
+      "owner": "@notrelix/ui-web",
+      "surfaceKind": "primitive",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "coveredSources": [
+        "src/components/ui/checkbox.tsx",
+        "src/components/ui/field.tsx",
+        "src/components/ui/input-group.tsx",
+        "src/components/ui/input-otp.tsx",
+        "src/components/ui/input.tsx",
+        "src/components/ui/label.tsx",
+        "src/components/ui/radio-group.tsx",
+        "src/components/ui/select.tsx",
+        "src/components/ui/slider.tsx",
+        "src/components/ui/switch.tsx",
+        "src/components/ui/textarea.tsx"
+      ],
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--form-controls",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "Controls are empty at rest in the Default story; value-bearing long-text, Unicode, and optional-value edges are exercised by the auth form and workspace surfaces that consume them.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "form-controls",
+          "testFile": "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "ui-web.primitives.navigation",
+      "owner": "@notrelix/ui-web",
+      "surfaceKind": "primitive",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "coveredSources": [
+        "src/components/ui/breadcrumb.tsx",
+        "src/components/ui/menubar.tsx",
+        "src/components/ui/navigation-menu.tsx",
+        "src/components/ui/pagination.tsx",
+        "src/components/ui/sidebar.tsx",
+        "src/components/ui/tabs.tsx"
+      ],
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--navigation-primitives",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "Navigation primitives render short fixed labels in the Default story; long-text and Unicode edges are exercised by the consuming workspace surfaces.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "navigation",
+          "testFile": "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "ui-web.primitives.overlays",
+      "owner": "@notrelix/ui-web",
+      "surfaceKind": "primitive",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "coveredSources": [
+        "src/components/ui/alert-dialog.tsx",
+        "src/components/ui/button.tsx",
+        "src/components/ui/command.tsx",
+        "src/components/ui/context-menu.tsx",
+        "src/components/ui/dialog.tsx",
+        "src/components/ui/drawer.tsx",
+        "src/components/ui/dropdown-menu.tsx",
+        "src/components/ui/hover-card.tsx",
+        "src/components/ui/popover.tsx",
+        "src/components/ui/sheet.tsx",
+        "src/components/ui/tooltip.tsx"
+      ],
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--overlay-primitives",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "Overlay triggers render short fixed labels in the Default story; long-text and Unicode edges are exercised by the consuming product surfaces.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "overlays",
+          "testFile": "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "ui-web.primitives.data-display",
+      "owner": "@notrelix/ui-web",
+      "surfaceKind": "primitive",
+      "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
+      "coveredSources": [
+        "src/components/ui/accordion.tsx",
+        "src/components/ui/alert.tsx",
+        "src/components/ui/aspect-ratio.tsx",
+        "src/components/ui/avatar.tsx",
+        "src/components/ui/badge.tsx",
+        "src/components/ui/button-group.tsx",
+        "src/components/ui/calendar.tsx",
+        "src/components/ui/card.tsx",
+        "src/components/ui/carousel.tsx",
+        "src/components/ui/chart.tsx",
+        "src/components/ui/collapsible.tsx",
+        "src/components/ui/empty.tsx",
+        "src/components/ui/item.tsx",
+        "src/components/ui/kbd.tsx",
+        "src/components/ui/progress.tsx",
+        "src/components/ui/resizable.tsx",
+        "src/components/ui/scroll-area.tsx",
+        "src/components/ui/separator.tsx",
+        "src/components/ui/skeleton.tsx",
+        "src/components/ui/sonner.tsx",
+        "src/components/ui/spinner.tsx",
+        "src/components/ui/table.tsx",
+        "src/components/ui/toggle-group.tsx",
+        "src/components/ui/toggle.tsx"
+      ],
+      "stories": [
+        {
+          "id": "ui-web-critical-surfaces--data-display-primitives",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "EdgeData",
+            "reason": "Data-display primitives render short fixture labels in the Default story; long-text and Unicode edges are exercised by the consuming product surfaces.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "data-display",
+          "testFile": "src/verification/__tests__/ui-web-critical-surfaces.component.test.tsx"
+        }
+      ]
+    }
+  ]
+}

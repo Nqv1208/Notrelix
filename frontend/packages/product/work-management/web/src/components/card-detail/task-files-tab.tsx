@@ -5,21 +5,23 @@ import { Button } from "@notrelix/ui-web";
 import { Input } from "@notrelix/ui-web";
 import { Skeleton } from "@notrelix/ui-web";
 import { ToggleGroup, ToggleGroupItem } from "@notrelix/ui-web";
-import { useCardFiles } from "@notrelix/work-management-state";
-import type { CardDetail, CardFile } from "@notrelix/work-management-core";
+import type { CardFile } from "@notrelix/work-management-core";
 import { TaskDetailEmptyState } from "./task-detail-empty-state";
 
-export function TaskFilesTab({ card }: { card: CardDetail }) {
-  const { data = [], isLoading } = useCardFiles(card.id, card.workspaceId);
+export function TaskFilesTab({
+  files,
+  isLoading,
+}: {
+  files: readonly CardFile[];
+  isLoading: boolean;
+}) {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"grid" | "list">("grid");
   const filteredFiles = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return data;
-    return data.filter((file: CardFile) =>
-      file.name.toLowerCase().includes(normalized),
-    );
-  }, [data, query]);
+    if (!normalized) return files;
+    return files.filter((file) => file.name.toLowerCase().includes(normalized));
+  }, [files, query]);
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -42,9 +44,9 @@ export function TaskFilesTab({ card }: { card: CardDetail }) {
           <ToggleGroup
             type="single"
             value={mode}
-            onValueChange={(value: any) =>
-              value && setMode(value as "grid" | "list")
-            }
+            onValueChange={(value) => {
+              if (value === "grid" || value === "list") setMode(value);
+            }}
           >
             <ToggleGroupItem value="grid" size="sm" aria-label="Grid view">
               <Grid2X2 className="size-4" />
@@ -78,7 +80,7 @@ export function TaskFilesTab({ card }: { card: CardDetail }) {
         />
       ) : mode === "grid" ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          {filteredFiles.map((file: CardFile) => (
+          {filteredFiles.map((file) => (
             <div
               key={file.id}
               className="rounded-lg border border-border bg-card p-3"
@@ -98,7 +100,7 @@ export function TaskFilesTab({ card }: { card: CardDetail }) {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filteredFiles.map((file: CardFile) => (
+          {filteredFiles.map((file) => (
             <div
               key={file.id}
               className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3"

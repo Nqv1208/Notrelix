@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "surfaceId": "work-management.forbidden-state",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/state.tsx",
+      "stories": [
+        { "id": "work-management-forbidden-state--default", "state": "Default" }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "work-management.forbidden-contracts",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/contracts.tsx",
+      "stories": [
+        {
+          "id": "work-management-forbidden-contracts--default",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "work-management.forbidden-runtime",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/runtime.tsx",
+      "stories": [
+        {
+          "id": "work-management-forbidden-runtime--default",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "work-management.forbidden-mock-backend",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/mock-backend.tsx",
+      "stories": [
+        {
+          "id": "work-management-forbidden-mock-backend--default",
+          "state": "Default"
+        }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    },
+    {
+      "surfaceId": "work-management.forbidden-auth",
+      "owner": "@notrelix/work-management-web",
+      "pureEntry": "src/auth.tsx",
+      "stories": [
+        { "id": "work-management-forbidden-auth--default", "state": "Default" }
+      ],
+      "requiredStates": ["Default"],
+      "checks": ["purity"],
+      "interactionTests": [],
+      "notApplicableStates": []
+    }
+  ]
+}

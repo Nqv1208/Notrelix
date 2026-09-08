@@ -1,6 +1,6 @@
 import { LayoutGrid, Table, Calendar, GanttChart, Plus } from "lucide-react";
 import { Button } from "@notrelix/ui-web";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const VIEW_TYPES = [
   { type: "kanban", label: "Board", icon: LayoutGrid },
@@ -45,9 +45,19 @@ export function AddViewMenu({
   onAddView: (type: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <Button
         variant="ghost"
         size="sm"

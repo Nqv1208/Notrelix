@@ -56,3 +56,7 @@ storybook-static/
 playwright-report/
 playwright-report-*/
 test-results/
+
+# Visual baselines are renderer-pinned to linux (see visual-baseline.lock.json)
+# Local non-linux snapshots are toolchain artifacts, never authoritative.
+e2e/ui/*-snapshots/*-chromium-darwin.png

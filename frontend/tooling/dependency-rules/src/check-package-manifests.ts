@@ -27,11 +27,12 @@ export function checkPackageManifests(rootDir: string): {
     const policy = ARCHITECTURE_POLICY_BY_PACKAGE.get(pkg.name);
     const forbidden = FORBIDDEN_IMPORTS[pkg.name] ?? [];
 
-    const declaredDeps = new Set([
+    const productionDeps = new Set([
       ...Object.keys(pkgJson.dependencies || {}),
-      ...Object.keys(pkgJson.devDependencies || {}),
       ...Object.keys(pkgJson.peerDependencies || {}),
     ]);
+    const devDeps = new Set(Object.keys(pkgJson.devDependencies || {}));
+    const declaredDeps = new Set([...productionDeps, ...devDeps]);
 
     for (const dep of declaredDeps) {
       if (forbidden.includes(dep)) {
@@ -53,7 +54,23 @@ export function checkPackageManifests(rootDir: string): {
       if (!policy) continue;
 
       if (internalPkg.startsWith("@notrelix/") && !isTooling) {
-        const allowed = policy.allowedInternalImports;
+        const verificationOnly =
+          policy.allowedVerificationInternalImports?.some(
+            (allowed) =>
+              internalPkg === allowed || internalPkg.startsWith(allowed + "/"),
+          ) ?? false;
+        if (verificationOnly && productionDeps.has(dep)) {
+          violations.push(
+            `[VERIFICATION_DEPENDENCY_MUST_BE_DEV] ${pkg.name} declared verification-only dependency "${internalPkg}" in dependencies or peerDependencies`,
+          );
+          continue;
+        }
+        const allowed = devDeps.has(dep)
+          ? [
+              ...policy.allowedInternalImports,
+              ...(policy.allowedVerificationInternalImports ?? []),
+            ]
+          : policy.allowedInternalImports;
         if (
           !allowed.some(
             (a) => internalPkg === a || internalPkg.startsWith(a + "/"),

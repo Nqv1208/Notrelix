@@ -33,7 +33,7 @@ export function useBoardKanban(boardId: string, workspaceId: string) {
   const deleteColumn = useDeleteKanbanColumn(boardId, workspaceId);
 
   const columns = useMemo(() => {
-    return filteredGroups.sort((a: any, b: any) => a.position - b.position);
+    return [...filteredGroups].sort((a, b) => a.position - b.position);
   }, [filteredGroups]);
 
   return {

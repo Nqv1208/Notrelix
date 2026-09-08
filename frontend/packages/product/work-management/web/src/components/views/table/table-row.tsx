@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type KeyboardEvent, type MouseEvent } from "react";
 import { MoreHorizontal, GripVertical } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -9,18 +9,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@notrelix/ui-web";
-import {
-  useDeleteCard,
-  useDuplicateCard,
-} from "@notrelix/work-management-state";
 import type {
   Board,
   BoardGroup,
   BoardTableColumn,
   Card,
+  UpdateCardInput,
 } from "@notrelix/work-management-core";
 import { cn } from "@notrelix/ui-web";
-import { TableCell } from "./table-cell";
+import { TableCell, type TableFieldValueUpdate } from "./table-cell";
 
 export function TableRow({
   board,
@@ -33,6 +30,10 @@ export function TableRow({
   isDetailSelected,
   onSelect,
   onOpenDetail,
+  onDuplicateCard,
+  onDeleteCard,
+  onUpdateCard,
+  onUpdateFieldValue,
 }: {
   board: Board;
   group: BoardGroup;
@@ -44,9 +45,11 @@ export function TableRow({
   isDetailSelected: boolean;
   onSelect: (selected: boolean) => void;
   onOpenDetail: () => void;
+  onDuplicateCard: (cardId: string) => void;
+  onDeleteCard: (cardId: string) => void;
+  onUpdateCard: (cardId: string, patch: UpdateCardInput) => void;
+  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
 }) {
-  const deleteCard = useDeleteCard(board.id, board.workspaceId);
-  const duplicateCard = useDuplicateCard(board.id, board.workspaceId);
   const {
     attributes,
     listeners,
@@ -71,17 +74,16 @@ export function TableRow({
   return (
     <div
       ref={setNodeRef}
-      role="row"
       tabIndex={0}
-      onKeyDown={(e: any) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
+      onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
           onOpenDetail();
         }
       }}
       aria-label={`${card.title} in ${group.title}`}
-      aria-selected={isDetailSelected}
-      aria-grabbed={isDragging}
+      data-selected={isDetailSelected ? "true" : "false"}
+      data-dragging={isDragging ? "true" : "false"}
       className={cn(
         "group/row grid min-h-12 cursor-pointer items-center border-b border-l-[6px] border-border/70 bg-table-row text-sm duration-150 ease-out hover:bg-table-row-hover",
         isChecked && "bg-table-selected/40 hover:bg-table-selected/50",
@@ -99,22 +101,21 @@ export function TableRow({
           borderLeftColor: `color-mix(in oklch, ${accent} 22%, transparent)`,
         } as React.CSSProperties & { "--group-color": string }
       }
-      onMouseEnter={(e: any) => {
-        e.currentTarget.style.borderLeftColor = accent;
+      onMouseEnter={(event: MouseEvent<HTMLDivElement>) => {
+        event.currentTarget.style.borderLeftColor = accent;
       }}
-      onMouseLeave={(e: any) => {
-        e.currentTarget.style.borderLeftColor = `color-mix(in oklch, ${accent} 22%, transparent)`;
+      onMouseLeave={(event: MouseEvent<HTMLDivElement>) => {
+        event.currentTarget.style.borderLeftColor = `color-mix(in oklch, ${accent} 22%, transparent)`;
       }}
       onClick={onOpenDetail}
     >
-      <div
-        role="gridcell"
-        className="sticky left-0 z-10 flex h-full items-center gap-2 border-r border-border/70 bg-inherit px-3"
-      >
+      <div className="sticky left-0 z-10 flex h-full items-center gap-2 border-r border-border/70 bg-inherit px-3">
         <Checkbox
           checked={isChecked}
-          onCheckedChange={(checked: any) => onSelect(Boolean(checked))}
-          onClick={(event: any) => event.stopPropagation()}
+          onCheckedChange={(checked) => onSelect(Boolean(checked))}
+          onClick={(event: MouseEvent<HTMLButtonElement>) =>
+            event.stopPropagation()
+          }
           aria-label={`Select ${card.title}`}
           className="opacity-0 transition-opacity group-hover/row:opacity-100 data-[state=checked]:opacity-100"
         />
@@ -122,7 +123,9 @@ export function TableRow({
           type="button"
           className="cursor-grab rounded p-0.5 text-muted-foreground/40 opacity-0 transition hover:text-muted-foreground active:cursor-grabbing group-hover/row:opacity-100"
           aria-label={`Move ${card.title}`}
-          onClick={(event: any) => event.stopPropagation()}
+          onClick={(event: MouseEvent<HTMLButtonElement>) =>
+            event.stopPropagation()
+          }
           {...attributes}
           {...listeners}
         >
@@ -132,7 +135,6 @@ export function TableRow({
       {columns.map((column) => (
         <div
           key={column.id}
-          role="gridcell"
           className="flex min-w-0 items-center border-r border-border/70 px-3 py-2"
         >
           <TableCell
@@ -140,37 +142,40 @@ export function TableRow({
             card={card}
             field={column.field}
             onOpenDetail={onOpenDetail}
+            onUpdateCard={onUpdateCard}
+            onUpdateFieldValue={onUpdateFieldValue}
           />
         </div>
       ))}
-      <div
-        role="gridcell"
-        className="flex h-full items-center justify-center border-r border-border/70 px-2"
-      >
+      <div className="flex h-full items-center justify-center border-r border-border/70 px-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-foreground/8 hover:text-foreground group-hover/row:opacity-100"
               aria-label={`${card.title} row menu`}
-              onClick={(event: any) => event.stopPropagation()}
+              onClick={(event: MouseEvent<HTMLButtonElement>) =>
+                event.stopPropagation()
+              }
             >
               <MoreHorizontal className="size-4" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            onClick={(event: any) => event.stopPropagation()}
+            onClick={(event: MouseEvent<HTMLDivElement>) =>
+              event.stopPropagation()
+            }
           >
             <DropdownMenuItem onClick={onOpenDetail}>
               Open details
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => duplicateCard.mutate(card.id)}>
+            <DropdownMenuItem onClick={() => onDuplicateCard(card.id)}>
               Duplicate task
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
-              onClick={() => deleteCard.mutate(card.id)}
+              onClick={() => onDeleteCard(card.id)}
             >
               Delete task
             </DropdownMenuItem>

@@ -17,26 +17,38 @@ import {
 } from "@notrelix/ui-web";
 import { Textarea } from "@notrelix/ui-web";
 import { Skeleton } from "@notrelix/ui-web";
-import {
-  useCardComments,
-  useDeleteCardUpdate,
-  useUpdateCardUpdate,
-} from "@notrelix/work-management-state";
 import type { CardDetail, CardUpdate } from "@notrelix/work-management-core";
 import { TaskDetailEmptyState } from "./task-detail-empty-state";
 import { UpdateComposer } from "./update-composer";
+import type {
+  TaskDetailCallbacks,
+  TaskDetailCapabilities,
+} from "./task-detail-types";
 
-export function TaskUpdatesTab({ card }: { card: CardDetail }) {
-  const { data = [], isLoading } = useCardComments(card.id, card.workspaceId);
-  const updateMutation = useUpdateCardUpdate(card.id, card.workspaceId);
-  const deleteMutation = useDeleteCardUpdate(card.id, card.workspaceId);
-
+export function TaskUpdatesTab({
+  card,
+  updates,
+  isLoading,
+  capabilities,
+  onCreateUpdate,
+  onUpdateUpdate,
+  onDeleteUpdate,
+}: {
+  card: CardDetail;
+  updates: readonly CardUpdate[];
+  isLoading: boolean;
+  capabilities: TaskDetailCapabilities;
+  onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
+  onUpdateUpdate: TaskDetailCallbacks["onUpdateUpdate"];
+  onDeleteUpdate: TaskDetailCallbacks["onDeleteUpdate"];
+}) {
   return (
     <div className="flex flex-col gap-3 p-3.5">
       <UpdateComposer
         cardId={card.id}
-        workspaceId={card.workspaceId}
         members={card.members.length > 0 ? card.members : card.watchers}
+        disabled={!capabilities.canEditFields}
+        onCreateUpdate={onCreateUpdate}
       />
 
       {isLoading ? (
@@ -44,7 +56,7 @@ export function TaskUpdatesTab({ card }: { card: CardDetail }) {
           <Skeleton className="h-14 rounded-lg" />
           <Skeleton className="h-14 rounded-lg" />
         </div>
-      ) : data.length === 0 ? (
+      ) : updates.length === 0 ? (
         <TaskDetailEmptyState
           icon={MessageSquareText}
           title="No updates yet"
@@ -52,14 +64,14 @@ export function TaskUpdatesTab({ card }: { card: CardDetail }) {
         />
       ) : (
         <div className="flex flex-col gap-1.5 mt-1">
-          {data.map((update: CardUpdate) => (
+          {updates.map((update) => (
             <UpdateItem
               key={update.id}
               update={update}
-              onSave={(body) =>
-                updateMutation.mutate({ updateId: update.id, body })
-              }
-              onDelete={() => deleteMutation.mutate(update.id)}
+              canEdit={capabilities.canEditFields}
+              canDelete={capabilities.canDelete}
+              onSave={(body) => onUpdateUpdate(update.id, body)}
+              onDelete={() => onDeleteUpdate(update.id)}
             />
           ))}
         </div>
@@ -70,10 +82,14 @@ export function TaskUpdatesTab({ card }: { card: CardDetail }) {
 
 function UpdateItem({
   update,
+  canEdit,
+  canDelete,
   onSave,
   onDelete,
 }: {
   update: CardUpdate;
+  canEdit: boolean;
+  canDelete: boolean;
   onSave: (body: string) => void;
   onDelete: () => void;
 }) {
@@ -83,10 +99,7 @@ function UpdateItem({
   return (
     <article className="group/comment flex items-start gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-muted/30">
       <Avatar className="size-7 shrink-0 mt-0.5">
-        <AvatarFallback
-          className="text-[9px] font-bold text-primary-foreground"
-          style={{ backgroundColor: update.author.color }}
-        >
+        <AvatarFallback className="bg-foreground text-[10px] font-bold text-background">
           {update.author.initials}
         </AvatarFallback>
       </Avatar>
@@ -113,25 +126,30 @@ function UpdateItem({
                   size="icon-sm"
                   className="size-6 p-0 hover:bg-muted"
                   aria-label="Update actions"
+                  disabled={!canEdit && !canDelete}
                 >
                   <MoreHorizontal className="size-3.5 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-24">
-                <DropdownMenuItem
-                  onClick={() => setEditing(true)}
-                  className="text-xs py-1"
-                >
-                  <Pencil className="mr-1.5 size-3.5" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive text-xs py-1"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="mr-1.5 size-3.5" />
-                  Delete
-                </DropdownMenuItem>
+                {canEdit ? (
+                  <DropdownMenuItem
+                    onClick={() => setEditing(true)}
+                    className="text-xs py-1"
+                  >
+                    <Pencil className="mr-1.5 size-3.5" />
+                    Edit
+                  </DropdownMenuItem>
+                ) : null}
+                {canDelete ? (
+                  <DropdownMenuItem
+                    className="text-destructive text-xs py-1"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="mr-1.5 size-3.5" />
+                    Delete
+                  </DropdownMenuItem>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

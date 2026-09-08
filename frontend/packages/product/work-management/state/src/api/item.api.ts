@@ -46,7 +46,11 @@ export function createCardApi(client: NotrelixClient) {
       return mapCardDto(card);
     },
 
-    async createCard(boardId: string, payload: CreateCardInput): Promise<void> {
+    async createCard(
+      boardId: string,
+      payload: CreateCardInput,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
       const body: CreateItemBody = {
         groupId: payload.listId, // canonical uses groupId!
         title: payload.title,
@@ -55,9 +59,7 @@ export function createCardApi(client: NotrelixClient) {
       await api.post<CreateItemResponse>(
         endpoints.boardItems.create(boardId),
         body,
-        {
-          headers: { "Idempotency-Key": crypto.randomUUID() },
-        },
+        options ?? { headers: { "Idempotency-Key": crypto.randomUUID() } },
       );
       // no longer returning getCard(id) because response is void.
     },
