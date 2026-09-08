@@ -321,12 +321,13 @@ Requirements missing traceability: 0
 Actionable architecture-choice phrases: 0
 Forbidden integration commands in positive validate:ui graph: 0
 Artifact audit: PASS
+```
 
 ## 11. Execution evidence log
 
 Candidate-bound evidence recorded per FUIR-PLAN-V4 wave. FUIR-LOCK-29 applies: no evidence from an older SHA certifies a newer candidate.
 
-### Wave 0 — Candidate refresh and scope freeze
+## 11.1 Wave 0 — Candidate refresh and scope freeze
 
 ```text
 candidate_sha:          eabbe62f45ac (PR #115 branch feature/web-app HEAD after FUIR-PLAN-V4 execution start)
@@ -383,4 +384,39 @@ real backend persistence/auth/RLS
 real E2E
 mock-real parity
 ```
+
+## 11.2 Wave 1 checkpoint — Manifest v2 and machine source inventory
+
+```text
+commit: 55c092d
+FUIR-WU-013 Terminal:   IMPLEMENTED_VERIFIED (all 10 active owner manifests schemaVersion 2 at candidate)
+FUIR-WU-014 Terminal:   IMPLEMENTED_VERIFIED (manual inventory docs demoted to historical;
+                        resolved debt rows marked removed)
+
+Gate evidence:
+
+check:ui-evidence:   valid, 42 surfaces, 96 required states  (FUIR-TST-025/027, current-source pass)
+check:ui-purity:     valid, 42 entries
+```
+
+## 11.3 Wave 2 checkpoint — Pure seams and action-contract closure
+
+```text
+FUIR-WU-020 Terminal:   KEEP_EXISTING_VERIFIED (board layout shell/toolbar/view-tabs
+                        registered at baseline, typed onFilter present)
+FUIR-WU-021 Terminal:   IMPLEMENTED_VERIFIED (board-workspace-surface.tsx pure seam,
+                        useFullBoard stays in board-workspace-view-content.tsx)
+FUIR-WU-022 Terminal:   IMPLEMENTED_VERIFIED (workspace contextual toolbar typed
+                        action/search contract)
+FUIR-WU-023 Terminal:   IMPLEMENTED_VERIFIED (check:ui-actions at package.json:37)
+FUIR-WU-024 Terminal:   IMPLEMENTED_VERIFIED (dynamic import/require traversal, side-effect
+                        AST detection in check-ui-purity)
+
+Gate evidence:
+
+unit (node vitest):   check-ui-actions 4, check-ui-purity 9, check-fixture-determinism 2   = 15 passed
+web vitest:           board-layout 9, kanban-board 2, kanban-column 2                    = 15 passed
+check:ui-actions:     valid, 119 registered sources
+check:ui-purity:      valid, 42 entries
+check:ui-fixtures:    valid, 27 fixture/scenario/controller files
 ```
