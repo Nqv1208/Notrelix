@@ -145,6 +145,7 @@ jobs:
           actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "1.61.1" ]]
       - run: pnpm check:ui-purity
       - run: pnpm check:ui-actions
+      - run: pnpm check:ui-fixtures
       - run: pnpm check:ui-evidence
       - run: pnpm test:ui:freeze
       - if: failure()

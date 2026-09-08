@@ -24,6 +24,7 @@ describe("command graph resolvers", () => {
       "check:architecture",
       "check:ui-purity",
       "check:ui-actions",
+      "check:ui-fixtures",
       "check:ui-evidence",
       "typecheck",
       "lint",

@@ -542,7 +542,7 @@ Wave 7  Final candidate-SHA certification
 
 **Inputs:** root `frontend/package.json`; SPEC §15.
 
-**Required implementation:** add `check:ui-actions` and `validate:ui` exact composition from SPEC. Preserve `validate` and `validate:fast` unchanged.
+**Required implementation:** add `check:ui-actions`, `check:ui-fixtures`, and `validate:ui` exact composition from SPEC. Preserve `validate` and `validate:fast` unchanged.
 
 **Forbidden:** codegen/mock/real/backend commands in the `validate:ui` dependency graph.
 
@@ -574,7 +574,7 @@ Wave 7  Final candidate-SHA certification
 
 **Inputs:** `.github/workflows/frontend-ci.yml`; current `ui-foundation` job.
 
-**Required implementation:** keep the job owner and renderer pin. Ensure it runs `check:ui-purity`, `check:ui-actions`, `check:ui-evidence`, `test:web:guarded` if case-level interaction coverage is not already guaranteed by an upstream required job for the same SHA, and `test:ui:freeze`. Do not add mock/real-backend needs.
+**Required implementation:** keep the job owner and renderer pin. Ensure it runs `check:ui-purity`, `check:ui-actions`, `check:ui-fixtures`, `check:ui-evidence`, `test:web:guarded` if case-level interaction coverage is not already guaranteed by an upstream required job for the same SHA, and `test:ui:freeze`. Do not add mock/real-backend needs.
 
 **Forbidden:** redesigning global Frontend gate/routing; adding a second UI workflow.
 

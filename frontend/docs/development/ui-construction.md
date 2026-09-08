@@ -67,4 +67,4 @@ Every visual story includes `desktop/light`. A `responsive` surface's `Default` 
 pnpm validate:ui
 ```
 
-`validate:ui` is the UI-only lane. It runs architecture, purity, actions, evidence, typecheck, lint, format, web tests, and the Storybook freeze. It deliberately does **not** run codegen, mock-contract, mock/real E2E, or backend/docker/database commands. Starting a backend/mock E2E is **not** required to reach UI DONE for a governed surface.
+`validate:ui` is the UI-only lane. It runs architecture, purity, actions, fixture determinism, evidence, typecheck, lint, format, web tests, and the Storybook freeze. It deliberately does **not** run codegen, mock-contract, mock/real E2E, or backend/docker/database commands. Starting a backend/mock E2E is **not** required to reach UI DONE for a governed surface.

@@ -30,6 +30,7 @@ describe("frontend-ci ui-foundation lane", () => {
     expect(block).toMatch(/playwright:v[\d.]+/);
     expect(block).toMatch(/check:ui-purity/);
     expect(block).toMatch(/check:ui-actions/);
+    expect(block).toMatch(/check:ui-fixtures/);
     expect(block).toMatch(/check:ui-evidence/);
     expect(block).toMatch(/test:ui:freeze/);
   });

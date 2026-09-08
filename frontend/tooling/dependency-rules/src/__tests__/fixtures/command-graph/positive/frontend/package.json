@@ -3,6 +3,7 @@
     "check:architecture": "pnpm --filter @notrelix/dependency-rules check",
     "check:ui-purity": "tsx tooling/dependency-rules/src/check-ui-purity.ts",
     "check:ui-actions": "tsx tooling/dependency-rules/src/check-ui-actions.ts",
+    "check:ui-fixtures": "tsx tooling/dependency-rules/src/check-fixture-determinism.ts",
     "check:ui-evidence": "pnpm storybook:web:build && tsx tooling/storybook/web/src/evidence/check-ui-evidence.ts",
     "storybook:web:build": "pnpm --filter @notrelix/storybook-web build",
     "typecheck": "tsc --noEmit",
@@ -10,6 +11,6 @@
     "format:check": "prettier --check .",
     "test:web:guarded": "vitest run --config tooling/testing/vitest.web.config.ts",
     "test:ui:freeze": "playwright test --config playwright.storybook.config.ts",
-    "validate:ui": "pnpm check:architecture && pnpm check:ui-purity && pnpm check:ui-actions && pnpm check:ui-evidence && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:web:guarded && pnpm test:ui:freeze"
+    "validate:ui": "pnpm check:architecture && pnpm check:ui-purity && pnpm check:ui-actions && pnpm check:ui-fixtures && pnpm check:ui-evidence && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:web:guarded && pnpm test:ui:freeze"
   }
 }
