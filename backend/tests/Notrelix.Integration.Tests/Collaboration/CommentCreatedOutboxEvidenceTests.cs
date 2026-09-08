@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.EventMappers.Collaboration;
 using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Collaboration.Comments.Events;
+using Notrelix.Domain.Collaboration.Mentions.Events;
+using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -187,5 +190,103 @@ public sealed class CommentCreatedOutboxEvidenceTests : IAsyncLifetime
         itemAfter.Name.Should().Be(beforeName);
         itemAfter.UpdatedAt.Should().Be(beforeUpdatedAt);
         itemAfter.DomainEvents.Should().BeEmpty("the Work aggregate owns no part of the comment mutation");
+    }
+
+    /// <summary>
+    /// M7 composite-write atomicity — the comment and its mention entities are
+    /// one transaction with their outward enrollments: a mention-enrollment
+    /// failure inside the actual interceptor chain fails the whole SaveChanges,
+    /// leaving no comment, no mention, and neither outward fact in committed
+    /// state. "Same DbContext" is proven atomic, not assumed.
+    /// </summary>
+    [Fact]
+    public async Task MentionEnrollmentFailure_RollsBackCommentMentionAndBothOutboxFacts()
+    {
+        var graph = await SeedBoardItemStackAsync();
+        var mentionedUserId = Guid.NewGuid();
+
+        var failingInterceptor = new DomainEventInterceptor(
+            new FixedClock(Now),
+            new EventTypeRegistry(),
+            ClassificationPolicy.CreateBuilder().Build(),
+            DeliveryPolicy.CreateBuilder().Build(),
+            new FailingMentionOnlyMapper(),
+            new IntegrationEventCollector());
+
+        await using (var context = _db.CreateContext(SystemTenant(), failingInterceptor))
+        {
+            var comment = Comment.Create(
+                graph.AccountId,
+                graph.WorkspaceId,
+                ResourceRef.Create(ResourceKind.Create("work-management.board-item"), graph.ItemId, graph.WorkspaceId),
+                "Composite content",
+                graph.AuthorId,
+                Now);
+            context.Comments.Add(comment);
+            context.PageMentions.Add(Domain.Collaboration.Mentions.Mention.Create(
+                graph.AccountId,
+                graph.WorkspaceId,
+                ResourceRef.Create(ResourceKind.Create("work-management.board-item"), graph.ItemId, graph.WorkspaceId),
+                Domain.Collaboration.Mentions.MentionType.User,
+                mentionedUserId,
+                graph.AuthorId,
+                Now));
+
+            var act = () => context.SaveChangesAsync();
+            await act.Should().ThrowAsync<InvalidOperationException>(
+                "mention enrollment runs inside the SaveChanges chain, so its failure aborts the whole composite write");
+        }
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.Comments.IgnoreQueryFilters()
+            .AnyAsync(c => c.WorkspaceId == graph.WorkspaceId)).Should().BeFalse(
+            "the comment must not survive the aborted composite write");
+        (await verify.PageMentions.IgnoreQueryFilters()
+            .AnyAsync(m => m.WorkspaceId == graph.WorkspaceId)).Should().BeFalse(
+            "the mention must not survive the aborted composite write");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .CountAsync(m => m.WorkspaceId == graph.WorkspaceId
+                && (m.MessageName == "comment.created" || m.MessageName == "mention.created"))).Should().Be(0,
+            "neither outward fact may survive the aborted composite write");
+    }
+
+    private sealed class FailingMentionOnlyMapper :
+        IIntegrationEventMapper<CommentCreatedDomainEvent, Application.Events.Collaboration.CommentCreatedIntegrationEvent>,
+        IIntegrationEventMapper<MentionCreatedDomainEvent, Application.Events.Collaboration.MentionCreatedIntegrationEvent>
+    {
+        public Application.Events.Collaboration.CommentCreatedIntegrationEvent? Map(CommentCreatedDomainEvent domainEvent)
+        {
+            var workspaceId = domainEvent.WorkspaceId;
+            return new Application.Events.Collaboration.CommentCreatedIntegrationEvent(
+                EventId: Guid.CreateVersion7(),
+                AccountId: domainEvent.AccountId,
+                CommentId: domainEvent.CommentId,
+                WorkspaceId: workspaceId,
+                TargetType: domainEvent.Target.Kind.Value,
+                TargetId: domainEvent.Target.ResourceId,
+                AuthorId: domainEvent.CreatedBy,
+                Body: domainEvent.Content,
+                CorrelationId: domainEvent.EventId,
+                OccurredAt: domainEvent.OccurredAt);
+        }
+
+        public Application.Events.Collaboration.MentionCreatedIntegrationEvent? Map(MentionCreatedDomainEvent domainEvent) =>
+            throw new InvalidOperationException("synthetic mention enrollment failure inside the interceptor chain");
+
+        IReadOnlyList<IntegrationEventMapping> IIntegrationEventMapper.Map(IDomainEvent domainEvent)
+        {
+            if (domainEvent is CommentCreatedDomainEvent created)
+            {
+                var mapped = Map(created);
+                if (mapped is not null) return [new IntegrationEventMapping(mapped)];
+            }
+
+            if (domainEvent is MentionCreatedDomainEvent mentioned)
+            {
+                Map(mentioned);
+            }
+
+            return [];
+        }
     }
 }
