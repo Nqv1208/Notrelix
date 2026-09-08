@@ -441,3 +441,21 @@ check:ui-evidence:    valid, 42 surfaces, 96 required states (semantics + kind p
 check:ui-fixtures:    valid, 27 fixture/scenario/controller files
 forbidden-ndet scan:  NO_FORBIDDEN_NDET_IN_VERIFICATION
 ```
+
+## 11.5 Wave 4 checkpoint — Interaction behavior closure
+
+```text
+FUIR-WU-040 Terminal:   IMPLEMENTED_VERIFIED (74 manifest-declared interaction cases with case IDs)
+FUIR-WU-041 Terminal:   IMPLEMENTED_VERIFIED (assert-ui-interaction-coverage.mjs exact-marker parser:
+                        errors on missing/duplicate/unknown markers)
+FUIR-WU-042 Terminal:   IMPLEMENTED_VERIFIED (component tests carry exact FUI[surface:case] markers;
+                        baseline board layout/workspace/kanban/auth/feature actions covered)
+FUIR-WU-043 Terminal:   IMPLEMENTED_VERIFIED (keyboard assertions present for keyboard-operable
+                        interaction surfaces)
+
+Gate evidence:
+
+test:web:guarded (vitest.web.config.json): 21 test files, 80 passed, 0 failed, 0 skipped
+parser:          UI interaction coverage: 74 manifest-declared interaction cases satisfied by exact passing markers.
+                 Zero-test guard: 80 tests executed.
+```
