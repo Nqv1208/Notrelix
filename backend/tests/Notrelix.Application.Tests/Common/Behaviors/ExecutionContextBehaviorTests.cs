@@ -106,6 +106,7 @@ public sealed class ExecutionContextBehaviorTests
         var selectedAccountId = Guid.NewGuid();
         var foreignAccountId = Guid.NewGuid();
         var foreignWorkspaceId = Guid.NewGuid();
+        var nextCalled = false;
 
         fixture.Tenant.SetupGet(context => context.AccountId).Returns(selectedAccountId);
         fixture.Locator
@@ -116,10 +117,16 @@ public sealed class ExecutionContextBehaviorTests
 
         var act = () => fixture.Behavior.Handle(
             new ResourceRequest(ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid())),
-            _ => Task.FromResult("ok"),
+            _ =>
+            {
+                nextCalled = true;
+                return Task.FromResult("ok");
+            },
             CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
+        nextCalled.Should().BeFalse(
+            "the cross-account hide must reject before the rest of the pipeline ever runs");
 
         fixture.ExecutionContext.Snapshot.Should().BeNull(
             "the foreign resource must never produce an execution snapshot");
