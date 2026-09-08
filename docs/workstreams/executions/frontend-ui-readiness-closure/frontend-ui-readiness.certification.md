@@ -543,3 +543,64 @@ All 8 waves (0–7) reached their terminal state. The UI-only lane (`pnpm valida
 and the CI `ui-foundation` job enforce the same contract without application
 integration dependencies. Remaining integration work (mock/real E2E, codegen,
 backend) is explicitly deferred and is not required evidence for UI DONE.
+
+## 13. Post-audit closure (CI hygiene)
+
+Follow-up to the audit of HEAD `639d0d14`: three closure items were identified
+and completed. Architecture verdict above is unchanged.
+
+```text
+commit: (see git log) fixture determinism gate + lint coverage fail-closed +
+        rest contract sync
+
+FUIR-CI-1  check:ui-fixtures wired into steady-state gates
+           - validate:ui composition now includes check:ui-fixtures (SPEC §15
+             and plan WU-060/WU-062 updated to match; ui-construction.md
+             documents fixture determinism in the lane)
+           - frontend-ci.yml ui-foundation job runs check:ui-fixtures
+           - command-graph checker requires check:ui-fixtures; positive and
+             ci-ui-lane tests updated (8/8 node tests pass)
+           - local evidence: 27 fixture/scenario/controller files validated
+
+FUIR-CI-2  check:lint-coverage fail-closed
+           - scripts/assert-lint-coverage.mjs (AST parser) replaced by
+             scripts/assert-lint-coverage.ts importing ARCHITECTURE_MANIFEST
+             directly from the canonical module; the previous parser matched
+             only ArrayLiteralExpression initializers and read 0 packages
+             while reporting green
+           - zero-package manifest now fails with
+             "manifest resolved with zero packages" (unit test added)
+           - local evidence: "Lint coverage OK: 42 manifest packages checked."
+
+FUIR-CI-3  generated REST contract synced
+           - pnpm codegen regenerated
+             packages/foundation/contracts/src/generated/rest/schema.ts from
+             the current backend OpenAPI (Pages.ArchivePage operation,
+             CommentCreate mentionedUserIds, PermissionAction enum 0..35)
+           - pnpm codegen:check exits 0 after the generated commit
+```
+
+## 14. Final validation after post-audit closure
+
+```text
+candidate SHA: 6e0c4722 (branch feature/web-app)
+command:       pnpm validate:ui (frontend/), exit 0
+log:           /tmp/validate-ui-final2.log
+
+  check:architecture    All architecture rules passed clean with 0 violations.
+  check:ui-purity       Pure UI check valid: 42 entries.
+  check:ui-actions      UI actions check valid: 119 registered sources.
+  check:ui-fixtures     Fixture determinism check valid: 27 fixture/scenario/controller files.
+  check:ui-evidence     UI evidence valid: 42 surfaces, 96 required states.
+  typecheck             Tasks: 43 successful, 43 total.
+  lint                  Tasks: 44 successful, 44 total.
+  format:check          All matched files use Prettier code style!
+  test:web:guarded      Zero-test guard: 80 tests executed; 74/74 interaction case markers.
+  test:ui:freeze        410 passed (3.8m).
+
+codegen:check          exit 0 (after FUIR-CI-3).
+check:lint-coverage    42 manifest packages checked (fail-closed).
+```
+
+Verdict remains `UI_READY_FOR_PRODUCT_DEVELOPMENT_AND_UI_TESTING` with the
+mockdata determinism invariant now enforced in both local and CI lanes.
