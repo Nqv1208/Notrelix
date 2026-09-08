@@ -216,8 +216,6 @@ public class UseCaseSecurityClassificationTests
         ["CreateBoardFieldCommand"] = new("CreateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 
         // Integrations — Calendar (use WorkspaceId from route/context)
-        ["DisconnectCalendarCommand"] = new("DisconnectCalendarCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Integrations"),
-        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Integrations"),
         ["TriggerCalendarSyncCommand"] = new("TriggerCalendarSyncCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Integrations"),
 
         // Governance — ShareLinks/Permissions

@@ -27,16 +27,26 @@ public sealed class DataProtectionIntegrationSecretStore : IIntegrationSecretSto
         _clock = clock;
     }
 
-    public async Task<string> StoreAsync(string secret, CancellationToken cancellationToken)
+    /// <summary>
+    /// Stages the encrypted blob on the SAME scoped context as the workflow
+    /// aggregates — the DataSession transaction commits blob + aggregates as
+    /// one fate (atomicity instead of compensation). The opaque reference is
+    /// assigned on staging so the IntegrationSecretVersion can record it.
+    /// </summary>
+    public Task<string> StoreAsync(string secret, CancellationToken cancellationToken)
     {
         var blob = IntegrationSecretBlob.Create(
             _encryptor.Encrypt(secret),
             _clock.UtcNow);
         _context.IntegrationSecretBlobs.Add(blob);
-        await _context.SaveChangesAsync(cancellationToken);
-        return blob.Id.ToString();
+        return Task.FromResult(blob.Id.ToString());
     }
 
+    /// <summary>
+    /// Commits the revocation of a physical secret (post-commit cleanup path —
+    /// e.g. revoking a previous version's blob after a failed rotation).
+    /// Unknown/already-revoked references are no-ops.
+    /// </summary>
     public async Task RevokeAsync(string secretReference, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(secretReference, out var blobId))
