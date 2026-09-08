@@ -97,12 +97,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData",
-          "Loading"
-        ],
+        "required": ["Default", "Empty", "EdgeData", "Loading"],
         "delegated": [],
         "notApplicable": [
           {
@@ -114,12 +109,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -178,11 +168,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData"
-        ],
+        "required": ["Default", "Empty", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -194,12 +180,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -248,10 +229,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "EdgeData"
-        ],
+        "required": ["Default", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -268,12 +246,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -332,11 +305,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData"
-        ],
+        "required": ["Default", "Empty", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -368,12 +337,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",
@@ -432,11 +396,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData"
-        ],
+        "required": ["Default", "Empty", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -468,12 +428,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",

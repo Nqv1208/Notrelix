@@ -74,11 +74,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error"
-        ],
+        "required": ["Default", "Loading", "Error"],
         "delegated": [],
         "notApplicable": [
           {
@@ -100,12 +96,7 @@
       },
       "responsive": false,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "submit",
@@ -160,11 +151,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error"
-        ],
+        "required": ["Default", "Loading", "Error"],
         "delegated": [],
         "notApplicable": [
           {
@@ -186,12 +173,7 @@
       },
       "responsive": false,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "submit",
@@ -246,10 +228,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Success"
-        ],
+        "required": ["Default", "Success"],
         "delegated": [],
         "notApplicable": [
           {
@@ -276,12 +255,7 @@
       },
       "responsive": false,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "submit",

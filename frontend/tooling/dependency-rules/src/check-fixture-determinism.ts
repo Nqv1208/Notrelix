@@ -54,10 +54,11 @@ function isFixtureSource(rootDir: string, filePath: string): boolean {
   const segments = rel.split("/");
   const verificationIndex = segments.indexOf("verification");
   return (
-    verificationIndex !== -1 &&
-    segments[0] === "packages" &&
-    segments[1] !== "ui" ||
-    (verificationIndex !== -1 && segments.slice(0, 2).join("/") === "packages/ui/web")
+    (verificationIndex !== -1 &&
+      segments[0] === "packages" &&
+      segments[1] !== "ui") ||
+    (verificationIndex !== -1 &&
+      segments.slice(0, 2).join("/") === "packages/ui/web")
   );
 }
 

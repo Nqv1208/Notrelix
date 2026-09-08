@@ -28,11 +28,7 @@ export const UI_EVIDENCE_SURFACE_KINDS = [
   "primitive",
 ] as const;
 
-export const UI_EVIDENCE_VIEWPORTS = [
-  "mobile",
-  "tablet",
-  "desktop",
-] as const;
+export const UI_EVIDENCE_VIEWPORTS = ["mobile", "tablet", "desktop"] as const;
 
 export const UI_EVIDENCE_THEMES = ["light", "dark"] as const;
 
@@ -73,8 +69,7 @@ export const UI_EVIDENCE_SURFACE_KIND_STATE_UNIVERSES: Record<
 
 export type UiEvidenceState = (typeof UI_EVIDENCE_STATES)[number];
 export type UiEvidenceCheck = (typeof UI_EVIDENCE_CHECKS)[number];
-export type UiEvidenceSurfaceKind =
-  (typeof UI_EVIDENCE_SURFACE_KINDS)[number];
+export type UiEvidenceSurfaceKind = (typeof UI_EVIDENCE_SURFACE_KINDS)[number];
 export type UiEvidenceViewport = (typeof UI_EVIDENCE_VIEWPORTS)[number];
 export type UiEvidenceTheme = (typeof UI_EVIDENCE_THEMES)[number];
 export type UiEvidenceExclusionCategory =
@@ -281,12 +276,14 @@ function validateStateCoverage(
     diagnostics.push(`${path}.required must be an array`);
   } else {
     value.required.forEach((item, index) => {
-      if (validateEnum<UiEvidenceState>(
-        diagnostics,
-        item,
-        `${path}.required[${index}]`,
-        allowedStates,
-      )) {
+      if (
+        validateEnum<UiEvidenceState>(
+          diagnostics,
+          item,
+          `${path}.required[${index}]`,
+          allowedStates,
+        )
+      ) {
         required.push(item);
       }
     });
@@ -766,8 +763,7 @@ export function validateUiEvidenceManifest(
           `${itemPath}.reason`,
         );
         const concreteOk =
-          reasonOk &&
-          !isGenericExclusionReason(item.reason as string);
+          reasonOk && !isGenericExclusionReason(item.reason as string);
         if (reasonOk && !concreteOk) {
           diagnostics.push(
             `${itemPath}.reason must be concrete, not a generic placeholder (SPEC §9.1)`,
@@ -789,11 +785,7 @@ export function validateUiEvidenceManifest(
     diagnostics.push("surfaces must be an array");
   } else {
     value.surfaces.forEach((item, index) => {
-      const surface = validateSurface(
-        item,
-        `surfaces[${index}]`,
-        diagnostics,
-      );
+      const surface = validateSurface(item, `surfaces[${index}]`, diagnostics);
       if (surface) surfaces.push(surface);
     });
   }
@@ -826,7 +818,9 @@ export function validateUiEvidenceManifest(
         );
         continue;
       }
-      if (!targetSurface.stateCoverage.required.includes(delegated.targetState)) {
+      if (
+        !targetSurface.stateCoverage.required.includes(delegated.targetState)
+      ) {
         diagnostics.push(
           `surfaces[${surface.surfaceId}] delegates ${delegated.state} to surface ${delegated.surfaceId} state ${delegated.targetState} which is not required by the target`,
         );

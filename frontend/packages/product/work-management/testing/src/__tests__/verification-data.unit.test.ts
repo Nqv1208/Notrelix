@@ -164,26 +164,37 @@ describe("Work Management verification fixtures and scenarios", () => {
     expect(
       kanbanEdge.columns
         .flatMap((group) => group.cards)
-        .some((card) => card.dueDate === undefined || card.priority === undefined),
+        .some(
+          (card) => card.dueDate === undefined || card.priority === undefined,
+        ),
     ).toBe(true);
   });
 
   it("produces documented exact HighDensity cardinalities repeatedly (TST-061)", () => {
     expect(
-      createKanbanScenario({ seed: "dense", columnCount: 8, cardsPerColumn: 40 })
-        .columns,
+      createKanbanScenario({
+        seed: "dense",
+        columnCount: 8,
+        cardsPerColumn: 40,
+      }).columns,
     ).toHaveLength(8);
     expect(
-      createKanbanScenario({ seed: "dense", columnCount: 8, cardsPerColumn: 40 })
-        .columns.flatMap((group) => group.cards),
+      createKanbanScenario({
+        seed: "dense",
+        columnCount: 8,
+        cardsPerColumn: 40,
+      }).columns.flatMap((group) => group.cards),
     ).toHaveLength(320);
     expect(
-      createKanbanScenario({ seed: "dense", columnCount: 8, cardsPerColumn: 40 })
-        .columns.flatMap((group) => group.cards),
+      createKanbanScenario({
+        seed: "dense",
+        columnCount: 8,
+        cardsPerColumn: 40,
+      }).columns.flatMap((group) => group.cards),
     ).toHaveLength(320);
-    expect(tableDenseScenario().groups.flatMap((group) => group.cards)).toHaveLength(
-      300,
-    );
+    expect(
+      tableDenseScenario().groups.flatMap((group) => group.cards),
+    ).toHaveLength(300);
   });
 });
 

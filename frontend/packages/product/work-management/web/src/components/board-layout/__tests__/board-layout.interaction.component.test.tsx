@@ -84,7 +84,6 @@ describe("ViewTabs interactions", () => {
   });
 });
 
-
 describe("Board layout keyboard semantics", () => {
   it("FUI[wm.board-layout.view-tabs:keyboard] keeps native keyboard operability for focusable tab buttons", () => {
     const onViewChange = vi.fn();

@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  AlertCircle,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button, Checkbox, Input, Label } from "@notrelix/ui-web";
 
 export interface AuthSubmitData {

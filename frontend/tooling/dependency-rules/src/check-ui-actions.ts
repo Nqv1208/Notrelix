@@ -144,9 +144,11 @@ function collectImportedButtonAliases(sourceFile: ts.SourceFile): Set<string> {
   for (const statement of sourceFile.statements) {
     if (!ts.isImportDeclaration(statement)) continue;
     if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
-    if (!statement.moduleSpecifier.text.startsWith("@notrelix/ui-web")) continue;
+    if (!statement.moduleSpecifier.text.startsWith("@notrelix/ui-web"))
+      continue;
     const clause = statement.importClause;
-    if (!clause?.namedBindings || !ts.isNamedImports(clause.namedBindings)) continue;
+    if (!clause?.namedBindings || !ts.isNamedImports(clause.namedBindings))
+      continue;
     for (const element of clause.namedBindings.elements) {
       const imported = element.propertyName?.text ?? element.name.text;
       if (imported === "Button") aliases.add(element.name.text);
@@ -200,9 +202,7 @@ function hasSubmitSemantics(attributes: ts.JsxAttributes): boolean {
   });
 }
 
-function isCompoundTriggerChild(
-  parent: ts.Node | undefined,
-): boolean {
+function isCompoundTriggerChild(parent: ts.Node | undefined): boolean {
   if (!parent) return false;
 
   const directChild = ts.isJsxSelfClosingElement(parent)
@@ -271,7 +271,10 @@ function checkSourceActions(
         : ts.isPropertyAccessExpression(tagName)
           ? tagName.name.text
           : undefined;
-      if (name && (name === "button" || context.importedButtonNames.has(name))) {
+      if (
+        name &&
+        (name === "button" || context.importedButtonNames.has(name))
+      ) {
         checkControl(context, node, violations);
       }
     }
@@ -280,7 +283,9 @@ function checkSourceActions(
   visit(context.sourceFile);
 }
 
-export function checkUiActions(rootDir: string = DEFAULT_ROOT): UiActionsResult {
+export function checkUiActions(
+  rootDir: string = DEFAULT_ROOT,
+): UiActionsResult {
   const violations: UiActionViolation[] = [];
   const manifestPaths = findManifestPaths(rootDir);
   const allSources = new Set<string>();

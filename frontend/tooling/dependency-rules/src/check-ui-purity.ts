@@ -191,7 +191,9 @@ interface DynamicImportEdge {
   readonly kind: "dynamic-import" | "require";
 }
 
-function collectDynamicModuleEdges(sourceFile: ts.SourceFile): DynamicImportEdge[] {
+function collectDynamicModuleEdges(
+  sourceFile: ts.SourceFile,
+): DynamicImportEdge[] {
   const edges: DynamicImportEdge[] = [];
   const visit = (node: ts.Node): void => {
     if (
@@ -200,7 +202,8 @@ function collectDynamicModuleEdges(sourceFile: ts.SourceFile): DynamicImportEdge
     ) {
       const argument = node.arguments[0];
       edges.push({
-        specifier: argument && ts.isStringLiteral(argument) ? argument.text : undefined,
+        specifier:
+          argument && ts.isStringLiteral(argument) ? argument.text : undefined,
         kind: "dynamic-import",
       });
     } else if (
@@ -211,7 +214,8 @@ function collectDynamicModuleEdges(sourceFile: ts.SourceFile): DynamicImportEdge
     ) {
       const argument = node.arguments[0];
       edges.push({
-        specifier: argument && ts.isStringLiteral(argument) ? argument.text : undefined,
+        specifier:
+          argument && ts.isStringLiteral(argument) ? argument.text : undefined,
         kind: "require",
       });
     }
@@ -224,8 +228,14 @@ function collectDynamicModuleEdges(sourceFile: ts.SourceFile): DynamicImportEdge
 const FORBIDDEN_SIDE_EFFECT_PATTERNS: ReadonlyArray<[RegExp, string]> = [
   [/\bdocument\s*\.\s*cookie\b/, "document.cookie"],
   [/\bnavigator\s*\.\s*clipboard\b/, "navigator.clipboard"],
-  [/\bhistory\s*\.\s*(pushState|replaceState|back|forward|go)\b/, "history navigation"],
-  [/\bwindow\s*\.\s*location\s*\.\s*(href|assign|replace|reload)\s*=/, "window.location mutation"],
+  [
+    /\bhistory\s*\.\s*(pushState|replaceState|back|forward|go)\b/,
+    "history navigation",
+  ],
+  [
+    /\bwindow\s*\.\s*location\s*\.\s*(href|assign|replace|reload)\s*=/,
+    "window.location mutation",
+  ],
   [/\bwindow\s*\.\s*location\s*=\s*[^=]/, "window.location reassignment"],
   [/\blocation\s*\.\s*(href|assign|replace|reload)\s*=/, "location mutation"],
 ] as const;

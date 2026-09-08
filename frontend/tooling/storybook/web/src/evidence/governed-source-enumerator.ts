@@ -51,7 +51,13 @@ function walk(
     }
     if (entry.isDirectory()) {
       if (isStructurallyExcludedDirectory(entry.name)) continue;
-      walk(join(directory, entry.name), ownerRoot, realSrcRoot, sources, diagnostics);
+      walk(
+        join(directory, entry.name),
+        ownerRoot,
+        realSrcRoot,
+        sources,
+        diagnostics,
+      );
       continue;
     }
     if (!entry.isFile()) continue;
@@ -59,9 +65,7 @@ function walk(
     if (!entry.name.endsWith(".tsx")) continue;
 
     const absPath = join(directory, entry.name);
-    sources.push(
-      relative(ownerRoot, absPath).split(sep).join("/"),
-    );
+    sources.push(relative(ownerRoot, absPath).split(sep).join("/"));
   }
 }
 

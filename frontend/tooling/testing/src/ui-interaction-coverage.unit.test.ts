@@ -12,7 +12,9 @@ const SCRIPT = resolve(
 
 function runGuard(report) {
   const root = mkdtempSync(join(tmpdir(), "notrelix-ui-coverage-"));
-  mkdirSync(join(root, "packages/features/a/verification"), { recursive: true });
+  mkdirSync(join(root, "packages/features/a/verification"), {
+    recursive: true,
+  });
   writeFileSync(
     join(root, "packages/features/a/verification/ui-evidence.manifest.json"),
     JSON.stringify({
@@ -58,7 +60,7 @@ function runGuard(report) {
 
 const manifest = {
   entries: {
-    "one": {
+    one: {
       id: "one",
       tags: ["fui-surface--a.surface", "fui-state--Default"],
     },
@@ -103,7 +105,9 @@ describe("assert-ui-interaction-coverage (synthetic reports)", () => {
       report([["FUI[a.surface:action] emits the action", "failed"]]),
     );
     expect(failed.status).toBe(1);
-    expect(failed.stderr).toContain("not passing: failed: FUI[a.surface:action]");
+    expect(failed.stderr).toContain(
+      "not passing: failed: FUI[a.surface:action]",
+    );
 
     const skipped = runGuard(
       report([["FUI[a.surface:action] emits the action", "skipped"]]),

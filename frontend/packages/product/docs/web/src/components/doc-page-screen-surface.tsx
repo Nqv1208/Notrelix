@@ -1,4 +1,10 @@
-import type { Block, BreadcrumbItem, PageActivity, PageComment, PageTreeNode } from "@notrelix/docs-core";
+import type {
+  Block,
+  BreadcrumbItem,
+  PageActivity,
+  PageComment,
+  PageTreeNode,
+} from "@notrelix/docs-core";
 import { Button, Skeleton } from "@notrelix/ui-web";
 import { CheckSquare, FileText, Square, Trash2 } from "lucide-react";
 import type { DocPageSurfaceCallbacks } from "./doc-page-surface-models";

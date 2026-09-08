@@ -101,9 +101,7 @@ describe("docs web pure surfaces", () => {
   });
 
   it("FUI[docs.history:render] renders the history surface from deterministic fixture data", () => {
-    renderPureUi(
-      <DocHistorySurface history={docsHistoryDefaultScenario()} />,
-    );
+    renderPureUi(<DocHistorySurface history={docsHistoryDefaultScenario()} />);
 
     expect(screen.getByText(/History \(\d+\)/)).toBeTruthy();
   });

@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import { discoverUiEvidenceManifests, resolveFrontendRootFromHere } from "./manifest-discovery";
+import {
+  discoverUiEvidenceManifests,
+  resolveFrontendRootFromHere,
+} from "./manifest-discovery";
 import { enumerateGovernedSources } from "./governed-source-enumerator";
 
 interface StorybookIndex {
@@ -58,7 +61,10 @@ export function checkUiEvidence(
   const registeredSurfaces = new Set<string>();
   const requiredBindings = new Set<string>();
   const requiredStoryIds = new Set<string>();
-  const storyExpectations = new Map<string, { surfaceId: string; state: string }>();
+  const storyExpectations = new Map<
+    string,
+    { surfaceId: string; state: string }
+  >();
   const ownerRoots = new Set<string>();
   let requiredStateCount = 0;
 
@@ -166,7 +172,9 @@ export function checkUiEvidence(
     if (entries.length <= 1) continue;
     if (!governedByOwner.has(absPath)) continue;
     const owners = [...new Set(entries.map((entry) => entry.owner))];
-    const surfaces = [...new Set(entries.map((entry) => entry.surfaceId).filter(Boolean))];
+    const surfaces = [
+      ...new Set(entries.map((entry) => entry.surfaceId).filter(Boolean)),
+    ];
     diagnostics.push(
       `source ${relative(frontendRoot, absPath)} is classified ${entries.length} times (owners: ${owners.join(", ")}${
         surfaces.length > 0 ? `; surfaces: ${surfaces.join(", ")}` : ""

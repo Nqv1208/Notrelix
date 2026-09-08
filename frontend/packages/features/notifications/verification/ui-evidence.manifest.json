@@ -62,11 +62,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData"
-        ],
+        "required": ["Default", "Empty", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -98,12 +94,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "render",

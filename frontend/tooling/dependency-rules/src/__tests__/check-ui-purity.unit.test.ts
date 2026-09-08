@@ -66,7 +66,9 @@ describe("checkUiPurity", () => {
   });
 
   it("rejects a forbidden dynamic import with its chain (TST-044)", () => {
-    const result = checkUiPurity(join(fixturesRoot, "forbidden-dynamic-import"));
+    const result = checkUiPurity(
+      join(fixturesRoot, "forbidden-dynamic-import"),
+    );
 
     expect(result.ok).toBe(false);
     expect(result.violations).toContainEqual(

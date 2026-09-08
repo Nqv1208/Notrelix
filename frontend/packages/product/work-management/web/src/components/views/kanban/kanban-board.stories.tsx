@@ -10,7 +10,7 @@ import { KanbanBoard } from "./kanban-board";
 const noOp = () => undefined;
 const defaults = {
   onOpenDetails: noOp,
-            onCopyCardLink: noOp,
+  onCopyCardLink: noOp,
   onMoveCard: noOp,
   onReorderColumns: noOp,
   onAdd: noOp,

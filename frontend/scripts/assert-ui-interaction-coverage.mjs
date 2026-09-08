@@ -54,7 +54,10 @@ function requiredCases() {
       for (const interactionCase of surface.interactionCases ?? []) {
         const marker = `${surface.surfaceId}:${interactionCase.id}`;
         declared.add(marker);
-        required.set(marker, { manifestPath, testFile: interactionCase.testFile });
+        required.set(marker, {
+          manifestPath,
+          testFile: interactionCase.testFile,
+        });
       }
       if (declared.size === 0) {
         console.error(

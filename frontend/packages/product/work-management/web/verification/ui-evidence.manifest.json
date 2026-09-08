@@ -62,9 +62,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -86,11 +84,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["a11y", "visual", "purity"],
       "interactionCases": []
     },
     {
@@ -124,9 +118,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -143,12 +135,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "filter",
@@ -199,9 +186,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -218,12 +203,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "select",
@@ -308,22 +288,13 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Loading",
-          "Error",
-          "EdgeData"
-        ],
+        "required": ["Default", "Loading", "Error", "EdgeData"],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["a11y", "visual", "purity"],
       "interactionCases": []
     },
     {
@@ -392,12 +363,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData",
-          "HighDensity"
-        ],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
         "delegated": [
           {
             "state": "Loading",
@@ -425,12 +391,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "board",
@@ -447,9 +408,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/views/kanban/kanban-column.tsx",
-      "coveredSources": [
-        "src/components/views/kanban/kanban-column-menu.tsx"
-      ],
+      "coveredSources": ["src/components/views/kanban/kanban-column-menu.tsx"],
       "stories": [
         {
           "id": "work-management-kanban-column--default",
@@ -495,11 +454,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData"
-        ],
+        "required": ["Default", "Empty", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -516,12 +471,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "column",
@@ -538,9 +488,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
-      "coveredSources": [
-        "src/components/views/kanban/kanban-card-menu.tsx"
-      ],
+      "coveredSources": ["src/components/views/kanban/kanban-card-menu.tsx"],
       "stories": [
         {
           "id": "work-management-kanban-card--default",
@@ -576,10 +524,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "EdgeData"
-        ],
+        "required": ["Default", "EdgeData"],
         "delegated": [],
         "notApplicable": [
           {
@@ -616,12 +561,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "card",
@@ -634,9 +574,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/views/kanban/kanban-toolbar.tsx",
-      "coveredSources": [
-        "src/components/views/kanban/kanban-sort-menu.tsx"
-      ],
+      "coveredSources": ["src/components/views/kanban/kanban-sort-menu.tsx"],
       "stories": [
         {
           "id": "work-management-kanban-toolbar--default",
@@ -662,9 +600,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -681,12 +617,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "toolbar",
@@ -713,9 +644,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Loading"
-        ],
+        "required": ["Loading"],
         "delegated": [],
         "notApplicable": [
           {
@@ -727,11 +656,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["a11y", "visual", "purity"],
       "interactionCases": []
     },
     {
@@ -753,9 +678,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Error"
-        ],
+        "required": ["Error"],
         "delegated": [],
         "notApplicable": [
           {
@@ -767,11 +690,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["a11y", "visual", "purity"],
       "interactionCases": []
     },
     {
@@ -853,13 +772,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData",
-          "HighDensity",
-          "ReadOnly"
-        ],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
         "delegated": [
           {
             "state": "Loading",
@@ -882,12 +795,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "table",
@@ -926,9 +834,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Loading"
-        ],
+        "required": ["Loading"],
         "delegated": [],
         "notApplicable": [
           {
@@ -940,11 +846,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["a11y", "visual", "purity"],
       "interactionCases": []
     },
     {
@@ -966,9 +868,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Error"
-        ],
+        "required": ["Error"],
         "delegated": [],
         "notApplicable": [
           {
@@ -980,11 +880,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["a11y", "visual", "purity"],
       "interactionCases": []
     },
     {
@@ -1048,12 +944,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData",
-          "HighDensity"
-        ],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
         "delegated": [
           {
             "state": "Loading",
@@ -1081,12 +972,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "calendar",
@@ -1145,11 +1031,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default",
-          "Empty",
-          "EdgeData"
-        ],
+        "required": ["Default", "Empty", "EdgeData"],
         "delegated": [
           {
             "state": "Loading",
@@ -1182,12 +1064,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "timeline",
@@ -1296,12 +1173,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "panel",

@@ -3,10 +3,7 @@ import { ErrorState, NotFoundState } from "@notrelix/ui-web";
 import type { ReactNode } from "react";
 
 export type BoardWorkspaceSurfaceStatus =
-  | "ready"
-  | "loading"
-  | "error"
-  | "unsupported";
+  "ready" | "loading" | "error" | "unsupported";
 
 interface BoardWorkspaceSurfaceProps {
   status: BoardWorkspaceSurfaceStatus;

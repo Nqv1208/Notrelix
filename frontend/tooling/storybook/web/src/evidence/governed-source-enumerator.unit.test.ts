@@ -21,7 +21,8 @@ describe("enumerateGovernedSources", () => {
       "src/a/table-main.tsx": "export const T = () => null;\n",
       "src/a/board.util.ts": "export const helper = 1;\n",
       "src/c/board-cell.tsx": "export const C = () => null;\n",
-      "src/__tests__/kanban-board.component.test.tsx": "import {} from 'vitest';\n",
+      "src/__tests__/kanban-board.component.test.tsx":
+        "import {} from 'vitest';\n",
       "src/b/kanban-board.stories.tsx": "export const S = {};\n",
       "src/c/board-cell.spec.tsx": "export const S = {};\n",
       "src/verification/ui-web-critical-surfaces.tsx":

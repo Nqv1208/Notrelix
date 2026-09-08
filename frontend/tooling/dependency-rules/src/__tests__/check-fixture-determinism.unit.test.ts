@@ -14,7 +14,9 @@ describe("checkFixtureDeterminism", () => {
   });
 
   it("rejects ambient random IDs and wall-clock reads in fixture authorities (TST-056, TST-057)", () => {
-    const result = checkFixtureDeterminism(join(fixturesRoot, "nondeterministic"));
+    const result = checkFixtureDeterminism(
+      join(fixturesRoot, "nondeterministic"),
+    );
     const messages = result.violations
       .map((violation) => violation.message)
       .join("\n");

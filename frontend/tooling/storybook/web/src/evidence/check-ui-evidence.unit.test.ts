@@ -52,13 +52,45 @@ function v2Manifest(overrides: {
           required: ["Default"],
           delegated: [],
           notApplicable: [
-            { state: "Loading", reason: "Loading presentation is owned by a dedicated loading surface.", authority: "docs/product/work-management.md" },
-            { state: "Empty", reason: "Empty board is a distinct board-level story.", authority: "docs/product/work-management.md" },
-            { state: "Error", reason: "Fetch failure is owned by a dedicated unavailable surface.", authority: "docs/product/work-management.md" },
-            { state: "EdgeData", reason: "Edge-value input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-            { state: "HighDensity", reason: "High-density input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-            { state: "ReadOnly", reason: "No product-authoritative read-only contract exists at this baseline.", authority: "docs/product/work-management.md" },
-            { state: "PermissionLimited", reason: "No permission-limited capability contract exists at this baseline.", authority: "docs/product/work-management.md" },
+            {
+              state: "Loading",
+              reason:
+                "Loading presentation is owned by a dedicated loading surface.",
+              authority: "docs/product/work-management.md",
+            },
+            {
+              state: "Empty",
+              reason: "Empty board is a distinct board-level story.",
+              authority: "docs/product/work-management.md",
+            },
+            {
+              state: "Error",
+              reason:
+                "Fetch failure is owned by a dedicated unavailable surface.",
+              authority: "docs/product/work-management.md",
+            },
+            {
+              state: "EdgeData",
+              reason: "Edge-value input is a distinct board-level story.",
+              authority: "docs/product/work-management.md",
+            },
+            {
+              state: "HighDensity",
+              reason: "High-density input is a distinct board-level story.",
+              authority: "docs/product/work-management.md",
+            },
+            {
+              state: "ReadOnly",
+              reason:
+                "No product-authoritative read-only contract exists at this baseline.",
+              authority: "docs/product/work-management.md",
+            },
+            {
+              state: "PermissionLimited",
+              reason:
+                "No permission-limited capability contract exists at this baseline.",
+              authority: "docs/product/work-management.md",
+            },
           ],
         },
         responsive: false,
@@ -67,7 +99,8 @@ function v2Manifest(overrides: {
         interactionCases: [
           {
             id: "board",
-            testFile: "src/__tests__/kanban-board.interaction.component.test.tsx",
+            testFile:
+              "src/__tests__/kanban-board.interaction.component.test.tsx",
           },
         ],
       },
@@ -105,13 +138,45 @@ describe("checkUiEvidence", () => {
             required: ["Default"],
             delegated: [],
             notApplicable: [
-              { state: "Loading", reason: "Loading presentation is owned by a dedicated loading surface.", authority: "docs/product/work-management.md" },
-              { state: "Empty", reason: "Empty board is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "Error", reason: "Fetch failure is owned by a dedicated unavailable surface.", authority: "docs/product/work-management.md" },
-              { state: "EdgeData", reason: "Edge-value input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "HighDensity", reason: "High-density input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "ReadOnly", reason: "No product-authoritative read-only contract exists at this baseline.", authority: "docs/product/work-management.md" },
-              { state: "PermissionLimited", reason: "No permission-limited capability contract exists at this baseline.", authority: "docs/product/work-management.md" },
+              {
+                state: "Loading",
+                reason:
+                  "Loading presentation is owned by a dedicated loading surface.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "Empty",
+                reason: "Empty board is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "Error",
+                reason:
+                  "Fetch failure is owned by a dedicated unavailable surface.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "EdgeData",
+                reason: "Edge-value input is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "HighDensity",
+                reason: "High-density input is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "ReadOnly",
+                reason:
+                  "No product-authoritative read-only contract exists at this baseline.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "PermissionLimited",
+                reason:
+                  "No permission-limited capability contract exists at this baseline.",
+                authority: "docs/product/work-management.md",
+              },
             ],
           },
           responsive: false,
@@ -120,13 +185,17 @@ describe("checkUiEvidence", () => {
           interactionCases: [
             {
               id: "board",
-              testFile: "src/__tests__/kanban-board.interaction.component.test.tsx",
+              testFile:
+                "src/__tests__/kanban-board.interaction.component.test.tsx",
             },
           ],
         },
       ],
     });
-    const indexPath = join(root, "tooling/storybook/web/storybook-static/index.json");
+    const indexPath = join(
+      root,
+      "tooling/storybook/web/storybook-static/index.json",
+    );
     writeJson(indexPath, {
       entries: {
         "kanban-board--default": {
@@ -153,7 +222,10 @@ describe("checkUiEvidence", () => {
       schemaVersion: 1,
       surfaces: [],
     });
-    const indexPath = join(root, "tooling/storybook/web/storybook-static/index.json");
+    const indexPath = join(
+      root,
+      "tooling/storybook/web/storybook-static/index.json",
+    );
     writeJson(indexPath, { entries: {} });
 
     const result = checkUiEvidence(root, indexPath);
@@ -167,13 +239,18 @@ describe("checkUiEvidence", () => {
     createOwner(root, "packages/features/wm", {
       "src/kanban-board.tsx": "export const KanbanBoard = () => null;\n",
     });
-    const indexPath = join(root, "tooling/storybook/web/storybook-static/index.json");
+    const indexPath = join(
+      root,
+      "tooling/storybook/web/storybook-static/index.json",
+    );
     writeJson(indexPath, { entries: {} });
 
     const result = checkUiEvidence(root, indexPath);
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics).toContain("no UI evidence manifests were discovered");
+    expect(result.diagnostics).toContain(
+      "no UI evidence manifests were discovered",
+    );
   });
 
   it("reports every governed source classified exactly once and names both owners on duplication", () => {
@@ -184,7 +261,10 @@ describe("checkUiEvidence", () => {
     const ownerBRoot = createOwner(root, "packages/features/b", {
       "src/b/file.tsx": "export const B = () => null;\n",
     });
-    const indexPath = join(root, "tooling/storybook/web/storybook-static/index.json");
+    const indexPath = join(
+      root,
+      "tooling/storybook/web/storybook-static/index.json",
+    );
     writeJson(indexPath, { entries: {} });
 
     const manifest = v2Manifest({
@@ -192,7 +272,10 @@ describe("checkUiEvidence", () => {
       surfaceId: "a.first",
       sourceName: "a/file",
     });
-    writeJson(join(ownerARoot, "verification/ui-evidence.manifest.json"), manifest);
+    writeJson(
+      join(ownerARoot, "verification/ui-evidence.manifest.json"),
+      manifest,
+    );
 
     const dupManifest = v2Manifest({
       owner: "@notrelix/b",
@@ -202,7 +285,10 @@ describe("checkUiEvidence", () => {
     dupManifest.surfaces = [
       { ...dupManifest.surfaces[0], pureEntry: "../a/src/a/file.tsx" },
     ];
-    writeJson(join(ownerBRoot, "verification/ui-evidence.manifest.json"), dupManifest);
+    writeJson(
+      join(ownerBRoot, "verification/ui-evidence.manifest.json"),
+      dupManifest,
+    );
 
     const result = checkUiEvidence(root, indexPath);
 
@@ -242,13 +328,45 @@ describe("checkUiEvidence", () => {
             required: ["Default"],
             delegated: [],
             notApplicable: [
-              { state: "Loading", reason: "Loading presentation is owned by a dedicated loading surface.", authority: "docs/product/work-management.md" },
-              { state: "Empty", reason: "Empty board is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "Error", reason: "Fetch failure is owned by a dedicated unavailable surface.", authority: "docs/product/work-management.md" },
-              { state: "EdgeData", reason: "Edge-value input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "HighDensity", reason: "High-density input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "ReadOnly", reason: "No product-authoritative read-only contract exists at this baseline.", authority: "docs/product/work-management.md" },
-              { state: "PermissionLimited", reason: "No permission-limited capability contract exists at this baseline.", authority: "docs/product/work-management.md" },
+              {
+                state: "Loading",
+                reason:
+                  "Loading presentation is owned by a dedicated loading surface.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "Empty",
+                reason: "Empty board is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "Error",
+                reason:
+                  "Fetch failure is owned by a dedicated unavailable surface.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "EdgeData",
+                reason: "Edge-value input is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "HighDensity",
+                reason: "High-density input is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "ReadOnly",
+                reason:
+                  "No product-authoritative read-only contract exists at this baseline.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "PermissionLimited",
+                reason:
+                  "No permission-limited capability contract exists at this baseline.",
+                authority: "docs/product/work-management.md",
+              },
             ],
           },
           responsive: false,
@@ -257,13 +375,17 @@ describe("checkUiEvidence", () => {
           interactionCases: [
             {
               id: "board",
-              testFile: "src/__tests__/kanban-board.interaction.component.test.tsx",
+              testFile:
+                "src/__tests__/kanban-board.interaction.component.test.tsx",
             },
           ],
         },
       ],
     });
-    const indexPath = join(root, "tooling/storybook/web/storybook-static/index.json");
+    const indexPath = join(
+      root,
+      "tooling/storybook/web/storybook-static/index.json",
+    );
     writeJson(indexPath, {
       entries: {
         "kanban-board--default": {
@@ -341,7 +463,10 @@ describe("checkUiEvidence", () => {
         },
       ],
     });
-    const indexPath = join(root, "tooling/storybook/web/storybook-static/index.json");
+    const indexPath = join(
+      root,
+      "tooling/storybook/web/storybook-static/index.json",
+    );
     writeJson(indexPath, {
       entries: {
         "unknown--default": {
@@ -354,9 +479,7 @@ describe("checkUiEvidence", () => {
     const result = checkUiEvidence(root, indexPath);
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.join("\n")).toContain(
-      "classified 2 times",
-    );
+    expect(result.diagnostics.join("\n")).toContain("classified 2 times");
     expect(result.diagnostics.join("\n")).toContain(
       "unregistered collected surface: not-registered",
     );
@@ -391,13 +514,45 @@ describe("checkUiEvidence", () => {
             required: ["Default"],
             delegated: [],
             notApplicable: [
-              { state: "Loading", reason: "Loading presentation is owned by a dedicated loading surface.", authority: "docs/product/work-management.md" },
-              { state: "Empty", reason: "Empty board is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "Error", reason: "Fetch failure is owned by a dedicated unavailable surface.", authority: "docs/product/work-management.md" },
-              { state: "EdgeData", reason: "Edge-value input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "HighDensity", reason: "High-density input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "ReadOnly", reason: "No product-authoritative read-only contract exists at this baseline.", authority: "docs/product/work-management.md" },
-              { state: "PermissionLimited", reason: "No permission-limited capability contract exists at this baseline.", authority: "docs/product/work-management.md" },
+              {
+                state: "Loading",
+                reason:
+                  "Loading presentation is owned by a dedicated loading surface.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "Empty",
+                reason: "Empty board is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "Error",
+                reason:
+                  "Fetch failure is owned by a dedicated unavailable surface.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "EdgeData",
+                reason: "Edge-value input is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "HighDensity",
+                reason: "High-density input is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "ReadOnly",
+                reason:
+                  "No product-authoritative read-only contract exists at this baseline.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "PermissionLimited",
+                reason:
+                  "No permission-limited capability contract exists at this baseline.",
+                authority: "docs/product/work-management.md",
+              },
             ],
           },
           responsive: false,
@@ -406,13 +561,17 @@ describe("checkUiEvidence", () => {
           interactionCases: [
             {
               id: "board",
-              testFile: "src/__tests__/kanban-board.interaction.component.test.tsx",
+              testFile:
+                "src/__tests__/kanban-board.interaction.component.test.tsx",
             },
           ],
         },
       ],
     });
-    const indexPath = join(root, "tooling/storybook/web/storybook-static/index.json");
+    const indexPath = join(
+      root,
+      "tooling/storybook/web/storybook-static/index.json",
+    );
     writeJson(indexPath, { entries: {} });
 
     const result = checkUiEvidence(root, indexPath);
@@ -421,7 +580,9 @@ describe("checkUiEvidence", () => {
     expect(result.diagnostics).toContain(
       "missing collected binding: wm.board::Default",
     );
-    expect(result.diagnostics).toContain("missing collected story id: kanban-board--default");
+    expect(result.diagnostics).toContain(
+      "missing collected story id: kanban-board--default",
+    );
     expect(result.diagnostics.length).toBeGreaterThan(0);
   });
 
@@ -454,13 +615,45 @@ describe("checkUiEvidence", () => {
             required: ["Default"],
             delegated: [],
             notApplicable: [
-              { state: "Loading", reason: "Loading presentation is owned by a dedicated loading surface.", authority: "docs/product/work-management.md" },
-              { state: "Empty", reason: "Empty board is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "Error", reason: "Fetch failure is owned by a dedicated unavailable surface.", authority: "docs/product/work-management.md" },
-              { state: "EdgeData", reason: "Edge-value input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "HighDensity", reason: "High-density input is a distinct board-level story.", authority: "docs/product/work-management.md" },
-              { state: "ReadOnly", reason: "No product-authoritative read-only contract exists at this baseline.", authority: "docs/product/work-management.md" },
-              { state: "PermissionLimited", reason: "No permission-limited capability contract exists at this baseline.", authority: "docs/product/work-management.md" },
+              {
+                state: "Loading",
+                reason:
+                  "Loading presentation is owned by a dedicated loading surface.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "Empty",
+                reason: "Empty board is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "Error",
+                reason:
+                  "Fetch failure is owned by a dedicated unavailable surface.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "EdgeData",
+                reason: "Edge-value input is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "HighDensity",
+                reason: "High-density input is a distinct board-level story.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "ReadOnly",
+                reason:
+                  "No product-authoritative read-only contract exists at this baseline.",
+                authority: "docs/product/work-management.md",
+              },
+              {
+                state: "PermissionLimited",
+                reason:
+                  "No permission-limited capability contract exists at this baseline.",
+                authority: "docs/product/work-management.md",
+              },
             ],
           },
           responsive: false,
@@ -469,13 +662,17 @@ describe("checkUiEvidence", () => {
           interactionCases: [
             {
               id: "board",
-              testFile: "src/__tests__/kanban-board.interaction.component.test.tsx",
+              testFile:
+                "src/__tests__/kanban-board.interaction.component.test.tsx",
             },
           ],
         },
       ],
     });
-    const indexPath = join(root, "tooling/storybook/web/storybook-static/index.json");
+    const indexPath = join(
+      root,
+      "tooling/storybook/web/storybook-static/index.json",
+    );
     writeJson(indexPath, {
       entries: {
         "kanban-board--default": {

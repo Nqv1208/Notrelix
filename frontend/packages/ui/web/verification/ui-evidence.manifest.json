@@ -16,9 +16,7 @@
       "owner": "@notrelix/ui-web",
       "surfaceKind": "primitive",
       "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
-      "coveredSources": [
-        "src/components/brand/notrelix-logo.tsx"
-      ],
+      "coveredSources": ["src/components/brand/notrelix-logo.tsx"],
       "stories": [
         {
           "id": "ui-web-critical-surfaces--brand-logo",
@@ -44,9 +42,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -58,11 +54,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["a11y", "visual", "purity"],
       "interactionCases": []
     },
     {
@@ -105,19 +97,13 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["a11y", "visual", "purity"],
       "interactionCases": []
     },
     {
@@ -125,9 +111,7 @@
       "owner": "@notrelix/ui-web",
       "surfaceKind": "form",
       "pureEntry": "src/verification/ui-web-critical-surfaces.tsx",
-      "coveredSources": [
-        "src/components/forms/submit-state.tsx"
-      ],
+      "coveredSources": ["src/components/forms/submit-state.tsx"],
       "stories": [
         {
           "id": "ui-web-critical-surfaces--submit-state",
@@ -153,9 +137,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -187,12 +169,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "submit",
@@ -243,9 +220,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -257,12 +232,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "form-controls",
@@ -308,9 +278,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -322,12 +290,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "navigation",
@@ -378,9 +341,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -392,12 +353,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "overlays",
@@ -461,9 +417,7 @@
         }
       ],
       "stateCoverage": {
-        "required": [
-          "Default"
-        ],
+        "required": ["Default"],
         "delegated": [],
         "notApplicable": [
           {
@@ -475,12 +429,7 @@
       },
       "responsive": true,
       "themeAware": true,
-      "checks": [
-        "interaction",
-        "a11y",
-        "visual",
-        "purity"
-      ],
+      "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
           "id": "data-display",

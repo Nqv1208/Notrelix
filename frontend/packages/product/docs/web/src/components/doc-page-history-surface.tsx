@@ -1,9 +1,6 @@
 import type { PageActivity } from "@notrelix/docs-core";
 import { Clock, FileText, MessageSquare, Sparkles } from "lucide-react";
-import {
-  actionLabel,
-  formatDate,
-} from "./doc-page-surface-models";
+import { actionLabel, formatDate } from "./doc-page-surface-models";
 
 export function DocHistorySurface({ history }: { history: PageActivity[] }) {
   return (

@@ -1,9 +1,6 @@
 import { Users } from "lucide-react";
 import type { WorkspaceSummary } from "../../core/types/workspace";
-import {
-  colorForWorkspace,
-  formatWorkspacePlan,
-} from "./workspace-ui-models";
+import { colorForWorkspace, formatWorkspacePlan } from "./workspace-ui-models";
 
 export interface WorkspaceDirectorySurfaceProps {
   workspaces: readonly WorkspaceSummary[];

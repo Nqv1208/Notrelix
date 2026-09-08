@@ -35,7 +35,8 @@ const validManifest = {
           },
           {
             state: "Error",
-            reason: "Board-level fetch failure is owned by wm.kanban.unavailable.",
+            reason:
+              "Board-level fetch failure is owned by wm.kanban.unavailable.",
             authority: "docs/product/work-management.md",
           },
           {
@@ -101,9 +102,7 @@ describe("validateUiEvidenceManifest", () => {
           surfaceKind: "data",
           pureEntry: "../bad.tsx",
           coveredSources: [],
-          stories: [
-            { id: "story", state: "Mystery", visualTargets: [] },
-          ],
+          stories: [{ id: "story", state: "Mystery", visualTargets: [] }],
           stateCoverage: {
             required: ["Default"],
             delegated: [],
@@ -118,7 +117,9 @@ describe("validateUiEvidenceManifest", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.join("\n")).toContain("stories[0].state must be one of");
+    expect(result.diagnostics.join("\n")).toContain(
+      "stories[0].state must be one of",
+    );
     expect(result.diagnostics.join("\n")).toContain("checks[0] must be one of");
     expect(result.diagnostics.join("\n")).toContain("authority");
     expect(result.diagnostics.join("\n")).toContain("pureEntry");
@@ -171,7 +172,9 @@ describe("validateUiEvidenceManifest", () => {
 
     expect(result.ok).toBe(false);
     expect(result.diagnostics.join("\n")).toContain("must be concrete");
-    expect(result.diagnostics.join("\n")).toContain("must declare visualTargets");
+    expect(result.diagnostics.join("\n")).toContain(
+      "must declare visualTargets",
+    );
   });
 
   it("enforces responsive Default targets only for responsive surfaces", () => {
@@ -263,7 +266,11 @@ describe("validateUiEvidenceManifest", () => {
       ...structuredClone(validManifest.surfaces[0]),
       surfaceId: "wm.kanban.loading",
       surfaceKind: "feedback",
-      stateCoverage: { required: ["Loading"], delegated: [], notApplicable: [] },
+      stateCoverage: {
+        required: ["Loading"],
+        delegated: [],
+        notApplicable: [],
+      },
     });
     absentTarget.surfaces[0].stateCoverage.delegated.push({
       state: "Error",
