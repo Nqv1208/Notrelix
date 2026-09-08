@@ -41,6 +41,8 @@ public static class IntegrationsRegistration
         }
 
         // Integrations-owned public webhook action (producer-owned surface)
+        services.AddScoped<Notrelix.Application.Features.Integrations.Public.Webhooks.ICalendarWebhookVerifier, Notrelix.Infrastructure.Integrations.Webhooks.CalendarWebhookVerifier>();
+        services.AddScoped<Notrelix.Application.Features.Integrations.Public.Webhooks.ICalendarWebhookIntake, Notrelix.Infrastructure.Integrations.Webhooks.CalendarWebhookIntake>();
         services.AddScoped<IN8nWebhookActions>(sp =>
             new N8nWebhookActions(sp.GetRequiredService<IN8nClient>()));
 

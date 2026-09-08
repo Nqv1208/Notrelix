@@ -1,6 +1,8 @@
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Integrations.Calendar.Commands.ConnectCalendar;
 using Notrelix.Application.Features.Integrations.Calendar.Commands.DisconnectCalendar;
+using Notrelix.API.Contracts.Integrations.Calendar.Requests;
+using Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook;
 
 namespace Notrelix.API.Endpoints.Integrations.Calendar;
 
@@ -13,7 +15,7 @@ public static class CalendarEndpoints
             .WithTags("Integrations.Calendar")
             .WithOpenApi();
 
-        workspaceGroup.MapPost("/connections", ConnectAsync)
+        workspaceGroup.MapResourcePost("/connections", ConnectAsync)
             .WithName("Integrations.Calendar.Connect")
             .WithSummary("Connect a calendar provider to the workspace");
 
@@ -22,11 +24,36 @@ public static class CalendarEndpoints
             .WithTags("Integrations.Calendar")
             .WithOpenApi();
 
-        calendarGroup.MapDelete("/", DisconnectAsync)
+        calendarGroup.MapResourceDelete("/", DisconnectAsync)
             .WithName("Integrations.Calendar.Disconnect")
             .WithSummary("Disconnect a calendar integration");
 
+        var webhookGroup = app
+            .MapGroup("/api/v1/integrations/calendar/webhooks/{provider}")
+            .WithTags("Integrations.Calendar")
+            .WithOpenApi();
+
+        webhookGroup.MapPublicPost("/", WebhookAsync)
+            .WithName("Integrations.Calendar.HandleWebhook")
+            .WithSummary("Verified provider webhook callback intake")
+            .AllowAnonymous();
+
         return app;
+    }
+
+    private static async Task<IResult> WebhookAsync(string provider, HttpRequest request, HandleCalendarWebhookCommandHandler handler, CancellationToken cancellationToken)
+    {
+        using var reader = new StreamReader(request.Body);
+        var rawBody = await reader.ReadToEndAsync(cancellationToken);
+
+        var signature = request.Headers["X-Calendar-Signature"].FirstOrDefault() ?? string.Empty;
+        var timestamp = request.Headers["X-Calendar-Timestamp"].FirstOrDefault() ?? string.Empty;
+
+        var result = await handler.Handle(
+            new HandleCalendarWebhookCommand(provider, signature, timestamp, rawBody),
+            cancellationToken);
+
+        return result.Succeeded ? Results.Ok() : Results.Unauthorized();
     }
 
     private static async Task<IResult> ConnectAsync(Guid workspaceId, ConnectCalendarRequest body, ISender sender)
@@ -42,5 +69,3 @@ public static class CalendarEndpoints
         return result.ToNoContentResult();
     }
 }
-
-public record ConnectCalendarRequest(string Provider, string AccessToken, Guid? ProviderAccountId, string SyncDirection);

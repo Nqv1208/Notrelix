@@ -8749,6 +8749,62 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("resource_permission_inheritance_cache", "governance");
                 });
 
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Integrations.InboundWebhookReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ExternalEventId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("external_event_id");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("payload_hash");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("provider");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inbound_webhook_receipts");
+
+                    b.HasIndex("ReceivedAt")
+                        .HasDatabaseName("idx_inbound_webhook_receipts_received_at");
+
+                    b.HasIndex("Provider", "ExternalEventId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_inbound_webhook_receipts_provider_external_event_id");
+
+                    b.ToTable("inbound_webhook_receipts", "integration");
+                });
+
             modelBuilder.Entity("Notrelix.Infrastructure.Data.Integrations.IntegrationSecretBlob", b =>
                 {
                     b.Property<Guid>("Id")

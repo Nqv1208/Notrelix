@@ -8,7 +8,14 @@ public class HandleCalendarWebhookCommandValidator : AbstractValidator<HandleCal
             .NotEmpty()
             .MaximumLength(50);
 
-        RuleFor(x => x.Payload)
+        RuleFor(x => x.Signature)
             .NotEmpty();
+
+        RuleFor(x => x.Timestamp)
+            .NotEmpty();
+
+        RuleFor(x => x.RawBody)
+            .NotEmpty()
+            .MaximumLength(65536);
     }
 }
