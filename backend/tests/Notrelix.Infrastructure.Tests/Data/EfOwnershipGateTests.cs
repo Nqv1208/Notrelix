@@ -79,6 +79,7 @@ public sealed class EfOwnershipGateTests
 
         // Integrations physical secret persistence (M8)
         [typeof(IntegrationSecretBlob)] = "IntegrationsSecretPersistence",
+        [typeof(InboundWebhookReceipt)] = "IntegrationsSecretPersistence",
     };
 
     /// <summary>Domain/Application namespace segment to the business context port exposing it.</summary>
