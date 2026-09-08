@@ -19,6 +19,11 @@ review_on:
 
 Inventory generated from source truth on 2026-09-01 for FUIC-WU-087.
 
+Manifest authority note (FUIR-WU-014): the active coverage authority is the
+owner-local `verification/ui-evidence.manifest.json` and `check:ui-purity` +
+`check:ui-evidence` + guarded interaction coverage. This inventory documents
+the historical Wave 9 classification; no table here determines pass/fail.
+
 Covered roots:
 
 - `frontend/packages/ui/web/src`
@@ -31,7 +36,7 @@ Classification rule:
 - `covered`: critical leaf surface already covered by a registered parent pure surface and not counted as an additional manifest row.
 - `excluded`: source under the covered roots that is not a governed Web UI surface; every excluded row records owner and rationale.
 
-Candidate rows are inventory only. They do not count as D5/complete until the owning Wave 9 work unit adds deterministic scenario/story/evidence or records a legal terminal reason.
+Candidate rows are inventory only. They do not count as D5/complete until the owning work unit adds deterministic scenario/story/evidence or records a legal terminal reason.
 
 ## Critical rows
 
