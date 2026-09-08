@@ -50,32 +50,35 @@ public sealed class AutomationMoveItemUseCase
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == message.RuleId, cancellationToken);
 
-        if (rule is null)
+        // The execution lifecycle only permits Fail from Running, so every
+        // terminal pre-execution defect starts the execution first — the
+        // failure is recorded against a started, then failed, state machine.
+        var startAndFail = async (string error) =>
         {
-            execution.Fail("Automation rule no longer exists.", _clock.UtcNow);
+            execution.Start(_clock.UtcNow);
+            execution.Fail(error, _clock.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
             return true;
+        };
+
+        if (rule is null)
+        {
+            return await startAndFail("Automation rule no longer exists.");
         }
 
         if (rule.Status != AutomationRuleStatus.Active)
         {
-            execution.Fail("Automation rule is not active.", _clock.UtcNow);
-            await _context.SaveChangesAsync(cancellationToken);
-            return true;
+            return await startAndFail("Automation rule is not active.");
         }
 
         if (!TryParseMoveItemConfiguration(rule.Configuration.Action.Configuration, out var itemId, out var targetGroupId))
         {
-            execution.Fail("MoveItem action configuration is invalid.", _clock.UtcNow);
-            await _context.SaveChangesAsync(cancellationToken);
-            return true;
+            return await startAndFail("MoveItem action configuration is invalid.");
         }
 
         if (message.ActorUserId is null || message.ActorUserId == Guid.Empty)
         {
-            execution.Fail("The trigger fact carried no trusted actor; the automation cannot execute.", _clock.UtcNow);
-            await _context.SaveChangesAsync(cancellationToken);
-            return true;
+            return await startAndFail("The trigger fact carried no trusted actor; the automation cannot execute.");
         }
 
         execution.Start(_clock.UtcNow);
