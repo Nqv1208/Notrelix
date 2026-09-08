@@ -283,7 +283,10 @@ describe("checkUiEvidence", () => {
       sourceName: "b/file",
     });
     dupManifest.surfaces = [
-      { ...dupManifest.surfaces[0], pureEntry: "../a/src/a/file.tsx" },
+      {
+        ...dupManifest.surfaces[0]!,
+        pureEntry: "../a/src/a/file.tsx",
+      },
     ];
     writeJson(
       join(ownerBRoot, "verification/ui-evidence.manifest.json"),
