@@ -866,6 +866,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
             "no comment may persist for a cross-scope target");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "comment.created"
+                && m.WorkspaceId == workspaceA)).Should().BeFalse(
+            "no outward fact may be staged for a cross-scope target");
         (await verify.Pages.IgnoreQueryFilters().SingleAsync(p => p.Id == pageB)).Status
             .Should().Be(PageStatus.Active,
             "the foreign page must remain untouched");
@@ -880,6 +884,15 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var (_, _, _, boardB, _) = await SeedBoardStackAsync();
         var itemB = await ResolveBoardItemIdAsync(boardB);
 
+        long itemVersionBefore;
+        string itemNameBefore;
+        await using (var snapshot = _db.CreateContext(SystemTenant()))
+        {
+            var item = await snapshot.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == itemB);
+            itemVersionBefore = item.Version;
+            itemNameBefore = item.Name;
+        }
+
         using var provider = CreateProvider(accountA, memberA);
         var act = () => SendAsync<Result<Guid>>(provider,
             CreateCommentCommand.ForBoardItem(itemB, "Cross-tenant item comment", null));
@@ -890,6 +903,14 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         (await verify.Comments.IgnoreQueryFilters()
             .AnyAsync(c => c.WorkspaceId == workspaceA)).Should().BeFalse(
             "no comment may persist for a cross-scope target");
+        (await verify.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .AnyAsync(m => m.MessageName == "comment.created"
+                && m.WorkspaceId == workspaceA)).Should().BeFalse(
+            "no outward fact may be staged for a cross-scope target");
+        var itemAfter = await verify.BoardItems.IgnoreQueryFilters().SingleAsync(i => i.Id == itemB);
+        itemAfter.Version.Should().Be(itemVersionBefore,
+            "the foreign board item must remain untouched");
+        itemAfter.Name.Should().Be(itemNameBefore);
     }
 
     // ── composition -----------------------------------------------------------
