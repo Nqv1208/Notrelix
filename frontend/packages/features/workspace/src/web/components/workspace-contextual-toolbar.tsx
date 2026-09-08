@@ -66,29 +66,11 @@ export function WorkspaceContextualToolbar({
       />
     );
   if (activeType === "calendar")
-    return (
-      <CalendarToolbar
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        onAction={onAction}
-      />
-    );
+    return <CalendarToolbar onAction={onAction} />;
   if (activeType === "timeline")
-    return (
-      <TimelineToolbar
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        onAction={onAction}
-      />
-    );
+    return <TimelineToolbar onAction={onAction} />;
   if (activeType === "dashboard")
-    return (
-      <DashboardToolbar
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        onAction={onAction}
-      />
-    );
+    return <DashboardToolbar onAction={onAction} />;
   return null;
 }
 
@@ -192,13 +174,8 @@ function DocToolbar({
 }
 
 function CalendarToolbar({
-  searchQuery,
-  onSearchChange,
   onAction,
-}: Pick<
-  WorkspaceContextualToolbarProps,
-  "searchQuery" | "onSearchChange" | "onAction"
->) {
+}: Pick<WorkspaceContextualToolbarProps, "onAction">) {
   return (
     <ToolbarShell>
       <Button
@@ -247,13 +224,8 @@ function CalendarToolbar({
 }
 
 function TimelineToolbar({
-  searchQuery,
-  onSearchChange,
   onAction,
-}: Pick<
-  WorkspaceContextualToolbarProps,
-  "searchQuery" | "onSearchChange" | "onAction"
->) {
+}: Pick<WorkspaceContextualToolbarProps, "onAction">) {
   return (
     <ToolbarShell>
       <Button
@@ -293,13 +265,8 @@ function TimelineToolbar({
 }
 
 function DashboardToolbar({
-  searchQuery,
-  onSearchChange,
   onAction,
-}: Pick<
-  WorkspaceContextualToolbarProps,
-  "searchQuery" | "onSearchChange" | "onAction"
->) {
+}: Pick<WorkspaceContextualToolbarProps, "onAction">) {
   return (
     <ToolbarShell>
       <Button
