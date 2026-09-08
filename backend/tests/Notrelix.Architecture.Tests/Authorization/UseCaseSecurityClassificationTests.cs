@@ -228,7 +228,6 @@ public class UseCaseSecurityClassificationTests
         ["GetAutomationExecutionsQuery"] = new("GetAutomationExecutionsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Automation"),
         ["GetWorkspaceAutomationsQuery"] = new("GetWorkspaceAutomationsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Automation"),
         ["SetAutomationRuleEnabledCommand"] = new("SetAutomationRuleEnabledCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Automation"),
-        ["CreateAutomationRuleCommand"] = new("CreateAutomationRuleCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Automation"),
 
         // Documents — Blocks (use PageId)
         ["GetPageBlocksQuery"] = new("GetPageBlocksQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
