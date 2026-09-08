@@ -40,9 +40,9 @@ describe("command graph resolvers", () => {
     const result = checkCommandGraph("validate:ui", catalog);
 
     expect(result.ok).toBe(false);
-    expect(
-      result.violations.some((v) => v.includes("test:ui:freeze")),
-    ).toBe(true);
+    expect(result.violations.some((v) => v.includes("test:ui:freeze"))).toBe(
+      true,
+    );
   });
 
   it("rejects forbidden codegen/mock/real commands in the graph (TST-111)", () => {
@@ -50,9 +50,9 @@ describe("command graph resolvers", () => {
     const result = checkCommandGraph("validate:ui", catalog);
 
     expect(result.ok).toBe(false);
-    expect(
-      result.violations.some((v) => v.includes("mock:contract")),
-    ).toBe(true);
+    expect(result.violations.some((v) => v.includes("mock:contract"))).toBe(
+      true,
+    );
   });
 
   it("catches a forbidden command hidden behind multi-level script indirection (TST-116)", () => {
@@ -60,9 +60,9 @@ describe("command graph resolvers", () => {
     const result = checkCommandGraph("validate:ui", catalog);
 
     expect(result.ok).toBe(false);
-    expect(
-      result.violations.some((v) => v.includes("codegen:check")),
-    ).toBe(true);
+    expect(result.violations.some((v) => v.includes("codegen:check"))).toBe(
+      true,
+    );
   });
 
   it("resolves every transitively referenced script (no dangling refs)", () => {

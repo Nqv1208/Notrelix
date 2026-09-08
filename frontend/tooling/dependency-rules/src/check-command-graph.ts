@@ -86,7 +86,10 @@ export function traverseCommandGraph(
 ): Traversal {
   const traversedScripts = new Set<string>();
   const leafCommands = new Set<string>();
-  const allOwners = [catalog.scripts, ...Object.values(catalog.workspaceScripts)];
+  const allOwners = [
+    catalog.scripts,
+    ...Object.values(catalog.workspaceScripts),
+  ];
 
   const findOwner = (name: string): Record<string, string> | undefined =>
     allOwners.find((owner) => name in owner);
@@ -161,7 +164,8 @@ export function checkCommandGraph(
     const tokens = item.split(/\s+/).filter(Boolean);
     for (const t of tokens) {
       const candidate = t.replace(/^pnpm:\/\//, "");
-      if (FORBIDDEN_UI_COMMANDS.includes(candidate)) forbiddenSet.add(candidate);
+      if (FORBIDDEN_UI_COMMANDS.includes(candidate))
+        forbiddenSet.add(candidate);
       if (FORBIDDEN_TOKENS.includes(t.toLowerCase())) forbiddenSet.add(t);
     }
   }

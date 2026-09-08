@@ -3,10 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const repoRoot = resolve(__dirname, "../../../../../");
-const workflowPath = resolve(
-  repoRoot,
-  ".github/workflows/frontend-ci.yml",
-);
+const workflowPath = resolve(repoRoot, ".github/workflows/frontend-ci.yml");
 
 const FORBIDDEN_UI_LANE = [
   "test:integration:guarded",

@@ -65,10 +65,8 @@ export function WorkspaceContextualToolbar({
         onAction={onAction}
       />
     );
-  if (activeType === "calendar")
-    return <CalendarToolbar onAction={onAction} />;
-  if (activeType === "timeline")
-    return <TimelineToolbar onAction={onAction} />;
+  if (activeType === "calendar") return <CalendarToolbar onAction={onAction} />;
+  if (activeType === "timeline") return <TimelineToolbar onAction={onAction} />;
   if (activeType === "dashboard")
     return <DashboardToolbar onAction={onAction} />;
   return null;
