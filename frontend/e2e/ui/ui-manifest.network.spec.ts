@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { storybookIframeUrl, uiEvidenceTargets } from "./support/ui-evidence";
 
 for (const target of uiEvidenceTargets("purity")) {
-  test(`network manifest: ${target.surfaceId} ${target.state}`, async ({
+  test(`network manifest: ${target.storyId} ${target.state}`, async ({
     page,
   }) => {
     const errors: string[] = [];

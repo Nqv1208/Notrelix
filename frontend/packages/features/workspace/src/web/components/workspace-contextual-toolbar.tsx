@@ -129,9 +129,24 @@ function KanbanToolbar({
         value={searchQuery}
         onChange={onSearchChange}
       />
-      <ToolbarButton icon={UserRound} label="Person" action="person" onAction={onAction} />
-      <ToolbarButton icon={Filter} label="Filter" action="filter" onAction={onAction} />
-      <ToolbarButton icon={ArrowDownUp} label="Sort" action="sort" onAction={onAction} />
+      <ToolbarButton
+        icon={UserRound}
+        label="Person"
+        action="person"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={Filter}
+        label="Filter"
+        action="filter"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={ArrowDownUp}
+        label="Sort"
+        action="sort"
+        onAction={onAction}
+      />
       <ToolbarButton
         icon={Group}
         label="Group by status"
@@ -209,9 +224,24 @@ function CalendarToolbar({
           Day
         </ToggleGroupItem>
       </ToggleGroup>
-      <ToolbarButton icon={Filter} label="Filter" action="filter" onAction={onAction} />
-      <ToolbarButton icon={ArrowDownUp} label="Sync" action="sync" onAction={onAction} />
-      <ToolbarButton icon={Settings2} label="Settings" action="settings" onAction={onAction} />
+      <ToolbarButton
+        icon={Filter}
+        label="Filter"
+        action="filter"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={ArrowDownUp}
+        label="Sync"
+        action="sync"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={Settings2}
+        label="Settings"
+        action="settings"
+        onAction={onAction}
+      />
     </ToolbarShell>
   );
 }
@@ -234,8 +264,18 @@ function TimelineToolbar({
         <CalendarDays className="size-4" />
         Today
       </Button>
-      <ToolbarButton icon={UserRound} label="Person" action="person" onAction={onAction} />
-      <ToolbarButton icon={Filter} label="Filter" action="filter" onAction={onAction} />
+      <ToolbarButton
+        icon={UserRound}
+        label="Person"
+        action="person"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={Filter}
+        label="Filter"
+        action="filter"
+        onAction={onAction}
+      />
       <ToolbarButton
         icon={Group}
         label="Group by list"
@@ -270,9 +310,24 @@ function DashboardToolbar({
         <ListPlus className="size-4" />
         Add widget
       </Button>
-      <ToolbarButton icon={Filter} label="Filter" action="filter" onAction={onAction} />
-      <ToolbarButton icon={ArrowDownUp} label="Refresh" action="refresh" onAction={onAction} />
-      <ToolbarButton icon={Bot} label="AI summary" action="ai-summary" onAction={onAction} />
+      <ToolbarButton
+        icon={Filter}
+        label="Filter"
+        action="filter"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={ArrowDownUp}
+        label="Refresh"
+        action="refresh"
+        onAction={onAction}
+      />
+      <ToolbarButton
+        icon={Bot}
+        label="AI summary"
+        action="ai-summary"
+        onAction={onAction}
+      />
     </ToolbarShell>
   );
 }
@@ -303,6 +358,7 @@ function ToolbarButton({
       variant="ghost"
       size="sm"
       className="rounded-full"
+      aria-label={label}
       onClick={() => onAction?.(action)}
     >
       <Icon className="size-4" />

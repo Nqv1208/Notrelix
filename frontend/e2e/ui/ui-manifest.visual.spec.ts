@@ -1,24 +1,32 @@
 import { expect, test } from "@playwright/test";
-import { storybookIframeUrl, uiEvidenceTargets } from "./support/ui-evidence";
+import { requireViewportSize } from "../../tooling/testing/src/ui-visual-registry";
+import {
+  storybookIframeUrl,
+  uiEvidenceVisualTargets,
+} from "./support/ui-evidence";
 
-const VIEWPORTS = [{ name: "desktop", width: 1440, height: 900 }] as const;
+for (const target of uiEvidenceVisualTargets()) {
+  const size = requireViewportSize(target.viewport);
 
-for (const target of uiEvidenceTargets("visual")) {
-  for (const viewport of VIEWPORTS) {
-    test(`visual manifest: ${target.surfaceId} ${target.state} ${viewport.name}`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({
-        width: viewport.width,
-        height: viewport.height,
-      });
-      await page.goto(storybookIframeUrl(target.storyId));
-      await page.waitForLoadState("networkidle");
+  test(`visual manifest: ${target.storyId} ${target.viewport}/${target.theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await page.goto(
+      `${storybookIframeUrl(target.storyId)}&fui-theme=${target.theme}`,
+    );
+    await page.waitForLoadState("networkidle");
 
-      await expect(page.locator("#storybook-root")).toHaveScreenshot(
-        `${target.storyId}-${viewport.name}.png`,
-        { animations: "disabled" },
-      );
-    });
-  }
+    const rootClass = await page.evaluate(
+      () => document.documentElement.className,
+    );
+    expect(rootClass, `theme class for ${target.theme}`).toContain(
+      target.theme,
+    );
+
+    await expect(page.locator("#storybook-root")).toHaveScreenshot(
+      `${target.storyId}--${target.viewport}--${target.theme}.png`,
+      { animations: "disabled" },
+    );
+  });
 }

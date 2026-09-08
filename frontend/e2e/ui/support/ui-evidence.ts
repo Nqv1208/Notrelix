@@ -1,12 +1,24 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { validateUiEvidenceManifest } from "../../../tooling/testing/src/ui-evidence-schema";
+import {
+  UI_EVIDENCE_VIEWPORTS,
+  UI_EVIDENCE_THEMES,
+} from "../../../tooling/testing/src/ui-evidence-schema";
 
 export interface UiEvidenceTarget {
   readonly surfaceId: string;
   readonly storyId: string;
   readonly state: string;
   readonly checks: readonly string[];
+}
+
+export interface UiEvidenceVisualTargetInfo {
+  readonly surfaceId: string;
+  readonly storyId: string;
+  readonly state: string;
+  readonly viewport: (typeof UI_EVIDENCE_VIEWPORTS)[number];
+  readonly theme: (typeof UI_EVIDENCE_THEMES)[number];
 }
 
 const MANIFEST_FILE_NAME = "ui-evidence.manifest.json";
@@ -79,6 +91,44 @@ export function uiEvidenceTargets(
   }
   if (targets.length === 0)
     throw new Error(`No UI evidence targets for ${check}`);
+  return targets;
+}
+
+/**
+ * Exact per-story visual targets derived from manifest v2 visualTargets
+ * (FUIR-WU-052). No undeclared viewport/theme permutations are generated.
+ */
+export function uiEvidenceVisualTargets(): UiEvidenceVisualTargetInfo[] {
+  const targets: UiEvidenceVisualTargetInfo[] = [];
+  const seen = new Set<string>();
+  for (const manifestPath of manifestPaths()) {
+    const validation = validateUiEvidenceManifest(
+      JSON.parse(readFileSync(manifestPath, "utf8")),
+    );
+    if (!validation.ok || !validation.manifest) {
+      throw new Error(
+        `Invalid UI evidence manifest ${manifestPath}: ${validation.diagnostics.join("; ")}`,
+      );
+    }
+    for (const surface of validation.manifest.surfaces) {
+      if (!surface.checks.includes("visual")) continue;
+      for (const story of surface.stories) {
+        for (const target of story.visualTargets) {
+          const key = `${story.id}--${target.viewport}--${target.theme}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          targets.push({
+            surfaceId: surface.surfaceId,
+            storyId: story.id,
+            state: story.state,
+            viewport: target.viewport,
+            theme: target.theme,
+          });
+        }
+      }
+    }
+  }
+  if (targets.length === 0) throw new Error("No UI evidence visual targets");
   return targets;
 }
 

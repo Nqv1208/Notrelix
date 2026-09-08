@@ -5,9 +5,7 @@ import { storybookIframeUrl, uiEvidenceTargets } from "./support/ui-evidence";
 test.describe.configure({ mode: "serial" });
 
 for (const target of uiEvidenceTargets("a11y")) {
-  test(`a11y manifest: ${target.surfaceId} ${target.state}`, async ({
-    page,
-  }) => {
+  test(`a11y manifest: ${target.storyId} ${target.state}`, async ({ page }) => {
     await page.goto(storybookIframeUrl(target.storyId));
     await expect(page.locator("#storybook-root")).toBeVisible();
 
