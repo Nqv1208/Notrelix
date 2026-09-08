@@ -405,6 +405,23 @@ export interface paths {
         patch: operations["Documents.Pages.UpdatePage"];
         trace?: never;
     };
+    "/api/v1/pages/{pageId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a page */
+        post: operations["Documents.Pages.ArchivePage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}/breadcrumb": {
         parameters: {
             query?: never;
@@ -3568,6 +3585,7 @@ export interface components {
             contentMd?: string | null;
             /** Format: uuid */
             parentCommentId?: string | null;
+            mentionedUserIds?: string[] | null;
         };
         "Notrelix.API.Contracts.Collaboration.Comments.Requests.UpdateCommentRequest": {
             contentMd?: string | null;
@@ -4124,7 +4142,7 @@ export interface components {
          * Format: int32
          * @enum {integer}
          */
-        "Notrelix.Domain.Governance.Permissions.PermissionAction": 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34;
+        "Notrelix.Domain.Governance.Permissions.PermissionAction": 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35;
         "Notrelix.Domain.SharedKernel.ResourceKind": {
             readonly value?: string | null;
         };
@@ -4956,6 +4974,28 @@ export interface operations {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.UpdatePageRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Documents.Pages.ArchivePage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
