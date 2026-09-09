@@ -3283,9 +3283,16 @@
           "200": {
             "description": "OK",
             "content": {
+              "application/json": { }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -3320,12 +3327,11 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/System.Void"
-                }
-              }
+              "application/json": { }
             }
+          },
+          "204": {
+            "description": "No Content"
           }
         },
         "security": [
@@ -3352,16 +3358,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook.HandleCalendarWebhookCommandHandler"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "OK",
@@ -15238,10 +15234,6 @@
             "nullable": true
           }
         },
-        "additionalProperties": false
-      },
-      "Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook.HandleCalendarWebhookCommandHandler": {
-        "type": "object",
         "additionalProperties": false
       },
       "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields.ReorderBoardFieldsCommand": {
