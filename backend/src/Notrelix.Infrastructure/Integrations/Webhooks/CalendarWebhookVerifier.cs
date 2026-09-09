@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Notrelix.Application.Features.Integrations.Public.Webhooks;
 using Notrelix.Infrastructure.Options;
 

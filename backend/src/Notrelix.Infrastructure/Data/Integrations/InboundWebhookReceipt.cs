@@ -1,5 +1,3 @@
-using Notrelix.Infrastructure.Data.Abstractions;
-
 namespace Notrelix.Infrastructure.Data.Integrations;
 
 /// <summary>
