@@ -1,4 +1,6 @@
 using Notrelix.API.Extensions;
+using Notrelix.API.Middleware;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Integrations.Calendar.Commands.ConnectCalendar;
 using Notrelix.Application.Features.Integrations.Calendar.Commands.DisconnectCalendar;
 using Notrelix.API.Contracts.Integrations.Calendar.Requests;
@@ -38,7 +40,9 @@ public static class CalendarEndpoints
         webhookGroup.MapPublicPost("/", WebhookAsync)
             .WithName("Integrations.Calendar.HandleWebhook")
             .WithSummary("Verified provider webhook callback intake")
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .WithMetadata(new SignatureAuthenticatedWebhookAttribute())
+            .WithMetadata(new RateLimitPolicyAttribute("WebhookIntakeByIp"));
 
         return app;
     }

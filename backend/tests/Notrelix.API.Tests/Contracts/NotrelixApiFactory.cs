@@ -5,6 +5,7 @@ using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Application.Features.Integrations.Calendar.Commands.ConnectCalendar;
 using Notrelix.Application.Features.Integrations.Calendar.Commands.DisconnectCalendar;
+using Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
@@ -408,6 +409,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<ConnectCalendarCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<DisconnectCalendarCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<HandleCalendarWebhookCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<CreateWorkspaceCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<UnarchiveWorkspaceCommand, Result>(services, Result.Success());
