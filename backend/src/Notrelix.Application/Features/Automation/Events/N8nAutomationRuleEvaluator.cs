@@ -8,12 +8,14 @@ namespace Notrelix.Application.Features.Automation.Events;
 /// Evaluates the runtime-reachable Work automation triggers ("ItemAssigned",
 /// "ItemMovedToGroup", "ItemCreated") and, for each matching active rule with
 /// a dispatchable action, creates an <see cref="AutomationExecution"/> and
-/// stages a durable outbox intent. The intent routes by action type:
-/// "Webhook" rules stage the n8n dispatch; "MoveItem" rules stage the
-/// Work target-action dispatch (executed through the Automation→Work port).
-/// Both commit atomically with the consumer's transaction; the HTTP or
-/// target-action dispatch is performed by a MassTransit consumer after commit.
-/// No process-local queue.
+/// stages a durable outbox intent. The intent routes explicitly by action
+/// type: "MoveItem" rules stage the Work target-action dispatch (executed
+/// through the Automation→Work port); "Webhook" rules stage the n8n
+/// dispatch; any other configured action type fails the execution closed —
+/// it is never silently rerouted to the wrong dispatcher (debt:
+/// M8-AUTOMATION-ACTION-PARITY). Both dispatch intents commit atomically
+/// with the consumer's transaction; the HTTP or target-action dispatch is
+/// performed by a MassTransit consumer after commit. No process-local queue.
 /// </summary>
 public sealed class N8nAutomationRuleEvaluator
 {
@@ -43,6 +45,7 @@ public sealed class N8nAutomationRuleEvaluator
         var rules = await _context.AutomationRules
             .Where(rule =>
                 rule.WorkspaceId == workspaceId &&
+                rule.AccountId == accountId &&
                 rule.Status == AutomationRuleStatus.Active)
             .ToListAsync(cancellationToken);
 
@@ -71,31 +74,47 @@ public sealed class N8nAutomationRuleEvaluator
 
             _context.AutomationExecutions.Add(execution);
 
-            if (rule.Configuration.Action.Type == "MoveItem")
+            switch (rule.Configuration.Action.Type)
             {
-                _events.Add(new AutomationMoveItemRequestedV1(
-                    Guid.CreateVersion7(),
-                    execution.Id,
-                    rule.Id,
-                    accountId,
-                    workspaceId,
-                    trigger.ActorUserId,
-                    _clock.UtcNow,
-                    trigger.CorrelationId,
-                    trigger.CausationId));
-            }
-            else
-            {
-                _events.Add(new N8nDispatchRequestedV1(
-                    Guid.CreateVersion7(),
-                    execution.Id,
-                    rule.Id,
-                    accountId,
-                    workspaceId,
-                    _clock.UtcNow,
-                    trigger.CorrelationId,
-                    trigger.SourceEventId,
-                    trigger.CausationId));
+                case "MoveItem":
+                    _events.Add(new AutomationMoveItemRequestedV1(
+                        Guid.CreateVersion7(),
+                        execution.Id,
+                        rule.Id,
+                        accountId,
+                        workspaceId,
+                        trigger.ActorUserId,
+                        _clock.UtcNow,
+                        trigger.CorrelationId,
+                        trigger.CausationId));
+                    break;
+
+                case "Webhook":
+                    _events.Add(new N8nDispatchRequestedV1(
+                        Guid.CreateVersion7(),
+                        execution.Id,
+                        rule.Id,
+                        accountId,
+                        workspaceId,
+                        _clock.UtcNow,
+                        trigger.CorrelationId,
+                        trigger.SourceEventId,
+                        trigger.CausationId));
+                    break;
+
+                default:
+                    // Fail closed: an action type without a runtime executor is
+                    // never silently rerouted to another dispatcher. The rule
+                    // stays a valid configuration (vocabulary is broader than
+                    // the M8 runtime) but the staged execution terminates
+                    // visibly instead of dispatching to the wrong channel
+                    // (debt: M8-AUTOMATION-ACTION-PARITY).
+                    var failedAt = _clock.UtcNow;
+                    execution.Start(failedAt);
+                    execution.Fail(
+                        $"Action type '{rule.Configuration.Action.Type}' has no runtime executor (M8-AUTOMATION-ACTION-PARITY).",
+                        failedAt);
+                    break;
             }
         }
     }

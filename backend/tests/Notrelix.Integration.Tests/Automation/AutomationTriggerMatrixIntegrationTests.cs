@@ -70,10 +70,11 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         string? actionConfigPattern = null,
         string? triggerConfigPattern = null)
     {
-        var accountId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
+        var account = Domain.Accounts.Accounts.Account.Create("Trigger Account", $"trg-{Guid.NewGuid():N}", Domain.Accounts.Accounts.AccountType.Team, ownerId, Now);
+        var accountId = account.Id;
         var workspace = Workspace.Create(accountId, ownerId, "Trigger WS", $"trg-{Guid.NewGuid():N}", Now);
-        var member = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
+        var member = WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
         var board = Board.Create(accountId, workspace.Id, ownerId, "Board", null, Now);
         var group = BoardGroup.Create(accountId, workspace.Id, board.Id, "Todo", Color.Create("#808080"), FractionalIndex.Initial(), ownerId, Now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, group.Id, "Task", FractionalIndex.Initial(), ownerId, Now);
@@ -87,11 +88,10 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         var config = AutomationConfiguration.Create(
             AutomationTriggerDefinition.Create(triggerType, triggerConfig),
             AutomationActionDefinition.Create(actionType, actionConfig));
-        var rule = AutomationRule.Create(Guid.NewGuid(), workspace.Id, $"Rule {triggerType}", config, ownerId, Now);
+        var rule = AutomationRule.Create(accountId, workspace.Id, $"Rule {triggerType}", config, ownerId, Now);
         rule.Enable(ownerId, Now);
 
         var user = Domain.Identity.Users.User.Create($"trg-{Guid.NewGuid():N}@example.com", "Trigger User", "hashed", Now, true);
-        var account = Domain.Accounts.Accounts.Account.Create("Trigger Account", $"trg-{Guid.NewGuid():N}", Domain.Accounts.Accounts.AccountType.Team, ownerId, Now);
 
         await using var seed = _db.CreateContext(SystemTenant());
         seed.Users.Add(user);
@@ -191,6 +191,33 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         (await EvaluateAsync(graph, trigger)).Should().Be(1);
         (await CountExecutionsForRuleAsync(graph.RuleId)).Should().Be(1);
         (await CountIntentsAsync(graph.WorkspaceId, "automation.n8n-dispatch-requested")).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task UnsupportedActionType_FailsClosed_TerminalFailure_NoDispatchIntent()
+    {
+        // SendEmail is valid rule vocabulary (configuration accepts it) but has
+        // no M8 runtime executor — it must fail the execution closed, never be
+        // silently rerouted to the n8n webhook dispatcher.
+        var graph = await SeedRuleAsync("ItemCreated", "SendEmail", """{"templateId":"t-1","subject":"Hi"}""");
+        var sourceEventId = Guid.NewGuid();
+
+        var trigger = new AutomationTriggerContext(
+            graph.AccountId, graph.WorkspaceId, "ItemCreated",
+            sourceEventId, Guid.NewGuid(), Guid.NewGuid(), null, Now);
+
+        (await EvaluateAsync(graph, trigger)).Should().Be(0,
+            "a fail-closed unsupported action stages no dispatch intent");
+        (await CountExecutionsForRuleAsync(graph.RuleId)).Should().Be(1,
+            "the trigger still produced its durable execution record");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var execution = await verify.AutomationExecutions.IgnoreQueryFilters()
+            .SingleAsync(e => e.RuleId == graph.RuleId);
+        execution.Status.Should().Be(AutomationExecutionStatus.Failed,
+            "an action without a runtime executor is a visible terminal failure");
+        execution.Error.Should().Contain("SendEmail");
+        execution.Error.Should().Contain("M8-AUTOMATION-ACTION-PARITY");
     }
 
     [Fact]
