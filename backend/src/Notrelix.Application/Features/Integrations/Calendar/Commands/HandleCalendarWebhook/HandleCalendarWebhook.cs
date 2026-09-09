@@ -9,13 +9,16 @@ namespace Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCal
 /// is signature+timestamp verified by the provider verifier before any
 /// business use; tenant identity is never derived from the payload, and the
 /// request authenticates by provider signature — not by a user session
-/// (session-auth providers are forbidden by TAC-GATE-024).
+/// (session-auth providers are forbidden by TAC-GATE-024). The technical
+/// receipt write is the protected effect of this command, so the request is
+/// write-classified and executes inside the canonical data-session
+/// transaction like every other write.
 /// </summary>
 public record HandleCalendarWebhookCommand(
     string Provider,
     string Signature,
     string Timestamp,
-    string RawBody) : ICommand<Result>, INoDataRequest, IAnonymousRequest, IGlobalRequest;
+    string RawBody) : ICommand<Result>, IWriteRequest, IAnonymousRequest, IGlobalRequest;
 
 public class HandleCalendarWebhookCommandHandler : IRequestHandler<HandleCalendarWebhookCommand, Result>
 {

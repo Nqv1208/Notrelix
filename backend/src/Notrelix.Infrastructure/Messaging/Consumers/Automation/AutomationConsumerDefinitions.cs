@@ -87,6 +87,7 @@ public sealed class AutomationMoveItemDispatchConsumerDefinition
         endpointConfigurator.UseMessageRetry(r =>
         {
             r.Interval(3, TimeSpan.FromMilliseconds(200));
+            r.Ignore<ArgumentException>();
         });
     }
 }
@@ -109,6 +110,7 @@ public sealed class N8nDispatchConsumerDefinition
         endpointConfigurator.UseMessageRetry(r =>
         {
             r.Interval(3, TimeSpan.FromMilliseconds(200));
+            r.Ignore<ArgumentException>();
         });
     }
 }

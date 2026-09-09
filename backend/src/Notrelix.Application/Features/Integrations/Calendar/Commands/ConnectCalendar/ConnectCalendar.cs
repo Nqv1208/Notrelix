@@ -10,9 +10,10 @@ namespace Notrelix.Application.Features.Integrations.Calendar.Commands.ConnectCa
 /// (physical persistence outside the aggregates) → IntegrationSecretVersion
 /// creation → IntegrationConnection create/reuse → CalendarIntegration
 /// binding → single Integrations DB commit. The physical secret lives behind
-/// an opaque SecretReference owned by IIntegrationSecretStore; if the DB
-/// commit fails after the secret was stored, the secret is revoked as the
-/// compensation.
+/// an opaque SecretReference owned by IIntegrationSecretStore; the blob and
+/// the aggregates share ONE scoped context and one transaction fate — no
+/// compensation path exists or is needed (frozen: atomicity over
+/// compensation).
 /// </summary>
 public record ConnectCalendarCommand(
     string Provider,
@@ -83,7 +84,12 @@ public class ConnectCalendarCommandHandler : IRequestHandler<ConnectCalendarComm
             string version;
             if (connection is not null)
             {
+                // Reuse of an ACTIVE connection is an intentional
+                // reauthorization: the supplied secret rotates to a new
+                // version AND the request's provider account is applied —
+                // never silently ignored.
                 version = (int.Parse(connection.CurrentSecretVersion ?? "0") + 1).ToString();
+                connection.Reconnect(request.ProviderAccountId?.ToString(), expiresAt: null, actorId, now);
                 connection.RotateSecret(version, secretReference, actorId, now);
             }
             else
@@ -119,6 +125,12 @@ public class ConnectCalendarCommandHandler : IRequestHandler<ConnectCalendarComm
             if (calendar is not null && calendar.ConnectionId == connection.Id)
             {
                 calendar.Activate(actorId, now);
+                // A successful reconnect applies the requested sync direction
+                // instead of silently keeping the previous one.
+                if (calendar.SyncDirection != syncDirection)
+                {
+                    calendar.ChangeSyncDirection(syncDirection, actorId, now);
+                }
                 calendarIntegrationId = calendar.Id;
             }
             else

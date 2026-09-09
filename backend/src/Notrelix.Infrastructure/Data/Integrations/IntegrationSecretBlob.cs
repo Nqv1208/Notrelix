@@ -4,8 +4,10 @@ namespace Notrelix.Infrastructure.Data.Integrations;
 /// M8 — technical physical-secret persistence: the encrypted blob behind an
 /// opaque <c>SecretReference</c>. Infrastructure reliability state, not a
 /// business model — the reference authority remains
-/// <c>IntegrationSecretVersion</c> (Domain). Revocation is the compensation
-/// path when a connect workflow fails after the secret was stored.
+/// <c>IntegrationSecretVersion</c> (Domain). The blob row and the connect
+/// aggregates share one scoped context and one transaction fate, so a failed
+/// workflow never leaves an orphan blob; revocation additionally marks a blob
+/// whose secret is retired (e.g. the last binding revoked via CAL-CONN-001).
 /// </summary>
 public class IntegrationSecretBlob
 {

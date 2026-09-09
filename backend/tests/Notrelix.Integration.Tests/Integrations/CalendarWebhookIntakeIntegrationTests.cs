@@ -12,7 +12,7 @@ namespace Notrelix.Integration.Tests.Integrations;
 /// TAC-AI-FLOW-07 — the verified inbound webhook intake over real PostgreSQL:
 /// signature+timestamp verification gates every callback; the receipt
 /// deduplicates by (provider, external event id) so a duplicate delivery
-/// produces no second business effect; rejected callbacks are recorded for
+/// produces no second processed technical receipt; rejected callbacks are recorded for
 /// bounded diagnostics only.
 /// </summary>
 [Collection("Database")]
@@ -123,7 +123,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
             "a rejected callback must never become business processing state");
         (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .AnyAsync(r => r.ExternalEventId == externalEventId && r.Status == "Processed"))
-            .Should().BeFalse("the rejected callback must produce no business effect");
+            .Should().BeFalse("the rejected callback must produce no processed technical receipt");
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
             .Succeeded.Should().BeTrue();
 
         // Redeliver the SAME verified callback: the intake accepts it
-        // idempotently (HTTP-level) but produces no second business effect.
+        // idempotently (HTTP-level) but produces no second processed receipt.
         (await handler.Handle(
             new HandleCalendarWebhookCommand(Provider, signature, timestamp, body), CancellationToken.None))
             .Succeeded.Should().BeTrue("the intake is idempotent at the transport boundary");

@@ -305,6 +305,60 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
             "the stale binding (pointing at the revoked connection) is replaced by a binding on the active connection");
     }
 
+    /// <summary>
+    /// A second Connect while the connection is already Active is an
+    /// intentional reauthorization, NOT a duplicate no-op: the supplied
+    /// secret rotates to a new version, the supplied provider account and
+    /// sync direction are applied — never silently ignored (frozen M8
+    /// duplicate-Connect semantics).
+    /// </summary>
+    [Fact]
+    public async Task ConnectCalendar_DuplicateWhileActive_RotatesSecret_AppliesAccountAndDirection()
+    {
+        var stack = await SeedWorkspaceAsync();
+        await using (var provider = CreateProvider(stack))
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            (await scope.ServiceProvider.GetRequiredService<ConnectCalendarCommandHandler>()
+                .Handle(NewConnectCommand(stack, "token-1"), CancellationToken.None)).Succeeded.Should().BeTrue();
+            await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+                .SaveChangesAsync(CancellationToken.None);
+        }
+
+        var providerAccountId = Guid.NewGuid();
+        await using (var provider = CreateProvider(stack))
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var reconnect = new ConnectCalendarCommand(
+                "Google", "token-2", stack.WorkspaceId, providerAccountId, "Pull");
+            (await scope.ServiceProvider.GetRequiredService<ConnectCalendarCommandHandler>()
+                .Handle(reconnect, CancellationToken.None)).Succeeded.Should().BeTrue();
+            await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+                .SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using var verify = _db.CreateContext(SystemTenant());
+
+        var connections = await verify.IntegrationConnections.IgnoreQueryFilters()
+            .Where(c => c.WorkspaceId == stack.WorkspaceId).ToListAsync();
+        connections.Should().HaveCount(1, "reconnecting an active connection reuses it — no second connection");
+        var connection = connections.Single();
+        connection.Status.Should().Be(IntegrationConnectionStatus.Active);
+        connection.ProviderAccountId.Should().Be(providerAccountId.ToString(),
+            "the reauthorization applies the supplied provider account");
+
+        var secretVersions = await verify.IntegrationSecretVersions.IgnoreQueryFilters()
+            .Where(sv => sv.ConnectionId == connection.Id).ToListAsync();
+        secretVersions.Should().HaveCount(2, "the second connect rotates the secret to a new version");
+        secretVersions.Should().Contain(sv => sv.Version == "2");
+
+        var calendar = await verify.CalendarIntegrations.IgnoreQueryFilters()
+            .SingleAsync(ci => ci.WorkspaceId == stack.WorkspaceId && ci.DeletedAt == null);
+        calendar.SyncDirection.Should().Be(CalendarSyncDirection.Pull,
+            "the reauthorization applies the requested sync direction");
+        calendar.IsActive.Should().BeTrue();
+    }
+
     [Fact]
     public async Task DisconnectCalendar_SingleBinding_RetentionDecisionFollowsCalConn001()
     {
@@ -531,7 +585,73 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task DisconnectCalendar_FullPipeline_RoleLadder()
+    public async Task DisconnectCalendar_FullPipeline_Owner_IsAllowed()
+    {
+        var (stack, calendarId) = await SeedConnectedCalendarAsync();
+
+        // Owner through the full pipeline: locator resolves the integration
+        // resource, engine evaluates the resource-scoped ManageIntegrations.
+        await using (var ownerProvider = CreateProvider(stack))
+        await using (var scope = ownerProvider.CreateAsyncScope())
+        {
+            var response = await scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new DisconnectCalendarCommand(calendarId), CancellationToken.None);
+            response.Succeeded.Should().BeTrue(
+                "the workspace owner passes the resource-scoped ManageIntegrations ladder");
+        }
+    }
+
+    /// <summary>
+    /// Disconnect addresses a different surface than Connect: the integration
+    /// RESOURCE, not the workspace. The resource-scoped ManageIntegrations
+    /// ladder is proven here through the full pipeline as its own role matrix.
+    /// </summary>
+    [Theory]
+    [InlineData(WorkspaceRole.Owner, true)]
+    [InlineData(WorkspaceRole.Admin, true)]
+    [InlineData(WorkspaceRole.Member, false)]
+    [InlineData(WorkspaceRole.Guest, false)]
+    public async Task DisconnectCalendar_FullPipeline_RoleLadder(WorkspaceRole role, bool allowed)
+    {
+        var (stack, calendarId) = await SeedConnectedCalendarAsync();
+
+        var actor = Guid.NewGuid();
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            var user = Domain.Identity.Users.User.Create($"cal-disc-{role}-{Guid.NewGuid():N}@example.com", $"Cal Disc {role}", "hashed", Now, true);
+            user.ConfirmEmail(user.Id, Now);
+            seed.Users.Add(user);
+            seed.WorkspaceMembers.Add(WorkspaceMember.Create(
+                stack.AccountId, stack.WorkspaceId, user.Id, role, stack.OwnerId, Now));
+            await seed.SaveChangesAsync();
+            actor = user.Id;
+        }
+
+        await SyncAccessGrantsAsync(stack.AccountId, stack.WorkspaceId, (actor, role));
+
+        await using var provider = CreateProvider(stack, actingUserId: actor, actorEmail: "cal-disc-actor@example.com", actorName: "Cal Disc Actor");
+        await using var scope = provider.CreateAsyncScope();
+
+        if (allowed)
+        {
+            var response = await scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new DisconnectCalendarCommand(calendarId), CancellationToken.None);
+            response.Succeeded.Should().BeTrue($"a {role} holds ManageIntegrations on the integration resource by default");
+        }
+        else
+        {
+            var act = () => scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new DisconnectCalendarCommand(calendarId), CancellationToken.None);
+            await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>(
+                $"a {role} does not hold ManageIntegrations on the integration resource by default — the canonical pipeline fails closed");
+        }
+    }
+
+    /// <summary>
+    /// Seeds a workspace with an active connected calendar binding and returns
+    /// the stack plus the integration id to disconnect.
+    /// </summary>
+    private async Task<(Stack stack, Guid calendarId)> SeedConnectedCalendarAsync()
     {
         var stack = await SeedWorkspaceAsync();
         await using (var provider = CreateProvider(stack))
@@ -550,16 +670,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
                 .SingleAsync(ci => ci.WorkspaceId == stack.WorkspaceId)).Id;
         }
 
-        // Owner through the full pipeline: locator resolves the integration
-        // resource, engine evaluates the resource-scoped ManageIntegrations.
-        await using (var ownerProvider = CreateProvider(stack))
-        await using (var scope = ownerProvider.CreateAsyncScope())
-        {
-            var response = await scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new DisconnectCalendarCommand(calendarId), CancellationToken.None);
-            response.Succeeded.Should().BeTrue(
-                "the workspace owner passes the resource-scoped ManageIntegrations ladder");
-        }
+        return (stack, calendarId);
     }
 
     private async Task SeedWorkspaceMemberAsync(Guid accountId, Guid workspaceId, Guid userId, WorkspaceRole role)

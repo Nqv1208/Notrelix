@@ -9,15 +9,14 @@ namespace Notrelix.Infrastructure.Integrations.Webhooks;
 /// Application port. Receipts are Infrastructure reliability state in
 /// integrations.inbound_webhook_receipts. The database unique constraint on
 /// (provider, external event id) is the dedup authority: the claim is a
-/// single INSERT, and the loser of a concurrent race observes the constraint
-/// and classifies the delivery as a duplicate — never an error. The payload
-/// hash is SHA-256 over the exact verified raw bytes; the raw payload is
-/// persisted only encrypted at rest.
+/// single conditional INSERT ... ON CONFLICT DO NOTHING RETURNING, so the
+/// loser of a concurrent race observes an empty result and classifies the
+/// delivery as a duplicate — never an error, and the ambient transaction
+/// never enters an aborted state. The payload hash is SHA-256 over the exact
+/// verified raw bytes; the raw payload is persisted only encrypted at rest.
 /// </summary>
 public sealed class CalendarWebhookIntake : ICalendarWebhookIntake
 {
-    private const string ReceiptIdentityConstraint = "ux_inbound_webhook_receipts_provider_external_event_id";
-
     private readonly ApplicationDbContext _context;
     private readonly ISecretEncryptor _encryptor;
     private readonly IDateTimeProvider _clock;
@@ -48,20 +47,38 @@ public sealed class CalendarWebhookIntake : ICalendarWebhookIntake
         // Intake is the business of this flow: claiming the receipt IS the
         // processed technical effect (AI-FLOW-07 is frozen intake-only).
         receipt.MarkProcessed(_clock.UtcNow);
-        _context.InboundWebhookReceipts.Add(receipt);
 
-        try
+        // The identity claim must be atomic inside the ambient data-session
+        // transaction without gambling on a constraint violation aborting that
+        // transaction: one conditional INSERT whose RETURNING result is the
+        // claim authority. The conflict target infers the unique index
+        // ux_inbound_webhook_receipts_provider_external_event_id — the dedup
+        // authority. An empty result means another delivery already holds the
+        // (provider, event id) identity — idempotent no-op, no error, no
+        // poisoned transaction.
+        var claimed = await _context.Database
+            .SqlQuery<Guid?>($"""
+                INSERT INTO integration.inbound_webhook_receipts
+                    (id, provider, external_event_id, payload_hash, protected_payload,
+                     received_at, status, processed_at, failure_reason)
+                VALUES (
+                    {receipt.Id}, {receipt.Provider}, {receipt.ExternalEventId}, {receipt.PayloadHash},
+                    {receipt.ProtectedPayload}, {receipt.ReceivedAt}, {receipt.Status},
+                    {receipt.ProcessedAt}, {receipt.FailureReason})
+                ON CONFLICT (provider, external_event_id) DO NOTHING
+                RETURNING id
+                """)
+            .ToListAsync(cancellationToken);
+
+        if (claimed.Count > 0)
         {
-            await _context.SaveChangesAsync(cancellationToken);
             return CalendarWebhookIntakeResult.Accepted;
         }
-        catch (DbUpdateException ex) when (IsIdentityConflict(ex))
-        {
-            // Concurrent duplicate claim: another delivery already holds the
-            // (provider, event id) identity — idempotent no-op, no error.
-            _context.Entry(receipt).State = EntityState.Detached;
-            return CalendarWebhookIntakeResult.Duplicate;
-        }
+
+        // Lost the identity race: the tracked entity must not be flushed as a
+        // second INSERT when the surrounding session commits.
+        _context.Entry(receipt).State = EntityState.Detached;
+        return CalendarWebhookIntakeResult.Duplicate;
     }
 
     public async Task RecordRejectedAsync(
@@ -86,10 +103,4 @@ public sealed class CalendarWebhookIntake : ICalendarWebhookIntake
             System.Text.Encoding.UTF8.GetBytes(rawBody)));
 
     private string Protect(string rawBody) => _encryptor.Protect(rawBody, "Notrelix.Integrations.CalendarWebhooks.v1");
-
-    private static bool IsIdentityConflict(DbUpdateException ex) =>
-        ex.InnerException is Npgsql.PostgresException
-        {
-            SqlState: "23505"
-        } pg && pg.ConstraintName == ReceiptIdentityConstraint;
 }
