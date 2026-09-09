@@ -1786,12 +1786,7 @@
           "200": {
             "description": "OK"
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/health/ready": {
@@ -1889,12 +1884,6 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": { }
-            }
-          },
           "201": {
             "description": "Created",
             "content": {
@@ -1942,12 +1931,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": { }
-            }
-          },
           "204": {
             "description": "No Content"
           }
@@ -1988,12 +1971,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/login": {
@@ -2025,12 +2003,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/csrf": {
@@ -2046,12 +2019,7 @@
           "200": {
             "description": "OK"
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/forgot-password": {
@@ -2083,12 +2051,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/reset-password": {
@@ -2120,12 +2083,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/refresh": {
@@ -2147,12 +2105,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/oauth/{provider}/start": {
@@ -2192,12 +2145,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/oauth/{provider}/callback": {
@@ -2258,12 +2206,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/email-verification/confirm": {
@@ -2294,12 +2237,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/email-verification/resend": {
@@ -2330,12 +2268,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/email-verification/request": {
@@ -2795,12 +2728,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/mfa/enrollment/start": {
@@ -3280,12 +3208,6 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": { }
-            }
-          },
           "201": {
             "description": "Created",
             "content": {
@@ -3324,12 +3246,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": { }
-            }
-          },
           "204": {
             "description": "No Content"
           }
@@ -3369,12 +3285,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/boards/{boardId}/approvals": {
@@ -11526,12 +11437,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     },
     "/api/v1/workspaces/{workspaceId}/members": {
@@ -13540,12 +13446,7 @@
           "200": {
             "description": "OK"
           }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
+        }
       }
     }
   },

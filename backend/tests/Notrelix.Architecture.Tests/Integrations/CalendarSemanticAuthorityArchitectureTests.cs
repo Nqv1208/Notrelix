@@ -38,16 +38,13 @@ public class CalendarSemanticAuthorityArchitectureTests : ArchitectureTestBase
     private const string GateId = "TAC-GATE-024";
 
     /// <summary>
-    /// Exact M8-gap baseline: the unimplemented calendar webhook stub still
-    /// carries the legacy session-auth request shape. When the real flow is
-    /// implemented it must be replaced with a signature-verified inbound
-    /// receipt and this baseline must shrink in the same change.
+    /// Exact M8-gap baseline for unimplemented webhook stubs carrying a legacy
+    /// session-auth request shape. The M8 implementation replaced the stub
+    /// with a signature-verified inbound receipt, so the baseline is now
+    /// EMPTY — any new unimplemented webhook stub is a violation, not a gap.
     /// </summary>
     private static readonly IReadOnlySet<string> SessionAuthWebhookStubBaseline =
-        new HashSet<string>(StringComparer.Ordinal)
-        {
-            "Features/Integrations/Calendar/Commands/HandleCalendarWebhook/HandleCalendarWebhook.cs",
-        };
+        new HashSet<string>(StringComparer.Ordinal);
 
     // ------------------------------------------------------------------
     // Production rules
@@ -241,7 +238,7 @@ public class CalendarSemanticAuthorityArchitectureTests : ArchitectureTestBase
     {
         const string stub = "throw new NotImplementedException();";
         ClassifySessionAuthWebhook("Features/Integrations/Calendar/Commands/HandleCalendarWebhook/HandleCalendarWebhook.cs", stub)
-            .Should().BeNull("the exact unimplemented M8-gap stub is baselined");
+            .Should().NotBeNull("the M8 gap is closed — an unimplemented webhook stub is no longer baselined");
 
         const string realWithSignature =
             "public class HandleOtherWebhookCommandHandler : IRequestHandler<HandleOtherWebhookCommand, Result>\n" +
@@ -285,12 +282,11 @@ public class CalendarSemanticAuthorityArchitectureTests : ArchitectureTestBase
     }
 
     [Fact]
-    public void Gate_SessionAuthStubBaseline_IsExact_AndNonEmpty()
+    public void Gate_SessionAuthStubBaseline_IsExact_AndEmpty_AfterM8Closure()
     {
-        SessionAuthWebhookStubBaseline.Should().NotBeEmpty();
-        SessionAuthWebhookStubBaseline.Should().OnlyContain(p =>
-            p.StartsWith("Features/Integrations/", StringComparison.Ordinal) &&
-            p.Contains("Webhook", StringComparison.Ordinal));
+        SessionAuthWebhookStubBaseline.Should().BeEmpty(
+            "the M8 webhook implementation closed the session-auth stub gap; " +
+            "any new unimplemented webhook stub is a violation");
     }
 
     // ------------------------------------------------------------------

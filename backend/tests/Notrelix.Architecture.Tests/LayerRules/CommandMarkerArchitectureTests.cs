@@ -74,9 +74,6 @@ public class CommandMarkerArchitectureTests
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingTransactionalRequest = new()
     {
-        ["HandleCalendarWebhookCommand"] = new("HandleCalendarWebhookCommand", AllowlistClassification.MigrationPending,
-            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
-            "Implement the bounded feature with IWriteRequest when product work resumes"),
         ["ForgotPasswordCommand"] = new("ForgotPasswordCommand", AllowlistClassification.PublicCommand,
             "ForgotPassword is a global unauthenticated endpoint — no workspace context exists yet",
             "Keep as-is; public command does not need transactional behavior"),
