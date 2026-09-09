@@ -141,7 +141,7 @@
     "requiresSubscription": false,
     "requiresFeature": false,
     "expectedVersion": false,
-    "idempotent": false,
+    "idempotent": true,
     "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
@@ -2009,7 +2009,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "INoDataRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
