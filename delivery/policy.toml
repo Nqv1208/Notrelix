@@ -15,8 +15,11 @@ transitional_branches = ["develop"]
 
 [defaults]
 frontend_default_capabilities = ["node-tests"]
-full_frontend_capabilities = ["node-tests", "web-tests", "mobile-tests", "tooling-tests", "ui", "mock", "contract"]
+full_frontend_capabilities = ["node-tests", "web-tests", "integration-tests", "mobile-tests", "tooling-tests", "ui", "mock", "contract"]
 release_candidate_mode = "complete-deployable-set"
+
+[infra]
+modes = ["topology", "assembled"]
 
 [[change_rules]]
 id = "docs"
@@ -30,6 +33,7 @@ id = "delivery-platform"
 patterns = [".github/workflows/**", ".github/actions/**", ".github/CODEOWNERS", ".github/dependabot.yml", ".github/*.yml", "tools/**", "scripts/ci/**", "delivery/**", "Makefile", ".python-version", ".node-version"]
 exclusive = true
 full_ci = true
+delivery_platform = true
 release = false
 
 [[change_rules]]
@@ -44,6 +48,7 @@ id = "backend-container"
 patterns = ["backend/Dockerfile", ".dockerignore"]
 components = ["backend-api"]
 planes = ["infra"]
+infra_modes = ["topology", "assembled"]
 package_components = ["backend-api"]
 security_domains = ["backend"]
 release = true
@@ -54,6 +59,7 @@ patterns = ["frontend/Dockerfile", "frontend/apps/web/nginx.conf"]
 exclusive = true
 components = ["web"]
 planes = ["infra"]
+infra_modes = ["topology", "assembled"]
 package_components = ["web"]
 security_domains = ["frontend"]
 release = true
@@ -64,6 +70,7 @@ patterns = ["frontend/Dockerfile.marketing"]
 exclusive = true
 components = ["marketing"]
 planes = ["infra"]
+infra_modes = ["topology", "assembled"]
 package_components = ["marketing"]
 security_domains = ["frontend"]
 release = true
@@ -124,6 +131,7 @@ id = "runtime-infra"
 patterns = ["docker-compose.yml", "docker-compose.prod.yml", "docker-compose.staging.yml", "infra/nginx/**", "infra/postgres/**", "delivery/images.lock.toml"]
 exclusive = true
 planes = ["infra"]
+infra_modes = ["topology", "assembled"]
 package_all_deployables = true
 security_domains = ["backend", "frontend"]
 release = true
@@ -162,6 +170,9 @@ required = ["container:{component_id}"]
 [proof_profiles.release-stack]
 required = ["stack:release-candidate"]
 
+[proof_profiles.delivery-platform]
+required = ["delivery:platform"]
+
 [proof_profiles.ui]
 required = ["ui:foundation"]
 
@@ -181,6 +192,9 @@ profile = "container"
 
 [proof_bindings.release]
 profile = "release-stack"
+
+[proof_bindings.delivery]
+profile = "delivery-platform"
 
 [mock]
 artifact_component = "web"
