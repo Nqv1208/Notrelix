@@ -47,24 +47,24 @@ public class N8nAutomationTests : IAsyncLifetime
         var workspace = Workspace.Create(accountId, ownerId, "Workspace", "workspace", Now);
         context.Workspaces.Add(workspace);
 
-        var ownerMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
-        var assignedMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, assignedUserId, WorkspaceRole.Member, ownerId, Now);
+        var ownerMember = WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
+        var assignedMember = WorkspaceMember.Create(accountId, workspace.Id, assignedUserId, WorkspaceRole.Member, ownerId, Now);
         context.WorkspaceMembers.Add(ownerMember);
         context.WorkspaceMembers.Add(assignedMember);
 
-        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, Now);
+        var board = Board.Create(accountId, workspace.Id, ownerId, "Board", null, Now);
         context.Boards.Add(board);
 
-        var group = Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup.Create(Guid.NewGuid(), workspace.Id, board.Id, "Todo", Notrelix.Domain.SharedKernel.Color.Create("#808080"), Notrelix.Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
+        var group = Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup.Create(accountId, workspace.Id, board.Id, "Todo", Notrelix.Domain.SharedKernel.Color.Create("#808080"), Notrelix.Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
         context.BoardGroups.Add(group);
 
-        var item = BoardItem.CreateRoot(Guid.NewGuid(), workspace.Id, board.Id, group.Id, "Task", Notrelix.Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
+        var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, group.Id, "Task", Notrelix.Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
         context.BoardItems.Add(item);
 
         var trigger = AutomationTriggerDefinition.Create("ItemAssigned");
         var action = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}""");
         var config = AutomationConfiguration.Create(trigger, action);
-        var rule = AutomationRule.Create(Guid.NewGuid(), workspace.Id, "Card assigned alert", config, ownerId, Now);
+        var rule = AutomationRule.Create(accountId, workspace.Id, "Card assigned alert", config, ownerId, Now);
         rule.Enable(ownerId, Now);
         context.AutomationRules.Add(rule);
 

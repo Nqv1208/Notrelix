@@ -141,7 +141,7 @@
     "requiresSubscription": false,
     "requiresFeature": false,
     "expectedVersion": false,
-    "idempotent": false,
+    "idempotent": true,
     "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
@@ -1956,12 +1956,12 @@
       "IAuthenticatedRequest"
     ],
     "scopeMarkers": [
-      "IGlobalRequest"
+      "IWorkspaceRequest"
     ],
     "dataMarkers": [
-      "INoDataRequest"
+      "IWriteRequest"
     ],
-    "requiresPermission": false,
+    "requiresPermission": true,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
     "requiresFeature": false,
@@ -1984,7 +1984,7 @@
       "IResourceScopedRequest"
     ],
     "dataMarkers": [
-      "INoDataRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": true,
     "requiresVerifiedEmail": false,
@@ -2003,13 +2003,13 @@
     "requestType": "Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook.HandleCalendarWebhookCommand",
     "kind": "Command",
     "principalMarkers": [
-      "IAuthenticatedRequest"
+      "IAnonymousRequest"
     ],
     "scopeMarkers": [
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "INoDataRequest"
+      "IWriteRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,

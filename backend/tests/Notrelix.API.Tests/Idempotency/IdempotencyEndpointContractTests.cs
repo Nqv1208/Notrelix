@@ -233,6 +233,31 @@ public class IdempotencyEndpointContractTests : IClassFixture<NotrelixApiFactory
     }
 
     [Fact]
+    public void OpenApi_RuleCreate_DeclaresCanonical201_IdempotencyContract()
+    {
+        using var factory = _factory.WithWebHostBuilder(_ => { });
+        using var scope = factory.Services.CreateScope();
+        var provider = (Swashbuckle.AspNetCore.Swagger.ISwaggerProvider)scope.ServiceProvider
+            .GetRequiredService(typeof(Swashbuckle.AspNetCore.Swagger.ISwaggerProvider));
+
+        var document = provider.GetSwagger("v1");
+
+        var automationsPath = document.Paths.Keys.Single(p => p.EndsWith("/automations"));
+        var createRule = document.Paths[automationsPath].Operations[OperationType.Post];
+
+        // The handler returns ToCreatedResult — the exported contract must name
+        // the real 201 success code, not a phantom 200 (TAC-AI-FLOW-01).
+        createRule.Responses.Keys.Should().Contain("201",
+            "a successful rule creation is 201 Created");
+        createRule.Responses.Keys.Should().NotContain("200",
+            "an endpoint declaring its canonical 201 must not also export the inferred 200");
+        createRule.Responses.Keys.Should().Contain("409").And.Contain("503",
+            "the marked idempotency contract travels with the operation");
+        createRule.Parameters
+            .Should().Contain(p => p.Name == "Idempotency-Key" && p.In == ParameterLocation.Header && p.Required);
+    }
+
+    [Fact]
     public async Task IncompleteState_Returns503WithRetryAfter()
     {
         var store = new Moq.Mock<IIdempotencyStore>();

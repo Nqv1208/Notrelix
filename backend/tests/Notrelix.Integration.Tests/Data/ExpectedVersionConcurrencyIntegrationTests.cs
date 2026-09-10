@@ -13,6 +13,7 @@ using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
+using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
@@ -416,6 +417,7 @@ public sealed class ExpectedVersionConcurrencyIntegrationTests : IAsyncLifetime
         services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddSingleton<IOptions<RlsOptions>>(Microsoft.Extensions.Options.Options.Create(new RlsOptions

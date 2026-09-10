@@ -6,6 +6,7 @@ using Notrelix.Infrastructure.Data.Audit;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Events;
 using Notrelix.Infrastructure.Data.Governance.Projections;
+using Notrelix.Infrastructure.Data.Integrations;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Data.Ops.Entities;
@@ -75,6 +76,10 @@ public sealed class EfOwnershipGateTests
         // Authz technical projection
         [typeof(ResourcePermissionInheritanceCacheEntry)] = "AuthzProjection",
         [typeof(AccessGrant)] = "AuthzProjection",
+
+        // Integrations physical secret persistence (M8)
+        [typeof(IntegrationSecretBlob)] = "IntegrationsSecretPersistence",
+        [typeof(InboundWebhookReceipt)] = "IntegrationsSecretPersistence",
     };
 
     /// <summary>Domain/Application namespace segment to the business context port exposing it.</summary>
