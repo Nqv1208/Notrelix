@@ -7,6 +7,11 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      container_matrix: {required: true, type: string}
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
 
 permissions:
   contents: read
@@ -20,14 +25,34 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      backend: ${{ steps.detect.outputs.backend }}
-      web: ${{ steps.detect.outputs.web }}
-      marketing: ${{ steps.detect.outputs.marketing }}
+      backend: ${{ steps.detect.outputs.backend || steps.called.outputs.backend }}
+      web: ${{ steps.detect.outputs.web || steps.called.outputs.web }}
+      marketing: ${{ steps.detect.outputs.marketing || steps.called.outputs.marketing }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - id: called
+        if: github.event_name == 'workflow_call'
+        env:
+          MATRIX: ${{ inputs.container_matrix }}
+        run: |
+          set -euo pipefail
+          backend=false; web=false; marketing=false
+          while IFS= read -r id; do
+            case "$id" in
+              backend-api) backend=true ;;
+              web) web=true ;;
+              marketing) marketing=true ;;
+            esac
+          done < <(jq -r '.include[].component_id' <<<"$MATRIX")
+          {
+            echo "backend=$backend"
+            echo "web=$web"
+            echo "marketing=$marketing"
+          } >> "$GITHUB_OUTPUT"
       - id: detect
+        if: github.event_name != 'workflow_call'
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -273,3 +298,24 @@ jobs:
           if [[ "$BACKEND_SELECTED" == true ]]; then require backend-image "$(result backend-image)"; fi
           if [[ "$WEB_SELECTED" == true ]]; then require web-image "$(result web-image)"; fi
           if [[ "$MARKETING_SELECTED" == true ]]; then require marketing-image "$(result marketing-image)"; fi
+      - if: github.event_name == 'workflow_call' && needs.changes.outputs.backend == 'true'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:backend-api'
+          component_id: backend-api
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
+      - if: github.event_name == 'workflow_call' && needs.changes.outputs.web == 'true'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:web'
+          component_id: web
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
+      - if: github.event_name == 'workflow_call' && needs.changes.outputs.marketing == 'true'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:marketing'
+          component_id: marketing
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}

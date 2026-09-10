@@ -6,6 +6,13 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      selected: {required: true, type: boolean}
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
+      renderer_ref: {required: true, type: string}
+      renderer_version: {required: true, type: string}
 permissions: {contents: read}
 defaults:
   run: {shell: bash, working-directory: frontend}
@@ -27,11 +34,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      frontend: ${{ steps.detect.outputs.frontend }}
+      frontend: ${{ steps.detect.outputs.frontend || steps.called.outputs.frontend }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: {fetch-depth: 0}
+      - id: called
+        if: github.event_name == 'workflow_call'
+        env:
+          SELECTED: ${{ inputs.selected }}
+        run: echo "frontend=$SELECTED" >> "$GITHUB_OUTPUT"
       - id: detect
+        if: github.event_name != 'workflow_call'
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -135,19 +148,28 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e
+      image: ${{ github.event_name == 'workflow_call' && inputs.renderer_ref || 'mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e' }}
       env: {PLAYWRIGHT_BROWSERS_PATH: /ms-playwright}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
       - name: Renderer/package version contract
+        env:
+          EXPECTED: ${{ github.event_name == 'workflow_call' && inputs.renderer_version || '1.61.1' }}
         run: |
-          actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "1.61.1" ]]
+          actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "$EXPECTED" ]]
       - run: pnpm check:ui-purity
       - run: pnpm check:ui-actions
       - run: pnpm check:ui-fixtures
       - run: pnpm check:ui-evidence
       - run: pnpm test:ui:freeze
+      - if: github.event_name == 'workflow_call'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'ui:foundation'
+          component_id: ui-foundation
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with: {name: ui-playwright-report, path: frontend/playwright-report-ui, if-no-files-found: ignore, retention-days: 7}
@@ -183,14 +205,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e
+      image: ${{ github.event_name == 'workflow_call' && inputs.renderer_ref || 'mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e' }}
       env: {PLAYWRIGHT_BROWSERS_PATH: /ms-playwright}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
       - name: Renderer/package version contract
+        env:
+          EXPECTED: ${{ github.event_name == 'workflow_call' && inputs.renderer_version || '1.61.1' }}
         run: |
-          actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "1.61.1" ]]
+          actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "$EXPECTED" ]]
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with: {name: frontend-host-build-web, path: artifacts/frontend/web}
       - name: Restore exact web artifact
@@ -237,14 +261,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e
+      image: ${{ github.event_name == 'workflow_call' && inputs.renderer_ref || 'mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e' }}
       env: {PLAYWRIGHT_BROWSERS_PATH: /ms-playwright}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
       - name: Renderer/package version contract
+        env:
+          EXPECTED: ${{ github.event_name == 'workflow_call' && inputs.renderer_version || '1.61.1' }}
         run: |
-          actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "1.61.1" ]]
+          actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "$EXPECTED" ]]
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with: {name: frontend-host-build-marketing, path: artifacts/frontend/marketing}
       - name: Restore exact marketing artifact
@@ -348,3 +374,10 @@ jobs:
               require "$job" "$(result "$job")"
             done
           fi
+      - if: github.event_name == 'workflow_call'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'frontend:gate'
+          component_id: frontend-gate
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}

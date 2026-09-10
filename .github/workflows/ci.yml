@@ -1,0 +1,206 @@
+name: Notrelix CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  merge_group:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Force full CI
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: notrelix-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  plan:
+    name: Plan CI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      backend_required: ${{ steps.plan.outputs.backend_required }}
+      frontend_required: ${{ steps.plan.outputs.frontend_required }}
+      container_required: ${{ steps.plan.outputs.container_required }}
+      backend_matrix: ${{ steps.plan.outputs.backend_matrix }}
+      container_matrix: ${{ steps.plan.outputs.container_matrix }}
+      change_range_json: ${{ steps.plan.outputs.change_range_json }}
+      renderer_ref: ${{ steps.plan.outputs.renderer_ref }}
+      renderer_version: ${{ steps.plan.outputs.renderer_version }}
+      runtime_images_json: ${{ steps.plan.outputs.runtime_images_json }}
+      infra_topology_required: ${{ steps.plan.outputs.infra_topology_required }}
+      infra_assembled_required: ${{ steps.plan.outputs.infra_assembled_required }}
+      docs_required: ${{ steps.plan.outputs.docs_required }}
+      delivery_platform_required: ${{ steps.plan.outputs.delivery_platform_required }}
+      security_backend_required: ${{ steps.plan.outputs.security_backend_required }}
+      security_frontend_required: ${{ steps.plan.outputs.security_frontend_required }}
+      plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Validate delivery definition
+        run: python3 -m tools.deliveryctl validate
+      - id: plan
+        name: Build execution plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SOURCE_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          FULL: ${{ inputs.full || 'false' }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/ci"
+          args=(--event-name "$EVENT_NAME" --ref "$REF" --source-sha "$SOURCE_SHA" --output "$GITHUB_WORKSPACE/artifacts/ci/ci-execution-plan.json" --github-output)
+          [[ -n "$BASE_SHA" ]] && args+=(--base-sha "$BASE_SHA")
+          [[ -n "$HEAD_SHA" ]] && args+=(--head-sha "$HEAD_SHA")
+          [[ "$FULL" == true ]] && args+=(--full)
+          python3 -m tools.deliveryctl plan "${args[@]}"
+      - name: Upload execution plan
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-execution-plan
+          path: artifacts/ci/ci-execution-plan.json
+          if-no-files-found: error
+          retention-days: 30
+
+  backend:
+    name: Backend CI
+    needs: plan
+    if: needs.plan.outputs.backend_required == 'true'
+    uses: ./.github/workflows/backend-ci.yml
+    with:
+      selected: true
+      source_sha: ${{ github.sha }}
+      plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+      redis_image: ${{ fromJSON(needs.plan.outputs.backend_matrix).include[0].redis_image }}
+      change_range_json: ${{ needs.plan.outputs.change_range_json }}
+
+  frontend:
+    name: Frontend CI
+    needs: plan
+    if: needs.plan.outputs.frontend_required == 'true'
+    uses: ./.github/workflows/frontend-ci.yml
+    with:
+      selected: true
+      source_sha: ${{ github.sha }}
+      plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+      renderer_ref: ${{ needs.plan.outputs.renderer_ref }}
+      renderer_version: ${{ needs.plan.outputs.renderer_version }}
+
+  container:
+    name: Container CI
+    needs: plan
+    if: needs.plan.outputs.container_required == 'true'
+    uses: ./.github/workflows/container-ci.yml
+    with:
+      container_matrix: ${{ needs.plan.outputs.container_matrix }}
+      source_sha: ${{ github.sha }}
+      plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+
+  infra:
+    name: Infrastructure CI
+    needs: plan
+    if: needs.plan.outputs.infra_topology_required == 'true' || needs.plan.outputs.infra_assembled_required == 'true'
+    uses: ./.github/workflows/infra-ci.yml
+    with:
+      topology_required: ${{ needs.plan.outputs.infra_topology_required }}
+      assembled_required: ${{ needs.plan.outputs.infra_assembled_required }}
+      runtime_images_json: ${{ needs.plan.outputs.runtime_images_json }}
+      source_sha: ${{ github.sha }}
+      plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+
+  docs:
+    name: Documentation CI
+    needs: plan
+    if: needs.plan.outputs.docs_required == 'true'
+    uses: ./.github/workflows/docs-ci.yml
+    with:
+      source_sha: ${{ github.sha }}
+      plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+
+  delivery-platform:
+    name: CI definition
+    needs: plan
+    if: needs.plan.outputs.delivery_platform_required == 'true'
+    uses: ./.github/workflows/ci-definition.yml
+    with:
+      source_sha: ${{ github.sha }}
+      plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+
+  security:
+    name: Dependency security
+    needs: plan
+    if: needs.plan.outputs.security_backend_required == 'true' || needs.plan.outputs.security_frontend_required == 'true'
+    uses: ./.github/workflows/security-ci.yml
+    with:
+      scan_backend: ${{ needs.plan.outputs.security_backend_required }}
+      scan_frontend: ${{ needs.plan.outputs.security_frontend_required }}
+      plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+      source_sha: ${{ github.sha }}
+
+  evidence:
+    name: Consolidate CI evidence
+    needs: [plan, backend, frontend, container, infra, docs, delivery-platform, security]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Require canonical plan
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::execution plan failed (result=${{ needs.plan.result }})"
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Download execution plan
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ci-execution-plan
+          path: ./.artifacts/ci
+      - name: Download provider evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: ci-evidence-*
+          merge-multiple: true
+          path: ./.artifacts/ci/evidence
+      - name: Aggregate and verify evidence
+        run: |
+          python3 -m tools.deliveryctl evidence-aggregate \
+            --plan ./.artifacts/ci/ci-execution-plan.json \
+            --evidence-dir ./.artifacts/ci/evidence \
+            --output ./.artifacts/ci/ci-evidence-summary.json \
+            --run-id "$GITHUB_RUN_ID"
+      - name: Upload evidence summary
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-evidence-summary
+          path: ./.artifacts/ci/ci-evidence-summary.json
+          if-no-files-found: error
+          retention-days: 30
+
+  ci-gate:
+    name: CI gate
+    needs: [plan, evidence]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require planning and evidence
+        run: |
+          set -euo pipefail
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          require plan "${{ needs.plan.result }}"
+          require evidence "${{ needs.evidence.result }}"

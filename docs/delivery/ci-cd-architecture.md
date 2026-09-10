@@ -29,6 +29,33 @@ review_on:
 
 # Notrelix CI/CD — Delivery Platform Architecture
 
+## Migration note — W2 (introducing the central orchestrator)
+
+Wave W2 (see `.opencode/executions/ci-cd-modernization/`) introduces a single
+control workflow `.github/workflows/ci.yml` (`Notrelix CI`) that executes the
+canonical `tools.deliveryctl plan` once, routes the domain providers through
+reusable `workflow_call` inputs, collects provider evidence records
+(`ci-evidence-*`), aggregates them into a per-run EvidenceSummary bound to the
+execution plan (`plan_sha256`), and terminates in a central `CI gate` job that
+fails closed.
+
+Transitional state in W2:
+
+- The six domain workflows keep their standalone triggers alongside the new
+  `workflow_call` entry; both lanes execute until cutover to branch protection
+  on the orchestrator check (W7). Duplicate execution in this window is
+  intentional; it is required by the expansion phase of the migration.
+- Providers emit plan-bound evidence only after their internal final gate has
+  closed and only in orchestrated (`workflow_call`) runs.
+- Scheduled dependency security remains standalone and is explicitly not
+  change-routed by `ci.yml`; scheduled runs are verification without plan-bound
+  evidence.
+
+Sections 1–10 below still describe the original standalone architecture and the
+provider-internal proof contracts. The end-state architecture (which removes
+standalone change routing and the duplicated detectors) is defined by the W9
+conversion documented in the migration workstream.
+
 ## 1. Goal
 
 Notrelix CI/CD is split into independently-owned continuous-integration workflows (one per domain) plus a frozen release path. Each domain owns its complete proof chain locally; no central orchestrator plans execution.

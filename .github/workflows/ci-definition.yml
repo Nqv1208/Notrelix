@@ -7,6 +7,10 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
 
 permissions:
   contents: read
@@ -20,14 +24,23 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      delivery_tool: ${{ steps.detect.outputs.delivery_tool }}
-      evidence_action: ${{ steps.detect.outputs.evidence_action }}
-      runtime_lock: ${{ steps.detect.outputs.runtime_lock }}
+      delivery_tool: ${{ steps.detect.outputs.delivery_tool || steps.called.outputs.delivery_tool }}
+      evidence_action: ${{ steps.detect.outputs.evidence_action || steps.called.outputs.evidence_action }}
+      runtime_lock: ${{ steps.detect.outputs.runtime_lock || steps.called.outputs.runtime_lock }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - id: called
+        if: github.event_name == 'workflow_call'
+        run: |
+          {
+            echo "delivery_tool=true"
+            echo "evidence_action=true"
+            echo "runtime_lock=true"
+          } >> "$GITHUB_OUTPUT"
       - id: detect
+        if: github.event_name != 'workflow_call'
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -231,3 +244,10 @@ jobs:
           if [[ "$DELIVERY_TOOL" == true ]]; then require delivery-tool-validation "$(result delivery-tool-validation)"; fi
           if [[ "$EVIDENCE_ACTION" == true ]]; then require evidence-action-validation "$(result evidence-action-validation)"; fi
           if [[ "$RUNTIME_LOCK" == true ]]; then require runtime-lock-security "$(result runtime-lock-security)"; fi
+      - if: github.event_name == 'workflow_call'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'delivery:platform'
+          component_id: ci-definition
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}

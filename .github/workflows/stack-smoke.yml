@@ -49,6 +49,9 @@ jobs:
           health="$(jq -er .stack_health_url <<<"$CONTRACT")"; for _ in $(seq 1 75); do curl -fsS "$health" >/dev/null && break; sleep 2; done
           while IFS= read -r url; do curl -fsS --max-time 10 "$url" >/dev/null; done < <(jq -r '.stack_smoke_urls[]' <<<"$CONTRACT")
       - uses: ./.github/actions/emit-evidence
-        with: {proof_id: 'stack:release-candidate', component_id: release-stack, plan_sha256: ${{ inputs.plan_sha256 }}}
+        with:
+          proof_id: 'stack:release-candidate'
+          component_id: release-stack
+          plan_sha256: ${{ inputs.plan_sha256 }}
       - if: always()
         run: docker compose --env-file /tmp/stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml down -v --remove-orphans || true

@@ -7,6 +7,13 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      selected: {required: true, type: boolean}
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
+      redis_image: {required: true, type: string}
+      change_range_json: {required: true, type: string}
 
 permissions:
   contents: read
@@ -22,12 +29,32 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      backend: ${{ steps.detect.outputs.backend }}
+      backend: ${{ steps.detect.outputs.backend || steps.called.outputs.backend }}
+      base_sha: ${{ steps.detect.outputs.base_sha || steps.called.outputs.base_sha }}
+      head_sha: ${{ steps.detect.outputs.head_sha || steps.called.outputs.head_sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - id: called
+        if: github.event_name == 'workflow_call'
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          RANGE: ${{ inputs.change_range_json }}
+          SELECTED: ${{ inputs.selected }}
+        run: |
+          set -euo pipefail
+          base="$(jq -r '.base_sha // ""' <<<"$RANGE")"
+          head="$(jq -r '.head_sha // ""' <<<"$RANGE")"
+          [[ -n "$base" ]] || base="$SOURCE_SHA"
+          [[ -n "$head" ]] || head="$SOURCE_SHA"
+          {
+            echo "backend=$SELECTED"
+            echo "base_sha=$base"
+            echo "head_sha=$head"
+          } >> "$GITHUB_OUTPUT"
       - id: detect
+        if: github.event_name != 'workflow_call'
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -54,7 +81,11 @@ jobs:
               ;;
           esac
           if [[ "$selected" == true ]] || ! files="$(git diff --name-only --diff-filter=ACMRDTUXB "$base" "$head" 2>/dev/null)"; then
-            echo "backend=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "backend=true"
+              echo "base_sha=$base"
+              echo "head_sha=$head"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
           while IFS= read -r file; do
@@ -69,7 +100,11 @@ jobs:
             esac
             [[ "$selected" == true ]] && break
           done <<< "$files"
-          echo "backend=$selected" >> "$GITHUB_OUTPUT"
+          {
+            echo "backend=$selected"
+            echo "base_sha=$base"
+            echo "head_sha=$head"
+          } >> "$GITHUB_OUTPUT"
 
   quality:
     name: Quality and architecture guards
@@ -96,8 +131,8 @@ jobs:
         run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION" -p:ContinuousIntegrationBuild=true
       - name: Enforce append-only migration history
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          BASE_SHA: ${{ needs.changes.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.changes.outputs.head_sha }}
         run: python3 scripts/ci/check-migration-discipline.py --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA"
       - name: Guard dependency graph against SQLite
         working-directory: backend
@@ -272,7 +307,7 @@ jobs:
     timeout-minutes: 30
     services:
       redis:
-        image: redis:7-alpine
+        image: ${{ github.event_name == 'workflow_call' && inputs.redis_image || 'redis:7-alpine' }}
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s --health-timeout 5s --health-retries 5
@@ -334,7 +369,7 @@ jobs:
     timeout-minutes: 40
     services:
       redis:
-        image: redis:7-alpine
+        image: ${{ github.event_name == 'workflow_call' && inputs.redis_image || 'redis:7-alpine' }}
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s --health-timeout 5s --health-retries 5
@@ -413,3 +448,10 @@ jobs:
             require api-tests "$(result api-tests)"
             require integration-tests "$(result integration-tests)"
           fi
+      - if: github.event_name == 'workflow_call'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'backend:backend-api'
+          component_id: backend-api
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}

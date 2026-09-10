@@ -4,7 +4,8 @@ on:
     inputs:
       scan_backend: {required: false, type: boolean, default: false}
       scan_frontend: {required: false, type: boolean, default: false}
-      plan_sha256: {required: true, type: string}
+      plan_sha256: {required: false, type: string, default: ""}
+      source_sha: {required: false, type: string, default: ""}
 permissions:
   contents: read
 jobs:
@@ -27,8 +28,13 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with: {name: backend-vulnerability-report, path: backend/vulnerable-report.txt, if-no-files-found: ignore, retention-days: 14}
-      - uses: ./.github/actions/emit-evidence
-        with: {proof_id: 'security:backend', component_id: backend-dependencies, plan_sha256: ${{ inputs.plan_sha256 }}}
+      - if: inputs.plan_sha256 != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'security:backend'
+          component_id: backend-dependencies
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
   frontend-dependencies:
     name: Frontend dependency vulnerabilities
     if: inputs.scan_frontend
@@ -44,8 +50,13 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with: {name: frontend-vulnerability-report, path: frontend/pnpm-audit.txt, if-no-files-found: ignore, retention-days: 14}
-      - uses: ./.github/actions/emit-evidence
-        with: {proof_id: 'security:frontend', component_id: frontend-dependencies, plan_sha256: ${{ inputs.plan_sha256 }}}
+      - if: inputs.plan_sha256 != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'security:frontend'
+          component_id: frontend-dependencies
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
   gate:
     name: Dependency Security CI gate
     if: always()

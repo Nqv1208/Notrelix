@@ -74,9 +74,29 @@ def check(root: Path = ROOT) -> None:
                 if ref in text:
                     errors.append(f"{path.name}: duplicated runtime image authority {image_id}")
 
-    for forbidden_ci in ("ci.yml", "ci-v2.yml", "ci-orchestrator.yml", "ci-gate.yml"):
+    for forbidden_ci in ("ci-v2.yml", "ci-orchestrator.yml", "ci-gate.yml"):
         if (workflows / forbidden_ci).exists():
             errors.append(f"central CI orchestrator {forbidden_ci} forbidden")
+
+    ci_path = workflows / "ci.yml"
+    if not ci_path.exists():
+        errors.append("central control workflow ci.yml missing")
+    else:
+        ci_text = ci_path.read_text(encoding="utf-8")
+        if not re.search(r"^name:\s*Notrelix CI\s*$", ci_text, re.MULTILINE):
+            errors.append("ci.yml must be named Notrelix CI")
+        if "python3 -m tools.deliveryctl plan" not in ci_text:
+            errors.append("ci.yml must invoke canonical deliveryctl plan")
+        for forbidden in (
+            "dotnet test",
+            "pnpm test",
+            "pnpm e2e",
+            "docker build",
+            "docker compose build",
+            "make docs-check",
+        ):
+            if forbidden in ci_text:
+                errors.append(f"ci.yml must not implement domain checks ({forbidden})")
 
     developer_workflows = (
         "backend-ci.yml",
@@ -89,9 +109,13 @@ def check(root: Path = ROOT) -> None:
     for name in developer_workflows:
         if "python3 -m tools.deliveryctl plan" in (workflows / name).read_text(encoding="utf-8"):
             errors.append(f"{name}: canonical deliveryctl planner forbidden in domain workflow")
-    for name in domain_workflows:
-        if "uses: ./.github/actions/emit-evidence" in (workflows / name).read_text(encoding="utf-8"):
-            errors.append(f"{name}: domain workflow must not emit evidence")
+    reusable_domain = domain_workflows + ("security-ci.yml",)
+    for name in reusable_domain:
+        text = (workflows / name).read_text(encoding="utf-8")
+        if "uses: ./.github/actions/emit-evidence" in text and "workflow_call:" not in text:
+            errors.append(f"{name}: domain evidence requires reusable workflow_call entry")
+        if "workflow_call:" in text and not re.search(r"inputs\.", text):
+            errors.append(f"{name}: workflow_call entry must consume resolved inputs")
 
     frontend = (workflows / "frontend-ci.yml").read_text(encoding="utf-8")
     if re.search(r"has [^\n]+&&\s*require [^\n]+\|\|\s*true", frontend):

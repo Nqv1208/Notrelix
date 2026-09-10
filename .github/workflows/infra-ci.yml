@@ -7,6 +7,13 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      topology_required: {required: true, type: boolean}
+      assembled_required: {required: true, type: boolean}
+      runtime_images_json: {required: true, type: string}
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
 
 permissions:
   contents: read
@@ -17,14 +24,28 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      infra: ${{ steps.detect.outputs.infra }}
-      backend_selected: ${{ steps.detect.outputs.backend_selected }}
-      selected: ${{ steps.detect.outputs.selected }}
+      infra: ${{ steps.detect.outputs.infra || steps.called.outputs.infra }}
+      backend_selected: ${{ steps.detect.outputs.backend_selected || steps.called.outputs.backend_selected }}
+      selected: ${{ steps.detect.outputs.selected || steps.called.outputs.selected }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - id: called
+        if: github.event_name == 'workflow_call'
+        env:
+          TOPOLOGY: ${{ inputs.topology_required }}
+          ASSEMBLED: ${{ inputs.assembled_required }}
+        run: |
+          set -euo pipefail
+          [[ "$TOPOLOGY" == true || "$ASSEMBLED" == true ]] && selected=true || selected=false
+          {
+            echo "infra=$selected"
+            echo "backend_selected=$selected"
+            echo "selected=$selected"
+          } >> "$GITHUB_OUTPUT"
       - id: detect
+        if: github.event_name != 'workflow_call'
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -162,3 +183,10 @@ jobs:
             echo "::error::expected static and assembled to be skipped when unselected"
             exit 1
           fi
+      - if: github.event_name == 'workflow_call'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'infra:gate'
+          component_id: infra-gate
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
