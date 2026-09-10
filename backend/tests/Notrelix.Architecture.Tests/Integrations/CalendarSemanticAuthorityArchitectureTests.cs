@@ -30,8 +30,9 @@ namespace Notrelix.Architecture.Tests.Integrations;
 ///   7. Domain integration types must not carry raw secret strings — secrets
 ///      travel only inside SecretRef/secret-hash value objects.
 ///
-/// This gate certifies structure only. A NotImplemented Calendar Real Flow
-/// remains an M8 implementation gap and must not be marked VERIFIED during M3.
+/// This gate certifies structure only. The M8 receipt flow has landed, so
+/// the session-auth webhook stub baseline is empty — any NotImplemented
+/// session-auth Calendar webhook stub is now a violation.
 /// </summary>
 public class CalendarSemanticAuthorityArchitectureTests : ArchitectureTestBase
 {

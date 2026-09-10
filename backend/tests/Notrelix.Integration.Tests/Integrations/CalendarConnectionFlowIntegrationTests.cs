@@ -31,7 +31,8 @@ namespace Notrelix.Integration.Tests.Integrations;
 /// + CalendarIntegration round-trip and advances the connection's secret
 /// pointer on reuse; the disconnect follows CAL-CONN-001 (one-of-many keeps
 /// the generic connection, the last binding revokes it) and a connect that
-/// fails after the secret was stored compensates by revoking it.
+/// fails after staging shares one transaction fate — rollback commits no row
+/// of any kind (atomicity instead of compensation, frozen).
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]

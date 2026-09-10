@@ -13,7 +13,8 @@ namespace Notrelix.Infrastructure.Integrations.Webhooks;
 /// loser of a concurrent race observes an empty result and classifies the
 /// delivery as a duplicate — never an error, and the ambient transaction
 /// never enters an aborted state. The payload hash is SHA-256 over the exact
-/// verified raw bytes; the raw payload is persisted only encrypted at rest.
+/// rawBody under the provider's UTF-8 contract; the raw payload is persisted
+/// only encrypted at rest.
 /// </summary>
 public sealed class CalendarWebhookIntake : ICalendarWebhookIntake
 {
@@ -97,7 +98,7 @@ public sealed class CalendarWebhookIntake : ICalendarWebhookIntake
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>SHA-256 over the exact raw bytes used for signature verification.</summary>
+    /// <summary>SHA-256 over the exact rawBody — the same UTF-8 bytes the signature was verified against.</summary>
     private static string ComputePayloadHash(string rawBody) =>
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
             System.Text.Encoding.UTF8.GetBytes(rawBody)));

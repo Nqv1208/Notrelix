@@ -70,7 +70,8 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         string? actionConfigPattern = null,
         string? triggerConfigPattern = null)
     {
-        var ownerId = Guid.NewGuid();
+        var owner = Domain.Identity.Users.User.Create($"trg-{Guid.NewGuid():N}@example.com", "Trigger Owner", "hashed", Now, true);
+        var ownerId = owner.Id;
         var account = Domain.Accounts.Accounts.Account.Create("Trigger Account", $"trg-{Guid.NewGuid():N}", Domain.Accounts.Accounts.AccountType.Team, ownerId, Now);
         var accountId = account.Id;
         var workspace = Workspace.Create(accountId, ownerId, "Trigger WS", $"trg-{Guid.NewGuid():N}", Now);
@@ -91,10 +92,8 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
         var rule = AutomationRule.Create(accountId, workspace.Id, $"Rule {triggerType}", config, ownerId, Now);
         rule.Enable(ownerId, Now);
 
-        var user = Domain.Identity.Users.User.Create($"trg-{Guid.NewGuid():N}@example.com", "Trigger User", "hashed", Now, true);
-
         await using var seed = _db.CreateContext(SystemTenant());
-        seed.Users.Add(user);
+        seed.Users.Add(owner);
         seed.Accounts.Add(account);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(member);
