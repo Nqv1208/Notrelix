@@ -11,6 +11,7 @@ public static class CreateAutomationRuleEndpoint
             .WithName("Automation.Rules.Create")
             .WithTags("Automation.Rules")
             .WithSummary("Create a workspace automation rule")
+            .Produces<Guid>(StatusCodes.Status201Created)
             .WithIdempotencyKey();
         return group;
     }
