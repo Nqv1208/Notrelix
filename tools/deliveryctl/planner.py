@@ -12,18 +12,20 @@ def _git(root,*args):
 def _exists(root,sha):
     if not sha or set(sha)=={'0'}: return False
     return subprocess.run(['git','cat-file','-e',f'{sha}^{{commit}}'],cwd=root,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
-def changed_files(root,event_name,base_sha,head_sha,before_sha):
+def resolve_range(root,event_name,base_sha,head_sha,before_sha):
     head=head_sha or _git(root,'rev-parse','HEAD')
     if event_name in {'pull_request','merge_group'}:
-        if not (_exists(root,base_sha) and _exists(root,head)): return [],True,'missing PR range'
+        mode=event_name
+        if not (_exists(root,base_sha) and _exists(root,head)):
+            return {'mode':mode,'base_sha':base_sha or '','head_sha':head,'merge_base_sha':'','full_ci':True,'reason':'missing PR range','changed_files':[]}
         mb=_git(root,'merge-base',base_sha,head); out=_git(root,'diff','--name-only','--diff-filter=ACMRDTUXB',mb,head)
-        return sorted({normalize_path(x) for x in out.splitlines() if x.strip()}),False,f'merge-base:{mb}'
+        return {'mode':mode,'base_sha':base_sha,'head_sha':head,'merge_base_sha':mb,'full_ci':False,'reason':f'merge-base:{mb}','changed_files':sorted({normalize_path(x) for x in out.splitlines() if x.strip()})}
     if event_name=='push':
         if _exists(root,before_sha) and _exists(root,head):
             out=_git(root,'diff','--name-only','--diff-filter=ACMRDTUXB',before_sha,head)
-            return sorted({normalize_path(x) for x in out.splitlines() if x.strip()}),False,f'push:{before_sha}..{head}'
-        return [],True,'unknown push range'
-    return [],True,f'{event_name}: full CI'
+            return {'mode':'push','base_sha':before_sha,'head_sha':head,'merge_base_sha':'','full_ci':False,'reason':f'push:{before_sha}..{head}','changed_files':sorted({normalize_path(x) for x in out.splitlines() if x.strip()})}
+        return {'mode':'push','base_sha':before_sha or '','head_sha':head,'merge_base_sha':'','full_ci':True,'reason':'unknown push range','changed_files':[]}
+    return {'mode':event_name,'base_sha':base_sha or '','head_sha':head,'merge_base_sha':'','full_ci':True,'reason':f'{event_name}: full CI','changed_files':[]}
 def renderer(images):
     cfg=image(images,'playwright-ci'); source=str(cfg['source']); m=TAG_RE.fullmatch(source.rsplit(':',1)[-1])
     if not m: raise ValueError('playwright-ci tag must be semantic')
@@ -38,15 +40,16 @@ def container_contract(cid,cfg,images):
     cc=cfg['container'];return {'component_id':cid,'provider':cfg['provider'],'container_context':cc['context'],'dockerfile':cc['dockerfile'],'image_name':cc['image_name'],'compose_service':cc['compose_service'],'deploy_env_var':cc['deploy_env_var'],'runtime_port':int(cc['runtime_port']),'health_path':cc['health_path'],'health_scheme':cc['health_scheme'],'build_args':{k:image(images,v)['ref'] for k,v in cc.get('build_arg_locks',{}).items()},'smoke_dependencies':{k:image(images,v)['ref'] for k,v in cc.get('smoke_dependency_locks',{}).items()},'stateful':False}
 def build_plan(root=ROOT,event_name='workflow_dispatch',ref='',source_sha='',base_sha='',head_sha='',before_sha='',explicit_changed=None,force_full=False):
     a=load_authorities(root);c,p,imgs=a['catalog'],a['policy'],a['images']; comps=c['components']; all_ids=set(comps);deployables={i for i,v in comps.items() if v.get('deployable')};front={i for i,v in comps.items() if v.get('provider') in {'frontend-host','mobile'}};front_dep=front&deployables
-    if explicit_changed is not None: changed=sorted({normalize_path(x) for x in explicit_changed});full=force_full;reason='explicit'
-    elif force_full:changed=[];full=True;reason='full'
-    else:changed,full,reason=changed_files(root,event_name,base_sha,head_sha,before_sha)
-    affected=set();packages=set();planes=set();caps=set();security=set();runtime_changed=set();release_required=False;full_front=False;warnings=[]
+    if explicit_changed is not None: change_range={'mode':'explicit','base_sha':base_sha or '','head_sha':head_sha or '','merge_base_sha':'','full_ci':force_full,'reason':'explicit','changed_files':sorted({normalize_path(x) for x in explicit_changed})}
+    elif force_full:change_range={'mode':'full','base_sha':base_sha or '','head_sha':head_sha or '','merge_base_sha':'','full_ci':True,'reason':'full','changed_files':[]}
+    else:change_range=resolve_range(root,event_name,base_sha,head_sha,before_sha)
+    changed=change_range['changed_files'];full=change_range['full_ci'];reason=change_range['reason']
+    affected=set();packages=set();planes=set();caps=set();security=set();runtime_changed=set();release_required=False;full_front=False;infra_modes=set();delivery_platform=False;warnings=[]
     for path in changed:
         matched=False;exclusive=False
         for rule in p.get('change_rules',[]):
             if not any(matches(path,pat) for pat in rule.get('patterns',[])):continue
-            matched=True;exclusive|=bool(rule.get('exclusive'));affected.update(rule.get('components',[]));packages.update(rule.get('package_components',[]));planes.update(rule.get('planes',[]));caps.update(rule.get('capabilities',[]));security.update(rule.get('security_domains',[]));full|=bool(rule.get('full_ci'));full_front|=bool(rule.get('full_frontend'));release_required|=rule.get('release') is True
+            matched=True;exclusive|=bool(rule.get('exclusive'));affected.update(rule.get('components',[]));packages.update(rule.get('package_components',[]));planes.update(rule.get('planes',[]));caps.update(rule.get('capabilities',[]));security.update(rule.get('security_domains',[]));full|=bool(rule.get('full_ci'));full_front|=bool(rule.get('full_frontend'));infra_modes.update(rule.get('infra_modes',[]));delivery_platform|=bool(rule.get('delivery_platform'));release_required|=rule.get('release') is True
             if rule.get('package_all_deployables'):packages.update(deployables)
             if rule.get('package_all_frontend_deployables'):packages.update(front_dep)
         if exclusive:continue
@@ -59,7 +62,7 @@ def build_plan(root=ROOT,event_name='workflow_dispatch',ref='',source_sha='',bas
         elif not matched:warnings.append(f'unclassified path {path}; full fail-safe');full=True;release_required=True
     if full and event_name=='push' and reason.startswith('unknown push'):release_required=True
     if full:
-        affected.update(all_ids);packages.update(deployables);planes.update({'docs','infra'});security.update({'backend','frontend'});caps.update(p['defaults']['full_frontend_capabilities'])
+        affected.update(all_ids);packages.update(deployables);planes.update({'docs','infra'});security.update({'backend','frontend'});caps.update(p['defaults']['full_frontend_capabilities']);infra_modes.update(p['infra']['modes']);delivery_platform=True
     elif full_front:
         affected.update(front);packages.update(front_dep);security.add('frontend');caps.update(p['defaults']['full_frontend_capabilities'])
     if affected&front:caps.update(p['defaults']['frontend_default_capabilities']);security.add('frontend')
@@ -81,13 +84,15 @@ def build_plan(root=ROOT,event_name='workflow_dispatch',ref='',source_sha='',bas
     for cap in sorted(caps):
         if cap in b.get('capabilities',{}):expected+=resolve_proof_profile(p,b['capabilities'][cap])
     for cid in sorted(packages):expected+=resolve_proof_profile(p,b['packaging']['profile'],component_id=cid)
-    if release_candidate:expected+=resolve_proof_profile(p,b['release']['profile'])
+    if delivery_platform:expected+=resolve_proof_profile(p,b['delivery']['profile'])
+    ci_expected=sorted(set(expected))
+    release_expected=sorted(resolve_proof_profile(p,b['release']['profile'])) if release_candidate else []
     dep=p['deployment'];migration_component=dep['migration_component'];migration_service=comps[migration_component]['container']['compose_service']
     release_contract={'schema_change_policy':dep['schema_change_policy'],'rollback_after_schema_change':dep['rollback_after_schema_change'],'migration_component':migration_component,'migration_service':migration_service,'migration_commands':dep['migration_commands'],'stack_health_url':dep['stack_health_url'],'stack_smoke_urls':dep['stack_smoke_urls']}
     schema_change=any(any(matches(path,pat) for pat in dep['migration_paths']) for path in changed)
     mock=host_contract(p['mock']['artifact_component'],comps[p['mock']['artifact_component']])
-    plan={'api_version':PLAN_API,'kind':'ExecutionPlan','source_sha':source_sha,'event':event_name,'ref':ref,'reason':reason,'changed_files':changed,'full_ci':full,'affected_components':sorted(affected),'package_components':sorted(packages),'planes':sorted(planes),'capabilities':sorted(caps),'security_domains':sorted(security),'release_candidate':release_candidate,'schema_change':schema_change,'expected_proofs':sorted(set(expected)),'warnings':warnings,'renderer':renderer(imgs),'runtime_images':runtime_images(imgs),'deployment_containers':deployable_contracts,'release_contract':release_contract,'mock_artifact':mock,'frontend_filters':filters,'matrices':{'backend':backend,'frontend_hosts':hosts,'mobile':mobiles,'containers':containers}}
+    plan={'api_version':PLAN_API,'kind':'ExecutionPlan','source_sha':source_sha,'event':event_name,'ref':ref,'reason':reason,'change_range':change_range,'changed_files':changed,'full_ci':full,'affected_components':sorted(affected),'package_components':sorted(packages),'planes':sorted(planes),'infra_modes':sorted(infra_modes),'capabilities':sorted(caps),'security_domains':sorted(security),'delivery_platform_required':delivery_platform,'release_candidate':release_candidate,'schema_change':schema_change,'ci_expected_proofs':ci_expected,'release_expected_proofs':release_expected,'expected_proofs':ci_expected,'warnings':warnings,'renderer':renderer(imgs),'runtime_images':runtime_images(imgs),'deployment_containers':deployable_contracts,'release_contract':release_contract,'mock_artifact':mock,'frontend_filters':filters,'matrices':{'backend':backend,'frontend_hosts':hosts,'mobile':mobiles,'containers':containers}}
     plan['plan_sha256']=hashlib.sha256(compact(plan).encode()).hexdigest();return plan
 def github_outputs(plan):
     matrix=lambda x:compact({'include':x});m=plan['matrices'];mock=plan['mock_artifact'];caps=plan['capabilities']
-    return {'backend_matrix':matrix(m['backend']),'backend_count':str(len(m['backend'])),'frontend_host_matrix':matrix(m['frontend_hosts']),'host_count':str(len(m['frontend_hosts'])),'mobile_matrix':matrix(m['mobile']),'mobile_count':str(len(m['mobile'])),'container_matrix':matrix(m['containers']),'container_count':str(len(m['containers'])),'frontend_required':str(bool(m['frontend_hosts'] or m['mobile'] or caps)).lower(),'frontend_filters_json':compact(plan['frontend_filters']),'frontend_capabilities_json':compact(caps),'renderer_ref':plan['renderer']['ref'],'renderer_version':plan['renderer']['version'],'runtime_images_json':compact({'api_version':PLAN_API,'kind':'RuntimeImageSet','images':plan['runtime_images']}),'deployable_containers_json':compact({'api_version':PLAN_API,'kind':'DeployableContainerSet','containers':plan['deployment_containers']}),'release_contract_json':compact(plan['release_contract']),'mock_artifact_component':mock['component_id'],'mock_artifact_name':mock['artifact_name'],'mock_archive_file':mock['archive_file'],'mock_manifest_file':mock['manifest_file'],'docs_required':str('docs' in plan['planes']).lower(),'infra_required':str('infra' in plan['planes']).lower(),'security_backend':str('backend' in plan['security_domains']).lower(),'security_frontend':str('frontend' in plan['security_domains']).lower(),'packaging_required':str(bool(m['containers'])).lower(),'release_candidate':str(bool(plan['release_candidate'])).lower(),'schema_change':str(bool(plan['schema_change'])).lower(),'expected_proofs_json':compact(plan['expected_proofs']),'plan_sha256':plan['plan_sha256']}
+    return {'backend_matrix':matrix(m['backend']),'backend_count':str(len(m['backend'])),'frontend_host_matrix':matrix(m['frontend_hosts']),'host_count':str(len(m['frontend_hosts'])),'mobile_matrix':matrix(m['mobile']),'mobile_count':str(len(m['mobile'])),'container_matrix':matrix(m['containers']),'container_count':str(len(m['containers'])),'backend_required':str(bool(m['backend'])).lower(),'frontend_required':str(bool(m['frontend_hosts'] or m['mobile'] or caps)).lower(),'container_required':str(bool(m['containers'])).lower(),'frontend_filters_json':compact(plan['frontend_filters']),'frontend_capabilities_json':compact(caps),'renderer_ref':plan['renderer']['ref'],'renderer_version':plan['renderer']['version'],'runtime_images_json':compact({'api_version':PLAN_API,'kind':'RuntimeImageSet','images':plan['runtime_images']}),'deployable_containers_json':compact({'api_version':PLAN_API,'kind':'DeployableContainerSet','containers':plan['deployment_containers']}),'release_contract_json':compact(plan['release_contract']),'mock_artifact_component':mock['component_id'],'mock_artifact_name':mock['artifact_name'],'mock_archive_file':mock['archive_file'],'mock_manifest_file':mock['manifest_file'],'docs_required':str('docs' in plan['planes']).lower(),'infra_required':str('infra' in plan['planes']).lower(),'infra_topology_required':str('topology' in plan['infra_modes']).lower(),'infra_assembled_required':str('assembled' in plan['infra_modes']).lower(),'delivery_platform_required':str(bool(plan['delivery_platform_required'])).lower(),'security_backend':str('backend' in plan['security_domains']).lower(),'security_frontend':str('frontend' in plan['security_domains']).lower(),'security_backend_required':str('backend' in plan['security_domains']).lower(),'security_frontend_required':str('frontend' in plan['security_domains']).lower(),'packaging_required':str(bool(m['containers'])).lower(),'release_candidate':str(bool(plan['release_candidate'])).lower(),'schema_change':str(bool(plan['schema_change'])).lower(),'expected_proofs_json':compact(plan['expected_proofs']),'ci_expected_proofs_json':compact(plan['ci_expected_proofs']),'release_expected_proofs_json':compact(plan['release_expected_proofs']),'change_range_json':compact(plan['change_range']),'plan_sha256':plan['plan_sha256']}
