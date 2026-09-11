@@ -20,7 +20,7 @@ env:
 
 jobs:
   changes:
-    name: Change detection
+    name: Change detection and selection
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -91,8 +91,8 @@ jobs:
             echo "runtime_lock=$runtime_lock"
           } >> "$GITHUB_OUTPUT"
 
-  workflow-lint:
-    name: Workflow definition lint
+  static:
+    name: Static definition checks
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -107,13 +107,6 @@ jobs:
       - name: Lint GitHub Actions workflows
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
-
-  script-syntax:
-    name: Script syntax and roundtrip checks
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Compile CI scripts
         run: python3 -m compileall -q scripts/ci
       - name: Syntax-check host artifact helpers
@@ -121,17 +114,17 @@ jobs:
           cd frontend
           node --check scripts/ci/package-host-artifact.mjs
           node --check scripts/ci/restore-host-artifact.mjs
+          node --check scripts/ci/check-pnpm-audit.mjs
       - name: Run host artifact roundtrip test
         run: |
           cd frontend
           node scripts/ci/host-artifact.roundtrip.test.mjs
 
-  delivery-tool-validation:
-    name: Deliveryctl validation
+  contracts:
+    name: Delivery contracts validation
     needs: changes
-    if: needs.changes.outputs.delivery_tool == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Compile deliveryctl and CI scripts
@@ -144,31 +137,14 @@ jobs:
         run: python3 -m tools.deliveryctl visual --check
       - name: Run deliveryctl unit tests
         run: python3 -m unittest discover -s tools/deliveryctl/tests -p 'test_*.py' -v
-
-  evidence-action-validation:
-    name: Emit evidence contract test
-    needs: changes
-    if: needs.changes.outputs.evidence_action == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: frontend/.node-version
       - name: Run emit-evidence contract test
         working-directory: .github/actions/emit-evidence
         run: node contract.test.mjs
-
-  runtime-lock-security:
-    name: Runtime image lock security
-    needs: changes
-    if: needs.changes.outputs.runtime_lock == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Extract pinned runtime image refs
+        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
         run: |
           python3 - <<'EOF'
           import os, sys
@@ -193,6 +169,7 @@ jobs:
               sys.exit(1)
           EOF
       - name: Scan postgres
+        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_POSTGRES }}
@@ -200,6 +177,7 @@ jobs:
           ignore-unfixed: "true"
           exit-code: "1"
       - name: Scan redis
+        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_REDIS }}
@@ -207,6 +185,7 @@ jobs:
           ignore-unfixed: "true"
           exit-code: "1"
       - name: Scan rabbitmq
+        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_RABBITMQ }}
@@ -214,6 +193,7 @@ jobs:
           ignore-unfixed: "true"
           exit-code: "1"
       - name: Scan nginx
+        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_NGINX }}
@@ -221,29 +201,23 @@ jobs:
           ignore-unfixed: "true"
           exit-code: "1"
 
-  ci-definition-gate:
+  proof:
     name: CI Definition Safety gate
     if: always()
-    needs: [changes, workflow-lint, script-syntax, delivery-tool-validation, evidence-action-validation, runtime-lock-security]
+    needs: [changes, static, contracts]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Require CI definition proof when selected
+      - name: Require CI definition proof
         env:
-          DELIVERY_TOOL: ${{ needs.changes.outputs.delivery_tool }}
-          EVIDENCE_ACTION: ${{ needs.changes.outputs.evidence_action }}
-          RUNTIME_LOCK: ${{ needs.changes.outputs.runtime_lock }}
           RESULTS: ${{ toJSON(needs) }}
         run: |
           set -euo pipefail
           require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
           result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
           require changes "$(result changes)"
-          require workflow-lint "$(result workflow-lint)"
-          require script-syntax "$(result script-syntax)"
-          if [[ "$DELIVERY_TOOL" == true ]]; then require delivery-tool-validation "$(result delivery-tool-validation)"; fi
-          if [[ "$EVIDENCE_ACTION" == true ]]; then require evidence-action-validation "$(result evidence-action-validation)"; fi
-          if [[ "$RUNTIME_LOCK" == true ]]; then require runtime-lock-security "$(result runtime-lock-security)"; fi
+          require static "$(result static)"
+          require contracts "$(result contracts)"
       - if: github.event_name == 'workflow_call'
         uses: ./.github/actions/emit-evidence
         with:

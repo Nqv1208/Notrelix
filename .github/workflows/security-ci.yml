@@ -19,12 +19,12 @@ jobs:
       - uses: ./.github/actions/setup-backend
       - working-directory: backend
         run: dotnet restore backend.slnx
-      - name: Fail on vulnerable NuGet packages
+      - name: Fail on vulnerable NuGet packages (structured checker)
         working-directory: backend
         run: |
           set -euo pipefail
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-report.txt
-          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then exit 1; fi
+          dotnet list package --vulnerable --include-transitive > vulnerable-report.txt
+          python3 ../scripts/ci/check-dotnet-vulnerabilities.py --report vulnerable-report.txt --output vulnerable-summary.json
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with: {name: backend-vulnerability-report, path: backend/vulnerable-report.txt, if-no-files-found: ignore, retention-days: 14}
@@ -43,13 +43,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - working-directory: frontend
+      - name: Fail on high/critical pnpm advisories (structured checker)
+        working-directory: frontend
         run: |
-          set -o pipefail
-          pnpm audit --audit-level high 2>&1 | tee pnpm-audit.txt
+          set -euo pipefail
+          # pnpm exits nonzero when advisories exist; the structured checker owns the verdict
+          pnpm audit --json > pnpm-audit.json || true
+          node scripts/ci/check-pnpm-audit.mjs --input pnpm-audit.json --output pnpm-audit-summary.json
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with: {name: frontend-vulnerability-report, path: frontend/pnpm-audit.txt, if-no-files-found: ignore, retention-days: 14}
+        with: {name: frontend-vulnerability-report, path: frontend/pnpm-audit.json, if-no-files-found: ignore, retention-days: 14}
       - if: inputs.plan_sha256 != ''
         uses: ./.github/actions/emit-evidence
         with:

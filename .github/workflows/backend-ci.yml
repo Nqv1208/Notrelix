@@ -37,7 +37,6 @@ jobs:
       range_known: ${{ steps.detect.outputs.range_known || steps.called.outputs.range_known }}
       schema_change: ${{ steps.detect.outputs.schema_change || steps.called.outputs.schema_change }}
       redis_ref: ${{ steps.detect.outputs.redis_ref || steps.called.outputs.redis_ref }}
-      audit: ${{ steps.detect.outputs.audit || steps.called.outputs.audit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -65,7 +64,6 @@ jobs:
             echo "range_known=$range_known"
             echo "schema_change=$SCHEMA_CHANGE"
             echo "redis_ref=$REDIS_REF"
-            echo "audit=false"
           } >> "$GITHUB_OUTPUT"
       - id: detect
         if: github.event_name != 'workflow_call'
@@ -119,7 +117,6 @@ jobs:
             echo "range_known=$([[ "$selected" == true ]] && echo false || echo "$range_known")"
             echo "schema_change=false"
             echo "redis_ref=$FALLBACK_REDIS_REF"
-            echo "audit=true"
           } >> "$GITHUB_OUTPUT"
 
   preflight:
@@ -168,21 +165,6 @@ jobs:
           set -euo pipefail
           matches="$(grep -RInE 'UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:' src tests Directory.Packages.props --include='*.cs' --include='*.csproj' --include='*.props' --exclude='DatabaseProviderArchitectureTests.cs' || true)"
           [[ -z "$matches" ]] || { printf '%s\n' "$matches"; exit 1; }
-      - name: Fail on vulnerable NuGet packages
-        if: needs.changes.outputs.audit == 'true'
-        working-directory: backend
-        run: |
-          set -euo pipefail
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-report.txt
-          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then exit 1; fi
-      - name: Upload dependency vulnerability report
-        if: always() && needs.changes.outputs.audit == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: backend-vulnerability-report
-          path: backend/vulnerable-report.txt
-          if-no-files-found: ignore
-          retention-days: 14
 
   architecture-core:
     name: Architecture and core tests

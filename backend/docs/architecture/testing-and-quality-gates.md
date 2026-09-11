@@ -1693,7 +1693,10 @@ Keep secret-shaped test data scoped to fixtures/CI config and documented as synt
 
 # 112. CI secret scanning/vulnerability
 
-Current quality job includes dependency vulnerability scanning.
+Dependency vulnerability scanning is owned by the central security provider
+(`security-ci.yml`) through the structured checker
+`scripts/ci/check-dotnet-vulnerabilities.py`; the backend CI lanes do not
+duplicate it. Scheduled security keeps covering the backend ecosystem.
 
 Secret scanning may be another repository/platform control.
 

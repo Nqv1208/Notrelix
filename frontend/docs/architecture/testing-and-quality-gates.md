@@ -951,9 +951,10 @@ ui-foundation
 mock-contract
 mock-shard
 mock-artifact-isolation
-dependency-security
 proof (check name `Frontend gate`)
 ```
+
+Dependency audit is owned by the central security provider (`security-ci.yml`) through the structured checker `frontend/scripts/ci/check-pnpm-audit.mjs`; the frontend lane does not duplicate it.
 
 Execution jobs run only when their capability/component selection is true (plan-routed inputs in orchestrated runs, path detection in standalone runs). The `proof` job runs `if: always()`: selected jobs must succeed, unselected jobs must be skipped, and a mock selection additionally requires exact mock shard completeness before the gate closes.
 

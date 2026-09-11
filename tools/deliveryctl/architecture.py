@@ -136,6 +136,8 @@ def check(root: Path = ROOT) -> None:
         errors.append("frontend must verify production/mock artifact isolation")
     if "restore-host-artifact.mjs" not in frontend:
         errors.append("frontend exact-artifact restore contract missing")
+    if re.search(r"pnpm\s+audit", frontend):
+        errors.append("frontend provider must not duplicate dependency audit; security-ci.yml is the single owner")
 
     backend = (workflows / "backend-ci.yml").read_text(encoding="utf-8")
     critical_backend_fqns = (
@@ -200,8 +202,13 @@ def check(root: Path = ROOT) -> None:
         helper_text = migration_helper.read_text(encoding="utf-8")
         if re.search(r"GITHUB_EVENT|EVENT_NAME|github\.event", helper_text):
             errors.append("migration discipline helper must consume the resolved range, not interpret GitHub events")
-    if "has the following vulnerable packages" not in backend:
-        errors.append("backend must fail on vulnerable NuGet packages")
+    if "list package --vulnerable" in backend:
+        errors.append("backend provider must not own dependency security; security-ci.yml is the single owner")
+
+    security = (workflows / "security-ci.yml").read_text(encoding="utf-8")
+    for required in ("check-dotnet-vulnerabilities.py", "check-pnpm-audit.mjs"):
+        if required not in security:
+            errors.append(f"security provider must use the structured checker {required}")
 
     # Startup-critical smoke environment: dropping any of these silently breaks
     # the backend container at Production startup validation (observed with

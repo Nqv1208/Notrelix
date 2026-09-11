@@ -61,7 +61,6 @@ jobs:
       mock: ${{ steps.detect.outputs.mock || steps.called.outputs.mock }}
       mock_contract: ${{ steps.detect.outputs.mock_contract || steps.called.outputs.mock_contract }}
       web_selected: ${{ steps.detect.outputs.web_selected || steps.called.outputs.web_selected }}
-      audit: ${{ steps.detect.outputs.audit || steps.called.outputs.audit }}
       mock_artifact_component: ${{ steps.detect.outputs.mock_artifact_component || steps.called.outputs.mock_artifact_component }}
       mock_artifact_name: ${{ steps.detect.outputs.mock_artifact_name || steps.called.outputs.mock_artifact_name }}
       mock_archive_file: ${{ steps.detect.outputs.mock_archive_file || steps.called.outputs.mock_archive_file }}
@@ -104,7 +103,6 @@ jobs:
             echo "mock=$mock"
             echo "mock_contract=$mock"
             echo "web_selected=$(jq -r '[.include[].component_id] | any(. == "web")' <<<"$HOST_MATRIX")"
-            echo "audit=false"
             echo "mock_artifact_component=$MOCK_ARTIFACT_COMPONENT"
             echo "mock_artifact_name=$MOCK_ARTIFACT_NAME"
             echo "mock_archive_file=$MOCK_ARCHIVE_FILE"
@@ -169,7 +167,6 @@ jobs:
               echo "mock=true"
               echo "mock_contract=true"
               echo "web_selected=true"
-              echo "audit=true"
               echo "mock_artifact_component=$FALLBACK_MOCK_ARTIFACT_COMPONENT"
               echo "mock_artifact_name=$FALLBACK_MOCK_ARTIFACT_NAME"
               echo "mock_archive_file=$FALLBACK_MOCK_ARCHIVE_FILE"
@@ -191,7 +188,6 @@ jobs:
               echo "mock=false"
               echo "mock_contract=false"
               echo "web_selected=false"
-              echo "audit=false"
               echo "mock_artifact_component=$FALLBACK_MOCK_ARTIFACT_COMPONENT"
               echo "mock_artifact_name=$FALLBACK_MOCK_ARTIFACT_NAME"
               echo "mock_archive_file=$FALLBACK_MOCK_ARCHIVE_FILE"
@@ -418,26 +414,10 @@ jobs:
         run: node scripts/ci/restore-host-artifact.mjs --component "$COMPONENT" --archive "$GITHUB_WORKSPACE/artifacts/frontend/mock/$ARCHIVE" --manifest "$GITHUB_WORKSPACE/artifacts/frontend/mock/$MANIFEST" --destination "$GITHUB_WORKSPACE/frontend"
       - run: pnpm check:production-mock-isolation
 
-  dependency-security:
-    name: Dependency security
-    needs: [changes, static]
-    if: needs.changes.outputs.audit == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-frontend
-      - run: |
-          set -o pipefail
-          pnpm audit --audit-level high 2>&1 | tee pnpm-audit.txt
-      - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with: {name: frontend-pnpm-audit, path: frontend/pnpm-audit.txt, if-no-files-found: ignore, retention-days: 14}
-
   proof:
     name: Frontend gate
     if: always()
-    needs: [changes, static, tests, host-build, host-e2e, mobile, ui-foundation, mock-contract, mock-shard, mock-artifact-isolation, dependency-security]
+    needs: [changes, static, tests, host-build, host-e2e, mobile, ui-foundation, mock-contract, mock-shard, mock-artifact-isolation]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults: {run: {shell: bash, working-directory: .}}
@@ -453,7 +433,6 @@ jobs:
           MOCK_SELECTED: ${{ needs.changes.outputs.mock }}
           MOCK_CONTRACT_SELECTED: ${{ needs.changes.outputs.mock_contract }}
           WEB_SELECTED: ${{ needs.changes.outputs.web_selected }}
-          AUDIT_SELECTED: ${{ needs.changes.outputs.audit }}
           RESULTS: ${{ toJSON(needs) }}
         run: |
           set -euo pipefail
@@ -470,7 +449,6 @@ jobs:
           check "$MOCK_SELECTED" mock-shard
           check "$MOCK_CONTRACT_SELECTED" mock-contract
           check "$WEB_SELECTED" mock-artifact-isolation
-          check "$AUDIT_SELECTED" dependency-security
       - name: Download mock shard summaries
         if: needs.changes.outputs.mock == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1

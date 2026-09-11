@@ -84,6 +84,13 @@ jobs:
       - uses: ./.github/actions/setup-frontend
       - name: Run documentation governance
         run: make docs-check
+      - if: github.event_name == 'workflow_call'
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'docs:gate'
+          component_id: docs-gate
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
 
   docs-gate:
     name: Documentation Governance gate
@@ -107,10 +114,3 @@ jobs:
             echo "::error::expected governance to be skipped when unselected"
             exit 1
           fi
-      - if: github.event_name == 'workflow_call'
-        uses: ./.github/actions/emit-evidence
-        with:
-          proof_id: 'docs:gate'
-          component_id: docs-gate
-          plan_sha256: ${{ inputs.plan_sha256 }}
-          source_sha: ${{ inputs.source_sha }}
