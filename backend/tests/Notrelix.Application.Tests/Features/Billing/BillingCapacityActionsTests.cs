@@ -7,7 +7,6 @@ using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Domain.Billing;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Common.Exceptions;
 using BusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 
 namespace Notrelix.Application.Tests.Features.Billing;
