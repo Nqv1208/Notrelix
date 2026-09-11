@@ -146,7 +146,9 @@ jobs:
         env:
           BUILD_ARGS: ${{ needs.changes.outputs.backend_build_args }}
         run: |
-          mapfile -t flags < <(jq -r 'to_entries[] | "--build-arg \(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          mapfile -t pairs < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          flags=()
+          for kv in "${pairs[@]}"; do flags+=(--build-arg "$kv"); done
           docker build --pull=false "${flags[@]}" -f backend/Dockerfile -t "$IMAGE" backend
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -248,7 +250,9 @@ jobs:
         env:
           BUILD_ARGS: ${{ needs.changes.outputs.web_build_args }}
         run: |
-          mapfile -t flags < <(jq -r 'to_entries[] | "--build-arg \(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          mapfile -t pairs < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          flags=()
+          for kv in "${pairs[@]}"; do flags+=(--build-arg "$kv"); done
           docker build --pull=false "${flags[@]}" -f frontend/Dockerfile -t "$IMAGE" .
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -310,7 +314,9 @@ jobs:
         env:
           BUILD_ARGS: ${{ needs.changes.outputs.marketing_build_args }}
         run: |
-          mapfile -t flags < <(jq -r 'to_entries[] | "--build-arg \(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          mapfile -t pairs < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          flags=()
+          for kv in "${pairs[@]}"; do flags+=(--build-arg "$kv"); done
           docker build --pull=false "${flags[@]}" -f frontend/Dockerfile.marketing -t "$IMAGE" .
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
