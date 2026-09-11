@@ -114,6 +114,10 @@ const summary = {
   scenarios: results,
 };
 const summaryPath = `${outDir}/mock-shard-summary-${shardIndex}.json`;
+// Each `pnpm e2e:mock` run wipes Playwright's test-results directory at
+// startup, so the shard directory must be recreated immediately before the
+// summary is written after the final scenario.
+mkdirSync(outDir, { recursive: true });
 writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`);
 console.log(JSON.stringify(summary));
 

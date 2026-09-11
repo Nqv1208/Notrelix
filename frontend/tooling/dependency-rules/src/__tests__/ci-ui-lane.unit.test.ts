@@ -21,18 +21,26 @@ describe("frontend-ci ui-foundation lane", () => {
   it("keeps one ui-foundation job owning the UI contract (TST-114)", () => {
     const jobCount = (workflow.match(/^ {2}ui-foundation:/gm) ?? []).length;
     expect(jobCount).toBe(1);
-    const block = workflow.split("  build-web:")[0]!;
+    const block = workflow.split("  mock-contract:")[0]!;
     expect(block).toContain("ui-foundation:");
   });
 
-  it("runs the pinned renderer and the UI-only checks (TST-114)", () => {
+  it("runs the planner-provided pinned renderer and the UI-only checks (TST-114)", () => {
     const block = extractJobBlock(workflow);
-    expect(block).toMatch(/playwright:v[\d.]+/);
+    expect(block).toMatch(/needs\.changes\.outputs\.renderer_ref/);
+    expect(block).toMatch(/needs\.changes\.outputs\.renderer_version/);
     expect(block).toMatch(/check:ui-purity/);
     expect(block).toMatch(/check:ui-actions/);
     expect(block).toMatch(/check:ui-fixtures/);
     expect(block).toMatch(/check:ui-evidence/);
     expect(block).toMatch(/test:ui:freeze/);
+    const fallback = workflow.match(
+      /FALLBACK_RENDERER_REF: mcr\.microsoft\.com\/playwright:v[\d.]+-jammy@sha256:[0-9a-f]{64}/,
+    );
+    expect(fallback).not.toBeNull();
+    const digestSources = (workflow.match(/FALLBACK_RENDERER_REF:/g) ?? [])
+      .length;
+    expect(digestSources).toBe(1);
   });
 
   it("has no application integration dependency in the UI lane (TST-115)", () => {
