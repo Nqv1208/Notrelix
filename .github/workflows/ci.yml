@@ -152,8 +152,8 @@ jobs:
     if: needs.plan.outputs.infra_topology_required == 'true' || needs.plan.outputs.infra_assembled_required == 'true'
     uses: ./.github/workflows/infra-ci.yml
     with:
-      topology_required: ${{ needs.plan.outputs.infra_topology_required }}
-      assembled_required: ${{ needs.plan.outputs.infra_assembled_required }}
+      topology_required: ${{ needs.plan.outputs.infra_topology_required == 'true' }}
+      assembled_required: ${{ needs.plan.outputs.infra_assembled_required == 'true' }}
       runtime_images_json: ${{ needs.plan.outputs.runtime_images_json }}
       source_sha: ${{ github.sha }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
@@ -183,8 +183,8 @@ jobs:
     if: needs.plan.outputs.security_backend_required == 'true' || needs.plan.outputs.security_frontend_required == 'true'
     uses: ./.github/workflows/security-ci.yml
     with:
-      scan_backend: ${{ needs.plan.outputs.security_backend_required }}
-      scan_frontend: ${{ needs.plan.outputs.security_frontend_required }}
+      scan_backend: ${{ needs.plan.outputs.security_backend_required == 'true' }}
+      scan_frontend: ${{ needs.plan.outputs.security_frontend_required == 'true' }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
       source_sha: ${{ github.sha }}
 
