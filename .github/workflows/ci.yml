@@ -84,6 +84,17 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  debug-outputs:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Dump plan outputs
+        run: |
+          cat <<'EOF'
+          ${{ toJSON(needs.plan.outputs) }}
+          EOF
+
   backend:
     name: Backend CI
     needs: plan
