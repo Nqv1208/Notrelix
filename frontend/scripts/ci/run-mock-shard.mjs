@@ -24,11 +24,19 @@ const shardCount = intArg("--shard-count");
 const shardIndex = intArg("--shard-index");
 
 if (!Number.isInteger(shardCount) || shardCount < 1) {
-  console.error(`[run-mock-shard] invalid --shard-count: ${process.argv[process.argv.indexOf("--shard-count") + 1]}`);
+  console.error(
+    `[run-mock-shard] invalid --shard-count: ${process.argv[process.argv.indexOf("--shard-count") + 1]}`,
+  );
   process.exit(1);
 }
-if (!Number.isInteger(shardIndex) || shardIndex < 0 || shardIndex >= shardCount) {
-  console.error(`[run-mock-shard] invalid --shard-index: ${process.argv[process.argv.indexOf("--shard-index") + 1]}`);
+if (
+  !Number.isInteger(shardIndex) ||
+  shardIndex < 0 ||
+  shardIndex >= shardCount
+) {
+  console.error(
+    `[run-mock-shard] invalid --shard-index: ${process.argv[process.argv.indexOf("--shard-index") + 1]}`,
+  );
   process.exit(1);
 }
 
@@ -42,7 +50,9 @@ function countPlaywrightTests(results) {
   return total;
 }
 
-const assigned = SCENARIOS.filter((_, index) => index % shardCount === shardIndex);
+const assigned = SCENARIOS.filter(
+  (_, index) => index % shardCount === shardIndex,
+);
 const outDir = "test-results/mock-shards";
 mkdirSync(outDir, { recursive: true });
 
@@ -57,29 +67,45 @@ for (const scenario of assigned) {
   let status = "passed";
   const e2e = spawnSync("pnpm", ["e2e:mock"], { stdio: "inherit", env });
   if (e2e.error) {
-    console.error(`[run-mock-shard] ${scenario.id} spawn error: ${e2e.error.message}`);
+    console.error(
+      `[run-mock-shard] ${scenario.id} spawn error: ${e2e.error.message}`,
+    );
   }
   if (e2e.status !== 0) {
     status = "failed";
   }
   if (status === "passed") {
-    const count = spawnSync("pnpm", ["e2e:mock:count"], { stdio: "inherit", env });
+    const count = spawnSync("pnpm", ["e2e:mock:count"], {
+      stdio: "inherit",
+      env,
+    });
     if (count.status !== 0) status = "failed";
   }
   if (status === "passed") {
     try {
-      const parsed = JSON.parse(readFileSync("test-results/mock-e2e-results.json", "utf8"));
+      const parsed = JSON.parse(
+        readFileSync("test-results/mock-e2e-results.json", "utf8"),
+      );
       const total = countPlaywrightTests(parsed);
       if (total === 0) {
-        console.error(`[run-mock-shard] zero-test inner run for ${scenario.id}`);
+        console.error(
+          `[run-mock-shard] zero-test inner run for ${scenario.id}`,
+        );
         status = "failed";
       }
     } catch (error) {
-      console.error(`[run-mock-shard] ${scenario.id} results unreadable: ${error.message}`);
+      console.error(
+        `[run-mock-shard] ${scenario.id} results unreadable: ${error.message}`,
+      );
       status = "failed";
     }
   }
-  results.push({ id: scenario.id, persona: scenario.persona, state: scenario.state, status });
+  results.push({
+    id: scenario.id,
+    persona: scenario.persona,
+    state: scenario.state,
+    status,
+  });
 }
 
 const summary = {
@@ -93,6 +119,8 @@ console.log(JSON.stringify(summary));
 
 const failed = results.filter((result) => result.status !== "passed");
 if (failed.length > 0) {
-  console.error(`[run-mock-shard] failed scenarios: ${failed.map((f) => f.id).join(", ")}`);
+  console.error(
+    `[run-mock-shard] failed scenarios: ${failed.map((f) => f.id).join(", ")}`,
+  );
   process.exit(1);
 }

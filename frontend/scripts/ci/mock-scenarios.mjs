@@ -24,7 +24,9 @@ export function validateManifest() {
   const errors = [];
   const expected = PERSONAS.length * STATES.length;
   if (SCENARIOS.length !== expected) {
-    errors.push(`scenario count ${SCENARIOS.length} != ${PERSONAS.length}x${STATES.length}`);
+    errors.push(
+      `scenario count ${SCENARIOS.length} != ${PERSONAS.length}x${STATES.length}`,
+    );
   }
   const ids = SCENARIOS.map((scenario) => scenario.id);
   if (new Set(ids).size !== ids.length) {

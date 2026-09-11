@@ -19,23 +19,36 @@ let parsed;
 try {
   parsed = JSON.parse(readFileSync(inputPath, "utf8"));
 } catch (error) {
-  console.error(`::error::[check-pnpm-audit] malformed audit report: ${error.message}`);
+  console.error(
+    `::error::[check-pnpm-audit] malformed audit report: ${error.message}`,
+  );
   console.error(JSON.stringify({ ok: false, reason: "malformed report" }));
   process.exit(1);
 }
 
 let advisories = parsed?.advisories ?? [];
-if (!Array.isArray(advisories) && typeof advisories === "object" && advisories !== null) {
+if (
+  !Array.isArray(advisories) &&
+  typeof advisories === "object" &&
+  advisories !== null
+) {
   advisories = Object.values(advisories);
 }
 if (!Array.isArray(advisories)) {
-  console.error("::error::[check-pnpm-audit] malformed audit report: advisories section missing");
-  console.error(JSON.stringify({ ok: false, reason: "advisories section missing" }));
+  console.error(
+    "::error::[check-pnpm-audit] malformed audit report: advisories section missing",
+  );
+  console.error(
+    JSON.stringify({ ok: false, reason: "advisories section missing" }),
+  );
   process.exit(1);
 }
 
 const failing = advisories
-  .filter((advisory) => advisory?.severity === "high" || advisory?.severity === "critical")
+  .filter(
+    (advisory) =>
+      advisory?.severity === "high" || advisory?.severity === "critical",
+  )
   .map((advisory) => ({
     module: advisory.module_name ?? advisory.name ?? "unknown",
     severity: advisory.severity,
@@ -53,7 +66,9 @@ if (arg("--output")) {
 }
 if (failing.length > 0) {
   for (const finding of failing) {
-    console.error(`::error::[check-pnpm-audit] ${finding.severity}: ${finding.module} ${finding.title}`);
+    console.error(
+      `::error::[check-pnpm-audit] ${finding.severity}: ${finding.module} ${finding.title}`,
+    );
   }
   process.exit(1);
 }

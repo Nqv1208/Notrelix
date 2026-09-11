@@ -35,14 +35,18 @@ let capabilities;
 try {
   capabilities = JSON.parse(raw);
 } catch (error) {
-  console.error(`[run-selected-tests] invalid capabilities JSON: ${error.message}`);
+  console.error(
+    `[run-selected-tests] invalid capabilities JSON: ${error.message}`,
+  );
   process.exit(1);
 }
 if (
   !Array.isArray(capabilities) ||
   capabilities.some((capability) => typeof capability !== "string")
 ) {
-  console.error("[run-selected-tests] capabilities must be a JSON array of strings");
+  console.error(
+    "[run-selected-tests] capabilities must be a JSON array of strings",
+  );
   process.exit(1);
 }
 
@@ -58,7 +62,9 @@ const selected = Object.keys(SUITES).filter((capability) =>
   capabilities.includes(capability),
 );
 if (selected.length === 0) {
-  console.error("[run-selected-tests] zero selected suites while tests are expected");
+  console.error(
+    "[run-selected-tests] zero selected suites while tests are expected",
+  );
   process.exit(1);
 }
 
@@ -67,9 +73,14 @@ let failed = false;
 for (const capability of selected) {
   const script = SUITES[capability];
   console.log(`[run-selected-tests] ${capability} -> pnpm ${script}`);
-  const run = spawnSync("pnpm", [script], { stdio: "inherit", env: process.env });
+  const run = spawnSync("pnpm", [script], {
+    stdio: "inherit",
+    env: process.env,
+  });
   if (run.error) {
-    console.error(`[run-selected-tests] ${capability} spawn error: ${run.error.message}`);
+    console.error(
+      `[run-selected-tests] ${capability} spawn error: ${run.error.message}`,
+    );
   }
   const status = run.status === 0 ? "passed" : "failed";
   if (run.status !== 0) failed = true;
