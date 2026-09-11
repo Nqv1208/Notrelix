@@ -18,6 +18,7 @@ public class EntitlementConfiguration : IEntityTypeConfiguration<Entitlement>
         builder.Property(x => x.TargetWorkspaceId).HasColumnName("target_workspace_id");
         builder.Property(x => x.Feature).HasColumnName("feature_code").HasConversion(v => v.Code, v => FeatureCode.Create(v)).IsRequired().HasMaxLength(128);
         builder.Property(x => x.Limit).HasColumnName("limit_value").IsRequired();
+        builder.Property(x => x.IsUnlimited).HasColumnName("is_unlimited").HasDefaultValue(false);
         builder.Property(x => x.Source).HasColumnName("source").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");

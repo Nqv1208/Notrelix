@@ -10,6 +10,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
     public Guid? TargetWorkspaceId { get; private set; }
     public FeatureCode Feature { get; private set; } = null!;
     public int Limit { get; private set; }
+    public bool IsUnlimited { get; private set; }
     public EntitlementSource Source { get; private set; }
     public EntitlementStatus Status { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
@@ -26,7 +27,8 @@ public class Entitlement : AggregateRoot, IAccountScoped
         DateTimeOffset createdAt,
         EntitlementTargetScope targetScope = EntitlementTargetScope.Account,
         Guid? targetWorkspaceId = null,
-        DateTimeOffset? expiresAt = null)
+        DateTimeOffset? expiresAt = null,
+        bool isUnlimited = false)
     {
         Guard.NotEmpty(accountId);
         Guard.NotNull(feature);
@@ -48,17 +50,18 @@ public class Entitlement : AggregateRoot, IAccountScoped
             TargetWorkspaceId = targetWorkspaceId,
             Feature = feature,
             Limit = limit,
+            IsUnlimited = isUnlimited,
             Source = source,
             Status = EntitlementStatus.Active,
             ExpiresAt = expiresAt
         };
 
         entitlement.RaiseDomainEvent(new EntitlementGrantedDomainEvent(
-            accountId, targetWorkspaceId, entitlement.Id, feature.Code, limit, createdAt));
+            accountId, targetWorkspaceId, entitlement.Id, feature.Code, limit, createdAt, isUnlimited));
         return entitlement;
     }
 
-    public void ChangeLimit(int newLimit, Guid actorUserId, DateTimeOffset occurredAt)
+    public void ChangeLimit(int newLimit, Guid actorUserId, DateTimeOffset occurredAt, bool isUnlimited = false)
     {
         Guard.NotEmpty(actorUserId);
 
@@ -68,16 +71,17 @@ public class Entitlement : AggregateRoot, IAccountScoped
         if (Status != EntitlementStatus.Active)
             throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_CannotChangeLimitOfNonActive, "Cannot change the limit of a non-active entitlement.");
 
-        if (Limit == newLimit) return;
+        if (Limit == newLimit && IsUnlimited == isUnlimited) return;
 
         var oldLimit = Limit;
         var pending = PrepareAuditUpdate(actorUserId, occurredAt);
         Limit = newLimit;
+        IsUnlimited = isUnlimited;
         ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new EntitlementLimitChangedDomainEvent(
-            AccountId, WorkspaceId, Id, Feature.Code, oldLimit, newLimit, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, oldLimit, newLimit, occurredAt, isUnlimited));
     }
 
     public void Disable(Guid actorUserId, DateTimeOffset occurredAt)

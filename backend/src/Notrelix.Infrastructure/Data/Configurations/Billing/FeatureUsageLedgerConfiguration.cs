@@ -16,10 +16,15 @@ public class FeatureUsageLedgerConfiguration : IEntityTypeConfiguration<FeatureU
         builder.Property(x => x.FeatureCode).HasColumnName("feature_code").IsRequired().HasMaxLength(128);
         builder.Property(x => x.Delta).HasColumnName("delta").HasColumnType("decimal(18,2)").IsRequired();
         builder.Property(x => x.ActorUserId).HasColumnName("actor_user_id");
+        builder.Property(x => x.LogicalOperationId).HasColumnName("logical_operation_id");
         builder.Property(x => x.ReferenceResource).HasColumnName("reference_resource").HasMaxLength(500);
         builder.Property(x => x.Note).HasColumnName("note").HasMaxLength(1000);
         builder.Property(x => x.OccurredAt).HasColumnName("occurred_at").IsRequired();
 
+        builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.FeatureCode, x.LogicalOperationId })
+            .HasDatabaseName("ux_feature_usage_ledger_logical_operation")
+            .HasFilter("\"logical_operation_id\" IS NOT NULL")
+            .IsUnique();
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_feature_usage_ledger_workspace_id");
     }
 }

@@ -8,6 +8,7 @@ public sealed record EntitlementLimitChangedDomainEvent : BillingAccountScopedDo
     public string FeatureCode { get; }
     public decimal OldLimit { get; }
     public decimal NewLimit { get; }
+    public bool IsUnlimited { get; }
 
     public EntitlementLimitChangedDomainEvent(
         Guid accountId,
@@ -16,12 +17,14 @@ public sealed record EntitlementLimitChangedDomainEvent : BillingAccountScopedDo
         string featureCode,
         decimal oldLimit,
         decimal newLimit,
-        DateTimeOffset occurredAt)
+        DateTimeOffset occurredAt,
+        bool isUnlimited = false)
         : base(accountId, workspaceId, occurredAt)
     {
         EntitlementId = entitlementId;
         FeatureCode = featureCode;
         OldLimit = oldLimit;
         NewLimit = newLimit;
+        IsUnlimited = isUnlimited;
     }
 }

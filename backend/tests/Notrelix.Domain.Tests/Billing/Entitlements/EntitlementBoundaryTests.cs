@@ -18,11 +18,14 @@ public class EntitlementBoundaryTests
     }
 
     [Fact]
-    public void Entitlement_Create_WithZeroLimit_ShouldSucceed()
+    public void Entitlement_Create_WithZeroLimit_ShouldDefaultToZeroCapacityNotUnlimited()
     {
+        // BILL-LIMIT-001: numeric zero without the IsUnlimited representation is
+        // zero capacity (unavailable), never unlimited.
         var feature = FeatureCode.Create("boards");
         var entitlement = Entitlement.Create(AccountId, feature, 0, EntitlementSource.Subscription, Now);
         entitlement.Limit.Should().Be(0);
+        entitlement.IsUnlimited.Should().BeFalse("zero numeric limit without the unlimited flag is zero capacity");
     }
 
     [Fact]
