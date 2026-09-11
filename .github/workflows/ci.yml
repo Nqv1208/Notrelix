@@ -39,6 +39,7 @@ jobs:
       frontend_capabilities_json: ${{ steps.plan.outputs.frontend_capabilities_json }}
       frontend_host_matrix: ${{ steps.plan.outputs.frontend_host_matrix }}
       mobile_matrix: ${{ steps.plan.outputs.mobile_matrix }}
+      frontend_profile_json: ${{ steps.plan.outputs.frontend_profile_json }}
       mock_artifact_component: ${{ steps.plan.outputs.mock_artifact_component }}
       mock_artifact_name: ${{ steps.plan.outputs.mock_artifact_name }}
       mock_archive_file: ${{ steps.plan.outputs.mock_archive_file }}
@@ -115,7 +116,7 @@ jobs:
     with:
       source_sha: ${{ github.sha }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
-      frontend_capabilities_json: ${{ needs.plan.outputs.frontend_capabilities_json }}
+      frontend_profile_json: ${{ needs.plan.outputs.frontend_profile_json }}
       frontend_host_matrix: ${{ needs.plan.outputs.frontend_host_matrix }}
       mobile_matrix: ${{ needs.plan.outputs.mobile_matrix }}
       renderer_ref: ${{ needs.plan.outputs.renderer_ref }}

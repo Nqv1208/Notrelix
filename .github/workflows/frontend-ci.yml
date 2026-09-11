@@ -10,7 +10,7 @@ on:
     inputs:
       source_sha: {required: true, type: string}
       plan_sha256: {required: true, type: string}
-      frontend_capabilities_json: {required: true, type: string}
+      frontend_profile_json: {required: true, type: string}
       frontend_host_matrix: {required: true, type: string}
       mobile_matrix: {required: true, type: string}
       renderer_ref: {required: true, type: string}
@@ -34,9 +34,9 @@ env:
   EXPO_PUBLIC_APP_URL: https://app.example.invalid
   EXPO_PUBLIC_RELEASE_SHA: ${{ github.sha }}
   MARKETING_E2E_REUSE_BUILD: "1"
+  FALLBACK_PROFILE_JSON: '{"profile":"frontend-full-baseline","workspace":["node","web","integration","mobile","tooling"],"build":["web","marketing","mobile"],"host_runtime":["web","marketing"],"ui":true,"mock":true}'
   FALLBACK_RENDERER_REF: mcr.microsoft.com/playwright:v1.61.1-jammy@sha256:7b86926fff94374389e8e1f4fdc5c76d050d4a06a7886bb537bf412b20e2b71e
   FALLBACK_RENDERER_VERSION: "1.61.1"
-  FALLBACK_TEST_SUITES: '["node-tests","web-tests","integration-tests","mobile-tests","tooling-tests"]'
   FALLBACK_HOST_MATRIX: '{"include":[{"component_id":"web","workspace":"@notrelix/app-web","build_script":"build","e2e_script":"e2e","artifact_paths_json":"[\"apps/web/dist\"]","artifact_name":"frontend-host-build-web","archive_file":"web.tar.gz","manifest_file":"web.manifest.json"},{"component_id":"marketing","workspace":"@notrelix/app-marketing","build_script":"build","e2e_script":"e2e:marketing","artifact_paths_json":"[\"apps/marketing/.next/standalone\",\"apps/marketing/.next/static\",\"apps/marketing/public\"]","artifact_name":"frontend-host-build-marketing","archive_file":"marketing.tar.gz","manifest_file":"marketing.manifest.json"}]}'
   FALLBACK_MOBILE_MATRIX: '{"include":[{"component_id":"mobile","workspace":"@notrelix/app-mobile","build_script":"build"}]}'
   FALLBACK_MOCK_ARTIFACT_COMPONENT: web
@@ -44,23 +44,15 @@ env:
   FALLBACK_MOCK_ARCHIVE_FILE: web.tar.gz
   FALLBACK_MOCK_MANIFEST_FILE: web.manifest.json
 jobs:
-  changes:
-    name: Change detection and selection
+  select:
+    name: Frontend selection
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       frontend: ${{ steps.detect.outputs.frontend || steps.called.outputs.frontend }}
-      static: ${{ steps.detect.outputs.static || steps.called.outputs.static }}
-      tests: ${{ steps.detect.outputs.tests || steps.called.outputs.tests }}
-      tests_suites_json: ${{ steps.detect.outputs.tests_suites_json || steps.called.outputs.tests_suites_json }}
-      hosts: ${{ steps.detect.outputs.hosts || steps.called.outputs.hosts }}
-      host_matrix_json: ${{ steps.detect.outputs.host_matrix_json || steps.called.outputs.host_matrix_json }}
-      mobile: ${{ steps.detect.outputs.mobile || steps.called.outputs.mobile }}
-      mobile_matrix_json: ${{ steps.detect.outputs.mobile_matrix_json || steps.called.outputs.mobile_matrix_json }}
-      ui: ${{ steps.detect.outputs.ui || steps.called.outputs.ui }}
-      mock: ${{ steps.detect.outputs.mock || steps.called.outputs.mock }}
-      mock_contract: ${{ steps.detect.outputs.mock_contract || steps.called.outputs.mock_contract }}
-      web_selected: ${{ steps.detect.outputs.web_selected || steps.called.outputs.web_selected }}
+      profile_json: ${{ steps.detect.outputs.profile_json || steps.called.outputs.profile_json }}
+      application_build_matrix_json: ${{ steps.detect.outputs.application_build_matrix_json || steps.called.outputs.application_build_matrix_json }}
+      host_runtime_matrix_json: ${{ steps.detect.outputs.host_runtime_matrix_json || steps.called.outputs.host_runtime_matrix_json }}
       mock_artifact_component: ${{ steps.detect.outputs.mock_artifact_component || steps.called.outputs.mock_artifact_component }}
       mock_artifact_name: ${{ steps.detect.outputs.mock_artifact_name || steps.called.outputs.mock_artifact_name }}
       mock_archive_file: ${{ steps.detect.outputs.mock_archive_file || steps.called.outputs.mock_archive_file }}
@@ -73,7 +65,7 @@ jobs:
       - id: called
         if: inputs.source_sha != ''
         env:
-          CAPABILITIES_JSON: ${{ inputs.frontend_capabilities_json }}
+          PROFILE_JSON: ${{ inputs.frontend_profile_json }}
           HOST_MATRIX: ${{ inputs.frontend_host_matrix }}
           MOBILE_MATRIX: ${{ inputs.mobile_matrix }}
           MOCK_ARTIFACT_COMPONENT: ${{ inputs.mock_artifact_component }}
@@ -84,25 +76,13 @@ jobs:
           RENDERER_VERSION: ${{ inputs.renderer_version }}
         run: |
           set -euo pipefail
-          suites="$FALLBACK_TEST_SUITES"
-          selected_suites="$(jq -cn --argjson suites "$suites" --argjson caps "$CAPABILITIES_JSON" '$suites - ($suites - $caps)')"
-          in_caps(){ jq -e --arg c "$1" 'any(. == $c)' <<<"$CAPABILITIES_JSON" >/dev/null; }
-          ui=false; mock=false
-          in_caps ui && ui=true || true
-          in_caps mock && mock=true || true
+          application_build_matrix="$(jq -c --argjson h "$HOST_MATRIX" --argjson m "$MOBILE_MATRIX" '{include: ($h.include + $m.include)}')"
+          host_runtime_matrix="$(jq -c --argjson h "$HOST_MATRIX" '{include: $h.include}')"
           {
             echo "frontend=true"
-            echo "static=true"
-            echo "tests=$(jq -r 'length > 0' <<<"$selected_suites")"
-            echo "tests_suites_json=$selected_suites"
-            echo "hosts=$(jq -r '.include | length > 0' <<<"$HOST_MATRIX")"
-            echo "host_matrix_json=$HOST_MATRIX"
-            echo "mobile=$(jq -r '.include | length > 0' <<<"$MOBILE_MATRIX")"
-            echo "mobile_matrix_json=$MOBILE_MATRIX"
-            echo "ui=$ui"
-            echo "mock=$mock"
-            echo "mock_contract=$mock"
-            echo "web_selected=$(jq -r '[.include[].component_id] | any(. == "web")' <<<"$HOST_MATRIX")"
+            echo "profile_json=$PROFILE_JSON"
+            echo "application_build_matrix_json=$application_build_matrix"
+            echo "host_runtime_matrix_json=$host_runtime_matrix"
             echo "mock_artifact_component=$MOCK_ARTIFACT_COMPONENT"
             echo "mock_artifact_name=$MOCK_ARTIFACT_NAME"
             echo "mock_archive_file=$MOCK_ARCHIVE_FILE"
@@ -153,97 +133,87 @@ jobs:
               [[ "$selected" == true ]] && break
             done <<< "$files"
           fi
-          if [[ "$selected" == true ]]; then
-            {
-              echo "frontend=true"
-              echo "static=true"
-              echo "tests=true"
-              echo "tests_suites_json=$FALLBACK_TEST_SUITES"
-              echo "hosts=true"
-              echo "host_matrix_json=$FALLBACK_HOST_MATRIX"
-              echo "mobile=true"
-              echo "mobile_matrix_json=$FALLBACK_MOBILE_MATRIX"
-              echo "ui=true"
-              echo "mock=true"
-              echo "mock_contract=true"
-              echo "web_selected=true"
-              echo "mock_artifact_component=$FALLBACK_MOCK_ARTIFACT_COMPONENT"
-              echo "mock_artifact_name=$FALLBACK_MOCK_ARTIFACT_NAME"
-              echo "mock_archive_file=$FALLBACK_MOCK_ARCHIVE_FILE"
-              echo "mock_manifest_file=$FALLBACK_MOCK_MANIFEST_FILE"
-              echo "renderer_ref=$FALLBACK_RENDERER_REF"
-              echo "renderer_version=$FALLBACK_RENDERER_VERSION"
-            } >> "$GITHUB_OUTPUT"
-          else
-            {
-              echo "frontend=false"
-              echo "static=false"
-              echo "tests=false"
-              echo "tests_suites_json=[]"
-              echo "hosts=false"
-              echo "host_matrix_json={\"include\":[]}"
-              echo "mobile=false"
-              echo "mobile_matrix_json={\"include\":[]}"
-              echo "ui=false"
-              echo "mock=false"
-              echo "mock_contract=false"
-              echo "web_selected=false"
-              echo "mock_artifact_component=$FALLBACK_MOCK_ARTIFACT_COMPONENT"
-              echo "mock_artifact_name=$FALLBACK_MOCK_ARTIFACT_NAME"
-              echo "mock_archive_file=$FALLBACK_MOCK_ARCHIVE_FILE"
-              echo "mock_manifest_file=$FALLBACK_MOCK_MANIFEST_FILE"
-              echo "renderer_ref=$FALLBACK_RENDERER_REF"
-              echo "renderer_version=$FALLBACK_RENDERER_VERSION"
-            } >> "$GITHUB_OUTPUT"
-          fi
+          application_build_matrix="$(jq -c --argjson h "$FALLBACK_HOST_MATRIX" --argjson m "$FALLBACK_MOBILE_MATRIX" '{include: ($h.include + $m.include)}')"
+          {
+            echo "frontend=$selected"
+            echo "profile_json=$FALLBACK_PROFILE_JSON"
+            echo "application_build_matrix_json=$application_build_matrix"
+            echo "host_runtime_matrix_json=$FALLBACK_HOST_MATRIX"
+            echo "mock_artifact_component=$FALLBACK_MOCK_ARTIFACT_COMPONENT"
+            echo "mock_artifact_name=$FALLBACK_MOCK_ARTIFACT_NAME"
+            echo "mock_archive_file=$FALLBACK_MOCK_ARCHIVE_FILE"
+            echo "mock_manifest_file=$FALLBACK_MOCK_MANIFEST_FILE"
+            echo "renderer_ref=$FALLBACK_RENDERER_REF"
+            echo "renderer_version=$FALLBACK_RENDERER_VERSION"
+          } >> "$GITHUB_OUTPUT"
 
-  static:
-    name: Repository invariants and static checks
-    needs: changes
-    if: needs.changes.outputs.static == 'true'
+  repository-integrity:
+    name: Frontend / Repository integrity
+    needs: select
+    if: needs.select.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - run: pnpm codegen:check
-      - run: pnpm check:architecture
-      - run: pnpm check:architecture-docs
-      - run: pnpm check:test-taxonomy
-      - run: pnpm check:lint-coverage
-      - run: pnpm format:check
-      - run: pnpm typecheck
-      - run: pnpm lint
+      - name: pnpm codegen:check
+        run: pnpm codegen:check
+      - name: pnpm check:architecture
+        run: pnpm check:architecture
+      - name: pnpm check:architecture-docs
+        run: pnpm check:architecture-docs
+      - name: pnpm check:test-taxonomy
+        run: pnpm check:test-taxonomy
+      - name: pnpm check:lint-coverage
+        run: pnpm check:lint-coverage
+      - name: pnpm format:check
+        run: pnpm format:check
+      - name: pnpm typecheck
+        run: pnpm typecheck
+      - name: pnpm lint
+        run: pnpm lint
 
-  tests:
-    name: Selected guarded test suites
-    needs: [changes, static]
-    if: needs.changes.outputs.tests == 'true'
+  workspace-tests:
+    name: Frontend / Workspace tests
+    needs: [select, repository-integrity]
+    if: needs.select.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - name: Run selected guarded test suites
+      - name: Run full baseline guarded suites
         env:
-          CAPABILITIES_JSON: ${{ needs.changes.outputs.tests_suites_json }}
-        run: node scripts/ci/run-selected-tests.mjs --capabilities-json "$CAPABILITIES_JSON" --summary-out /tmp/selected-tests-summary.json
+          PROFILE_JSON: ${{ needs.select.outputs.profile_json }}
+        run: |
+          suites="$(jq -c '.workspace | map(. + "-tests")' <<<"$PROFILE_JSON")"
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/frontend/ci"
+          node scripts/ci/run-selected-tests.mjs --capabilities-json "$suites" --summary-out "$GITHUB_WORKSPACE/artifacts/frontend/ci/workspace-summary.json"
+      - name: Upload workspace suite summary
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: frontend-workspace-summary
+          path: artifacts/frontend/ci/workspace-summary.json
+          if-no-files-found: error
+          retention-days: 3
 
-  host-build:
-    name: Frontend host build
-    needs: [changes, static]
-    if: needs.changes.outputs.hosts == 'true'
+  application-build:
+    name: Frontend / Build — ${{ matrix.component_id }}
+    needs: [select, repository-integrity]
+    if: needs.select.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.changes.outputs.host_matrix_json) }}
+      matrix: ${{ fromJSON(needs.select.outputs.application_build_matrix_json) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - name: Build host workspace
+      - name: Build ${{ matrix.component_id }} workspace
         run: pnpm --filter ${{ matrix.workspace }} ${{ matrix.build_script }}
       - name: Package exact host artifact
+        if: matrix.artifact_name != ''
         env:
           COMPONENT: ${{ matrix.component_id }}
           PATHS_JSON: ${{ matrix.artifact_paths_json }}
@@ -253,6 +223,7 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/artifacts/frontend"
           node scripts/ci/package-host-artifact.mjs --component "$COMPONENT" --paths-json "$PATHS_JSON" --output "$GITHUB_WORKSPACE/artifacts/frontend/$ARCHIVE" --manifest "$GITHUB_WORKSPACE/artifacts/frontend/$MANIFEST"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: matrix.artifact_name != ''
         with:
           name: ${{ matrix.artifact_name }}
           path: |
@@ -261,24 +232,24 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  host-e2e:
-    name: Frontend host E2E
-    needs: [changes, host-build]
-    if: needs.changes.outputs.hosts == 'true'
+  host-runtime:
+    name: Frontend / Host runtime — ${{ matrix.component_id }}
+    needs: [select, application-build]
+    if: needs.select.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     container:
-      image: ${{ needs.changes.outputs.renderer_ref }}
+      image: ${{ needs.select.outputs.renderer_ref }}
       env: {PLAYWRIGHT_BROWSERS_PATH: /ms-playwright}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.changes.outputs.host_matrix_json) }}
+      matrix: ${{ fromJSON(needs.select.outputs.host_runtime_matrix_json) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
       - name: Renderer/package version contract
         env:
-          EXPECTED: ${{ needs.changes.outputs.renderer_version }}
+          EXPECTED: ${{ needs.select.outputs.renderer_version }}
         run: |
           actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "$EXPECTED" ]]
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -287,7 +258,8 @@ jobs:
           path: artifacts/frontend/${{ matrix.component_id }}
       - name: Restore exact host artifact
         run: node scripts/ci/restore-host-artifact.mjs --component ${{ matrix.component_id }} --archive "$GITHUB_WORKSPACE/artifacts/frontend/${{ matrix.component_id }}/${{ matrix.archive_file }}" --manifest "$GITHUB_WORKSPACE/artifacts/frontend/${{ matrix.component_id }}/${{ matrix.manifest_file }}" --destination "$GITHUB_WORKSPACE/frontend"
-      - run: pnpm ${{ matrix.e2e_script }}
+      - name: Browser E2E (exact artifact)
+        run: pnpm ${{ matrix.e2e_script }}
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -298,93 +270,76 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  mobile:
-    name: Mobile build
-    needs: [changes, static]
-    if: needs.changes.outputs.mobile == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.changes.outputs.mobile_matrix_json) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-frontend
-      - name: Build mobile workspace
-        run: pnpm --filter ${{ matrix.workspace }} ${{ matrix.build_script }}
-
-  ui-foundation:
-    name: UI foundation
-    needs: [changes, static]
-    if: needs.changes.outputs.ui == 'true'
+  ui-system:
+    name: Frontend / UI system
+    needs: [select, repository-integrity]
+    if: needs.select.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     container:
-      image: ${{ needs.changes.outputs.renderer_ref }}
+      image: ${{ needs.select.outputs.renderer_ref }}
       env: {PLAYWRIGHT_BROWSERS_PATH: /ms-playwright}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
       - name: Renderer/package version contract
         env:
-          EXPECTED: ${{ needs.changes.outputs.renderer_version }}
+          EXPECTED: ${{ needs.select.outputs.renderer_version }}
         run: |
           actual="$(pnpm exec playwright --version | awk '{print $2}')"; [[ "$actual" == "$EXPECTED" ]]
-      - run: pnpm check:ui-purity
-      - run: pnpm check:ui-actions
-      - run: pnpm check:ui-fixtures
-      - run: pnpm check:ui-evidence
-      - run: pnpm test:ui:freeze
+      - name: pnpm check:ui-purity
+        run: pnpm check:ui-purity
+      - name: pnpm check:ui-actions
+        run: pnpm check:ui-actions
+      - name: pnpm check:ui-fixtures
+        run: pnpm check:ui-fixtures
+      - name: pnpm check:ui-evidence
+        run: pnpm check:ui-evidence
+      - name: pnpm test:ui:freeze
+        run: pnpm test:ui:freeze
       - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'ui:foundation'
-          component_id: ui-foundation
+          component_id: ui-system
           plan_sha256: ${{ inputs.plan_sha256 }}
           source_sha: ${{ inputs.source_sha }}
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with: {name: ui-playwright-report, path: frontend/playwright-report-ui, if-no-files-found: ignore, retention-days: 7}
 
-  mock-contract:
-    name: Mock contract
-    needs: [changes, static]
-    if: needs.changes.outputs.mock_contract == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-frontend
-      - run: pnpm mock:contract
-
   mock-shard:
-    name: Mock E2E shard
-    needs: [changes, static]
-    if: needs.changes.outputs.mock == 'true'
+    name: Frontend / Mock scenarios — shard ${{ matrix.shard_label }}
+    needs: [select, workspace-tests]
+    if: needs.select.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     container:
-      image: ${{ needs.changes.outputs.renderer_ref }}
+      image: ${{ needs.select.outputs.renderer_ref }}
       env: {PLAYWRIGHT_BROWSERS_PATH: /ms-playwright}
     strategy:
       fail-fast: false
       matrix:
-        shard_index: [0, 1, 2, 3]
+        include:
+          - {shard_index: 0, shard_label: "1/4"}
+          - {shard_index: 1, shard_label: "2/4"}
+          - {shard_index: 2, shard_label: "3/4"}
+          - {shard_index: 3, shard_label: "4/4"}
     env:
       SHARD_COUNT: "4"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
       - name: Run mock scenario shard
-        run: node scripts/ci/run-mock-shard.mjs --shard-index ${{ matrix.shard_index }} --shard-count "$SHARD_COUNT"
+        run: node scripts/ci/run-mock-shard.mjs --shard-index ${{ matrix.shard_index }} --shard-count "$SHARD_COUNT" --out-dir "$GITHUB_WORKSPACE/artifacts/frontend/ci/mock-shards"
       - name: Upload shard summary
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mock-shard-summary-${{ matrix.shard_index }}
-          path: frontend/test-results/mock-shards/mock-shard-summary-${{ matrix.shard_index }}.json
-          if-no-files-found: ignore
-          retention-days: 7
+          path: artifacts/frontend/ci/mock-shards/mock-shard-summary-${{ matrix.shard_index }}.json
+          if-no-files-found: error
+          retention-days: 3
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -393,75 +348,76 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  mock-artifact-isolation:
-    name: Production/mock artifact isolation
-    needs: [changes, host-build]
-    if: needs.changes.outputs.web_selected == 'true'
+  mock-system:
+    name: Frontend / Mock system
+    needs: [select, workspace-tests, application-build, mock-shard]
+    if: needs.select.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Node guarded prerequisite (from Workspace summary)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: frontend-workspace-summary, path: artifacts/frontend/ci}
+      - name: Require Node guarded suite success
+        run: |
+          jq -e '.suites.node == "passed"' artifacts/frontend/ci/workspace-summary.json >/dev/null \
+            || { echo "::error::Node guarded suite did not pass in Workspace tests"; exit 1; }
+      - name: Mock freeze contract
+        run: pnpm mock:freeze:check
+      - name: Download mock shard summaries
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ needs.changes.outputs.mock_artifact_name }}
-          path: artifacts/frontend/mock
-      - name: Restore exact web artifact
+          pattern: mock-shard-summary-*
+          merge-multiple: true
+          path: .artifacts/mock-shards
+      - name: Verify exact 20/20 mock scenario coverage
         env:
-          COMPONENT: ${{ needs.changes.outputs.mock_artifact_component }}
-          ARCHIVE: ${{ needs.changes.outputs.mock_archive_file }}
-          MANIFEST: ${{ needs.changes.outputs.mock_manifest_file }}
+          SUMMARIES_DIR: ${{ github.workspace }}/.artifacts/mock-shards
+          SHARD_COUNT: "4"
+        run: node scripts/ci/verify-mock-shards.mjs --dir "$SUMMARIES_DIR" --shard-count "$SHARD_COUNT"
+      - name: Download exact Web production artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.select.outputs.mock_artifact_name }}
+          path: artifacts/frontend/mock
+      - name: Restore exact Web artifact
+        env:
+          COMPONENT: ${{ needs.select.outputs.mock_artifact_component }}
+          ARCHIVE: ${{ needs.select.outputs.mock_archive_file }}
+          MANIFEST: ${{ needs.select.outputs.mock_manifest_file }}
         run: node scripts/ci/restore-host-artifact.mjs --component "$COMPONENT" --archive "$GITHUB_WORKSPACE/artifacts/frontend/mock/$ARCHIVE" --manifest "$GITHUB_WORKSPACE/artifacts/frontend/mock/$MANIFEST" --destination "$GITHUB_WORKSPACE/frontend"
-      - run: pnpm check:production-mock-isolation
+      - name: Production/mock isolation on exact Web artifact
+        run: pnpm check:production-mock-isolation
 
-  proof:
+  frontend-gate:
     name: Frontend gate
     if: always()
-    needs: [changes, static, tests, host-build, host-e2e, mobile, ui-foundation, mock-contract, mock-shard, mock-artifact-isolation]
+    needs: [select, repository-integrity, workspace-tests, application-build, host-runtime, ui-system, mock-system]
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 5
     defaults: {run: {shell: bash, working-directory: .}}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Require selected frontend proof
+      - name: Require frontend proof when selected
         env:
-          STATIC_SELECTED: ${{ needs.changes.outputs.static }}
-          TESTS_SELECTED: ${{ needs.changes.outputs.tests }}
-          HOSTS_SELECTED: ${{ needs.changes.outputs.hosts }}
-          MOBILE_SELECTED: ${{ needs.changes.outputs.mobile }}
-          UI_SELECTED: ${{ needs.changes.outputs.ui }}
-          MOCK_SELECTED: ${{ needs.changes.outputs.mock }}
-          MOCK_CONTRACT_SELECTED: ${{ needs.changes.outputs.mock_contract }}
-          WEB_SELECTED: ${{ needs.changes.outputs.web_selected }}
+          SELECTED: ${{ needs.select.outputs.frontend }}
           RESULTS: ${{ toJSON(needs) }}
         run: |
           set -euo pipefail
           require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
           allowed_unselected(){ local name="$1" result="$2"; [[ "$result" == skipped || "$result" == success ]] || { echo "::error::$name unexpected result=$result"; exit 1; }; }
           result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
-          require changes "$(result changes)"
-          check(){ local flag="$1"; shift; if [[ "$flag" == true ]]; then for j in "$@"; do require "$j" "$(result "$j")"; done; else for j in "$@"; do allowed_unselected "$j" "$(result "$j")"; done; fi; }
-          check "$STATIC_SELECTED" static
-          check "$TESTS_SELECTED" tests
-          check "$HOSTS_SELECTED" host-build host-e2e
-          check "$MOBILE_SELECTED" mobile
-          check "$UI_SELECTED" ui-foundation
-          check "$MOCK_SELECTED" mock-shard
-          check "$MOCK_CONTRACT_SELECTED" mock-contract
-          check "$WEB_SELECTED" mock-artifact-isolation
-      - name: Download mock shard summaries
-        if: needs.changes.outputs.mock == 'true'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          pattern: mock-shard-summary-*
-          merge-multiple: true
-          path: .artifacts/mock-shards
-      - name: Verify mock shard completeness
-        if: needs.changes.outputs.mock == 'true'
-        env:
-          SUMMARIES_DIR: ${{ github.workspace }}/.artifacts/mock-shards
-          SHARD_COUNT: "4"
-        run: node frontend/scripts/ci/verify-mock-shards.mjs --dir "$SUMMARIES_DIR" --shard-count "$SHARD_COUNT"
+          require select "$(result select)"
+          if [[ "$SELECTED" == true ]]; then
+            for j in repository-integrity workspace-tests application-build host-runtime ui-system mock-system; do
+              require "$j" "$(result "$j")"
+            done
+          else
+            for j in repository-integrity workspace-tests application-build host-runtime ui-system mock-system; do
+              allowed_unselected "$j" "$(result "$j")"
+            done
+          fi
       - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:

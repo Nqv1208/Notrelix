@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 from .model import load_authorities
+from .planner import FRONTEND_FULL_BASELINE
 from .runtime import ROOT
 
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
@@ -138,6 +139,53 @@ def check(root: Path = ROOT) -> None:
         errors.append("frontend exact-artifact restore contract missing")
     if re.search(r"pnpm\s+audit", frontend):
         errors.append("frontend provider must not duplicate dependency audit; security-ci.yml is the single owner")
+
+    # Frontend CI process reorganization v1.1 guards (SC-FE-001..014).
+    if re.search(r"^\s*(persona|state):\s*\[", frontend, re.MULTILINE):
+        errors.append("frontend workflow must not expose persona/state combinations as a GitHub matrix (SC-FE-010)")
+    if re.search(r"^\s*shard_index:\s*\[[^\]]+\]", frontend, re.MULTILINE):
+        errors.append("frontend mock shards must expand from four include cells, not an array cross product (SC-FE-004)")
+    shard_cells = re.findall(r"- \{shard_index: (\d+), shard_label: \"\d/4\"\}", frontend)
+    if sorted(shard_cells) != ["0", "1", "2", "3"]:
+        errors.append(f"frontend mock shard expansion must be exactly 4 cells (0..3), got {sorted(shard_cells)} (SC-FE-004)")
+    if "e2e:real" in frontend:
+        errors.append("frontend workflow must not introduce mandatory real-backend E2E (SC-FE-012)")
+    host_runtime_start = frontend.find("\n  host-runtime:\n")
+    if host_runtime_start < 0:
+        errors.append("frontend workflow must define a host-runtime semantic stage (SC-FE-007)")
+    else:
+        host_tail = frontend[host_runtime_start + 1:]
+        next_job = re.search(r"\n  [a-z][a-z0-9-]*:\n", host_tail)
+        host_block = host_tail[: next_job.start()] if next_job else host_tail
+        if re.search(r"(pnpm --filter [^\n]* build|pnpm build|npm run build|docker build)", host_block):
+            errors.append("host runtime must consume the exact artifact and never rebuild (SC-FE-007)")
+    gate_match = re.search(r"^  frontend-gate:\n((?:  .*\n|\n)*)", frontend, re.MULTILINE)
+    if not gate_match:
+        errors.append("frontend workflow must define the frontend-gate final closure job (SC-FE-009)")
+    else:
+        gate_block = gate_match.group(1)
+        for required_stage in (
+            "repository-integrity",
+            "workspace-tests",
+            "application-build",
+            "host-runtime",
+            "ui-system",
+            "mock-system",
+        ):
+            if required_stage not in gate_block:
+                errors.append(f"frontend gate must require the {required_stage} semantic stage (SC-FE-009)")
+    profile_sources = re.findall(r'FALLBACK_PROFILE_JSON: \'([^\']+)\'', frontend)
+    if not profile_sources:
+        errors.append("frontend workflow must carry the frontend-full-baseline fallback profile (SC-FE-002)")
+    else:
+        try:
+            import json as _json
+
+            fallback_profile = _json.loads(profile_sources[0])
+            if fallback_profile != FRONTEND_FULL_BASELINE:
+                errors.append("frontend fallback profile must be the full migration profile (SC-FE-002)")
+        except ValueError:
+            errors.append("frontend fallback profile JSON is malformed (SC-FE-002)")
 
     backend = (workflows / "backend-ci.yml").read_text(encoding="utf-8")
     critical_backend_fqns = (

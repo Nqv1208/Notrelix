@@ -72,6 +72,17 @@ if (!dir || !existsSync(dir)) {
         errors.push(`duplicate scenario execution: ${scenario.id}`);
         continue;
       }
+      if (!Number.isInteger(scenario.executed) || scenario.executed <= 0) {
+        errors.push(
+          `zero-test scenario: ${scenario.id} (executed logical tests must be > 0)`,
+        );
+      }
+      if (
+        (Number.isInteger(scenario.failed) && scenario.failed > 0) ||
+        scenario.status !== "passed"
+      ) {
+        errors.push(`failed scenario: ${scenario.id}`);
+      }
       executed.set(scenario.id, scenario.status);
     }
   }

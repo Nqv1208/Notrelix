@@ -1,16 +1,20 @@
 #!/usr/bin/env node
-// Mock E2E shard runner (delivery plan v2 §10.9).
+// Mock E2E shard runner (frontend-ci-process-reorganization v1.1 §14.2).
 //
 // One GitHub runner per shard. Scenarios are assigned by `index % shard_count`
 // over the canonical manifest in mock-scenarios.mjs. Each scenario invocation
 // sets VITE_MOCK_PERSONA/VITE_MOCK_STATE before `pnpm e2e:mock` starts the dev
-// server (playwright.mock.config.ts reads them per process), then runs the
-// existing `pnpm e2e:mock:count` guard and additionally fails a scenario whose
-// inner Playwright run executed zero tests. The shard summary is always
-// written so the completeness verifier can prove exact 20/20 coverage.
+// server (playwright.mock.config.ts reads them per process), then interprets
+// the Playwright report through the shared parser
+// (playwright-result-summary.mjs) and requires executed logical tests > 0.
+// Remaining scenarios still run for diagnostics; the shard exits nonzero if
+// any scenario failed. Summaries are written to a durable directory outside
+// Playwright-owned cleanup paths.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
+import { summarizePlaywrightReport } from "./playwright-result-summary.mjs";
 import { SCENARIOS } from "./mock-scenarios.mjs";
 
 function intArg(name) {
@@ -18,6 +22,12 @@ function intArg(name) {
   if (i < 0 || i + 1 >= process.argv.length) return undefined;
   const value = Number(process.argv[i + 1]);
   return Number.isInteger(value) ? value : Number.NaN;
+}
+
+function arg(name) {
+  const i = process.argv.indexOf(name);
+  if (i < 0 || i + 1 >= process.argv.length) return undefined;
+  return process.argv[i + 1];
 }
 
 const shardCount = intArg("--shard-count");
@@ -40,40 +50,12 @@ if (
   process.exit(1);
 }
 
-// Counts specs that actually executed (expected/flaky outcomes). The Playwright
-// JSON reporter exposes test cases as `specs`; `suite.tests` is always empty.
-// Scenario-conditional skips (e.g. the default-only accessibility spec) are
-// designed filtering and do not count as executed or as failures.
-function countExecutedSpecs(results) {
-  let total = 0;
-  let executed = 0;
-  let failed = 0;
-  const walk = (suite) => {
-    for (const spec of suite.specs ?? []) {
-      total += 1;
-      const outcomes = spec.tests ?? [];
-      const status = outcomes[outcomes.length - 1]?.status ?? "unknown";
-      if (status === "expected" || status === "passed" || status === "flaky") {
-        executed += 1;
-      } else if (
-        status === "unexpected" ||
-        status === "failed" ||
-        status === "timedOut"
-      ) {
-        failed += 1;
-      }
-    }
-    for (const child of suite.suites ?? []) walk(child);
-  };
-  for (const suite of results.suites ?? []) walk(suite);
-  return { total, executed, failed };
-}
+const outDir = resolve(arg("--out-dir") ?? "artifacts/frontend/ci/mock-shards");
+mkdirSync(outDir, { recursive: true });
 
 const assigned = SCENARIOS.filter(
   (_, index) => index % shardCount === shardIndex,
 );
-const outDir = "test-results/mock-shards";
-mkdirSync(outDir, { recursive: true });
 
 const results = [];
 for (const scenario of assigned) {
@@ -84,6 +66,8 @@ for (const scenario of assigned) {
     VITE_MOCK_STATE: scenario.state,
   };
   let status = "passed";
+  let executed = 0;
+  let failed = 0;
   const e2e = spawnSync("pnpm", ["e2e:mock"], { stdio: "inherit", env });
   if (e2e.error) {
     console.error(
@@ -100,29 +84,28 @@ for (const scenario of assigned) {
     });
     if (count.status !== 0) status = "failed";
   }
-  if (status === "passed") {
-    try {
-      const parsed = JSON.parse(
-        readFileSync("test-results/mock-e2e-results.json", "utf8"),
-      );
-      const counts = countExecutedSpecs(parsed);
-      if (counts.executed === 0) {
-        console.error(
-          `[run-mock-shard] zero-test inner run for ${scenario.id}`,
-        );
-        status = "failed";
-      }
-    } catch (error) {
-      console.error(
-        `[run-mock-shard] ${scenario.id} results unreadable: ${error.message}`,
-      );
+  try {
+    const summary = summarizePlaywrightReport(
+      JSON.parse(readFileSync("test-results/mock-e2e-results.json", "utf8")),
+    );
+    executed = summary.executed;
+    failed = summary.failed;
+    if (status === "passed" && summary.executed === 0) {
+      console.error(`[run-mock-shard] zero-test inner run for ${scenario.id}`);
       status = "failed";
     }
+  } catch (error) {
+    console.error(
+      `[run-mock-shard] ${scenario.id} results unreadable: ${error.message}`,
+    );
+    status = "failed";
   }
   results.push({
     id: scenario.id,
     persona: scenario.persona,
     state: scenario.state,
+    executed,
+    failed,
     status,
   });
 }
@@ -132,10 +115,9 @@ const summary = {
   assigned: assigned.map((scenario) => scenario.id),
   scenarios: results,
 };
-const summaryPath = `${outDir}/mock-shard-summary-${shardIndex}.json`;
-// Each `pnpm e2e:mock` run wipes Playwright's test-results directory at
-// startup, so the shard directory must be recreated immediately before the
-// summary is written after the final scenario.
+const summaryPath = resolve(outDir, `mock-shard-summary-${shardIndex}.json`);
+// Durable summaries live outside Playwright's test-results directory, which is
+// wiped at the start of every `pnpm e2e:mock` run.
 mkdirSync(outDir, { recursive: true });
 writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`);
 console.log(JSON.stringify(summary));

@@ -87,7 +87,17 @@ for (const capability of selected) {
   results.push({ capability, script, status });
 }
 
-const summary = { selected, results, failed };
+const summary = {
+  selected,
+  results,
+  suites: Object.fromEntries(
+    results.map((result) => [
+      result.capability.replace(/-tests$/, ""),
+      result.status,
+    ]),
+  ),
+  failed,
+};
 const summaryOut = arg("--summary-out");
 if (summaryOut) {
   writeFileSync(summaryOut, `${JSON.stringify(summary, null, 2)}\n`);

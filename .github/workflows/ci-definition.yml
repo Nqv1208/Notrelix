@@ -115,10 +115,15 @@ jobs:
           node --check scripts/ci/package-host-artifact.mjs
           node --check scripts/ci/restore-host-artifact.mjs
           node --check scripts/ci/check-pnpm-audit.mjs
+          node --check scripts/ci/playwright-result-summary.mjs
       - name: Run host artifact roundtrip test
         run: |
           cd frontend
           node scripts/ci/host-artifact.roundtrip.test.mjs
+      - name: Run shared Playwright parser tests
+        run: |
+          cd frontend
+          node scripts/ci/playwright-result-summary.test.mjs
 
   contracts:
     name: Delivery contracts validation

@@ -15,20 +15,20 @@ const FORBIDDEN_UI_LANE = [
   "mock:freeze:check",
 ];
 
-describe("frontend-ci ui-foundation lane", () => {
+describe("frontend-ci ui-system lane", () => {
   const workflow = readFileSync(workflowPath, "utf8");
 
-  it("keeps one ui-foundation job owning the UI contract (TST-114)", () => {
-    const jobCount = (workflow.match(/^ {2}ui-foundation:/gm) ?? []).length;
+  it("keeps one ui-system job owning the UI contract (TST-114)", () => {
+    const jobCount = (workflow.match(/^ {2}ui-system:/gm) ?? []).length;
     expect(jobCount).toBe(1);
-    const block = workflow.split("  mock-contract:")[0]!;
-    expect(block).toContain("ui-foundation:");
+    const block = workflow.split("  mock-shard:")[0]!;
+    expect(block).toContain("ui-system:");
   });
 
   it("runs the planner-provided pinned renderer and the UI-only checks (TST-114)", () => {
     const block = extractJobBlock(workflow);
-    expect(block).toMatch(/needs\.changes\.outputs\.renderer_ref/);
-    expect(block).toMatch(/needs\.changes\.outputs\.renderer_version/);
+    expect(block).toMatch(/needs\.select\.outputs\.renderer_ref/);
+    expect(block).toMatch(/needs\.select\.outputs\.renderer_version/);
     expect(block).toMatch(/check:ui-purity/);
     expect(block).toMatch(/check:ui-actions/);
     expect(block).toMatch(/check:ui-fixtures/);
@@ -55,7 +55,7 @@ describe("frontend-ci ui-foundation lane", () => {
 });
 
 function extractJobBlock(workflow: string): string {
-  const marker = "  ui-foundation:";
+  const marker = "  ui-system:";
   const start = workflow.indexOf(marker);
   expect(start).toBeGreaterThanOrEqual(0);
   const tail = workflow.slice(start + marker.length);
