@@ -27,10 +27,10 @@ jobs:
         with:
           fetch-depth: 0
       - id: called
-        if: github.event_name == 'workflow_call'
+        if: inputs.source_sha != ''
         run: echo "documentation=true" >> "$GITHUB_OUTPUT"
       - id: detect
-        if: github.event_name != 'workflow_call'
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -84,7 +84,7 @@ jobs:
       - uses: ./.github/actions/setup-frontend
       - name: Run documentation governance
         run: make docs-check
-      - if: github.event_name == 'workflow_call'
+      - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'docs:gate'

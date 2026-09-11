@@ -71,7 +71,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: {fetch-depth: 0}
       - id: called
-        if: github.event_name == 'workflow_call'
+        if: inputs.source_sha != ''
         env:
           CAPABILITIES_JSON: ${{ inputs.frontend_capabilities_json }}
           HOST_MATRIX: ${{ inputs.frontend_host_matrix }}
@@ -111,7 +111,7 @@ jobs:
             echo "renderer_version=$RENDERER_VERSION"
           } >> "$GITHUB_OUTPUT"
       - id: detect
-        if: github.event_name != 'workflow_call'
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -335,7 +335,7 @@ jobs:
       - run: pnpm check:ui-fixtures
       - run: pnpm check:ui-evidence
       - run: pnpm test:ui:freeze
-      - if: github.event_name == 'workflow_call'
+      - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'ui:foundation'
@@ -462,7 +462,7 @@ jobs:
           SUMMARIES_DIR: ${{ github.workspace }}/.artifacts/mock-shards
           SHARD_COUNT: "4"
         run: node frontend/scripts/ci/verify-mock-shards.mjs --dir "$SUMMARIES_DIR" --shard-count "$SHARD_COUNT"
-      - if: github.event_name == 'workflow_call'
+      - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'frontend:gate'

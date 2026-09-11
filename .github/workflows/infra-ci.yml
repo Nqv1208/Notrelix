@@ -38,7 +38,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: called
-        if: github.event_name == 'workflow_call'
+        if: inputs.source_sha != ''
         env:
           TOPOLOGY: ${{ inputs.topology_required }}
           ASSEMBLED: ${{ inputs.assembled_required }}
@@ -54,7 +54,7 @@ jobs:
             echo "runtime_images_json=$RUNTIME_IMAGES_JSON"
           } >> "$GITHUB_OUTPUT"
       - id: detect
-        if: github.event_name != 'workflow_call'
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -204,7 +204,7 @@ jobs:
           fi
           if [[ "$TOPOLOGY_SELECTED" == true ]]; then require topology "$(result topology)"; else allowed_unselected topology "$(result topology)"; fi
           if [[ "$ASSEMBLED_SELECTED" == true ]]; then require assembled "$(result assembled)"; else allowed_unselected assembled "$(result assembled)"; fi
-      - if: github.event_name == 'workflow_call'
+      - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'infra:gate'

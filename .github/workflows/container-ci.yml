@@ -49,7 +49,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: called
-        if: github.event_name == 'workflow_call'
+        if: inputs.source_sha != ''
         env:
           MATRIX: ${{ inputs.container_matrix }}
           PUBLISH_MODE: ${{ inputs.publish_mode }}
@@ -71,7 +71,7 @@ jobs:
             echo "publish_mode=$PUBLISH_MODE"
           } >> "$GITHUB_OUTPUT"
       - id: detect
-        if: github.event_name != 'workflow_call'
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -367,7 +367,7 @@ jobs:
   publish:
     name: Trusted-main image publication
     needs: [changes, backend-image, web-image, marketing-image]
-    if: always() && needs.changes.outputs.publish_mode == 'true' && github.event_name == 'workflow_call' && github.ref == 'refs/heads/main'
+    if: always() && needs.changes.outputs.publish_mode == 'true' && inputs.source_sha != '' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -475,21 +475,21 @@ jobs:
           if [[ "$WEB_SELECTED" == true ]]; then require web-image "$(result web-image)"; fi
           if [[ "$MARKETING_SELECTED" == true ]]; then require marketing-image "$(result marketing-image)"; fi
           if [[ "$PUBLISH_MODE" == true ]]; then require publish "$(result publish)"; fi
-      - if: github.event_name == 'workflow_call' && needs.changes.outputs.backend == 'true'
+      - if: inputs.source_sha != '' && needs.changes.outputs.backend == 'true'
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'container:backend-api'
           component_id: backend-api
           plan_sha256: ${{ inputs.plan_sha256 }}
           source_sha: ${{ inputs.source_sha }}
-      - if: github.event_name == 'workflow_call' && needs.changes.outputs.web == 'true'
+      - if: inputs.source_sha != '' && needs.changes.outputs.web == 'true'
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'container:web'
           component_id: web
           plan_sha256: ${{ inputs.plan_sha256 }}
           source_sha: ${{ inputs.source_sha }}
-      - if: github.event_name == 'workflow_call' && needs.changes.outputs.marketing == 'true'
+      - if: inputs.source_sha != '' && needs.changes.outputs.marketing == 'true'
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'container:marketing'

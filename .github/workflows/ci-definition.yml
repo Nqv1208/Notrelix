@@ -32,7 +32,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: called
-        if: github.event_name == 'workflow_call'
+        if: inputs.source_sha != ''
         run: |
           {
             echo "delivery_tool=true"
@@ -40,7 +40,7 @@ jobs:
             echo "runtime_lock=true"
           } >> "$GITHUB_OUTPUT"
       - id: detect
-        if: github.event_name != 'workflow_call'
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -144,7 +144,7 @@ jobs:
         working-directory: .github/actions/emit-evidence
         run: node contract.test.mjs
       - name: Extract pinned runtime image refs
-        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
+        if: needs.changes.outputs.runtime_lock == 'true' || inputs.source_sha != ''
         run: |
           python3 - <<'EOF'
           import os, sys
@@ -169,7 +169,7 @@ jobs:
               sys.exit(1)
           EOF
       - name: Scan postgres
-        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
+        if: needs.changes.outputs.runtime_lock == 'true' || inputs.source_sha != ''
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_POSTGRES }}
@@ -177,7 +177,7 @@ jobs:
           ignore-unfixed: "true"
           exit-code: "1"
       - name: Scan redis
-        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
+        if: needs.changes.outputs.runtime_lock == 'true' || inputs.source_sha != ''
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_REDIS }}
@@ -185,7 +185,7 @@ jobs:
           ignore-unfixed: "true"
           exit-code: "1"
       - name: Scan rabbitmq
-        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
+        if: needs.changes.outputs.runtime_lock == 'true' || inputs.source_sha != ''
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_RABBITMQ }}
@@ -193,7 +193,7 @@ jobs:
           ignore-unfixed: "true"
           exit-code: "1"
       - name: Scan nginx
-        if: needs.changes.outputs.runtime_lock == 'true' || github.event_name == 'workflow_call'
+        if: needs.changes.outputs.runtime_lock == 'true' || inputs.source_sha != ''
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.RUNTIME_REF_NGINX }}
@@ -218,7 +218,7 @@ jobs:
           require changes "$(result changes)"
           require static "$(result static)"
           require contracts "$(result contracts)"
-      - if: github.event_name == 'workflow_call'
+      - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'delivery:platform'

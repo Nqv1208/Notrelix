@@ -42,7 +42,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: called
-        if: github.event_name == 'workflow_call'
+        if: inputs.source_sha != ''
         env:
           SOURCE_SHA: ${{ inputs.source_sha }}
           RANGE: ${{ inputs.change_range_json }}
@@ -66,7 +66,7 @@ jobs:
             echo "redis_ref=$REDIS_REF"
           } >> "$GITHUB_OUTPUT"
       - id: detect
-        if: github.event_name != 'workflow_call'
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -339,7 +339,7 @@ jobs:
               allowed_unselected "$j" "$(result "$j")"
             done
           fi
-      - if: github.event_name == 'workflow_call'
+      - if: inputs.source_sha != ''
         uses: ./.github/actions/emit-evidence
         with:
           proof_id: 'backend:backend-api'
