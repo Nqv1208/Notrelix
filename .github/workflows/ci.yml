@@ -52,6 +52,7 @@ jobs:
       security_frontend_required: ${{ steps.plan.outputs.security_frontend_required }}
       plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
       schema_change: ${{ steps.plan.outputs.schema_change }}
+      release_candidate: ${{ steps.plan.outputs.release_candidate }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -122,6 +123,7 @@ jobs:
       container_matrix: ${{ needs.plan.outputs.container_matrix }}
       source_sha: ${{ github.sha }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+      publish_mode: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.release_candidate == 'true') && 'true' || 'false' }}
 
   infra:
     name: Infrastructure CI
@@ -134,6 +136,7 @@ jobs:
       runtime_images_json: ${{ needs.plan.outputs.runtime_images_json }}
       source_sha: ${{ github.sha }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+      schema_change: ${{ needs.plan.outputs.schema_change }}
 
   docs:
     name: Documentation CI

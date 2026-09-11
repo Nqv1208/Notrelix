@@ -72,16 +72,16 @@ def check(root: Path = ROOT) -> None:
                 errors.append(f"{path.name}: provider reads control plane/authority")
             for image_id, ref in runtime_refs.items():
                 if ref in text:
-                    # W4 transition exception: the backend standalone lane (until
-                    # the W7 cutover) has no plan to receive redis_image from, so
-                    # it single-sources the locked digest once as FALLBACK_REDIS_REF.
-                    # Remove together with the standalone lane; any second
-                    # occurrence or use outside backend-ci.yml stays forbidden.
+                    # W4/W5 transition exception: standalone provider lanes (until
+                    # the W7 cutover) have no plan to receive runtime refs from,
+                    # so each provider may single-source locked digests once in
+                    # a FALLBACK_* env contract. Remove together with the
+                    # standalone lanes; any second occurrence or use outside a
+                    # transitional fallback stays forbidden.
                     transitional_fallback = (
-                        path.name == "backend-ci.yml"
-                        and image_id == "redis"
+                        path.name in {"backend-ci.yml", "container-ci.yml", "infra-ci.yml"}
                         and text.count(ref) == 1
-                        and "FALLBACK_REDIS_REF" in text
+                        and re.search(r"FALLBACK_[A-Z_]+:", text) is not None
                     )
                     if not transitional_fallback:
                         errors.append(f"{path.name}: duplicated runtime image authority {image_id}")
@@ -223,9 +223,27 @@ def check(root: Path = ROOT) -> None:
         if required_env not in container_text:
             errors.append(f"backend runtime smoke lost startup-critical env: {required_env.rstrip('=')}")
 
+    publish_start = container_text.find("\n  publish:\n")
+    if publish_start < 0:
+        errors.append("container provider must define a trusted-main publish job")
+        outside_publish = container_text
+    else:
+        after_publish = container_text[publish_start + 1:]
+        next_job = re.search(r"\n  [a-z][a-z0-9-]*:\n", after_publish)
+        publish_end = len(container_text) if next_job is None else publish_start + 1 + next_job.start()
+        publish_text = container_text[publish_start:publish_end]
+        outside_publish = container_text.replace(publish_text, "", 1)
+        if "docker build" in publish_text:
+            errors.append("container publish must push the validated image bytes; a second build is forbidden")
+        for write in ("packages: write", "id-token: write", "attestations: write"):
+            if write in outside_publish:
+                errors.append(f"container provider write permission {write!r} must be scoped to the publish job")
+        if "release-image-" not in publish_text or 'kind:"ReleaseImage"' not in publish_text:
+            errors.append("container publish must upload a ReleaseImage manifest binding component/source/plan/digest")
+
     for forbidden in ("publish_candidate", "docker push", "attest"):
-        if forbidden in container_text:
-            errors.append(f"container provider must not publish/attest images ({forbidden})")
+        if forbidden in outside_publish:
+            errors.append(f"container provider must not publish/attest outside the trusted publish job ({forbidden})")
 
     docs = (workflows / "docs-ci.yml").read_text(encoding="utf-8")
     if "make docs-check" not in docs:
@@ -236,6 +254,12 @@ def check(root: Path = ROOT) -> None:
         errors.append("infra provider must execute validate-infra.py")
     if "--runtime-images" in infra_workflow:
         errors.append("infra provider must not consume planner runtime contract")
+    if "nginx_ref" not in infra_workflow:
+        errors.append("infra provider must validate nginx syntax with the locked nginx_ref")
+    if re.search(r"nginx:1\.27-alpine", infra_workflow):
+        errors.append("infra workflow must use the immutable locked nginx ref (@sha256:), not a mutable tag")
+    if "write-test-env.sh" not in infra_workflow or "deploy_env_var" not in infra_workflow:
+        errors.append("infra provider must combine credentials env with resolved NOTRELIX_* runtime image env")
 
     infra_helper = (root / "scripts/ci/validate-infra.py").read_text(encoding="utf-8")
     if (
