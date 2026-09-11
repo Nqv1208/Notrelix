@@ -40,7 +40,7 @@ public class BillingCapabilityFactsProviderTests
         _contextMock.Setup(c => c.FeatureUsageLedger).Returns(mock.Object);
     }
 
-    private static Entitlement ActiveEntitlement(int limit, DateTimeOffset? expiresAt = null) =>
+    private static Entitlement ActiveEntitlement(int limit, DateTimeOffset? expiresAt = null, bool isUnlimited = false) =>
         Entitlement.Create(
             AccountId,
             FeatureCode.Create(BillingCapabilityCode.AutomationRule),
@@ -49,7 +49,8 @@ public class BillingCapabilityFactsProviderTests
             TestNow,
             EntitlementTargetScope.Account,
             targetWorkspaceId: null,
-            expiresAt: expiresAt);
+            expiresAt: expiresAt,
+            isUnlimited: isUnlimited);
 
     private static FeatureUsageLedger Usage(decimal delta) =>
         FeatureUsageLedger.Create(
@@ -70,17 +71,35 @@ public class BillingCapabilityFactsProviderTests
     }
 
     [Fact]
-    public async Task GetCapability_WithUnlimitedEntitlement_IsAvailableWithoutQuantity()
+    public async Task GetCapability_WithExplicitUnlimitedEntitlement_IsAvailableWithoutQuantity()
     {
-        SetupEntitlements(ActiveEntitlement(limit: 0));
+        // BILL-LIMIT-001: unbounded access is carried by the explicit
+        // IsUnlimited representation, never inherited from a zero numeric limit.
+        SetupEntitlements(ActiveEntitlement(limit: 0, isUnlimited: true));
 
         var fact = await _sut.GetCapabilityAsync(
             AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
 
         fact!.IsAvailable.Should().BeTrue();
-        fact.Limit.Should().BeNull("limit 0 means unlimited in the current model");
+        fact.Limit.Should().BeNull("an unlimited grant is not a quantified ceiling");
         fact.Used.Should().BeNull();
         fact.Remaining.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetCapability_WithZeroNumericLimit_IsUnavailable()
+    {
+        // BILL-LIMIT-001: after the semantic flip a numeric limit of 0 means
+        // zero capacity, distinct from an explicit unlimited grant.
+        SetupEntitlements(ActiveEntitlement(limit: 0));
+
+        var fact = await _sut.GetCapabilityAsync(
+            AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
+
+        fact!.IsAvailable.Should().BeFalse();
+        fact.Limit.Should().Be(0);
+        fact.Used.Should().Be(0);
+        fact.Remaining.Should().Be(0);
     }
 
     [Fact]
