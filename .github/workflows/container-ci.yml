@@ -56,6 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           cell(){ jq -r --arg id "$1" --arg k "$2" '[.include[] | select(.component_id == $id)][0][$k] // ""' <<<"$MATRIX"; }
+          cellc(){ jq -c --arg id "$1" --arg k "$2" '([.include[] | select(.component_id == $id)][0][$k]) // ""' <<<"$MATRIX"; }
           selected(){ jq -r --arg id "$1" '[.include[].component_id] | index($id) != null' <<<"$MATRIX"; }
           {
             echo "backend=$(selected backend-api)"
@@ -64,10 +65,10 @@ jobs:
             echo "backend_image_name=$(cell backend-api image_name)"
             echo "web_image_name=$(cell web image_name)"
             echo "marketing_image_name=$(cell marketing image_name)"
-            echo "backend_build_args=$(cell backend-api build_args)"
-            echo "web_build_args=$(cell web build_args)"
-            echo "marketing_build_args=$(cell marketing build_args)"
-            echo "backend_smoke_deps=$(cell backend-api smoke_dependencies)"
+            echo "backend_build_args=$(cellc backend-api build_args)"
+            echo "web_build_args=$(cellc web build_args)"
+            echo "marketing_build_args=$(cellc marketing build_args)"
+            echo "backend_smoke_deps=$(cellc backend-api smoke_dependencies)"
             echo "publish_mode=$PUBLISH_MODE"
           } >> "$GITHUB_OUTPUT"
       - id: detect
