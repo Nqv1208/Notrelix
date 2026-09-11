@@ -66,12 +66,15 @@ public static class AccessFactsQuery
           CASE WHEN @feature_code IS NULL THEN true ELSE COALESCE((
             SELECT e.status = 'Active'
                AND (e.expires_at IS NULL OR e.expires_at > @now)
-               AND (e.limit_value = 0 OR COALESCE((
+               AND (e.is_unlimited OR COALESCE((
                    SELECT SUM(f.delta) FROM billing.feature_usage_ledger f
-                    WHERE f.account_id = @account_id AND f.feature_code = @feature_code), 0) + @feature_amount <= e.limit_value)
+                    WHERE f.account_id = @account_id AND f.workspace_id = @workspace_id AND f.feature_code = @feature_code), 0) + @feature_amount <= e.limit_value)
               FROM billing.entitlements e
              WHERE e.account_id = @account_id AND e.feature_code = @feature_code
-             ORDER BY e.created_at DESC LIMIT 1
+               AND (e.target_scope = 'Account'
+                    OR (e.target_scope = 'Workspace' AND e.target_workspace_id = @workspace_id))
+             ORDER BY CASE WHEN e.target_scope = 'Workspace' THEN 0 ELSE 1 END, e.created_at DESC
+             LIMIT 1
           ), false) END,
           CASE WHEN @resource_type IS NOT NULL THEN (
             SELECT CASE rp.permission_level

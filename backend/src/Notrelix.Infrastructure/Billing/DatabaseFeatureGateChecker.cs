@@ -27,8 +27,14 @@ public sealed class DatabaseFeatureGateChecker : IFeatureGateChecker
         if (entitlement.ExpiresAt.HasValue && entitlement.ExpiresAt.Value <= DateTimeOffset.UtcNow)
             return false;
 
-        if (entitlement.Limit == 0)
+        // BILL-LIMIT-001: only the explicit IsUnlimited representation grants
+        // unbounded access. A zero numeric limit without the flag is zero
+        // capacity (unavailable), not unlimited.
+        if (entitlement.IsUnlimited)
             return true;
+
+        if (entitlement.Limit == 0)
+            return false;
 
         var totalUsed = await _db.FeatureUsageLedger
             .Where(f => f.AccountId == accountId

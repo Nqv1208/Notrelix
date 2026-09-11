@@ -24,5 +24,6 @@ public interface IBillingDbContext
     DbSet<UsageMetric> UsageMetrics { get; }
     DbSet<UsageMetricHistory> UsageMetricHistories { get; }
     DbSet<FeatureUsageLedger> FeatureUsageLedger { get; }
+    DbSet<WorkspaceFeatureUsage> WorkspaceFeatureUsages { get; }
     DbSet<PaymentMethod> PaymentMethods { get; }
 }
