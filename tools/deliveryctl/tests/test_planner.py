@@ -36,7 +36,7 @@ class T(unittest.TestCase):
   p=self._plan('backend/contracts/openapi/v1/boards.yaml')
   self.assertNotIn('ui',p['capabilities'])
  def test_frontend_gate_requires_ui_foundation(self):
-  text=(ROOT/'.github/workflows/frontend-ci.yml').read_text();block=text.split('  frontend-gate:',1)[1].split('    runs-on:',1)[0]
+  text=(ROOT/'.github/workflows/frontend-ci.yml').read_text();block=text.split('  proof:',1)[1].split('    runs-on:',1)[0]
   self.assertIn('ui-foundation',block)
  def test_change_range_explicit(self):
   p=build_plan(root=ROOT,event_name='pull_request',ref='refs/pull/9/merge',source_sha='M'*40,base_sha='B'*40,head_sha='H'*40,explicit_changed=['frontend/apps/web/src/a.ts'])

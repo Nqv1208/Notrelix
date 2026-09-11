@@ -938,22 +938,24 @@ It does not make a failed required gate acceptable.
 
 # 71. Current CI topology
 
-Current `fe-ci.yml` has required jobs:
+Current `frontend-ci.yml` jobs:
 
 ```text
-quality
-test-core
-test-mobile
-test-tooling
+changes
+static
+tests
+host-build
+host-e2e
+mobile
 ui-foundation
-build-web
-build-marketing
-build-mobile
-e2e-production
-frontend-gate
+mock-contract
+mock-shard
+mock-artifact-isolation
+dependency-security
+proof (check name `Frontend gate`)
 ```
 
-The final gate depends on the first nine execution jobs and requires every result to equal `success`.
+Execution jobs run only when their capability/component selection is true (plan-routed inputs in orchestrated runs, path detection in standalone runs). The `proof` job runs `if: always()`: selected jobs must succeed, unselected jobs must be skipped, and a mock selection additionally requires exact mock shard completeness before the gate closes.
 
 ---
 
@@ -971,41 +973,44 @@ rather than allowing partial green status.
 
 ---
 
-# 73. Quality job
+# 73. Static job
 
-Current `quality` executes:
+Current `static` executes:
 
 ```text
 codegen:check
 check:architecture
 check:architecture-docs
 check:test-taxonomy
+check:lint-coverage
+format:check
 typecheck
 lint
-format:check
 ```
 
 ---
 
 # 74. FE-TST-037 — Static/generated architecture quality runs before broader suites
 
-Current CI makes major test/build jobs depend on `quality`.
+Current CI makes the broader test/build jobs depend on `static`.
 
 This fails fast on structural/generated defects before spending broader CI resources.
 
 ---
 
-# 75. Core tests job
+# 75. Selected tests job
 
-Current core job executes guarded:
+Current selected-tests job executes only capability-selected guarded suites through `frontend/scripts/ci/run-selected-tests.mjs`:
 
 ```text
 node
 web
 integration
+mobile
+generator
 ```
 
-suites.
+The suites share one runner; every selected suite is attempted and failures aggregate. Unknown or zero selections fail the runner.
 
 ---
 
@@ -1019,7 +1024,7 @@ Separate suite meaning should remain observable.
 
 # 77. Mobile job
 
-Current mobile job runs guarded mobile tests plus category coverage.
+Current mobile job builds selected mobile components from the planner-provided mobile matrix.
 
 ---
 
@@ -1031,7 +1036,7 @@ If mobile architecture still contains a required category, the guarded suite sho
 
 # 79. Tooling job
 
-Current tooling job runs guarded generator tests.
+Generator/tooling suites run in the selected tests job when `tooling-tests` is selected.
 
 ---
 
@@ -1045,13 +1050,13 @@ Tooling is not “developer convenience only.”
 
 # 81. UI foundation job
 
-Current UI job installs Chromium and runs:
+Current UI job runs inside the planner-pinned Playwright renderer container, executes:
 
 ```text
 test:ui:freeze
 ```
 
-then uploads report on failure.
+and uploads its report on failure.
 
 ---
 
@@ -1070,7 +1075,7 @@ for design-system foundation.
 
 # 83. Build jobs
 
-Web, marketing, mobile builds run separately after quality.
+Web and marketing build through the `host-build` matrix after `static`; mobile builds through the `mobile` matrix. Each cell comes from planner-provided host/mobile contracts (workspace, build script, artifact paths and names).
 
 ---
 
@@ -1084,9 +1089,9 @@ Each supported host owns its packaging evidence.
 
 # 85. E2E dependency
 
-Current E2E depends specifically on `build-web`.
+Current host E2E (`host-e2e` matrix) depends on `host-build` for the same component, downloads the exact artifact, and never rebuilds it.
 
-The final gate separately depends on all other required jobs.
+The final gate separately depends on all selected jobs.
 
 ---
 

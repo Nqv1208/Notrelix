@@ -36,6 +36,13 @@ jobs:
       change_range_json: ${{ steps.plan.outputs.change_range_json }}
       renderer_ref: ${{ steps.plan.outputs.renderer_ref }}
       renderer_version: ${{ steps.plan.outputs.renderer_version }}
+      frontend_capabilities_json: ${{ steps.plan.outputs.frontend_capabilities_json }}
+      frontend_host_matrix: ${{ steps.plan.outputs.frontend_host_matrix }}
+      mobile_matrix: ${{ steps.plan.outputs.mobile_matrix }}
+      mock_artifact_component: ${{ steps.plan.outputs.mock_artifact_component }}
+      mock_artifact_name: ${{ steps.plan.outputs.mock_artifact_name }}
+      mock_archive_file: ${{ steps.plan.outputs.mock_archive_file }}
+      mock_manifest_file: ${{ steps.plan.outputs.mock_manifest_file }}
       runtime_images_json: ${{ steps.plan.outputs.runtime_images_json }}
       infra_topology_required: ${{ steps.plan.outputs.infra_topology_required }}
       infra_assembled_required: ${{ steps.plan.outputs.infra_assembled_required }}
@@ -93,11 +100,17 @@ jobs:
     if: needs.plan.outputs.frontend_required == 'true'
     uses: ./.github/workflows/frontend-ci.yml
     with:
-      selected: true
       source_sha: ${{ github.sha }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+      frontend_capabilities_json: ${{ needs.plan.outputs.frontend_capabilities_json }}
+      frontend_host_matrix: ${{ needs.plan.outputs.frontend_host_matrix }}
+      mobile_matrix: ${{ needs.plan.outputs.mobile_matrix }}
       renderer_ref: ${{ needs.plan.outputs.renderer_ref }}
       renderer_version: ${{ needs.plan.outputs.renderer_version }}
+      mock_artifact_component: ${{ needs.plan.outputs.mock_artifact_component }}
+      mock_artifact_name: ${{ needs.plan.outputs.mock_artifact_name }}
+      mock_archive_file: ${{ needs.plan.outputs.mock_archive_file }}
+      mock_manifest_file: ${{ needs.plan.outputs.mock_manifest_file }}
 
   container:
     name: Container CI
