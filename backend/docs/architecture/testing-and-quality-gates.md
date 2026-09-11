@@ -1083,13 +1083,21 @@ A test command can exit 0 while selecting zero tests.
 
 Critical suites need explicit execution verification.
 
-Current backend CI uses TRX inspection through:
+Current backend CI binds critical architecture/core/platform/API/integration
+proofs to stable semantic IDs in the backend-owned registry:
 
 ```text
-scripts/ci/verify-required-tests-trx.py
+backend/tests/ci-proofs.json
 ```
 
-for critical architecture/Infrastructure/Platform/API/integration suites.
+and verifies actual TRX execution and success through:
+
+```text
+scripts/ci/verify-required-proofs-trx.py
+```
+
+The workflow YAML must not list critical test FQNs; a test rename updates the
+backend-owned registry only.
 
 ---
 

@@ -72,7 +72,19 @@ def check(root: Path = ROOT) -> None:
                 errors.append(f"{path.name}: provider reads control plane/authority")
             for image_id, ref in runtime_refs.items():
                 if ref in text:
-                    errors.append(f"{path.name}: duplicated runtime image authority {image_id}")
+                    # W4 transition exception: the backend standalone lane (until
+                    # the W7 cutover) has no plan to receive redis_image from, so
+                    # it single-sources the locked digest once as FALLBACK_REDIS_REF.
+                    # Remove together with the standalone lane; any second
+                    # occurrence or use outside backend-ci.yml stays forbidden.
+                    transitional_fallback = (
+                        path.name == "backend-ci.yml"
+                        and image_id == "redis"
+                        and text.count(ref) == 1
+                        and "FALLBACK_REDIS_REF" in text
+                    )
+                    if not transitional_fallback:
+                        errors.append(f"{path.name}: duplicated runtime image authority {image_id}")
 
     for forbidden_ci in ("ci-v2.yml", "ci-orchestrator.yml", "ci-gate.yml"):
         if (workflows / forbidden_ci).exists():
@@ -126,15 +138,68 @@ def check(root: Path = ROOT) -> None:
         errors.append("frontend exact-artifact restore contract missing")
 
     backend = (workflows / "backend-ci.yml").read_text(encoding="utf-8")
-    for required in (
-        "HandlerConstructorPortGateTests",
-        "RlsPolicyVerificationTests",
-        "OrderingEnforcerTests",
-        "IdempotencyEndpointContractTests",
-        "ProductionGraphTests",
-    ):
-        if required not in backend:
-            errors.append(f"backend critical-test execution guard missing: {required}")
+    critical_backend_fqns = (
+        "Notrelix.Architecture.Tests.DomainPurity.DomainBoundedContextSignatureTests",
+        "Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests",
+        "Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests",
+        "Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests",
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_CanonicalDocs_MatchFrozenSevenStageTopology",
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_LegacyGapCount_IsZero",
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.IntentionalAllowlistEntries_MustDescribePermanentArchitectureExceptions",
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllowlistEntries_AreNotStale",
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllProductionRequests_HaveValidDescriptors",
+        "Notrelix.Architecture.Tests.CrossContextPersistenceBoundaryTests",
+        "Notrelix.Architecture.Tests.CrossContextApplicationDependencyTests",
+        "Notrelix.Architecture.Tests.DataAccess.CrossContextCascadeArchitectureTests",
+        "Notrelix.Architecture.Tests.Contracts.PublicSemanticContractArchitectureTests",
+        "Notrelix.Architecture.Tests.ApplicationLayer.ApplicationTransportBoundaryTests",
+        "Notrelix.Architecture.Tests.Events.IntegrationEventOwnershipArchitectureTests",
+        "Notrelix.Architecture.Tests.LayerRules.CommonEntitlementsAntiRegressionTests",
+        "Notrelix.Architecture.Tests.FeatureStructureArchitectureTests",
+        "Notrelix.Infrastructure.Tests.Data.Rls.RlsPolicyVerificationTests",
+        "Notrelix.Infrastructure.Tests.Data.DomainEventInterceptorTests",
+        "Notrelix.Platform.Tests.Messaging.Reliability.OrderingEnforcerTests",
+        "Notrelix.Platform.Tests.Messaging.Reliability.PoisonDetectorTests",
+        "Notrelix.Platform.Tests.Messaging.Consumers.ConsumerHostDeliveryContractTests",
+        "Notrelix.API.Tests.Idempotency.IdempotencyEndpointContractTests",
+        "Notrelix.Integration.Tests.Data.Ops.IdempotencyStoreIntegrationTests",
+        "Notrelix.Integration.Tests.Integration.TenantIsolationTests",
+        "Notrelix.Integration.Tests.Integration.CrossTenantIsolationTests",
+        "Notrelix.Integration.Tests.Integration.RlsRuntimeEnforcementTests",
+        "Notrelix.Integration.Tests.Auth.ApiTokenFlowTests",
+        "Notrelix.Integration.Tests.Auth.ApiTokenHttpFlowTests",
+        "Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterIntegrationTests",
+        "Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests",
+        "Notrelix.Integration.Tests.Data.OutboxDispatchContractTests",
+        "Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests",
+        "Notrelix.Integration.Tests.Data.OutboxAtomicityTests",
+        "Notrelix.Integration.Tests.Data.MigrationSmokeTests",
+        "Notrelix.Integration.Tests.Integration.ProductionCompositionTests",
+        "Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests",
+        "Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests",
+    )
+    for fqn in critical_backend_fqns:
+        if fqn in backend:
+            errors.append(f"backend workflow retains critical FQN; move to backend/tests/ci-proofs.json: {fqn}")
+    if "verify-required-proofs-trx.py" not in backend:
+        errors.append("backend provider must verify registry proof profiles via verify-required-proofs-trx.py")
+    if "backend/tests/ci-proofs.json" not in backend:
+        errors.append("backend provider must consume the backend-owned proof registry")
+    if not (root / "backend/tests/ci-proofs.json").exists():
+        errors.append("backend internal proof registry backend/tests/ci-proofs.json missing")
+    if re.search(r"redis:7-alpine", backend):
+        errors.append("backend workflow must use the immutable locked redis ref (@sha256:), not a mutable tag")
+    legacy_verifier = root / "scripts/ci/verify-required-tests-trx.py"
+    if legacy_verifier.exists():
+        errors.append("legacy FQN verifier scripts/ci/verify-required-tests-trx.py must be deleted after registry migration")
+    for path in sorted(workflows.glob("*.yml")):
+        if "verify-required-tests-trx.py" in path.read_text(encoding="utf-8"):
+            errors.append(f"{path.name}: references retired legacy FQN verifier")
+    migration_helper = root / "scripts/ci/check-migration-discipline.py"
+    if migration_helper.exists():
+        helper_text = migration_helper.read_text(encoding="utf-8")
+        if re.search(r"GITHUB_EVENT|EVENT_NAME|github\.event", helper_text):
+            errors.append("migration discipline helper must consume the resolved range, not interpret GitHub events")
     if "has the following vulnerable packages" not in backend:
         errors.append("backend must fail on vulnerable NuGet packages")
 

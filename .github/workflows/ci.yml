@@ -51,6 +51,7 @@ jobs:
       security_backend_required: ${{ steps.plan.outputs.security_backend_required }}
       security_frontend_required: ${{ steps.plan.outputs.security_frontend_required }}
       plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
+      schema_change: ${{ steps.plan.outputs.schema_change }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -88,11 +89,11 @@ jobs:
     if: needs.plan.outputs.backend_required == 'true'
     uses: ./.github/workflows/backend-ci.yml
     with:
-      selected: true
       source_sha: ${{ github.sha }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
       redis_image: ${{ fromJSON(needs.plan.outputs.backend_matrix).include[0].redis_image }}
       change_range_json: ${{ needs.plan.outputs.change_range_json }}
+      schema_change: ${{ needs.plan.outputs.schema_change }}
 
   frontend:
     name: Frontend CI
