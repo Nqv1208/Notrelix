@@ -85,6 +85,13 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            Notrelix.Application.Features.Billing.Public.Capacity.CapacityOperationConflictException => (
+                StatusCodes.Status409Conflict,
+                ErrorCodes.Conflict,
+                "Conflict",
+                exception.Message,
+                null
+            ),
             Notrelix.Application.Common.Exceptions.PreconditionFailedException precondition => (
                 StatusCodes.Status412PreconditionFailed,
                 precondition.ErrorCode,
