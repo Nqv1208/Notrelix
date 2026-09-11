@@ -3,10 +3,14 @@
  * assert-playwright-mock-count.mjs
  *
  * MDF-10 compliance gate: Parse Playwright JSON results and assert that:
- *   - executed == expected
- *   - passed == expected
+ *   - specs actually executed (the previous `suite.tests` walk always
+ *     counted zero, which made this gate vacuous)
  *   - failed == 0
- *   - skipped == 0
+ *   - (optionally) executed == expected
+ *
+ * Skipped specs are reported but not gated: mock scenario cells
+ * intentionally skip the default-only accessibility spec outside the
+ * `default` state.
  *
  * Usage:
  *   node scripts/assert-playwright-mock-count.mjs [path-to-results.json] [expected-count]
@@ -48,8 +52,10 @@ try {
 const stats = results.stats ?? {};
 const suites = results.suites ?? [];
 
-// Count tests across all suites recursively
-function countTests(suites) {
+// Count specs across all suites recursively. The JSON reporter exposes test
+// cases as `specs` (each carrying `tests` outcome entries); `suite.tests` is
+// always empty, so the previous walk never counted anything.
+function countSpecs(suites) {
   let total = 0;
   let passed = 0;
   let failed = 0;
@@ -57,13 +63,18 @@ function countTests(suites) {
   let flaky = 0;
 
   function walk(suite) {
-    for (const test of suite.tests ?? []) {
+    for (const spec of suite.specs ?? []) {
       total++;
-      const outcomes = test.results ?? [];
+      const outcomes = spec.tests ?? [];
       const lastOutcome = outcomes[outcomes.length - 1];
       const status = lastOutcome?.status ?? "unknown";
-      if (status === "passed") passed++;
-      else if (status === "failed" || status === "timedOut") failed++;
+      if (status === "expected" || status === "passed") passed++;
+      else if (
+        status === "unexpected" ||
+        status === "failed" ||
+        status === "timedOut"
+      )
+        failed++;
       else if (status === "skipped") skipped++;
       else if (status === "flaky") flaky++;
     }
@@ -78,7 +89,7 @@ function countTests(suites) {
   return { total, passed, failed, skipped, flaky };
 }
 
-const counts = countTests(suites);
+const counts = countSpecs(suites);
 
 console.log(`[assert-playwright-mock-count] Mock E2E Results:`);
 console.log(`  Total    : ${counts.total}`);
@@ -93,11 +104,15 @@ if (counts.failed !== 0) {
   errors.push(`  FAIL: expected failed=0, got ${counts.failed}`);
 }
 
-if (counts.skipped !== 0) {
+if (counts.total === 0) {
   errors.push(
-    `  FAIL: expected skipped=0, got ${counts.skipped} (MDF-10: no required E2E skips allowed)`,
+    `  FAIL: zero specs executed (MDF-10: an inner run must execute the mock suite)`,
   );
 }
+
+// Skipped specs are reported but not gated: mock scenario cells intentionally
+// skip the default-only accessibility spec outside the `default` state, so a
+// per-scenario run may legitimately contain designed scenario filtering.
 
 if (expectedCount > 0 && counts.total !== expectedCount) {
   errors.push(

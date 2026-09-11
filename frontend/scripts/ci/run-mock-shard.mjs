@@ -40,14 +40,33 @@ if (
   process.exit(1);
 }
 
-function countPlaywrightTests(results) {
+// Counts specs that actually executed (expected/flaky outcomes). The Playwright
+// JSON reporter exposes test cases as `specs`; `suite.tests` is always empty.
+// Scenario-conditional skips (e.g. the default-only accessibility spec) are
+// designed filtering and do not count as executed or as failures.
+function countExecutedSpecs(results) {
   let total = 0;
+  let executed = 0;
+  let failed = 0;
   const walk = (suite) => {
-    total += (suite.tests ?? []).length;
+    for (const spec of suite.specs ?? []) {
+      total += 1;
+      const outcomes = spec.tests ?? [];
+      const status = outcomes[outcomes.length - 1]?.status ?? "unknown";
+      if (status === "expected" || status === "passed" || status === "flaky") {
+        executed += 1;
+      } else if (
+        status === "unexpected" ||
+        status === "failed" ||
+        status === "timedOut"
+      ) {
+        failed += 1;
+      }
+    }
     for (const child of suite.suites ?? []) walk(child);
   };
   for (const suite of results.suites ?? []) walk(suite);
-  return total;
+  return { total, executed, failed };
 }
 
 const assigned = SCENARIOS.filter(
@@ -86,8 +105,8 @@ for (const scenario of assigned) {
       const parsed = JSON.parse(
         readFileSync("test-results/mock-e2e-results.json", "utf8"),
       );
-      const total = countPlaywrightTests(parsed);
-      if (total === 0) {
+      const counts = countExecutedSpecs(parsed);
+      if (counts.executed === 0) {
         console.error(
           `[run-mock-shard] zero-test inner run for ${scenario.id}`,
         );
