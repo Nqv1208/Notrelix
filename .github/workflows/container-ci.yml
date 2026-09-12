@@ -1,12 +1,6 @@
 name: Container CI
 
 on:
-  pull_request:
-    branches: [main, develop]
-  merge_group:
-  push:
-    branches: [main, develop]
-  workflow_dispatch:
   workflow_call:
     inputs:
       container_matrix: {required: true, type: string}
