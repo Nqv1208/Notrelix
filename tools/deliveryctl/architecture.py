@@ -9,6 +9,23 @@ from .runtime import ROOT
 
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 USES = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
+JOB_HEADER = re.compile(r"(?m)^  ([A-Za-z][A-Za-z0-9_-]*):\s*$")
+LOCAL_ACTION_USE = "uses: ./.github/actions/"
+
+
+def jobs_missing_local_action_checkout(text: str) -> list[str]:
+    """SC-WF-001: a job consuming a local composite action must run
+    actions/checkout earlier in the same job, otherwise the action does not
+    exist on the runner and the step fails. Returns offending job names."""
+    matches = list(JOB_HEADER.finditer(text))
+    offenders: list[str] = []
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        body = text[match.start():end]
+        use = body.find(LOCAL_ACTION_USE)
+        if use >= 0 and "actions/checkout@" not in body[:use]:
+            offenders.append(match.group(1))
+    return offenders
 PROVIDERS = {
     "backend-ci.yml",
     "frontend-ci.yml",
@@ -67,6 +84,11 @@ def check(root: Path = ROOT) -> None:
         for legacy in LEGACY_EXECUTABLE_REFERENCES:
             if legacy in text:
                 errors.append(f"{path.name}: legacy runtime reference {legacy}")
+
+        for job in jobs_missing_local_action_checkout(text):
+            errors.append(
+                f"{path.name}: job {job} uses a local .github action without an earlier checkout (SC-WF-001)"
+            )
 
         if path.name in PROVIDERS:
             if "tools.deliveryctl" in text or "delivery/" in text:

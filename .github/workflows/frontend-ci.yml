@@ -424,6 +424,8 @@ jobs:
     timeout-minutes: 5
     defaults: {run: {shell: bash, working-directory: .}}
     steps:
+      - if: inputs.source_sha != ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require frontend proof when selected
         env:
           SELECTED: ${{ needs.select.outputs.frontend }}
