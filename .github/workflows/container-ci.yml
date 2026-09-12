@@ -236,6 +236,13 @@ jobs:
           path: release-image-backend-api.tar
           if-no-files-found: error
           retention-days: 1
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:backend-api'
+          component_id: backend-api
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
 
   web-image:
     name: Web image validation
@@ -300,6 +307,13 @@ jobs:
           path: release-image-web.tar
           if-no-files-found: error
           retention-days: 1
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:web'
+          component_id: web
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
 
   marketing-image:
     name: Marketing image validation
@@ -364,6 +378,13 @@ jobs:
           path: release-image-marketing.tar
           if-no-files-found: error
           retention-days: 1
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:marketing'
+          component_id: marketing
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
 
   publish:
     name: Trusted-main image publication
@@ -459,7 +480,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require container proof when selected
         env:
           BACKEND_SELECTED: ${{ needs.changes.outputs.backend }}
@@ -476,24 +496,3 @@ jobs:
           if [[ "$WEB_SELECTED" == true ]]; then require web-image "$(result web-image)"; fi
           if [[ "$MARKETING_SELECTED" == true ]]; then require marketing-image "$(result marketing-image)"; fi
           if [[ "$PUBLISH_MODE" == true ]]; then require publish "$(result publish)"; fi
-      - if: inputs.source_sha != '' && needs.changes.outputs.backend == 'true'
-        uses: ./.github/actions/emit-evidence
-        with:
-          proof_id: 'container:backend-api'
-          component_id: backend-api
-          plan_sha256: ${{ inputs.plan_sha256 }}
-          source_sha: ${{ inputs.source_sha }}
-      - if: inputs.source_sha != '' && needs.changes.outputs.web == 'true'
-        uses: ./.github/actions/emit-evidence
-        with:
-          proof_id: 'container:web'
-          component_id: web
-          plan_sha256: ${{ inputs.plan_sha256 }}
-          source_sha: ${{ inputs.source_sha }}
-      - if: inputs.source_sha != '' && needs.changes.outputs.marketing == 'true'
-        uses: ./.github/actions/emit-evidence
-        with:
-          proof_id: 'container:marketing'
-          component_id: marketing
-          plan_sha256: ${{ inputs.plan_sha256 }}
-          source_sha: ${{ inputs.source_sha }}
