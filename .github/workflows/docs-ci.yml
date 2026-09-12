@@ -1,12 +1,6 @@
 name: Documentation CI
 
 on:
-  pull_request:
-    branches: [main, develop]
-  merge_group:
-  push:
-    branches: [main, develop]
-  workflow_dispatch:
   workflow_call:
     inputs:
       source_sha: {required: true, type: string}
