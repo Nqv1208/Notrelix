@@ -21,7 +21,7 @@ public class FeatureUsageLedgerConfiguration : IEntityTypeConfiguration<FeatureU
         builder.Property(x => x.Note).HasColumnName("note").HasMaxLength(1000);
         builder.Property(x => x.OccurredAt).HasColumnName("occurred_at").IsRequired();
 
-        builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.FeatureCode, x.LogicalOperationId })
+        builder.HasIndex(x => x.LogicalOperationId)
             .HasDatabaseName("ux_feature_usage_ledger_logical_operation")
             .HasFilter("\"logical_operation_id\" IS NOT NULL")
             .IsUnique();

@@ -10,9 +10,9 @@ namespace Notrelix.Application.Features.Billing.Capacity;
 /// Billing-owned hard-capacity action. The WorkspaceFeatureUsage row owns the
 /// capacity invariant (optimistic concurrency on the aggregate version makes
 /// the last-slot race safe); the ledger records every consume/release effect
-/// and provides the LogicalOperationId dedup key. Reads assume the caller runs
-/// inside the same request transaction as the quota-bearing resource mutation
-/// so the capacity effect commits atomically with the feature change.
+/// and provides the global LogicalOperationId dedup identity. Read/execute
+/// must run inside the caller's request transaction (the data session) so the
+/// capacity effect commits atomically with the quota-bearing resource mutation.
 /// </summary>
 public sealed class BillingCapacityActions : IBillingCapacityActions
 {
@@ -33,18 +33,14 @@ public sealed class BillingCapacityActions : IBillingCapacityActions
     {
         var op = request.Operation;
 
-        var existing = await _context.FeatureUsageLedger
-            .FirstOrDefaultAsync(l =>
-                l.AccountId == op.AccountId
-                && l.WorkspaceId == op.WorkspaceId
-                && l.FeatureCode == op.CapabilityCode
-                && l.LogicalOperationId == op.LogicalOperationId,
-                cancellationToken);
-
+        // LogicalOperationId is global identity: a replay of an executed
+        // operation is detected by that id alone, whatever the scope. An
+        // identical semantic payload replays; anything else (including another
+        // scope) is a deterministic conflict.
+        var existing = await FindByIdentityAsync(op.LogicalOperationId, cancellationToken);
         if (existing is not null)
         {
-            if (existing.Delta == op.Amount
-                && existing.ReferenceResource == op.SourceResource)
+            if (SamePayload(existing, op, expectedDelta: op.Amount))
             {
                 return new ConsumeCapacityResult(
                     AlreadyConsumed: true,
@@ -78,18 +74,10 @@ public sealed class BillingCapacityActions : IBillingCapacityActions
     {
         var op = request.Operation;
 
-        var existing = await _context.FeatureUsageLedger
-            .FirstOrDefaultAsync(l =>
-                l.AccountId == op.AccountId
-                && l.WorkspaceId == op.WorkspaceId
-                && l.FeatureCode == op.CapabilityCode
-                && l.LogicalOperationId == op.LogicalOperationId,
-                cancellationToken);
-
+        var existing = await FindByIdentityAsync(op.LogicalOperationId, cancellationToken);
         if (existing is not null)
         {
-            if (existing.Delta == -op.Amount
-                && existing.ReferenceResource == op.SourceResource)
+            if (SamePayload(existing, op, expectedDelta: -op.Amount))
             {
                 return new ReleaseCapacityResult(
                     AlreadyReleased: true,
@@ -105,6 +93,7 @@ public sealed class BillingCapacityActions : IBillingCapacityActions
             return new ReleaseCapacityResult(AlreadyReleased: true, Remaining: null);
         }
 
+        await ReconcileLimitsAsync(usage, op, cancellationToken);
         usage.Release(op.Amount, op.ActorUserId, op.OccurredAt);
 
         _context.FeatureUsageLedger.Add(FeatureUsageLedger.Create(
@@ -123,19 +112,62 @@ public sealed class BillingCapacityActions : IBillingCapacityActions
 
     /// <summary>
     /// Loads the authoritative per-workspace usage record or seeds it from the
-    /// current capability fact. BILL-LIMIT-001 representation: an explicit
-    /// unlimited grant materializes as a null hard limit (no ceiling); a finite
-    /// limit (including zero) materializes as a numeric ceiling. When no
-    /// entitlement exists the record seeds at zero so consumption fails closed.
+    /// current capability fact through the atomic first-use primitive. On every
+    /// path the effective limit is reconciled with the current fact: an
+    /// unavailable or missing grant fails closed to a zero ceiling, an explicit
+    /// unlimited grant clears the ceiling, and a finite (including zero) limit
+    /// reconciles to its numeric value. Reconfiguring never deletes committed
+    /// usage; a downgrade below it denies new consumption instead.
     /// </summary>
     private async Task<WorkspaceFeatureUsage> LoadOrCreateUsageAsync(
         BillingCapacityOperationIdentity op,
         CancellationToken cancellationToken)
     {
-        var usage = await LoadUsageAsync(op, cancellationToken);
-        if (usage is not null)
-            return usage;
+        var existing = await LoadUsageAsync(op, cancellationToken);
+        if (existing is not null)
+        {
+            await ReconcileLimitsAsync(existing, op, cancellationToken);
+            return existing;
+        }
 
+        var (hardLimit, softLimit) = await EffectiveLimitAsync(op, cancellationToken);
+        var usage = await _context.GetOrCreateWorkspaceFeatureUsageAsync(
+            op.AccountId,
+            op.WorkspaceId,
+            op.CapabilityCode,
+            hardLimit,
+            softLimit,
+            op.ActorUserId,
+            op.OccurredAt,
+            cancellationToken);
+
+        // The primitive may have lost a concurrent first-use race and returned
+        // the winner's row, so reconciliation must still resolve our fact.
+        ReconcileLimits(usage, hardLimit, softLimit, op.ActorUserId, op.OccurredAt);
+        return usage;
+    }
+
+    private async Task ReconcileLimitsAsync(
+        WorkspaceFeatureUsage usage,
+        BillingCapacityOperationIdentity op,
+        CancellationToken cancellationToken)
+    {
+        var (hardLimit, softLimit) = await EffectiveLimitAsync(op, cancellationToken);
+        ReconcileLimits(usage, hardLimit, softLimit, op.ActorUserId, op.OccurredAt);
+    }
+
+    private static void ReconcileLimits(
+        WorkspaceFeatureUsage usage,
+        decimal? hardLimit,
+        decimal? softLimit,
+        Guid actorUserId,
+        DateTimeOffset occurredAt)
+        => usage.ReconfigureLimits(hardLimit, softLimit, actorUserId, occurredAt);
+
+    private async Task<(decimal? HardLimit, decimal? SoftLimit)> EffectiveLimitAsync(
+        BillingCapacityOperationIdentity op,
+        CancellationToken cancellationToken)
+    {
         var fact = await _capabilityFacts.GetCapabilityAsync(
             op.AccountId,
             op.WorkspaceId,
@@ -143,27 +175,39 @@ public sealed class BillingCapacityActions : IBillingCapacityActions
             requestedAmount: (int)op.Amount,
             cancellationToken);
 
-        // Null limit from the fact means explicit unlimited (unbounded). A
-        // missing entitlement (null fact) fails closed to a zero ceiling.
-        var effectiveLimit = fact switch
+        // Decision authority is IsAvailable, not Limit alone: an unavailable
+        // fact (IsAvailable=false with any Limit, including NULL) fails closed to
+        // a zero ceiling; a missing fact fails closed the same way. Only an
+        // available grant sets a ceiling (NULL = unbounded, numeric = bounded).
+        var effective = fact switch
         {
             null => (decimal?)0,
-            { Limit: null } => null,
-            { Limit: int limit } => limit,
+            { IsAvailable: false } => 0,
+            { IsAvailable: true, Limit: null } => null,
+            { IsAvailable: true, Limit: int limit } => limit,
         };
 
-        usage = WorkspaceFeatureUsage.Create(
-            op.AccountId,
-            op.WorkspaceId,
-            FeatureCode.Create(op.CapabilityCode),
-            currentUsage: 0,
-            hardLimit: effectiveLimit,
-            softLimit: effectiveLimit,
-            op.OccurredAt);
-
-        _context.WorkspaceFeatureUsages.Add(usage);
-        return usage;
+        return (effective, effective);
     }
+
+    private async Task<FeatureUsageLedger?> FindByIdentityAsync(
+        Guid logicalOperationId,
+        CancellationToken cancellationToken)
+        => await _context.FeatureUsageLedger
+            .FirstOrDefaultAsync(l => l.LogicalOperationId == logicalOperationId, cancellationToken);
+
+    private static bool SamePayload(
+        FeatureUsageLedger existing,
+        BillingCapacityOperationIdentity op,
+        decimal expectedDelta)
+        => existing.AccountId == op.AccountId
+            && existing.WorkspaceId == op.WorkspaceId
+            && existing.FeatureCode == NormalizeCode(op.CapabilityCode)
+            && existing.Delta == expectedDelta
+            && existing.ReferenceResource == op.SourceResource;
+
+    private static string NormalizeCode(string capabilityCode)
+        => capabilityCode.Trim().ToUpperInvariant();
 
     private async Task<WorkspaceFeatureUsage?> LoadUsageAsync(
         BillingCapacityOperationIdentity op,
@@ -188,7 +232,7 @@ public sealed class BillingCapacityActions : IBillingCapacityActions
     private static decimal? RemainingOf(WorkspaceFeatureUsage usage)
     {
         return usage.HardLimit.HasValue
-            ? usage.HardLimit - usage.CurrentUsage
+            ? Math.Max(0m, usage.HardLimit.Value - usage.CurrentUsage)
             : null;
     }
 }

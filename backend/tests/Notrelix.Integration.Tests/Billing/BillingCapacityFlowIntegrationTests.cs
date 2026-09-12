@@ -142,6 +142,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(accountId, workspaceId, ownerId);
         await using var context = _db.CreateContext(tenant);
+        await using var tx = await context.Database.BeginTransactionAsync();
         var capacity = new BillingCapacityActions(
             context,
             new BillingCapabilityFactsProvider(context, clock.Object));
@@ -178,6 +179,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var releaseReplay = await capacity.ReleaseAsync(new ReleaseCapacityRequest(releaseOp), CancellationToken.None);
         releaseReplay.AlreadyReleased.Should().BeTrue("a repeated release is deduplicated");
         releaseReplay.Remaining.Should().Be(5m);
+        await tx.CommitAsync();
 
         await using var verify = _db.CreateContext(SystemTenant());
         var ledger = await verify.FeatureUsageLedger
@@ -192,6 +194,161 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
         usage.CurrentUsage.Should().Be(0m, "the released capacity is restored");
         usage.HardLimit.Should().Be(5m);
+    }
+
+    [Fact(DisplayName = "TAC-BI-FLOW-02 - direct last-slot race, two transactions, exactly one wins")]
+    public async Task DirectAction_LastSlotRace_TwoTransactions_ExactlyOneWins()
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        await SeedWorkspaceFeatureUsageAsync(accountId, workspaceId, currentUsage: 1, hardLimit: 2);
+        await SeedEntitlementAsync(accountId, limit: 2);
+
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+
+        async Task<bool> TryConsumeAsync(string sourceResource)
+        {
+            var tenant = new FakeCurrentTenantContext();
+            tenant.SetWorkspace(accountId, workspaceId, ownerId);
+            await using var ctx = _db.CreateContext(tenant);
+            var capacity = new BillingCapacityActions(ctx, new BillingCapabilityFactsProvider(ctx, clock.Object));
+            var op = new BillingCapacityOperationIdentity(
+                accountId, workspaceId, BillingCapabilityCode.AutomationRule,
+                Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: sourceResource,
+                ActorUserId: ownerId, OccurredAt: clock.Object.UtcNow);
+            await using var tx = await ctx.Database.BeginTransactionAsync();
+            try
+            {
+                var result = await capacity.ConsumeAsync(new ConsumeCapacityRequest(op), CancellationToken.None);
+                await ctx.SaveChangesAsync();
+                await tx.CommitAsync();
+                return !result.AlreadyConsumed;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Lost the optimistic-concurrency race at SaveChanges.
+                return false;
+            }
+            catch (BusinessRuleException)
+            {
+                // Lost the last slot before SaveChanges: the usage load observed
+                // the winner's committed current usage and the Domain limit guard
+                // denied the new consumption. Both mechanisms are legitimate
+                // single-winner outcomes of the same race.
+                return false;
+            }
+        }
+
+        var outcomes = await Task.WhenAll(TryConsumeAsync("slot-a"), TryConsumeAsync("slot-b"));
+
+        outcomes.Count(o => o).Should().Be(1, "exactly one transaction wins the single remaining slot");
+        await using var verify = _db.CreateContext(SystemTenant());
+        var usage = await verify.WorkspaceFeatureUsages
+            .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
+        usage.CurrentUsage.Should().Be(2m, "exactly one capacity slot is consumed into the reserved row");
+        usage.Version.Should().Be(2, "the version token advanced exactly once for the single winning consume");
+        var ledger = await verify.FeatureUsageLedger
+            .Where(l => l.AccountId == accountId
+                && l.WorkspaceId == workspaceId
+                && l.FeatureCode == BillingCapabilityCode.AutomationRule)
+            .ToListAsync();
+        ledger.Should().HaveCount(1, "the one consumed slot records exactly one ledger effect");
+        ledger.Single().Delta.Should().Be(1m);
+    }
+
+    [Fact(DisplayName = "TAC-BI-FLOW-02 - first-use bootstrap race, two transactions, both served")]
+    public async Task FirstUse_ConcurrentConsumes_OnFreshScope_BothSucceed_NoFalseUniqueConflict()
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        await SeedEntitlementAsync(accountId, limit: 2);
+        // Intentionally NO WorkspaceFeatureUsage row — both consumers race the atomic first-use seed.
+
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+
+        async Task<bool> TryConsumeAsync(string sourceResource)
+        {
+            var tenant = new FakeCurrentTenantContext();
+            tenant.SetWorkspace(accountId, workspaceId, ownerId);
+            await using var ctx = _db.CreateContext(tenant);
+            var capacity = new BillingCapacityActions(ctx, new BillingCapabilityFactsProvider(ctx, clock.Object));
+            var op = new BillingCapacityOperationIdentity(
+                accountId, workspaceId, BillingCapabilityCode.AutomationRule,
+                Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: sourceResource,
+                ActorUserId: ownerId, OccurredAt: clock.Object.UtcNow);
+            await using var tx = await ctx.Database.BeginTransactionAsync();
+            try
+            {
+                var result = await capacity.ConsumeAsync(new ConsumeCapacityRequest(op), CancellationToken.None);
+                await ctx.SaveChangesAsync();
+                await tx.CommitAsync();
+                return !result.AlreadyConsumed;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return false;
+            }
+        }
+
+        var outcomes = await Task.WhenAll(TryConsumeAsync("boot-a"), TryConsumeAsync("boot-b"));
+        outcomes.Should().OnlyContain(o => o,
+            "the atomic first-use seed must serve both consumers up to the limit, never a false unique-scope conflict");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var usage = await verify.WorkspaceFeatureUsages
+            .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
+        usage.CurrentUsage.Should().Be(2m, "both consumers succeeded against the finite limit of 2");
+        usage.HardLimit.Should().Be(2m);
+        var ledger = await verify.FeatureUsageLedger
+            .Where(l => l.AccountId == accountId
+                && l.WorkspaceId == workspaceId
+                && l.FeatureCode == BillingCapabilityCode.AutomationRule)
+            .ToListAsync();
+        ledger.Should().HaveCount(2, "two distinct logical operations record two +1 effects");
+        ledger.Should().OnlyContain(l => l.Delta == 1m);
+    }
+
+    [Fact(DisplayName = "TAC-BI-FLOW-02 - first-use seeds CurrentUsage from the ledger sum")]
+    public async Task FirstUse_WithPriorLedgerHistory_SeedsCurrentUsageFromLedgerSum()
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        await SeedEntitlementAsync(accountId, limit: 5);
+        await SeedLedgerDeltaAsync(accountId, workspaceId, 2, ownerId); // committed history, no WFU row yet
+
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(accountId, workspaceId, ownerId);
+        await using var context = _db.CreateContext(tenant);
+        await using var tx = await context.Database.BeginTransactionAsync();
+        var capacity = new BillingCapacityActions(
+            context,
+            new BillingCapabilityFactsProvider(context, clock.Object));
+        var op = new BillingCapacityOperationIdentity(
+            accountId, workspaceId, BillingCapabilityCode.AutomationRule,
+            Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: "materialized-history",
+            ActorUserId: ownerId, OccurredAt: clock.Object.UtcNow);
+
+        var result = await capacity.ConsumeAsync(new ConsumeCapacityRequest(op), CancellationToken.None);
+
+        result.Remaining.Should().Be(2m, "two historical units are already consumed from the five-unit grant");
+        await context.SaveChangesAsync();
+        await tx.CommitAsync();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var usage = await verify.WorkspaceFeatureUsages
+            .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
+        usage.CurrentUsage.Should().Be(3m, "the seed materialized the ledger sum (2) and the new consume added 1");
+        usage.HardLimit.Should().Be(5m);
+        var ledger = await verify.FeatureUsageLedger
+            .Where(l => l.AccountId == accountId
+                && l.WorkspaceId == workspaceId
+                && l.FeatureCode == BillingCapabilityCode.AutomationRule)
+            .ToListAsync();
+        ledger.Should().HaveCount(2);
+        ledger.Should().ContainSingle(l => l.Delta == 2m);
+        ledger.Should().ContainSingle(l => l.Delta == 1m);
     }
 
     [Fact(DisplayName = "BOUND-TX-003 - capacity consume rolls back with downstream failure")]
@@ -462,6 +619,31 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         return fact?.Remaining;
     }
 
+    [Fact(DisplayName = "TAC-BI-FLOW-02 - the global ledger index rejects a duplicated logical operation id across scopes")]
+    public async Task GlobalLogicalOperationIndex_RejectsDuplicateAcrossScopes()
+    {
+        var (accountA, ownerA, workspaceA) = await SeedWorkspaceStackAsync();
+        var (accountB, _, workspaceB) = await SeedWorkspaceStackAsync();
+        var logicalOperationId = Guid.CreateVersion7();
+
+        await SeedLedgerDeltaAsync(accountA, workspaceA, 1, ownerA, logicalOperationId);
+
+        await using var context = _db.CreateContext(SystemTenant());
+        context.FeatureUsageLedger.Add(FeatureUsageLedger.Create(
+            accountB,
+            workspaceB,
+            BillingCapabilityCode.AutomationRule,
+            1m,
+            ownerA,
+            referenceResource: "cross-scope-duplicate",
+            note: null,
+            DateTimeOffset.UtcNow,
+            logicalOperationId));
+        var insert = () => context.SaveChangesAsync();
+        await insert.Should().ThrowAsync<DbUpdateException>(
+            "the global partial unique index on logical_operation_id must reject the duplicate across scopes at the database");
+    }
+
     private async Task SeedWorkspaceFeatureUsageAsync(
         Guid accountId, Guid workspaceId, decimal currentUsage, decimal hardLimit)
     {
@@ -487,6 +669,27 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             limit,
             EntitlementSource.Subscription,
             DateTimeOffset.UtcNow));
+        await seed.SaveChangesAsync();
+    }
+
+    private async Task SeedLedgerDeltaAsync(
+        Guid accountId,
+        Guid workspaceId,
+        decimal delta,
+        Guid actorUserId,
+        Guid? logicalOperationId = null)
+    {
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.FeatureUsageLedger.Add(FeatureUsageLedger.Create(
+            accountId,
+            workspaceId,
+            BillingCapabilityCode.AutomationRule,
+            delta,
+            actorUserId,
+            referenceResource: "historical-usage",
+            note: null,
+            DateTimeOffset.UtcNow,
+            logicalOperationId ?? Guid.CreateVersion7()));
         await seed.SaveChangesAsync();
     }
 

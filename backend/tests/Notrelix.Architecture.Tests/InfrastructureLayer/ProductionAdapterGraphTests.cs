@@ -28,9 +28,7 @@ public class ProductionAdapterGraphTests
     /// </summary>
     private static readonly HashSet<string> ConditionallyRegisteredDevTypes = new(StringComparer.Ordinal)
     {
-        "Notrelix.Infrastructure.Billing.DevNullEntitlementChecker",
         "Notrelix.Infrastructure.Billing.DevNullSubscriptionChecker",
-        "Notrelix.Infrastructure.Billing.DevNullFeatureGateChecker",
         "Notrelix.Infrastructure.Email.NoopEmailService",
         "Notrelix.Infrastructure.Integrations.Providers.NoopN8nClient",
         "Notrelix.Infrastructure.DevNullIntegrationEventBus",

@@ -64,7 +64,6 @@ public class HandlerDataPortGateTests : ArchitectureTestBase
         "IN8nSignatureService",
         "IAuthSessionIssuer",
         "ISubscriptionChecker",
-        "IFeatureGateChecker",
         "IExecutionContextReader",
         "ICorrelationContext",
     };

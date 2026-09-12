@@ -37,11 +37,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 columns: new[] { "account_id", "workspace_id", "feature_code" },
                 unique: true);
 
+            // Global dedup identity: LogicalOperationId is unique across every
+            // account and workspace, so a replayed capacity operation can be
+            // detected regardless of scope. NULL rows (operations without an
+            // identity) are excluded from the index.
             migrationBuilder.CreateIndex(
                 name: "ux_feature_usage_ledger_logical_operation",
                 schema: "billing",
                 table: "feature_usage_ledger",
-                columns: new[] { "account_id", "workspace_id", "feature_code", "logical_operation_id" },
+                column: "logical_operation_id",
                 unique: true,
                 filter: "\"logical_operation_id\" IS NOT NULL");
         }

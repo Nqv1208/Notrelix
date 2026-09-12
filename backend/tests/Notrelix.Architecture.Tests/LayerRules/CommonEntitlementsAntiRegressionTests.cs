@@ -30,8 +30,6 @@ public class CommonEntitlementsAntiRegressionTests : ArchitectureTestBase
     private static readonly IReadOnlySet<string> KnownEntitlementsTypes = new HashSet<string>(StringComparer.Ordinal)
     {
         "Notrelix.Application.Common.Entitlements.FeatureCode",
-        "Notrelix.Application.Common.Entitlements.IEntitlementChecker",
-        "Notrelix.Application.Common.Entitlements.IFeatureGateChecker",
         "Notrelix.Application.Common.Entitlements.ISubscriptionChecker",
     };
 

@@ -85,7 +85,6 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IStorageService>().Should().BeOfType<LocalStorageProvider>();
 
         services.GetRequiredService<ISubscriptionChecker>().Should().BeOfType<DatabaseSubscriptionChecker>();
-        services.GetRequiredService<IFeatureGateChecker>().Should().BeOfType<DatabaseFeatureGateChecker>();
 
         services.GetRequiredService<IAuditService>().Should().NotBeNull();
 

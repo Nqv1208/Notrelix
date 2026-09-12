@@ -257,6 +257,9 @@ billing.workspace-feature-usage-initialized|1|Notrelix.Domain.Billing.Usage.Even
 billing.workspace-feature-usage-initialized|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageInitializedDomainEvent|Workspace|Feature|Notrelix.Domain.Billing.Plans.FeatureCode|False
 billing.workspace-feature-usage-initialized|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageInitializedDomainEvent|Workspace|HardLimit|System.Decimal|True
 billing.workspace-feature-usage-initialized|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageInitializedDomainEvent|Workspace|SoftLimit|System.Decimal|True
+billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|Feature|Notrelix.Domain.Billing.Plans.FeatureCode|False
+billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|HardLimit|System.Decimal|True
+billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|SoftLimit|System.Decimal|True
 billing.workspace-feature-usage-reset|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageResetDomainEvent|Workspace|Feature|Notrelix.Domain.Billing.Plans.FeatureCode|False
 collaboration.attachment-created|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentCreatedDomainEvent|Workspace|AttachmentId|System.Guid|False
 collaboration.attachment-created|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentCreatedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False

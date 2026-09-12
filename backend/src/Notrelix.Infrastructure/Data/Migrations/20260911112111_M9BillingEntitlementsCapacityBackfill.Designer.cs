@@ -2288,7 +2288,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_feature_usage_ledger_workspace_id");
 
-                    b.HasIndex("AccountId", "WorkspaceId", "FeatureCode", "LogicalOperationId")
+                    b.HasIndex("LogicalOperationId")
                         .IsUnique()
                         .HasDatabaseName("ux_feature_usage_ledger_logical_operation")
                         .HasFilter("\"logical_operation_id\" IS NOT NULL");

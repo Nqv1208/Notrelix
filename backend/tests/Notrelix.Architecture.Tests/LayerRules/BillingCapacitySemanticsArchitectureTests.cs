@@ -59,7 +59,6 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
     private static readonly IReadOnlySet<string> TierReferenceBaseline =
         new HashSet<string>(StringComparer.Ordinal)
         {
-            "Notrelix.Application/Common/Entitlements/IEntitlementChecker.cs",
             "Notrelix.Application/Common/Security/AccessFacts.cs",
             "Notrelix.Application/Common/Security/AccessPolicyEngine.cs",
         };
