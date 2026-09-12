@@ -16,6 +16,7 @@ evidence:
   - .github/workflows/docs-ci.yml
   - .github/workflows/infra-ci.yml
   - .github/workflows/container-ci.yml
+  - .github/workflows/security-ci.yml
   - .github/workflows/ci-definition.yml
   - delivery/catalog.toml
   - delivery/policy.toml
@@ -124,7 +125,8 @@ Current domains:
 - **Documentation CI** — `make docs-check` documentation governance;
 - **Infrastructure CI** — static Compose/gateway/rootless topology validation plus an assembled staging stack health run (migrations, RLS, HTTP live probes);
 - **Container CI** — build, Trivy HIGH/CRITICAL gate and SPDX SBOM for exact backend/web/marketing image bytes (validation-only; publish/attest live on the release path);
-- **CI Definition** — deliveryctl validation, `architecture-check`, actionlint, artifact-helper roundtrip and runtime image-lock security scanning.
+- **Security CI** — NuGet and pnpm dependency vulnerability gates plus runtime image-lock Trivy scanning (HIGH/CRITICAL) for the planner-resolved `RuntimeImageSet`;
+- **CI Definition** — deliveryctl validation, `architecture-check`, actionlint, planner regression tests, artifact-helper roundtrip and emit-evidence contract test (definition proof only; it owns no security scanning).
 
 Adding a component that fits an existing domain changes that domain's ownership patterns and proof jobs; adding a wholly new domain adds a new standalone workflow, not a plan step in a central file.
 
@@ -153,7 +155,7 @@ UI visual baselines are bound to the Playwright declaration/runtime version, Sto
 
 Backend CI preserves explicit critical-test execution guards in addition to running the full test projects. This includes architecture boundaries, RLS/data-event infrastructure guards, platform reliability, API idempotency and critical integration/production-composition tests.
 
-Runtime dependency images used in CI service containers (Redis and publish-runtime images) are declared locally by the workflow; the backend domain does not own a duplicate runtime image authority (digests live only in `delivery/images.lock.toml`, consumed by the release path and by the CI Definition runtime-lock scans).
+Runtime dependency images used in CI service containers (Redis and publish-runtime images) are declared locally by the workflow; the backend domain does not own a duplicate runtime image authority (digests live only in `delivery/images.lock.toml`, consumed by the release path and by the Security CI runtime-image scans, which receive the planner-resolved `RuntimeImageSet` instead of reading the lock directly).
 
 The NuGet vulnerability gate fails on any project reporting vulnerable package data rather than only emitting a report.
 

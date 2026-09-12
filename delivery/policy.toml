@@ -133,7 +133,7 @@ exclusive = true
 planes = ["infra"]
 infra_modes = ["topology", "assembled"]
 package_all_deployables = true
-security_domains = ["backend", "frontend"]
+security_domains = ["backend", "frontend", "runtime"]
 release = true
 
 [[change_rules]]
@@ -164,6 +164,9 @@ required = ["security:backend"]
 [proof_profiles.security-frontend]
 required = ["security:frontend"]
 
+[proof_profiles.security-runtime]
+required = ["security:runtime"]
+
 [proof_profiles.container]
 required = ["container:{component_id}"]
 
@@ -183,6 +186,7 @@ infra = "infra"
 [proof_bindings.security_domains]
 backend = "security-backend"
 frontend = "security-frontend"
+runtime = "security-runtime"
 
 [proof_bindings.capabilities]
 ui = "ui"

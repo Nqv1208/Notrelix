@@ -51,6 +51,7 @@ jobs:
       delivery_platform_required: ${{ steps.plan.outputs.delivery_platform_required }}
       security_backend_required: ${{ steps.plan.outputs.security_backend_required }}
       security_frontend_required: ${{ steps.plan.outputs.security_frontend_required }}
+      security_runtime_required: ${{ steps.plan.outputs.security_runtime_required }}
       plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
       schema_change: ${{ steps.plan.outputs.schema_change }}
       release_candidate: ${{ steps.plan.outputs.release_candidate }}
@@ -181,11 +182,13 @@ jobs:
   security:
     name: Dependency security
     needs: plan
-    if: needs.plan.outputs.security_backend_required == 'true' || needs.plan.outputs.security_frontend_required == 'true'
+    if: needs.plan.outputs.security_backend_required == 'true' || needs.plan.outputs.security_frontend_required == 'true' || needs.plan.outputs.security_runtime_required == 'true'
     uses: ./.github/workflows/security-ci.yml
     with:
       scan_backend: ${{ needs.plan.outputs.security_backend_required == 'true' }}
       scan_frontend: ${{ needs.plan.outputs.security_frontend_required == 'true' }}
+      scan_runtime: ${{ needs.plan.outputs.security_runtime_required == 'true' }}
+      runtime_images_json: ${{ needs.plan.outputs.runtime_images_json }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
       source_sha: ${{ github.sha }}
 

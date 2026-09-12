@@ -35,6 +35,24 @@ class T(unittest.TestCase):
  def test_backend_change_does_not_select_ui(self):
   p=self._plan('backend/contracts/openapi/v1/boards.yaml')
   self.assertNotIn('ui',p['capabilities'])
+ def test_images_lock_change_requires_runtime_image_security(self):
+  p=self._plan('delivery/images.lock.toml')
+  self.assertIn('runtime',p['security_domains']);self.assertIn('security:runtime',p['ci_expected_proofs'])
+ def test_runtime_image_security_decision_output(self):
+  from tools.deliveryctl.planner import github_outputs
+  o=github_outputs(self._plan('delivery/images.lock.toml'))
+  self.assertEqual(o['security_runtime_required'],'true')
+ def test_backend_change_does_not_scan_runtime_images(self):
+  p=self._plan('backend/src/Notrelix.Domain/Board.cs')
+  self.assertNotIn('runtime',p['security_domains']);self.assertNotIn('security:runtime',p['ci_expected_proofs'])
+ def test_full_ci_scans_runtime_images(self):
+  p=build_plan(root=ROOT,event_name='workflow_dispatch',ref='refs/heads/main',source_sha='a'*40,explicit_changed=[],force_full=True)
+  self.assertIn('runtime',p['security_domains']);self.assertIn('security:runtime',p['ci_expected_proofs'])
+ def test_security_provider_owns_runtime_image_scans(self):
+  sec=(ROOT/'.github/workflows/security-ci.yml').read_text()
+  self.assertIn('security:runtime',sec);self.assertIn('scan_runtime',sec);self.assertNotIn('delivery/',sec)
+  ci=(ROOT/'.github/workflows/ci.yml').read_text();self.assertIn('runtime_images_json',ci)
+  cidef=(ROOT/'.github/workflows/ci-definition.yml').read_text();self.assertNotIn('trivy',cidef.lower())
  def test_frontend_gate_requires_ui_system(self):
   text=(ROOT/'.github/workflows/frontend-ci.yml').read_text();block=text.split('  frontend-gate:',1)[1].split('    runs-on:',1)[0]
   self.assertIn('ui-system',block)
