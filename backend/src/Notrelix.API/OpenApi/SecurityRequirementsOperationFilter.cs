@@ -12,10 +12,14 @@ public sealed class SecurityRequirementsOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        var hasAllowAnonymous = context.MethodInfo is not null
-            && context.MethodInfo.GetCustomAttributes(true)
-                .OfType<IAllowAnonymous>()
-                .Any();
+        // Minimal API endpoint metadata (WhereMetadata/IAllowAnonymous applied
+        // on the route builder) does not reflect on MethodInfo — it lives in
+        // the action descriptor. Both surfaces must be consulted, otherwise a
+        // signature-authenticated anonymous endpoint exports a phantom Bearer
+        // requirement.
+        var hasAllowAnonymous =
+            (context.MethodInfo?.GetCustomAttributes(true).OfType<IAllowAnonymous>().Any() ?? false)
+            || context.ApiDescription.ActionDescriptor.EndpointMetadata.OfType<IAllowAnonymous>().Any();
 
         if (hasAllowAnonymous)
         {

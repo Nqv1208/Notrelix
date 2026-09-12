@@ -6,7 +6,7 @@ namespace Notrelix.API.Tests.Contracts;
 /// <summary>
 /// API host factory with Security:Csrf:Enabled=true for CSRF enforcement tests.
 /// </summary>
-public sealed class CsrfEnabledApiFactory : NotrelixApiFactory
+public class CsrfEnabledApiFactory : NotrelixApiFactory
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

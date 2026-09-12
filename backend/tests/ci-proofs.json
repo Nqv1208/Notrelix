@@ -1,0 +1,245 @@
+{
+  "api_version": "ci.notrelix.dev/backend-proofs/v1",
+  "profiles": {
+    "architecture": [
+      "backend.architecture.domain-bounded-context",
+      "backend.architecture.domain-reference-graph",
+      "backend.architecture.handler-data-port",
+      "backend.architecture.handler-constructor-port",
+      "backend.architecture.pipeline-canonical-topology",
+      "backend.architecture.pipeline-legacy-gap-zero",
+      "backend.architecture.pipeline-allowlist-description",
+      "backend.architecture.pipeline-allowlist-not-stale",
+      "backend.architecture.production-request-descriptors",
+      "backend.architecture.cross-context-persistence",
+      "backend.architecture.cross-context-application",
+      "backend.architecture.cross-context-cascade",
+      "backend.architecture.public-semantic-contract",
+      "backend.architecture.application-transport",
+      "backend.architecture.integration-event-ownership",
+      "backend.architecture.common-entitlements",
+      "backend.architecture.feature-structure"
+    ],
+    "core": [
+      "backend.data.rls-policy",
+      "backend.data.domain-event-interceptor"
+    ],
+    "platform": [
+      "backend.messaging.ordering",
+      "backend.messaging.poison",
+      "backend.messaging.consumer-delivery"
+    ],
+    "api": [
+      "backend.api.idempotency"
+    ],
+    "integration": [
+      "backend.data.idempotency-store",
+      "backend.tenant.isolation",
+      "backend.tenant.cross-isolation",
+      "backend.data.rls-runtime",
+      "backend.auth.api-token-flow",
+      "backend.auth.api-token-http-flow",
+      "backend.messaging.deduplication",
+      "backend.messaging.deduplication-full",
+      "backend.messaging.outbox-dispatch",
+      "backend.messaging.outbox-claim-reclaim",
+      "backend.messaging.outbox-atomicity",
+      "backend.integration.migration-smoke",
+      "backend.integration.production-composition",
+      "backend.integration.production-graph",
+      "backend.messaging.realtime-resource-changed"
+    ]
+  },
+  "proofs": {
+    "backend.architecture.domain-bounded-context": {
+      "tests": [
+        "Notrelix.Architecture.Tests.DomainPurity.DomainBoundedContextSignatureTests"
+      ]
+    },
+    "backend.architecture.domain-reference-graph": {
+      "tests": [
+        "Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests"
+      ]
+    },
+    "backend.architecture.handler-data-port": {
+      "tests": [
+        "Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests"
+      ]
+    },
+    "backend.architecture.handler-constructor-port": {
+      "tests": [
+        "Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests"
+      ]
+    },
+    "backend.architecture.pipeline-canonical-topology": {
+      "tests": [
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_CanonicalDocs_MatchFrozenSevenStageTopology"
+      ]
+    },
+    "backend.architecture.pipeline-legacy-gap-zero": {
+      "tests": [
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_LegacyGapCount_IsZero"
+      ]
+    },
+    "backend.architecture.pipeline-allowlist-description": {
+      "tests": [
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.IntentionalAllowlistEntries_MustDescribePermanentArchitectureExceptions"
+      ]
+    },
+    "backend.architecture.pipeline-allowlist-not-stale": {
+      "tests": [
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllowlistEntries_AreNotStale"
+      ]
+    },
+    "backend.architecture.production-request-descriptors": {
+      "tests": [
+        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllProductionRequests_HaveValidDescriptors"
+      ]
+    },
+    "backend.architecture.cross-context-persistence": {
+      "tests": [
+        "Notrelix.Architecture.Tests.CrossContextPersistenceBoundaryTests"
+      ]
+    },
+    "backend.architecture.cross-context-application": {
+      "tests": [
+        "Notrelix.Architecture.Tests.CrossContextApplicationDependencyTests"
+      ]
+    },
+    "backend.architecture.cross-context-cascade": {
+      "tests": [
+        "Notrelix.Architecture.Tests.DataAccess.CrossContextCascadeArchitectureTests"
+      ]
+    },
+    "backend.architecture.public-semantic-contract": {
+      "tests": [
+        "Notrelix.Architecture.Tests.Contracts.PublicSemanticContractArchitectureTests"
+      ]
+    },
+    "backend.architecture.application-transport": {
+      "tests": [
+        "Notrelix.Architecture.Tests.ApplicationLayer.ApplicationTransportBoundaryTests"
+      ]
+    },
+    "backend.architecture.integration-event-ownership": {
+      "tests": [
+        "Notrelix.Architecture.Tests.Events.IntegrationEventOwnershipArchitectureTests"
+      ]
+    },
+    "backend.architecture.common-entitlements": {
+      "tests": [
+        "Notrelix.Architecture.Tests.LayerRules.CommonEntitlementsAntiRegressionTests"
+      ]
+    },
+    "backend.architecture.feature-structure": {
+      "tests": [
+        "Notrelix.Architecture.Tests.FeatureStructureArchitectureTests"
+      ]
+    },
+    "backend.data.rls-policy": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.Rls.RlsPolicyVerificationTests"
+      ]
+    },
+    "backend.data.domain-event-interceptor": {
+      "tests": [
+        "Notrelix.Infrastructure.Tests.Data.DomainEventInterceptorTests"
+      ]
+    },
+    "backend.messaging.ordering": {
+      "tests": [
+        "Notrelix.Platform.Tests.Messaging.Reliability.OrderingEnforcerTests"
+      ]
+    },
+    "backend.messaging.poison": {
+      "tests": [
+        "Notrelix.Platform.Tests.Messaging.Reliability.PoisonDetectorTests"
+      ]
+    },
+    "backend.messaging.consumer-delivery": {
+      "tests": [
+        "Notrelix.Platform.Tests.Messaging.Consumers.ConsumerHostDeliveryContractTests"
+      ]
+    },
+    "backend.api.idempotency": {
+      "tests": [
+        "Notrelix.API.Tests.Idempotency.IdempotencyEndpointContractTests"
+      ]
+    },
+    "backend.data.idempotency-store": {
+      "tests": [
+        "Notrelix.Integration.Tests.Data.Ops.IdempotencyStoreIntegrationTests"
+      ]
+    },
+    "backend.tenant.isolation": {
+      "tests": [
+        "Notrelix.Integration.Tests.Integration.TenantIsolationTests"
+      ]
+    },
+    "backend.tenant.cross-isolation": {
+      "tests": [
+        "Notrelix.Integration.Tests.Integration.CrossTenantIsolationTests"
+      ]
+    },
+    "backend.data.rls-runtime": {
+      "tests": [
+        "Notrelix.Integration.Tests.Integration.RlsRuntimeEnforcementTests"
+      ]
+    },
+    "backend.auth.api-token-flow": {
+      "tests": [
+        "Notrelix.Integration.Tests.Auth.ApiTokenFlowTests"
+      ]
+    },
+    "backend.auth.api-token-http-flow": {
+      "tests": [
+        "Notrelix.Integration.Tests.Auth.ApiTokenHttpFlowTests"
+      ]
+    },
+    "backend.messaging.deduplication": {
+      "tests": [
+        "Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterIntegrationTests"
+      ]
+    },
+    "backend.messaging.deduplication-full": {
+      "tests": [
+        "Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests"
+      ]
+    },
+    "backend.messaging.outbox-dispatch": {
+      "tests": [
+        "Notrelix.Integration.Tests.Data.OutboxDispatchContractTests"
+      ]
+    },
+    "backend.messaging.outbox-claim-reclaim": {
+      "tests": [
+        "Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests"
+      ]
+    },
+    "backend.messaging.outbox-atomicity": {
+      "tests": [
+        "Notrelix.Integration.Tests.Data.OutboxAtomicityTests"
+      ]
+    },
+    "backend.integration.migration-smoke": {
+      "tests": [
+        "Notrelix.Integration.Tests.Data.MigrationSmokeTests"
+      ]
+    },
+    "backend.integration.production-composition": {
+      "tests": [
+        "Notrelix.Integration.Tests.Integration.ProductionCompositionTests"
+      ]
+    },
+    "backend.integration.production-graph": {
+      "tests": [
+        "Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests"
+      ]
+    },
+    "backend.messaging.realtime-resource-changed": {
+      "tests": [
+        "Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests"
+      ]
+    }
+  }
+}

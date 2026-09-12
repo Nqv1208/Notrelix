@@ -213,6 +213,24 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return ManageAwareAllow(permission, request, facts, role);
         }
 
+        // M8 intended policy: connecting/revoking external provider
+        // integrations is a dedicated workspace capability — not workspace
+        // settings, and not any Board/Page vocabulary. Owner and Admin hold
+        // it by default; ordinary members and guests do not. The capability
+        // applies to both addressing surfaces: the workspace (Connect) and
+        // the integration-owned resource (Disconnect). Applicable explicit
+        // permission rules still evaluate first above.
+        if (permission.Action == PermissionAction.ManageIntegrations
+            && permission.Resource?.Kind.Value
+                is "workspaces.workspace" or "integrations.calendar-integration")
+        {
+            var privileged = string.Equals(role, "Owner", StringComparison.Ordinal)
+                || string.Equals(role, "Admin", StringComparison.Ordinal);
+            return privileged
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+        }
+
         // M2G intended policy: page creation is a workspace usage right —
         // the DC-FLOW-01 actor is the authenticated workspace member, not
         // workspace management. Guests are excluded; explicit permission

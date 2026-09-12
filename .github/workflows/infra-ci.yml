@@ -1,30 +1,54 @@
 name: Infrastructure CI
 
 on:
-  pull_request:
-    branches: [main, develop]
-  merge_group:
-  push:
-    branches: [main, develop]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      topology_required: {required: true, type: boolean}
+      assembled_required: {required: true, type: boolean}
+      runtime_images_json: {required: true, type: string}
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
+      schema_change: {required: true, type: string}
 
 permissions:
   contents: read
 
+env:
+  FALLBACK_RUNTIME_IMAGES_JSON: '{"api_version":"delivery.notrelix.dev/v1","kind":"RuntimeImageSet","images":[{"id":"postgres","ref":"postgres@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825","deploy_env_var":"NOTRELIX_POSTGRES_IMAGE"},{"id":"redis","ref":"redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf","deploy_env_var":"NOTRELIX_REDIS_IMAGE"},{"id":"rabbitmq","ref":"rabbitmq@sha256:57bddb6fbc3498b5d8b5a14dc6f4506073ebcf94c66ba2a7678c335faa8dd631","deploy_env_var":"NOTRELIX_RABBITMQ_IMAGE"},{"id":"nginx","ref":"nginx@sha256:c9366b8c560169b101ca0e5422ed063b20779e6454c2326b9c9704225c9b0c08","deploy_env_var":"NOTRELIX_NGINX_IMAGE"}]}'
+
 jobs:
   changes:
-    name: Change detection
+    name: Change detection and selection
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      infra: ${{ steps.detect.outputs.infra }}
-      backend_selected: ${{ steps.detect.outputs.backend_selected }}
-      selected: ${{ steps.detect.outputs.selected }}
+      topology_selected: ${{ steps.detect.outputs.topology_selected || steps.called.outputs.topology_selected }}
+      assembled_selected: ${{ steps.detect.outputs.assembled_selected || steps.called.outputs.assembled_selected }}
+      schema_change: ${{ steps.detect.outputs.schema_change || steps.called.outputs.schema_change }}
+      nginx_ref: ${{ steps.detect.outputs.nginx_ref || steps.called.outputs.nginx_ref }}
+      runtime_images_json: ${{ steps.detect.outputs.runtime_images_json || steps.called.outputs.runtime_images_json }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - id: called
+        if: inputs.source_sha != ''
+        env:
+          TOPOLOGY: ${{ inputs.topology_required }}
+          ASSEMBLED: ${{ inputs.assembled_required }}
+          SCHEMA_CHANGE: ${{ inputs.schema_change }}
+          RUNTIME_IMAGES_JSON: ${{ inputs.runtime_images_json }}
+        run: |
+          set -euo pipefail
+          {
+            echo "topology_selected=$TOPOLOGY"
+            echo "assembled_selected=$ASSEMBLED"
+            echo "schema_change=$SCHEMA_CHANGE"
+            echo "nginx_ref=$(jq -r '.images[] | select(.id == "nginx") | .ref' <<<"$RUNTIME_IMAGES_JSON")"
+            echo "runtime_images_json=$RUNTIME_IMAGES_JSON"
+          } >> "$GITHUB_OUTPUT"
       - id: detect
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -72,38 +96,49 @@ jobs:
           else
             infra=true; backend_selected=true
           fi
-          echo "infra=$infra" >> "$GITHUB_OUTPUT"
-          echo "backend_selected=$backend_selected" >> "$GITHUB_OUTPUT"
           [[ "$infra" == true || "$backend_selected" == true ]] && selected=true || selected=false
-          echo "selected=$selected" >> "$GITHUB_OUTPUT"
+          {
+            echo "topology_selected=$selected"
+            echo "assembled_selected=$selected"
+            echo "schema_change=false"
+            echo "nginx_ref=$(jq -r '.images[] | select(.id == "nginx") | .ref' <<<"$FALLBACK_RUNTIME_IMAGES_JSON")"
+            echo "runtime_images_json=$FALLBACK_RUNTIME_IMAGES_JSON"
+          } >> "$GITHUB_OUTPUT"
 
-  static:
+  topology:
     name: Static topology validation
     needs: changes
-    if: needs.changes.outputs.selected == 'true'
+    if: needs.changes.outputs.topology_selected == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      NGINX_REF: ${{ needs.changes.outputs.nginx_ref }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate Compose topology and rootless invariants
         run: python3 scripts/ci/validate-infra.py
       - name: Validate staging nginx syntax
-        run: docker run --rm -v "$PWD/infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" nginx:1.27-alpine nginx -t
+        run: docker run --rm -v "$PWD/infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" "$NGINX_REF" nginx -t
       - name: Validate production nginx syntax
-        run: docker run --rm -v "$PWD/infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro" nginx:1.27-alpine nginx -t
+        run: docker run --rm -v "$PWD/infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro" "$NGINX_REF" nginx -t
 
   assembled:
     name: Assembled stack health
     needs: changes
-    if: needs.changes.outputs.selected == 'true'
+    if: needs.changes.outputs.assembled_selected == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       HTTP_PORT: "8080"
+      RUNTIME_IMAGES_JSON: ${{ needs.changes.outputs.runtime_images_json }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Generate ephemeral environment
-        run: bash scripts/ci/write-test-env.sh /tmp/notrelix-infra.env
+      - name: Generate ephemeral environment with resolved runtime images
+        run: |
+          bash scripts/ci/write-test-env.sh /tmp/notrelix-creds.env
+          jq -r '.images[] | select(.deploy_env_var != null and .deploy_env_var != "") | "\(.deploy_env_var)=\(.ref)"' <<<"$RUNTIME_IMAGES_JSON" > /tmp/notrelix-images.env
+          cat /tmp/notrelix-creds.env /tmp/notrelix-images.env > /tmp/notrelix-infra.env
+          chmod 600 /tmp/notrelix-infra.env
       - name: Compose config
         run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml config --quiet
       - name: Build backend, web and marketing images
@@ -137,28 +172,36 @@ jobs:
         if: always()
         run: docker compose --env-file /tmp/notrelix-infra.env -f docker-compose.yml -f docker-compose.staging.yml down -v --remove-orphans || true
 
-  infra-gate:
+  proof:
     name: Infrastructure CI gate
     if: always()
-    needs: [changes, static, assembled]
+    needs: [changes, topology, assembled]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require infrastructure proof when selected
         env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          SELECTED: ${{ needs.changes.outputs.selected }}
-          STATIC_RESULT: ${{ needs.static.result }}
-          ASSEMBLED_RESULT: ${{ needs.assembled.result }}
+          TOPOLOGY_SELECTED: ${{ needs.changes.outputs.topology_selected }}
+          ASSEMBLED_SELECTED: ${{ needs.changes.outputs.assembled_selected }}
+          SCHEMA_CHANGE: ${{ needs.changes.outputs.schema_change }}
+          RESULTS: ${{ toJSON(needs) }}
         run: |
           set -euo pipefail
           require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
-          require changes "$CHANGES_RESULT"
-          if [[ "$SELECTED" == true ]]; then
-            require static "$STATIC_RESULT"
-            require assembled "$ASSEMBLED_RESULT"
-          elif [[ "$STATIC_RESULT" != skipped || "$ASSEMBLED_RESULT" != skipped ]]; then
-            echo "::error::expected static and assembled to be skipped when unselected"
+          allowed_unselected(){ local name="$1" result="$2"; [[ "$result" == skipped || "$result" == success ]] || { echo "::error::$name unexpected result=$result"; exit 1; }; }
+          result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
+          require changes "$(result changes)"
+          if [[ "$SCHEMA_CHANGE" == true && "$ASSEMBLED_SELECTED" != true ]]; then
+            echo "::error::schema change requires assembled stack proof"
             exit 1
           fi
+          if [[ "$TOPOLOGY_SELECTED" == true ]]; then require topology "$(result topology)"; else allowed_unselected topology "$(result topology)"; fi
+          if [[ "$ASSEMBLED_SELECTED" == true ]]; then require assembled "$(result assembled)"; else allowed_unselected assembled "$(result assembled)"; fi
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'infra:gate'
+          component_id: infra-gate
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}

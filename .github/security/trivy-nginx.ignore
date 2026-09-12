@@ -1,0 +1,16 @@
+# Scoped Trivy ignore — nginx runtime image ONLY (delivery/images.lock.toml [images.nginx]).
+# Enforced expiry: security-ci runtime-images fails when this date passes and no
+# patched upstream digest has been pinned. Renewal requires an explicit security
+# decision; this file must never be renewed silently.
+#
+# applies-to-image-ref: nginx@sha256:c9366b8c560169b101ca0e5422ed063b20779e6454c2326b9c9704225c9b0c08
+# expires: 2026-09-26
+# justification: alpine openssl 3.5.8-r0 (CVE-2026-14456) and 3.5.7-r0
+#   (CVE-2026-45447) fixes postdate the newest published nginx:1.29-alpine-slim
+#   build (sha256:c9366b8c...). Packages are the only HIGH/CRITICAL fixed-version
+#   findings in the image; the nginx binary itself is clean. Remove this file as
+#   soon as an upstream rebuild containing the fixed packages is pinned.
+#
+# Only these two CVEs are suppressed. Anything else must fail the scan.
+CVE-2026-14456
+CVE-2026-45447

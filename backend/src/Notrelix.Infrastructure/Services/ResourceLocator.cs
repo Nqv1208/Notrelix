@@ -2,6 +2,7 @@ using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
+using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Infrastructure.Services;
@@ -29,25 +30,29 @@ public sealed class ResourceLocator : IResourceLocator
     private static readonly ResourceKind ShareLink = ResourceKind.Create("governance.share-link");
     private static readonly ResourceKind AutomationRule = ResourceKind.Create("automation.rule");
     private static readonly ResourceKind AutomationExecution = ResourceKind.Create("automation.execution");
+    private static readonly ResourceKind CalendarIntegration = ResourceKind.Create("integrations.calendar-integration");
 
     private readonly IWorkManagementDbContext _workDb;
     private readonly IDocumentDbContext _docDb;
     private readonly ICollaborationDbContext _collabDb;
     private readonly IGovernanceDbContext _govDb;
     private readonly IAutomationDbContext _autoDb;
+    private readonly IIntegrationDbContext _integrationDb;
 
     public ResourceLocator(
         IWorkManagementDbContext workDb,
         IDocumentDbContext docDb,
         ICollaborationDbContext collabDb,
         IGovernanceDbContext govDb,
-        IAutomationDbContext autoDb)
+        IAutomationDbContext autoDb,
+        IIntegrationDbContext integrationDb)
     {
         _workDb = workDb;
         _docDb = docDb;
         _collabDb = collabDb;
         _govDb = govDb;
         _autoDb = autoDb;
+        _integrationDb = integrationDb;
     }
 
     public async Task<ResourceLocation?> LocateAsync(
@@ -149,6 +154,12 @@ public sealed class ResourceLocator : IResourceLocator
                 .FirstOrDefaultAsync(cancellationToken)),
 
             "automation.execution" => ToLocation(AutomationExecution, await _autoDb.AutomationExecutions
+                .IgnoreQueryFilters()
+                .Where(r => r.Id == resource.ResourceId)
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
+
+            "integrations.calendar-integration" => ToLocation(CalendarIntegration, await _integrationDb.CalendarIntegrations
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
                 .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))

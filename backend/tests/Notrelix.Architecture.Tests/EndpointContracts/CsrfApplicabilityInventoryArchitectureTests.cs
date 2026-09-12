@@ -50,6 +50,8 @@ public class CsrfApplicabilityInventoryArchitectureTests : ArchitectureTestBase
             "completes challenge and establishes ambient access/refresh token cookies on success"),
         ["ForgotPasswordEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "no ambient session read or established; response is enumeration-safe generic"),
+        ["CalendarEndpoints.cs"] = new(false, "CSRF_NOT_REQUIRED",
+            "provider webhook callback authenticates by HMAC signature, not by ambient browser session"),
         ["ResetPasswordEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "one-time reset-token credential flow; no ambient cookie session consumed or established"),
         ["EmailVerificationEndpoints.cs"] = new(false, "CSRF_NOT_REQUIRED",

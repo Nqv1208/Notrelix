@@ -484,6 +484,36 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "BoardItemMovedAutomationConsumer",
+                EventName = "board_item.moved",
+                EventVersion = 1,
+                EndpointName = "notrelix-automation-board-item-moved-v1",
+                BoundedContext = "Automation",
+                Description = "Evaluates item-moved automation rules after commit",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "BoardItemCreatedAutomationConsumer",
+                EventName = "board.item.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-automation-board-item-created-v1",
+                BoundedContext = "Automation",
+                Description = "Evaluates item-created automation rules after commit",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "AutomationMoveItemDispatchConsumer",
+                EventName = "automation.move-item-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-automation-move-item-dispatch-v1",
+                BoundedContext = "Automation",
+                Description = "Executes automation MoveItem actions through the Automation→Work port",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "N8nDispatchConsumer",
                 EventName = "automation.n8n-dispatch-requested",
                 EventVersion = 1,
