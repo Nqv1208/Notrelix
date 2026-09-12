@@ -115,6 +115,7 @@ jobs:
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: "true"
           exit-code: "1"
+          trivyignores: .github/security/trivy-postgres.ignore
       - name: Scan redis
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -137,26 +138,33 @@ jobs:
           ignore-unfixed: "true"
           exit-code: "1"
           trivyignores: .github/security/trivy-nginx.ignore
-      - name: Enforce nginx ignore expiry
+      - name: Enforce scoped ignore expiry and digest binding
         run: |
           python3 - <<'EOF'
-          import datetime, sys
+          import datetime, os, sys
           from pathlib import Path
-          path = Path(".github/security/trivy-nginx.ignore")
-          if not path.exists():
-              sys.exit(0)
-          expires = None
-          for line in path.read_text(encoding="utf-8").splitlines():
-              if line.startswith("# expires:"):
-                  expires = line.removeprefix("# expires:").strip()
-                  break
-          if expires is None:
-              print("nginx ignore file has no expiry date", file=sys.stderr)
-              sys.exit(1)
-          if datetime.date.today() > datetime.date.fromisoformat(expires):
-              print(f"nginx ignore file expired on {expires}; pin a patched digest or renew by explicit security decision", file=sys.stderr)
-              sys.exit(1)
-          print(f"nginx ignore file valid until {expires}")
+          files = sorted(Path(".github/security").glob("trivy-*.ignore"))
+          for path in files:
+              suffix = path.name.removeprefix("trivy-").removesuffix(".ignore")
+              env_var = f"RUNTIME_REF_{suffix.upper()}"
+              bound_ref = os.environ.get(env_var, "")
+              expires = None
+              applies_to = None
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  if line.startswith("# expires:"):
+                      expires = line.removeprefix("# expires:").strip()
+                  elif line.startswith("# applies-to-image-ref:"):
+                      applies_to = line.removeprefix("# applies-to-image-ref:").strip()
+              if expires is None or applies_to is None:
+                  print(f"{path}: missing expiry or image-ref binding", file=sys.stderr)
+                  sys.exit(1)
+              if bound_ref and applies_to != bound_ref:
+                  print(f"{path}: bound to {applies_to} but the plan resolves {env_var}={bound_ref}; re-assess the exception for the new digest", file=sys.stderr)
+                  sys.exit(1)
+              if datetime.date.today() > datetime.date.fromisoformat(expires):
+                  print(f"{path}: expired on {expires}; pin a patched digest or renew by explicit security decision", file=sys.stderr)
+                  sys.exit(1)
+              print(f"{path}: scoped to {applies_to}, valid until {expires}")
           EOF
       - if: inputs.plan_sha256 != ''
         uses: ./.github/actions/emit-evidence

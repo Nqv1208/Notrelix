@@ -125,7 +125,7 @@ Current domains:
 - **Documentation CI** — `make docs-check` documentation governance;
 - **Infrastructure CI** — static Compose/gateway/rootless topology validation plus an assembled staging stack health run (migrations, RLS, HTTP live probes);
 - **Container CI** — build, Trivy HIGH/CRITICAL gate and SPDX SBOM for exact backend/web/marketing image bytes (validation-only; publish/attest live on the release path);
-- **Security CI** — NuGet and pnpm dependency vulnerability gates plus runtime image-lock Trivy scanning (HIGH/CRITICAL) for the planner-resolved `RuntimeImageSet`;
+- **Security CI** — NuGet and pnpm dependency vulnerability gates plus runtime image-lock Trivy scanning (HIGH/CRITICAL) for the planner-resolved `RuntimeImageSet`; the only permitted vulnerability exceptions are scoped `.github/security/trivy-*.ignore` files bound to an exact image digest and CVE allow-list with a machine-enforced expiry, after which CI fails closed until a patched digest is pinned or a security decision renews the exception.
 - **CI Definition** — deliveryctl validation, `architecture-check`, actionlint, planner regression tests, artifact-helper roundtrip and emit-evidence contract test (definition proof only; it owns no security scanning).
 
 Adding a component that fits an existing domain changes that domain's ownership patterns and proof jobs; adding a wholly new domain adds a new standalone workflow, not a plan step in a central file.
