@@ -75,5 +75,34 @@ def validate_authorities(root:Path=ROOT):
         merged={**envs.get('defaults',{}),**cfg}
         for f in ('deployment_adapter','rollback_after_schema_change','stateful_image_change_policy','smoke_profile','compose_overlay','promotion_mode','run_migrations','rollout_strategy','concurrency_group'):
             if f not in merged:errors.append(f'environment {name}: missing {f}')
+    vocab=set(p['defaults']['frontend_default_capabilities']+p['defaults']['full_frontend_capabilities'])
+    infra_modes=set(p.get('infra',{}).get('modes',[]))
+    profiles=p['proof_profiles']
+    bindings=p.get('proof_bindings',{})
+    buse=set()
+    for nr,r in enumerate(p.get('change_rules',[])):
+        rid=r.get('id')
+        if not rid: errors.append(f'change rule #{nr}: missing id'); continue
+        if rid in buse: errors.append(f'change rule {rid}: duplicate id')
+        buse.add(rid)
+        for key in ('exclusive','full_ci','delivery_platform','release','full_frontend','package_all_deployables','package_all_frontend_deployables'):
+            if key in r and not isinstance(r[key],bool): errors.append(f'change rule {rid}: {key} must be boolean')
+        for f in ('components','package_components'):
+            for cid in r.get(f,[]):
+                if cid not in c.get('components',{}): errors.append(f'change rule {rid}: unknown {f[:-1]} {cid}')
+        for cap in r.get('capabilities',[]):
+            if cap not in vocab: errors.append(f'change rule {rid}: unknown capability {cap}')
+        for mode in r.get('infra_modes',[]):
+            if mode not in infra_modes: errors.append(f'change rule {rid}: unknown infra mode {mode}')
+        if 'infra' in r.get('planes',[]) and not r.get('infra_modes'): errors.append(f'change rule {rid}: infra plane without infra_modes')
+        if r.get('delivery_platform') and 'delivery-platform' not in profiles: errors.append(f'change rule {rid}: delivery_platform without delivery-platform profile')
+    for section,claims in (('planes',bindings.get('planes',{})),('security_domains',bindings.get('security_domains',{})),('capabilities',bindings.get('capabilities',{}))):
+        for key,prof in claims.items():
+            if prof not in profiles: errors.append(f'proof_bindings.{section}.{key}: unknown profile {prof}')
+            if section=='capabilities' and key not in vocab: errors.append(f'proof_bindings.capabilities.{key}: unknown capability')
+    for section in ('packaging','release','delivery'):
+        prof=bindings.get(section,{}).get('profile')
+        if prof not in profiles: errors.append(f'proof_bindings.{section}: unknown profile')
+    if 'delivery-platform' not in profiles: errors.append('missing delivery-platform proof profile')
     if errors: raise ValueError('\n'.join(errors))
     return a

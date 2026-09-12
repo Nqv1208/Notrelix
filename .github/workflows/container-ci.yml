@@ -7,27 +7,72 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      container_matrix: {required: true, type: string}
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
+      publish_mode: {required: true, type: string}
 
 permissions:
   contents: read
 
 env:
   TRIVY_SEVERITY: CRITICAL,HIGH
+  FALLBACK_BACKEND_IMAGE_NAME: notrelix-backend
+  FALLBACK_WEB_IMAGE_NAME: notrelix-web
+  FALLBACK_MARKETING_IMAGE_NAME: notrelix-marketing
+  FALLBACK_BACKEND_BUILD_ARGS: '{"DOTNET_SDK_IMAGE":"mcr.microsoft.com/dotnet/sdk:9.0.317@sha256:f190d2dd9eef2899c91ac323caa0bd2b39334a5400ba93013e5199da39dad940","DOTNET_RUNTIME_IMAGE":"mcr.microsoft.com/dotnet/aspnet:9.0.20-bookworm-slim@sha256:779b0b298964fe93e6c6388c8bb823393a7c301b79cd5b3d80632bc886b2ffd4"}'
+  FALLBACK_WEB_BUILD_ARGS: '{"NODE_BASE_IMAGE":"node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32","NGINX_BASE_IMAGE":"nginx:alpine@sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913"}'
+  FALLBACK_MARKETING_BUILD_ARGS: '{"NODE_BASE_IMAGE":"node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32"}'
+  FALLBACK_SMOKE_DEPS: '{"postgres":"postgres@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825","redis":"redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf","rabbitmq":"rabbitmq@sha256:57bddb6fbc3498b5d8b5a14dc6f4506073ebcf94c66ba2a7678c335faa8dd631"}'
 
 jobs:
   changes:
-    name: Change detection
+    name: Change detection and selection
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      backend: ${{ steps.detect.outputs.backend }}
-      web: ${{ steps.detect.outputs.web }}
-      marketing: ${{ steps.detect.outputs.marketing }}
+      backend: ${{ steps.detect.outputs.backend || steps.called.outputs.backend }}
+      web: ${{ steps.detect.outputs.web || steps.called.outputs.web }}
+      marketing: ${{ steps.detect.outputs.marketing || steps.called.outputs.marketing }}
+      backend_image_name: ${{ steps.detect.outputs.backend_image_name || steps.called.outputs.backend_image_name }}
+      web_image_name: ${{ steps.detect.outputs.web_image_name || steps.called.outputs.web_image_name }}
+      marketing_image_name: ${{ steps.detect.outputs.marketing_image_name || steps.called.outputs.marketing_image_name }}
+      backend_build_args: ${{ steps.detect.outputs.backend_build_args || steps.called.outputs.backend_build_args }}
+      web_build_args: ${{ steps.detect.outputs.web_build_args || steps.called.outputs.web_build_args }}
+      marketing_build_args: ${{ steps.detect.outputs.marketing_build_args || steps.called.outputs.marketing_build_args }}
+      backend_smoke_deps: ${{ steps.detect.outputs.backend_smoke_deps || steps.called.outputs.backend_smoke_deps }}
+      publish_mode: ${{ steps.detect.outputs.publish_mode || steps.called.outputs.publish_mode }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - id: called
+        if: inputs.source_sha != ''
+        env:
+          MATRIX: ${{ inputs.container_matrix }}
+          PUBLISH_MODE: ${{ inputs.publish_mode }}
+        run: |
+          set -euo pipefail
+          cell(){ jq -r --arg id "$1" --arg k "$2" '[.include[] | select(.component_id == $id)][0][$k] // ""' <<<"$MATRIX"; }
+          cellc(){ jq -c --arg id "$1" --arg k "$2" '([.include[] | select(.component_id == $id)][0][$k]) // ""' <<<"$MATRIX"; }
+          selected(){ jq -r --arg id "$1" '[.include[].component_id] | index($id) != null' <<<"$MATRIX"; }
+          {
+            echo "backend=$(selected backend-api)"
+            echo "web=$(selected web)"
+            echo "marketing=$(selected marketing)"
+            echo "backend_image_name=$(cell backend-api image_name)"
+            echo "web_image_name=$(cell web image_name)"
+            echo "marketing_image_name=$(cell marketing image_name)"
+            echo "backend_build_args=$(cellc backend-api build_args)"
+            echo "web_build_args=$(cellc web build_args)"
+            echo "marketing_build_args=$(cellc marketing build_args)"
+            echo "backend_smoke_deps=$(cellc backend-api smoke_dependencies)"
+            echo "publish_mode=$PUBLISH_MODE"
+          } >> "$GITHUB_OUTPUT"
       - id: detect
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -63,9 +108,8 @@ jobs:
               case "$file" in
                 *.md) ;;
                 backend/*) backend=true ;;
-                frontend/Dockerfile|frontend/Dockerfile.marketing) web=true; marketing=true ;;
-                frontend/apps/web/**) web=true ;;
-                frontend/apps/marketing/**) marketing=true ;;
+                frontend/Dockerfile|frontend/apps/web/**) web=true ;;
+                frontend/Dockerfile.marketing|frontend/apps/marketing/**) marketing=true ;;
                 frontend/packages/**|frontend/tooling/**) web=true; marketing=true ;;
                 frontend/package.json|frontend/pnpm-lock.yaml|frontend/pnpm-workspace.yaml|frontend/.npmrc|frontend/turbo.json) web=true; marketing=true ;;
                 .dockerignore|.github/workflows/container-ci.yml) backend=true; web=true; marketing=true ;;
@@ -79,6 +123,14 @@ jobs:
             echo "backend=$backend"
             echo "web=$web"
             echo "marketing=$marketing"
+            echo "backend_image_name=$FALLBACK_BACKEND_IMAGE_NAME"
+            echo "web_image_name=$FALLBACK_WEB_IMAGE_NAME"
+            echo "marketing_image_name=$FALLBACK_MARKETING_IMAGE_NAME"
+            echo "backend_build_args=$FALLBACK_BACKEND_BUILD_ARGS"
+            echo "web_build_args=$FALLBACK_WEB_BUILD_ARGS"
+            echo "marketing_build_args=$FALLBACK_MARKETING_BUILD_ARGS"
+            echo "backend_smoke_deps=$FALLBACK_SMOKE_DEPS"
+            echo "publish_mode=false"
           } >> "$GITHUB_OUTPUT"
 
   backend-image:
@@ -87,10 +139,18 @@ jobs:
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      IMAGE: notrelix-ci/backend:${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Build backend image
-        run: docker build --pull=false -f backend/Dockerfile -t notrelix-ci/backend:${{ github.sha }} backend
+      - name: Build backend image with locked build arguments
+        env:
+          BUILD_ARGS: ${{ needs.changes.outputs.backend_build_args }}
+        run: |
+          mapfile -t pairs < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          flags=()
+          for kv in "${pairs[@]}"; do flags+=(--build-arg "$kv"); done
+          docker build --pull=false "${flags[@]}" -f backend/Dockerfile -t "$IMAGE" backend
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -112,6 +172,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Verify runtime health with publish dependencies
+        env:
+          SMOKE_DEPS: ${{ needs.changes.outputs.backend_smoke_deps }}
         run: |
           set -euo pipefail
           network="notrelix-ci-backend-${{ github.run_id }}"
@@ -119,9 +181,12 @@ jobs:
           docker network create "$network"
           cleanup(){ rm -f "$creds"; docker rm -f notrelix-ci-backend-http notrelix-ci-rabbitmq notrelix-ci-redis notrelix-ci-postgres >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; }
           trap cleanup EXIT
-          docker run -d --name notrelix-ci-postgres --network "$network" -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=notrelix postgres:16-alpine >/dev/null
-          docker run -d --name notrelix-ci-redis --network "$network" redis:7-alpine redis-server --requirepass ci >/dev/null
-          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=ci rabbitmq:3.13-management-alpine >/dev/null
+          postgres_ref="$(jq -r '.postgres' <<<"$SMOKE_DEPS")"
+          redis_ref="$(jq -r '.redis' <<<"$SMOKE_DEPS")"
+          rabbitmq_ref="$(jq -r '.rabbitmq' <<<"$SMOKE_DEPS")"
+          docker run -d --name notrelix-ci-postgres --network "$network" -e POSTGRES_PASSWORD=ci -e POSTGRES_DB=notrelix "$postgres_ref" >/dev/null
+          docker run -d --name notrelix-ci-redis --network "$network" "$redis_ref" redis-server --requirepass ci >/dev/null
+          docker run -d --name notrelix-ci-rabbitmq --network "$network" -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=ci "$rabbitmq_ref" >/dev/null
           for _ in $(seq 1 45); do docker exec notrelix-ci-postgres pg_isready -U postgres -d notrelix >/dev/null 2>&1 && break; sleep 1; done
           for _ in $(seq 1 60); do docker exec notrelix-ci-rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1 && break; sleep 1; done
           scripts/ci/generate-test-credentials.sh > "$creds"
@@ -160,6 +225,24 @@ jobs:
             [[ "$code" != 200 ]] && sleep 3
           done
           if [[ "$code" != 200 ]]; then docker logs notrelix-ci-backend-http; exit 1; fi
+      - name: Save validated image for trusted publish
+        if: needs.changes.outputs.publish_mode == 'true'
+        run: docker save -o "$GITHUB_WORKSPACE/release-image-backend-api.tar" "$IMAGE"
+      - name: Upload validated image
+        if: needs.changes.outputs.publish_mode == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-image-backend-api
+          path: release-image-backend-api.tar
+          if-no-files-found: error
+          retention-days: 1
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:backend-api'
+          component_id: backend-api
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
 
   web-image:
     name: Web image validation
@@ -167,10 +250,18 @@ jobs:
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      IMAGE: notrelix-ci/web:${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Build web image
-        run: docker build --pull=false -f frontend/Dockerfile -t notrelix-ci/web:${{ github.sha }} .
+      - name: Build web image with locked build arguments
+        env:
+          BUILD_ARGS: ${{ needs.changes.outputs.web_build_args }}
+        run: |
+          mapfile -t pairs < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          flags=()
+          for kv in "${pairs[@]}"; do flags+=(--build-arg "$kv"); done
+          docker build --pull=false "${flags[@]}" -f frontend/Dockerfile -t "$IMAGE" .
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -205,6 +296,24 @@ jobs:
             [[ "$code" != 200 ]] && sleep 3
           done
           [[ "$code" == 200 ]] || { docker logs "$container"; exit 1; }
+      - name: Save validated image for trusted publish
+        if: needs.changes.outputs.publish_mode == 'true'
+        run: docker save -o "$GITHUB_WORKSPACE/release-image-web.tar" "$IMAGE"
+      - name: Upload validated image
+        if: needs.changes.outputs.publish_mode == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-image-web
+          path: release-image-web.tar
+          if-no-files-found: error
+          retention-days: 1
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:web'
+          component_id: web
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
 
   marketing-image:
     name: Marketing image validation
@@ -212,10 +321,18 @@ jobs:
     if: needs.changes.outputs.marketing == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      IMAGE: notrelix-ci/marketing:${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Build marketing image
-        run: docker build --pull=false -f frontend/Dockerfile.marketing -t notrelix-ci/marketing:${{ github.sha }} .
+      - name: Build marketing image with locked build arguments
+        env:
+          BUILD_ARGS: ${{ needs.changes.outputs.marketing_build_args }}
+        run: |
+          mapfile -t pairs < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$BUILD_ARGS")
+          flags=()
+          for kv in "${pairs[@]}"; do flags+=(--build-arg "$kv"); done
+          docker build --pull=false "${flags[@]}" -f frontend/Dockerfile.marketing -t "$IMAGE" .
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -250,20 +367,125 @@ jobs:
             [[ "$code" != 200 ]] && sleep 3
           done
           [[ "$code" == 200 ]] || { docker logs "$container"; exit 1; }
+      - name: Save validated image for trusted publish
+        if: needs.changes.outputs.publish_mode == 'true'
+        run: docker save -o "$GITHUB_WORKSPACE/release-image-marketing.tar" "$IMAGE"
+      - name: Upload validated image
+        if: needs.changes.outputs.publish_mode == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-image-marketing
+          path: release-image-marketing.tar
+          if-no-files-found: error
+          retention-days: 1
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'container:marketing'
+          component_id: marketing
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
+
+  publish:
+    name: Trusted-main image publication
+    needs: [changes, backend-image, web-image, marketing-image]
+    if: always() && needs.changes.outputs.publish_mode == 'true' && inputs.source_sha != '' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      PUBLISH_BACKEND: ${{ needs.changes.outputs.backend }}
+      PUBLISH_WEB: ${{ needs.changes.outputs.web }}
+      PUBLISH_MARKETING: ${{ needs.changes.outputs.marketing }}
+      BACKEND_IMAGE_NAME: ${{ needs.changes.outputs.backend_image_name }}
+      WEB_IMAGE_NAME: ${{ needs.changes.outputs.web_image_name }}
+      MARKETING_IMAGE_NAME: ${{ needs.changes.outputs.marketing_image_name }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      PLAN_SHA256: ${{ inputs.plan_sha256 }}
+    steps:
+      - name: Require validated images for selected components
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
+          for pair in "PUBLISH_BACKEND backend-image" "PUBLISH_WEB web-image" "PUBLISH_MARKETING marketing-image"; do
+            read -r flag job <<<"$pair"
+            [[ "$flag" == true ]] && require "$job" "$(result "$job")"
+          done
+      - name: Download validated backend image
+        if: env.PUBLISH_BACKEND == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: release-image-backend-api, path: images}
+      - name: Download validated web image
+        if: env.PUBLISH_WEB == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: release-image-web, path: images}
+      - name: Download validated marketing image
+        if: env.PUBLISH_MARKETING == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: release-image-marketing, path: images}
+      - name: Publish exact validated bytes and record release-image manifests
+        run: |
+          set -euo pipefail
+          mkdir -p release-images
+          publish(){
+            local component="$1" tar="$2" local_name="$3" image_name="$4" sbom_artifact="$5" tag digest
+            docker load -i "images/$tar"
+            tag="ghcr.io/${GITHUB_REPOSITORY_OWNER}/${image_name}:${SOURCE_SHA}"
+            docker tag "notrelix-ci/${local_name}:${SOURCE_SHA}" "$tag"
+            docker push "$tag" >/dev/null
+            digest="$(docker image inspect "$tag" --format '{{range .RepoDigests}}{{println .}}{{end}}' | grep -o 'sha256:[a-f0-9]*' | head -1)"
+            [[ -n "$digest" ]]
+            jq -n --arg component "$component" --arg source "$SOURCE_SHA" --arg plan "$PLAN_SHA256" \
+              --arg ref "ghcr.io/${GITHUB_REPOSITORY_OWNER}/${image_name}" --arg digest "$digest" \
+              --arg sbom_artifact "$sbom_artifact" --arg created "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              '{api_version:"delivery.notrelix.dev/v1",kind:"ReleaseImage",component_id:$component,source_sha:$source,plan_sha256:$plan,
+                image:{ref:$ref,digest:$digest},sbom:{format:"spdx-json",artifact:$sbom_artifact},
+                provenance:{attestation:"release-image-manifest-"+$component},created_at:$created}' \
+              > "release-images/release-image-${component}.json"
+          }
+          [[ "$PUBLISH_BACKEND" == true ]] && publish backend-api release-image-backend-api.tar backend "$BACKEND_IMAGE_NAME" container-backend-sbom
+          [[ "$PUBLISH_WEB" == true ]] && publish web release-image-web.tar web "$WEB_IMAGE_NAME" container-web-sbom
+          [[ "$PUBLISH_MARKETING" == true ]] && publish marketing release-image-marketing.tar marketing "$MARKETING_IMAGE_NAME" container-marketing-sbom
+      - name: Attest backend release-image manifest
+        if: env.PUBLISH_BACKEND == 'true'
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with: {subject-path: release-images/release-image-backend-api.json}
+      - name: Attest web release-image manifest
+        if: env.PUBLISH_WEB == 'true'
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with: {subject-path: release-images/release-image-web.json}
+      - name: Attest marketing release-image manifest
+        if: env.PUBLISH_MARKETING == 'true'
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with: {subject-path: release-images/release-image-marketing.json}
+      - name: Upload release-image manifests
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-image-manifests
+          path: release-images/release-image-*.json
+          if-no-files-found: error
+          retention-days: 90
 
   container-gate:
     name: Container CI gate
     if: always()
-    needs: [changes, backend-image, web-image, marketing-image]
+    needs: [changes, backend-image, web-image, marketing-image, publish]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require container proof when selected
         env:
           BACKEND_SELECTED: ${{ needs.changes.outputs.backend }}
           WEB_SELECTED: ${{ needs.changes.outputs.web }}
           MARKETING_SELECTED: ${{ needs.changes.outputs.marketing }}
+          PUBLISH_MODE: ${{ needs.changes.outputs.publish_mode }}
           RESULTS: ${{ toJSON(needs) }}
         run: |
           set -euo pipefail
@@ -273,3 +495,4 @@ jobs:
           if [[ "$BACKEND_SELECTED" == true ]]; then require backend-image "$(result backend-image)"; fi
           if [[ "$WEB_SELECTED" == true ]]; then require web-image "$(result web-image)"; fi
           if [[ "$MARKETING_SELECTED" == true ]]; then require marketing-image "$(result marketing-image)"; fi
+          if [[ "$PUBLISH_MODE" == true ]]; then require publish "$(result publish)"; fi

@@ -1,9 +1,18 @@
 name: Dependency Security CI
+
 on:
   workflow_call:
     inputs:
       scan_backend: {required: false, type: boolean, default: false}
       scan_frontend: {required: false, type: boolean, default: false}
+      scan_runtime: {required: false, type: boolean, default: false}
+      runtime_images_json: {required: false, type: string, default: ""}
+      plan_sha256: {required: false, type: string, default: ""}
+      source_sha: {required: false, type: string, default: ""}
+
+env:
+  TRIVY_SEVERITY: CRITICAL,HIGH
+
 permissions:
   contents: read
 jobs:
@@ -17,17 +26,22 @@ jobs:
       - uses: ./.github/actions/setup-backend
       - working-directory: backend
         run: dotnet restore backend.slnx
-      - name: Fail on vulnerable NuGet packages
+      - name: Fail on vulnerable NuGet packages (structured checker)
         working-directory: backend
         run: |
           set -euo pipefail
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-report.txt
-          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then exit 1; fi
+          dotnet list package --vulnerable --include-transitive > vulnerable-report.txt
+          python3 ../scripts/ci/check-dotnet-vulnerabilities.py --report vulnerable-report.txt --output vulnerable-summary.json
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with: {name: backend-vulnerability-report, path: backend/vulnerable-report.txt, if-no-files-found: ignore, retention-days: 14}
-      - uses: ./.github/actions/emit-evidence
-        with: {proof_id: 'security:backend', component_id: backend-dependencies}
+      - if: inputs.plan_sha256 != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'security:backend'
+          component_id: backend-dependencies
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
   frontend-dependencies:
     name: Frontend dependency vulnerabilities
     if: inputs.scan_frontend
@@ -36,19 +50,135 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - working-directory: frontend
+      - name: Fail on high/critical pnpm advisories (structured checker)
+        working-directory: frontend
         run: |
-          set -o pipefail
-          pnpm audit --audit-level high 2>&1 | tee pnpm-audit.txt
+          set -euo pipefail
+          # pnpm exits nonzero when advisories exist; the structured checker owns the verdict
+          pnpm audit --json > pnpm-audit.json || true
+          node scripts/ci/check-pnpm-audit.mjs --input pnpm-audit.json --output pnpm-audit-summary.json
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with: {name: frontend-vulnerability-report, path: frontend/pnpm-audit.txt, if-no-files-found: ignore, retention-days: 14}
-      - uses: ./.github/actions/emit-evidence
-        with: {proof_id: 'security:frontend', component_id: frontend-dependencies}
+        with: {name: frontend-vulnerability-report, path: frontend/pnpm-audit.json, if-no-files-found: ignore, retention-days: 14}
+      - if: inputs.plan_sha256 != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'security:frontend'
+          component_id: frontend-dependencies
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
+  runtime-images:
+    name: Runtime image vulnerabilities
+    if: inputs.scan_runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TRIVY_SECRET_CONFIG: .github/security/trivy-secret.yaml
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Resolve pinned runtime image refs
+        env:
+          RUNTIME_IMAGES_JSON: ${{ inputs.runtime_images_json }}
+        run: |
+          python3 - <<'EOF'
+          import os, sys, json
+          raw = os.environ.get("RUNTIME_IMAGES_JSON", "")
+          if not raw:
+              print("planner provided no runtime image set", file=sys.stderr)
+              sys.exit(1)
+          data = json.loads(raw)
+          if data.get("api_version") != "delivery.notrelix.dev/v1" or data.get("kind") != "RuntimeImageSet":
+              print(f"unexpected runtime image set contract: {data.get('kind')!r}", file=sys.stderr)
+              sys.exit(1)
+          images = data.get("images", [])
+          required = {"postgres", "redis", "rabbitmq", "nginx"}
+          found: set[str] = set()
+          for item in images:
+              name = str(item.get("id", ""))
+              ref = str(item.get("ref", ""))
+              if not name or not ref:
+                  print(f"runtime image entry missing id/ref: {item!r}", file=sys.stderr)
+                  sys.exit(1)
+              if "@sha256:" not in ref:
+                  print(f"{name} runtime ref is not content-addressed: {ref!r}", file=sys.stderr)
+                  sys.exit(1)
+              found.add(name)
+              with open(os.environ["GITHUB_ENV"], "a") as handle:
+                  handle.write(f"RUNTIME_REF_{name.upper()}={ref}\n")
+          missing = sorted(required - found)
+          if missing:
+              print(f"runtime image set missing: {missing}", file=sys.stderr)
+              sys.exit(1)
+          EOF
+      - name: Scan postgres
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.RUNTIME_REF_POSTGRES }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+          trivyignores: .github/security/trivy-postgres.ignore
+      - name: Scan redis
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.RUNTIME_REF_REDIS }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Scan rabbitmq
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.RUNTIME_REF_RABBITMQ }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+      - name: Scan nginx
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.RUNTIME_REF_NGINX }}
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: "true"
+          exit-code: "1"
+          trivyignores: .github/security/trivy-nginx.ignore
+      - name: Enforce scoped ignore expiry and digest binding
+        run: |
+          python3 - <<'EOF'
+          import datetime, os, sys
+          from pathlib import Path
+          files = sorted(Path(".github/security").glob("trivy-*.ignore"))
+          for path in files:
+              suffix = path.name.removeprefix("trivy-").removesuffix(".ignore")
+              env_var = f"RUNTIME_REF_{suffix.upper()}"
+              bound_ref = os.environ.get(env_var, "")
+              expires = None
+              applies_to = None
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  if line.startswith("# expires:"):
+                      expires = line.removeprefix("# expires:").strip()
+                  elif line.startswith("# applies-to-image-ref:"):
+                      applies_to = line.removeprefix("# applies-to-image-ref:").strip()
+              if expires is None or applies_to is None:
+                  print(f"{path}: missing expiry or image-ref binding", file=sys.stderr)
+                  sys.exit(1)
+              if bound_ref and applies_to != bound_ref:
+                  print(f"{path}: bound to {applies_to} but the plan resolves {env_var}={bound_ref}; re-assess the exception for the new digest", file=sys.stderr)
+                  sys.exit(1)
+              if datetime.date.today() > datetime.date.fromisoformat(expires):
+                  print(f"{path}: expired on {expires}; pin a patched digest or renew by explicit security decision", file=sys.stderr)
+                  sys.exit(1)
+              print(f"{path}: scoped to {applies_to}, valid until {expires}")
+          EOF
+      - if: inputs.plan_sha256 != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'security:runtime'
+          component_id: runtime-images
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
   gate:
     name: Dependency Security CI gate
     if: always()
-    needs: [backend-dependencies, frontend-dependencies]
+    needs: [backend-dependencies, frontend-dependencies, runtime-images]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -56,8 +186,10 @@ jobs:
         env:
           SCAN_BACKEND: ${{ inputs.scan_backend }}
           SCAN_FRONTEND: ${{ inputs.scan_frontend }}
+          SCAN_RUNTIME: ${{ inputs.scan_runtime }}
           BACKEND_RESULT: ${{ needs.backend-dependencies.result }}
           FRONTEND_RESULT: ${{ needs.frontend-dependencies.result }}
+          RUNTIME_RESULT: ${{ needs.runtime-images.result }}
         run: |
           set -euo pipefail
           check(){
@@ -70,3 +202,4 @@ jobs:
           }
           check "$SCAN_BACKEND" "$BACKEND_RESULT" backend
           check "$SCAN_FRONTEND" "$FRONTEND_RESULT" frontend
+          check "$SCAN_RUNTIME" "$RUNTIME_RESULT" runtime

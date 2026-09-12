@@ -7,6 +7,13 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
+      redis_image: {required: true, type: string}
+      change_range_json: {required: true, type: string}
+      schema_change: {required: true, type: string}
 
 permissions:
   contents: read
@@ -15,19 +22,51 @@ env:
   DOTNET_CONFIGURATION: Release
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
   DOTNET_NOLOGO: "true"
+  FALLBACK_REDIS_REF: redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+  PROOF_REGISTRY: ${{ github.workspace }}/backend/tests/ci-proofs.json
 
 jobs:
   changes:
-    name: Change detection
+    name: Change detection and selection
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      backend: ${{ steps.detect.outputs.backend }}
+      backend: ${{ steps.detect.outputs.backend || steps.called.outputs.backend }}
+      base_sha: ${{ steps.detect.outputs.base_sha || steps.called.outputs.base_sha }}
+      head_sha: ${{ steps.detect.outputs.head_sha || steps.called.outputs.head_sha }}
+      range_known: ${{ steps.detect.outputs.range_known || steps.called.outputs.range_known }}
+      schema_change: ${{ steps.detect.outputs.schema_change || steps.called.outputs.schema_change }}
+      redis_ref: ${{ steps.detect.outputs.redis_ref || steps.called.outputs.redis_ref }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - id: called
+        if: inputs.source_sha != ''
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          RANGE: ${{ inputs.change_range_json }}
+          SCHEMA_CHANGE: ${{ inputs.schema_change }}
+          REDIS_REF: ${{ inputs.redis_image }}
+        run: |
+          set -euo pipefail
+          base="$(jq -r '.base_sha // ""' <<<"$RANGE")"
+          head="$(jq -r '.head_sha // ""' <<<"$RANGE")"
+          full_ci="$(jq -r '.full_ci // false' <<<"$RANGE")"
+          [[ -n "$base" ]] || base="$SOURCE_SHA"
+          [[ -n "$head" ]] || head="$SOURCE_SHA"
+          range_known=true
+          [[ "$full_ci" == true || -z "$base" || -z "$head" ]] && range_known=false
+          {
+            echo "backend=true"
+            echo "base_sha=$base"
+            echo "head_sha=$head"
+            echo "range_known=$range_known"
+            echo "schema_change=$SCHEMA_CHANGE"
+            echo "redis_ref=$REDIS_REF"
+          } >> "$GITHUB_OUTPUT"
       - id: detect
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -37,42 +76,51 @@ jobs:
           set -euo pipefail
           selected=false
           base="$BASE_SHA"; head="$HEAD_SHA"
+          range_known=false
           case "$EVENT_NAME" in
             pull_request|merge_group)
               if [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] && merge_base="$(git merge-base "$base" "$head" 2>/dev/null || true)" && [[ -n "$merge_base" ]]; then
                 base="$merge_base"
+                range_known=true
               else
                 selected=true
               fi
               ;;
             push)
               head="$GITHUB_SHA"; base="$BEFORE_SHA"
-              if [[ ! "$base" =~ ^[0-9a-f]{40}$ ]]; then selected=true; fi
+              if [[ "$base" =~ ^[0-9a-f]{40}$ ]]; then range_known=true; else selected=true; fi
               ;;
             *)
               selected=true
               ;;
           esac
           if [[ "$selected" == true ]] || ! files="$(git diff --name-only --diff-filter=ACMRDTUXB "$base" "$head" 2>/dev/null)"; then
-            echo "backend=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            selected=true
+          else
+            while IFS= read -r file; do
+              [[ -n "$file" ]] || continue
+              case "$file" in
+                *.md) ;;
+                backend/*) selected=true ;;
+                .github/workflows/backend-ci.yml) selected=true ;;
+                .github/actions/setup-backend/*) selected=true ;;
+                scripts/ci/check-migration-discipline.py) selected=true ;;
+                scripts/ci/verify-required-proofs-trx.py) selected=true ;;
+              esac
+              [[ "$selected" == true ]] && break
+            done <<< "$files"
           fi
-          while IFS= read -r file; do
-            [[ -n "$file" ]] || continue
-            case "$file" in
-              *.md) ;;
-              backend/*) selected=true ;;
-              .github/workflows/backend-ci.yml) selected=true ;;
-              .github/actions/setup-backend/*) selected=true ;;
-              scripts/ci/check-migration-discipline.py) selected=true ;;
-              scripts/ci/verify-required-tests-trx.py) selected=true ;;
-            esac
-            [[ "$selected" == true ]] && break
-          done <<< "$files"
-          echo "backend=$selected" >> "$GITHUB_OUTPUT"
+          {
+            echo "backend=$selected"
+            echo "base_sha=$base"
+            echo "head_sha=$head"
+            echo "range_known=$([[ "$selected" == true ]] && echo false || echo "$range_known")"
+            echo "schema_change=false"
+            echo "redis_ref=$FALLBACK_REDIS_REF"
+          } >> "$GITHUB_OUTPUT"
 
-  quality:
-    name: Quality and architecture guards
+  preflight:
+    name: Preflight and static guards
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
@@ -96,9 +144,12 @@ jobs:
         run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION" -p:ContinuousIntegrationBuild=true
       - name: Enforce append-only migration history
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
-        run: python3 scripts/ci/check-migration-discipline.py --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA"
+          BASE_SHA: ${{ needs.changes.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.changes.outputs.head_sha }}
+          RANGE_FLAGS: ${{ needs.changes.outputs.range_known == 'true' && '' || '--full-range' }} ${{ needs.changes.outputs.schema_change == 'true' && '--schema-change' || '' }}
+        run: |
+          read -r -a flags <<<"$RANGE_FLAGS"
+          python3 scripts/ci/check-migration-discipline.py --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" "${flags[@]}"
       - name: Guard dependency graph against SQLite
         working-directory: backend
         run: |
@@ -114,75 +165,10 @@ jobs:
           set -euo pipefail
           matches="$(grep -RInE 'UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:' src tests Directory.Packages.props --include='*.cs' --include='*.csproj' --include='*.props' --exclude='DatabaseProviderArchitectureTests.cs' || true)"
           [[ -z "$matches" ]] || { printf '%s\n' "$matches"; exit 1; }
-      - name: Fail on vulnerable NuGet packages
-        working-directory: backend
-        run: |
-          set -euo pipefail
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-report.txt
-          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then exit 1; fi
-      - name: Upload dependency vulnerability report
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: backend-vulnerability-report
-          path: backend/vulnerable-report.txt
-          if-no-files-found: ignore
-          retention-days: 14
 
-  architecture-tests:
-    name: Architecture tests
-    needs: [changes, quality]
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      ASPNETCORE_ENVIRONMENT: CI
-      DOTNET_ENVIRONMENT: CI
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-backend
-      - working-directory: backend
-        run: dotnet restore tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
-      - working-directory: backend
-        run: >
-          dotnet test tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
-          --no-restore --configuration "$DOTNET_CONFIGURATION"
-          --logger "trx;LogFileName=architecture.trx"
-          --results-directory TestResults/architecture --blame-hang-timeout 5m
-      - name: Verify foundation architecture gates executed
-        working-directory: backend
-        run: >
-          python3 ../scripts/ci/verify-required-tests-trx.py
-          TestResults/architecture/architecture.trx
-          Notrelix.Architecture.Tests.DomainPurity.DomainBoundedContextSignatureTests
-          Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests
-          Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests
-          Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests
-          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_CanonicalDocs_MatchFrozenSevenStageTopology
-          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_LegacyGapCount_IsZero
-          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.IntentionalAllowlistEntries_MustDescribePermanentArchitectureExceptions
-          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllowlistEntries_AreNotStale
-          Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllProductionRequests_HaveValidDescriptors
-          Notrelix.Architecture.Tests.CrossContextPersistenceBoundaryTests
-          Notrelix.Architecture.Tests.CrossContextApplicationDependencyTests
-          Notrelix.Architecture.Tests.DataAccess.CrossContextCascadeArchitectureTests
-          Notrelix.Architecture.Tests.Contracts.PublicSemanticContractArchitectureTests
-          Notrelix.Architecture.Tests.ApplicationLayer.ApplicationTransportBoundaryTests
-          Notrelix.Architecture.Tests.Events.IntegrationEventOwnershipArchitectureTests
-          Notrelix.Architecture.Tests.LayerRules.CommonEntitlementsAntiRegressionTests
-          Notrelix.Architecture.Tests.FeatureStructureArchitectureTests
-      - name: Upload architecture test evidence on failure
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: backend-architecture-test-results
-          path: backend/TestResults/architecture
-          if-no-files-found: ignore
-          retention-days: 7
-
-  core-tests:
-    name: Domain, Application and Infrastructure tests
-    needs: [changes, quality]
+  architecture-core:
+    name: Architecture and core tests
+    needs: [changes, preflight]
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -192,6 +178,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
+      - name: Architecture tests
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          dotnet restore tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
+          dotnet test tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=architecture.trx" --results-directory TestResults/architecture --blame-hang-timeout 5m
+      - name: Verify architecture proof profile
+        working-directory: backend
+        run: >
+          python3 ../scripts/ci/verify-required-proofs-trx.py
+          --registry "$PROOF_REGISTRY" --profile architecture
+          --trx TestResults/architecture/architecture.trx
       - name: Domain tests
         working-directory: backend
         run: |
@@ -211,68 +209,30 @@ jobs:
           set -euo pipefail
           dotnet restore tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
           dotnet test tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=infrastructure.trx" --results-directory TestResults/infrastructure --blame-hang-timeout 5m
-      - name: Verify critical Infrastructure guards executed
+      - name: Verify core proof profile
         working-directory: backend
         run: >
-          python3 ../scripts/ci/verify-required-tests-trx.py
-          TestResults/infrastructure/infrastructure.trx
-          Notrelix.Infrastructure.Tests.Data.Rls.RlsPolicyVerificationTests
-          Notrelix.Infrastructure.Tests.Data.DomainEventInterceptorTests
-      - name: Upload core test evidence on failure
+          python3 ../scripts/ci/verify-required-proofs-trx.py
+          --registry "$PROOF_REGISTRY" --profile core
+          --trx TestResults/infrastructure/infrastructure.trx
+      - name: Upload architecture and core test evidence on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: backend-core-test-results
+          name: backend-architecture-core-test-results
           path: backend/TestResults
           if-no-files-found: ignore
           retention-days: 7
 
-  platform-tests:
-    name: Platform messaging tests
-    needs: [changes, quality]
+  api-integration:
+    name: API, platform and integration tests
+    needs: [changes, preflight]
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      ASPNETCORE_ENVIRONMENT: CI
-      DOTNET_ENVIRONMENT: CI
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-backend
-      - working-directory: backend
-        run: dotnet restore tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
-      - working-directory: backend
-        run: >
-          dotnet test tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
-          --no-restore --configuration "$DOTNET_CONFIGURATION"
-          --logger "trx;LogFileName=platform.trx"
-          --results-directory TestResults/platform --blame-hang-timeout 5m
-      - name: Verify critical Platform reliability tests executed
-        working-directory: backend
-        run: >
-          python3 ../scripts/ci/verify-required-tests-trx.py
-          TestResults/platform/platform.trx
-          Notrelix.Platform.Tests.Messaging.Reliability.OrderingEnforcerTests
-          Notrelix.Platform.Tests.Messaging.Reliability.PoisonDetectorTests
-          Notrelix.Platform.Tests.Messaging.Consumers.ConsumerHostDeliveryContractTests
-      - name: Upload Platform test evidence on failure
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: backend-platform-test-results
-          path: backend/TestResults/platform
-          if-no-files-found: ignore
-          retention-days: 7
-
-  api-tests:
-    name: API tests and OpenAPI contract
-    needs: [changes, quality]
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     services:
       redis:
-        image: redis:7-alpine
+        image: ${{ needs.changes.outputs.redis_ref }}
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s --health-timeout 5s --health-retries 5
@@ -293,16 +253,30 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
-      - working-directory: backend
-        run: dotnet restore tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
-      - working-directory: backend
-        run: dotnet test tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=api.trx" --results-directory TestResults/api --blame-hang-timeout 5m
-      - name: Verify API idempotency contract tests executed
+      - name: Platform messaging tests
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          dotnet restore tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj
+          dotnet test tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=platform.trx" --results-directory TestResults/platform --blame-hang-timeout 5m
+      - name: Verify platform proof profile
         working-directory: backend
         run: >
-          python3 ../scripts/ci/verify-required-tests-trx.py
-          TestResults/api/api.trx
-          Notrelix.API.Tests.Idempotency.IdempotencyEndpointContractTests
+          python3 ../scripts/ci/verify-required-proofs-trx.py
+          --registry "$PROOF_REGISTRY" --profile platform
+          --trx TestResults/platform/platform.trx
+      - name: API tests
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          dotnet restore tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
+          dotnet test tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=api.trx" --results-directory TestResults/api --blame-hang-timeout 5m
+      - name: Verify api proof profile
+        working-directory: backend
+        run: >
+          python3 ../scripts/ci/verify-required-proofs-trx.py
+          --registry "$PROOF_REGISTRY" --profile api
+          --trx TestResults/api/api.trx
       - name: Export OpenAPI spec and verify no drift
         working-directory: backend
         env:
@@ -317,81 +291,31 @@ jobs:
           git ls-files --error-unmatch "$contract"
           dotnet run --project src/Notrelix.API/Notrelix.API.csproj --configuration "$DOTNET_CONFIGURATION" --no-build -- --export-openapi /tmp/notrelix.v1.generated.json
           cmp "$contract" /tmp/notrelix.v1.generated.json
-      - name: Upload API test evidence on failure
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: backend-api-test-results
-          path: backend/TestResults/api
-          if-no-files-found: ignore
-          retention-days: 7
-
-  integration-tests:
-    name: Integration and provider tests
-    needs: [changes, quality]
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 40
-    services:
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s --health-timeout 5s --health-retries 5
-        ports:
-          - 6379:6379
-    env:
-      ASPNETCORE_ENVIRONMENT: CI
-      DOTNET_ENVIRONMENT: CI
-      ConnectionStrings__Redis: localhost:6379,abortConnect=false
-      Cors__AllowedOrigins__0: http://localhost:5173
-      Cors__AllowedOrigins__1: http://localhost:3000
-      ForwardedHeaders__RequireKnownProxyInProduction: "false"
-      JwtSettings__SecretKey: ci-test-secret-key-must-be-at-least-32-characters
-      JwtSettings__Issuer: Notrelix.CI
-      JwtSettings__Audience: Notrelix.CI
-      JwtSettings__ExpireMinutes: "60"
-      JwtSettings__RefreshTokenExpireDays: "7"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-backend
-      - working-directory: backend
-        run: dotnet restore tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
-      - working-directory: backend
-        run: dotnet test tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration --blame-hang-timeout 5m
-      - name: Verify critical foundation provider tests executed
+      - name: Integration and provider tests
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          dotnet restore tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
+          dotnet test tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration --blame-hang-timeout 5m
+      - name: Verify integration proof profile
         working-directory: backend
         run: >
-          python3 ../scripts/ci/verify-required-tests-trx.py
-          TestResults/integration/integration.trx
-          Notrelix.Integration.Tests.Data.Ops.IdempotencyStoreIntegrationTests
-          Notrelix.Integration.Tests.Integration.TenantIsolationTests
-          Notrelix.Integration.Tests.Integration.CrossTenantIsolationTests
-          Notrelix.Integration.Tests.Integration.RlsRuntimeEnforcementTests
-          Notrelix.Integration.Tests.Auth.ApiTokenFlowTests
-          Notrelix.Integration.Tests.Auth.ApiTokenHttpFlowTests
-          Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterIntegrationTests
-          Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests
-          Notrelix.Integration.Tests.Data.OutboxDispatchContractTests
-          Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests
-          Notrelix.Integration.Tests.Data.OutboxAtomicityTests
-          Notrelix.Integration.Tests.Data.MigrationSmokeTests
-          Notrelix.Integration.Tests.Integration.ProductionCompositionTests
-          Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests
-          Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests
-      - name: Upload Integration test evidence on failure
+          python3 ../scripts/ci/verify-required-proofs-trx.py
+          --registry "$PROOF_REGISTRY" --profile integration
+          --trx TestResults/integration/integration.trx
+      - name: Upload API, platform and integration evidence on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: backend-integration-test-results
-          path: backend/TestResults/integration
+          name: backend-api-integration-test-results
+          path: backend/TestResults
           if-no-files-found: ignore
           retention-days: 7
 
-  backend-gate:
+  proof:
     name: Backend CI gate
     if: always()
-    needs: [changes, quality, architecture-tests, core-tests, platform-tests, api-tests, integration-tests]
+    needs: [changes, preflight, architecture-core, api-integration]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -403,13 +327,22 @@ jobs:
         run: |
           set -euo pipefail
           require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          allowed_unselected(){ local name="$1" result="$2"; [[ "$result" == skipped || "$result" == success ]] || { echo "::error::$name unexpected result=$result"; exit 1; }; }
           result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
           require changes "$(result changes)"
           if [[ "$SELECTED" == true ]]; then
-            require quality "$(result quality)"
-            require architecture-tests "$(result architecture-tests)"
-            require core-tests "$(result core-tests)"
-            require platform-tests "$(result platform-tests)"
-            require api-tests "$(result api-tests)"
-            require integration-tests "$(result integration-tests)"
+            require preflight "$(result preflight)"
+            require architecture-core "$(result architecture-core)"
+            require api-integration "$(result api-integration)"
+          else
+            for j in preflight architecture-core api-integration; do
+              allowed_unselected "$j" "$(result "$j")"
+            done
           fi
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'backend:backend-api'
+          component_id: backend-api
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}

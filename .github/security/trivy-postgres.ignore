@@ -1,0 +1,76 @@
+# Scoped Trivy ignore — postgres runtime image ONLY (delivery/images.lock.toml [images.postgres]).
+# Machine-enforced by the Security CI runtime-images job:
+#   - expires automatically on the date below (CI fails after expiry)
+#   - bound to the exact digest below (a re-pinned digest invalidates this file and CI fails)
+# Renewal requires an explicit security decision; this file must never be renewed silently.
+#
+# applies-to-image-ref: postgres@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825
+# expires: 2026-09-26
+# reassessment: if upstream has not shipped a gosu rebuild (Go >= 1.24.13/1.25.7) by expiry,
+#   reassess building a security-patched postgres runtime image instead of renewing.
+#
+# ============================================================================
+# Waiver block 1 of 2 — gosu / embedded Go stdlib 1.24.6 (usr/local/bin/gosu)
+# Reachability evidence: gosu (tianon/gosu) imports only
+#   os, os/exec, runtime, syscall, github.com/moby/sys/user, golang.org/x/sys/unix.
+# Go links only reachable code, so stdlib packages absent from that import set
+# are not present in the binary; the scanner flags the toolchain version.
+# Per-CVE reasoning below; no blanket "no network" claim.
+# ============================================================================
+# CVE-2025-68121 crypto/tls session resumption - gosu never imports crypto/tls and opens no TLS session
+# CVE-2025-61726 net/url query-parameter limit - gosu imports no net/url and parses no URLs
+# CVE-2025-61729 crypto/x509 HostnameError.Error - gosu imports no crypto/x509
+# CVE-2026-25679 net/url host/authority validation - gosu imports no net/url
+# CVE-2026-27145 crypto/x509 VerifyHostname - gosu imports no crypto/x509
+# CVE-2026-32280 crypto/x509 chain building limits - gosu imports no crypto/x509
+# CVE-2026-32281 crypto/x509 policy chains - gosu imports no crypto/x509
+# CVE-2026-32283 crypto/tls key update - gosu imports no crypto/tls
+# CVE-2026-33811 net LookupCNAME cgo resolver - gosu imports no net and performs no DNS lookups
+# CVE-2026-33814 net/http HTTP/2 SETTINGS transport - gosu imports no net/http
+# CVE-2026-33818 encoding/asn1 Unmarshal recursion - gosu imports no encoding/asn1
+# CVE-2026-39820 net/mail ParseAddress/ParseAddressList/ParseDate - gosu imports no net/mail
+# CVE-2026-39821 Punycode ToASCII/ToUnicode label validation - gosu performs no domain-label handling
+# CVE-2026-39822 os.Root trailing-slash symlink escape - gosu imports os but never constructs os.Root
+# CVE-2026-39836 net Dial/LookupPort Windows panic - gosu imports no net; image is linux-only
+# CVE-2026-42499 net/mail consumePhrase DoS - gosu imports no net/mail
+# CVE-2026-42504 MIME header encoded-word decoding - gosu imports no mime/textproto
+# CVE-2026-56853 net/http unencrypted HTTP/2 server - gosu imports no net/http
+# CVE-2026-56858 net/url path escaping - gosu imports no net/url
+# CVE-2026-56859 encoding/xml DecodeElement depth - gosu imports no encoding/xml
+# CVE-2026-56860 os.Root '..' path resolution - gosu imports os but never constructs os.Root
+# CVE-2026-56862 crypto/tls handshake state - gosu imports no crypto/tls
+#
+# ============================================================================
+# Waiver block 2 of 2 — libpcre2-8-0 10.42-1 (Debian bookworm base package)
+# Separate from the gosu waiver. Fixes exist upstream (10.42-1+deb12u1); the
+# official postgres image build predates them. Tracked for removal by the same
+# expiry/reassessment above.
+# ============================================================================
+# CVE-2026-86145 libpcre2-8-0 out-of-bounds write, fixed 10.42-1+deb12u1
+# CVE-2026-89161 libpcre2-8-0 memory corruption, fixed 10.42-1+deb12u1
+#
+# Only these CVEs are suppressed. Anything else must fail the scan.
+CVE-2025-68121
+CVE-2025-61726
+CVE-2025-61729
+CVE-2026-25679
+CVE-2026-27145
+CVE-2026-32280
+CVE-2026-32281
+CVE-2026-32283
+CVE-2026-33811
+CVE-2026-33814
+CVE-2026-33818
+CVE-2026-39820
+CVE-2026-39821
+CVE-2026-39822
+CVE-2026-39836
+CVE-2026-42499
+CVE-2026-42504
+CVE-2026-56853
+CVE-2026-56858
+CVE-2026-56859
+CVE-2026-56860
+CVE-2026-56862
+CVE-2026-86145
+CVE-2026-89161

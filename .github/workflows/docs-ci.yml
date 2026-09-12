@@ -7,6 +7,10 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_sha: {required: true, type: string}
+      plan_sha256: {required: true, type: string}
 
 permissions:
   contents: read
@@ -17,12 +21,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      documentation: ${{ steps.detect.outputs.documentation }}
+      documentation: ${{ steps.detect.outputs.documentation || steps.called.outputs.documentation }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - id: called
+        if: inputs.source_sha != ''
+        run: echo "documentation=true" >> "$GITHUB_OUTPUT"
       - id: detect
+        if: inputs.source_sha == ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}
@@ -76,6 +84,13 @@ jobs:
       - uses: ./.github/actions/setup-frontend
       - name: Run documentation governance
         run: make docs-check
+      - if: inputs.source_sha != ''
+        uses: ./.github/actions/emit-evidence
+        with:
+          proof_id: 'docs:gate'
+          component_id: docs-gate
+          plan_sha256: ${{ inputs.plan_sha256 }}
+          source_sha: ${{ inputs.source_sha }}
 
   docs-gate:
     name: Documentation Governance gate

@@ -38,7 +38,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
     private static readonly DateTimeOffset FixedTime = new(2026, 6, 28, 0, 0, 0, TimeSpan.Zero);
 
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+        .WithImage("postgres:16.15-bookworm")
         .WithDatabase("notrelix_rls_runtime")
         .WithUsername("notrelix")
         .WithPassword("notrelix_test")

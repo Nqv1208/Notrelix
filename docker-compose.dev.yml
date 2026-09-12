@@ -13,7 +13,7 @@ name: notrelix
 services:
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.15-bookworm
     container_name: notrelix-postgres-dev
     restart: unless-stopped
     ports:
@@ -66,7 +66,7 @@ services:
 
   rabbitmq:
     profiles: ["messaging"]
-    image: rabbitmq:3.13-management-alpine
+    image: rabbitmq:4.3-management
     restart: unless-stopped
     ports:
       - "0.0.0.0:5672:5672"
@@ -224,7 +224,7 @@ services:
         max-file: "3"
 
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.29-alpine-slim
     container_name: notrelix-nginx-dev
     restart: unless-stopped
     volumes:

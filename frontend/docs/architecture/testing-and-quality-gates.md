@@ -20,7 +20,7 @@ evidence:
   - frontend/playwright.config.ts
   - frontend/playwright.mock.config.ts
   - frontend/playwright.storybook.config.ts
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/frontend-ci.yml
 review_on:
   - frontend-test-taxonomy-change
   - frontend-ci-gate-change
@@ -938,22 +938,23 @@ It does not make a failed required gate acceptable.
 
 # 71. Current CI topology
 
-Current `fe-ci.yml` has required jobs:
+Current `frontend-ci.yml` semantic process stages (frontend-ci-process-reorganization v1.1):
 
 ```text
-quality
-test-core
-test-mobile
-test-tooling
-ui-foundation
-build-web
-build-marketing
-build-mobile
-e2e-production
-frontend-gate
+select (transition-only selection)
+repository-integrity
+workspace-tests
+application-build (Build — web / marketing / mobile)
+host-runtime (Host runtime — web / marketing)
+ui-system
+mock-shard (Mock scenarios — 4 shards)
+mock-system
+frontend-gate (check name `Frontend gate`)
 ```
 
-The final gate depends on the first nine execution jobs and requires every result to equal `success`.
+Dependency audit is owned by the central security provider (`security-ci.yml`) through the structured checker `frontend/scripts/ci/check-pnpm-audit.mjs`; the frontend lane does not duplicate it.
+
+Selection answers only "Frontend selected?" and resolves the `frontend-full-baseline` migration profile; it does not reduce baseline proof. Each stage runs only when Frontend is selected. The `frontend-gate` job runs `if: always()`: when selected, every required semantic stage must succeed (skipped stages fail the gate); the gate executes no domain commands and emits `frontend:gate` only after internal closure.
 
 ---
 
@@ -971,41 +972,44 @@ rather than allowing partial green status.
 
 ---
 
-# 73. Quality job
+# 73. Static job
 
-Current `quality` executes:
+Current `static` executes:
 
 ```text
 codegen:check
 check:architecture
 check:architecture-docs
 check:test-taxonomy
+check:lint-coverage
+format:check
 typecheck
 lint
-format:check
 ```
 
 ---
 
 # 74. FE-TST-037 — Static/generated architecture quality runs before broader suites
 
-Current CI makes major test/build jobs depend on `quality`.
+Current CI makes the broader test/build jobs depend on `repository-integrity`.
 
 This fails fast on structural/generated defects before spending broader CI resources.
 
 ---
 
-# 75. Core tests job
+# 75. Workspace tests job
 
-Current core job executes guarded:
+Current workspace-tests job executes the full baseline guarded suite set through `frontend/scripts/ci/run-selected-tests.mjs`:
 
 ```text
 node
 web
 integration
+mobile
+generator
 ```
 
-suites.
+The suites share one runner; every suite is attempted and failures aggregate. The per-suite summary is uploaded and reused by Mock System as its Node prerequisite instead of re-running the Node suite.
 
 ---
 
@@ -1017,9 +1021,9 @@ Separate suite meaning should remain observable.
 
 ---
 
-# 77. Mobile job
+# 77. Mobile build lane
 
-Current mobile job runs guarded mobile tests plus category coverage.
+Mobile builds as one bounded `application-build` lane (Build — mobile) proving buildability.
 
 ---
 
@@ -1029,9 +1033,9 @@ If mobile architecture still contains a required category, the guarded suite sho
 
 ---
 
-# 79. Tooling job
+# 79. Tooling suites
 
-Current tooling job runs guarded generator tests.
+Generator/tooling suites run inside the Workspace tests job as part of the full baseline suite set.
 
 ---
 
@@ -1043,15 +1047,9 @@ Tooling is not “developer convenience only.”
 
 ---
 
-# 81. UI foundation job
+# 81. UI system job
 
-Current UI job installs Chromium and runs:
-
-```text
-test:ui:freeze
-```
-
-then uploads report on failure.
+Current UI system job runs inside the planner-pinned Playwright renderer container, executes the complete UI proof (purity/actions/fixtures/evidence/freeze) and uploads its report on failure.
 
 ---
 
@@ -1068,9 +1066,9 @@ for design-system foundation.
 
 ---
 
-# 83. Build jobs
+# 83. Application Build stage
 
-Web, marketing, mobile builds run separately after quality.
+Web, marketing and mobile build through the bounded `application-build` matrix after `repository-integrity`. The matrix is the fixed `frontend-full-baseline` build topology (`web` / `marketing` / `mobile` cells); it is not derived from affected components or relayed dynamically through `select` outputs. Each cell resolves its contract (workspace, build script, artifact paths and names) from planner-provided host/mobile matrices via `frontend/scripts/ci/resolve-frontend-ci-contract.mjs`, consumed as explicit step outputs; orchestrated runs use `workflow_call` inputs, standalone runs use the transition-only migration fallbacks. Web/marketing cells package exact host artifacts; the mobile cell proves buildability. Resolution fails closed on missing, duplicate, malformed or incomplete contracts.
 
 ---
 
@@ -1084,9 +1082,9 @@ Each supported host owns its packaging evidence.
 
 # 85. E2E dependency
 
-Current E2E depends specifically on `build-web`.
+Current host runtime (`host-runtime` matrix) depends on `application-build` for the same component, downloads the exact artifact, and never rebuilds it. The runtime matrix is the fixed `frontend-full-baseline` host topology (`web` / `marketing`); each cell resolves its planner contract with the same resolver and refuses a non-host contract.
 
-The final gate separately depends on all other required jobs.
+The final gate depends on every required semantic stage.
 
 ---
 
@@ -1987,7 +1985,7 @@ frontend/tooling/testing/
 frontend/tooling/dependency-rules/
 frontend/playwright.config.ts
 frontend/playwright.storybook.config.ts
-.github/workflows/fe-ci.yml
+.github/workflows/frontend-ci.yml
 ```
 
 Current CI explicitly protects:
