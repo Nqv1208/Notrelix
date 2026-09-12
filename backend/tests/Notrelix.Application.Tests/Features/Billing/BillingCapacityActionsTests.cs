@@ -141,6 +141,18 @@ public class BillingCapacityActionsTests
                 AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new BillingCapabilityFact(IsAvailable: false, Limit: null, Used: 1, Remaining: null));
 
+    /// <summary>
+    /// Real producer shape at full capacity: a finite grant whose Used equals
+    /// the Limit reads IsAvailable=false but still carries its numeric Limit.
+    /// The ceiling must be the grant limit, not the request availability — only
+    /// a null-limit fact (missing/no applicable grant) fails closed to zero.
+    /// </summary>
+    private void SetupExhaustedFiniteFact()
+        => _factsMock
+            .Setup(f => f.GetCapabilityAsync(
+                AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BillingCapabilityFact(IsAvailable: false, Limit: 5, Used: 5, Remaining: 0));
+
     private void SetupUsage(params WorkspaceFeatureUsage[] usage) => _usage.AddRange(usage);
 
     [Fact]
@@ -401,6 +413,41 @@ public class BillingCapacityActionsTests
         var reconciled = _usage.Single();
         reconciled.HardLimit.Should().Be(2);
         reconciled.CurrentUsage.Should().Be(2, "release still reduces committed usage below the downgraded ceiling");
+    }
+
+    [Fact]
+    public async Task Release_AtFullCapacity_KeepsFiniteCeiling_AndRestoresHeadroom()
+    {
+        SetupExhaustedFiniteFact(); // IsAvailable=false, Limit=5, Used=5 — the real provider shape at full capacity
+        SetupUsage(Usage(5));
+
+        var result = await _sut.ReleaseAsync(new ReleaseCapacityRequest(Op()), CancellationToken.None);
+
+        result.AlreadyReleased.Should().BeFalse();
+        result.Remaining.Should().Be(1, "releasing one unit restores one headroom under the granted limit");
+        var usage = _usage.Single();
+        usage.HardLimit.Should().Be(5, "the finite grant stays the ceiling even when availability is exhausted");
+        usage.CurrentUsage.Should().Be(4);
+        var ledger = _addedLedger.Single();
+        ledger.Delta.Should().Be(-1);
+        ledger.Note.Should().Be("capacity-released");
+    }
+
+    [Fact]
+    public async Task Consume_AtFullCapacity_Denied_CeilingStaysAtGrantLimit()
+    {
+        SetupExhaustedFiniteFact(); // the same fact: unavailable (used == limit) but the limit is still 5
+        SetupUsage(Usage(5));
+
+        var ex = await _sut.Invoking(s => s.ConsumeAsync(
+                new ConsumeCapacityRequest(Op()), CancellationToken.None))
+            .Should().ThrowAsync<BusinessRuleException>();
+
+        ex.Which.RuleCode.Should().Be(BillingRuleCodes.Billing_Usage_FeatureLimitExceeded);
+        var usage = _usage.Single();
+        usage.HardLimit.Should().Be(5, "a rejected consume must not zero the finite grant's ceiling");
+        usage.CurrentUsage.Should().Be(5, "a rejected consume leaves committed usage untouched");
+        _addedLedger.Should().BeEmpty();
     }
 
     [Fact]

@@ -113,10 +113,11 @@ public sealed class BillingCapacityActions : IBillingCapacityActions
     /// <summary>
     /// Loads the authoritative per-workspace usage record or seeds it from the
     /// current capability fact through the atomic first-use primitive. On every
-    /// path the effective limit is reconciled with the current fact: an
-    /// unavailable or missing grant fails closed to a zero ceiling, an explicit
-    /// unlimited grant clears the ceiling, and a finite (including zero) limit
-    /// reconciles to its numeric value. Reconfiguring never deletes committed
+    /// path the effective limit is reconciled with the current fact: a missing
+    /// grant or an unavailable null-limit grant fails closed to a zero ceiling,
+    /// an explicit unlimited grant clears the ceiling, and a finite (including
+    /// zero) limit reconciles to its numeric value regardless of whether the
+    /// current request is available. Reconfiguring never deletes committed
     /// usage; a downgrade below it denies new consumption instead.
     /// </summary>
     private async Task<WorkspaceFeatureUsage> LoadOrCreateUsageAsync(
@@ -175,16 +176,18 @@ public sealed class BillingCapacityActions : IBillingCapacityActions
             requestedAmount: (int)op.Amount,
             cancellationToken);
 
-        // Decision authority is IsAvailable, not Limit alone: an unavailable
-        // fact (IsAvailable=false with any Limit, including NULL) fails closed to
-        // a zero ceiling; a missing fact fails closed the same way. Only an
-        // available grant sets a ceiling (NULL = unbounded, numeric = bounded).
+        // A finite grant is the ceiling regardless of its availability: the
+        // request-specific IsAvailable may be false only because Used already
+        // equals the Limit (the requested amount no longer fits), which must
+        // never shrink the persisted ceiling. IsAvailable only distinguishes
+        // the null-limit facts: an available null grant is unbounded, an
+        // unavailable null grant or a missing fact fails closed to zero.
         var effective = fact switch
         {
             null => (decimal?)0,
-            { IsAvailable: false } => 0,
+            { Limit: int limit } => limit,
             { IsAvailable: true, Limit: null } => null,
-            { IsAvailable: true, Limit: int limit } => limit,
+            { IsAvailable: false, Limit: null } => 0,
         };
 
         return (effective, effective);

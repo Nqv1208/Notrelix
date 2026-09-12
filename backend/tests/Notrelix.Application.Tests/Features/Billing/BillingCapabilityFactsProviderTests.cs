@@ -170,6 +170,40 @@ public class BillingCapabilityFactsProviderTests
     }
 
     [Fact]
+    public async Task GetCapability_WithRevokedEntitlement_IsUnavailableAndStillReportsUsage()
+    {
+        var revoked = ActiveEntitlement(limit: 5);
+        revoked.Revoke(Guid.CreateVersion7(), TestNow);
+        SetupEntitlements(revoked);
+        SetupUsage(Usage(2, WorkspaceId));
+
+        var fact = await _sut.GetCapabilityAsync(
+            AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
+
+        fact!.IsAvailable.Should().BeFalse("a revoked grant ceases to apply");
+        fact.Limit.Should().BeNull();
+        fact.Used.Should().Be(2, "revocation removes the grant, not the ledger history");
+        fact.Remaining.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetCapability_WithDisabledEntitlement_IsUnavailableAndStillReportsUsage()
+    {
+        var disabled = ActiveEntitlement(limit: 5);
+        disabled.Disable(Guid.CreateVersion7(), TestNow);
+        SetupEntitlements(disabled);
+        SetupUsage(Usage(2, WorkspaceId));
+
+        var fact = await _sut.GetCapabilityAsync(
+            AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
+
+        fact!.IsAvailable.Should().BeFalse("a disabled grant ceases to apply");
+        fact.Limit.Should().BeNull();
+        fact.Used.Should().Be(2, "disable removes the grant, not the ledger history");
+        fact.Remaining.Should().BeNull();
+    }
+
+    [Fact]
     public async Task GetCapability_WithHeadroom_ReturnsQuantitySemantics()
     {
         SetupEntitlements(ActiveEntitlement(limit: 5));
@@ -208,6 +242,22 @@ public class BillingCapabilityFactsProviderTests
 
         fact!.IsAvailable.Should().BeFalse("a request consuming beyond Remaining is rejected");
         fact.Remaining.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetCapability_WhenRemainingEqualsRequested_IsAvailable()
+    {
+        // TAC-BI-001 boundary: Remaining == Requested is the exact equality
+        // that must still pass — the request consumes the very last unit.
+        SetupEntitlements(ActiveEntitlement(limit: 5));
+        SetupUsage(Usage(4, WorkspaceId));
+
+        var fact = await _sut.GetCapabilityAsync(
+            AccountId, WorkspaceId, BillingCapabilityCode.AutomationRule, 1, CancellationToken.None);
+
+        fact!.IsAvailable.Should().BeTrue("a request equal to the remaining capacity is allowed");
+        fact.Remaining.Should().Be(1);
+        fact.Limit.Should().Be(5);
     }
 
     [Fact]

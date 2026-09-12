@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Idempotency;
@@ -12,6 +13,7 @@ using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
+using Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Billing.Capacity;
 using Notrelix.Application.Features.Billing.Entitlements.Services;
@@ -26,6 +28,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
+using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Billing;
 using Notrelix.Domain.Billing.Entitlements;
 using Notrelix.Domain.Billing.Plans;
@@ -53,6 +56,9 @@ namespace Notrelix.Integration.Tests.Billing;
 /// <item>TAC-BI-008B / TAC-BI-FLOW-03 retry — usage write idempotency</item>
 /// <item>BOUND-TX-003 / TAC-BI-FLOW-03 compensation — failure atomicity</item>
 /// <item>TAC-BI-FLOW-04 / TAC-BI-008C — production lifecycle feeds the ledger</item>
+/// <item>TAC-BI-FLOW-02 — release at full capacity preserves the finite ceiling</item>
+/// <item>TAC-BI-FLOW-03 — a disabled rule still occupies its capacity slot</item>
+/// <item>TAC-BI-006 retry — same idempotency key never double-uses capacity; usage is workspace-isolated</item>
 /// </list>
 /// </summary>
 [Collection("Database")]
@@ -444,6 +450,137 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         usage.CurrentUsage.Should().Be(3m);
     }
 
+    [Fact(DisplayName = "TAC-BI-FLOW-02 - release at full capacity keeps the finite ceiling")]
+    public async Task ReleaseAtFullCapacity_PreservesFiniteCeiling_AndRestoresHeadroom()
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        await SeedWorkspaceFeatureUsageAsync(accountId, workspaceId, currentUsage: 2, hardLimit: 2);
+        await SeedEntitlementAsync(accountId, limit: 2);
+
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(accountId, workspaceId, ownerId);
+        await using var context = _db.CreateContext(tenant);
+        await using var tx = await context.Database.BeginTransactionAsync();
+        var capacity = new BillingCapacityActions(
+            context,
+            new BillingCapabilityFactsProvider(context, clock.Object));
+        var op = new BillingCapacityOperationIdentity(
+            accountId, workspaceId, BillingCapabilityCode.AutomationRule,
+            Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: "release-at-full",
+            ActorUserId: ownerId, OccurredAt: clock.Object.UtcNow);
+
+        var release = await capacity.ReleaseAsync(new ReleaseCapacityRequest(op), CancellationToken.None);
+
+        release.AlreadyReleased.Should().BeFalse("release at full capacity restores headroom, never zeroes the grant");
+        release.Remaining.Should().Be(1m, "releasing one of the two granted units leaves one headroom");
+        await context.SaveChangesAsync();
+        await tx.CommitAsync();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var usage = await verify.WorkspaceFeatureUsages
+            .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
+        usage.CurrentUsage.Should().Be(1m);
+        usage.HardLimit.Should().Be(2m, "the finite grant remains the ceiling after the release");
+        (await verify.FeatureUsageLedger.CountAsync(l =>
+                l.AccountId == accountId && l.WorkspaceId == workspaceId
+                && l.FeatureCode == BillingCapabilityCode.AutomationRule && l.Delta == -1))
+            .Should().Be(1, "the release records exactly one -1 ledger effect");
+    }
+
+    [Fact(DisplayName = "TAC-BI-FLOW-03 - a disabled rule still occupies its capacity slot")]
+    public async Task DisablingARule_DoesNotReleaseCapacity()
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        await SeedEntitlementAsync(accountId, limit: 3);
+
+        using var provider = CreateProvider(accountId, ownerId, gateFact: null);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+
+        var created = await SendCreateAsync(provider, "disable-key-1", CreateRuleCommand(workspaceId, "Disabled Rule", "disable-me"));
+        created.Succeeded.Should().BeTrue();
+        (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
+            .Should().Be(2, "one slot is consumed by the created rule");
+
+        using (var scope = provider.CreateScope())
+        {
+            BindKey(scope, "disable-rule-attempt");
+            var disabled = await scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new SetAutomationRuleEnabledCommand(created.Data, false));
+            disabled.Succeeded.Should().BeTrue();
+        }
+
+        (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
+            .Should().Be(2, "disabling a rule does not return its slot to the pool");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var rule = await verify.AutomationRules.IgnoreQueryFilters()
+            .SingleAsync(r => r.Id == created.Data);
+        rule.Status.Should().Be(AutomationRuleStatus.Disabled);
+        var usage = await verify.WorkspaceFeatureUsages
+            .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
+        usage.CurrentUsage.Should().Be(1m, "the disabled rule still occupies one slot");
+        (await verify.FeatureUsageLedger.CountAsync(l =>
+                l.AccountId == accountId && l.WorkspaceId == workspaceId
+                && l.FeatureCode == BillingCapabilityCode.AutomationRule && l.Delta == 1))
+            .Should().Be(1, "exactly the one create consume is ledgered");
+        (await verify.FeatureUsageLedger.CountAsync(l =>
+                l.AccountId == accountId && l.WorkspaceId == workspaceId
+                && l.FeatureCode == BillingCapabilityCode.AutomationRule && l.Delta == -1))
+            .Should().Be(0, "a mere disable adds no release effect");
+    }
+
+    [Fact(DisplayName = "TAC-BI-006 - CreateAutomationRule retry with the same idempotency key never double-uses capacity")]
+    public async Task CreateRule_RetrySameIdempotencyKey_ConsumesOneSlotOnly()
+    {
+        var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
+        await SeedEntitlementAsync(accountId, limit: 3);
+
+        using var provider = CreateProvider(accountId, ownerId, gateFact: null);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+
+        var command = CreateRuleCommand(workspaceId, "Retried Rule", "retry-me");
+        var first = await SendCreateAsync(provider, "retry-same-key", command);
+        first.Succeeded.Should().BeTrue();
+        var replay = await SendCreateAsync(provider, "retry-same-key", command);
+        replay.Succeeded.Should().BeTrue("the same operation key replays the first semantic result");
+
+        (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
+            .Should().Be(2, "the replayed request must not consume a second slot");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId))
+            .Should().Be(1, "the retry must not create a second rule");
+        (await verify.FeatureUsageLedger.CountAsync(l =>
+                l.AccountId == accountId && l.WorkspaceId == workspaceId
+                && l.FeatureCode == BillingCapabilityCode.AutomationRule && l.Delta == 1))
+            .Should().Be(1, "the retry must not record a second +1 ledger effect");
+    }
+
+    [Fact(DisplayName = "TAC-BI-006 - CreateAutomationRule usage is isolated per workspace")]
+    public async Task CreateRuleInOneWorkspace_DoesNotConsumeCapacityOfAnother()
+    {
+        var (accountId, ownerId, workspaceIdA) = await SeedWorkspaceStackAsync();
+        var workspaceIdB = await SeedAdditionalWorkspaceAsync(accountId, ownerId, "Billing WS B", $"billing-ws-b-{Guid.NewGuid():N}");
+        await SeedEntitlementAsync(accountId, limit: 3);
+
+        using var provider = CreateProvider(accountId, ownerId, gateFact: null);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+
+        var created = await SendCreateAsync(provider, "iso-key-a", CreateRuleCommand(workspaceIdA, "Isolation Rule", "iso-a"));
+        created.Succeeded.Should().BeTrue();
+
+        (await ReadRemainingAsync(accountId, workspaceIdA, clock.Object))
+            .Should().Be(2, "workspace A consumed one slot");
+        (await ReadRemainingAsync(accountId, workspaceIdB, clock.Object))
+            .Should().Be(3, "workspace B is untouched by workspace A's usage under the same account grant");
+    }
+
     private static CreateAutomationRuleCommand CreateRuleCommand(Guid workspaceId, string name, string path) =>
         new(workspaceId, name, "ItemCreated", "Webhook", $$"""{"webhookPath":"{{path}}"}""");
 
@@ -498,6 +635,10 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var credentialMock = new Mock<ICurrentCredentialContext>();
         credentialMock.Setup(c => c.Kind).Returns(CredentialKind.UserSession);
 
+        var currentUserMock = new Mock<ICurrentUser>();
+        currentUserMock.Setup(c => c.UserId).Returns(userId);
+        currentUserMock.Setup(c => c.IsAuthenticated).Returns(true);
+
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
 
@@ -512,6 +653,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         services.AddSingleton(requestContextMock.Object);
         services.AddSingleton<ICurrentTenantContext>(tenant);
         services.AddSingleton(credentialMock.Object);
+        services.AddSingleton(currentUserMock.Object);
         services.AddSingleton(clockMock.Object);
         services.AddSingleton(TimeProvider.System);
 
@@ -605,6 +747,10 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             IRequestHandler<CreateAutomationRuleCommand, Result<Guid>>,
             CreateAutomationRuleCommandHandler>();
 
+        services.AddScoped<
+            IRequestHandler<SetAutomationRuleEnabledCommand, Result>,
+            SetAutomationRuleEnabledCommandHandler>();
+
         return services.BuildServiceProvider();
     }
 
@@ -658,6 +804,25 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             softLimit: hardLimit,
             now));
         await seed.SaveChangesAsync();
+    }
+
+    private async Task<Guid> SeedAdditionalWorkspaceAsync(
+        Guid accountId, Guid ownerId, string name, string slug)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var workspace = Workspace.Create(accountId, ownerId, name, slug, now);
+
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.Workspaces.Add(workspace);
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
+        await seed.SaveChangesAsync();
+
+        await using var grant = _db.CreateContext(SystemTenant());
+        var projection = new AccessGrantProjectionService(grant);
+        await projection.SyncWorkspaceMemberGrantAsync(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, now, CancellationToken.None);
+        await grant.SaveChangesAsync();
+
+        return workspace.Id;
     }
 
     private async Task SeedEntitlementAsync(Guid accountId, int limit)
