@@ -10,7 +10,9 @@ using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 using Notrelix.Application.Common.Integrations.N8n;
 using Notrelix.Application.Features.Automation.Executions.Services;
+using Notrelix.Application.Features.Billing.Capacity;
 using Notrelix.Application.Features.Billing.Entitlements.Services;
+using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Identity.Users.Services;
@@ -111,6 +113,9 @@ public static class DependencyInjection
 
         // Producer-owned public capability surface (Billing)
         services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();
+
+        // Producer-owned public capacity action (Billing hard-quota consume/release)
+        services.AddScoped<IBillingCapacityActions, BillingCapacityActions>();
 
         // Automation-owned dispatch use cases (process progression)
         services.AddScoped<N8nDispatchUseCase>();

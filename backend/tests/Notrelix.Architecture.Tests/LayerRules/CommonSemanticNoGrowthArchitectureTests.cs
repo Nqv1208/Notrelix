@@ -30,8 +30,6 @@ public class CommonSemanticNoGrowthArchitectureTests
             ["Notrelix.Application.Common.Entitlements"] = new HashSet<string>(StringComparer.Ordinal)
             {
                 "Notrelix.Application.Common.Entitlements.FeatureCode",
-                "Notrelix.Application.Common.Entitlements.IEntitlementChecker",
-                "Notrelix.Application.Common.Entitlements.IFeatureGateChecker",
                 "Notrelix.Application.Common.Entitlements.ISubscriptionChecker",
             },
             ["Notrelix.Application.Common.Integrations.N8n"] = new HashSet<string>(StringComparer.Ordinal)

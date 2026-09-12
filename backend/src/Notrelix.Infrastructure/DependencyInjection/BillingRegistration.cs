@@ -28,14 +28,11 @@ public static class BillingRegistration
                     "DevNull mode bypasses subscription and feature-gate checks and must not be used in production.");
             }
 
-            services.AddScoped<IEntitlementChecker, DevNullEntitlementChecker>();
             services.AddScoped<ISubscriptionChecker, DevNullSubscriptionChecker>();
-            services.AddScoped<IFeatureGateChecker, DevNullFeatureGateChecker>();
         }
         else
         {
             services.AddScoped<ISubscriptionChecker, DatabaseSubscriptionChecker>();
-            services.AddScoped<IFeatureGateChecker, DatabaseFeatureGateChecker>();
         }
 
         return services;

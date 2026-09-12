@@ -235,6 +235,7 @@ public partial class ApplicationDbContext
     public DbSet<UsageMetric> UsageMetrics => Set<UsageMetric>();
     public DbSet<UsageMetricHistory> UsageMetricHistories => Set<UsageMetricHistory>();
     public DbSet<FeatureUsageLedger> FeatureUsageLedger => Set<FeatureUsageLedger>();
+    public DbSet<WorkspaceFeatureUsage> WorkspaceFeatureUsages => Set<WorkspaceFeatureUsage>();
 
     // Search projections
     public DbSet<SearchDocumentRecord> SearchDocuments => Set<SearchDocumentRecord>();

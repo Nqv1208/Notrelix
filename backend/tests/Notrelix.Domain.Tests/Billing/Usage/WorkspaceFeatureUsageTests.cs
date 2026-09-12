@@ -164,4 +164,140 @@ public class WorkspaceFeatureUsageTests
         usage.CurrentUsage.Should().Be(85);
     }
 
+    [Fact]
+    public void ReconfigureLimits_WithNewLimits_ShouldUpdateBoth_RaiseEvent_AndAdvanceVersion()
+    {
+        var actor = Guid.NewGuid();
+        var occurredAt = DateTimeOffset.UtcNow;
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, occurredAt);
+        ((IHasDomainEvents)usage).ClearDomainEvents();
+        var versionBefore = usage.Version;
+
+        usage.ReconfigureLimits(80, 70, actor, occurredAt);
+
+        usage.HardLimit.Should().Be(80);
+        usage.SoftLimit.Should().Be(70);
+        usage.CurrentUsage.Should().Be(0, "reconfiguring limits never touches committed usage");
+        usage.Version.Should().Be(versionBefore + 1);
+        var reconfigured = usage.DomainEvents.Should().ContainSingle()
+            .Which.Should().BeOfType<WorkspaceFeatureUsageLimitsReconfiguredDomainEvent>().Subject;
+        reconfigured.HardLimit.Should().Be(80);
+        reconfigured.SoftLimit.Should().Be(70);
+    }
+
+    [Fact]
+    public void ReconfigureLimits_WithSameLimits_ShouldBeNoOp_NoVersionIncrement_NoEvent()
+    {
+        var actor = Guid.NewGuid();
+        var occurredAt = DateTimeOffset.UtcNow;
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, 80, occurredAt);
+        ((IHasDomainEvents)usage).ClearDomainEvents();
+        var versionBefore = usage.Version;
+
+        usage.ReconfigureLimits(100, 80, actor, occurredAt);
+
+        usage.HardLimit.Should().Be(100);
+        usage.SoftLimit.Should().Be(80);
+        usage.Version.Should().Be(versionBefore, "an unchanged limit is a semantic no-op");
+        usage.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ReconfigureLimits_DowngradeBelowCurrentUsage_ShouldRetainUsage_NotThrow_AndAdvanceVersion()
+    {
+        var actor = Guid.NewGuid();
+        var occurredAt = DateTimeOffset.UtcNow;
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 150, 100, 90, occurredAt, overageAllowed: true);
+        ((IHasDomainEvents)usage).ClearDomainEvents();
+        var versionBefore = usage.Version;
+
+        usage.ReconfigureLimits(80, 70, actor, occurredAt);
+
+        usage.CurrentUsage.Should().Be(150, "a limit downgrade never deletes committed usage (transient over-limit)");
+        usage.HardLimit.Should().Be(80);
+        usage.SoftLimit.Should().Be(70);
+        usage.Version.Should().Be(versionBefore + 1);
+        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageLimitsReconfiguredDomainEvent);
+    }
+
+    [Fact]
+    public void ReconfigureLimits_ConsumeExceedingDowngradedLimit_ShouldThrow_RetainingSeededUsage()
+    {
+        var actor = Guid.NewGuid();
+        var occurredAt = DateTimeOffset.UtcNow;
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, occurredAt);
+
+        usage.ReconfigureLimits(2, 2, actor, occurredAt);
+        var act = () => usage.Consume(3, actor, occurredAt);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*limit exceeded*");
+        usage.CurrentUsage.Should().Be(0, "a denied consume must leave usage unchanged");
+        usage.HardLimit.Should().Be(2);
+    }
+
+    [Fact]
+    public void ReconfigureLimits_ToNull_ShouldClearNumericCeiling()
+    {
+        var actor = Guid.NewGuid();
+        var occurredAt = DateTimeOffset.UtcNow;
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, 100, occurredAt);
+        ((IHasDomainEvents)usage).ClearDomainEvents();
+        var versionBefore = usage.Version;
+
+        usage.ReconfigureLimits(null, null, actor, occurredAt);
+
+        usage.HardLimit.Should().BeNull("an unlimited grant clears the numeric ceiling");
+        usage.SoftLimit.Should().BeNull();
+        usage.Version.Should().Be(versionBefore + 1);
+        var unlimited = usage.DomainEvents.Should().ContainSingle()
+            .Which.Should().BeOfType<WorkspaceFeatureUsageLimitsReconfiguredDomainEvent>().Subject;
+        unlimited.HardLimit.Should().BeNull();
+        unlimited.SoftLimit.Should().BeNull();
+    }
+
+    [Fact]
+    public void ReconfigureLimits_WithNegativeHardLimit_ShouldThrow_NoMutation()
+    {
+        var actor = Guid.NewGuid();
+        var occurredAt = DateTimeOffset.UtcNow;
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, occurredAt);
+        var versionBefore = usage.Version;
+
+        var act = () => usage.ReconfigureLimits(-1, null, actor, occurredAt);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*negative*");
+        usage.HardLimit.Should().Be(100);
+        usage.Version.Should().Be(versionBefore);
+        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageInitializedDomainEvent);
+    }
+
+    [Fact]
+    public void ReconfigureLimits_WithNegativeSoftLimit_ShouldThrow_NoMutation()
+    {
+        var actor = Guid.NewGuid();
+        var occurredAt = DateTimeOffset.UtcNow;
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, occurredAt);
+        var versionBefore = usage.Version;
+
+        var act = () => usage.ReconfigureLimits(null, -1, actor, occurredAt);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*negative*");
+        usage.SoftLimit.Should().BeNull();
+        usage.Version.Should().Be(versionBefore);
+    }
+
+    [Fact]
+    public void ReconfigureLimits_WithSoftLimitExceedingHardLimit_ShouldThrow_NoMutation()
+    {
+        var actor = Guid.NewGuid();
+        var occurredAt = DateTimeOffset.UtcNow;
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, occurredAt);
+        var versionBefore = usage.Version;
+
+        var act = () => usage.ReconfigureLimits(100, 150, actor, occurredAt);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*Soft limit cannot exceed hard limit*");
+        usage.Version.Should().Be(versionBefore);
+    }
+
 }

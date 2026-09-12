@@ -24,5 +24,24 @@ public interface IBillingDbContext
     DbSet<UsageMetric> UsageMetrics { get; }
     DbSet<UsageMetricHistory> UsageMetricHistories { get; }
     DbSet<FeatureUsageLedger> FeatureUsageLedger { get; }
+    DbSet<WorkspaceFeatureUsage> WorkspaceFeatureUsages { get; }
     DbSet<PaymentMethod> PaymentMethods { get; }
+
+    /// <summary>
+    /// Atomically seeds the per-scope usage row on first use for a capability:
+    /// INSERT ... ON CONFLICT DO NOTHING that materializes CurrentUsage from the
+    /// SUM of the committed ledger (so first-use never drifts from history), then
+    /// reloads the authoritative row through the scoped DbSet so the winner of a
+    /// concurrent first-use race is observed. MUST be invoked inside the same
+    /// request transaction as the waiter's SaveChanges (BOUND-TX-003).
+    /// </summary>
+    Task<WorkspaceFeatureUsage> GetOrCreateWorkspaceFeatureUsageAsync(
+        Guid accountId,
+        Guid workspaceId,
+        string capabilityCode,
+        decimal? hardLimit,
+        decimal? softLimit,
+        Guid actorUserId,
+        DateTimeOffset occurredAt,
+        CancellationToken cancellationToken);
 }

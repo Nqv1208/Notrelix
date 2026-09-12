@@ -7,6 +7,7 @@ public sealed record EntitlementGrantedDomainEvent : BillingAccountScopedDomainE
     public Guid EntitlementId { get; }
     public string FeatureCode { get; }
     public decimal Limit { get; }
+    public bool IsUnlimited { get; }
 
     public EntitlementGrantedDomainEvent(
         Guid accountId,
@@ -14,11 +15,13 @@ public sealed record EntitlementGrantedDomainEvent : BillingAccountScopedDomainE
         Guid entitlementId,
         string featureCode,
         decimal limit,
-        DateTimeOffset occurredAt)
+        DateTimeOffset occurredAt,
+        bool isUnlimited = false)
         : base(accountId, workspaceId, occurredAt)
     {
         EntitlementId = entitlementId;
         FeatureCode = featureCode;
         Limit = limit;
+        IsUnlimited = isUnlimited;
     }
 }

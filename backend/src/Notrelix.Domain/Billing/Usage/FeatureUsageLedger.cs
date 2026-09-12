@@ -7,6 +7,7 @@ public class FeatureUsageLedger : Entity, IWorkspaceScoped
     public string FeatureCode { get; private set; } = null!;
     public decimal Delta { get; private set; }
     public Guid? ActorUserId { get; private set; }
+    public Guid? LogicalOperationId { get; private set; }
     public string? ReferenceResource { get; private set; }
     public string? Note { get; private set; }
     public DateTimeOffset OccurredAt { get; private set; }
@@ -21,7 +22,8 @@ public class FeatureUsageLedger : Entity, IWorkspaceScoped
         Guid? actorUserId,
         string? referenceResource,
         string? note,
-        DateTimeOffset occurredAt)
+        DateTimeOffset occurredAt,
+        Guid? logicalOperationId = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -34,6 +36,7 @@ public class FeatureUsageLedger : Entity, IWorkspaceScoped
             FeatureCode = featureCode.Trim().ToUpperInvariant(),
             Delta = delta,
             ActorUserId = actorUserId,
+            LogicalOperationId = logicalOperationId,
             ReferenceResource = referenceResource,
             Note = note,
             OccurredAt = occurredAt

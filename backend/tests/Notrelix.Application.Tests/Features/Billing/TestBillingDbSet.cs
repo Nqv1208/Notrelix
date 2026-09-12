@@ -69,7 +69,7 @@ internal class BillingAsyncQueryProvider<T>(IQueryable<T> inner) : IAsyncQueryPr
     }
 }
 
-internal class BillingAsyncEnumerable<T>(IQueryable<T> queryable) : IAsyncEnumerable<T>, IQueryable<T>
+internal class BillingAsyncEnumerable<T>(IQueryable<T> queryable) : IAsyncEnumerable<T>, IOrderedQueryable<T>
 {
     public Type ElementType => queryable.ElementType;
     public Expression Expression => queryable.Expression;
