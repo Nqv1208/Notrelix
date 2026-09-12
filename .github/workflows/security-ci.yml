@@ -72,6 +72,8 @@ jobs:
     if: inputs.scan_runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      TRIVY_SECRET_CONFIG: .github/security/trivy-secret.yaml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Resolve pinned runtime image refs
