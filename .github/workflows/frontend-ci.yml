@@ -76,8 +76,8 @@ jobs:
           RENDERER_VERSION: ${{ inputs.renderer_version }}
         run: |
           set -euo pipefail
-          application_build_matrix="$(jq -c --argjson h "$HOST_MATRIX" --argjson m "$MOBILE_MATRIX" '{include: ($h.include + $m.include)}')"
-          host_runtime_matrix="$(jq -c --argjson h "$HOST_MATRIX" '{include: $h.include}')"
+          application_build_matrix="$(jq -c --argjson h "$HOST_MATRIX" --argjson m "$MOBILE_MATRIX" '$h.include + $m.include | {include: .}')"
+          host_runtime_matrix="$(jq -c --argjson h "$HOST_MATRIX" '$h.include | {include: .}')"
           {
             echo "frontend=true"
             echo "profile_json=$PROFILE_JSON"
@@ -133,7 +133,7 @@ jobs:
               [[ "$selected" == true ]] && break
             done <<< "$files"
           fi
-          application_build_matrix="$(jq -c --argjson h "$FALLBACK_HOST_MATRIX" --argjson m "$FALLBACK_MOBILE_MATRIX" '{include: ($h.include + $m.include)}')"
+          application_build_matrix="$(jq -c --argjson h "$FALLBACK_HOST_MATRIX" --argjson m "$FALLBACK_MOBILE_MATRIX" '$h.include + $m.include | {include: .}')"
           {
             echo "frontend=$selected"
             echo "profile_json=$FALLBACK_PROFILE_JSON"
