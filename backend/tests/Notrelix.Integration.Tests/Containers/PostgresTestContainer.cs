@@ -11,7 +11,7 @@ namespace Notrelix.Integration.Tests.Containers;
 public sealed class PostgresTestContainer : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+        .WithImage("postgres:16.15-bookworm")
         .WithDatabase("notrelix_test")
         .WithUsername("notrelix")
         .WithPassword("notrelix_test")

@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 env:
-  FALLBACK_RUNTIME_IMAGES_JSON: '{"api_version":"delivery.notrelix.dev/v1","kind":"RuntimeImageSet","images":[{"id":"postgres","ref":"postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685","deploy_env_var":"NOTRELIX_POSTGRES_IMAGE"},{"id":"redis","ref":"redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf","deploy_env_var":"NOTRELIX_REDIS_IMAGE"},{"id":"rabbitmq","ref":"rabbitmq@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281","deploy_env_var":"NOTRELIX_RABBITMQ_IMAGE"},{"id":"nginx","ref":"nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10","deploy_env_var":"NOTRELIX_NGINX_IMAGE"}]}'
+  FALLBACK_RUNTIME_IMAGES_JSON: '{"api_version":"delivery.notrelix.dev/v1","kind":"RuntimeImageSet","images":[{"id":"postgres","ref":"postgres@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825","deploy_env_var":"NOTRELIX_POSTGRES_IMAGE"},{"id":"redis","ref":"redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf","deploy_env_var":"NOTRELIX_REDIS_IMAGE"},{"id":"rabbitmq","ref":"rabbitmq@sha256:57bddb6fbc3498b5d8b5a14dc6f4506073ebcf94c66ba2a7678c335faa8dd631","deploy_env_var":"NOTRELIX_RABBITMQ_IMAGE"},{"id":"nginx","ref":"nginx@sha256:c9366b8c560169b101ca0e5422ed063b20779e6454c2326b9c9704225c9b0c08","deploy_env_var":"NOTRELIX_NGINX_IMAGE"}]}'
 
 jobs:
   changes:

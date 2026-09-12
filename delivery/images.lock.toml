@@ -8,8 +8,8 @@ stateful = false
 
 [images.dotnet-aspnet]
 class = "build"
-source = "mcr.microsoft.com/dotnet/aspnet:9.0.19-bookworm-slim"
-ref = "mcr.microsoft.com/dotnet/aspnet:9.0.19-bookworm-slim@sha256:b1201ee0ccf9a22c06844982296c1be40d5ff9c7685dc002729f204e63fb1730"
+source = "mcr.microsoft.com/dotnet/aspnet:9.0.20-bookworm-slim"
+ref = "mcr.microsoft.com/dotnet/aspnet:9.0.20-bookworm-slim@sha256:779b0b298964fe93e6c6388c8bb823393a7c301b79cd5b3d80632bc886b2ffd4"
 stateful = false
 
 [images.node-build]
@@ -26,8 +26,8 @@ stateful = false
 
 [images.postgres]
 class = "runtime"
-source = "postgres:16-alpine"
-ref = "postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685"
+source = "postgres:16.15-bookworm"
+ref = "postgres@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825"
 compose_service = "postgres"
 deploy_env_var = "NOTRELIX_POSTGRES_IMAGE"
 stateful = true
@@ -35,23 +35,23 @@ stateful = true
 [images.redis]
 class = "runtime"
 source = "redis:7-alpine"
-ref = "redis@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf"
+ref = "redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf"
 compose_service = "redis"
 deploy_env_var = "NOTRELIX_REDIS_IMAGE"
 stateful = true
 
 [images.rabbitmq]
 class = "runtime"
-source = "rabbitmq:3.13-management-alpine"
-ref = "rabbitmq@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281"
+source = "rabbitmq:4.3-management"
+ref = "rabbitmq@sha256:57bddb6fbc3498b5d8b5a14dc6f4506073ebcf94c66ba2a7678c335faa8dd631"
 compose_service = "rabbitmq"
 deploy_env_var = "NOTRELIX_RABBITMQ_IMAGE"
 stateful = true
 
 [images.nginx]
 class = "runtime"
-source = "nginx:1.27-alpine"
-ref = "nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10"
+source = "nginx:1.29-alpine-slim"
+ref = "nginx@sha256:c9366b8c560169b101ca0e5422ed063b20779e6454c2326b9c9704225c9b0c08"
 compose_service = "nginx"
 deploy_env_var = "NOTRELIX_NGINX_IMAGE"
 stateful = false

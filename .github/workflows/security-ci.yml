@@ -136,6 +136,28 @@ jobs:
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: "true"
           exit-code: "1"
+          trivyignores: .github/security/trivy-nginx.ignore
+      - name: Enforce nginx ignore expiry
+        run: |
+          python3 - <<'EOF'
+          import datetime, sys
+          from pathlib import Path
+          path = Path(".github/security/trivy-nginx.ignore")
+          if not path.exists():
+              sys.exit(0)
+          expires = None
+          for line in path.read_text(encoding="utf-8").splitlines():
+              if line.startswith("# expires:"):
+                  expires = line.removeprefix("# expires:").strip()
+                  break
+          if expires is None:
+              print("nginx ignore file has no expiry date", file=sys.stderr)
+              sys.exit(1)
+          if datetime.date.today() > datetime.date.fromisoformat(expires):
+              print(f"nginx ignore file expired on {expires}; pin a patched digest or renew by explicit security decision", file=sys.stderr)
+              sys.exit(1)
+          print(f"nginx ignore file valid until {expires}")
+          EOF
       - if: inputs.plan_sha256 != ''
         uses: ./.github/actions/emit-evidence
         with:

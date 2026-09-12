@@ -93,7 +93,7 @@ services:
       - frontend-network
 
   nginx:
-    image: ${NOTRELIX_NGINX_IMAGE:-nginx:1.27-alpine}
+    image: ${NOTRELIX_NGINX_IMAGE:-nginx:1.29-alpine-slim}
     restart: unless-stopped
     user: nginx
     read_only: true

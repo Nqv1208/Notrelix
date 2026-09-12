@@ -10,7 +10,7 @@ name: notrelix
 
 services:
   postgres:
-    image: ${NOTRELIX_POSTGRES_IMAGE:-postgres:16-alpine}
+    image: ${NOTRELIX_POSTGRES_IMAGE:-postgres:16.15-bookworm}
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -59,7 +59,7 @@ services:
   # contracts select Messaging:Transport=RabbitMQ. Keeping it outside a Compose
   # profile prevents a release from becoming healthy without its broker.
   rabbitmq:
-    image: ${NOTRELIX_RABBITMQ_IMAGE:-rabbitmq:3.13-management-alpine}
+    image: ${NOTRELIX_RABBITMQ_IMAGE:-rabbitmq:4.3-management}
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required}
