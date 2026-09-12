@@ -28,7 +28,13 @@ const HOSTS = {
   ],
 };
 const MOBILES = {
-  include: [{ component_id: "mobile", workspace: "@notrelix/app-mobile", build_script: "build" }],
+  include: [
+    {
+      component_id: "mobile",
+      workspace: "@notrelix/app-mobile",
+      build_script: "build",
+    },
+  ],
 };
 
 function failingCall(args) {
@@ -89,7 +95,11 @@ function failingCall(args) {
     hostsJson: JSON.stringify(HOSTS),
     mobilesJson: JSON.stringify({
       include: [
-        { component_id: "web", workspace: "@notrelix/app-web", build_script: "build" },
+        {
+          component_id: "web",
+          workspace: "@notrelix/app-web",
+          build_script: "build",
+        },
         ...MOBILES.include,
       ],
     }),
@@ -100,7 +110,11 @@ function failingCall(args) {
 
 // CONTRACT-05 — malformed JSON fails closed
 {
-  const message = failingCall({ component: "web", hostsJson: "{not json", mobilesJson: JSON.stringify(MOBILES) });
+  const message = failingCall({
+    component: "web",
+    hostsJson: "{not json",
+    mobilesJson: JSON.stringify(MOBILES),
+  });
   assert.match(message, /hosts matrix is not valid JSON/);
   console.log("CONTRACT-05 malformed JSON PASS");
 }
@@ -133,8 +147,15 @@ function failingCall(args) {
 
 // CONTRACT-08 — matrix payload without include array fails closed
 {
-  const message = failingCall({ component: "web", hostsJson: '{"cells":[]}', mobilesJson: JSON.stringify(MOBILES) });
-  assert.match(message, /hosts matrix must be a matrix object with an include array/);
+  const message = failingCall({
+    component: "web",
+    hostsJson: '{"cells":[]}',
+    mobilesJson: JSON.stringify(MOBILES),
+  });
+  assert.match(
+    message,
+    /hosts matrix must be a matrix object with an include array/,
+  );
   console.log("CONTRACT-08 malformed matrix shape PASS");
 }
 

@@ -36,34 +36,56 @@ function parseMatrix(raw, label) {
     return fail(`${label} must be a matrix object with an include array`);
   }
   for (const entry of include) {
-    if (!entry || typeof entry !== "object" || typeof entry.component_id !== "string" || !entry.component_id) {
+    if (
+      !entry ||
+      typeof entry !== "object" ||
+      typeof entry.component_id !== "string" ||
+      !entry.component_id
+    ) {
       return fail(`${label} contains an entry without a component_id`);
     }
   }
   return include;
 }
 
-export function resolveFrontendContract({ component, hostsJson, mobilesJson, requireHost = false }) {
+export function resolveFrontendContract({
+  component,
+  hostsJson,
+  mobilesJson,
+  requireHost = false,
+}) {
   if (!component) fail("missing --component");
   const hosts = parseMatrix(hostsJson, "hosts matrix");
   const mobiles = parseMatrix(mobilesJson, "mobiles matrix");
   const hostMatches = hosts.filter((entry) => entry.component_id === component);
-  const mobileMatches = mobiles.filter((entry) => entry.component_id === component);
-  if (hostMatches.length > 1 || mobileMatches.length > 1 || hostMatches.length + mobileMatches.length > 1) {
+  const mobileMatches = mobiles.filter(
+    (entry) => entry.component_id === component,
+  );
+  if (
+    hostMatches.length > 1 ||
+    mobileMatches.length > 1 ||
+    hostMatches.length + mobileMatches.length > 1
+  ) {
     fail(`duplicate contract entries for component ${component}`);
   }
   if (hostMatches.length === 0 && mobileMatches.length === 0) {
-    fail(`no contract found for component ${component} in planner host/mobile matrices`);
+    fail(
+      `no contract found for component ${component} in planner host/mobile matrices`,
+    );
   }
   const isHost = hostMatches.length === 1;
   const contract = isHost ? hostMatches[0] : mobileMatches[0];
   for (const field of isHost ? REQUIRED_HOST_FIELDS : REQUIRED_MOBILE_FIELDS) {
     if (typeof contract[field] !== "string" || !contract[field]) {
-      fail(`${isHost ? "host" : "mobile"} contract for ${component} is missing ${field}`);
+      fail(
+        `${isHost ? "host" : "mobile"} contract for ${component} is missing ${field}`,
+      );
     }
   }
   if (!isHost && requireHost) {
-    fail(`component ${component} resolved as a mobile contract; host runtime requires a host contract`);
+    fail(
+      `component ${component} resolved as a mobile contract; host runtime requires a host contract`,
+    );
   }
   return {
     component_id: component,
@@ -90,7 +112,10 @@ function writeOutputs(contract) {
   appendFileSync(outputPath, `${lines}\n`);
 }
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split("/").pop())) {
+if (
+  process.argv[1] &&
+  import.meta.url.endsWith(process.argv[1].split("/").pop())
+) {
   const argv = process.argv;
   const value = (flag) => {
     const index = argv.indexOf(flag);
@@ -105,7 +130,9 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split("/").pop()
     });
     writeOutputs(contract);
   } catch (error) {
-    console.error(`::error::frontend contract resolution failed: ${error.message}`);
+    console.error(
+      `::error::frontend contract resolution failed: ${error.message}`,
+    );
     process.exit(1);
   }
 }
