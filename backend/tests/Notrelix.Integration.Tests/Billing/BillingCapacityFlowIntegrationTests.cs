@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Idempotency;
@@ -208,11 +207,20 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
         await SeedWorkspaceFeatureUsageAsync(accountId, workspaceId, currentUsage: 1, hardLimit: 2);
         await SeedEntitlementAsync(accountId, limit: 2);
+        await SeedLedgerDeltaAsync(accountId, workspaceId, 1, ownerId); // coherent ledger backing the reserved usage row
+
+        await using (var beforeVerify = _db.CreateContext(SystemTenant()))
+        {
+            (await beforeVerify.FeatureUsageLedger.CountAsync(l =>
+                    l.AccountId == accountId && l.WorkspaceId == workspaceId
+                    && l.FeatureCode == BillingCapabilityCode.AutomationRule))
+                .Should().Be(1, "the race starts with exactly one committed baseline usage effect");
+        }
 
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-        async Task<bool> TryConsumeAsync(string sourceResource)
+        async Task<(bool Won, Guid LogicalOperationId)> TryConsumeAsync(string sourceResource, Guid logicalOperationId)
         {
             var tenant = new FakeCurrentTenantContext();
             tenant.SetWorkspace(accountId, workspaceId, ownerId);
@@ -220,7 +228,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             var capacity = new BillingCapacityActions(ctx, new BillingCapabilityFactsProvider(ctx, clock.Object));
             var op = new BillingCapacityOperationIdentity(
                 accountId, workspaceId, BillingCapabilityCode.AutomationRule,
-                Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: sourceResource,
+                Amount: 1, LogicalOperationId: logicalOperationId, SourceResource: sourceResource,
                 ActorUserId: ownerId, OccurredAt: clock.Object.UtcNow);
             await using var tx = await ctx.Database.BeginTransactionAsync();
             try
@@ -228,12 +236,12 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
                 var result = await capacity.ConsumeAsync(new ConsumeCapacityRequest(op), CancellationToken.None);
                 await ctx.SaveChangesAsync();
                 await tx.CommitAsync();
-                return !result.AlreadyConsumed;
+                return (!result.AlreadyConsumed, logicalOperationId);
             }
             catch (DbUpdateConcurrencyException)
             {
                 // Lost the optimistic-concurrency race at SaveChanges.
-                return false;
+                return (false, logicalOperationId);
             }
             catch (BusinessRuleException)
             {
@@ -241,13 +249,18 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
                 // the winner's committed current usage and the Domain limit guard
                 // denied the new consumption. Both mechanisms are legitimate
                 // single-winner outcomes of the same race.
-                return false;
+                return (false, logicalOperationId);
             }
         }
 
-        var outcomes = await Task.WhenAll(TryConsumeAsync("slot-a"), TryConsumeAsync("slot-b"));
+        var contenderIds = new[] { Guid.CreateVersion7(), Guid.CreateVersion7() };
+        var outcomes = await Task.WhenAll(
+            TryConsumeAsync("slot-a", contenderIds[0]),
+            TryConsumeAsync("slot-b", contenderIds[1]));
 
-        outcomes.Count(o => o).Should().Be(1, "exactly one transaction wins the single remaining slot");
+        outcomes.Count(o => o.Won).Should().Be(1, "exactly one transaction wins the single remaining slot");
+        var winner = outcomes.Single(o => o.Won);
+        var loser = outcomes.Single(o => !o.Won);
         await using var verify = _db.CreateContext(SystemTenant());
         var usage = await verify.WorkspaceFeatureUsages
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
@@ -258,8 +271,14 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
                 && l.WorkspaceId == workspaceId
                 && l.FeatureCode == BillingCapabilityCode.AutomationRule)
             .ToListAsync();
-        ledger.Should().HaveCount(1, "the one consumed slot records exactly one ledger effect");
-        ledger.Single().Delta.Should().Be(1m);
+        ledger.Should().HaveCount(2, "the coherent baseline ledger plus exactly one new winning effect");
+        ledger.Should().ContainSingle(l =>
+                l.Delta == 1m && l.ReferenceResource == "historical-usage",
+            "the seeded baseline effect is untouched by the race");
+        ledger.Should().ContainSingle(l => l.LogicalOperationId == winner.LogicalOperationId,
+            "exactly one new ledger effect belongs to the winning contender");
+        ledger.Should().NotContain(l => l.LogicalOperationId == loser.LogicalOperationId,
+            "the losing contender never records a ledger effect");
     }
 
     [Fact(DisplayName = "TAC-BI-FLOW-02 - first-use bootstrap race, two transactions, both served")]
@@ -454,7 +473,6 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
     public async Task ReleaseAtFullCapacity_PreservesFiniteCeiling_AndRestoresHeadroom()
     {
         var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
-        await SeedWorkspaceFeatureUsageAsync(accountId, workspaceId, currentUsage: 2, hardLimit: 2);
         await SeedEntitlementAsync(accountId, limit: 2);
 
         var clock = new Mock<IDateTimeProvider>();
@@ -467,12 +485,38 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var capacity = new BillingCapacityActions(
             context,
             new BillingCapabilityFactsProvider(context, clock.Object));
-        var op = new BillingCapacityOperationIdentity(
-            accountId, workspaceId, BillingCapabilityCode.AutomationRule,
-            Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: "release-at-full",
-            ActorUserId: ownerId, OccurredAt: clock.Object.UtcNow);
 
-        var release = await capacity.ReleaseAsync(new ReleaseCapacityRequest(op), CancellationToken.None);
+        // Drive the two-unit grant to full capacity through the real production
+        // capacity action: two distinct consumes journal +1 each in the ledger.
+        var first = await capacity.ConsumeAsync(
+            new ConsumeCapacityRequest(CapacityOperation(accountId, workspaceId, ownerId, clock.Object, "release-slot-a")),
+            CancellationToken.None);
+        first.AlreadyConsumed.Should().BeFalse();
+        first.Remaining.Should().Be(1m, "the first consume leaves one headroom under the two-unit grant");
+        await context.SaveChangesAsync();
+
+        var second = await capacity.ConsumeAsync(
+            new ConsumeCapacityRequest(CapacityOperation(accountId, workspaceId, ownerId, clock.Object, "release-slot-b")),
+            CancellationToken.None);
+        second.AlreadyConsumed.Should().BeFalse();
+        second.Remaining.Should().Be(0m, "the second consume fills the two-unit grant exactly");
+        await context.SaveChangesAsync();
+
+        // The real capability fact is exhausted: the provider's ledger authority
+        // reports Used == Limit, so requesting another unit is unavailable. This is
+        // exactly the state the regressed branch must preserve — release must keep
+        // the finite ceiling instead of collapsing it to zero.
+        var exhausted = await new BillingCapabilityFactsProvider(context, clock.Object)
+            .GetCapabilityAsync(accountId, workspaceId, BillingCapabilityCode.AutomationRule, requestedAmount: 1, CancellationToken.None);
+        exhausted.Should().NotBeNull();
+        exhausted!.IsAvailable.Should().BeFalse("at full capacity the requested unit no longer fits the grant");
+        exhausted.Limit.Should().Be(2, "the finite grant stays the reported ceiling");
+        exhausted.Used.Should().Be(2, "the ledger authority reports both consumed units");
+        exhausted.Remaining.Should().Be(0);
+
+        var release = await capacity.ReleaseAsync(
+            new ReleaseCapacityRequest(CapacityOperation(accountId, workspaceId, ownerId, clock.Object, "release-at-full")),
+            CancellationToken.None);
 
         release.AlreadyReleased.Should().BeFalse("release at full capacity restores headroom, never zeroes the grant");
         release.Remaining.Should().Be(1m, "releasing one of the two granted units leaves one headroom");
@@ -484,10 +528,15 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
         usage.CurrentUsage.Should().Be(1m);
         usage.HardLimit.Should().Be(2m, "the finite grant remains the ceiling after the release");
-        (await verify.FeatureUsageLedger.CountAsync(l =>
-                l.AccountId == accountId && l.WorkspaceId == workspaceId
-                && l.FeatureCode == BillingCapabilityCode.AutomationRule && l.Delta == -1))
-            .Should().Be(1, "the release records exactly one -1 ledger effect");
+        usage.Version.Should().Be(4, "the reserved row advanced through the two consumes and the release");
+        var ledger = await verify.FeatureUsageLedger
+            .Where(l => l.AccountId == accountId
+                && l.WorkspaceId == workspaceId
+                && l.FeatureCode == BillingCapabilityCode.AutomationRule)
+            .ToListAsync();
+        ledger.Should().HaveCount(3, "two consumes (+1) and one release (-1) journal exactly three effects");
+        ledger.Count(l => l.Delta == 1m).Should().Be(2);
+        ledger.Count(l => l.Delta == -1m).Should().Be(1);
     }
 
     [Fact(DisplayName = "TAC-BI-FLOW-03 - a disabled rule still occupies its capacity slot")]
@@ -583,6 +632,17 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
     private static CreateAutomationRuleCommand CreateRuleCommand(Guid workspaceId, string name, string path) =>
         new(workspaceId, name, "ItemCreated", "Webhook", $$"""{"webhookPath":"{{path}}"}""");
+
+    private static BillingCapacityOperationIdentity CapacityOperation(
+        Guid accountId,
+        Guid workspaceId,
+        Guid actorUserId,
+        IDateTimeProvider clock,
+        string sourceResource)
+        => new(
+            accountId, workspaceId, BillingCapabilityCode.AutomationRule,
+            Amount: 1, LogicalOperationId: Guid.CreateVersion7(), SourceResource: sourceResource,
+            ActorUserId: actorUserId, OccurredAt: clock.UtcNow);
 
     private static async Task<Result<Guid>> SendCreateAsync(
         ServiceProvider provider,
