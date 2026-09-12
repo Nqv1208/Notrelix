@@ -32,4 +32,25 @@ class T(unittest.TestCase):
  def test_aggregate_rejects_missing_proof(self):
   with self.assertRaises(ValueError) as ctx:aggregate(self.tmp/'plan.json',self.evi,self.tmp/'summary.json')
   self.assertIn('missing proofs',str(ctx.exception))
+ def _frontend_plan(self):
+  self.plan=build_plan(root=ROOT,event_name='pull_request',ref='refs/pull/131/merge',source_sha='s'*40,explicit_changed=['frontend/apps/web/src/board.ts'])
+  (self.tmp/'plan.json').write_text(json.dumps(self.plan));return self.plan
+ def test_fe_evidence_01_full_baseline_frontend_proofs_aggregate(self):
+  plan=self._frontend_plan()
+  self.assertIn('frontend:gate',plan['ci_expected_proofs']);self.assertIn('ui:foundation',plan['ci_expected_proofs'])
+  for proof in plan['ci_expected_proofs']:self._record(proof)
+  out=aggregate(self.tmp/'plan.json',self.evi,self.tmp/'summary.json',expected_run_id=self.run)
+  self.assertEqual(out['status'],'passed');self.assertEqual(out['missing'],[]);self.assertEqual(out['unexpected'],[])
+ def test_fe_evidence_02_missing_ui_foundation_fails(self):
+  plan=self._frontend_plan()
+  for proof in plan['ci_expected_proofs']:
+   if proof!='ui:foundation':self._record(proof)
+  with self.assertRaises(ValueError) as ctx:aggregate(self.tmp/'plan.json',self.evi,self.tmp/'summary.json',expected_run_id=self.run)
+  self.assertIn("missing proofs: ['ui:foundation']",str(ctx.exception))
+ def test_fe_evidence_03_unexpected_frontend_proof_fails(self):
+  plan=self._frontend_plan()
+  for proof in plan['ci_expected_proofs']:self._record(proof)
+  self._record('frontend:legacy')
+  with self.assertRaises(ValueError) as ctx:aggregate(self.tmp/'plan.json',self.evi,self.tmp/'summary.json',expected_run_id=self.run)
+  self.assertIn("unexpected proofs: ['frontend:legacy']",str(ctx.exception))
 if __name__=='__main__':unittest.main()

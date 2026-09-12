@@ -187,6 +187,33 @@ def check(root: Path = ROOT) -> None:
         except ValueError:
             errors.append("frontend fallback profile JSON is malformed (SC-FE-002)")
 
+    # v1.1 closure guards (SC-FE-015..017): the profile is an executable contract —
+    # no dynamic matrix relay, bounded full-baseline topology, explicit step-output contracts.
+    if "application_build_matrix_json" in frontend or "host_runtime_matrix_json" in frontend:
+        errors.append("frontend workflow must not relay dynamic build/runtime matrices through select outputs (SC-FE-015)")
+    app_build_start = frontend.find("\n  application-build:\n")
+    if app_build_start < 0:
+        errors.append("frontend workflow must define the application-build semantic stage (SC-FE-016)")
+    else:
+        app_tail = frontend[app_build_start + 1:]
+        next_app_job = re.search(r"\n  [a-z][a-z0-9-]*:\n", app_tail)
+        app_block = app_tail[: next_app_job.start()] if next_app_job else app_tail
+        build_cells = re.findall(r"- \{component_id: ([a-z]+)\}", app_block)
+        if sorted(build_cells) != ["marketing", "mobile", "web"]:
+            errors.append(
+                f"application-build must schedule exactly the full-baseline build topology web/marketing/mobile, got {build_cells} (SC-FE-016)"
+            )
+    if host_runtime_start >= 0:
+        runtime_cells = re.findall(r"- \{component_id: ([a-z]+)\}", host_block)
+        if sorted(runtime_cells) != ["marketing", "web"]:
+            errors.append(
+                f"host-runtime must schedule exactly the full-baseline runtime topology web/marketing, got {runtime_cells} (SC-FE-016)"
+            )
+    if "resolve-frontend-ci-contract.mjs" not in frontend:
+        errors.append("frontend workflow must resolve planner contracts via resolve-frontend-ci-contract.mjs (SC-FE-017)")
+    if "steps.contract.outputs" not in frontend:
+        errors.append("frontend contract resolution must flow through explicit step outputs (SC-FE-017)")
+
     backend = (workflows / "backend-ci.yml").read_text(encoding="utf-8")
     critical_backend_fqns = (
         "Notrelix.Architecture.Tests.DomainPurity.DomainBoundedContextSignatureTests",

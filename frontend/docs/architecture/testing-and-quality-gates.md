@@ -20,7 +20,7 @@ evidence:
   - frontend/playwright.config.ts
   - frontend/playwright.mock.config.ts
   - frontend/playwright.storybook.config.ts
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/frontend-ci.yml
 review_on:
   - frontend-test-taxonomy-change
   - frontend-ci-gate-change
@@ -1068,7 +1068,7 @@ for design-system foundation.
 
 # 83. Application Build stage
 
-Web, marketing and mobile build through the bounded `application-build` matrix after `repository-integrity`. Web/marketing cells come from planner-provided host contracts (workspace, build script, artifact paths and names) and package exact host artifacts; the mobile cell proves buildability.
+Web, marketing and mobile build through the bounded `application-build` matrix after `repository-integrity`. The matrix is the fixed `frontend-full-baseline` build topology (`web` / `marketing` / `mobile` cells); it is not derived from affected components or relayed dynamically through `select` outputs. Each cell resolves its contract (workspace, build script, artifact paths and names) from planner-provided host/mobile matrices via `frontend/scripts/ci/resolve-frontend-ci-contract.mjs`, consumed as explicit step outputs; orchestrated runs use `workflow_call` inputs, standalone runs use the transition-only migration fallbacks. Web/marketing cells package exact host artifacts; the mobile cell proves buildability. Resolution fails closed on missing, duplicate, malformed or incomplete contracts.
 
 ---
 
@@ -1082,7 +1082,7 @@ Each supported host owns its packaging evidence.
 
 # 85. E2E dependency
 
-Current host runtime (`host-runtime` matrix) depends on `application-build` for the same component, downloads the exact artifact, and never rebuilds it.
+Current host runtime (`host-runtime` matrix) depends on `application-build` for the same component, downloads the exact artifact, and never rebuilds it. The runtime matrix is the fixed `frontend-full-baseline` host topology (`web` / `marketing`); each cell resolves its planner contract with the same resolver and refuses a non-host contract.
 
 The final gate depends on every required semantic stage.
 
@@ -1985,7 +1985,7 @@ frontend/tooling/testing/
 frontend/tooling/dependency-rules/
 frontend/playwright.config.ts
 frontend/playwright.storybook.config.ts
-.github/workflows/fe-ci.yml
+.github/workflows/frontend-ci.yml
 ```
 
 Current CI explicitly protects:

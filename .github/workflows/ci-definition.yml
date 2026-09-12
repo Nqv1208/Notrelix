@@ -116,6 +116,7 @@ jobs:
           node --check scripts/ci/restore-host-artifact.mjs
           node --check scripts/ci/check-pnpm-audit.mjs
           node --check scripts/ci/playwright-result-summary.mjs
+          node --check scripts/ci/resolve-frontend-ci-contract.mjs
       - name: Run host artifact roundtrip test
         run: |
           cd frontend
@@ -124,6 +125,10 @@ jobs:
         run: |
           cd frontend
           node scripts/ci/playwright-result-summary.test.mjs
+      - name: Run frontend contract resolver tests
+        run: |
+          cd frontend
+          node scripts/ci/resolve-frontend-ci-contract.test.mjs
 
   contracts:
     name: Delivery contracts validation

@@ -70,9 +70,11 @@ def build_plan(root=ROOT,event_name='workflow_dispatch',ref='',source_sha='',bas
     for cid in affected&front:caps.update(comps[cid].get('frontend',{}).get('capabilities',[]))
     release_candidate=event_name=='push' and ref==f"refs/heads/{c['repository']['release_branch']}" and release_required
     if release_candidate:packages=set(deployables);security.update({'backend','frontend'})
+    frontend_selected=bool((affected&front) or caps)
+    frontend_profile=dict(FRONTEND_FULL_BASELINE) if frontend_selected else None
     backend=[{'component_id':cid,'redis_image':image(imgs,'redis')['ref']} for cid in sorted(affected) if comps[cid].get('provider')=='backend']
-    hosts=[host_contract(cid,comps[cid]) for cid in sorted(affected) if comps[cid].get('provider')=='frontend-host']
-    mobiles=[mobile_contract(cid,comps[cid]) for cid in sorted(affected) if comps[cid].get('provider')=='mobile']
+    hosts=[host_contract(cid,comps[cid]) for cid in (frontend_profile['host_runtime'] if frontend_profile else [])]
+    mobiles=[mobile_contract(cid,comps[cid]) for cid in (frontend_profile['build'] if frontend_profile else []) if comps[cid].get('provider')=='mobile']
     containers=[container_contract(cid,comps[cid],imgs) for cid in sorted(packages)]
     deployable_contracts=[container_contract(cid,comps[cid],imgs) for cid in sorted(deployables)]
     filters=sorted({comps[cid]['workspace'] for cid in affected&front if comps[cid].get('workspace')});
@@ -84,6 +86,9 @@ def build_plan(root=ROOT,event_name='workflow_dispatch',ref='',source_sha='',bas
     for dom in sorted(security):expected+=resolve_proof_profile(p,b['security_domains'][dom])
     for cap in sorted(caps):
         if cap in b.get('capabilities',{}):expected+=resolve_proof_profile(p,b['capabilities'][cap])
+    if frontend_profile:
+        expected+=resolve_proof_profile(p,'frontend')
+        if frontend_profile.get('ui'):expected+=resolve_proof_profile(p,b['capabilities']['ui'])
     for cid in sorted(packages):expected+=resolve_proof_profile(p,b['packaging']['profile'],component_id=cid)
     if delivery_platform:expected+=resolve_proof_profile(p,b['delivery']['profile'])
     ci_expected=sorted(set(expected))
@@ -92,8 +97,6 @@ def build_plan(root=ROOT,event_name='workflow_dispatch',ref='',source_sha='',bas
     release_contract={'schema_change_policy':dep['schema_change_policy'],'rollback_after_schema_change':dep['rollback_after_schema_change'],'migration_component':migration_component,'migration_service':migration_service,'migration_commands':dep['migration_commands'],'stack_health_url':dep['stack_health_url'],'stack_smoke_urls':dep['stack_smoke_urls']}
     schema_change=any(any(matches(path,pat) for pat in dep['migration_paths']) for path in changed)
     mock=host_contract(p['mock']['artifact_component'],comps[p['mock']['artifact_component']])
-    frontend_selected=bool(hosts or mobiles or caps)
-    frontend_profile=dict(FRONTEND_FULL_BASELINE) if frontend_selected else None
     plan={'api_version':PLAN_API,'kind':'ExecutionPlan','source_sha':source_sha,'event':event_name,'ref':ref,'reason':reason,'change_range':change_range,'changed_files':changed,'full_ci':full,'affected_components':sorted(affected),'package_components':sorted(packages),'planes':sorted(planes),'infra_modes':sorted(infra_modes),'capabilities':sorted(caps),'security_domains':sorted(security),'delivery_platform_required':delivery_platform,'release_candidate':release_candidate,'schema_change':schema_change,'ci_expected_proofs':ci_expected,'release_expected_proofs':release_expected,'expected_proofs':ci_expected,'warnings':warnings,'renderer':renderer(imgs),'runtime_images':runtime_images(imgs),'deployment_containers':deployable_contracts,'release_contract':release_contract,'mock_artifact':mock,'frontend_filters':filters,'frontend_profile':frontend_profile,'matrices':{'backend':backend,'frontend_hosts':hosts,'mobile':mobiles,'containers':containers}}
     plan['plan_sha256']=hashlib.sha256(compact(plan).encode()).hexdigest();return plan
 def github_outputs(plan):
