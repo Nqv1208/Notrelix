@@ -387,7 +387,7 @@ jobs:
         with: {name: frontend-workspace-summary, path: artifacts/frontend/ci}
       - name: Require Node guarded suite success
         run: |
-          jq -e '.suites.node == "passed"' artifacts/frontend/ci/workspace-summary.json >/dev/null \
+          jq -e '.suites.node == "passed"' "$GITHUB_WORKSPACE/artifacts/frontend/ci/workspace-summary.json" >/dev/null \
             || { echo "::error::Node guarded suite did not pass in Workspace tests"; exit 1; }
       - name: Mock freeze contract
         run: pnpm mock:freeze:check
