@@ -1,12 +1,6 @@
 name: Backend CI
 
 on:
-  pull_request:
-    branches: [main, develop]
-  merge_group:
-  push:
-    branches: [main, develop]
-  workflow_dispatch:
   workflow_call:
     inputs:
       source_sha: {required: true, type: string}
@@ -52,11 +46,14 @@ jobs:
           set -euo pipefail
           base="$(jq -r '.base_sha // ""' <<<"$RANGE")"
           head="$(jq -r '.head_sha // ""' <<<"$RANGE")"
-          full_ci="$(jq -r '.full_ci // false' <<<"$RANGE")"
+          mode="$(jq -r '.mode // ""' <<<"$RANGE")"
           [[ -n "$base" ]] || base="$SOURCE_SHA"
           [[ -n "$head" ]] || head="$SOURCE_SHA"
+          # "known range" means a comparable base..head pair exists. A rule-
+          # escalated full_ci plan can still carry a real pair (e.g. push
+          # before..head); only a full/empty/self range is unverifiable.
           range_known=true
-          [[ "$full_ci" == true || -z "$base" || -z "$head" ]] && range_known=false
+          [[ "$mode" == "full" || -z "$base" || -z "$head" || "$base" == "$head" ]] && range_known=false
           {
             echo "backend=true"
             echo "base_sha=$base"
