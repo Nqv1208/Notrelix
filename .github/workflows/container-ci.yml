@@ -424,29 +424,36 @@ jobs:
         if: env.PUBLISH_MARKETING == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with: {name: release-image-marketing, path: images}
+      - name: Authenticate to GHCR
+        env: {GHCR_TOKEN: '${{ github.token }}'}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Publish exact validated bytes and record release-image manifests
+        id: publish
         run: |
           set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
           mkdir -p release-images
           publish(){
-            local component="$1" tar="$2" local_name="$3" image_name="$4" sbom_artifact="$5" tag digest
+            local component="$1" tar="$2" local_name="$3" image_name="$4" sbom_artifact="$5" var="$6" tag digest
             docker load -i "images/$tar"
-            tag="ghcr.io/${GITHUB_REPOSITORY_OWNER}/${image_name}:${SOURCE_SHA}"
+            tag="ghcr.io/${owner}/${image_name}:${SOURCE_SHA}"
             docker tag "notrelix-ci/${local_name}:${SOURCE_SHA}" "$tag"
             docker push "$tag" >/dev/null
             digest="$(docker image inspect "$tag" --format '{{range .RepoDigests}}{{println .}}{{end}}' | grep -o 'sha256:[a-f0-9]*' | head -1)"
             [[ -n "$digest" ]]
+            printf 'subject_name_%s=%s\n' "$var" "ghcr.io/${owner}/${image_name}" >> "$GITHUB_OUTPUT"
+            printf 'subject_digest_%s=%s\n' "$var" "$digest" >> "$GITHUB_OUTPUT"
             jq -n --arg component "$component" --arg source "$SOURCE_SHA" --arg plan "$PLAN_SHA256" \
-              --arg ref "ghcr.io/${GITHUB_REPOSITORY_OWNER}/${image_name}" --arg digest "$digest" \
+              --arg ref "ghcr.io/${owner}/${image_name}" --arg digest "$digest" \
               --arg sbom_artifact "$sbom_artifact" --arg created "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
               '{api_version:"delivery.notrelix.dev/v1",kind:"ReleaseImage",component_id:$component,source_sha:$source,plan_sha256:$plan,
                 image:{ref:$ref,digest:$digest},sbom:{format:"spdx-json",artifact:$sbom_artifact},
                 provenance:{attestation:"release-image-manifest-"+$component},created_at:$created}' \
               > "release-images/release-image-${component}.json"
           }
-          [[ "$PUBLISH_BACKEND" == true ]] && publish backend-api release-image-backend-api.tar backend "$BACKEND_IMAGE_NAME" container-backend-sbom
-          [[ "$PUBLISH_WEB" == true ]] && publish web release-image-web.tar web "$WEB_IMAGE_NAME" container-web-sbom
-          [[ "$PUBLISH_MARKETING" == true ]] && publish marketing release-image-marketing.tar marketing "$MARKETING_IMAGE_NAME" container-marketing-sbom
+          [[ "$PUBLISH_BACKEND" == true ]] && publish backend-api release-image-backend-api.tar backend "$BACKEND_IMAGE_NAME" container-backend-sbom backend
+          [[ "$PUBLISH_WEB" == true ]] && publish web release-image-web.tar web "$WEB_IMAGE_NAME" container-web-sbom web
+          [[ "$PUBLISH_MARKETING" == true ]] && publish marketing release-image-marketing.tar marketing "$MARKETING_IMAGE_NAME" container-marketing-sbom marketing
       - name: Attest backend release-image manifest
         if: env.PUBLISH_BACKEND == 'true'
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
@@ -459,6 +466,30 @@ jobs:
         if: env.PUBLISH_MARKETING == 'true'
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
         with: {subject-path: release-images/release-image-marketing.json}
+      - name: Attest backend application image provenance
+        if: env.PUBLISH_BACKEND == 'true'
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-name: ${{ steps.publish.outputs.subject_name_backend }}
+          subject-digest: ${{ steps.publish.outputs.subject_digest_backend }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Attest web application image provenance
+        if: env.PUBLISH_WEB == 'true'
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-name: ${{ steps.publish.outputs.subject_name_web }}
+          subject-digest: ${{ steps.publish.outputs.subject_digest_web }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Attest marketing application image provenance
+        if: env.PUBLISH_MARKETING == 'true'
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-name: ${{ steps.publish.outputs.subject_name_marketing }}
+          subject-digest: ${{ steps.publish.outputs.subject_digest_marketing }}
+          push-to-registry: true
+          create-storage-record: false
       - name: Upload release-image manifests
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

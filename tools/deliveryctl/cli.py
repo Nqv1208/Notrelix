@@ -7,6 +7,7 @@ from .planner import build_plan,github_outputs
 from .evidence import aggregate
 from .environment import resolve
 from .bundle import materialize
+from .release import build_candidate
 from .architecture import check as architecture_check
 from .visual import check as visual_check
 
@@ -23,6 +24,7 @@ def main():
     e=s.add_parser('evidence-aggregate');e.add_argument('--plan',type=Path,required=True);e.add_argument('--evidence-dir',type=Path,required=True);e.add_argument('--output',type=Path,required=True);e.add_argument('--run-id',default=os.getenv('GITHUB_RUN_ID',''))
     en=s.add_parser('environment');en.add_argument('--name',required=True);en.add_argument('--require-promotion-mode',default='');en.add_argument('--github-output',action='store_true')
     b=s.add_parser('bundle');b.add_argument('--manifest',type=Path,required=True);b.add_argument('--environment',type=Path,required=True);b.add_argument('--output-dir',type=Path,required=True)
+    r=s.add_parser('release-candidate');r.add_argument('--plan',type=Path,required=True);r.add_argument('--evidence-summary',type=Path,required=True);r.add_argument('--images-dir',type=Path,required=True);r.add_argument('--run-id',required=True);r.add_argument('--output',type=Path,required=True)
     v=s.add_parser('visual');v.add_argument('--check',action='store_true')
     a=p.parse_args()
     try:
@@ -36,6 +38,8 @@ def main():
             if a.require_promotion_mode and c['promotion_mode']!=a.require_promotion_mode:raise ValueError('promotion mode mismatch')
             gout({'contract_json':compact(c)}) if a.github_output else print(json.dumps(c,indent=2))
         elif a.cmd=='bundle':materialize(json.loads(a.manifest.read_text()),json.loads(a.environment.read_text()),a.output_dir);print(a.output_dir)
+        elif a.cmd=='release-candidate':
+            validate_authorities(ROOT);candidate=build_candidate(json.loads(a.plan.read_text()),json.loads(a.evidence_summary.read_text()),a.images_dir,a.run_id);a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(candidate,indent=2,sort_keys=True)+'\n');print(a.output)
         elif a.cmd=='visual':visual_check(ROOT);print('visual baseline contract PASS')
         return 0
     except Exception as e:print(f'deliveryctl: {e}',file=sys.stderr);return 1
