@@ -126,7 +126,7 @@ public class PublicSemanticContractArchitectureTests
     [Fact]
     public void Gate_Detects_InfrastructureTypeInsidePublicContract()
     {
-        ClassifyPurity("Notrelix.Infrastructure.Billing.DatabaseFeatureGateChecker", ownProducer: null)
+        ClassifyPurity("Notrelix.Infrastructure.Billing.DatabaseSubscriptionChecker", ownProducer: null)
             .Should().NotBeNull("Infrastructure types must not leak into Public contracts");
     }
 

@@ -11,6 +11,7 @@ using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
+using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
@@ -156,6 +157,11 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new BillingCapabilityFact(IsAvailable: true, Limit: 100, Used: 0, Remaining: 100));
 
+        var capacityMock = new Mock<IBillingCapacityActions>();
+        capacityMock
+            .Setup(c => c.ConsumeAsync(It.IsAny<ConsumeCapacityRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConsumeCapacityResult(AlreadyConsumed: false, Remaining: 99));
+
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddOptions();
@@ -170,6 +176,7 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
         services.AddSingleton(clockMock.Object);
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(billingMock.Object);
+        services.AddSingleton(capacityMock.Object);
 
         services.AddSingleton<IRequestDescriptorRegistry>(
             RequestDescriptorRegistry.Create(typeof(CreateAutomationRuleCommand).Assembly));

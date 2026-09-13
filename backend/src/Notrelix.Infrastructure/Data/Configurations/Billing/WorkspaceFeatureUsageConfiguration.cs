@@ -27,6 +27,9 @@ public class WorkspaceFeatureUsageConfiguration : IEntityTypeConfiguration<Works
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
+        builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.Feature })
+            .HasDatabaseName("ux_workspace_feature_usages_scope")
+            .IsUnique();
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_workspace_feature_usages_workspace_id");
     }
 }

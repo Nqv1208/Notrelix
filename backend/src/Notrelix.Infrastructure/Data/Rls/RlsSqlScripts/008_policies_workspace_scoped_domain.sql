@@ -79,4 +79,5 @@ SELECT ops.apply_scoped_business_policies('billing', 'entitlements', true);
 SELECT ops.apply_scoped_business_policies('billing', 'usage_metrics', true);
 SELECT ops.apply_scoped_business_policies('billing', 'usage_metric_history', true);
 SELECT ops.apply_scoped_business_policies('billing', 'feature_usage_ledger', true);
+SELECT ops.apply_scoped_business_policies('billing', 'workspace_feature_usages', true);
 SELECT ops.apply_worker_internal_policies('billing', 'billing_events', true);

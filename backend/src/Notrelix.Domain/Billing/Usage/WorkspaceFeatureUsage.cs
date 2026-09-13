@@ -99,6 +99,42 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new FeatureUsageReleasedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, occurredAt));
     }
 
+    /// <summary>
+    /// Reconciles the effective hard/soft limits with the current capability
+    /// grant. A downgrade below current usage is intentionally allowed: committed
+    /// usage is retained (transient over-limit) and new consumption is denied by
+    /// <see cref="Consume"/>, so a limit shrink never deletes history. An
+    /// unlimited grant clears the numeric ceiling. A reconfigure to the same
+    /// limits is a semantic no-op: no version increment and no domain event.
+    /// </summary>
+    public void ReconfigureLimits(
+        decimal? hardLimit,
+        decimal? softLimit,
+        Guid actorUserId,
+        DateTimeOffset occurredAt)
+    {
+        if (hardLimit < 0)
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_HardLimitCannotBeNegative, "Hard limit cannot be negative.");
+
+        if (softLimit < 0)
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_SoftLimitCannotBeNegative, "Soft limit cannot be negative.");
+
+        if (softLimit.HasValue && hardLimit.HasValue && softLimit > hardLimit)
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_SoftLimitCannotExceedHard, "Soft limit cannot exceed hard limit.");
+
+        if (HardLimit == hardLimit && SoftLimit == softLimit)
+            return;
+
+        var pending = PrepareAuditUpdate(actorUserId, occurredAt);
+        HardLimit = hardLimit;
+        SoftLimit = softLimit;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+
+        RaiseDomainEvent(new WorkspaceFeatureUsageLimitsReconfiguredDomainEvent(
+            AccountId, WorkspaceId, Feature, hardLimit, softLimit, occurredAt));
+    }
+
     public void Reset(DateTimeOffset resetAt, Guid actorUserId)
     {
         var pending = PrepareAuditUpdate(actorUserId, resetAt);

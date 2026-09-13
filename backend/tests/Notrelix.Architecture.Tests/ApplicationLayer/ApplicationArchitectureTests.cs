@@ -568,14 +568,6 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void DatabaseFeatureGateChecker_Exists()
-    {
-        var infraPath = Path.Combine(Path.GetDirectoryName(GetApplicationPath())!, "Notrelix.Infrastructure", "Billing");
-        var files = Directory.GetFiles(infraPath, "DatabaseFeatureGateChecker.cs");
-        files.Should().NotBeEmpty("DatabaseFeatureGateChecker must exist for production feature gate checks");
-    }
-
-    [Fact]
     public void RlsSessionContext_ThrowsWhenSetSessionContextDisabledForNonSystem()
     {
         var path = Path.Combine(
