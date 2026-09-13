@@ -196,6 +196,14 @@ jobs:
     name: Consolidate CI evidence
     needs: [plan, backend, frontend, container, infra, docs, delivery-platform, security]
     if: always()
+    # id-token/attestations writes exist solely so the release-candidate
+    # assembly below can attest the candidate; the step is gated on
+    # release_candidate (push to main only), so PR runs never attest.
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -204,6 +212,12 @@ jobs:
         run: |
           echo "::error::execution plan failed (result=${{ needs.plan.result }})"
           exit 1
+      - name: Require container publication for release candidate
+        if: needs.plan.outputs.release_candidate == 'true'
+        run: |
+          set -euo pipefail
+          require(){ local name="$1" result="$2"; [[ "$result" == success ]] || { echo "::error::$name=$result"; exit 1; }; }
+          require container "${{ needs.container.result }}"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -230,6 +244,33 @@ jobs:
         with:
           name: ci-evidence-summary
           path: ./.artifacts/ci/ci-evidence-summary.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Download release-image manifests
+        if: needs.plan.outputs.release_candidate == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-image-manifests
+          path: ./.artifacts/ci/release-images
+      - name: Assemble release candidate
+        if: needs.plan.outputs.release_candidate == 'true'
+        run: |
+          python3 -m tools.deliveryctl release-candidate \
+            --plan ./.artifacts/ci/ci-execution-plan.json \
+            --evidence-summary ./.artifacts/ci/ci-evidence-summary.json \
+            --images-dir ./.artifacts/ci/release-images \
+            --run-id "$GITHUB_RUN_ID" \
+            --output ./.artifacts/ci/release-candidate.json
+      - name: Attest release candidate
+        if: needs.plan.outputs.release_candidate == 'true'
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with: {subject-path: ./.artifacts/ci/release-candidate.json}
+      - name: Upload release candidate artifact
+        if: needs.plan.outputs.release_candidate == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-candidate
+          path: ./.artifacts/ci/release-candidate.json
           if-no-files-found: error
           retention-days: 30
 
