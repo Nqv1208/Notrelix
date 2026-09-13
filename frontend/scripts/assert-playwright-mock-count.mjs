@@ -1,12 +1,17 @@
-#!/usr/bin/env node
 /**
  * assert-playwright-mock-count.mjs
  *
- * MDF-10 compliance gate: Parse Playwright JSON results and assert that:
- *   - executed == expected
- *   - passed == expected
+ * MDF-10 compliance gate (thin CLI adapter over the shared parser —
+ * frontend-ci-process-reorganization v1.1 DEC-FE-012: this file contains no
+ * traversal implementation of its own).
+ *
+ * Gates on the captured Playwright JSON report:
  *   - failed == 0
- *   - skipped == 0
+ *   - executed logical tests > 0 (zero-execution fails closed)
+ *   - (optionally) executed == expected and passed == expected
+ *
+ * Skipped specs are reported but not gated: mock scenario cells intentionally
+ * skip the default-only accessibility spec outside the `default` state.
  *
  * Usage:
  *   node scripts/assert-playwright-mock-count.mjs [path-to-results.json] [expected-count]
@@ -17,6 +22,7 @@
 
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
+import { summarizePlaywrightReport } from "./ci/playwright-result-summary.mjs";
 
 const resultsPath = process.argv[2] ?? "test-results/mock-e2e-results.json";
 const expectedCount = parseInt(process.argv[3] ?? "0", 10);
@@ -33,80 +39,45 @@ if (!existsSync(resolvedPath)) {
   process.exit(1);
 }
 
-let results;
+let summary;
 try {
-  results = JSON.parse(readFileSync(resolvedPath, "utf8"));
-} catch (e) {
-  console.error(
-    `[assert-playwright-mock-count] ERROR: Could not parse results file: ${resolvedPath}`,
+  summary = summarizePlaywrightReport(
+    JSON.parse(readFileSync(resolvedPath, "utf8")),
   );
-  console.error(e.message);
+} catch (error) {
+  console.error(`[assert-playwright-mock-count] GATE FAILED: ${error.message}`);
   process.exit(1);
 }
 
-// Playwright JSON reporter format
-const stats = results.stats ?? {};
-const suites = results.suites ?? [];
-
-// Count tests across all suites recursively
-function countTests(suites) {
-  let total = 0;
-  let passed = 0;
-  let failed = 0;
-  let skipped = 0;
-  let flaky = 0;
-
-  function walk(suite) {
-    for (const test of suite.tests ?? []) {
-      total++;
-      const outcomes = test.results ?? [];
-      const lastOutcome = outcomes[outcomes.length - 1];
-      const status = lastOutcome?.status ?? "unknown";
-      if (status === "passed") passed++;
-      else if (status === "failed" || status === "timedOut") failed++;
-      else if (status === "skipped") skipped++;
-      else if (status === "flaky") flaky++;
-    }
-    for (const child of suite.suites ?? []) {
-      walk(child);
-    }
-  }
-
-  for (const s of suites) {
-    walk(s);
-  }
-  return { total, passed, failed, skipped, flaky };
-}
-
-const counts = countTests(suites);
-
 console.log(`[assert-playwright-mock-count] Mock E2E Results:`);
-console.log(`  Total    : ${counts.total}`);
-console.log(`  Passed   : ${counts.passed}`);
-console.log(`  Failed   : ${counts.failed}`);
-console.log(`  Skipped  : ${counts.skipped}`);
-console.log(`  Flaky    : ${counts.flaky}`);
+console.log(`  Logical tests : ${summary.logical_tests}`);
+console.log(`  Executed      : ${summary.executed}`);
+console.log(`  Passed        : ${summary.passed}`);
+console.log(`  Failed        : ${summary.failed}`);
+console.log(`  Skipped       : ${summary.skipped}`);
 
 const errors = [];
 
-if (counts.failed !== 0) {
-  errors.push(`  FAIL: expected failed=0, got ${counts.failed}`);
+if (summary.failed !== 0) {
+  errors.push(`  FAIL: expected failed=0, got ${summary.failed}`);
 }
 
-if (counts.skipped !== 0) {
+if (summary.executed === 0) {
   errors.push(
-    `  FAIL: expected skipped=0, got ${counts.skipped} (MDF-10: no required E2E skips allowed)`,
+    `  FAIL: zero executed logical tests (MDF-10: an inner run must execute the mock suite)`,
   );
 }
 
-if (expectedCount > 0 && counts.total !== expectedCount) {
+if (expectedCount > 0 && summary.executed !== expectedCount) {
   errors.push(
-    `  FAIL: expected total=${expectedCount}, got ${counts.total} (MDF-10: executed == expected)`,
+    `  FAIL: expected executed=${expectedCount}, got ${summary.executed} (MDF-10: executed == expected)`,
   );
 }
 
-if (expectedCount > 0 && counts.passed !== expectedCount) {
-  errors.push(`  FAIL: expected passed=${expectedCount}, got ${counts.passed}`);
+if (expectedCount > 0 && summary.passed !== expectedCount) {
+  errors.push(
+    `  FAIL: expected passed=${expectedCount}, got ${summary.passed}`,
+  );
 }
 
 if (errors.length > 0) {

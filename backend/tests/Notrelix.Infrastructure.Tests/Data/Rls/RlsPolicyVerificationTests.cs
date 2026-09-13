@@ -8,7 +8,7 @@ namespace Notrelix.Infrastructure.Tests.Data.Rls;
 public class RlsPolicyVerificationTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+        .WithImage("postgres:16.15-bookworm")
         .WithDatabase("notrelix_rls_test")
         .WithUsername("notrelix")
         .WithPassword("notrelix_test")

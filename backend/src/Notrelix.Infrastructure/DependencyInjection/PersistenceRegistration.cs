@@ -80,6 +80,13 @@ public static class PersistenceRegistration
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        // Integrations-owned physical secret persistence (M8): the opaque
+        // reference authority stays with IntegrationSecretVersion; this store
+        // owns the encrypted blob rows.
+        services.AddScoped<
+            global::Notrelix.Application.Features.Integrations.Public.Secrets.IIntegrationSecretStore,
+            global::Notrelix.Infrastructure.Security.Secrets.DataProtectionIntegrationSecretStore>();
         services.AddScoped<IBillingDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IReportingDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         // Projection

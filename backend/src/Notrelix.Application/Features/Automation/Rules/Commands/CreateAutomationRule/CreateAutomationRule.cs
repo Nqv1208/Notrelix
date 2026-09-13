@@ -5,12 +5,13 @@ using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
 
+[IdempotencyOperation("automation.rules.create.v1")]
 public record CreateAutomationRuleCommand(
     Guid WorkspaceId,
     string Name,
     string TriggerEvent,
     string ActionType,
-    string Configuration) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    string Configuration) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), WorkspaceId, WorkspaceId);

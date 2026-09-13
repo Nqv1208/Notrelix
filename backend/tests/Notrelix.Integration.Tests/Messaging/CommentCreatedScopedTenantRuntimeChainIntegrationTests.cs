@@ -620,42 +620,44 @@ public sealed class CommentCreatedScopedTenantRuntimeChainIntegrationTests : IAs
             return _inner.SaveChangesAsync(cancellationToken);
         }
     }
+}
 
-    /// <summary>
-    /// Full-delegating decorator around the production dedup store that records
-    /// claim attempts per (eventId, consumer) so the duplicate-delivery proof can
-    /// observe that a redelivery actually reached the filter — no sleeping, no
-    /// hoping. The static registry is per-test-class keyed by identity and the
-    /// decorator never changes the store's own decisions.
-    /// </summary>
-    internal sealed class RecordingDeduplicationStore(IMessageDeduplicationStore inner) : IMessageDeduplicationStore
+/// <summary>
+/// Full-delegating decorator around the production dedup store that records
+/// claim attempts per (eventId, consumer) so the duplicate-delivery proof can
+/// observe that a redelivery actually reached the filter — no sleeping, no
+/// hoping. The static registry is per-test-class keyed by identity and the
+/// decorator never changes the store's own decisions.
+/// </summary>
+internal sealed class RecordingDeduplicationStore(IMessageDeduplicationStore inner) : IMessageDeduplicationStore
+{
+    private static readonly ConcurrentDictionary<(Guid EventId, string ConsumerName), int> Claims = new();
+
+    public static int ClaimAttempts(Guid eventId, string consumerName) =>
+        Claims.TryGetValue((eventId, consumerName), out var count) ? count : 0;
+
+    public static string AllAttemptsSnapshot() =>
+        string.Join(",", Claims.Select(kvp => $"{kvp.Key.EventId:N}/{kvp.Key.ConsumerName}={kvp.Value}"));
+
+    public static void Reset() => Claims.Clear();
+
+    public Task<bool> IsProcessedAsync(Guid messageId, string consumerName, CancellationToken cancellationToken) =>
+        inner.IsProcessedAsync(messageId, consumerName, cancellationToken);
+
+    public async Task<bool> TryClaimProcessingAsync(
+        Guid messageId,
+        string consumerName,
+        string messageName,
+        int messageVersion,
+        Guid? sourceEventId,
+        Guid? workspaceId,
+        CancellationToken cancellationToken)
     {
-        private static readonly ConcurrentDictionary<(Guid EventId, string ConsumerName), int> Claims = new();
-
-        public static int ClaimAttempts(Guid eventId, string consumerName) =>
-            Claims.TryGetValue((eventId, consumerName), out var count) ? count : 0;
-
-        public static void Reset() => Claims.Clear();
-
-        public Task<bool> IsProcessedAsync(Guid messageId, string consumerName, CancellationToken cancellationToken) =>
-            inner.IsProcessedAsync(messageId, consumerName, cancellationToken);
-
-        public async Task<bool> TryClaimProcessingAsync(
-            Guid messageId,
-            string consumerName,
-            string messageName,
-            int messageVersion,
-            Guid? sourceEventId,
-            Guid? workspaceId,
-            CancellationToken cancellationToken)
-        {
-            Claims.AddOrUpdate((messageId, consumerName), 1, (_, count) => count + 1);
-            return await inner.TryClaimProcessingAsync(
-                messageId, consumerName, messageName, messageVersion, sourceEventId, workspaceId, cancellationToken);
-        }
-
-        public void MarkSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
-            inner.MarkSucceeded(messageId, consumerName, processedAt);
+        Claims.AddOrUpdate((messageId, consumerName), 1, (_, count) => count + 1);
+        return await inner.TryClaimProcessingAsync(
+            messageId, consumerName, messageName, messageVersion, sourceEventId, workspaceId, cancellationToken);
     }
 
+    public void MarkSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
+        inner.MarkSucceeded(messageId, consumerName, processedAt);
 }

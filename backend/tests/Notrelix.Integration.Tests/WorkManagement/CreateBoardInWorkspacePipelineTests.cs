@@ -14,6 +14,7 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Public.PageAuthorization;
 using Notrelix.Application.Features.Governance.Abstractions;
+using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 using Notrelix.Application.Features.Workspaces.Abstractions;
@@ -169,6 +170,7 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
         services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         services.AddSingleton<IOptions<RlsOptions>>(Options.Create(new RlsOptions
         {

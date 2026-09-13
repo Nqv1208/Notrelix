@@ -7,6 +7,7 @@ using Notrelix.API.Endpoints.Collaboration.Comments;
 using Notrelix.API.Endpoints.Accounts;
 using Notrelix.API.Endpoints.Documents.Blocks;
 using Notrelix.API.Endpoints.Documents.Pages;
+using Notrelix.API.Endpoints.Integrations.Calendar;
 using Notrelix.API.Endpoints.Governance.ResourcePermissions;
 using Notrelix.API.Endpoints.Governance.ShareLinks;
 using Notrelix.API.Endpoints.Health;
@@ -61,6 +62,9 @@ public static class EndpointRouteBuilderExtensions
         // Document
         app.AddPageEndpoints();
         app.AddBlockEndpoints();
+
+        // Integrations - Calendar
+        app.AddCalendarEndpoints();
 
         // WorkManagement - Boards
         app.RegisterWorkManagementBoardEndpoints();

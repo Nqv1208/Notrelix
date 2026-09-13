@@ -190,6 +190,8 @@ public partial class ApplicationDbContext
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
     public DbSet<InboundWebhookEvent> InboundWebhookEvents => Set<InboundWebhookEvent>();
+    public DbSet<global::Notrelix.Infrastructure.Data.Integrations.InboundWebhookReceipt> InboundWebhookReceipts => Set<global::Notrelix.Infrastructure.Data.Integrations.InboundWebhookReceipt>();
+    public DbSet<global::Notrelix.Infrastructure.Data.Integrations.IntegrationSecretBlob> IntegrationSecretBlobs => Set<global::Notrelix.Infrastructure.Data.Integrations.IntegrationSecretBlob>();
 
     // Automation
     public DbSet<AutomationRule> AutomationRules => Set<AutomationRule>();

@@ -146,6 +146,10 @@ public static class DependencyInjection
             // Idempotency contract: required header, 409/503 responses and the
             // replay header, only for endpoints marked with WithIdempotencyKey()
             options.OperationFilter<IdempotencyOperationFilter>();
+
+            // Endpoints declaring their canonical success code (201/204) must
+            // not also export the default inferred 200 response.
+            options.OperationFilter<CanonicalSuccessOperationFilter>();
         });
         return services;
     }

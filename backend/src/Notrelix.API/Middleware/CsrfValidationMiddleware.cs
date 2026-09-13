@@ -38,6 +38,17 @@ public sealed class CsrfValidationMiddleware
             return;
         }
 
+        // Route-declared signature-authenticated provider callbacks carry no
+        // ambient browser session (authenticity comes from the HMAC signature
+        // and the inbound call is anonymous by contract), so the double-submit
+        // threat model of ADR-005 does not apply to them. The exemption is
+        // declared per endpoint metadata — never a blanket skip.
+        if (context.GetEndpoint()?.Metadata.GetMetadata<SignatureAuthenticatedWebhookAttribute>() is not null)
+        {
+            await _next(context);
+            return;
+        }
+
         if (_classifier.IsBrowserCsrfApplicable(context.Request)
             && !_protector.Validate(context))
         {
@@ -47,6 +58,15 @@ public sealed class CsrfValidationMiddleware
 
         await _next(context);
     }
+}
+
+/// <summary>
+/// Endpoint metadata marker for provider webhook routes authenticated by
+/// request signature rather than by ambient browser credentials.
+/// </summary>
+[System.AttributeUsage(System.AttributeTargets.Method)]
+public sealed class SignatureAuthenticatedWebhookAttribute : Attribute
+{
 }
 
 public sealed class CsrfOptions

@@ -74,18 +74,9 @@ public class CommandMarkerArchitectureTests
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingTransactionalRequest = new()
     {
-        ["HandleCalendarWebhookCommand"] = new("HandleCalendarWebhookCommand", AllowlistClassification.MigrationPending,
-            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
-            "Implement the bounded feature with IWriteRequest when product work resumes"),
         ["ForgotPasswordCommand"] = new("ForgotPasswordCommand", AllowlistClassification.PublicCommand,
             "ForgotPassword is a global unauthenticated endpoint — no workspace context exists yet",
             "Keep as-is; public command does not need transactional behavior"),
-        ["DisconnectCalendarCommand"] = new("DisconnectCalendarCommand", AllowlistClassification.MigrationPending,
-            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
-            "Implement the bounded feature with IWriteRequest when product work resumes"),
-        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.MigrationPending,
-            "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
-            "Implement the bounded feature with IWriteRequest when product work resumes"),
         ["TriggerCalendarSyncCommand"] = new("TriggerCalendarSyncCommand", AllowlistClassification.MigrationPending,
             "Calendar/Documents feature stub outside pipeline migration scope; handler is an unimplemented product feature",
             "Implement the bounded feature with IWriteRequest when product work resumes"),
@@ -109,10 +100,6 @@ public class CommandMarkerArchitectureTests
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingWorkspaceRequest = new()
     {
-
-        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.MigrationPending,
-            "Calendar feature stub declared IGlobalRequest/INoDataRequest; no workspace authority exists yet",
-            "Re-scope to workspace authority and add IWorkspaceRequest together with the implementation"),
 
         ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
             "System command triggered by user registration — no workspace context exists yet (WorkspaceId => null)",

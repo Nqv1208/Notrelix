@@ -244,10 +244,12 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
 
     private async Task<RuleGraph> SeedRuleAsync()
     {
-        var accountId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
+        var user = Domain.Identity.Users.User.Create($"n8n-{Guid.NewGuid():N}@example.com", "N8N User", "hashed", Now, true);
+        var account = Domain.Accounts.Accounts.Account.Create("N8N Account", $"n8n-{Guid.NewGuid():N}", Domain.Accounts.Accounts.AccountType.Team, ownerId, Now);
+        var accountId = account.Id;
         var workspace = Workspace.Create(accountId, ownerId, "Automation WS", $"n8n-{Guid.NewGuid():N}", Now);
-        var member = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
+        var member = WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
         var board = Board.Create(accountId, workspace.Id, ownerId, "Board", null, Now);
         var group = BoardGroup.Create(accountId, workspace.Id, board.Id, "Todo", Color.Create("#808080"), FractionalIndex.Initial(), ownerId, Now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, group.Id, "Task", FractionalIndex.Initial(), ownerId, Now);
@@ -255,11 +257,8 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         var config = AutomationConfiguration.Create(
             AutomationTriggerDefinition.Create("ItemAssigned"),
             AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}"""));
-        var rule = AutomationRule.Create(Guid.NewGuid(), workspace.Id, "Card assigned alert", config, ownerId, Now);
+        var rule = AutomationRule.Create(accountId, workspace.Id, "Card assigned alert", config, ownerId, Now);
         rule.Enable(ownerId, Now);
-
-        var user = Domain.Identity.Users.User.Create($"n8n-{Guid.NewGuid():N}@example.com", "N8N User", "hashed", Now, true);
-        var account = Domain.Accounts.Accounts.Account.Create("N8N Account", $"n8n-{Guid.NewGuid():N}", Domain.Accounts.Accounts.AccountType.Team, ownerId, Now);
 
         await using var seed = _db.CreateContext(SystemTenant());
         seed.Users.Add(user);
