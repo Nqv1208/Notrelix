@@ -3,6 +3,8 @@ description: Emit one execution-plane proof record without invoking the delivery
 inputs:
   proof_id: {required: true, description: Canonical proof identifier}
   component_id: {required: false, default: repository}
+  plan_sha256: {required: true, description: plan_sha256 of the ExecutionPlan this proof substantiates}
+  source_sha: {required: false, default: "", description: Optional explicit source identity; asserts equality with GITHUB_SHA when set}
   metadata: {required: false, default: ""}
 runs:
   using: composite
@@ -12,12 +14,16 @@ runs:
       env:
         PROOF_ID: ${{ inputs.proof_id }}
         COMPONENT_ID: ${{ inputs.component_id }}
+        PLAN_SHA256: ${{ inputs.plan_sha256 }}
+        SOURCE_SHA: ${{ inputs.source_sha }}
         METADATA: ${{ inputs.metadata }}
       run: |
         set -euo pipefail
         node "$GITHUB_ACTION_PATH/emit.mjs" \
           --proof-id "$PROOF_ID" \
           --component-id "$COMPONENT_ID" \
+          --plan-sha256 "$PLAN_SHA256" \
+          ${SOURCE_SHA:+--source-sha "$SOURCE_SHA"} \
           ${METADATA:+--metadata "$METADATA"} \
           --out "$GITHUB_WORKSPACE/artifacts/ci/evidence"
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

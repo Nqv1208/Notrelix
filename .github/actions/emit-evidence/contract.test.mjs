@@ -17,6 +17,8 @@ const res = spawnSync(
     "ui:foundation",
     "--component-id",
     "frontend-ui",
+    "--plan-sha256",
+    "d".repeat(64),
     "--metadata",
     "published=true",
     "--out",
@@ -41,6 +43,12 @@ if (res.status !== 0) {
 const record = JSON.parse(
   readFileSync(join(out, "ui-foundation--frontend-ui.json"), "utf8"),
 );
+
+if (record.plan_sha256 !== "d".repeat(64)) {
+  console.error("FAIL: record does not carry emitted plan_sha256");
+  rmSync(tmp, { recursive: true, force: true });
+  process.exit(1);
+}
 
 const py = spawnSync(
   "python3",

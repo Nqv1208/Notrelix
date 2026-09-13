@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       ci_run_id: {description: Successful main-push Notrelix CI run containing release-candidate, required: true, type: string}
-permissions: {contents: read, actions: read, attestations: read}
+permissions: {contents: read, actions: read, packages: read, attestations: read}
 concurrency: {group: notrelix-release-staging, cancel-in-progress: false}
 jobs:
   candidate:
@@ -21,6 +21,11 @@ jobs:
       manifest_json: ${{ steps.load.outputs.manifest_json }}
       environment_json: ${{ steps.environment.outputs.contract_json }}
     steps:
+      # gh attestation verify requires a git repository to run against;
+      # the load step below verifies the candidate before the release-sha
+      # checkout, so establish .git first.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {fetch-depth: 1}
       - id: load
         env:
           GH_TOKEN: ${{ github.token }}

@@ -537,10 +537,10 @@ Current source uses families such as:
 mcr.microsoft.com/dotnet/sdk:9.0
 mcr.microsoft.com/dotnet/aspnet:9.0
 node:22-alpine
-nginx:alpine / nginx:1.27-alpine
-postgres:16-alpine
+nginx:alpine / nginx:1.29-alpine-slim
+postgres:16.15-bookworm
 redis:7-alpine
-rabbitmq:3.13-management-alpine
+rabbitmq:4.3-management
 ```
 
 ---

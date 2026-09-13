@@ -40,6 +40,11 @@ const componentId = arg("component-id") ?? "repository";
 const metadataInput = arg("metadata") ?? "";
 const outDir = arg("out");
 if (!outDir) throw new Error("missing --out");
+const planSha256 = arg("plan-sha256");
+if (!planSha256) throw new Error("missing --plan-sha256");
+const sourceSha = arg("source-sha");
+if (sourceSha !== undefined && sourceSha !== (process.env.GITHUB_SHA ?? ""))
+  throw new Error("source-sha does not match GITHUB_SHA");
 
 let metadata = {};
 if (metadataInput !== "") {
@@ -58,6 +63,7 @@ const body = sortDeep({
   component_id: componentId,
   status: "passed",
   source_sha: process.env.GITHUB_SHA ?? "",
+  plan_sha256: planSha256,
   run_id: process.env.GITHUB_RUN_ID ?? "",
   run_attempt: process.env.GITHUB_RUN_ATTEMPT ?? "",
   workflow: process.env.GITHUB_WORKFLOW ?? "",
