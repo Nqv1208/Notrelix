@@ -143,10 +143,25 @@ jobs:
         env:
           BASE_SHA: ${{ needs.changes.outputs.base_sha }}
           HEAD_SHA: ${{ needs.changes.outputs.head_sha }}
-          RANGE_FLAGS: ${{ needs.changes.outputs.range_known == 'true' && '' || '--full-range' }} ${{ needs.changes.outputs.schema_change == 'true' && '--schema-change' || '' }}
+          RANGE_KNOWN: ${{ needs.changes.outputs.range_known }}
+          SCHEMA_CHANGE: ${{ needs.changes.outputs.schema_change }}
         run: |
-          read -r -a flags <<<"$RANGE_FLAGS"
-          python3 scripts/ci/check-migration-discipline.py --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" "${flags[@]}"
+          set -euo pipefail
+
+          flags=()
+
+          if [[ "$RANGE_KNOWN" != "true" ]]; then
+            flags+=(--full-range)
+          fi
+
+          if [[ "$SCHEMA_CHANGE" == "true" ]]; then
+            flags+=(--schema-change)
+          fi
+
+          python3 scripts/ci/check-migration-discipline.py \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA" \
+            ${flags[@]+"${flags[@]}"}
       - name: Guard dependency graph against SQLite
         working-directory: backend
         run: |
