@@ -410,7 +410,7 @@ jobs:
           result(){ jq -r --arg k "$1" '.[$k].result' <<<"$RESULTS"; }
           for pair in "PUBLISH_BACKEND backend-image" "PUBLISH_WEB web-image" "PUBLISH_MARKETING marketing-image"; do
             read -r flag job <<<"$pair"
-            [[ "$flag" == true ]] && require "$job" "$(result "$job")"
+            [[ "${!flag}" == true ]] && require "$job" "$(result "$job")"
           done
       - name: Download validated backend image
         if: env.PUBLISH_BACKEND == 'true'
