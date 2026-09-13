@@ -434,8 +434,9 @@ jobs:
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           mkdir -p release-images
           publish(){
-            local component="$1" tar="$2" local_name="$3" image_name="$4" sbom_artifact="$5" var="$6" tag digest
+            local component="$1" tar="$2" local_name="$3" image_name="$4" sbom_artifact="$5" var="$6" tag digest provenance
             docker load -i "images/$tar"
+            provenance="release-image-manifest-${component}"
             tag="ghcr.io/${owner}/${image_name}:${SOURCE_SHA}"
             docker tag "notrelix-ci/${local_name}:${SOURCE_SHA}" "$tag"
             docker push "$tag" >/dev/null
@@ -446,9 +447,10 @@ jobs:
             jq -n --arg component "$component" --arg source "$SOURCE_SHA" --arg plan "$PLAN_SHA256" \
               --arg ref "ghcr.io/${owner}/${image_name}" --arg digest "$digest" \
               --arg sbom_artifact "$sbom_artifact" --arg created "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --arg provenance "$provenance" \
               '{api_version:"delivery.notrelix.dev/v1",kind:"ReleaseImage",component_id:$component,source_sha:$source,plan_sha256:$plan,
                 image:{ref:$ref,digest:$digest},sbom:{format:"spdx-json",artifact:$sbom_artifact},
-                provenance:{attestation:"release-image-manifest-"+$component},created_at:$created}' \
+                provenance:{attestation:$provenance},created_at:$created}' \
               > "release-images/release-image-${component}.json"
           }
           [[ "$PUBLISH_BACKEND" == true ]] && publish backend-api release-image-backend-api.tar backend "$BACKEND_IMAGE_NAME" container-backend-sbom backend
