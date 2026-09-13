@@ -189,7 +189,7 @@ class MigrationDisciplineTests(unittest.TestCase):
     untouched.parent.joinpath(untouched.name).write_text('CREATE TABLE t ();')
     result = self._run('--base-sha', base, '--head-sha', head)
     self.assertEqual(result.returncode, 0, result.stderr)
-    self.assertEqual(json.loads(result.stdout)['added'], ['backend/src/Notrelix.Infrastructure/Migrations/20260102000000_AddBoard.cs'])
+    self.assertEqual(json.loads(result.stdout)['added_migrations'], ['backend/src/Notrelix.Infrastructure/Migrations/20260102000000_AddBoard.cs'])
 
   def test_mig_005_push_before_head_range_compares(self):
     self._migration('20260101000000_Base.cs')

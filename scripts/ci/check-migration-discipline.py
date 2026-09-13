@@ -2,10 +2,20 @@
 """Enforce append-only EF Core migration history for an explicit change range.
 
 Consumes the resolved change range (explicit SHAs supplied by the caller; no
-GitHub event interpretation happens here). New migration files may be added;
-modifying, deleting or renaming an existing migration file fails. Unknown or
-full ranges never silently skip: with a known schema change they hard-fail,
-otherwise conservative chain validation runs at HEAD.
+GitHub event interpretation happens here). The Migrations directory holds two
+artifact kinds with different lifecycles:
+
+- Migration history entries: timestamped <index>_<Name>.cs plus their
+  <index>_<Name>.Designer.cs. These are immutable history: adding is allowed;
+  modifying, renaming, copying or deleting an existing entry fails.
+- ApplicationDbContextModelSnapshot.cs: EF's cumulative current model state.
+  EF rewrites it whenever a migration is appended, so a snapshot modification
+  or addition is allowed only when the same range also adds at least one
+  migration definition; a snapshot-only edit fails. Deleting, renaming or
+  type-changing the snapshot always fails.
+
+Unknown or full ranges never silently skip: with a known schema change they
+hard-fail, otherwise conservative chain validation runs at HEAD.
 """
 from __future__ import annotations
 
@@ -14,9 +24,24 @@ import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 MIGRATION_PATHS = ("backend/**/Migrations/**", "backend/**/migrations/**")
 MIGRATION_FILE_RE = re.compile(r"backend/.*/[Mm]igrations/.*")
+SNAPSHOT_SUFFIX = "ModelSnapshot.cs"
+DESIGNER_SUFFIX = ".Designer.cs"
+
+
+def is_snapshot(path: str) -> bool:
+    return Path(path).name.endswith(SNAPSHOT_SUFFIX)
+
+
+def is_designer(path: str) -> bool:
+    return path.endswith(DESIGNER_SUFFIX)
+
+
+def is_migration_definition(path: str) -> bool:
+    return path.endswith(".cs") and not is_designer(path) and not is_snapshot(path)
 
 
 def sh(*args: str) -> str:
@@ -39,7 +64,7 @@ def head_chain_duplicates() -> list[str]:
     seen: dict[str, str] = {}
     duplicates: list[str] = []
     for path in files:
-        if not MIGRATION_FILE_RE.fullmatch(path) or path.lower().endswith(".designer.cs"):
+        if not MIGRATION_FILE_RE.fullmatch(path) or is_designer(path) or is_snapshot(path):
             continue
         name = path.rsplit("/", 1)[-1]
         index = name.split("_", 1)[0]
@@ -49,27 +74,56 @@ def head_chain_duplicates() -> list[str]:
     return duplicates
 
 
-def range_violations(base: str, head: str) -> tuple[list[str], list[str], list[str]]:
+def range_changes(base: str, head: str) -> dict[str, list[str]]:
     args = ["git", "diff", "--name-status", base, head, "--", *MIGRATION_PATHS]
     try:
         output = sh(*args)
     except RuntimeError as error:
         raise RuntimeError(f"cannot diff migration range {base}..{head}: {error}") from error
-    added: list[str] = []
-    modified: list[str] = []
-    deleted: list[str] = []
+    changes: dict[str, list[str]] = {
+        "added_migrations": [],
+        "modified_history": [],
+        "deleted_history": [],
+        "snapshot_added": [],
+        "snapshot_modified": [],
+        "snapshot_removed": [],
+    }
     for line in output.splitlines():
         if not line.strip():
             continue
-        status, _, path = line.partition("\t")
-        status = status.strip()
-        if status.startswith("A") or status.startswith("C"):
-            added.append(path)
-        elif status.startswith("D"):
-            deleted.append(path)
-        elif status.startswith(("M", "R", "T")):
-            modified.append(path)
-    return added, modified, deleted
+        parts = line.split("\t")
+        status = parts[0].strip()
+        if status.startswith(("R", "C")):
+            old_path, new_path = parts[1], parts[2]
+        else:
+            old_path = new_path = parts[1]
+        if status.startswith("D"):
+            bucket = "snapshot_removed" if is_snapshot(old_path) else "deleted_history"
+            changes[bucket].append(old_path)
+        elif status.startswith("R"):
+            # A rename rewrites the history location (or relocates the snapshot);
+            # treat either side as a removal+addition pair of the same artifact.
+            if is_snapshot(old_path) or is_snapshot(new_path):
+                changes["snapshot_removed"].append(f"{old_path} -> {new_path}")
+            else:
+                changes["modified_history"].append(f"{old_path} -> {new_path}")
+        elif status.startswith("C"):
+            # Copying a history entry duplicates it (chain check would also flag
+            # the index); copying the snapshot is not an EF append workflow.
+            if is_snapshot(old_path) or is_snapshot(new_path):
+                changes["snapshot_removed"].append(f"{old_path} -> {new_path}")
+            else:
+                changes["modified_history"].append(f"{old_path} -> {new_path}")
+        elif status.startswith("T"):
+            bucket = "snapshot_removed" if is_snapshot(old_path) else "modified_history"
+            changes[bucket].append(old_path)
+        elif status.startswith("A"):
+            bucket = "snapshot_added" if is_snapshot(new_path) else "added_migrations"
+            changes[bucket].append(new_path)
+        else:
+            bucket = "snapshot_modified" if is_snapshot(old_path) else "modified_history"
+            changes[bucket].append(old_path)
+    return changes
 
 
 def main() -> int:
@@ -101,17 +155,35 @@ def main() -> int:
                 "::warning::[migration-discipline] unknown/full change range; conservative chain validation only",
                 file=sys.stderr,
             )
-            print(json.dumps({"compared": False, "conservative": True, "ok": True, "added": [], "modified": [], "deleted": []}))
+            print(json.dumps({"compared": False, "conservative": True, "ok": True, "added_migrations": [], "snapshot_modified": [], "violations": []}))
             return 0
 
-        added, modified, deleted = range_violations(args.base_sha, args.head_sha)
-        violations = modified + deleted
+        changes = range_changes(args.base_sha, args.head_sha)
+        violations: list[str] = []
+        for path in changes["modified_history"]:
+            violations.append(f"migration history is append-only; changed: {path}")
+        for path in changes["deleted_history"]:
+            violations.append(f"migration history is append-only; deleted: {path}")
+        for path in changes["snapshot_removed"]:
+            violations.append(f"model snapshot cannot be deleted, renamed or type-changed: {path}")
+        if not changes["added_migrations"]:
+            for path in changes["snapshot_modified"]:
+                violations.append(f"model snapshot modified without appending a migration: {path}")
+            for path in changes["snapshot_added"]:
+                violations.append(f"model snapshot added without appending a migration: {path}")
+        result = {
+            "compared": True,
+            "ok": not violations,
+            "added_migrations": sorted(changes["added_migrations"]),
+            "snapshot_modified": sorted(changes["snapshot_modified"]),
+            "violations": sorted(violations),
+        }
         if violations:
-            for path in violations:
-                print(f"::error::[migration-discipline] migration history is append-only; changed: {path}", file=sys.stderr)
-            print(json.dumps({"compared": True, "ok": False, "added": added, "modified": modified, "deleted": deleted}))
+            for violation in result["violations"]:
+                print(f"::error::[migration-discipline] {violation}", file=sys.stderr)
+            print(json.dumps(result))
             return 1
-        print(json.dumps({"compared": True, "ok": True, "added": sorted(added), "modified": [], "deleted": []}))
+        print(json.dumps(result))
         return 0
     except RuntimeError as error:
         print(f"::error::[migration-discipline] {error}", file=sys.stderr)
@@ -120,4 +192,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())
