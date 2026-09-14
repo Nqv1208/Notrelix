@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Events.WorkManagement;
+using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Analytics.Placements.Services;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
-using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 using Notrelix.Integration.Tests.Containers;
@@ -163,7 +164,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         context.ChangeTracker.Clear();
 
         // Rebuild from the producer-owned snapshot contract.
-        var source = new WorkItemProjectionSourceAdapter(_db.CreateContext(SystemTenant()));
+        var source = new WorkItemProjectionSourceService(_db.CreateContext(SystemTenant()));
         var snapshot = await source.GetWorkspacePlacementsAsync(workspace.Id, CancellationToken.None);
         await service.RebuildWorkspaceAsync(workspace.Id, snapshot, CancellationToken.None);
         await context.SaveChangesAsync();
@@ -204,6 +205,232 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         row.GroupId.Should().Be(groupId);
     }
 
+    [Fact]
+    public async Task ArchivedConsumer_ProjectsFactThroughConsumerPath()
+    {
+        var accountId = Guid.CreateVersion7();
+        var workspaceId = Guid.CreateVersion7();
+        var itemId = Guid.CreateVersion7();
+        var boardId = Guid.CreateVersion7();
+        var groupId = Guid.CreateVersion7();
+
+        var (context, service) = CreateService();
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, Now.UtcTicks, Now, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var consumer = new BoardItemArchivedPlacementConsumer(
+            service, NullLogger<BoardItemArchivedPlacementConsumer>.Instance);
+        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemArchivedIntegrationEvent>>();
+        var archivedAt = Now.AddMinutes(1);
+        consumeContext.SetupGet(c => c.Message).Returns(
+            new BoardItemArchivedIntegrationEvent(
+                EventId: Guid.CreateVersion7(),
+                AccountId: accountId,
+                ItemId: itemId,
+                BoardId: boardId,
+                WorkspaceId: workspaceId,
+                CorrelationId: Guid.CreateVersion7(),
+                OccurredAt: archivedAt));
+        consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
+
+        await consumer.Consume(consumeContext.Object);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
+        row.IsArchived.Should().BeTrue("the archived fact must mark the projection row without deleting placement history");
+        row.GroupId.Should().Be(groupId);
+    }
+
+    [Fact]
+    public async Task Rebuild_EmptySource_ClearsProjectionRows()
+    {
+        var accountId = Guid.CreateVersion7();
+        var workspaceId = Guid.CreateVersion7();
+        var itemId = Guid.CreateVersion7();
+        var boardId = Guid.CreateVersion7();
+        var groupId = Guid.CreateVersion7();
+
+        var (context, service) = CreateService();
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, Now.UtcTicks, Now, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        await service.RebuildWorkspaceAsync(workspaceId, [], CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        (await context.WorkspaceWorkItemPlacements.AnyAsync(p => p.WorkspaceId == workspaceId))
+            .Should().BeFalse("a rebuild from an empty source must remove rows for items no longer in the producer truth");
+    }
+
+    [Fact]
+    public async Task Rebuild_MultipleItems_ReconcilesAllAndRemovesMissing()
+    {
+        var accountId = Guid.CreateVersion7();
+        var workspaceId = Guid.CreateVersion7();
+        var boardId = Guid.CreateVersion7();
+        var keptItem = Guid.CreateVersion7();
+        var movedItem = Guid.CreateVersion7();
+        var removedItem = Guid.CreateVersion7();
+        var groupA = Guid.CreateVersion7();
+        var groupB = Guid.CreateVersion7();
+
+        var (context, service) = CreateService();
+        await service.ApplyPlacementAsync(accountId, workspaceId, keptItem, boardId, groupA, false, Now.UtcTicks, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, movedItem, boardId, groupA, false, Now.UtcTicks, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, removedItem, boardId, groupA, false, Now.UtcTicks, Now, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var snapshot = new List<WorkItemPlacementSnapshot>
+        {
+            new(accountId, keptItem, boardId, groupA, false, Now.UtcTicks, Now),
+            new(accountId, movedItem, boardId, groupB, false, Now.AddMinutes(1).UtcTicks, Now.AddMinutes(1)),
+        };
+
+        await service.RebuildWorkspaceAsync(workspaceId, snapshot, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var rows = await context.WorkspaceWorkItemPlacements
+            .Where(p => p.WorkspaceId == workspaceId)
+            .ToListAsync();
+        rows.Should().HaveCount(2, "the removed item is no longer in the producer snapshot and must be dropped");
+        rows.Single(p => p.ItemId == keptItem).GroupId.Should().Be(groupA);
+        rows.Single(p => p.ItemId == movedItem).GroupId.Should().Be(groupB);
+    }
+
+    [Fact]
+    public async Task Rebuild_ArchivedItem_MatchesProducerTruth()
+    {
+        var accountId = Guid.CreateVersion7();
+        var workspaceId = Guid.CreateVersion7();
+        var itemId = Guid.CreateVersion7();
+        var boardId = Guid.CreateVersion7();
+        var groupId = Guid.CreateVersion7();
+
+        var (context, service) = CreateService();
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, Now.UtcTicks, Now, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var snapshot = new List<WorkItemPlacementSnapshot>
+        {
+            new(accountId, itemId, boardId, groupId, true, Now.AddMinutes(1).UtcTicks, Now.AddMinutes(1)),
+        };
+
+        await service.RebuildWorkspaceAsync(workspaceId, snapshot, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
+        row.IsArchived.Should().BeTrue("the rebuild must carry the archived producer truth");
+    }
+
+    [Fact]
+    public async Task Rebuild_Duplicate_IsIdempotent()
+    {
+        var accountId = Guid.CreateVersion7();
+        var workspaceId = Guid.CreateVersion7();
+        var boardId = Guid.CreateVersion7();
+        var items = Enumerable.Range(0, 3)
+            .Select(_ => Guid.CreateVersion7())
+            .ToArray();
+        var groupId = Guid.CreateVersion7();
+
+        var (context, service) = CreateService();
+        await service.ApplyPlacementAsync(accountId, workspaceId, items[0], boardId, groupId, false, Now.UtcTicks, Now, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var snapshot = items
+            .Select((item, i) =>
+                new WorkItemPlacementSnapshot(accountId, item, boardId, groupId, false, Now.UtcTicks + i, Now))
+            .ToList();
+
+        await service.RebuildWorkspaceAsync(workspaceId, snapshot, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        await service.RebuildWorkspaceAsync(workspaceId, snapshot, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var rows = await context.WorkspaceWorkItemPlacements
+            .Where(p => p.WorkspaceId == workspaceId)
+            .ToListAsync();
+        rows.Should().HaveCount(items.Length, "repeated rebuild of the same snapshot must not duplicate rows");
+    }
+
+    [Fact]
+    public async Task Rebuild_WorkspaceIsolation_LeavesOtherWorkspaceUntouched()
+    {
+        var accountId = Guid.CreateVersion7();
+        var workspaceA = Guid.CreateVersion7();
+        var workspaceB = Guid.CreateVersion7();
+        var itemA = Guid.CreateVersion7();
+        var itemB = Guid.CreateVersion7();
+        var boardId = Guid.CreateVersion7();
+        var groupA = Guid.CreateVersion7();
+        var groupB = Guid.CreateVersion7();
+
+        var (context, service) = CreateService();
+        await service.ApplyPlacementAsync(accountId, workspaceA, itemA, boardId, groupA, false, Now.UtcTicks, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceB, itemB, boardId, groupB, false, Now.UtcTicks, Now, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        await service.RebuildWorkspaceAsync(workspaceA, [], CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        (await context.WorkspaceWorkItemPlacements.AnyAsync(p => p.WorkspaceId == workspaceA))
+            .Should().BeFalse();
+        var rowB = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceB && p.ItemId == itemB);
+        rowB.GroupId.Should().Be(groupB, "a rebuild scoped to workspace A must not touch workspace B");
+    }
+
+    [Fact]
+    public async Task CreatedConsumer_ProjectsFactThroughConsumerPath()
+    {
+        var accountId = Guid.CreateVersion7();
+        var workspaceId = Guid.CreateVersion7();
+        var itemId = Guid.CreateVersion7();
+        var boardId = Guid.CreateVersion7();
+        var groupId = Guid.CreateVersion7();
+
+        var (context, service) = CreateService();
+        var projectionSourceMock = new Mock<IWorkItemProjectionSourceAdapter>();
+        projectionSourceMock
+            .Setup(s => s.GetItemPlacementAsync(workspaceId, itemId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkItemPlacementSnapshot(
+                accountId, itemId, boardId, groupId, IsArchived: false,
+                Revision: Now.UtcTicks, LastOccurredAt: Now));
+        var consumer = new BoardItemCreatedPlacementConsumer(
+            service, projectionSourceMock.Object, NullLogger<BoardItemCreatedPlacementConsumer>.Instance);
+        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemCreatedIntegrationEvent>>();
+        consumeContext.SetupGet(c => c.Message).Returns(
+            new BoardItemCreatedIntegrationEvent(
+                EventId: Guid.CreateVersion7(),
+                AccountId: accountId,
+                ItemId: itemId,
+                BoardId: boardId,
+                WorkspaceId: workspaceId,
+                Title: "Task",
+                CorrelationId: Guid.CreateVersion7(),
+                OccurredAt: Now));
+        consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
+
+        await consumer.Consume(consumeContext.Object);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
+        row.GroupId.Should().Be(groupId);
+    }
+
     /// <summary>
     /// TAC-WM-010 / WM-FLOW-05 chain proof: Analytics consumer → producer Public
     /// ItemPlacement contract → WorkManagement-owned implementation → Work
@@ -234,7 +461,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         // The producer-owned snapshot flows through the published contract,
         // implemented against the Work producer's own DbContext.
         IWorkItemProjectionSource producerSource =
-            new WorkItemProjectionSourceAdapter(_db.CreateContext(SystemTenant()));
+            new WorkItemProjectionSourceService(_db.CreateContext(SystemTenant()));
         var snapshot = await producerSource.GetWorkspacePlacementsAsync(workspace.Id, CancellationToken.None);
 
         snapshot.Should().ContainSingle(s => s.ItemId == item.Id);
