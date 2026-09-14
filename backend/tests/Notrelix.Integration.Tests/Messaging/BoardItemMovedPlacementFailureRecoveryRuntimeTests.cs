@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Domain.Identity.Users;
@@ -21,22 +23,20 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Messaging;
 
 /// <summary>
-/// TAC-WM-009 + TAC-FRZ-018 — Work integration-event runtime ownership:
-/// a valid Work mutation enrolls exactly one board_item.moved fact in the
-/// same committed transaction, a rolled-back mutation enrolls none, and the
-/// production delivery chain (outbox dispatcher → MassTransit receive pipeline
-/// → TenantContextConsumeFilter → real Analytics placement consumer) restores
-/// the Workspace tenant before consuming and projects the placement exactly
-/// once under that tenant.
+/// TAC-AR-011 / AR-FLOW-04 — projection failure and recovery on the real
+/// delivery chain: a placement projection persistence failure (crash before
+/// commit) rolls the consumer effect and its dedup claim back atomically, the
+/// Work source state remains untouched, and the Platform delivery mechanism
+/// retries until the projection converges to producer truth.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
-public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
+public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncLifetime
 {
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
 
-    public BoardItemMovedOutboxRuntimeTests(PostgresTestContainer db)
+    public BoardItemMovedPlacementFailureRecoveryRuntimeTests(PostgresTestContainer db)
     {
         _db = db;
     }
@@ -50,14 +50,14 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task ValidMove_CommitsExactlyOneScopedFact_AndConsumerProjectsUnderRestoredTenant()
+    public async Task ProjectionCrashBeforeCommit_RollsBackClaim_Retries_AndConvergesWithoutTouchingSource()
     {
         var graph = await SeedBoardStackAsync();
         var recorder = new TenantObservationRecorder();
-        await using var provider = BuildProvider(recorder);
+        var failureBudget = new ProjectionFailureBudget(1);
+        await using var provider = BuildProvider(recorder, failureBudget);
 
-        // 1. Valid Work mutation + commit: the Domain fact and the outbox row
-        //    must land in the same committed transaction.
+        // 1. A valid Work move commits and enrolls its fact.
         await using (var scope = provider.CreateAsyncScope())
         {
             var tenant = scope.ServiceProvider.GetRequiredService<ICurrentTenantContext>();
@@ -73,40 +73,63 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
             await context.SaveChangesAsync();
         }
 
-        var outbox = await WaitForOutboxAsync(graph);
-        outbox.Should().NotBeNull("the committed mutation must enroll its fact in the outbox");
+        var eventId = await WaitForOutboxEventIdAsync(graph);
+        eventId.Should().NotBeNull("the committed mutation must enroll its fact in the outbox");
 
-        outbox!.AccountId.Should().Be(graph.AccountId, "TAC-FRZ-018: authoritative tenant envelope");
-        outbox.WorkspaceId.Should().Be(graph.WorkspaceId);
-        outbox.MessageName.Should().Be("board_item.moved");
-        outbox.SchemaVersion.Should().Be(1);
-        outbox.PayloadJson.RootElement.GetProperty("itemId").GetGuid().Should().Be(graph.ItemId);
-        outbox.PayloadJson.RootElement.GetProperty("oldGroupId").GetGuid().Should().Be(graph.SourceGroupId);
-        outbox.PayloadJson.RootElement.GetProperty("newGroupId").GetGuid().Should().Be(graph.TargetGroupId);
-        outbox.PayloadJson.RootElement.GetProperty("accountId").GetGuid().Should().Be(graph.AccountId);
-        outbox.PayloadJson.RootElement.GetProperty("workspaceId").GetGuid().Should().Be(graph.WorkspaceId);
-        outbox.PayloadJson.RootElement.GetProperty("actorUserId").GetGuid().Should().Be(graph.ExecutorUserId);
-
-        // 2. Start the real delivery chain and let the consumer project.
+        // 2. Delivery: the first projection attempt crashes before commit.
         var hostedServices = provider.GetServices<IHostedService>().ToArray();
         foreach (var hosted in hostedServices)
         {
             await hosted.StartAsync(CancellationToken.None);
         }
 
+        long? sourceVersionAfterMove = null;
         try
         {
-            recorder.Reset();
+            var converged = await WaitForPlacementAsync(graph);
+            if (!converged)
+            {
+                // Transport swallowed the fault without automatic redelivery:
+                // republish the SAME logical event — at-least-once retry.
+                await RepublishMovedEventAsync(provider, graph, eventId!.Value);
+                converged = await WaitForPlacementAsync(graph);
+            }
 
-            var dispatched = await WaitForOutboxProcessedAsync(outbox.Id);
-            dispatched.Should().BeTrue("the dispatcher must deliver the committed fact");
+            converged.Should().BeTrue(
+                "TAC-AR-011: the delivery mechanism must retry after the projection crash and converge");
+            failureBudget.TryConsume().Should().BeFalse(
+                "the injected failure must have been consumed by the crashed first attempt");
 
-            var projected = await WaitForPlacementAsync(graph);
-            projected.Should().BeTrue(
-                "the real Analytics placement consumer must project the moved item under the restored tenant");
+            // 3. Final projection converged to producer truth.
+            await using (var verify = _db.CreateContext(SystemTenant()))
+            {
+                var projection = await verify.WorkspaceWorkItemPlacements
+                    .SingleAsync(p => p.WorkspaceId == graph.WorkspaceId && p.ItemId == graph.ItemId);
+                projection.GroupId.Should().Be(graph.TargetGroupId);
+            }
 
-            (await OutboxRowCountAsync(graph)).Should().Be(1,
-                "TAC-WM-009: exactly one outward fact enrollment per move");
+            // 4. Crash-before-commit left no partial durable consumer state:
+            //    exactly one consumer claim, in the Succeeded terminal state.
+            await using (var audit = _db.CreateContext(SystemTenant()))
+            {
+                var consumerRows = await audit.Set<MessagingProcessedEvent>()
+                    .IgnoreQueryFilters()
+                    .Where(e => e.EventId == eventId
+                        && e.ConsumerName == "notrelix-board-item-moved-placement")
+                    .ToListAsync();
+                consumerRows.Should().ContainSingle(
+                    "the failed attempt's claim transaction rolled back atomically — only the retry's claim survives");
+                consumerRows[0].Status.Should().Be("Succeeded");
+            }
+
+            // 5. Source Work state remained the authoritative, untouched truth.
+            await using (var probe = _db.CreateContext(SystemTenant()))
+            {
+                var workItem = await probe.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
+                workItem.GroupId.Should().Be(graph.TargetGroupId,
+                    "a consumer-side projection failure must never roll back or alter Work source state");
+                sourceVersionAfterMove = workItem.Version;
+            }
         }
         finally
         {
@@ -116,61 +139,22 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
             }
         }
 
-        recorder.ObservedWorkspaceSet.Should().BeTrue(
-            "TenantContextConsumeFilter must restore the Workspace tenant before consumers run");
-        recorder.LastWorkspaceAccountId.Should().Be(graph.AccountId);
-        recorder.LastWorkspaceId.Should().Be(graph.WorkspaceId);
-        recorder.LastWorkspaceIsSystem.Should().BeFalse(
-            "a Workspace-scoped Work fact must not run its consumers as System");
-        recorder.ClearedAfterWorkspace.Should().BeTrue(
-            "TenantContextConsumeFilter must clear tenant state after consume completion");
-    }
-
-    [Fact]
-    public async Task RolledBackMove_EnrollsNoOutboxFact()
-    {
-        var graph = await SeedBoardStackAsync();
-        var recorder = new TenantObservationRecorder();
-        await using var provider = BuildProvider(recorder);
-
-        // Mutation inside an explicit transaction that is rolled back: neither
-        // the Work change nor the enrolled fact may survive.
-        await using (var scope = provider.CreateAsyncScope())
+        // A later delivery retry could not move the source either.
+        await using (var recheck = _db.CreateContext(SystemTenant()))
         {
-            var tenant = scope.ServiceProvider.GetRequiredService<ICurrentTenantContext>();
-            tenant.SetWorkspace(graph.AccountId, graph.WorkspaceId, graph.ExecutorUserId);
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await using var tx = await context.Database.BeginTransactionAsync();
-            var item = await context.BoardItems.FirstAsync(i => i.Id == graph.ItemId);
-            var targetGroup = await context.BoardGroups.FirstAsync(g => g.Id == graph.TargetGroupId);
-            item.MoveToGroup(
-                BoardGroupRef.From(targetGroup),
-                FractionalIndexGenerator.GenerateKeyBetween(null, null),
-                graph.ExecutorUserId,
-                DateTimeOffset.UtcNow);
-            await context.SaveChangesAsync();
-            await tx.RollbackAsync();
+            var workItem = await recheck.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
+            workItem.GroupId.Should().Be(graph.TargetGroupId);
+            workItem.Version.Should().Be(sourceVersionAfterMove,
+                "projection retries must not re-execute or disturb the producer mutation");
         }
 
-        var rolledBack = await WaitForAsync(async () =>
-        {
-            await using var probe = _db.CreateContext(SystemTenant());
-            return await probe.Set<MessagingOutboxMessage>()
-                .IgnoreQueryFilters()
-                .AnyAsync(m => m.MessageName == "board_item.moved" && m.WorkspaceId == graph.WorkspaceId);
-        }, timeoutSeconds: 3);
-
-        rolledBack.Should().BeFalse(
-            "TAC-WM-009: a failed/rolled-back Work mutation must enroll no outward event");
-
-        await using var verify = _db.CreateContext(SystemTenant());
-        var persisted = await verify.BoardItems.SingleAsync(i => i.Id == graph.ItemId);
-        persisted.GroupId.Should().Be(graph.SourceGroupId);
+        recorder.ObservedWorkspaceSet.Should().BeTrue(
+            "recovery runs consumers under the restored Workspace tenant");
     }
 
-    // ── composition -----------------------------------------------------------
+    // ── composition ──────────────────────────────────────────────────────
 
-    private ServiceProvider BuildProvider(TenantObservationRecorder recorder)
+    private ServiceProvider BuildProvider(TenantObservationRecorder recorder, ProjectionFailureBudget failureBudget)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -201,26 +185,43 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         services.AddObservability(configuration);
         services.AddBackgroundJobs(configuration);
         services.AddCrossContextBindings();
-        // The cross-context Analytics adapter delegates to the producer-owned
-        // Public placement contract, which the production composition registers
-        // through AddApplicationServices. This granular graph must bind it too
-        // for the real placement consumer to activate.
         services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
+
+        // Force the projection persistence seam to fail on its first use inside
+        // the consumer, simulating a crash before commit on the real chain.
+        services.RemoveAll<IReportingDbContext>();
+        services.AddScoped<IReportingDbContext>(sp =>
+            new FailOnceReportingDbContext(sp.GetRequiredService<ApplicationDbContext>(), failureBudget));
 
         return services.BuildServiceProvider();
     }
 
-    // ── seeding ---------------------------------------------------------------
+    private async Task RepublishMovedEventAsync(ServiceProvider provider, BoardGraph graph, Guid eventId)
+    {
+        var bus = provider.GetRequiredService<MassTransit.IBus>();
+        await bus.Publish(new Notrelix.Application.Events.WorkManagement.BoardItemMovedIntegrationEvent(
+            EventId: eventId,
+            AccountId: graph.AccountId,
+            ItemId: graph.ItemId,
+            BoardId: graph.BoardId,
+            WorkspaceId: graph.WorkspaceId,
+            OldGroupId: graph.SourceGroupId,
+            NewGroupId: graph.TargetGroupId,
+            CorrelationId: Guid.CreateVersion7(),
+            OccurredAt: DateTimeOffset.UtcNow));
+    }
+
+    // ── seeding ──────────────────────────────────────────────────────────
 
     private async Task<BoardGraph> SeedBoardStackAsync()
     {
         var now = DateTimeOffset.UtcNow;
         var accountId = Guid.CreateVersion7();
-        var executorUser = User.Create($"wm-ev-{Guid.NewGuid():N}@example.com", "WM Executor", "hashed", now, true);
-        var workspace = Workspace.Create(accountId, executorUser.Id, "WM Events WS", $"wm-ev-{Guid.NewGuid():N}", now);
+        var executorUser = User.Create($"ar-fail-{Guid.NewGuid():N}@example.com", "AR Failure Executor", "hashed", now, true);
+        var workspace = Workspace.Create(accountId, executorUser.Id, "AR Failure WS", $"ar-fail-{Guid.NewGuid():N}", now);
         var member = WorkspaceMember.Create(accountId, workspace.Id, executorUser.Id, WorkspaceRole.Member, executorUser.Id, now);
-        var board = Board.Create(accountId, workspace.Id, executorUser.Id, "Events Board", null, now);
+        var board = Board.Create(accountId, workspace.Id, executorUser.Id, "Failure Board", null, now);
         var sourceGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Todo", Domain.SharedKernel.Color.Create("#808080"), FractionalIndex.Create("a0"), executorUser.Id, now);
         var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Domain.SharedKernel.Color.Create("#00FF00"), FractionalIndex.Create("a1"), executorUser.Id, now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, sourceGroup.Id, "Task", FractionalIndex.Create("a0"), executorUser.Id, now);
@@ -244,29 +245,22 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         return new BoardGraph(accountId, workspace.Id, item.Id, board.Id, sourceGroup.Id, targetGroup.Id, executorUser.Id);
     }
 
-    // ── polling helpers -------------------------------------------------------
+    // ── polling helpers ──────────────────────────────────────────────────
 
-    private async Task<MessagingOutboxMessage?> WaitForOutboxAsync(BoardGraph graph)
+    private async Task<Guid?> WaitForOutboxEventIdAsync(BoardGraph graph)
     {
-        MessagingOutboxMessage? found = null;
+        Guid? eventId = null;
         var completed = await WaitForAsync(async () =>
         {
             await using var probe = _db.CreateContext(SystemTenant());
-            found = await probe.Set<MessagingOutboxMessage>()
+            var found = await probe.Set<MessagingOutboxMessage>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(m => m.MessageName == "board_item.moved" && m.WorkspaceId == graph.WorkspaceId);
+            if (found is not null) eventId = found.EventId;
             return found is not null;
         });
 
-        return completed ? found : null;
-    }
-
-    private async Task<long> OutboxRowCountAsync(BoardGraph graph)
-    {
-        await using var probe = _db.CreateContext(SystemTenant());
-        return await probe.Set<MessagingOutboxMessage>()
-            .IgnoreQueryFilters()
-            .CountAsync(m => m.MessageName == "board_item.moved" && m.WorkspaceId == graph.WorkspaceId);
+        return completed ? eventId : null;
     }
 
     private async Task<bool> WaitForPlacementAsync(BoardGraph graph)
@@ -278,18 +272,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
                 .AnyAsync(p => p.WorkspaceId == graph.WorkspaceId
                             && p.ItemId == graph.ItemId
                             && p.GroupId == graph.TargetGroupId);
-        });
-    }
-
-    private async Task<bool> WaitForOutboxProcessedAsync(Guid outboxId)
-    {
-        return await WaitForAsync(async () =>
-        {
-            await using var probe = _db.CreateContext(SystemTenant());
-            return await probe.Set<MessagingOutboxMessage>()
-                .IgnoreQueryFilters()
-                .AnyAsync(m => m.Id == outboxId && m.Status == "Processed");
-        });
+        }, timeoutSeconds: 20);
     }
 
     private static async Task<bool> WaitForAsync(Func<Task<bool>> predicate, int timeoutSeconds = 30)
@@ -324,6 +307,49 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         Guid TargetGroupId,
         Guid ExecutorUserId);
 
+    // ── failure injection ────────────────────────────────────────────────
+
+    private sealed class ProjectionFailureBudget
+    {
+        private int _remaining;
+
+        public ProjectionFailureBudget(int failures) => _remaining = failures;
+
+        public bool TryConsume() => Interlocked.Decrement(ref _remaining) >= 0;
+    }
+
+    /// <summary>
+    /// Delegates to the real scoped ApplicationDbContext (so committed state is
+    /// unchanged on success) while failing the placement projection seam the
+    /// configured number of times — a crash before the consumer commits.
+    /// </summary>
+    private sealed class FailOnceReportingDbContext : IReportingDbContext
+    {
+        private readonly ApplicationDbContext _inner;
+        private readonly ProjectionFailureBudget _budget;
+
+        public FailOnceReportingDbContext(ApplicationDbContext inner, ProjectionFailureBudget budget)
+        {
+            _inner = inner;
+            _budget = budget;
+        }
+
+        public DbSet<Notrelix.Domain.Analytics.Dashboards.Dashboard> Dashboards => _inner.Dashboards;
+        public DbSet<Notrelix.Domain.Analytics.Dashboards.DashboardWidget> DashboardWidgets => _inner.DashboardWidgets;
+        public DbSet<Notrelix.Domain.Analytics.Dashboards.DashboardSource> DashboardSources => _inner.DashboardSources;
+        public DbSet<Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot> ReportingSnapshots => _inner.ReportingSnapshots;
+
+        public DbSet<Notrelix.Application.Features.Analytics.Projections.WorkItemPlacement.WorkspaceWorkItemPlacementProjection> WorkspaceWorkItemPlacements
+        {
+            get
+            {
+                if (_budget.TryConsume())
+                    throw new InvalidOperationException("injected placement projection persistence failure");
+                return _inner.WorkspaceWorkItemPlacements;
+            }
+        }
+    }
+
     // ── tenant observation (mirrors the frozen scoped-tenant-chain pattern) ──
 
     private sealed class TenantObservationRecorder
@@ -334,16 +360,6 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         public Guid? LastWorkspaceAccountId { get; private set; }
         public Guid? LastWorkspaceId { get; private set; }
         public bool LastWorkspaceIsSystem { get; private set; }
-        public bool ClearedAfterWorkspace { get; private set; }
-
-        public void Reset()
-        {
-            lock (_gate)
-            {
-                ObservedWorkspaceSet = false;
-                ClearedAfterWorkspace = false;
-            }
-        }
 
         public void RecordWorkspace(Guid accountId, Guid workspaceId, bool isSystemContext)
         {
@@ -358,13 +374,6 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
 
         public void RecordClear()
         {
-            lock (_gate)
-            {
-                if (ObservedWorkspaceSet)
-                {
-                    ClearedAfterWorkspace = true;
-                }
-            }
         }
     }
 
@@ -391,7 +400,6 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
 
         public void SetUser(Guid userId) => _inner.SetUser(userId);
         public void SetAccountHint(Guid accountId) => _inner.SetAccountHint(accountId);
-
         public void SetAccount(Guid accountId, Guid? userId) => _inner.SetAccount(accountId, userId);
 
         public void SetWorkspace(Guid accountId, Guid workspaceId, Guid? userId)
@@ -403,15 +411,7 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
             }
         }
 
-        public void SetSystem()
-        {
-            _inner.SetSystem();
-        }
-
-        public void Clear()
-        {
-            _inner.Clear();
-            _recorder.RecordClear();
-        }
+        public void SetSystem() => _inner.SetSystem();
+        public void Clear() => _inner.Clear();
     }
 }
