@@ -1,6 +1,6 @@
 using Notrelix.Application.Common.Requests.Execution;
 
-namespace Notrelix.Application.Common.Security;
+namespace Notrelix.Application.Features.Governance.Authorization;
 
 public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
 {

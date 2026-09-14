@@ -37,3 +37,5 @@ global using Notrelix.Domain.WorkManagement.Fields;
 global using Notrelix.Domain.WorkManagement.Views;
 global using Notrelix.Domain.WorkManagement.Labels;
 global using Notrelix.Domain.WorkManagement.Approvals;
+
+global using Notrelix.Application.Features.Governance.Authorization;

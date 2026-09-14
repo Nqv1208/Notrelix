@@ -234,6 +234,8 @@ The registry does not restate the decision body.
 | `ADR-003` | [CSRF Protection via Double Submit Cookie](ADR-003-csrf-protection.md) | `Superseded` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | [ADR-005](ADR-005-csrf-cross-origin-bootstrap.md) |
 | `ADR-004` | [5-Tier Rate Limiting Architecture](ADR-004-rate-limiting-architecture.md) | `Accepted` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | None |
 | `ADR-005` | [Cross-Origin CSRF Bootstrap Protocol](ADR-005-csrf-cross-origin-bootstrap.md) | `Accepted` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | None |
+| `ADR-006` | [Frozen Seven-Behavior Application Pipeline](ADR-006-frozen-seven-behavior-pipeline.md) | `Accepted` | `../architecture/application-model.md` | None |
+| `ADR-007` | [Governance-Owned Authorization Evaluator Behind a Neutral Common Pipeline Seam](ADR-007-governance-owned-authorization-evaluator.md) | `Accepted` | `../architecture/security-tenancy-authorization.md`, `../architecture/application-model.md` | None |
 
 Backend ADRs currently recorded here as:
 

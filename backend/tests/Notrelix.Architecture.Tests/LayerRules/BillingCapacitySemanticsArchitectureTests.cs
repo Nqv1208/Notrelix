@@ -60,7 +60,7 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
         new HashSet<string>(StringComparer.Ordinal)
         {
             "Notrelix.Application/Common/Security/AccessFacts.cs",
-            "Notrelix.Application/Common/Security/AccessPolicyEngine.cs",
+            "Notrelix.Application/Features/Governance/Authorization/AccessPolicyEngine.cs",
         };
 
     // ------------------------------------------------------------------
@@ -195,7 +195,7 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
     [Fact]
     public void Gate_Detects_TierReference_OutsideBilling()
     {
-        DetectTierReference("Notrelix.Application/Common/Security/AccessPolicyEngine.cs", "facts.SubscriptionTier")
+        DetectTierReference("Notrelix.Application/Features/Governance/Authorization/AccessPolicyEngine.cs", "facts.SubscriptionTier")
             .Should().BeTrue("a governed-debt reference must be baselined, not silently grown");
 
         DetectTierReference("Notrelix.Application/Features/Automation/Rules/CreateAutomationRule.cs", "SubscriptionTier.Pro")

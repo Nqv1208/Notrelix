@@ -364,7 +364,7 @@ public class ApplicationArchitectureTests
     [Fact]
     public void AccessPolicyEngine_Subscription_UsesAccountScope()
     {
-        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var policyPath = Path.Combine(GetApplicationPath(), "Features", "Governance", "Authorization", "AccessPolicyEngine.cs");
         var content = File.ReadAllText(policyPath);
 
         content.Should().Contain("RequiresSubscription", "AccessPolicyEngine must enforce subscription requirements");
@@ -374,7 +374,7 @@ public class ApplicationArchitectureTests
     [Fact]
     public void AccessPolicyEngine_Feature_UsesAccountScope()
     {
-        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var policyPath = Path.Combine(GetApplicationPath(), "Features", "Governance", "Authorization", "AccessPolicyEngine.cs");
         var content = File.ReadAllText(policyPath);
 
         content.Should().Contain("RequiresFeature", "AccessPolicyEngine must enforce feature requirements");
@@ -447,7 +447,7 @@ public class ApplicationArchitectureTests
     [Fact]
     public void AccessPolicyEngine_Subscription_FailsClosed()
     {
-        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var policyPath = Path.Combine(GetApplicationPath(), "Features", "Governance", "Authorization", "AccessPolicyEngine.cs");
         var content = File.ReadAllText(policyPath);
 
         content.Should().Contain("Forbidden",
@@ -508,7 +508,7 @@ public class ApplicationArchitectureTests
     [Fact]
     public void AccessPolicyEngine_Feature_FailsClosed()
     {
-        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var policyPath = Path.Combine(GetApplicationPath(), "Features", "Governance", "Authorization", "AccessPolicyEngine.cs");
         var content = File.ReadAllText(policyPath);
 
         content.Should().Contain("Forbidden",

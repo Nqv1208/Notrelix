@@ -382,9 +382,11 @@ Validation executes inside `RequestContractBehavior` — there is no separate
 production validation stage. Transaction/RLS boundaries belong to the data
 session owned by `DataSessionBehavior` + Infrastructure `IRequestDataSession`.
 Authorization is `AccessFacts` + pure policy evaluation inside
-`AccessControlBehavior`. Durable side effects flow through the transactional
-outbox and broker consumers after commit; there is no generic post-commit or
-response-cache pipeline stage.
+`AccessControlBehavior`. The one pure evaluator (`AccessPolicyEngine`) is owned
+by the Governance Application module and bound to the Common pipeline only
+through the neutral `IAccessPolicyEvaluator` seam (`ADR-007`). Durable side
+effects flow through the transactional outbox and broker consumers after
+commit; there is no generic post-commit or response-cache pipeline stage.
 
 The earlier six-zone / nineteen-behavior model (ADR-001) is superseded and is
 described only as historical context in ADR-001 itself.

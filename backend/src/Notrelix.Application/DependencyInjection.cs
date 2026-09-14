@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Features.Accounts.Members;
+using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;

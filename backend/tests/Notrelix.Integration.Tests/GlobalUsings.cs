@@ -19,3 +19,5 @@ global using Notrelix.Application.Common.Security.Auth;
 global using Notrelix.Application.Features.Identity.Auth.Sessions;
 global using Notrelix.Application.Common.Tenancy;
 global using Notrelix.Application.Common.Time;
+
+global using Notrelix.Application.Features.Governance.Authorization;
