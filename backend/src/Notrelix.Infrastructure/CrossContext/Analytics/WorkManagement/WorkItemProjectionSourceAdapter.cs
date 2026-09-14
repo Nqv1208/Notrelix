@@ -1,60 +1,36 @@
-using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
-using Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 
 namespace Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
 
 /// <summary>
-/// Infrastructure adapter exposing the producer-owned Work placement snapshot
-/// to the Analytics rebuild path and created-item reconciliation.
+/// Delegate-only cross-context adapter: implements the Analytics-owned
+/// projection-source port and delegates every call to the producer-owned
+/// Public <see cref="IWorkItemProjectionSource"/> contract, which is
+/// implemented by WorkManagement Application over the Work producer's own
+/// persistence. This adapter never reaches Work persistence directly.
 /// </summary>
-public sealed class WorkItemProjectionSourceAdapter : IWorkItemProjectionSource, IWorkItemProjectionSourceAdapter
+public sealed class WorkItemProjectionSourceAdapter : IWorkItemProjectionSourceAdapter
 {
-    private readonly IWorkManagementDbContext _context;
+    private readonly IWorkItemProjectionSource _source;
 
-    public WorkItemProjectionSourceAdapter(IWorkManagementDbContext context)
+    public WorkItemProjectionSourceAdapter(IWorkItemProjectionSource source)
     {
-        _context = context;
+        _source = source;
     }
 
-    public async Task<IReadOnlyList<WorkItemPlacementSnapshot>> GetWorkspacePlacementsAsync(
+    public Task<IReadOnlyList<WorkItemPlacementSnapshot>> GetWorkspacePlacementsAsync(
         Guid workspaceId,
         CancellationToken cancellationToken)
     {
-        var snapshots = await _context.BoardItems
-            .AsNoTracking()
-            .Where(item => item.WorkspaceId == workspaceId)
-            .Select(item => new WorkItemPlacementSnapshot(
-                item.AccountId,
-                item.Id,
-                item.BoardId,
-                item.GroupId,
-                item.IsArchived,
-                item.Version,
-                item.UpdatedAt ?? item.CreatedAt))
-            .ToListAsync(cancellationToken);
-
-        return snapshots;
+        return _source.GetWorkspacePlacementsAsync(workspaceId, cancellationToken);
     }
 
-    public async Task<WorkItemPlacementSnapshot?> GetItemPlacementAsync(
+    public Task<WorkItemPlacementSnapshot?> GetItemPlacementAsync(
         Guid workspaceId,
         Guid itemId,
         CancellationToken cancellationToken)
     {
-        var snapshot = await _context.BoardItems
-            .AsNoTracking()
-            .Where(item => item.WorkspaceId == workspaceId && item.Id == itemId)
-            .Select(item => new WorkItemPlacementSnapshot(
-                item.AccountId,
-                item.Id,
-                item.BoardId,
-                item.GroupId,
-                item.IsArchived,
-                item.Version,
-                item.UpdatedAt ?? item.CreatedAt))
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return snapshot;
+        return _source.GetItemPlacementAsync(workspaceId, itemId, cancellationToken);
     }
 }

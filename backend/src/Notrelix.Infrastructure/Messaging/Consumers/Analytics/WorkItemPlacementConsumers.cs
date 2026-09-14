@@ -1,6 +1,6 @@
 using Notrelix.Application.Events.WorkManagement;
+using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Analytics.Placements.Services;
-using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 
@@ -143,17 +143,4 @@ public sealed class BoardItemArchivedPlacementConsumer
         if (applied)
             _logger.LogDebug("Placement projected: archived item {ItemId}", msg.ItemId);
     }
-}
-
-/// <summary>
-/// Runtime adapter seam for the producer-owned projection source, so the
-/// consumer never touches Work persistence. Infrastructure wires it to the
-/// producer Public contract.
-/// </summary>
-public interface IWorkItemProjectionSourceAdapter
-{
-    Task<WorkItemPlacementSnapshot?> GetItemPlacementAsync(
-        Guid workspaceId,
-        Guid itemId,
-        CancellationToken cancellationToken);
 }

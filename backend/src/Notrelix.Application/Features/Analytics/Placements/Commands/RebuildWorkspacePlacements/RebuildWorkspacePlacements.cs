@@ -1,14 +1,15 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Analytics.Placements.Services;
-using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 
 namespace Notrelix.Application.Features.Analytics.Placements.Commands.RebuildWorkspacePlacements;
 
 /// <summary>
 /// Analytics-owned rebuild use case: fetches the producer-owned placement
-/// snapshot through the WorkManagement Public projection-source contract and
-/// reconciles the local projection for one Workspace. Not an outbox replay;
-/// no Work DbContext access.
+/// snapshot through the Analytics source/rebuild Port (delegated by
+/// Infrastructure to the WorkManagement Public projection-source contract)
+/// and reconciles the local projection for one Workspace. Not an outbox
+/// replay; no Work DbContext access.
 /// </summary>
 public record RebuildWorkspacePlacementsCommand(Guid WorkspaceId)
     : ICommand<Result<int>>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest, IRequirePermission
@@ -21,11 +22,11 @@ public record RebuildWorkspacePlacementsCommand(Guid WorkspaceId)
 public class RebuildWorkspacePlacementsCommandHandler
     : IRequestHandler<RebuildWorkspacePlacementsCommand, Result<int>>
 {
-    private readonly IWorkItemProjectionSource _projectionSource;
+    private readonly IWorkItemProjectionSourceAdapter _projectionSource;
     private readonly WorkspaceWorkItemPlacementService _service;
 
     public RebuildWorkspacePlacementsCommandHandler(
-        IWorkItemProjectionSource projectionSource,
+        IWorkItemProjectionSourceAdapter projectionSource,
         WorkspaceWorkItemPlacementService service)
     {
         _projectionSource = projectionSource;
