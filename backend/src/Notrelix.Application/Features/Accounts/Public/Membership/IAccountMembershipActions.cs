@@ -26,7 +26,7 @@ public interface IAccountMembershipActions
     /// invitation flow is the canonical caller, the mutation authority
     /// remains Accounts.
     /// </summary>
-    Task EnsureWorkspaceInviteeMembershipAsync(
+    Task EnsureAccountMembershipAsync(
         Guid accountId,
         Guid userId,
         Guid invitedBy,
