@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Common.Security.Auth;
+namespace Notrelix.Application.Features.Identity.Auth.Sessions;
 
 public interface IAuthSessionIssuer
 {

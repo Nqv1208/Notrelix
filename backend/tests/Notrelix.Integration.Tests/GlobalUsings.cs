@@ -16,5 +16,6 @@ global using Notrelix.Application.Common.Integrations.N8n;
 global using Notrelix.Application.Common.Messaging;
 global using Notrelix.Application.Common.Security;
 global using Notrelix.Application.Common.Security.Auth;
+global using Notrelix.Application.Features.Identity.Auth.Sessions;
 global using Notrelix.Application.Common.Tenancy;
 global using Notrelix.Application.Common.Time;
