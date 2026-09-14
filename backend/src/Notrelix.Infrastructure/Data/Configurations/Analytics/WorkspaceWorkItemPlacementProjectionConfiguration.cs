@@ -1,4 +1,4 @@
-using Notrelix.Domain.Analytics.Placements;
+using Notrelix.Application.Features.Analytics.Projections.WorkItemPlacement;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Analytics;
 

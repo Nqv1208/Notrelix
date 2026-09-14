@@ -1,4 +1,4 @@
-namespace Notrelix.Domain.Analytics.Placements;
+namespace Notrelix.Application.Features.Analytics.Projections.WorkItemPlacement;
 
 /// <summary>
 /// Analytics-owned derived state: the latest known current placement of one
@@ -6,8 +6,9 @@ namespace Notrelix.Domain.Analytics.Placements;
 /// Analytics read model for placement queries — never Work source truth, and
 /// never a Billing/security authority.
 /// </summary>
-public class WorkspaceWorkItemPlacementProjection : Entity, IWorkspaceScoped
+public class WorkspaceWorkItemPlacementProjection
 {
+    public Guid Id { get; private set; }
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid ItemId { get; private set; }
@@ -41,6 +42,7 @@ public class WorkspaceWorkItemPlacementProjection : Entity, IWorkspaceScoped
 
         return new WorkspaceWorkItemPlacementProjection
         {
+            Id = Guid.CreateVersion7(),
             AccountId = accountId,
             WorkspaceId = workspaceId,
             ItemId = itemId,

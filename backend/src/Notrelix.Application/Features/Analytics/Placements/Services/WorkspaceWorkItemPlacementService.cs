@@ -1,6 +1,6 @@
 using Notrelix.Application.Features.Analytics.Abstractions;
+using Notrelix.Application.Features.Analytics.Projections.WorkItemPlacement;
 using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
-using Notrelix.Domain.Analytics.Placements;
 
 namespace Notrelix.Application.Features.Analytics.Placements.Services;
 

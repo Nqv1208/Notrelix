@@ -16,7 +16,6 @@ public class OwnedEntityMutationVisibilityTests
 
         // ── Analytics ──
         "Notrelix.Domain.Analytics.Dashboards.DashboardWidget",
-        "Notrelix.Domain.Analytics.Placements.WorkspaceWorkItemPlacementProjection",
 
         // ── Automation ──
         "Notrelix.Domain.Automation.Executions.AutomationExecutionStep",
