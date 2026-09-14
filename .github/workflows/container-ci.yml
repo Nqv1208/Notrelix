@@ -458,19 +458,19 @@ jobs:
           [[ "$PUBLISH_MARKETING" == true ]] && publish marketing release-image-marketing.tar marketing "$MARKETING_IMAGE_NAME" container-marketing-sbom marketing
       - name: Attest backend release-image manifest
         if: env.PUBLISH_BACKEND == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with: {subject-path: release-images/release-image-backend-api.json}
       - name: Attest web release-image manifest
         if: env.PUBLISH_WEB == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with: {subject-path: release-images/release-image-web.json}
       - name: Attest marketing release-image manifest
         if: env.PUBLISH_MARKETING == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with: {subject-path: release-images/release-image-marketing.json}
       - name: Attest backend application image provenance
         if: env.PUBLISH_BACKEND == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ steps.publish.outputs.subject_name_backend }}
           subject-digest: ${{ steps.publish.outputs.subject_digest_backend }}
@@ -478,7 +478,7 @@ jobs:
           create-storage-record: false
       - name: Attest web application image provenance
         if: env.PUBLISH_WEB == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ steps.publish.outputs.subject_name_web }}
           subject-digest: ${{ steps.publish.outputs.subject_digest_web }}
@@ -486,7 +486,7 @@ jobs:
           create-storage-record: false
       - name: Attest marketing application image provenance
         if: env.PUBLISH_MARKETING == 'true'
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ steps.publish.outputs.subject_name_marketing }}
           subject-digest: ${{ steps.publish.outputs.subject_digest_marketing }}
