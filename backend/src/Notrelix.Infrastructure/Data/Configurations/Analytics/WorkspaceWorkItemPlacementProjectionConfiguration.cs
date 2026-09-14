@@ -22,5 +22,13 @@ public class WorkspaceWorkItemPlacementProjectionConfiguration : IEntityTypeConf
         builder.HasIndex(x => new { x.WorkspaceId, x.ItemId })
             .IsUnique()
             .HasDatabaseName("ux_workspace_work_item_placements_workspace_item");
+
+        // Physical concurrent-write protection: the PostgreSQL xmin system
+        // column (Npgsql row-version mapping) is a persistence mechanism only.
+        // It is deliberately a shadow property — the Analytics projection
+        // model must not know which database enforces its write ordering; the
+        // business freshness watermark stays LastOccurredAt/SourceRevision.
+        builder.Property<uint>("xmin")
+            .IsRowVersion();
     }
 }

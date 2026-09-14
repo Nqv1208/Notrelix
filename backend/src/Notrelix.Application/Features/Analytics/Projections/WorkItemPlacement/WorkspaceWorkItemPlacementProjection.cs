@@ -21,10 +21,15 @@ public class WorkspaceWorkItemPlacementProjection
     private WorkspaceWorkItemPlacementProjection() { }
 
     /// <summary>
+    /// Canonical ordering watermark: the producer timestamp of the projected
+    /// fact. Live delivery and rebuild snapshots share this single scale —
+    /// aggregate versions are never mixed into it.
+    /// </summary>
+    public static long WatermarkOf(DateTimeOffset lastOccurredAt) => lastOccurredAt.UtcTicks;
+
+    /// <summary>
     /// Creates or re-derives the projection from a producer-owned snapshot
-    /// fact. Last-write-wins by producer revision: a snapshot older than the
-    /// currently known revision is ignored so out-of-order delivery cannot
-    /// regress the projection.
+    /// fact at the producer-timestamp watermark.
     /// </summary>
     public static WorkspaceWorkItemPlacementProjection Upsert(
         Guid accountId,
@@ -33,7 +38,6 @@ public class WorkspaceWorkItemPlacementProjection
         Guid boardId,
         Guid groupId,
         bool isArchived,
-        long sourceRevision,
         DateTimeOffset lastOccurredAt)
     {
         Guard.NotEmpty(accountId);
@@ -49,48 +53,56 @@ public class WorkspaceWorkItemPlacementProjection
             BoardId = boardId,
             GroupId = groupId,
             IsArchived = isArchived,
-            SourceRevision = sourceRevision,
+            SourceRevision = WatermarkOf(lastOccurredAt),
             LastOccurredAt = lastOccurredAt,
         };
     }
 
     /// <summary>
     /// Applies a newer producer fact. Returns false and changes nothing when
-    /// the incoming revision is not newer (duplicate or stale delivery).
+    /// the incoming watermark is not strictly newer (duplicate or stale
+    /// delivery), so out-of-order live facts cannot regress the projection.
     /// </summary>
     public bool ApplyNewer(
         Guid boardId,
         Guid groupId,
         bool isArchived,
-        long sourceRevision,
         DateTimeOffset lastOccurredAt)
     {
-        if (sourceRevision <= SourceRevision)
+        var watermark = WatermarkOf(lastOccurredAt);
+        if (watermark <= SourceRevision)
             return false;
 
         BoardId = boardId;
         GroupId = groupId;
         IsArchived = isArchived;
-        SourceRevision = sourceRevision;
+        SourceRevision = watermark;
         LastOccurredAt = lastOccurredAt;
         return true;
     }
 
     /// <summary>
-    /// Reconciliation path: replaces local state from a producer-owned
-    /// snapshot regardless of revision (rebuild after drift).
+    /// Reconciliation path for rebuild: applies a producer snapshot whose
+    /// watermark is at or ahead of the local state (equal watermarks are the
+    /// authorized drift-repair window). A strictly older snapshot is refused —
+    /// a live fact that arrived after the snapshot was taken must not be
+    /// overwritten. Returns true when local state was replaced.
     /// </summary>
-    public void Reconcile(
+    public bool Reconcile(
         Guid boardId,
         Guid groupId,
         bool isArchived,
-        long sourceRevision,
         DateTimeOffset lastOccurredAt)
     {
+        var watermark = WatermarkOf(lastOccurredAt);
+        if (watermark < SourceRevision)
+            return false;
+
         BoardId = boardId;
         GroupId = groupId;
         IsArchived = isArchived;
-        SourceRevision = sourceRevision;
+        SourceRevision = watermark;
         LastOccurredAt = lastOccurredAt;
+        return true;
     }
 }
