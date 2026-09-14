@@ -24,4 +24,9 @@ public interface IWorkItemProjectionSource
     Task<IReadOnlyList<WorkItemPlacementSnapshot>> GetWorkspacePlacementsAsync(
         Guid workspaceId,
         CancellationToken cancellationToken);
+
+    Task<WorkItemPlacementSnapshot?> GetItemPlacementAsync(
+        Guid workspaceId,
+        Guid itemId,
+        CancellationToken cancellationToken);
 }
