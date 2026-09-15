@@ -1857,7 +1857,11 @@ provider Port + adapter                → Integrations Public IN8nWebhookAction
                                          + Ports/Providers IN8nClient
                                          + Infrastructure N8nClient adapter
 capability/entitlement read            → Billing.Public IBillingCapabilityFacts
-                                         (consumer: CreateAutomationRule)
+                                          (consumer: CreateAutomationRule)
+subscription decision (authz gate)     → Billing.Public IBillingSubscriptionFacts
+                                          (consumer: access-facts provider composes
+                                          the neutral AccessFacts boolean; the shared
+                                          authz SQL never reads billing.subscriptions)
 transaction exception                  → BOUND-TX-002: Accounts↔Workspaces
                                          shared request transaction (AcceptInvitation)
 ```

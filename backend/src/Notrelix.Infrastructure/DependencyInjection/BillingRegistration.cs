@@ -1,4 +1,5 @@
-using Notrelix.Application.Common.Entitlements;
+using Notrelix.Application.Features.Billing.Public.Subscription;
+using Notrelix.Application.Features.Billing.Subscriptions.Services;
 using Notrelix.Infrastructure.Billing;
 
 namespace Notrelix.Infrastructure;
@@ -28,11 +29,11 @@ public static class BillingRegistration
                     "DevNull mode bypasses subscription and feature-gate checks and must not be used in production.");
             }
 
-            services.AddScoped<ISubscriptionChecker, DevNullSubscriptionChecker>();
+            services.AddScoped<IBillingSubscriptionFacts, DevNullBillingSubscriptionFacts>();
         }
         else
         {
-            services.AddScoped<ISubscriptionChecker, DatabaseSubscriptionChecker>();
+            services.AddScoped<IBillingSubscriptionFacts, BillingSubscriptionFactsProvider>();
         }
 
         return services;

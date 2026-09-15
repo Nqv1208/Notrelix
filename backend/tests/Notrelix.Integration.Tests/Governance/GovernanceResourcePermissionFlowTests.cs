@@ -1222,7 +1222,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
                 sp.GetRequiredService<TimeProvider>(),
-                sp.GetRequiredService<global::Notrelix.Application.Features.Documents.Public.PageAuthorization.IPageAuthorizationFacts>()));
+                sp.GetRequiredService<global::Notrelix.Application.Features.Documents.Public.PageAuthorization.IPageAuthorizationFacts>(),
+                new FakeBillingSubscriptionFacts()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
 
         services.AddScoped<IResourceLocator, ResourceLocator>();

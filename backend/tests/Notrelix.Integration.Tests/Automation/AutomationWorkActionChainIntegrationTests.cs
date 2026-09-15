@@ -133,7 +133,8 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
             new Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider(
                 workContext,
                 System.TimeProvider.System,
-                new Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts(workContext)),
+                new Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts(workContext),
+                new FakeBillingSubscriptionFacts()),
             new Notrelix.Application.Features.Governance.Authorization.AccessPolicyEngine());
 
         var actions = new Application.Features.WorkManagement.BoardItems.Services.WorkItemActions(

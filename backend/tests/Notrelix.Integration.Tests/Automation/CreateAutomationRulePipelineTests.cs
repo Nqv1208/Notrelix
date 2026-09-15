@@ -214,7 +214,8 @@ public sealed class CreateAutomationRulePipelineTests : IAsyncLifetime
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
                 sp.GetRequiredService<TimeProvider>(),
-                sp.GetRequiredService<IPageAuthorizationFacts>()));
+                sp.GetRequiredService<IPageAuthorizationFacts>(),
+                new FakeBillingSubscriptionFacts()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
 
         services.AddScoped<IResourceLocator, ResourceLocator>();

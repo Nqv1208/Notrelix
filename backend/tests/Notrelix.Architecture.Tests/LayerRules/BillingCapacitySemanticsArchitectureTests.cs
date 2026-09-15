@@ -52,16 +52,14 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
     /// <summary>
     /// Exact governed-debt baseline (DEBT-BILL-002): SubscriptionTier
     /// references outside Billing-owned paths. The access-policy tier ladder
-    /// is legacy authorization plumbing and the Common.Entitlements types are
-    /// the frozen ARCH-BC-008 hotspot; both are owned by the governed
-    /// entitlement migration. New references are forbidden.
+    /// and the Common.Entitlements subscription seam have both been migrated —
+    /// the subscription decision now flows through the Billing-owned
+    /// IBillingSubscriptionFacts seam, so no non-Billing production file
+    /// references SubscriptionTier. The baseline is now empty; new references
+    /// are forbidden and must go through the producer-owned Billing surface.
     /// </summary>
     private static readonly IReadOnlySet<string> TierReferenceBaseline =
-        new HashSet<string>(StringComparer.Ordinal)
-        {
-            "Notrelix.Application/Common/Security/AccessFacts.cs",
-            "Notrelix.Application/Features/Governance/Authorization/AccessPolicyEngine.cs",
-        };
+        new HashSet<string>(StringComparer.Ordinal);
 
     // ------------------------------------------------------------------
     // Production rules
@@ -214,7 +212,8 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
             p => p.EndsWith(".cs", StringComparison.Ordinal),
             "any future entries must use the canonical path shape");
 
-        TierReferenceBaseline.Should().NotBeEmpty();
+        // DEBT-BILL-002 closed: the tier ladder left Governance and the shared
+        // authz SQL, so the baseline is empty and new references are forbidden.
         TierReferenceBaseline.Should().OnlyContain(p => p.EndsWith(".cs", StringComparison.Ordinal));
     }
 

@@ -277,7 +277,7 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
                 referenced.AddRange(method.GetParameters().Select(p => p.ParameterType));
             }
 
-            foreach (var candidate in referenced.Select(Unwrap).Where(t => t is not null).Select(t => t!))
+            foreach (var candidate in referenced.SelectMany(FlattenType))
             {
                 if (candidate.Namespace?.StartsWith("Notrelix.Application.Features.Governance.", StringComparison.Ordinal) == true)
                     violations.Add($"{type.FullName} -> {candidate.FullName}");
@@ -288,12 +288,49 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
             "ADR-007: Application/Common owns pipeline mechanics only; Governance authorization " +
             "semantics are reached exclusively through the neutral IAccessPolicyEvaluator seam. " +
             "Violations:\n" + string.Join("\n", violations));
+    }
 
-        static Type? Unwrap(Type type)
+    [Fact]
+    public void Gate_Adr007_Walker_Detects_NestedGenericGovernanceArgument()
+    {
+        // Regression guard: the walker MUST inspect generic arguments, not
+        // merely the outer generic type definition. Without the fix,
+        // Func<Task<AccessPolicyEngine>> collapsed to Func<,> + Task<> and the
+        // Governance violation was silently missed (P2 reviewer note on ADR-007).
+        var governanceHits = new[] { typeof(Func<Task<AccessPolicyEngine>>) }
+            .SelectMany(FlattenType)
+            .Where(t => t.Namespace?.StartsWith("Notrelix.Application.Features.Governance.", StringComparison.Ordinal) == true)
+            .ToList();
+
+        governanceHits.Should().ContainSingle(
+            "a Governance type wrapped in generic containers must still be detected");
+        governanceHits[0].Should().Be(typeof(AccessPolicyEngine));
+    }
+
+    /// <summary>
+    /// Recursive walk over the full type expression so generic arguments, array
+    /// elements, byref, and pointer targets are all inspected. The previous
+    /// Unwrap collapsed <c>Task&lt;GovernanceType&gt;</c> to <c>Task&lt;&gt;</c>
+    /// and lost the argument, blinding the walker to Governance types wrapped
+    /// in generic containers.
+    /// </summary>
+    private static IEnumerable<Type> FlattenType(Type type) => Enumerate(type).Distinct();
+
+    private static IEnumerable<Type> Enumerate(Type t)
+    {
+        yield return t;
+
+        if ((t.IsArray || t.IsByRef || t.IsPointer) && t.GetElementType() is { } elementType)
         {
-            if (type.IsGenericType && !type.IsGenericTypeDefinition)
-                return Unwrap(type.GetGenericTypeDefinition());
-            return type.IsArray ? Unwrap(type.GetElementType()!) : type;
+            foreach (var nested in Enumerate(elementType))
+                yield return nested;
+        }
+
+        if (t.IsGenericType && !t.IsGenericTypeDefinition)
+        {
+            foreach (var argument in t.GetGenericArguments())
+                foreach (var nested in Enumerate(argument))
+                    yield return nested;
         }
     }
 

@@ -102,8 +102,7 @@ public sealed class CreatePageTargetPolicyMatrixTests
         ResourceMemberRole: null,
         HasExplicitResourcePermission: false,
         PermissionRules: rules ?? [],
-        HasActiveSubscription: false,
-        SubscriptionTier: null,
+        SubscriptionRequirementSatisfied: false,
         FeatureEnabled: false,
         ActiveResourcePermissionRank: null,
         TargetPermissionRank: null);

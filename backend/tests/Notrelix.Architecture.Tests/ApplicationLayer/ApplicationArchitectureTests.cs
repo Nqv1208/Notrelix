@@ -560,11 +560,29 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void DatabaseSubscriptionChecker_Exists()
+    public void BillingSubscriptionFactsProvider_Exists()
     {
-        var infraPath = Path.Combine(Path.GetDirectoryName(GetApplicationPath())!, "Notrelix.Infrastructure", "Billing");
-        var files = Directory.GetFiles(infraPath, "DatabaseSubscriptionChecker.cs");
-        files.Should().NotBeEmpty("DatabaseSubscriptionChecker must exist for production billing checks");
+        // DEBT-BILL-002 closure: the subscription decision moved out of the
+        // legacy Common.Infra DatabaseSubscriptionChecker into a Billing-owned
+        // producer surface. The real (non-fake) implementation must exist in
+        // the Application Billing feature.
+        var appPath = GetApplicationPath();
+        var providerPath = Path.Combine(
+            appPath, "Features", "Billing", "Subscriptions", "Services", "BillingSubscriptionFactsProvider.cs");
+        File.Exists(providerPath).Should().BeTrue(
+            "the Billing producer must own the database-backed subscription decision");
+    }
+
+    [Fact]
+    public void BillingSubscriptionFacts_PublicContract_Exists()
+    {
+        // The authorization pipeline consumes subscription only through this
+        // producer-owned public seam — never a tier ladder or Domain enum.
+        var appPath = GetApplicationPath();
+        var seamPath = Path.Combine(
+            appPath, "Features", "Billing", "Public", "Subscription", "IBillingSubscriptionFacts.cs");
+        File.Exists(seamPath).Should().BeTrue(
+            "the neutral subscription requirement decision must be a Billing Public seam");
     }
 
     [Fact]

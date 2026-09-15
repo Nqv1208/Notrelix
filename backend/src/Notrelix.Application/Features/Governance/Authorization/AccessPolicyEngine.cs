@@ -67,16 +67,17 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             }
         }
 
-        if (descriptor.Access.RequiresSubscription && request is IRequireSubscription subscription)
+        if (descriptor.Access.RequiresSubscription && !facts.SubscriptionRequirementSatisfied)
         {
-            if (!facts.HasActiveSubscription
-                || !MeetsMinimumTier(facts.SubscriptionTier, subscription.MinimumTier))
-            {
-                var message = string.IsNullOrEmpty(subscription.MinimumTier)
-                    ? "This feature requires an active subscription."
-                    : $"This feature requires at least the '{subscription.MinimumTier}' subscription tier.";
-                return AccessDecision.Deny(AccessDecisionKind.Forbidden, message);
-            }
+            // Billing owns the active-subscription + tier decision; the facts
+            // provider composed the neutral result. Governance reads the
+            // requested minimum tier here only to render the denial message —
+            // it never interprets or orders subscription tiers.
+            var minimumTier = request is IRequireSubscription subscription ? subscription.MinimumTier : null;
+            var message = string.IsNullOrEmpty(minimumTier)
+                ? "This feature requires an active subscription."
+                : $"This feature requires at least the '{minimumTier}' subscription tier.";
+            return AccessDecision.Deny(AccessDecisionKind.Forbidden, message);
         }
 
         if (descriptor.Access.RequiresFeature && !facts.FeatureEnabled)
@@ -333,15 +334,4 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         string.Equals(role, "Owner", StringComparison.Ordinal)
             ? OwnerRank
             : facts.ActiveResourcePermissionRank ?? 0;
-
-    private static bool MeetsMinimumTier(string? actualTier, string? minimumTier)
-    {
-        if (string.IsNullOrEmpty(minimumTier))
-        {
-            return true;
-        }
-
-        var tiers = new[] { "Free", "Starter", "Pro", "Business", "Enterprise" };
-        return Array.IndexOf(tiers, actualTier) >= Array.IndexOf(tiers, minimumTier);
-    }
 }

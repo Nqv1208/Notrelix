@@ -54,15 +54,7 @@ public static class AccessFactsQuery
                AND (pr.scope_type = 'Workspace'
                     OR ((pr.resource_type IS NULL OR pr.resource_type = @resource_type)
                         AND (pr.resource_id IS NULL OR pr.resource_id = @resource_id)))
-          ), '[]'::jsonb)::text,
-          EXISTS (
-            SELECT 1 FROM billing.subscriptions s
-             WHERE s.account_id = @account_id AND s.status = 'Active' AND s.current_period_end > @now),
-          (SELECT s.tier FROM billing.subscriptions s
-             WHERE s.account_id = @account_id AND s.status = 'Active' AND s.current_period_end > @now
-             ORDER BY CASE s.tier
-               WHEN 'Enterprise' THEN 5 WHEN 'Business' THEN 4 WHEN 'Pro' THEN 3
-               WHEN 'Starter' THEN 2 ELSE 1 END DESC LIMIT 1),
+           ), '[]'::jsonb)::text,
           CASE WHEN @feature_code IS NULL THEN true ELSE COALESCE((
             SELECT e.is_unlimited OR COALESCE((
                    SELECT SUM(f.delta) FROM billing.feature_usage_ledger f

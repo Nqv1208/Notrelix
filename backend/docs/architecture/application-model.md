@@ -1170,6 +1170,10 @@ quota
 
 through declared gates.
 
+The subscription gate is a neutral `AccessFacts` boolean composed by the access-facts
+provider from the Billing-owned `IBillingSubscriptionFacts` decision seam; the pipeline
+and evaluator never order subscription tiers themselves (`DEBT-BILL-002`).
+
 Remember:
 
 ```text
