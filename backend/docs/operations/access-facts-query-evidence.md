@@ -177,5 +177,6 @@ Evidence harness alignment: the gated `PipelineFreezeEvidenceTests` now binds
 mirroring the full provider parameter set so the canonical SQL remains
 runnable for plan verification.
 
-Re-evaluate when the shared SQL regains a Billing table dependency (feature
-migration is a separate follow-up gated behind `NRX-003/004` equivalence).
+Re-evaluate when the shared SQL regains a `billing.subscriptions` dependency
+(feature migration is a separate follow-up gated behind `NRX-003/004`
+equivalence).
