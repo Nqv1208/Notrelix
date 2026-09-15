@@ -305,6 +305,19 @@ PermissionScope
 
 These are current source evidence of centralized permission/resource evaluation.
 
+The single canonical evaluator is `AccessPolicyEngine`, owned by the Governance Application
+module and reached from the Common pipeline only through the neutral `IAccessPolicyEvaluator`
+seam (`ADR-007`). Permission semantics (actions, role ladder, rank ceilings, resource-kind
+policy) are Governance-owned; `Application/Common` retains pipeline mechanics only
+(`AccessControlBehavior`, facts/decision/descriptor types).
+
+Commercial gates arrive as neutral facts, not Governance policy. The subscription requirement
+reaches the evaluator as `AccessFacts.SubscriptionRequirementSatisfied`, composed by the
+access-facts provider from the Billing-owned `IBillingSubscriptionFacts` decision seam.
+`AccessPolicyEngine` consumes that boolean and never orders subscription tiers — the sole
+authority for `SubscriptionTier` comparison is Billing (the Domain enum behind the seam), and
+the shared authorization SQL no longer reads `billing.subscriptions` at all.
+
 ---
 
 # 12. BE-SEC-006 — Authorization is resource/action oriented
@@ -537,7 +550,9 @@ Workspace/Governance-consumed) operation is:
 ```text
 protected Application use case
 → request authorization contract (declared permission/action + scope)
-→ AuthorizationBehavior (central policy evaluation, e.g. PermissionService)
+→ AccessControlBehavior (central policy evaluation through the one
+   IAccessPolicyEvaluator seam; the Governance-owned AccessPolicyEngine
+   implements it — ADR-007)
 → handler business logic
 ```
 

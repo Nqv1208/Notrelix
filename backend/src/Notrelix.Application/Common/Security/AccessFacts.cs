@@ -12,8 +12,7 @@ public sealed record AccessFacts(
     string? ResourceMemberRole,
     bool HasExplicitResourcePermission,
     IReadOnlyList<AccessPermissionRule> PermissionRules,
-    bool HasActiveSubscription,
-    string? SubscriptionTier,
+    bool SubscriptionRequirementSatisfied,
     bool FeatureEnabled,
     int? ActiveResourcePermissionRank,
     int? TargetPermissionRank);

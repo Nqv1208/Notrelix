@@ -15,7 +15,9 @@ namespace Notrelix.Architecture.Tests.LayerRules;
 /// Canonical authorization machinery under Common/Security and
 /// Common/Requests (AccessFacts, IRequirePermission, ...) is pipeline-owned
 /// and governed by WG-REF-002/authorization docs; role strings inside it are
-/// data, not new Common vocabulary. Technical Common remains allowed.
+/// data, not new Common vocabulary. The policy evaluator itself is
+/// Governance-owned behind the neutral seam (ADR-007) and therefore not a
+/// Common type at all. Technical Common remains allowed.
 /// </summary>
 public class CommonSemanticNoGrowthArchitectureTests
 {
@@ -30,7 +32,6 @@ public class CommonSemanticNoGrowthArchitectureTests
             ["Notrelix.Application.Common.Entitlements"] = new HashSet<string>(StringComparer.Ordinal)
             {
                 "Notrelix.Application.Common.Entitlements.FeatureCode",
-                "Notrelix.Application.Common.Entitlements.ISubscriptionChecker",
             },
             ["Notrelix.Application.Common.Integrations.N8n"] = new HashSet<string>(StringComparer.Ordinal)
             {

@@ -273,8 +273,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                         ResourceMemberRole: "Manager",
                         HasExplicitResourcePermission: true,
                         PermissionRules: Array.Empty<AccessPermissionRule>(),
-                        HasActiveSubscription: true,
-                        SubscriptionTier: "Test",
+                        SubscriptionRequirementSatisfied: true,
                         FeatureEnabled: true,
                         ActiveResourcePermissionRank: (int)PermissionLevel.Owner,
                         TargetPermissionRank: null));

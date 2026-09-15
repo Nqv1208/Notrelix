@@ -7,6 +7,7 @@ using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Common.Security.Auth;
+using Notrelix.Application.Features.Identity.Auth.Sessions;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Accounts.Members;

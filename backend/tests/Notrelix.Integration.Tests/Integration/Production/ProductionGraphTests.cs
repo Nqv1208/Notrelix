@@ -7,12 +7,13 @@ using Notrelix.Application.Common.Auditing;
 using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Email;
-using Notrelix.Application.Common.Entitlements;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
 using Notrelix.Application.Features.Automation.Executions.Services;
 using Notrelix.Application.Features.Billing.Public.Facts;
+using Notrelix.Application.Features.Billing.Public.Subscription;
+using Notrelix.Application.Features.Billing.Subscriptions.Services;
 using Notrelix.Application.Features.Integrations.N8n.Providers;
 using Notrelix.Application.Features.Integrations.Public.Commands;
 using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
@@ -20,7 +21,6 @@ using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Storage;
 using Notrelix.API;
-using Notrelix.Infrastructure.Billing;
 using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
@@ -84,7 +84,11 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IEmailService>().Should().BeOfType<SmtpEmailService>();
         services.GetRequiredService<IStorageService>().Should().BeOfType<LocalStorageProvider>();
 
-        services.GetRequiredService<ISubscriptionChecker>().Should().BeOfType<DatabaseSubscriptionChecker>();
+        // Billing owns the subscription decision behind a producer-owned
+        // public seam; the authorization facts provider consumes only the
+        // neutral boolean (no tier ladder in Common or Governance).
+        services.GetRequiredService<IBillingSubscriptionFacts>()
+            .Should().BeOfType<BillingSubscriptionFactsProvider>();
 
         services.GetRequiredService<IAuditService>().Should().NotBeNull();
 
