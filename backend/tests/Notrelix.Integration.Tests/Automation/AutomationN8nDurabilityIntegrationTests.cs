@@ -211,6 +211,60 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ProviderBusinessRejection_TerminalFailure_SettlesExecutionWithoutRedelivery()
+    {
+        var graph = await SeedRuleAsync();
+        var execution = await SeedExecutionAsync(graph);
+        var attempts = 0;
+
+        var rejectingAdapter = new Mock<IN8nClient>();
+        rejectingAdapter.Setup(client => client.TriggerWebhookAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns<string, string, CancellationToken>((_, __, ___) =>
+            {
+                attempts++;
+                return Task.FromResult(new N8nWebhookDispatchResult(
+                    N8nWebhookOutcome.TerminalFailure, "n8n rejected the payload"));
+            });
+
+        var consume = () => InvokeConsumerAsync(graph, execution, rejectingAdapter.Object, NewDispatchMessage(execution));
+
+        await consume.Should().NotThrowAsync(
+            "a business rejection is terminal: the consumer must not signal the delivery mechanism to redeliver");
+
+        attempts.Should().Be(1, "the consumer delegates to exactly one provider attempt and never retries internally");
+        (await LoadExecutionAsync(execution.Id)).Status.Should().Be(AutomationExecutionStatus.Failed,
+            "a provider business rejection settles the execution as a terminal failure");
+    }
+
+    [Fact]
+    public async Task ProviderUnknownOutcome_SurfacesSingleRedelivery_WithoutGuessingExecutionFate()
+    {
+        var graph = await SeedRuleAsync();
+        var execution = await SeedExecutionAsync(graph);
+        var attempts = 0;
+
+        var unknownAdapter = new Mock<IN8nClient>();
+        unknownAdapter.Setup(client => client.TriggerWebhookAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns<string, string, CancellationToken>((_, __, ___) =>
+            {
+                attempts++;
+                return Task.FromResult(new N8nWebhookDispatchResult(
+                    N8nWebhookOutcome.UnknownOutcome, "n8n webhook call timed out"));
+            });
+
+        var consume = () => InvokeConsumerAsync(graph, execution, unknownAdapter.Object, NewDispatchMessage(execution));
+
+        await consume.Should().ThrowAsync<N8nDispatchRetryableException>(
+            "an unknown outcome must request exactly one redelivery so the reconciled attempt can resolve it");
+
+        attempts.Should().Be(1, "the consumer makes one attempt and hands retry ownership to the delivery mechanism");
+        (await LoadExecutionAsync(execution.Id)).Status.Should().Be(AutomationExecutionStatus.Running,
+            "the execution fate is not guessed on an unknown outcome; it stays Running for reconciliation");
+    }
+
+    [Fact]
     public async Task FailingDispatch_DoesNotBlockIndependentDispatch()
     {
         var firstGraph = await SeedRuleAsync();
