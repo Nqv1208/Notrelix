@@ -5842,11 +5842,176 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 columns: new[] { "workspace_id", "resource_type", "resource_id", "subject_type", "subject_id" },
                 unique: true,
                 filter: "deleted_at IS NULL");
+
+            // Consolidated from former 20260907112011_M7MentionMentionedByActor.
+            // Mention creation captures the trusted mentioner actor. The column
+            // adds NOT NULL without a persistent default — the Domain aggregate
+            // already guards non-empty actors, and the database never
+            // fabricates a sentinel.
+            migrationBuilder.AddColumn<Guid>(
+                name: "mentioned_by_user_id",
+                schema: "collab",
+                table: "mentions",
+                type: "uuid",
+                nullable: false);
+
+            migrationBuilder.AddCheckConstraint(
+                name: "ck_mentions_mentioned_by_user_id_present",
+                schema: "collab",
+                table: "mentions",
+                sql: "mentioned_by_user_id <> '00000000-0000-0000-0000-000000000000'");
+
+            // Consolidated from former 20260908071133_M8IntegrationsSecretBlobsAndWebhookReceipts.
+            migrationBuilder.CreateTable(
+                name: "inbound_webhook_receipts",
+                schema: "integration",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    external_event_id = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    payload_hash = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    protected_payload = table.Column<string>(type: "text", nullable: true),
+                    received_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    processed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    failure_reason = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_inbound_webhook_receipts", x => x.id);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_inbound_webhook_receipts_received_at",
+                schema: "integration",
+                table: "inbound_webhook_receipts",
+                column: "received_at");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_inbound_webhook_receipts_provider_external_event_id",
+                schema: "integration",
+                table: "inbound_webhook_receipts",
+                columns: new[] { "provider", "external_event_id" },
+                unique: true);
+
+            migrationBuilder.CreateTable(
+                name: "integration_secret_blobs",
+                schema: "integration",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    encrypted_payload = table.Column<string>(type: "text", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    revoked = table.Column<bool>(type: "boolean", nullable: false),
+                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_integration_secret_blobs", x => x.id);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_integration_secret_blobs_revoked",
+                schema: "integration",
+                table: "integration_secret_blobs",
+                column: "revoked");
+
+            // Consolidated from former 20260911112111_M9BillingEntitlementsCapacityBackfill.
+            // The placement-projection xmin row-version token (former
+            // 20260914090515_M10PlacementRowVersion) needs no DDL here: xmin
+            // is a PostgreSQL system column present on every table.
+            migrationBuilder.AddColumn<Guid>(
+                name: "logical_operation_id",
+                schema: "billing",
+                table: "feature_usage_ledger",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "is_unlimited",
+                schema: "billing",
+                table: "entitlements",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
+            // BILL-LIMIT-001: legacy rows with limit_value = 0 encoded
+            // "unlimited" by convention. Backfill them to the explicit
+            // representation BEFORE the zero-limit semantic flip makes a
+            // numeric 0 mean "zero capacity". A fresh baseline carries no
+            // legacy rows, so this is a no-op there; it is preserved so the
+            // consolidated migration states the durable data semantics.
+            migrationBuilder.Sql(
+                "UPDATE billing.entitlements SET is_unlimited = TRUE WHERE limit_value = 0;");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_workspace_feature_usages_scope",
+                schema: "billing",
+                table: "workspace_feature_usages",
+                columns: new[] { "account_id", "workspace_id", "feature_code" },
+                unique: true);
+
+            // Global dedup identity: LogicalOperationId is unique across every
+            // account and workspace, so a replayed capacity operation can be
+            // detected regardless of scope. NULL rows (operations without an
+            // identity) are excluded from the index.
+            migrationBuilder.CreateIndex(
+                name: "ux_feature_usage_ledger_logical_operation",
+                schema: "billing",
+                table: "feature_usage_ledger",
+                column: "logical_operation_id",
+                unique: true,
+                filter: "\"logical_operation_id\" IS NOT NULL");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Reverse of the consolidated former M7/M8/M9 additions.
+            migrationBuilder.DropIndex(
+                name: "ux_workspace_feature_usages_scope",
+                schema: "billing",
+                table: "workspace_feature_usages");
+
+            migrationBuilder.DropIndex(
+                name: "ux_feature_usage_ledger_logical_operation",
+                schema: "billing",
+                table: "feature_usage_ledger");
+
+            migrationBuilder.DropColumn(
+                name: "logical_operation_id",
+                schema: "billing",
+                table: "feature_usage_ledger");
+
+            // BILL-LIMIT-001 rewind: restore legacy convention (0 = unlimited)
+            // before dropping the explicit representation.
+            migrationBuilder.Sql(
+                "UPDATE billing.entitlements SET is_unlimited = FALSE WHERE limit_value = 0;");
+
+            migrationBuilder.DropColumn(
+                name: "is_unlimited",
+                schema: "billing",
+                table: "entitlements");
+
+            migrationBuilder.DropTable(
+                name: "inbound_webhook_receipts",
+                schema: "integration");
+
+            migrationBuilder.DropTable(
+                name: "integration_secret_blobs",
+                schema: "integration");
+
+            migrationBuilder.DropCheckConstraint(
+                name: "ck_mentions_mentioned_by_user_id_present",
+                schema: "collab",
+                table: "mentions");
+
+            migrationBuilder.DropColumn(
+                name: "mentioned_by_user_id",
+                schema: "collab",
+                table: "mentions");
+
             migrationBuilder.DropIndex(
                 name: "uq_resource_permissions_active_subject",
                 schema: "governance",
