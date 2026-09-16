@@ -5,6 +5,7 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Common.Requests.Gates;
 using Notrelix.Application.Common.Requests.Security;
+using Notrelix.Application.Features.Billing.Public.Subscription;
 using Notrelix.Application.Features.Documents.Public.PageAuthorization;
 
 namespace Notrelix.Infrastructure.Data.Authz;
@@ -16,15 +17,18 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
     private readonly ApplicationDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
     private readonly IPageAuthorizationFacts _pageAuthorizationFacts;
+    private readonly IBillingSubscriptionFacts _billingSubscriptionFacts;
 
     public PostgresAccessFactsProvider(
         ApplicationDbContext dbContext,
         TimeProvider timeProvider,
-        IPageAuthorizationFacts pageAuthorizationFacts)
+        IPageAuthorizationFacts pageAuthorizationFacts,
+        IBillingSubscriptionFacts billingSubscriptionFacts)
     {
         _dbContext = dbContext;
         _timeProvider = timeProvider;
         _pageAuthorizationFacts = pageAuthorizationFacts;
+        _billingSubscriptionFacts = billingSubscriptionFacts;
     }
 
     public async Task<AccessFacts> ResolveAsync(
@@ -93,11 +97,28 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 NullableString(reader, 8),
                 reader.GetBoolean(9),
                 rules,
+                true,
                 reader.GetBoolean(11),
-                NullableString(reader, 12),
-                reader.GetBoolean(13),
-                NullableInt(reader, 14),
-                NullableInt(reader, 15));
+                NullableInt(reader, 12),
+                NullableInt(reader, 13));
+        }
+
+        // The subscription requirement is a Billing-owned commercial decision,
+        // composed here through the producer's published subscription contract
+        // instead of reading billing.subscriptions (or re-deriving a tier
+        // ladder) inside the shared authorization SQL. It is only evaluated
+        // when the request actually carries a subscription gate.
+        if (descriptor.Access.RequiresSubscription)
+        {
+            var requirement = request as IRequireSubscription
+                ?? throw new SecurityMisconfigurationException(
+                    $"{descriptor.RequestType.Name} declares RequiresSubscription but does not implement {nameof(IRequireSubscription)}.");
+            var accountId = context.AccountId
+                ?? throw new SecurityMisconfigurationException(
+                    $"{descriptor.RequestType.Name} requires account context to evaluate the subscription gate.");
+            var satisfied = await _billingSubscriptionFacts.SatisfiesRequirementAsync(
+                accountId, requirement.MinimumTier, cancellationToken);
+            facts = facts with { SubscriptionRequirementSatisfied = satisfied };
         }
 
         // Page lifecycle/visibility are Documents-owned facts, composed here

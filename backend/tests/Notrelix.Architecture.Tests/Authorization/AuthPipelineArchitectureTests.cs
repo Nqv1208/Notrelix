@@ -1,5 +1,7 @@
+using System.Reflection;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Requests.Security;
+using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Features.Identity.Registration.Commands.SendWelcomeEmail;
@@ -210,11 +212,136 @@ public class AuthPipelineArchitectureTests : ArchitectureTestBase
         // The pure AccessPolicyEngine owns authorization decisions. It must not
         // depend on any DbContext/persistence port — access facts are resolved
         // separately by IAccessFactsProvider, then evaluated with zero I/O.
-        var policyPath = Path.Combine(GetApplicationPath(), "Common", "Security", "AccessPolicyEngine.cs");
+        var policyPath = Path.Combine(GetApplicationPath(), "Features", "Governance", "Authorization", "AccessPolicyEngine.cs");
         var content = RemoveComments(File.ReadAllText(policyPath));
 
         content.Should().NotContain("DbContext", "AccessPolicyEngine must be pure — no persistence access");
         content.Should().NotContain("IWorkManagementDbContext", "AccessPolicyEngine must not couple to persistence ports");
         content.Should().NotContain("IAccessFactsProvider", "AccessPolicyEngine consumes AccessFacts, never the facts provider");
+    }
+
+    // ADR-007 — authorization evaluator ownership: the single canonical policy
+    // evaluator is Governance-owned semantics, reached from the Common pipeline
+    // only through the neutral IAccessPolicyEvaluator seam.
+
+    [Fact]
+    public void AccessPolicyEngine_IsGovernanceOwned()
+    {
+        typeof(AccessPolicyEngine).Namespace
+            .Should().Be("Notrelix.Application.Features.Governance.Authorization",
+                "ADR-007: permission semantics (actions, roles, ranks, resource-kind policy) " +
+                "are owned by Governance Application, not Application/Common");
+    }
+
+    [Fact]
+    public void EvaluatorSeam_HasExactlyOneImplementation()
+    {
+        // One evaluator authority: adding a competing implementation is a
+        // second-authorization-authority violation (BE-SEC-013), not a choice.
+        var implementations = Assembly.Load("Notrelix.Application").GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract && typeof(IAccessPolicyEvaluator).IsAssignableFrom(t))
+            .Select(t => t.FullName!)
+            .ToList();
+
+        implementations.Should().BeEquivalentTo(
+            ["Notrelix.Application.Features.Governance.Authorization.AccessPolicyEngine"],
+            "there must be exactly one canonical policy evaluator, Governance-owned");
+    }
+
+    [Fact]
+    public void Common_MustNotDepend_On_GovernanceApplicationTypes()
+    {
+        // The pipeline seam is neutral: no public type under Application/Common
+        // may expose a Governance Application type in its signature graph.
+        // AccessControlBehavior depends only on IAccessPolicyEvaluator +
+        // Common facts/decision/descriptor types.
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
+        var violations = new List<string>();
+
+        foreach (var type in Assembly.Load("Notrelix.Application").GetTypes()
+                     .Where(t => t.IsPublic && t.Namespace?.StartsWith("Notrelix.Application.Common.", StringComparison.Ordinal) == true))
+        {
+            var referenced = new List<Type>();
+
+            if (type.BaseType is { } baseType) referenced.Add(baseType);
+            referenced.AddRange(type.GetInterfaces());
+
+            foreach (var ctor in type.GetConstructors(flags))
+                referenced.AddRange(ctor.GetParameters().Select(p => p.ParameterType));
+            foreach (var property in type.GetProperties(flags))
+                referenced.Add(property.PropertyType);
+            foreach (var method in type.GetMethods(flags).Where(m => !m.IsSpecialName))
+            {
+                referenced.Add(method.ReturnType);
+                referenced.AddRange(method.GetParameters().Select(p => p.ParameterType));
+            }
+
+            foreach (var candidate in referenced.SelectMany(FlattenType))
+            {
+                if (candidate.Namespace?.StartsWith("Notrelix.Application.Features.Governance.", StringComparison.Ordinal) == true)
+                    violations.Add($"{type.FullName} -> {candidate.FullName}");
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "ADR-007: Application/Common owns pipeline mechanics only; Governance authorization " +
+            "semantics are reached exclusively through the neutral IAccessPolicyEvaluator seam. " +
+            "Violations:\n" + string.Join("\n", violations));
+    }
+
+    [Fact]
+    public void Gate_Adr007_Walker_Detects_NestedGenericGovernanceArgument()
+    {
+        // Regression guard: the walker MUST inspect generic arguments, not
+        // merely the outer generic type definition. Without the fix,
+        // Func<Task<AccessPolicyEngine>> collapsed to Func<,> + Task<> and the
+        // Governance violation was silently missed (P2 reviewer note on ADR-007).
+        var governanceHits = new[] { typeof(Func<Task<AccessPolicyEngine>>) }
+            .SelectMany(FlattenType)
+            .Where(t => t.Namespace?.StartsWith("Notrelix.Application.Features.Governance.", StringComparison.Ordinal) == true)
+            .ToList();
+
+        governanceHits.Should().ContainSingle(
+            "a Governance type wrapped in generic containers must still be detected");
+        governanceHits[0].Should().Be(typeof(AccessPolicyEngine));
+    }
+
+    /// <summary>
+    /// Recursive walk over the full type expression so generic arguments, array
+    /// elements, byref, and pointer targets are all inspected. The previous
+    /// Unwrap collapsed <c>Task&lt;GovernanceType&gt;</c> to <c>Task&lt;&gt;</c>
+    /// and lost the argument, blinding the walker to Governance types wrapped
+    /// in generic containers.
+    /// </summary>
+    private static IEnumerable<Type> FlattenType(Type type) => Enumerate(type).Distinct();
+
+    private static IEnumerable<Type> Enumerate(Type t)
+    {
+        yield return t;
+
+        if ((t.IsArray || t.IsByRef || t.IsPointer) && t.GetElementType() is { } elementType)
+        {
+            foreach (var nested in Enumerate(elementType))
+                yield return nested;
+        }
+
+        if (t.IsGenericType && !t.IsGenericTypeDefinition)
+        {
+            foreach (var argument in t.GetGenericArguments())
+                foreach (var nested in Enumerate(argument))
+                    yield return nested;
+        }
+    }
+
+    [Fact]
+    public void AccessControlBehavior_ReferencesOnlyTheSeam_NotTheConcreteEngine()
+    {
+        var behaviorPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "AccessControlBehavior.cs");
+        var content = RemoveComments(File.ReadAllText(behaviorPath));
+
+        content.Should().NotContain("AccessPolicyEngine",
+            "ADR-007: the Common pipeline stage invokes IAccessPolicyEvaluator; " +
+            "the Governance-owned evaluator implementation must never be reached from Common");
     }
 }

@@ -10,6 +10,11 @@ public class RawSqlArchitectureTests
         // Reason: sets READ ONLY transaction mode for read-scoped requests
         "src/Notrelix.Infrastructure/Data/EfRequestDataSession.cs",
 
+        // Reason: atomic first-use seed for workspace feature usage with
+        // INSERT ... SELECT ... ON CONFLICT (relies on PostgreSQL unique-scope
+        // semantics that EF cannot express)
+        "src/Notrelix.Infrastructure/Data/ApplicationDbContext.BillingCapacity.cs",
+
         // Reason: claim outbox messages with SKIP LOCKED
         "src/Notrelix.Infrastructure/BackgroundJobs/OutboxDispatcher.cs",
         

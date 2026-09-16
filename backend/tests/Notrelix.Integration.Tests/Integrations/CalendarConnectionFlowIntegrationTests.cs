@@ -199,7 +199,8 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
             new Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
                 System.TimeProvider.System,
-                new Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>())));
+                new Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>()),
+                new FakeBillingSubscriptionFacts()));
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
         services.AddSingleton<IOptions<RlsOptions>>(Options.Create(new RlsOptions
         {

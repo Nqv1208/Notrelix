@@ -194,9 +194,11 @@ billing.entitlement-expired|1|Notrelix.Domain.Billing.Entitlements.Events.Entitl
 billing.entitlement-expired|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementExpiredDomainEvent|Account|FeatureCode|System.String|False
 billing.entitlement-granted|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementGrantedDomainEvent|Account|EntitlementId|System.Guid|False
 billing.entitlement-granted|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementGrantedDomainEvent|Account|FeatureCode|System.String|False
+billing.entitlement-granted|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementGrantedDomainEvent|Account|IsUnlimited|System.Boolean|False
 billing.entitlement-granted|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementGrantedDomainEvent|Account|Limit|System.Decimal|False
 billing.entitlement-limit-changed|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementLimitChangedDomainEvent|Account|EntitlementId|System.Guid|False
 billing.entitlement-limit-changed|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementLimitChangedDomainEvent|Account|FeatureCode|System.String|False
+billing.entitlement-limit-changed|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementLimitChangedDomainEvent|Account|IsUnlimited|System.Boolean|False
 billing.entitlement-limit-changed|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementLimitChangedDomainEvent|Account|NewLimit|System.Decimal|False
 billing.entitlement-limit-changed|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementLimitChangedDomainEvent|Account|OldLimit|System.Decimal|False
 billing.entitlement-revoked|1|Notrelix.Domain.Billing.Entitlements.Events.EntitlementRevokedDomainEvent|Account|EntitlementId|System.Guid|False
@@ -255,6 +257,9 @@ billing.workspace-feature-usage-initialized|1|Notrelix.Domain.Billing.Usage.Even
 billing.workspace-feature-usage-initialized|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageInitializedDomainEvent|Workspace|Feature|Notrelix.Domain.Billing.Plans.FeatureCode|False
 billing.workspace-feature-usage-initialized|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageInitializedDomainEvent|Workspace|HardLimit|System.Decimal|True
 billing.workspace-feature-usage-initialized|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageInitializedDomainEvent|Workspace|SoftLimit|System.Decimal|True
+billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|Feature|Notrelix.Domain.Billing.Plans.FeatureCode|False
+billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|HardLimit|System.Decimal|True
+billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|SoftLimit|System.Decimal|True
 billing.workspace-feature-usage-reset|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageResetDomainEvent|Workspace|Feature|Notrelix.Domain.Billing.Plans.FeatureCode|False
 collaboration.attachment-created|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentCreatedDomainEvent|Workspace|AttachmentId|System.Guid|False
 collaboration.attachment-created|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentCreatedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False

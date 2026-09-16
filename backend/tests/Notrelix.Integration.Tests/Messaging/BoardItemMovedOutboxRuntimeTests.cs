@@ -2,6 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -199,6 +201,11 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         services.AddObservability(configuration);
         services.AddBackgroundJobs(configuration);
         services.AddCrossContextBindings();
+        // The cross-context Analytics adapter delegates to the producer-owned
+        // Public placement contract, which the production composition registers
+        // through AddApplicationServices. This granular graph must bind it too
+        // for the real placement consumer to activate.
+        services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
 
         return services.BuildServiceProvider();

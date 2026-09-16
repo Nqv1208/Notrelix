@@ -1,6 +1,6 @@
 using Notrelix.Application.Features.Identity.Abstractions;
 
-namespace Notrelix.Application.Common.Security.Auth;
+namespace Notrelix.Application.Features.Identity.Auth.Sessions;
 
 public sealed class AuthSessionIssuer : IAuthSessionIssuer
 {

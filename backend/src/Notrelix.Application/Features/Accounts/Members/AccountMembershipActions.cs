@@ -22,7 +22,7 @@ public sealed class AccountMembershipActions : IAccountMembershipActions
         _grantProjection = grantProjection;
     }
 
-    public async Task EnsureWorkspaceInviteeMembershipAsync(
+    public async Task EnsureAccountMembershipAsync(
         Guid accountId,
         Guid userId,
         Guid invitedBy,

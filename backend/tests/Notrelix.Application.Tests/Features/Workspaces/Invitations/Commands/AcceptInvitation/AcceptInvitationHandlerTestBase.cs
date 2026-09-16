@@ -46,7 +46,7 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
             .ReturnsAsync(new AccountMembershipAdmissionFact(CanAdmitMember: true));
 
         AccountMembershipActionsMock
-            .Setup(a => a.EnsureWorkspaceInviteeMembershipAsync(
+            .Setup(a => a.EnsureAccountMembershipAsync(
                 TestAccountId, TestUserId, It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 

@@ -15,10 +15,10 @@ namespace Notrelix.Architecture.Tests.LayerRules;
 ///
 /// Enforced semantics:
 ///
-///   1. zero-as-unlimited interpretation sites are governed debt — the exact
-///      baseline below is owned by the M9 semantic flip (backfill is_unlimited
-///      BEFORE the flip). New sites are rejected; removals must shrink the
-///      baseline in the same change.
+///   1. the M9 semantic flip has corrected all zero-as-unlimited
+///      interpretation sites — the detector above now only flags the old
+///      WRONG pattern. The ZeroAsUnlimitedBaseline must be empty when M9
+///      is complete; new sites are forbidden.
 ///   2. the hard-capacity owner state is the versioned WorkspaceFeatureUsage
 ///      aggregate with its QuotaExceededDomainEvent guard — it must remain the
 ///      authoritative concurrency owner.
@@ -41,51 +41,40 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
     /// interpret numeric zero as unlimited without the BILL-LIMIT-001
     /// IsUnlimited representation. Owned by the M9 semantic flip — new entries
     /// are forbidden; removals must shrink this baseline in the same change.
+    ///
+    /// After the M9 flip, all old zero-as-unlimited sites have been corrected.
+    /// The baseline is now empty; the updated detector only flags the OLD
+    /// wrong pattern (limit == 0 → return true / limit_value = 0 OR).
     /// </summary>
     private static readonly IReadOnlySet<string> ZeroAsUnlimitedBaseline =
-        new HashSet<string>(StringComparer.Ordinal)
-        {
-            "Notrelix.Application/Features/Billing/Entitlements/Services/BillingCapabilityFactsProvider.cs",
-            "Notrelix.Infrastructure/Billing/DatabaseFeatureGateChecker.cs",
-            "Notrelix.Infrastructure/Data/Authz/AccessFactsQuery.cs",
-        };
+        new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>
     /// Exact governed-debt baseline (DEBT-BILL-002): SubscriptionTier
     /// references outside Billing-owned paths. The access-policy tier ladder
-    /// is legacy authorization plumbing and the Common.Entitlements types are
-    /// the frozen ARCH-BC-008 hotspot; both are owned by the governed
-    /// entitlement migration. New references are forbidden.
+    /// and the Common.Entitlements subscription seam have both been migrated —
+    /// the subscription decision now flows through the Billing-owned
+    /// IBillingSubscriptionFacts seam, so no non-Billing production file
+    /// references SubscriptionTier. The baseline is now empty; new references
+    /// are forbidden and must go through the producer-owned Billing surface.
     /// </summary>
     private static readonly IReadOnlySet<string> TierReferenceBaseline =
-        new HashSet<string>(StringComparer.Ordinal)
-        {
-            "Notrelix.Application/Common/Entitlements/IEntitlementChecker.cs",
-            "Notrelix.Application/Common/Security/AccessFacts.cs",
-            "Notrelix.Application/Common/Security/AccessPolicyEngine.cs",
-        };
+        new HashSet<string>(StringComparer.Ordinal);
 
     // ------------------------------------------------------------------
     // Production rules
     // ------------------------------------------------------------------
 
     [Fact]
-    public void ZeroInterpretationSites_MustMatch_ExactGovernedBaseline()
+    public void ZeroInterpretationSites_MustBeEmpty_AfterM9Flip()
     {
         var actual = CollectZeroAsUnlimitedSites();
 
-        var added = actual.Except(ZeroAsUnlimitedBaseline).ToList();
-        var removed = ZeroAsUnlimitedBaseline.Except(actual).ToList();
-
-        added.Should().BeEmpty(
-            $"{GateId} / BILL-LIMIT-001: numeric zero must not be newly interpreted as unlimited. " +
-            "Zero capacity and unlimited are distinct semantics; the existing sites are " +
-            "governed debt owned by the M9 semantic flip. Violations: " + string.Join(", ", added));
-
-        removed.Should().BeEmpty(
-            $"{GateId} / BILL-LIMIT-001: the zero-as-unlimited baseline shrank — shrink " +
-            "ZeroAsUnlimitedBaseline in this test in the same change (M9 flip). " +
-            "Removed: " + string.Join(", ", removed));
+        actual.Should().BeEmpty(
+            $"{GateId} / BILL-LIMIT-001: all old zero-as-unlimited sites must be corrected by M9. " +
+            "The detector only flags the wrong interpretation (limit == 0 → return true / " +
+            "limit_value = 0 OR). Any remaining sites are new debt. Violations: " +
+            string.Join(", ", actual));
     }
 
     [Fact]
@@ -162,13 +151,16 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
     public void Gate_Detects_ZeroAsUnlimited_Site()
     {
         DetectZeroAsUnlimited("if (entitlement.Limit == 0) return true;")
-            .Should().BeTrue("a new zero-as-unlimited interpretation must be flagged");
+            .Should().BeTrue("the old wrong C# pattern (return true) must be flagged");
 
         DetectZeroAsUnlimited("AND (e.limit_value = 0 OR used + amount <= e.limit_value)")
-            .Should().BeTrue("a new SQL zero-as-unlimited interpretation must be flagged");
+            .Should().BeTrue("the old wrong SQL pattern (limit_value = 0 OR) must be flagged");
 
-        DetectZeroAsUnlimited("if (entitlement.IsUnlimited) return true;")
-            .Should().BeFalse("the explicit unlimited representation is compliant");
+        DetectZeroAsUnlimited("if (entitlement.Limit == 0) return false;")
+            .Should().BeFalse("the corrected post-M9 pattern (return false / unavailable) is compliant");
+
+        DetectZeroAsUnlimited("e.is_unlimited OR used + amount <= e.limit_value")
+            .Should().BeFalse("the corrected post-M9 SQL pattern (is_unlimited OR) is compliant");
     }
 
     [Fact]
@@ -201,7 +193,7 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
     [Fact]
     public void Gate_Detects_TierReference_OutsideBilling()
     {
-        DetectTierReference("Notrelix.Application/Common/Security/AccessPolicyEngine.cs", "facts.SubscriptionTier")
+        DetectTierReference("Notrelix.Application/Features/Governance/Authorization/AccessPolicyEngine.cs", "facts.SubscriptionTier")
             .Should().BeTrue("a governed-debt reference must be baselined, not silently grown");
 
         DetectTierReference("Notrelix.Application/Features/Automation/Rules/CreateAutomationRule.cs", "SubscriptionTier.Pro")
@@ -214,10 +206,14 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
     [Fact]
     public void Gate_Baselines_AreExact_AndPathShaped()
     {
-        ZeroAsUnlimitedBaseline.Should().NotBeEmpty();
-        ZeroAsUnlimitedBaseline.Should().OnlyContain(p => p.EndsWith(".cs", StringComparison.Ordinal));
+        // M9 completed: all old zero-as-unlimited debt has been corrected;
+        // the baseline is now empty and new sites are forbidden.
+        ZeroAsUnlimitedBaseline.Should().OnlyContain(
+            p => p.EndsWith(".cs", StringComparison.Ordinal),
+            "any future entries must use the canonical path shape");
 
-        TierReferenceBaseline.Should().NotBeEmpty();
+        // DEBT-BILL-002 closed: the tier ladder left Governance and the shared
+        // authz SQL, so the baseline is empty and new references are forbidden.
         TierReferenceBaseline.Should().OnlyContain(p => p.EndsWith(".cs", StringComparison.Ordinal));
     }
 
@@ -227,11 +223,16 @@ public class BillingCapacitySemanticsArchitectureTests : ArchitectureTestBase
 
     private static bool DetectZeroAsUnlimited(string source)
     {
-        var zeroPattern = new Regex(
-            "Limit\\s*==\\s*0\\b|limit_value\\s*=\\s*0\\b",
-            RegexOptions.Compiled);
+        // After M9, the old zero-as-unlimited interpretation has been corrected.
+        // Only flag the WRONG patterns: C# "Limit == 0 → return true" and SQL
+        // "limit_value = 0 OR" which treat a numeric zero as unlimited capacity.
+        // The correct post-M9 patterns (Limit == 0 → return false;
+        // is_unlimited OR ...) are compliant and must NOT be flagged.
+        var zeroAsUnlimitedPattern = new Regex(
+            "Limit\\s*==\\s*0.*return\\s+true|limit_value\\s*=\\s*0\\s+OR",
+            RegexOptions.Compiled | RegexOptions.Singleline);
 
-        return zeroPattern.IsMatch(source);
+        return zeroAsUnlimitedPattern.IsMatch(source);
     }
 
     private static string? ClassifyCapacityConsumption(string typeFullName)

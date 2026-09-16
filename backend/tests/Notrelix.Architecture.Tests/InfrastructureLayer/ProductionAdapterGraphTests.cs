@@ -28,9 +28,7 @@ public class ProductionAdapterGraphTests
     /// </summary>
     private static readonly HashSet<string> ConditionallyRegisteredDevTypes = new(StringComparer.Ordinal)
     {
-        "Notrelix.Infrastructure.Billing.DevNullEntitlementChecker",
-        "Notrelix.Infrastructure.Billing.DevNullSubscriptionChecker",
-        "Notrelix.Infrastructure.Billing.DevNullFeatureGateChecker",
+        "Notrelix.Infrastructure.Billing.DevNullBillingSubscriptionFacts",
         "Notrelix.Infrastructure.Email.NoopEmailService",
         "Notrelix.Infrastructure.Integrations.Providers.NoopN8nClient",
         "Notrelix.Infrastructure.DevNullIntegrationEventBus",
@@ -126,7 +124,6 @@ public class ProductionAdapterGraphTests
         ("IWorkManagementCollaborationReadPort", "WorkManagementCollaborationReadAdapter"),
         ("IIdentityBootstrapReadPort", "IdentityBootstrapReadAdapter"),
         ("IWorkActionPort", "WorkItemActionAdapter"),
-        ("IWorkItemProjectionSource", "WorkItemProjectionSourceAdapter"),
         ("IWorkItemProjectionSourceAdapter", "WorkItemProjectionSourceAdapter"),
     ];
 
@@ -185,10 +182,7 @@ public class ProductionAdapterGraphTests
                     services.AddScoped<IIdentityBootstrapReadPort, IdentityBootstrapReadAdapter>();
                     services.AddScoped<IWorkActionPort, WorkItemActionAdapter>();
                     services.AddScoped<
-                        Notrelix.Application.Features.WorkManagement.Public.ItemPlacement.IWorkItemProjectionSource,
-                        WorkItemProjectionSourceAdapter>();
-                    services.AddScoped<
-                        Notrelix.Infrastructure.Messaging.Consumers.Analytics.IWorkItemProjectionSourceAdapter,
+                        Notrelix.Application.Features.Analytics.Abstractions.IWorkItemProjectionSourceAdapter,
                         WorkItemProjectionSourceAdapter>();
                     return services;
                 }

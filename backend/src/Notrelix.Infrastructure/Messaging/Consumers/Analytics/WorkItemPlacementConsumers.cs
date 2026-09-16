@@ -1,6 +1,6 @@
 using Notrelix.Application.Events.WorkManagement;
+using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Analytics.Placements.Services;
-using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 
@@ -8,24 +8,26 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 /// Analytics-owned placement projection consumers for Work facts. Thin
 /// inbound adapters: they translate the producer event into the projection
 /// update and let the Platform dedup filter own duplicate delivery. A fact
-/// missing workspace scope is not projectable and is skipped. Scope facts the
-/// payload lacks are resolved through the producer-owned snapshot contract —
-/// never through foreign persistence.
+/// missing workspace scope is not projectable and is skipped. Consumers that
+/// already carry every placement fact in the event project it directly; only
+/// facts the payload genuinely lacks are resolved through the producer-owned
+/// snapshot contract — never through foreign persistence. Ordering uses the
+/// single producer-timestamp watermark.
 /// </summary>
 public sealed class BoardItemMovedPlacementConsumer
     : IConsumer<BoardItemMovedIntegrationEvent>
 {
     private readonly WorkspaceWorkItemPlacementService _service;
-    private readonly IWorkItemProjectionSourceAdapter _projectionSource;
+    private readonly ICurrentTenantContext _tenant;
     private readonly ILogger<BoardItemMovedPlacementConsumer> _logger;
 
     public BoardItemMovedPlacementConsumer(
         WorkspaceWorkItemPlacementService service,
-        IWorkItemProjectionSourceAdapter projectionSource,
+        ICurrentTenantContext tenant,
         ILogger<BoardItemMovedPlacementConsumer> logger)
     {
         _service = service;
-        _projectionSource = projectionSource;
+        _tenant = tenant;
         _logger = logger;
     }
 
@@ -35,24 +37,18 @@ public sealed class BoardItemMovedPlacementConsumer
         if (msg.WorkspaceId is null || msg.NewGroupId is null)
             return;
 
-        // The moved payload carries no account scope; resolve it through the
-        // producer-owned snapshot. Revision guards on the envelope timestamp.
-        var snapshot = await _projectionSource.GetItemPlacementAsync(
-            msg.WorkspaceId.Value, msg.ItemId, context.CancellationToken);
-        if (snapshot is null)
-        {
-            _logger.LogDebug("Moved item {ItemId} had no placement snapshot yet", msg.ItemId);
-            return;
-        }
+        // The moved event already carries every placement fact; no producer
+        // snapshot read is required. Account scope falls back to the tenant
+        // restored for this message by the Platform runtime.
+        var accountId = msg.AccountId ?? _tenant.RequireAccountId();
 
         var applied = await _service.ApplyPlacementAsync(
-            snapshot.AccountId,
+            accountId,
             msg.WorkspaceId.Value,
             msg.ItemId,
             msg.BoardId,
             msg.NewGroupId.Value,
             isArchived: false,
-            sourceRevision: msg.OccurredAt.UtcTicks,
             lastOccurredAt: msg.OccurredAt,
             context.CancellationToken);
 
@@ -84,7 +80,7 @@ public sealed class BoardItemCreatedPlacementConsumer
         if (msg.WorkspaceId is null)
             return;
 
-        // The created payload carries no GroupId/account; fetch the current
+        // The created payload carries no GroupId; fetch the current
         // placement through the producer-owned snapshot contract.
         var snapshot = await _projectionSource.GetItemPlacementAsync(
             msg.WorkspaceId.Value, msg.ItemId, context.CancellationToken);
@@ -102,7 +98,6 @@ public sealed class BoardItemCreatedPlacementConsumer
             snapshot.BoardId,
             snapshot.GroupId,
             snapshot.IsArchived,
-            snapshot.Revision,
             snapshot.LastOccurredAt,
             context.CancellationToken);
 
@@ -136,24 +131,10 @@ public sealed class BoardItemArchivedPlacementConsumer
         var applied = await _service.MarkArchivedAsync(
             msg.WorkspaceId.Value,
             msg.ItemId,
-            sourceRevision: msg.OccurredAt.UtcTicks,
             lastOccurredAt: msg.OccurredAt,
             context.CancellationToken);
 
         if (applied)
             _logger.LogDebug("Placement projected: archived item {ItemId}", msg.ItemId);
     }
-}
-
-/// <summary>
-/// Runtime adapter seam for the producer-owned projection source, so the
-/// consumer never touches Work persistence. Infrastructure wires it to the
-/// producer Public contract.
-/// </summary>
-public interface IWorkItemProjectionSourceAdapter
-{
-    Task<WorkItemPlacementSnapshot?> GetItemPlacementAsync(
-        Guid workspaceId,
-        Guid itemId,
-        CancellationToken cancellationToken);
 }

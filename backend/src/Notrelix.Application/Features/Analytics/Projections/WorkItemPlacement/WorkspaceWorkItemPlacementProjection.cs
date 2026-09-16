@@ -1,4 +1,4 @@
-namespace Notrelix.Domain.Analytics.Placements;
+namespace Notrelix.Application.Features.Analytics.Projections.WorkItemPlacement;
 
 /// <summary>
 /// Analytics-owned derived state: the latest known current placement of one
@@ -6,8 +6,9 @@ namespace Notrelix.Domain.Analytics.Placements;
 /// Analytics read model for placement queries — never Work source truth, and
 /// never a Billing/security authority.
 /// </summary>
-public class WorkspaceWorkItemPlacementProjection : Entity, IWorkspaceScoped
+public class WorkspaceWorkItemPlacementProjection
 {
+    public Guid Id { get; private set; }
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid ItemId { get; private set; }
@@ -20,10 +21,15 @@ public class WorkspaceWorkItemPlacementProjection : Entity, IWorkspaceScoped
     private WorkspaceWorkItemPlacementProjection() { }
 
     /// <summary>
+    /// Canonical ordering watermark: the producer timestamp of the projected
+    /// fact. Live delivery and rebuild snapshots share this single scale —
+    /// aggregate versions are never mixed into it.
+    /// </summary>
+    public static long WatermarkOf(DateTimeOffset lastOccurredAt) => lastOccurredAt.UtcTicks;
+
+    /// <summary>
     /// Creates or re-derives the projection from a producer-owned snapshot
-    /// fact. Last-write-wins by producer revision: a snapshot older than the
-    /// currently known revision is ignored so out-of-order delivery cannot
-    /// regress the projection.
+    /// fact at the producer-timestamp watermark.
     /// </summary>
     public static WorkspaceWorkItemPlacementProjection Upsert(
         Guid accountId,
@@ -32,7 +38,6 @@ public class WorkspaceWorkItemPlacementProjection : Entity, IWorkspaceScoped
         Guid boardId,
         Guid groupId,
         bool isArchived,
-        long sourceRevision,
         DateTimeOffset lastOccurredAt)
     {
         Guard.NotEmpty(accountId);
@@ -41,54 +46,63 @@ public class WorkspaceWorkItemPlacementProjection : Entity, IWorkspaceScoped
 
         return new WorkspaceWorkItemPlacementProjection
         {
+            Id = Guid.CreateVersion7(),
             AccountId = accountId,
             WorkspaceId = workspaceId,
             ItemId = itemId,
             BoardId = boardId,
             GroupId = groupId,
             IsArchived = isArchived,
-            SourceRevision = sourceRevision,
+            SourceRevision = WatermarkOf(lastOccurredAt),
             LastOccurredAt = lastOccurredAt,
         };
     }
 
     /// <summary>
     /// Applies a newer producer fact. Returns false and changes nothing when
-    /// the incoming revision is not newer (duplicate or stale delivery).
+    /// the incoming watermark is not strictly newer (duplicate or stale
+    /// delivery), so out-of-order live facts cannot regress the projection.
     /// </summary>
     public bool ApplyNewer(
         Guid boardId,
         Guid groupId,
         bool isArchived,
-        long sourceRevision,
         DateTimeOffset lastOccurredAt)
     {
-        if (sourceRevision <= SourceRevision)
+        var watermark = WatermarkOf(lastOccurredAt);
+        if (watermark <= SourceRevision)
             return false;
 
         BoardId = boardId;
         GroupId = groupId;
         IsArchived = isArchived;
-        SourceRevision = sourceRevision;
+        SourceRevision = watermark;
         LastOccurredAt = lastOccurredAt;
         return true;
     }
 
     /// <summary>
-    /// Reconciliation path: replaces local state from a producer-owned
-    /// snapshot regardless of revision (rebuild after drift).
+    /// Reconciliation path for rebuild: applies a producer snapshot whose
+    /// watermark is at or ahead of the local state (equal watermarks are the
+    /// authorized drift-repair window). A strictly older snapshot is refused —
+    /// a live fact that arrived after the snapshot was taken must not be
+    /// overwritten. Returns true when local state was replaced.
     /// </summary>
-    public void Reconcile(
+    public bool Reconcile(
         Guid boardId,
         Guid groupId,
         bool isArchived,
-        long sourceRevision,
         DateTimeOffset lastOccurredAt)
     {
+        var watermark = WatermarkOf(lastOccurredAt);
+        if (watermark < SourceRevision)
+            return false;
+
         BoardId = boardId;
         GroupId = groupId;
         IsArchived = isArchived;
-        SourceRevision = sourceRevision;
+        SourceRevision = watermark;
         LastOccurredAt = lastOccurredAt;
+        return true;
     }
 }

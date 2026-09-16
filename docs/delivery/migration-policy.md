@@ -520,6 +520,8 @@ Do not silence pending-model-change/schema drift warnings as a migration strateg
 
 Migration files should explain intent through meaningful naming and remain immutable after production application except under an explicitly safe development-only policy.
 
+The repository's explicitly safe development-only policy is a dev-stage re-baseline: while no production database exists, the whole chain may be consolidated into the single development baseline migration (owned operationally by `backend/docs/operations/migrations-and-data-change.md` §8 / BE-OPS-DATA-004). Existing development databases are reset rather than upgraded, and the migration-discipline gate recognizes the exception only while the migration chain is exactly that one baseline file. Once a production database exists, the exception is retired and this policy reverts to strict append-only.
+
 # 57. DEL-MIG-028 — Applied migration history is append-oriented
 
 Do not rewrite already-applied production migration meaning casually.
