@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Events.Automation;
 using Notrelix.Application.Features.Automation.Executions.Services;
