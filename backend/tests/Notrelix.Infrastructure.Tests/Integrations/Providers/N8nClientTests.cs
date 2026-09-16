@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 using Notrelix.Application.Features.Integrations.Public.Commands;
 using Notrelix.Infrastructure.Integrations.Providers;
 using Notrelix.Infrastructure.Options;
@@ -9,11 +10,12 @@ namespace Notrelix.Infrastructure.Tests.Integrations.Providers;
 /// TAC-PF-FLOW-04 (TAC 117D) — provider outcome classification at the
 /// Infrastructure webhook adapter seam. A mocked HTTP handler proves the
 /// transport-to-semantic mapping the delivery mechanism relies on to classify
-/// a retry: business rejection (4xx), technical transient (connection failure),
-/// rate-limit / timeout (429 / 408 / 5xx), and unknown outcome (a request that
-/// times out may still have been processed). The adapter performs exactly one
-/// HTTP attempt — it never retries internally, so the durable delivery mechanism
-/// stays the single retry owner.
+/// a retry: business rejection (4xx), unambiguous connection-phase failure
+/// (connection refused / DNS failure), rate-limit (429), and indeterminate
+/// outcomes (408, 5xx, timeout, connection reset, bare transport error) which
+/// MUST NOT be auto re-fired because the provider may have processed the call.
+/// The adapter performs exactly one HTTP attempt — it never retries internally,
+/// so the durable delivery mechanism stays the single retry owner.
 /// </summary>
 public class N8nClientTests
 {
@@ -36,18 +38,28 @@ public class N8nClientTests
 
     [Theory]
     [InlineData(HttpStatusCode.RequestTimeout)]   // 408 request timeout
-    [InlineData(HttpStatusCode.TooManyRequests)]  // 429 rate limit
     [InlineData(HttpStatusCode.InternalServerError)]
     [InlineData(HttpStatusCode.ServiceUnavailable)]
-    public async Task TransientProviderStatus_ReturnsRetryableFailure(HttpStatusCode status)
+    public async Task IndeterminateStatus_ReturnsUnknownOutcome(HttpStatusCode status)
     {
         var client = ClientWith((_, _) => Task.FromResult(new HttpResponseMessage(status)));
 
         var result = await client.TriggerWebhookAsync("card-assigned", "{}");
 
-        result.Outcome.Should().Be(N8nWebhookOutcome.RetryableFailure,
-            $"{(int)status} is a transient transport signal a later attempt may clear");
+        result.Outcome.Should().Be(N8nWebhookOutcome.UnknownOutcome,
+            $"{(int)status} is indeterminate: the provider may or may not have processed the call");
         result.Error.Should().Contain(((int)status).ToString());
+    }
+
+    [Fact]
+    public async Task RateLimitStatus_ReturnsRetryableFailure()
+    {
+        var client = ClientWith((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.TooManyRequests)));
+
+        var result = await client.TriggerWebhookAsync("card-assigned", "{}");
+
+        result.Outcome.Should().Be(N8nWebhookOutcome.RetryableFailure,
+            "429 is retryable only when the provider/gateway contract guarantees rejection before execution");
     }
 
     [Theory]
@@ -83,7 +95,67 @@ public class N8nClientTests
     }
 
     [Fact]
-    public async Task ConnectionFailure_ReturnsRetryableFailure_AndMakesExactlyOneAttempt()
+    public async Task ConnectionRefused_ReturnsRetryableFailure_AndMakesExactlyOneAttempt()
+    {
+        var attempts = 0;
+        var client = ClientWith((_, _) =>
+        {
+            attempts++;
+            throw new HttpRequestException(
+                "connection refused",
+                new SocketException((int)SocketError.ConnectionRefused));
+        });
+
+        var result = await client.TriggerWebhookAsync("card-assigned", "{}");
+
+        result.Outcome.Should().Be(N8nWebhookOutcome.RetryableFailure,
+            "a connection refused the request never reached the provider — safe to retry");
+        attempts.Should().Be(1,
+            "the adapter makes exactly one attempt; retry ownership stays with the delivery mechanism");
+    }
+
+    [Fact]
+    public async Task NameResolutionFailure_ReturnsRetryableFailure_AndMakesExactlyOneAttempt()
+    {
+        var attempts = 0;
+        var client = ClientWith((_, _) =>
+        {
+            attempts++;
+            throw new HttpRequestException(
+                "no such host",
+                new SocketException((int)SocketError.HostNotFound));
+        });
+
+        var result = await client.TriggerWebhookAsync("card-assigned", "{}");
+
+        result.Outcome.Should().Be(N8nWebhookOutcome.RetryableFailure,
+            "a DNS failure proves the request never reached the provider — safe to retry");
+        attempts.Should().Be(1,
+            "the adapter makes exactly one attempt; retry ownership stays with the delivery mechanism");
+    }
+
+    [Fact]
+    public async Task ConnectionReset_ReturnsUnknownOutcome_AndMakesExactlyOneAttempt()
+    {
+        var attempts = 0;
+        var client = ClientWith((_, _) =>
+        {
+            attempts++;
+            throw new HttpRequestException(
+                "connection reset by peer",
+                new SocketException((int)SocketError.ConnectionReset));
+        });
+
+        var result = await client.TriggerWebhookAsync("card-assigned", "{}");
+
+        result.Outcome.Should().Be(N8nWebhookOutcome.UnknownOutcome,
+            "a connection reset may occur after the provider received the call — indeterminate");
+        attempts.Should().Be(1,
+            "the adapter makes exactly one attempt; retry ownership stays with the delivery mechanism");
+    }
+
+    [Fact]
+    public async Task BareTransportError_ReturnsUnknownOutcome_AndMakesExactlyOneAttempt()
     {
         var attempts = 0;
         var client = ClientWith((_, _) =>
@@ -94,10 +166,24 @@ public class N8nClientTests
 
         var result = await client.TriggerWebhookAsync("card-assigned", "{}");
 
-        result.Outcome.Should().Be(N8nWebhookOutcome.RetryableFailure,
-            "a transport/connection failure is transient and may be retried");
+        result.Outcome.Should().Be(N8nWebhookOutcome.UnknownOutcome,
+            "a transport error without a proven connection-phase cause is indeterminate");
         attempts.Should().Be(1,
             "the adapter makes exactly one attempt; retry ownership stays with the delivery mechanism");
+    }
+
+    [Fact]
+    public async Task CallerCancellation_PropagatesToCaller_NotClassifiedAsUnknownOutcome()
+    {
+        var client = ClientWith((_, _) => throw new TaskCanceledException("the request timed out"));
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var consume = () => client.TriggerWebhookAsync("card-assigned", "{}", cts.Token);
+
+        await consume.Should().ThrowAsync<OperationCanceledException>(
+            "the deliverer's own cancellation must propagate, not be disguised as an unknown provider outcome");
     }
 
     private sealed class StubHandler(

@@ -62,6 +62,9 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
     {
         // Must match WorkspaceProvisioningConsumerDefinition.EndpointName.
         "notrelix-identity-registration-completed-workspace-provision-v1",
+        // Must match N8nDispatchConsumerDefinition.EndpointName.
+        // Consumer opens its own transaction + RLS so dedup filter must not wrap.
+        "notrelix-automation-n8n-dispatch-v1",
     };
 
     /// <summary>

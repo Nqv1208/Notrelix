@@ -44,6 +44,14 @@ public sealed class N8nDispatchUseCase
         if (execution is null)
             return true; // nothing to progress; caller logs and completes
 
+        // Idempotency guard: if the execution already reached a terminal
+        // state (e.g. redelivery after commit succeeded on a prior attempt),
+        // do not re-fire the provider call or re-queue the execution.
+        if (execution.Status is AutomationExecutionStatus.Succeeded
+            or AutomationExecutionStatus.Failed
+            or AutomationExecutionStatus.Cancelled)
+            return true;
+
         if (execution.Status == AutomationExecutionStatus.Queued)
             execution.Start(_clock.UtcNow);
 
@@ -90,10 +98,15 @@ public sealed class N8nDispatchUseCase
 
             case N8nWebhookOutcome.UnknownOutcome:
             default:
-                // Unknown outcome must not guess the execution's fate; leave the
-                // attempt running and surface a technical retry to the caller.
-                await _context.SaveChangesAsync(cancellationToken);
-                return false;
+                // Unknown outcome: the provider may or may not have processed
+                // the call. MUST NOT auto re-fire — that risks duplicate
+                // side-effects. Settle the execution as failed with an explicit
+                // reconciliation-required signal so a human or reconciliation
+                // process can resolve it.
+                execution.Fail(
+                    $"{result.Error ?? "n8n outcome unknown"} — reconciliation required",
+                    now);
+                return true;
         }
     }
 

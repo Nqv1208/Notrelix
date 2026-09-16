@@ -238,7 +238,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ProviderUnknownOutcome_SurfacesSingleRedelivery_WithoutGuessingExecutionFate()
+    public async Task ProviderUnknownOutcome_SettlesExecutionAsFailed_WithoutRedelivery()
     {
         var graph = await SeedRuleAsync();
         var execution = await SeedExecutionAsync(graph);
@@ -256,12 +256,15 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
 
         var consume = () => InvokeConsumerAsync(graph, execution, unknownAdapter.Object, NewDispatchMessage(execution));
 
-        await consume.Should().ThrowAsync<N8nDispatchRetryableException>(
-            "an unknown outcome must request exactly one redelivery so the reconciled attempt can resolve it");
+        await consume.Should().NotThrowAsync(
+            "an unknown outcome must NOT auto re-fire the provider call — that risks duplicate delivery");
 
-        attempts.Should().Be(1, "the consumer makes one attempt and hands retry ownership to the delivery mechanism");
-        (await LoadExecutionAsync(execution.Id)).Status.Should().Be(AutomationExecutionStatus.Running,
-            "the execution fate is not guessed on an unknown outcome; it stays Running for reconciliation");
+        attempts.Should().Be(1, "the consumer makes one attempt and never redelivers an unknown outcome on its own");
+        var stored = await LoadExecutionAsync(execution.Id);
+        stored.Status.Should().Be(AutomationExecutionStatus.Failed,
+            "an unknown outcome settles the execution as a terminal failure for reconciliation");
+        stored.Error.Should().Contain("reconciliation required",
+            "the persisted error signals the execution must be reconciled before any manual re-dispatch");
     }
 
     [Fact]
@@ -357,9 +360,16 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         IN8nClient adapter,
         N8nDispatchRequestedV1 message)
     {
-        await using var context = _db.CreateContext(SystemTenant());
+        var tenant = SystemTenant();
+        await using var context = _db.CreateContext(tenant);
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(Now);
+
+        var rls = new Notrelix.Infrastructure.Data.Rls.RlsSessionContext(
+            context,
+            Microsoft.Extensions.Options.Options.Create(
+                new Notrelix.Application.Common.Data.Rls.RlsOptions { SetSessionContext = true }),
+            tenant);
 
         var useCase = new N8nDispatchUseCase(
             context,
@@ -367,6 +377,8 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
             clockMock.Object);
         var consumer = new N8nDispatchConsumer(
             useCase,
+            context,
+            rls,
             NullLogger<N8nDispatchConsumer>.Instance,
             new PipelineMetrics());
 
@@ -375,7 +387,6 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
 
         await consumer.Consume(consumeContext.Object);
-        await context.SaveChangesAsync();
     }
 
     private DomainEventInterceptor CreateOutboxInterceptor(IntegrationEventCollector collector)
