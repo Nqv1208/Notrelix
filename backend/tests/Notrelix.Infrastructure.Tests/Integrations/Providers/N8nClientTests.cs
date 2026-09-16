@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http;
 using Notrelix.Application.Features.Integrations.Public.Commands;
 using Notrelix.Infrastructure.Integrations.Providers;
 using Notrelix.Infrastructure.Options;
