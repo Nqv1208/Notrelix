@@ -26,6 +26,8 @@ public static class MessagingRegistration
 
         // Message deduplication store (Application abstraction -> Infrastructure implementation).
         services.AddScoped<IMessageDeduplicationStore, MessageDeduplicationStore>();
+        // Consumer-owned claim protocol (n8n dispatch prepare/effect/settle).
+        services.AddScoped<IProviderEffectClaimStore, MessageDeduplicationStore>();
 
         // Consumer registry (immutable catalog of all registered consumers).
         services.AddSingleton<IConsumerRegistry>(

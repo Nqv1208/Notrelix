@@ -4,7 +4,7 @@ using Notrelix.Infrastructure.Observability.Metrics;
 
 namespace Notrelix.Infrastructure.Messaging;
 
-public sealed class MessageDeduplicationStore : IMessageDeduplicationStore
+public sealed class MessageDeduplicationStore : IMessageDeduplicationStore, IProviderEffectClaimStore
 {
     private readonly ApplicationDbContext _context;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -76,6 +76,59 @@ public sealed class MessageDeduplicationStore : IMessageDeduplicationStore
 
         claim?.MarkSucceeded(processedAt);
     }
+
+    // ------------------------------------------------------------------
+    // IProviderEffectClaimStore — consumer-owned claim lifecycle used by the
+    // n8n dispatch endpoint (acquire/prepare tx, out-of-tx effect, settle tx).
+    // ------------------------------------------------------------------
+
+    public Task<bool> TryAcquireClaimAsync(
+        Guid messageId,
+        string consumerName,
+        string messageName,
+        int messageVersion,
+        Guid? sourceEventId,
+        Guid? workspaceId,
+        CancellationToken cancellationToken)
+        => TryClaimProcessingAsync(
+            messageId, consumerName, messageName, messageVersion, sourceEventId, workspaceId, cancellationToken);
+
+    public async Task<MessageClaimInspection> InspectClaimAsync(
+        Guid messageId,
+        string consumerName,
+        CancellationToken cancellationToken)
+    {
+        var claim = await _context.Set<MessagingProcessedEvent>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.EventId == messageId && e.ConsumerName == consumerName, cancellationToken);
+
+        if (claim is null)
+            return new MessageClaimInspection(MessageClaimState.Missing, null);
+
+        var state = claim.Status == "Succeeded"
+            ? MessageClaimState.Succeeded
+            : MessageClaimState.Processing;
+        return new MessageClaimInspection(state, claim.ClaimedAt);
+    }
+
+    public async Task<bool> TryReleaseProcessingClaimAsync(
+        Guid messageId,
+        string consumerName,
+        CancellationToken cancellationToken)
+    {
+        var deleted = await _context.Set<MessagingProcessedEvent>()
+            .Where(e => e.EventId == messageId
+                && e.ConsumerName == consumerName
+                && e.Status == "Processing")
+            .ExecuteDeleteAsync(cancellationToken);
+        return deleted > 0;
+    }
+
+    public void MarkClaimSucceeded(
+        Guid messageId,
+        string consumerName,
+        DateTimeOffset processedAt)
+        => MarkSucceeded(messageId, consumerName, processedAt);
 
     private static bool IsUniqueViolation(DbUpdateException ex)
     {

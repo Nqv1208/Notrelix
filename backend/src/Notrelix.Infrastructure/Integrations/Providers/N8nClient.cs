@@ -59,11 +59,11 @@ public sealed class N8nClient : IN8nClient
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException se
             && se.SocketErrorCode is SocketError.ConnectionRefused
-                or SocketError.ConnectionAborted
                 or SocketError.HostNotFound)
         {
-            // Unambiguous connection-phase failure: the request never reached
-            // the provider. Safe to retry.
+            // Unambiguous connection-phase failure: the connection to the
+            // provider was never established, so the request did not reach it.
+            // Safe to retry.
             return new N8nWebhookDispatchResult(
                 N8nWebhookOutcome.RetryableFailure,
                 $"n8n webhook call failed: {ex.Message}");
@@ -83,11 +83,9 @@ public sealed class N8nClient : IN8nClient
         {
             // 429 rate-limit: retryable ONLY when the provider/gateway contract
             // guarantees rejection before execution. Without such a guarantee
-            // (the common case), treat as unknown.
-            429 => N8nWebhookOutcome.RetryableFailure,
-            // 408 request timeout / 5xx provider failure: the provider may or
-            // may not have processed the call. Indeterminate.
-            408 or >= 500 => N8nWebhookOutcome.UnknownOutcome,
+            // (the common case), treat as unknown — the provider may have
+            // accepted the call before returning 429.
+            408 or 429 or >= 500 => N8nWebhookOutcome.UnknownOutcome,
             _ => N8nWebhookOutcome.TerminalFailure,
         };
 }
