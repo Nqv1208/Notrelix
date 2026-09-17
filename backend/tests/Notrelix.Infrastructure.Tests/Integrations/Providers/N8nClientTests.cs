@@ -10,12 +10,13 @@ namespace Notrelix.Infrastructure.Tests.Integrations.Providers;
 /// TAC-PF-FLOW-04 (TAC 117D) — provider outcome classification at the
 /// Infrastructure webhook adapter seam. A mocked HTTP handler proves the
 /// transport-to-semantic mapping the delivery mechanism relies on to classify
-/// a retry: business rejection (4xx), unambiguous connection-phase failure
-/// (connection refused / DNS failure), rate-limit (429), and indeterminate
-/// outcomes (408, 5xx, timeout, connection reset, bare transport error) which
-/// MUST NOT be auto re-fired because the provider may have processed the call.
-/// The adapter performs exactly one HTTP attempt — it never retries internally,
-/// so the durable delivery mechanism stays the single retry owner.
+/// a retry: business rejection (4xx except 408/429), unambiguous connection-
+/// phase failure (connection refused / DNS failure — the connection to the
+/// provider was never established), and indeterminate outcomes (408, 429, 5xx,
+/// timeout, connection reset/aborted, bare transport error) which MUST NOT be
+/// auto re-fired because the provider may have processed the call. The adapter
+/// performs exactly one HTTP attempt — it never retries internally, so the
+/// durable delivery mechanism stays the single retry owner.
 /// </summary>
 public class N8nClientTests
 {
@@ -52,14 +53,14 @@ public class N8nClientTests
     }
 
     [Fact]
-    public async Task RateLimitStatus_ReturnsRetryableFailure()
+    public async Task RateLimitStatus_NotRetryable_WithoutGuaranteedPreExecutionRejection()
     {
         var client = ClientWith((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.TooManyRequests)));
 
         var result = await client.TriggerWebhookAsync("card-assigned", "{}");
 
-        result.Outcome.Should().Be(N8nWebhookOutcome.RetryableFailure,
-            "429 is retryable only when the provider/gateway contract guarantees rejection before execution");
+        result.Outcome.Should().Be(N8nWebhookOutcome.UnknownOutcome,
+            "429 must NOT be auto re-fired unless the provider/gateway contract guarantees rejection before execution");
     }
 
     [Theory]
@@ -130,6 +131,26 @@ public class N8nClientTests
 
         result.Outcome.Should().Be(N8nWebhookOutcome.RetryableFailure,
             "a DNS failure proves the request never reached the provider — safe to retry");
+        attempts.Should().Be(1,
+            "the adapter makes exactly one attempt; retry ownership stays with the delivery mechanism");
+    }
+
+    [Fact]
+    public async Task ConnectionAborted_ReturnsUnknownOutcome_AndMakesExactlyOneAttempt()
+    {
+        var attempts = 0;
+        var client = ClientWith((_, _) =>
+        {
+            attempts++;
+            throw new HttpRequestException(
+                "connection aborted",
+                new SocketException((int)SocketError.ConnectionAborted));
+        });
+
+        var result = await client.TriggerWebhookAsync("card-assigned", "{}");
+
+        result.Outcome.Should().Be(N8nWebhookOutcome.UnknownOutcome,
+            "a connection abort does not prove the connection was never established — indeterminate");
         attempts.Should().Be(1,
             "the adapter makes exactly one attempt; retry ownership stays with the delivery mechanism");
     }

@@ -26,20 +26,21 @@ namespace Notrelix.Integration.Tests.Automation;
 /// <summary>
 /// TAC-PF-FLOW-04 (M11) — production-composition proof for the n8n dispatch
 /// chain: N8nDispatchRequestedV1 travels TenantContextConsumeFilter →
-/// DeduplicationConsumeFilter (command-owned path) → the real
+/// DeduplicationConsumeFilter (consumer-owned path) → the real
 /// N8nDispatchConsumer with its own transaction + RLS → the provider adapter
-/// port. Exactly the shipped graph; only the provider port and the dedup store
-/// are replaced with fakes. Proves: (1) an unknown provider outcome settles the
-/// execution as Failed with a reconciliation marker and never auto re-fires,
-/// and (2) a retryable outcome persists durable attempt evidence across real
-/// MassTransit retries (the first attempt's attempt-count survives before the
-/// retry re-runs the consumer).
+/// port. Exactly the shipped graph; only the provider port and the dedup/claim
+/// store are replaced with a recording fake. Proves: (1) an unknown provider
+/// outcome settles the execution as Failed with a reconciliation marker and
+/// never auto re-fires, and (2) a retryable outcome persists durable attempt
+/// evidence across real MassTransit retries (the first attempt's attempt-count
+/// survives before the retry re-runs the consumer without re-acquiring under a
+/// new identity).
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
 public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
 {
-    private const string N8nDispatchEndpoint = "notrelix-automation-n8n-dispatch-v1";
+    private const string N8nDispatchEndpoint = N8nDispatchProtocolEndpoints.DispatchEndpointName;
 
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
@@ -250,6 +251,14 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
                         sp.GetRequiredService<Notrelix.Application.Common.Time.IDateTimeProvider>(),
                         sp.GetRequiredService<MetricsService>()))));
 
+        builder.Services.Replace(
+            ServiceDescriptor.Scoped<IProviderEffectClaimStore>(sp =>
+                new RecordingDeduplicationStore(
+                    new MessageDeduplicationStore(
+                        sp.GetRequiredService<ApplicationDbContext>(),
+                        sp.GetRequiredService<Notrelix.Application.Common.Time.IDateTimeProvider>(),
+                        sp.GetRequiredService<MetricsService>()))));
+
         return builder.Services.BuildServiceProvider();
     }
 
@@ -328,7 +337,8 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
         public int CallCount => _callCount;
     }
 
-    private sealed class RecordingDeduplicationStore(IMessageDeduplicationStore inner) : IMessageDeduplicationStore
+    private sealed class RecordingDeduplicationStore(MessageDeduplicationStore inner)
+        : IMessageDeduplicationStore, IProviderEffectClaimStore
     {
         private static readonly ConcurrentDictionary<(Guid EventId, string ConsumerName), int> Claims = new();
 
@@ -356,5 +366,34 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
 
         public void MarkSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
             inner.MarkSucceeded(messageId, consumerName, processedAt);
+
+        public async Task<bool> TryAcquireClaimAsync(
+            Guid messageId,
+            string consumerName,
+            string messageName,
+            int messageVersion,
+            Guid? sourceEventId,
+            Guid? workspaceId,
+            CancellationToken cancellationToken)
+        {
+            Claims.AddOrUpdate((messageId, consumerName), 1, (_, count) => count + 1);
+            return await inner.TryAcquireClaimAsync(
+                messageId, consumerName, messageName, messageVersion, sourceEventId, workspaceId, cancellationToken);
+        }
+
+        public Task<MessageClaimInspection> InspectClaimAsync(
+            Guid messageId,
+            string consumerName,
+            CancellationToken cancellationToken) =>
+            inner.InspectClaimAsync(messageId, consumerName, cancellationToken);
+
+        public Task<bool> TryReleaseProcessingClaimAsync(
+            Guid messageId,
+            string consumerName,
+            CancellationToken cancellationToken) =>
+            inner.TryReleaseProcessingClaimAsync(messageId, consumerName, cancellationToken);
+
+        public void MarkClaimSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
+            inner.MarkClaimSucceeded(messageId, consumerName, processedAt);
     }
 }

@@ -295,6 +295,120 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
             "one failing dispatch must not head-of-line block unrelated dispatches");
     }
 
+    // ------------------------------------------------------------------
+    // Crash-boundary protocol (TAC-PF-FLOW-04 / M11). Under the
+    // prepare/effect/settle protocol every crash point has a durable,
+    // safe redelivery outcome:
+    //   A  crash after Tx1 (claim Processing + execution Running) before the
+    //      provider effect → redelivery must NOT re-fire; the interrupted
+    //      attempt settles Failed with "reconciliation required".
+    //   B  crash after a retryable Tx2 commit (evidence Queued + attempt++
+    //      with the claim RELEASED) before ACK → redelivery re-acquires the
+    //      claim and re-runs the attempt under the same execution identity.
+    //   C  crash after a success Tx2 commit (claim Succeeded + execution
+    //      Succeeded) before ACK → redelivery skips and never re-fires.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task CrashAfterPrepareCommit_RunningResidue_DoesNotRefireAndSettlesFailedWithReconciliation()
+    {
+        var graph = await SeedRuleAsync();
+        var execution = await SeedRunningExecutionAsync(graph);
+
+        var message = NewDispatchMessage(execution);
+        await SeedProcessingClaimAsync(message, graph.WorkspaceId);
+
+        var providerCalls = 0;
+        var adapter = new Mock<IN8nClient>();
+        adapter.Setup(client => client.TriggerWebhookAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns<string, string, CancellationToken>((_, _, _) =>
+            {
+                providerCalls++;
+                return Task.FromResult(new N8nWebhookDispatchResult(N8nWebhookOutcome.Succeeded, null));
+            });
+
+        await InvokeConsumerAsync(graph, execution, adapter.Object, message);
+
+        providerCalls.Should().Be(0,
+            "a redelivery of an interrupted attempt must never re-fire the provider call");
+
+        var stored = await LoadExecutionAsync(execution.Id);
+        stored.Status.Should().Be(AutomationExecutionStatus.Failed,
+            "an interrupted attempt whose provider outcome is unknown settles as a terminal failure");
+        stored.Error.Should().Contain("reconciliation required",
+            "the persisted error signals the outcome must be reconciled before any manual re-dispatch");
+
+        var claim = await LoadClaimAsync(message.EventId);
+        claim.Should().NotBeNull();
+        claim!.Status.Should().Be("Succeeded",
+            "the claim must normalize to Succeeded so a later governed re-dispatch is not blocked");
+    }
+
+    [Fact]
+    public async Task CrashAfterRetryableEvidenceCommit_ClaimReleased_RedeliveryReacquiresAndRetries()
+    {
+        var graph = await SeedRuleAsync();
+        var execution = await SeedRequeuedExecutionAsync(graph);
+
+        var message = NewDispatchMessage(execution);
+
+        var providerCalls = 0;
+        var adapter = new Mock<IN8nClient>();
+        adapter.Setup(client => client.TriggerWebhookAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns<string, string, CancellationToken>((_, _, _) =>
+            {
+                providerCalls++;
+                return Task.FromResult(new N8nWebhookDispatchResult(N8nWebhookOutcome.Succeeded, null));
+            });
+
+        await InvokeConsumerAsync(graph, execution, adapter.Object, message);
+
+        providerCalls.Should().Be(1,
+            "redelivery after a released claim must re-run the attempt once");
+
+        var stored = await LoadExecutionAsync(execution.Id);
+        stored.Status.Should().Be(AutomationExecutionStatus.Succeeded);
+        stored.AttemptCount.Should().Be(1,
+            "the attempt evidence persisted before the crash must survive and not double-count");
+
+        var claim = await LoadClaimAsync(message.EventId);
+        claim.Should().NotBeNull("redelivery must re-acquire the released claim");
+        claim!.Status.Should().Be("Succeeded");
+    }
+
+    [Fact]
+    public async Task CrashAfterSucceededCommit_RedeliverySkipsAndNeverRefires()
+    {
+        var graph = await SeedRuleAsync();
+        var execution = await SeedSucceededExecutionAsync(graph);
+
+        var message = NewDispatchMessage(execution);
+        await SeedSucceededClaimAsync(message, graph.WorkspaceId);
+
+        var providerCalls = 0;
+        var adapter = new Mock<IN8nClient>();
+        adapter.Setup(client => client.TriggerWebhookAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns<string, string, CancellationToken>((_, _, _) =>
+            {
+                providerCalls++;
+                return Task.FromResult(new N8nWebhookDispatchResult(N8nWebhookOutcome.Succeeded, null));
+            });
+
+        await InvokeConsumerAsync(graph, execution, adapter.Object, message);
+
+        providerCalls.Should().Be(0,
+            "a succeeded execution must never be re-fired");
+
+        (await LoadExecutionAsync(execution.Id)).Status.Should().Be(AutomationExecutionStatus.Succeeded);
+
+        var claim = await LoadClaimAsync(message.EventId);
+        claim.Should().NotBeNull();
+        claim!.Status.Should().Be("Succeeded");
+    }
+
     // --- helpers --------------------------------------------------------------
 
     private sealed record RuleGraph(Guid AccountId, Guid WorkspaceId, Guid RuleId);
@@ -342,6 +456,87 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         return execution;
     }
 
+    private async Task<AutomationExecution> SeedRunningExecutionAsync(RuleGraph graph)
+    {
+        var execution = AutomationExecution.Create(
+            graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
+        execution.Start(Now);
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.AutomationExecutions.Add(execution);
+        await seed.SaveChangesAsync();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
+        return execution;
+    }
+
+    private async Task<AutomationExecution> SeedRequeuedExecutionAsync(RuleGraph graph)
+    {
+        var execution = AutomationExecution.Create(
+            graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
+        execution.Start(Now);
+        execution.RecordRetryableDispatchFailure("n8n unreachable", Now);
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.AutomationExecutions.Add(execution);
+        await seed.SaveChangesAsync();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
+        return execution;
+    }
+
+    private async Task<AutomationExecution> SeedSucceededExecutionAsync(RuleGraph graph)
+    {
+        var execution = AutomationExecution.Create(
+            graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
+        execution.Start(Now);
+        execution.Succeed(Now);
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.AutomationExecutions.Add(execution);
+        await seed.SaveChangesAsync();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
+        return execution;
+    }
+
+    private static MessagingProcessedEvent NewClaim(N8nDispatchRequestedV1 message, Guid workspaceId)
+    {
+        var claim = new MessagingProcessedEvent(
+            eventId: message.EventId,
+            consumerName: N8nDispatchProtocolEndpoints.DispatchEndpointName,
+            sourceContext: null,
+            messageName: message.MessageName,
+            messageVersion: message.SchemaVersion,
+            sourceEventId: message.SourceEventId,
+            subjectType: null,
+            subjectId: null,
+            workspaceId: workspaceId,
+            actorUserId: null,
+            correlationId: message.CorrelationId.ToString(),
+            causationId: null,
+            claimedAt: Now);
+        return claim;
+    }
+
+    private async Task SeedProcessingClaimAsync(N8nDispatchRequestedV1 message, Guid workspaceId)
+    {
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.Set<MessagingProcessedEvent>().Add(NewClaim(message, workspaceId));
+        await seed.SaveChangesAsync();
+    }
+
+    private async Task SeedSucceededClaimAsync(N8nDispatchRequestedV1 message, Guid workspaceId)
+    {
+        await using var seed = _db.CreateContext(SystemTenant());
+        var claim = NewClaim(message, workspaceId);
+        claim.MarkSucceeded(Now);
+        seed.Set<MessagingProcessedEvent>().Add(claim);
+        await seed.SaveChangesAsync();
+    }
+
+    private async Task<MessagingProcessedEvent?> LoadClaimAsync(Guid eventId)
+    {
+        await using var probe = _db.CreateContext(SystemTenant());
+        return await probe.Set<MessagingProcessedEvent>().IgnoreQueryFilters()
+            .FirstOrDefaultAsync(e => e.EventId == eventId
+                && e.ConsumerName == N8nDispatchProtocolEndpoints.DispatchEndpointName);
+    }
+
     private static BoardItemMemberAssignedIntegrationEvent NewIntegrationEvent(
         Guid accountId, Guid workspaceId) =>
         new(Guid.CreateVersion7(), accountId, workspaceId, Guid.NewGuid(),
@@ -375,10 +570,16 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
             context,
             new N8nWebhookActions(adapter),
             clockMock.Object);
+        var claims = new MessageDeduplicationStore(
+            context,
+            clockMock.Object,
+            new Notrelix.Infrastructure.Observability.Metrics.MetricsService());
         var consumer = new N8nDispatchConsumer(
             useCase,
             context,
             rls,
+            claims,
+            clockMock.Object,
             NullLogger<N8nDispatchConsumer>.Instance,
             new PipelineMetrics());
 
