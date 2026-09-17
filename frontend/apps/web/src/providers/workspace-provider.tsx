@@ -1,7 +1,15 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  type ReactNode,
+} from "react";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
+  createUseWorkspaceMembers,
   createUseWorkspaceShellData,
+  type WorkspaceMember,
   type WorkspaceSummary,
   type WorkspaceView,
 } from "@notrelix/features-workspace";
@@ -10,6 +18,7 @@ type WorkspaceContextValue = {
   workspaceId: string;
   workspace: WorkspaceSummary | null;
   views: WorkspaceView[];
+  members: WorkspaceMember[];
   isLoading: boolean;
   isError: boolean;
   refetch: () => Promise<unknown>;
@@ -53,19 +62,38 @@ export function WorkspaceProvider({
     [runtimeClient],
   );
 
-  const { workspace, views, isLoading, isError, refetch } =
+  const useWorkspaceMembers = useMemo(
+    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
+    [runtimeClient],
+  );
+
+  const {
+    workspace,
+    views,
+    isLoading,
+    isError,
+    refetch: refetchShellData,
+  } =
     useWorkspaceShellData(workspaceId);
+  const { data: members = [], refetch: refetchMembers } =
+    useWorkspaceMembers(workspaceId);
+
+  const refetch = useCallback(
+    async () => Promise.all([refetchShellData(), refetchMembers()]),
+    [refetchMembers, refetchShellData],
+  );
 
   const value = useMemo<WorkspaceContextValue>(
     () => ({
       workspaceId,
       workspace: workspace ?? null,
       views,
+      members,
       isLoading,
       isError,
       refetch,
     }),
-    [workspaceId, workspace, views, isLoading, isError, refetch],
+    [workspaceId, workspace, views, members, isLoading, isError, refetch],
   );
 
   return (

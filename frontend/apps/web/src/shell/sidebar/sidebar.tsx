@@ -1,11 +1,5 @@
-import { useState, useMemo } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useWorkspaceContext } from "../../providers/workspace-provider";
-import {
-  createUseWorkspaceShellData,
-  createUseWorkspaceMembers,
-} from "@notrelix/features-workspace/web";
-import { useAppRuntime } from "@notrelix/runtime-web";
 import {
   Avatar,
   AvatarFallback,
@@ -14,9 +8,8 @@ import {
   CollapsibleTrigger,
 } from "@notrelix/ui-web";
 import { ScrollArea } from "@notrelix/ui-web";
-import { GlobalSearch } from "../global-search";
 import { WorkspaceSwitcher } from "./workspace-switcher";
-import { ChevronDown, Search, Star } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import type { WorkspaceMember } from "@notrelix/features-workspace/core";
 import { cn } from "@notrelix/ui-web";
 import {
@@ -55,40 +48,15 @@ function SidebarSection({
   );
 }
 
-export function WorkspaceSidebar() {
+export function WorkspaceSidebar({
+  onOpenSearch,
+}: {
+  onOpenSearch: () => void;
+}) {
   const location = useLocation();
-  const { api: runtimeClient } = useAppRuntime();
-  const { workspaceId } = useWorkspaceContext();
-  const [searchOpen, setSearchOpen] = useState(false);
-
-  const useShellData = useMemo(
-    () =>
-      createUseWorkspaceShellData({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
-  );
-
-  const useMembers = useMemo(
-    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
-    [runtimeClient],
-  );
-
-  const { views = [] } = useShellData(workspaceId);
-  const { data: members = [] } = useMembers(workspaceId);
+  const { workspaceId, members } = useWorkspaceContext();
 
   const pathname = location.pathname;
-
-  const favorites = useMemo(
-    () =>
-      views.slice(0, 3).map((v) => ({
-        id: v.id,
-        title: v.name,
-        href: `/workspaces/${workspaceId}`,
-      })),
-    [views, workspaceId],
-  );
 
   const primaryNav: NavItem[] = PRIMARY_NAV_CONTRIBUTIONS.map((c) => ({
     ...c,
@@ -108,7 +76,7 @@ export function WorkspaceSidebar() {
 
       <div className="p-3">
         <button
-          onClick={() => setSearchOpen(true)}
+          onClick={onOpenSearch}
           className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Search className="size-4" />
@@ -140,22 +108,6 @@ export function WorkspaceSidebar() {
         </nav>
 
         <div className="space-y-6 mt-6 pb-6">
-          <SidebarSection title="Quick access">
-            <div className="space-y-1">
-              {favorites.map((item) => (
-                <Link
-                  key={item.id}
-                  to="/workspaces/$workspaceId"
-                  params={{ workspaceId }}
-                  className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                >
-                  <Star className="size-3.5 text-primary" />
-                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
-                </Link>
-              ))}
-            </div>
-          </SidebarSection>
-
           <SidebarSection title="Team online">
             <div className="space-y-1">
               {members.map((member: WorkspaceMember, i: number) => (
@@ -210,7 +162,6 @@ export function WorkspaceSidebar() {
         </div>
       </div>
 
-      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </aside>
   );
 }

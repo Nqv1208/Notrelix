@@ -39,6 +39,8 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
+const storyAction = () => undefined;
+
 export const DirectoryDefault: Story = {
   render: () => (
     <WorkspaceDirectorySurface
@@ -66,7 +68,20 @@ export const DirectoryEdgeData: Story = {
 
 export const CompactHeaderDefault: Story = {
   render: () => (
-    <WorkspaceCompactHeaderSurface {...workspaceHeaderDefaultScenario()} />
+    <WorkspaceCompactHeaderSurface
+      {...workspaceHeaderDefaultScenario()}
+      onCopyLink={storyAction}
+      onOpenSettings={storyAction}
+      onInvite={storyAction}
+      onShare={storyAction}
+      onFavorite={storyAction}
+      onAiSuggestions={storyAction}
+      onIntegrate={storyAction}
+      onAutomate={storyAction}
+      onAgents={storyAction}
+      onOpenActivity={storyAction}
+      onMoreActions={storyAction}
+    />
   ),
   tags: ["fui-surface--workspace.compact-header", "fui-state--Default"],
 };
@@ -77,6 +92,8 @@ export const ViewTabsDefault: Story = {
       workspaceId="ws-main"
       views={workspaceTabsDefaultScenario()}
       activeViewId="view-board"
+      onAddView={storyAction}
+      onMoreActions={storyAction}
     />
   ),
   tags: ["fui-surface--workspace.view-tabs", "fui-state--Default"],
@@ -87,6 +104,8 @@ export const ViewTabsEmpty: Story = {
     <WorkspaceViewTabsSurface
       workspaceId="ws-main"
       views={workspaceTabsEmptyScenario()}
+      onAddView={storyAction}
+      onMoreActions={storyAction}
     />
   ),
   tags: ["fui-surface--workspace.view-tabs", "fui-state--Empty"],
@@ -97,6 +116,8 @@ export const ViewTabsEdgeData: Story = {
     <WorkspaceViewTabsSurface
       workspaceId="ws-enterprise"
       views={workspaceTabsEdgeDataScenario()}
+      onAddView={storyAction}
+      onMoreActions={storyAction}
     />
   ),
   tags: ["fui-surface--workspace.view-tabs", "fui-state--EdgeData"],

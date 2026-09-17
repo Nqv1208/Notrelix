@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useWorkspaceContext } from "../../providers/workspace-provider";
 import { useTheme } from "../../providers/app-providers";
 import { createNotificationBell } from "@notrelix/features-notifications";
@@ -6,14 +6,16 @@ import { useAppRuntime } from "@notrelix/runtime-web";
 import { Button } from "@notrelix/ui-web";
 import { Search, Sun, Moon, ChevronRight } from "lucide-react";
 import { useLocation } from "@tanstack/react-router";
-import { GlobalSearch } from "../global-search";
 
-export function WorkspaceTopbar() {
+export function WorkspaceTopbar({
+  onOpenSearch,
+}: {
+  onOpenSearch: () => void;
+}) {
   const { workspace } = useWorkspaceContext();
   const { theme, setTheme } = useTheme();
   const { api: runtimeClient } = useAppRuntime();
   const location = useLocation();
-  const [searchOpen, setSearchOpen] = useState(false);
 
   const NotificationBell = useMemo(
     () =>
@@ -23,17 +25,6 @@ export function WorkspaceTopbar() {
       }),
     [runtimeClient],
   );
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   const pathParts = location.pathname.split("/").filter(Boolean);
   const isBoard = pathParts.includes("boards");
@@ -50,7 +41,6 @@ export function WorkspaceTopbar() {
   else if (isMembers) currentPage = "Members";
 
   return (
-    <>
       <header className="h-14 border-b bg-card text-card-foreground px-6 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <span className="font-semibold text-foreground truncate max-w-[120px]">
@@ -67,7 +57,7 @@ export function WorkspaceTopbar() {
             variant="outline"
             size="sm"
             className="h-9 w-60 justify-start text-muted-foreground gap-2 hidden md:flex font-normal"
-            onClick={() => setSearchOpen(true)}
+            onClick={onOpenSearch}
           >
             <Search className="h-4 w-4" />
             <span className="text-xs">Search pages, boards...</span>
@@ -93,8 +83,5 @@ export function WorkspaceTopbar() {
           <NotificationBell />
         </div>
       </header>
-
-      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
-    </>
   );
 }

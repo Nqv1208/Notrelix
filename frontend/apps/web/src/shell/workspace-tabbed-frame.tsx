@@ -7,7 +7,6 @@ import type { WorkspaceView } from "@notrelix/features-workspace/core";
 import {
   WorkspaceCompactHeader,
   WorkspaceViewTabs,
-  WorkspaceContextualToolbar,
   createUseReorderWorkspaceViews,
 } from "@notrelix/features-workspace/web";
 import { useAppRuntime } from "@notrelix/runtime-web";
@@ -35,7 +34,7 @@ export function useWorkspaceTabbedRouteContext(): WorkspaceTabbedRouteContextVal
 export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { api: runtimeClient } = useAppRuntime();
-  const { workspaceId, workspace, views, isLoading, isError } =
+  const { workspaceId, workspace, views, members, isLoading, isError } =
     useWorkspaceContext();
 
   const useReorderWorkspaceViews = useMemo(
@@ -74,7 +73,7 @@ export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-screen overflow-hidden bg-background">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
         <div className="h-12 border-b px-4 flex items-center gap-3">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-6 w-24" />
@@ -93,7 +92,7 @@ export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
 
   if (isError || !workspace) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen p-6 text-center">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="h-10 w-10 text-destructive mb-3" />
         <h2 className="text-lg font-semibold mb-1">Failed to load workspace</h2>
         <p className="text-sm text-muted-foreground max-w-sm mb-4">
@@ -104,22 +103,18 @@ export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <WorkspaceCompactHeader workspace={workspace} members={[]} />
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+      <WorkspaceCompactHeader workspace={workspace} members={members} />
 
       <WorkspaceViewTabs
         workspaceId={workspaceId}
         views={views}
         activeViewId={activeView?.id}
         reorderHook={useReorderWorkspaceViews}
+        api={runtimeClient.api}
       />
 
-      <WorkspaceContextualToolbar
-        activeType={activeView?.type || "table"}
-        activeView={activeView || undefined}
-      />
-
-      <main className="flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto">
         {contextValue ? (
           <WorkspaceTabbedRouteContext.Provider value={contextValue}>
             {children}
@@ -127,7 +122,7 @@ export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
         ) : (
           children
         )}
-      </main>
+      </div>
     </div>
   );
 }
