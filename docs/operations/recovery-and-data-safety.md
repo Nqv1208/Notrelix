@@ -1204,3 +1204,138 @@ What loss/repair must remain recorded permanently?
 The target is:
 
 > **recovery that reconstructs a coherent product and distributed state, rather than merely restoring infrastructure, while preserving tenant safety, historical evidence, idempotency, and the real-world side effects that cannot be rolled back by database restore.**
+
+---
+
+# 103. Provider-webhook dispatch (n8n) reconciliation runbook
+
+Durable contract owned by `backend/docs/decisions/ADR-008`. Reconciliation applies
+the recovery rules above to the Automation execution lifecycle and the
+provider-effect claim rows that guard the n8n dispatch webhook call.
+
+## 103.1 Durable state involved
+
+```text
+automation.automation_executions
+  status: Queued | Running | Succeeded | Failed | Cancelled
+  attempt_count (retryable evidence)
+
+messaging.processed_events  (claim rows)
+  consumer_name = 'notrelix-automation-n8n-dispatch-v1'
+  status: Processing | Succeeded
+  unique (event_id, consumer_name)
+```
+
+Durable protocol (prepare/effect/settle): `Tx1` commits the claim (`Processing`)
+atomically with the execution intent (`Running`); the provider call happens with
+no database transaction; `Tx2` commits the outcome evidence atomically with the
+claim lifecycle (retryable → execution re-queued + claim deleted; terminal →
+state + claim `Succeeded`).
+
+## 103.2 Valid-state reference
+
+```text
+terminal execution (Succeeded/Failed/Cancelled)
+  → claim Succeeded (or absent after a retryable release)
+
+Queued execution + active Processing claim
+  → INVALID (torn residue; Tx1 never commits Queued with a claim)
+
+Running execution + Processing claim
+  → interrupted attempt window (provider outcome unknown)
+
+Retryable re-queue (execution Queued again, attempt_count incremented)
+  → claim row ABSENT (released in Tx2) — this is why Bound test B is green
+```
+
+## 103.3 Detect candidates
+
+Run with an operator-scoped session that deliberately preserves tenant scope and
+before any write:
+
+```sql
+select e.id            as execution_id,
+       e.workspace_id,
+       e.status        as execution_status,
+       e.attempt_count,
+       p.event_id      as message_id,
+       p.consumer_name,
+       p.status        as claim_status,
+       p.claimed_at
+from automation.automation_executions e
+left join messaging.processed_events p
+       on p.consumer_name = 'notrelix-automation-n8n-dispatch-v1'
+      and p.event_id = e.trigger_event_id -- when available; else join on message metadata
+where e.status = 1 -- Running
+   or (e.status = 0 and p.status = 'Processing');
+```
+
+If a stable execution→event join is not available, start from the claim side:
+
+```sql
+select p.event_id, p.consumer_name, p.status, p.claimed_at,
+       e.id as execution_id, e.status as execution_status, e.attempt_count
+from messaging.processed_events p
+left join automation.automation_executions e
+       on e.id = :execution_id -- from message payload correlationId/metadata
+where p.consumer_name = 'notrelix-automation-n8n-dispatch-v1'
+  and p.status = 'Processing';
+```
+
+## 103.4 Reconcile per residue (OPS-REC-017, OPS-REC-024, OPS-REC-023)
+
+```text
+claim Succeeded            → normal completion — no action.
+
+claim Processing + execution terminal
+                           → interrupted attempt resolved by the residue
+                             handler on redelivery; if no redelivery arrives,
+                             re-enqueue the message (bounded) or mark the claim
+                             Succeeded after confirming the terminal execution
+                             matches provider reality (OPS-REC-023).
+
+claim Processing + execution Running
+                           → crash between Tx1 and Tx2. NEVER re-fire first.
+                             1. verify against provider truth / run history
+                                whether the webhook executed (OPS-REC-023);
+                             2. if the effect verifiably happened or is
+                                indeterminate → set execution Failed with
+                                "reconciliation required" and mark the claim
+                                Succeeded (single reviewed script; OPS-REC-037);
+                             3. only if the effect verifiably did NOT happen and
+                                the run is meant to continue → re-queue the
+                                execution AND release the claim together, so a
+                                later redelivery re-acquires safely.
+
+claim Processing + execution Queued
+                           → stale torn state. Re-running the effect blindly
+                             risks a duplicate. Confirming no provider effect:
+                             re-queue + release claim together (safe retry);
+                             otherwise settle terminal + mark claim Succeeded.
+
+claim absent + execution Running
+                           → legacy pre-protocol residue; the consumer's settle
+                             path turns it into Failed with the reconciliation
+                             marker on the next delivery — sweep likewise.
+```
+
+Every corrective SQL that mutates both the execution and the claim does so in
+one reviewed script and one transaction (same durability boundary as the
+protocol), preserving tenant scope and leaving evidence (OPS-REC-003,
+OPS-REC-008, OPS-REC-013).
+
+## 103.5 No-go list
+
+```text
+[ ] never DELETE all Processing claims for the endpoint to "unstick" the queue
+[ ] never re-fire a provider effect while the provider may have processed it
+[ ] never set an execution to Succeeded without verifying the external effect
+[ ] never clear/rewind dedup evidence to force redelivery (OPS-REC-019)
+[ ] never run the sweep outside an operator session with tenant scoping
+```
+
+## 103.6 Closure
+
+Record affected executions/tenants, chosen resolution per residue, provider-truth
+verification, and any unavoidable permanent loss (OPS-REC-036). Reopen the
+dispatch backlog gradually only after source invariants pass (OPS-REC-039).
