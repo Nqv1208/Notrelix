@@ -36,6 +36,16 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
 
         var consumerName = ExtractConsumerName(context);
 
+        // Provider-effect durable consumer protocol (e.g. n8n dispatch): the
+        // consumer itself owns the claim, RLS transactions, out-of-transaction
+        // provider effect, and success marker. Wrapping it would open a second
+        // transaction on the shared connection, so these endpoints pass through.
+        if (ConsumerOwnedProtocolEndpoints.Contains(consumerName))
+        {
+            await next.Send(context);
+            return;
+        }
+
         // A command-dispatching consumer owns its own data-session transaction:
         // its MediatR command pipeline (DataSessionBehavior -> EfRequestDataSession)
         // opens a transaction (and applies its own RLS) on the shared
@@ -51,6 +61,18 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
 
         await TransactionalSendAsync(context, next, integrationEvent, consumerName);
     }
+
+    /// <summary>
+    /// Consumers that own the complete provider-effect claim protocol and
+    /// therefore must NOT be wrapped in the dedup filter's transaction.
+    /// Keyed by the receive endpoint name (the same value
+    /// <c>N8nDispatchProtocolEndpoints.DispatchEndpointName</c> and the dedup
+    /// filter's InputAddress-derived consumer name agree on in production).
+    /// </summary>
+    private static readonly HashSet<string> ConsumerOwnedProtocolEndpoints = new(StringComparer.OrdinalIgnoreCase)
+    {
+        N8nDispatchProtocolEndpoints.DispatchEndpointName,
+    };
 
     /// <summary>
     /// Consumers that run their own MediatR command/data-session transaction and
