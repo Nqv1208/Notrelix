@@ -1232,17 +1232,34 @@ no database transaction; `Tx2` commits the outcome evidence atomically with the
 claim lifecycle (retryable → execution re-queued + claim deleted; terminal →
 state + claim `Succeeded`).
 
+A claim's `ClaimedAt` decides whether a `Processing` claim is an **active**
+attempt or **interrupted** residue: `N8n:ProviderEffectClaimStaleAfterSeconds`
+(default `300`, validated to exceed the provider-call timeout) is the active-ownership
+window. FRESH means another attempt may still own the effect (a duplicate must
+not touch it); STALE means the attempt is a residue candidate that may be
+reconciled from durable state — the window never grants permission to re-fire
+the provider.
+
 ## 103.2 Valid-state reference
 
 ```text
 terminal execution (Succeeded/Failed/Cancelled)
   → claim Succeeded (or absent after a retryable release)
 
-Queued execution + active Processing claim
-  → INVALID (torn residue; Tx1 never commits Queued with a claim)
+Running execution + Processing claim FRESH
+  → VALID in-flight attempt (provider effect underway, outcome unknown).
+     A concurrent duplicate is ignored — it must not act here.
 
-Running execution + Processing claim
-  → interrupted attempt window (provider outcome unknown)
+Running execution + Processing claim STALE
+  → interrupted attempt window (provider outcome unknown) — residue candidate.
+
+Queued execution + Processing claim FRESH
+  → active attempt is between Tx1 variants only within its window; treat as
+     in-flight, do not act (no operator action while fresh).
+
+Queued execution + Processing claim STALE
+  → INVALID torn residue; the consumer leaves it for the operator sweep and
+     never re-runs the effect blindly.
 
 Retryable re-queue (execution Queued again, attempt_count incremented)
   → claim row ABSENT (released in Tx2) — this is why Bound test B is green
@@ -1266,9 +1283,15 @@ from automation.automation_executions e
 left join messaging.processed_events p
        on p.consumer_name = 'notrelix-automation-n8n-dispatch-v1'
       and p.event_id = e.trigger_event_id -- when available; else join on message metadata
-where e.status = 1 -- Running
-   or (e.status = 0 and p.status = 'Processing');
+where e.status = 1 -- Running; STALE only: and p.claimed_at < now() - interval '5 minutes'
+   or (e.status = 0 and p.status = 'Processing');  -- STALE only:
+                                                   --   and p.claimed_at < now() - interval '5 minutes'
 ```
+
+A `Processing` claim older than the stale window
+(`claimed_at < now() - interval '5 minutes'`, matching
+`N8n:ProviderEffectClaimStaleAfterSeconds`) is the residue candidate to act on;
+a FRESH `Processing` claim means an attempt is in flight — do NOT act on it.
 
 If a stable execution→event join is not available, start from the claim side:
 
@@ -1279,22 +1302,32 @@ from messaging.processed_events p
 left join automation.automation_executions e
        on e.id = :execution_id -- from message payload correlationId/metadata
 where p.consumer_name = 'notrelix-automation-n8n-dispatch-v1'
-  and p.status = 'Processing';
+  and p.status = 'Processing'
+  and p.claimed_at < now() - interval '5 minutes';  -- STALE claims only (active attempts excluded)
 ```
+
+Only STALE `Processing` claims are candidates. A FRESH `Processing` claim means
+the effect is still actively owned — inspecting it is fine, but acting on it is a
+duplicate-resolution error.
 
 ## 103.4 Reconcile per residue (OPS-REC-017, OPS-REC-024, OPS-REC-023)
 
 ```text
 claim Succeeded            → normal completion — no action.
 
-claim Processing + execution terminal
+claim Processing + FRESH (in-flight ownership)
+                           → DO NOT ACT. A duplicate is ignored by the consumer;
+                             the active attempt commits its own terminal outcome.
+                             Re-check after the stale window if it persists.
+
+claim Processing + execution terminal + STALE
                            → interrupted attempt resolved by the residue
                              handler on redelivery; if no redelivery arrives,
                              re-enqueue the message (bounded) or mark the claim
                              Succeeded after confirming the terminal execution
                              matches provider reality (OPS-REC-023).
 
-claim Processing + execution Running
+claim Processing + execution Running + STALE
                            → crash between Tx1 and Tx2. NEVER re-fire first.
                              1. verify against provider truth / run history
                                 whether the webhook executed (OPS-REC-023);
@@ -1307,11 +1340,13 @@ claim Processing + execution Running
                                 execution AND release the claim together, so a
                                 later redelivery re-acquires safely.
 
-claim Processing + execution Queued
+claim Processing + execution Queued + STALE
                            → stale torn state. Re-running the effect blindly
                              risks a duplicate. Confirming no provider effect:
                              re-queue + release claim together (safe retry);
                              otherwise settle terminal + mark claim Succeeded.
+                             The consumer leaves this to the sweep and never
+                             re-runs the effect itself.
 
 claim absent + execution Running
                            → legacy pre-protocol residue; the consumer's settle

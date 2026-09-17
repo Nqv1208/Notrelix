@@ -3,6 +3,7 @@ using Notrelix.Application.Events.Automation;
 using Notrelix.Application.Features.Automation.Executions.Services;
 using Notrelix.Application.Features.Integrations.Public.Commands;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;
 
@@ -21,10 +22,13 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;
 ///   can redeliver and re-acquire under the same execution identity.</item>
 /// </list>
 ///
-/// A redelivery whose claim is still Processing never re-fires the provider: it
-/// reconciles from the durable execution state (interrupted attempt → Failed
-/// with a reconciliation marker, settled claim → skip, stale Queued → operator
-/// sweep). The consumer owns no Automation business state.
+/// A redelivery whose claim is still Processing never re-fires the provider: a
+/// FRESH claim means another attempt is actively in flight (the duplicate is
+/// ignored — the execution and claim are left untouched), while a STALE claim
+/// indicates an interrupted attempt that is reconciled from the durable
+/// execution state (Running → Failed with a reconciliation marker, settled claim
+/// → skip, stale Queued → operator sweep). The consumer owns no Automation
+/// business state.
 /// </summary>
 public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
 {
@@ -35,6 +39,7 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
     private readonly IDateTimeProvider _clock;
     private readonly ILogger<N8nDispatchConsumer> _logger;
     private readonly PipelineMetrics _metrics;
+    private readonly TimeSpan _providerEffectClaimStaleAfter;
 
     public N8nDispatchConsumer(
         N8nDispatchUseCase useCase,
@@ -43,6 +48,7 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
         IProviderEffectClaimStore claims,
         IDateTimeProvider clock,
         ILogger<N8nDispatchConsumer> logger,
+        IOptions<N8nOptions>? n8nOptions = null,
         PipelineMetrics? metrics = null)
     {
         _useCase = useCase;
@@ -52,6 +58,9 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
         _clock = clock;
         _logger = logger;
         _metrics = metrics ?? new PipelineMetrics();
+        _providerEffectClaimStaleAfter = TimeSpan.FromSeconds(
+            (n8nOptions?.Value.ProviderEffectClaimStaleAfterSeconds
+                ?? new N8nOptions().ProviderEffectClaimStaleAfterSeconds));
     }
 
     public async Task Consume(ConsumeContext<N8nDispatchRequestedV1> context)
@@ -117,8 +126,13 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
 
             // Nothing to progress, or a precondition settled terminally:
             // normalize the claim and finish inside the first transaction.
-            _claims.MarkClaimSucceeded(
-                message.EventId, N8nDispatchProtocolEndpoints.DispatchEndpointName, _clock.UtcNow);
+            var settledEarly = await _claims.TryMarkClaimSucceededAsync(
+                message.EventId, N8nDispatchProtocolEndpoints.DispatchEndpointName, _clock.UtcNow, ct);
+            if (!settledEarly)
+            {
+                throw new InvalidOperationException(
+                    "Provider-effect claim was not transitioned to Succeeded before the terminal settle commit.");
+            }
             await _db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
@@ -157,8 +171,13 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
 
             if (handled)
             {
-                _claims.MarkClaimSucceeded(
-                    message.EventId, N8nDispatchProtocolEndpoints.DispatchEndpointName, _clock.UtcNow);
+                var settled = await _claims.TryMarkClaimSucceededAsync(
+                    message.EventId, N8nDispatchProtocolEndpoints.DispatchEndpointName, _clock.UtcNow, ct);
+                if (!settled)
+                {
+                    throw new InvalidOperationException(
+                        "Provider-effect claim was not transitioned to Succeeded before the terminal settle commit.");
+                }
                 await _db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
 
@@ -169,8 +188,13 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
             // Retryable provider outcome: the evidence (re-queued + attempt count)
             // and the claim release commit atomically so the invariant
             // "Queued-for-retry IFF the claim no longer blocks retry" always holds.
-            await _claims.TryReleaseProcessingClaimAsync(
+            var released = await _claims.TryReleaseProcessingClaimAsync(
                 message.EventId, N8nDispatchProtocolEndpoints.DispatchEndpointName, ct);
+            if (!released)
+            {
+                throw new InvalidOperationException(
+                    "Provider-effect claim ownership was lost before retry settlement.");
+            }
             await _db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
@@ -190,10 +214,14 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
     }
 
     /// <summary>
-    /// Reconciles a residual claim after a failed acquire. Never throws (the
-    /// message is fully consumed) and never re-fires the provider effect:
-    /// settled claim → skip; interrupted Running attempt → settle Failed with a
-    /// reconciliation marker; stale Queued execution → leave for the operator.
+    /// Reconciles a residual claim after a failed acquire. Normally never throws
+    /// (the message is fully consumed) and never re-fires the provider effect:
+    /// settled claim → skip; FRESH Processing claim → another attempt is in
+    /// flight, the duplicate is ignored without touching execution or claim;
+    /// STALE Processing + Running → interrupted attempt → settle Failed with a
+    /// reconciliation marker; STALE Processing + Queued → operator sweep. A
+    /// claim that vanished between inspection and settlement is left for a later
+    /// redelivery (never re-issued here).
     /// </summary>
     private async Task HandleClaimResidueAsync(
         ConsumeContext<N8nDispatchRequestedV1> context,
@@ -218,6 +246,20 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
                 return;
             }
 
+            if (IsClaimFresh(inspection.ClaimedAt))
+            {
+                // A fresh Processing claim means another consumer is actively
+                // handling the provider effect. The duplicate must NOT touch the
+                // execution or the claim, and must NOT call the provider — the
+                // active attempt will settle the outcome itself.
+                await transaction.CommitAsync(ct);
+                _logger.LogDebug(
+                    "Event {EventId} claim Processing and fresh for {ConsumerName}; "
+                    + "an attempt is in flight, duplicate not acted on",
+                    message.EventId, N8nDispatchProtocolEndpoints.DispatchEndpointName);
+                return;
+            }
+
             var residue = await _useCase.SettleResidueAsync(message, ct);
             if (residue == N8nDispatchResidueOutcome.RequiresOperatorSweep)
             {
@@ -231,8 +273,20 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
                 return;
             }
 
-            _claims.MarkClaimSucceeded(
-                message.EventId, N8nDispatchProtocolEndpoints.DispatchEndpointName, _clock.UtcNow);
+            var settled = await _claims.TryMarkClaimSucceededAsync(
+                message.EventId, N8nDispatchProtocolEndpoints.DispatchEndpointName, _clock.UtcNow, ct);
+            if (!settled)
+            {
+                // The claim vanished/changed between inspection and settlement.
+                // Keep the "never throws" residue contract: leave the state for
+                // the next redelivery, which re-inspects from scratch.
+                await transaction.CommitAsync(ct);
+                _logger.LogWarning(
+                    "Event {EventId} residue claim disappeared before reconciliation ({Outcome}); "
+                    + "leaving for a later redelivery",
+                    message.EventId, residue);
+                return;
+            }
             await _db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
             _logger.LogInformation(
@@ -249,6 +303,9 @@ public sealed class N8nDispatchConsumer : IConsumer<N8nDispatchRequestedV1>
             throw;
         }
     }
+
+    private bool IsClaimFresh(DateTimeOffset? claimedAt) =>
+        claimedAt is not null && _clock.UtcNow - claimedAt.Value < _providerEffectClaimStaleAfter;
 }
 
 /// <summary>

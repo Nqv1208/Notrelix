@@ -393,7 +393,11 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
             CancellationToken cancellationToken) =>
             inner.TryReleaseProcessingClaimAsync(messageId, consumerName, cancellationToken);
 
-        public void MarkClaimSucceeded(Guid messageId, string consumerName, DateTimeOffset processedAt) =>
-            inner.MarkClaimSucceeded(messageId, consumerName, processedAt);
+        public Task<bool> TryMarkClaimSucceededAsync(
+            Guid messageId,
+            string consumerName,
+            DateTimeOffset processedAt,
+            CancellationToken cancellationToken) =>
+            inner.TryMarkClaimSucceededAsync(messageId, consumerName, processedAt, cancellationToken);
     }
 }

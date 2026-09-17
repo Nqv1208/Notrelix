@@ -21,6 +21,13 @@ public static class IntegrationsRegistration
             .Validate(
                 o => o.SignatureToleranceSeconds > 0,
                 "N8n:SignatureToleranceSeconds must be greater than 0.")
+            .Validate(
+                o => o.ProviderEffectClaimStaleAfterSeconds > 0,
+                "N8n:ProviderEffectClaimStaleAfterSeconds must be greater than 0.")
+            .Validate(
+                o => o.ProviderEffectClaimStaleAfterSeconds > N8nOptions.HttpClientTimeoutSeconds,
+                "N8n:ProviderEffectClaimStaleAfterSeconds must exceed the provider call timeout "
+                    + $"({N8nOptions.HttpClientTimeoutSeconds}s) so an active attempt is never classified as residue.")
             .ValidateOnStart();
 
         var n8nOptions = configuration
@@ -32,7 +39,7 @@ public static class IntegrationsRegistration
             services.AddHttpClient<IN8nClient, N8nClient>((_, client) =>
             {
                 client.BaseAddress = new Uri(n8nOptions.InternalBaseUrl);
-                client.Timeout = TimeSpan.FromSeconds(15);
+                client.Timeout = TimeSpan.FromSeconds(N8nOptions.HttpClientTimeoutSeconds);
             });
         }
         else

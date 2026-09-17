@@ -33,12 +33,14 @@ review_on:
 
 ## Status
 
-`Accepted` — 2026-09-17 (second revision). The first accepted version (2026-09-16)
+`Accepted` — 2026-09-17 (third revision). The first accepted version (2026-09-16)
 recorded a single consumer-owned transaction and a claim-off-on-exception model.
-This revision is superseding: the prepare/effect/settle protocol was implemented
+The second revision is superseding: the prepare/effect/settle protocol was implemented
 as the M11 closure and the earlier version accurately describes the rejected
-alternative. The protocol decision, classification matrix and residue contract
-below are the current durable contract.
+alternative. This third revision adds the active-vs-stale `Processing` claim gate
+and the fail-closed claim transitions (retryable release and terminal settlement
+must each prove affected == 1). The protocol decision, classification matrix,
+residue contract and enforcement rules below are the current durable contract.
 
 ## Context
 
@@ -152,23 +154,43 @@ Tx2 (RLS):
 
 On a failed acquire (claim already exists), the unique violation aborts the
 transaction, so the consumer rolls back Tx1 and opens a **fresh** transaction to
-inspect the residual claim (`InspectClaimAsync`) and settle the residue
-(`SettleResidueAsync`):
+inspect the residual claim (`InspectClaimAsync`) and reconcile only what the
+durable state proves. The claim's `ClaimedAt` decides whether a `Processing`
+claim is an active attempt or interrupted residue:
 
 ```text
 claim Succeeded or Missing → nothing to do (normal duplicate/torn) → consume
-claim Processing:
+claim Processing + FRESH (ClaimedAt within ProviderEffectClaimStaleAfter):
+  → another attempt may still own the effect → duplicate is IGNORED → consume
+    (NO execution mutation, NO claim mutation, NO provider call; the active
+     attempt settles the outcome itself)
+claim Processing + STALE (older than ProviderEffectClaimStaleAfter):
   execution terminal      → nothing to do → consume
   execution Running       → settle Failed ("reconciliation required"),
                             mark claim Succeeded → consume
-                            (crash between the two durable transactions:
+                            (interrupted between the two durable transactions:
                              NEVER re-fire)
   execution Queued        → stale torn state → require operator sweep → consume
-                            (never re-run the effect blindly)
+                            (never re-run the effect blindly; claim is left
+                             blocking redelivery until the operator resolves it)
 ```
 
+`ProviderEffectClaimStaleAfter` is the n8n dispatch protocol's active-ownership
+window: configurable via typed options
+(`N8n:ProviderEffectClaimStaleAfterSeconds`, default `300`), validated to exceed
+the provider-call timeout (`N8nOptions.HttpClientTimeoutSeconds`), with a
+fixed-clock semantics that a claim older than the window is a residue candidate.
+The window grants the right to **reconcile durable state only** — it never
+transfers the effect to the duplicate and never grants permission to re-fire the
+provider. This closes the concurrent-duplicate version of crash boundary A: a
+duplicate arriving while an attempt is genuinely in flight must not settle the
+claim as if it were a crash, because the running attempt will commit its own
+outcome.
+
 The residue path never throws and never re-fires the provider; the message is
-fully consumed so delivery cannot hot-loop.
+fully consumed so delivery cannot hot-loop. If the claim vanishes between
+inspection and reconciliation, the residue path leaves the state untouched for a
+later redelivery rather than inventing an outcome.
 
 ### 3. Retry-safe invariant
 
@@ -178,6 +200,21 @@ Execution is queueable-for-retry      IFF no claim row blocks retry
 Execution is terminal                 IFF the claim is Succeeded
   (terminal state + claim Succeeded commit atomically)
 ```
+
+The transitions above are **enforced, not just documented**, at the consumer
+boundary:
+
+- Retryable settle: the claim release (`TryReleaseProcessingClaimAsync`) must
+  report affected == 1 before the retryable evidence commits. A lost claim on the
+  retryable path throws before `SaveChanges`, rolling back Tx2 so retry evidence
+  never commits while a claim still blocks redelivery.
+- Terminal settle (Tx1 early-settle and Tx2 handled path): the claim transition
+  (`TryMarkClaimSucceededAsync`) must report affected == 1 before the terminal
+  commit. A Succeeded outcome can never be committed with a claim still
+  Processing.
+- Residue reconciliation keeps the "never throws" contract: if the claim cannot
+  be transitioned, the residue path warns and leaves the state for a later
+  redelivery instead of forcing an outcome.
 
 A claim removed while the execution is still Running (or removed before the
 retryable evidence commits) would let redelivery re-fire an attempt whose outcome
@@ -262,9 +299,15 @@ provider-effect chain.
   external effect by redelivery alone.
 - Retryable attempt evidence and the claim release commit atomically, closing the
   re-queue window; redelivery re-acquires under the same execution identity.
-- A crash at any point leaves a reconcilable residue (Running+Processing →
-  Failed-with-marker, terminal → skip, Queued+Processing → operator sweep) that
-  never duplicates the provider call.
+- A crash at any point leaves a reconcilable residue that never duplicates the
+  provider call: STALE Running+Processing → Failed-with-marker, terminal → skip,
+  STALE Queued+Processing → operator sweep.
+- A FRESH Processing claim is never treated as residue: a concurrent duplicate
+  during an active attempt leaves the execution, claim, and provider untouched
+  and the active attempt commits the terminal outcome.
+- Claim transitions are fail-closed at the consumer boundary: a retryable
+  release or terminal settle that cannot prove affected == 1 aborts its
+  transaction instead of committing evidence against a stale claim.
 - Classification is pinned by unit tests at the adapter seam (one attempt each)
   and by production-composition durability + runtime-chain integration tests.
 - Reconcile-by-execution-id is explicit and observable (`— reconciliation required`).
@@ -322,7 +365,10 @@ on exception + `429 → RetryableFailure` and `ConnectionAborted → RetryableFa
 classifications). That revision is superseded by the prepare/effect/settle
 protocol, the conservative classification matrix above, and the consumer-owned
 claim lifecycle. The M11 execution record was corrected in the same governed
-change.
+change. The 2026-09-17 (second) revision remains accurate except where this third
+revision amends it: the `Processing` claim gate now distinguishes fresh
+(in-flight, duplicate ignored) from stale (residue candidate), and the claim
+release/settle transitions are fail-closed on affected == 1.
 
 ## Superseded By
 

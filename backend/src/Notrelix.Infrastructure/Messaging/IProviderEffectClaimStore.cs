@@ -68,12 +68,15 @@ public interface IProviderEffectClaimStore
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Marks an existing claim as Succeeded. No-op when the claim row does not
-    /// exist. Implied success marker to persist atomically with the outcome
-    /// evidence in the consumer's settle transaction.
+    /// Transitions a "Processing" claim to "Succeeded". Returns true only when a
+    /// claim was actually transitioned (affected == 1). The update is scoped to
+    /// <c>Status == "Processing"</c> so a settled or released claim is never
+    /// overwritten — a false return means the caller must fail closed rather
+    /// than commit a terminal outcome without the matching claim transition.
     /// </summary>
-    void MarkClaimSucceeded(
+    Task<bool> TryMarkClaimSucceededAsync(
         Guid messageId,
         string consumerName,
-        DateTimeOffset processedAt);
+        DateTimeOffset processedAt,
+        CancellationToken cancellationToken);
 }

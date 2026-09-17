@@ -124,11 +124,38 @@ public sealed class MessageDeduplicationStore : IMessageDeduplicationStore, IPro
         return deleted > 0;
     }
 
-    public void MarkClaimSucceeded(
+    public async Task<bool> TryMarkClaimSucceededAsync(
         Guid messageId,
         string consumerName,
-        DateTimeOffset processedAt)
-        => MarkSucceeded(messageId, consumerName, processedAt);
+        DateTimeOffset processedAt,
+        CancellationToken cancellationToken)
+    {
+        var updated = await _context.Set<MessagingProcessedEvent>()
+            .Where(e => e.EventId == messageId
+                && e.ConsumerName == consumerName
+                && e.Status == "Processing")
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(e => e.Status, "Succeeded")
+                    .SetProperty(e => e.ProcessedAt, processedAt),
+                cancellationToken);
+        if (updated > 0)
+            return true;
+
+        // Provider without ExecuteUpdate (in-memory test stores): fall back to a
+        // tracked transition so the caller can still verify affected == 1 before
+        // committing its terminal outcome. The caller saves shortly after; the
+        // update is scoped to Status == "Processing" here too.
+        var claim = await _context.Set<MessagingProcessedEvent>()
+            .FirstOrDefaultAsync(
+                e => e.EventId == messageId && e.ConsumerName == consumerName, cancellationToken);
+        if (claim is not null && claim.Status == "Processing")
+        {
+            claim.MarkSucceeded(processedAt);
+            return true;
+        }
+
+        return false;
+    }
 
     private static bool IsUniqueViolation(DbUpdateException ex)
     {
