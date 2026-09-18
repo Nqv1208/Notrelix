@@ -90,6 +90,10 @@ public class IgnoreQueryFiltersArchitectureTests
             "Resource locator bypasses EF query filter to resolve resource tenant context before RLS is set",
             "Keep as InfrastructureBootstrap — resolver runs before RLS session is established"),
 
+        ["CalendarWebhookBindingResolver.cs"] = new("CalendarWebhookBindingResolver.cs", AllowlistClassification.InfrastructureBootstrap,
+            "Webhook binding resolver bypasses EF query filter to resolve the owning calendar binding across tenant boundaries before the derived tenant can be adopted",
+            "Keep as InfrastructureBootstrap — resolver runs before RLS session is established (same pattern as ResourceLocator)"),
+
         ["PostgresPageAuthorizationFacts.cs"] = new("PostgresPageAuthorizationFacts.cs", AllowlistClassification.InfrastructureBootstrap,
             "Documents-owned page authorization facts must see deleted/archived pages so the engine can resolve NotFound instead of exposing them as live resources",
             "Keep as InfrastructureBootstrap — facts resolution runs before RLS session is established"),

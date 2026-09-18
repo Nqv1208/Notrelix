@@ -17,5 +17,9 @@ public class HandleCalendarWebhookCommandValidator : AbstractValidator<HandleCal
         RuleFor(x => x.RawBody)
             .NotEmpty()
             .MaximumLength(65536);
+
+        RuleFor(x => x.WebhookPath)
+            .NotEmpty()
+            .MaximumLength(64);
     }
 }

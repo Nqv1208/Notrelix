@@ -628,6 +628,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     connection_id = table.Column<Guid>(type: "uuid", nullable: false),
                     provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     sync_direction = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    webhook_path = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
@@ -4433,6 +4434,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "integration",
                 table: "calendar_integrations",
                 column: "workspace_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_calendar_integrations_webhook_path",
+                schema: "integration",
+                table: "calendar_integrations",
+                column: "webhook_path",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "idx_checklist_items_checklist_position",

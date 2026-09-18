@@ -11,14 +11,18 @@ using Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalenda
 namespace Notrelix.API.Tests.Contracts;
 
 /// <summary>
-/// HTTP contract for the anonymous, signature-authenticated provider webhook:
-/// with CSRF enabled the route-declared signature-auth metadata (not a blanket
-/// skip) keeps the double-submit gate out of the intake path, and verification
-/// failure surfaces as the endpoint's real 401 — never a CSRF 403.
+/// HTTP contract for the anonymous, signature-authenticated provider webhook
+/// on the C6 per-connection route: with CSRF enabled the route-declared
+/// signature-auth metadata (not a blanket skip) keeps the double-submit gate
+/// out of the intake path, and verification failure surfaces as the endpoint's
+/// real 401 — never a CSRF 403. The route now carries the per-connection
+/// {webhookPath}; the legacy provider-only route no longer exists and fails
+/// closed as 404 (no tenant is ever adopted through a stale route).
 /// </summary>
 public class CalendarWebhookHttpContractTests
 {
-    private const string WebhookPath = "/api/v1/integrations/calendar/webhooks/google";
+    private const string WebhookPath = "/api/v1/integrations/calendar/webhooks/google/test-webhook-path-abc123";
+    private const string LegacyRoutePath = "/api/v1/integrations/calendar/webhooks/google";
 
     [Fact]
     public async Task VerifiedCallback_WithoutBearer_WithoutCsrfMaterial_ReachesIntake_Returns200()
@@ -59,6 +63,31 @@ public class CalendarWebhookHttpContractTests
             "verification failure is the endpoint's declared rejection contract");
         response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden,
             "the rejection must come from the pipeline, not the CSRF gate");
+    }
+
+    [Fact]
+    public async Task LegacyProviderOnlyRoute_FailsClosed_Returns404()
+    {
+        await using var factory = new CsrfEnabledApiFactory();
+        var client = factory.CreateClient();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, LegacyRoutePath)
+        {
+            Content = new StringContent("""{"kind":"calendar#event"}""", Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Add("X-Calendar-Signature", "test-signature");
+        request.Headers.Add("X-Calendar-Timestamp", "1757400000");
+
+        var response = await client.SendAsync(request);
+
+        // The legacy provider-only route must fail closed: either 404 (no
+        // route) or 403 (CSRF rejects the unmatched unsigned POST) proves no
+        // handler/webhookPath is ever reached.
+        response.StatusCode.Should().BeOneOf(new[]
+        {
+            HttpStatusCode.NotFound,
+            HttpStatusCode.Forbidden,
+        });
     }
 
     /// <summary>

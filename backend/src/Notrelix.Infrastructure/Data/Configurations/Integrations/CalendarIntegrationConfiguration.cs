@@ -14,6 +14,7 @@ public class CalendarIntegrationConfiguration : IEntityTypeConfiguration<Calenda
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.ConnectionId).HasColumnName("connection_id").IsRequired();
+        builder.Property(x => x.WebhookPath).HasColumnName("webhook_path").IsRequired().HasMaxLength(64);
         builder.Property(x => x.Provider).HasColumnName("provider").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.SyncDirection).HasColumnName("sync_direction").HasConversion<string>().IsRequired().HasMaxLength(20);
         builder.Property(x => x.IsActive).HasColumnName("is_active");
@@ -32,5 +33,6 @@ public class CalendarIntegrationConfiguration : IEntityTypeConfiguration<Calenda
             .HasForeignKey(x => x.IntegrationId);
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_calendar_integrations_workspace_id");
+        builder.HasIndex(x => x.WebhookPath).IsUnique().HasDatabaseName("ux_calendar_integrations_webhook_path");
     }
 }

@@ -4904,12 +4904,22 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1L)
                         .HasColumnName("version");
 
+                    b.Property<string>("WebhookPath")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("webhook_path");
+
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
 
                     b.HasKey("Id")
                         .HasName("pk_calendar_integrations");
+
+                    b.HasIndex("WebhookPath")
+                        .IsUnique()
+                        .HasDatabaseName("ux_calendar_integrations_webhook_path");
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_calendar_integrations_workspace_id");

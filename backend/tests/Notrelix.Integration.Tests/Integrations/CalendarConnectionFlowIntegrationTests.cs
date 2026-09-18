@@ -435,7 +435,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
             firstCalendarId = first.Id;
             connectionId = first.ConnectionId;
             read.CalendarIntegrations.Add(CalendarIntegration.Create(
-                stack.AccountId, stack.WorkspaceId, connectionId,
+                stack.AccountId, stack.WorkspaceId, connectionId, "outlook-test-webhook-path",
                 CalendarProvider.Outlook, CalendarSyncDirection.Push, stack.OwnerId, Now));
             await read.SaveChangesAsync();
         }
