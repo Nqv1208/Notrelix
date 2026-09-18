@@ -42,11 +42,11 @@ export function WorkspaceTopbar({
 
   return (
     <header className="h-14 border-b bg-card text-card-foreground px-6 flex items-center justify-between">
-      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground truncate max-w-[120px]">
+      <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+        <span className="hidden font-semibold text-foreground truncate max-w-[120px] sm:inline">
           {workspace?.name || "Workspace"}
         </span>
-        <ChevronRight className="h-3.5 w-3.5" />
+        <ChevronRight className="hidden h-3.5 w-3.5 sm:block" />
         <span className="font-medium text-foreground/80 truncate">
           {currentPage}
         </span>
