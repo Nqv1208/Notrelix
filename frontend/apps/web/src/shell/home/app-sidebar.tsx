@@ -1,26 +1,16 @@
-import { useState, type ComponentType } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
-  Bot,
-  CheckSquare,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileText,
-  GitBranch,
-  Heart,
   Home,
-  Mic,
-  MoreHorizontal,
+  ListTodo,
   Plus,
-  Search,
-  Sparkles,
   SquareKanban,
   Star,
   Workflow,
 } from "lucide-react";
-import { createUseCreateWorkspace } from "@notrelix/features-workspace/web";
-import { useAppRuntime } from "@notrelix/runtime-web";
 import {
   Button,
   cn,
@@ -32,35 +22,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
   Input,
   ScrollArea,
 } from "@notrelix/ui-web";
 import type { HomeSidebarData, HomeSidebarResource } from "./types";
-
-function DisabledNavItem({
-  icon: Icon,
-  label,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      disabled
-      className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-sm text-muted-foreground opacity-60"
-    >
-      <Icon className="size-4" />
-      <span>{label}</span>
-    </button>
-  );
-}
 
 function PrimaryNav() {
   return (
@@ -72,8 +37,13 @@ function PrimaryNav() {
         <Home className="size-4" />
         <span>Home</span>
       </Link>
-      <DisabledNavItem icon={CheckSquare} label="My work" />
-      <DisabledNavItem icon={MoreHorizontal} label="More" />
+      <a
+        href="#my-work"
+        className="flex h-9 items-center gap-2 rounded-lg px-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+      >
+        <ListTodo className="size-4" />
+        <span>My work</span>
+      </a>
     </nav>
   );
 }
@@ -115,6 +85,7 @@ function ResourceLink({
       </Link>
     );
   }
+
   if (type === "Board") {
     return (
       <Link
@@ -126,6 +97,7 @@ function ResourceLink({
       </Link>
     );
   }
+
   return (
     <Link
       to="/workspaces/$workspaceId"
@@ -147,22 +119,23 @@ function FavoritesSection({
       <CollapsibleTrigger className="mb-1 flex w-full items-center gap-1 px-2 py-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
         Favorites
         <ChevronRight className="size-3.5 transition-transform group-data-[state=open]/favorites:rotate-90" />
-        <Search className="ml-auto size-3.5 opacity-0 transition group-hover/favorites:opacity-100" />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-1">
         {favorites.length === 0 ? (
           <p className="px-2 py-1 text-xs text-muted-foreground">
-            No favorites
+            No favorites yet
           </p>
         ) : (
-          favorites.map((resource) => (
-            <ResourceLink
-              key={resource.id}
-              resource={resource}
-              type="Doc"
-              favorite
-            />
-          ))
+          favorites
+            .slice(0, 4)
+            .map((resource) => (
+              <ResourceLink
+                key={resource.id}
+                resource={resource}
+                type="Doc"
+                favorite
+              />
+            ))
         )}
       </CollapsibleContent>
     </Collapsible>
@@ -170,13 +143,17 @@ function FavoritesSection({
 }
 
 function RecentSection({ data }: { data: HomeSidebarData }) {
-  const workspaceResources: HomeSidebarResource[] = data.workspaces.map(
-    (workspace) => ({
-      id: workspace.id,
-      workspaceId: workspace.id,
-      title: workspace.name,
-    }),
-  );
+  const items = [
+    ...data.recentDocs.slice(0, 2).map((resource) => ({
+      resource,
+      type: "Doc" as const,
+    })),
+    ...data.recentBoards.slice(0, 2).map((resource) => ({
+      resource,
+      type: "Board" as const,
+    })),
+  ];
+
   return (
     <section className="mt-4" aria-labelledby="recently-viewed-title">
       <h2
@@ -186,25 +163,11 @@ function RecentSection({ data }: { data: HomeSidebarData }) {
         Recently viewed
       </h2>
       <div className="space-y-1">
-        {workspaceResources.slice(0, 3).map((resource) => (
+        {items.map(({ resource, type }) => (
           <ResourceLink
-            key={`workspace-${resource.id}`}
+            key={`${type}-${resource.workspaceId}-${resource.id}`}
             resource={resource}
-            type="Workspace"
-          />
-        ))}
-        {data.recentDocs.slice(0, 2).map((resource) => (
-          <ResourceLink
-            key={`doc-${resource.id}`}
-            resource={resource}
-            type="Doc"
-          />
-        ))}
-        {data.recentBoards.slice(0, 2).map((resource) => (
-          <ResourceLink
-            key={`board-${resource.id}`}
-            resource={resource}
-            type="Board"
+            type={type}
           />
         ))}
       </div>
@@ -212,139 +175,81 @@ function RecentSection({ data }: { data: HomeSidebarData }) {
   );
 }
 
-function WorkspaceSwitcher({ data }: { data: HomeSidebarData }) {
-  const navigate = useNavigate();
-  const { api: runtimeClient } = useAppRuntime();
-  const activeWorkspace = data.workspaces[0];
+function WorkspaceSection({
+  data,
+  onCreateWorkspace,
+}: {
+  data: HomeSidebarData;
+  onCreateWorkspace?: (name: string) => void;
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
-  const useCreateWorkspace = createUseCreateWorkspace({
-    api: runtimeClient.api,
-    endpoints: runtimeClient.endpoints,
-  });
-  const createWorkspace = useCreateWorkspace();
 
   const submit = () => {
     const name = workspaceName.trim();
     if (!name) return;
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    createWorkspace.mutate(
-      { name, slug, isPersonal: false },
-      {
-        onSuccess: (workspace) => {
-          setDialogOpen(false);
-          setWorkspaceName("");
-          navigate({
-            to: "/workspaces/$workspaceId",
-            params: { workspaceId: workspace.id },
-          });
-        },
-      },
-    );
+    onCreateWorkspace?.(name);
+    setWorkspaceName("");
+    setDialogOpen(false);
   };
 
   return (
-    <section className="mt-4" aria-labelledby="home-workspace-switcher-title">
+    <section className="mt-4" aria-labelledby="home-workspaces-title">
       <div className="mb-1 flex items-center justify-between px-2 py-1">
         <h2
-          id="home-workspace-switcher-title"
+          id="home-workspaces-title"
           className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground"
         >
           Workspaces
         </h2>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            disabled
-            aria-label="Workspace tools"
-            className="p-1 text-muted-foreground opacity-50"
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
-          <button
-            type="button"
-            disabled
-            aria-label="Search workspaces"
-            className="p-1 text-muted-foreground opacity-50"
-          >
-            <Search className="size-4" />
-          </button>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 px-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex h-9 min-w-0 flex-1 items-center justify-between rounded-md border border-border px-2 hover:bg-muted"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-bold text-primary">
-                  {activeWorkspace?.name.charAt(0).toUpperCase() || "W"}
-                </span>
-                <span className="truncate text-sm font-semibold">
-                  {activeWorkspace?.name || "No workspace"}
-                </span>
-              </span>
-              <ChevronDown className="size-4 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[280px]" align="start">
-            <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
-            {data.workspaces.map((workspace) => (
-              <DropdownMenuItem
-                key={workspace.id}
-                onSelect={() =>
-                  navigate({
-                    to: "/workspaces/$workspaceId",
-                    params: { workspaceId: workspace.id },
-                  })
-                }
-              >
-                {workspace.name}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>Manage workspace</DropdownMenuItem>
-            <DropdownMenuItem disabled>Browse all workspaces</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
-              Add new workspace
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
         <Button
           type="button"
-          size="icon"
-          className="size-9 shrink-0"
-          aria-label="Add new workspace"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Add workspace"
           onClick={() => setDialogOpen(true)}
         >
           <Plus className="size-4" />
         </Button>
       </div>
 
+      <div className="space-y-1">
+        {data.workspaces.slice(0, 5).map((workspace) => (
+          <ResourceLink
+            key={workspace.id}
+            resource={{
+              id: workspace.id,
+              workspaceId: workspace.id,
+              title: workspace.name,
+            }}
+            type="Workspace"
+          />
+        ))}
+      </div>
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create new workspace</DialogTitle>
+            <DialogTitle>Create workspace</DialogTitle>
           </DialogHeader>
-          <Input
-            value={workspaceName}
-            onChange={(event) => setWorkspaceName(event.target.value)}
-            placeholder="Workspace name"
-          />
+          <div className="space-y-2">
+            <Input
+              value={workspaceName}
+              onChange={(event) => setWorkspaceName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submit();
+              }}
+              autoFocus
+              placeholder="Workspace name"
+              aria-label="Workspace name"
+            />
+          </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={submit}
-              disabled={!workspaceName.trim() || createWorkspace.isPending}
-            >
-              {createWorkspace.isPending ? "Creating..." : "Create"}
+            <Button onClick={submit} disabled={!workspaceName.trim()}>
+              Create
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -353,65 +258,66 @@ function WorkspaceSwitcher({ data }: { data: HomeSidebarData }) {
   );
 }
 
-function AINav() {
-  const items = [
-    [Sparkles, "AI Sidekick"],
-    [Heart, "Vibe"],
-    [GitBranch, "AI Workflows"],
-    [Bot, "AI Agents"],
-    [Mic, "AI Notetaker"],
-  ] as const;
-  return (
-    <Collapsible defaultOpen className="group/ai mt-4">
-      <CollapsibleTrigger className="mb-1 flex w-full items-center gap-1 px-2 py-1 text-[13px] font-bold text-foreground">
-        Notrelix AI
-        <ChevronRight className="size-3.5 transition-transform group-data-[state=open]/ai:rotate-90" />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-1">
-        {items.map(([Icon, label]) => (
-          <DisabledNavItem key={label} icon={Icon} label={label} />
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
-export function AppSidebar({ data }: { data: HomeSidebarData }) {
+export function AppSidebar({
+  data,
+  onCreateWorkspace,
+  mode = "desktop",
+}: {
+  data: HomeSidebarData;
+  onCreateWorkspace?: (name: string) => void;
+  mode?: "desktop" | "mobile";
+}) {
   const [collapsed, setCollapsed] = useState(false);
+  const isMobile = mode === "mobile";
+
   return (
     <aside
       data-home-sidebar
       className={cn(
-        "group/home-sidebar relative h-full shrink-0 overflow-hidden rounded-l-xl border-r border-border bg-card text-card-foreground transition-[width] duration-300",
-        collapsed ? "w-12" : "w-64",
+        "group/home-sidebar relative h-full shrink-0 border-border bg-card text-card-foreground",
+        isMobile
+          ? "w-full overflow-hidden"
+          : [
+              "overflow-visible rounded-l-xl border-r transition-[width,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              collapsed ? "w-12 hover:w-14 hover:shadow-md" : "w-64",
+            ],
       )}
     >
       <div
-        className={cn("h-full", collapsed && "pointer-events-none opacity-0")}
+        className={cn(
+          "h-full overflow-hidden rounded-l-xl transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          !isMobile &&
+            collapsed &&
+            "pointer-events-none -translate-x-2 opacity-0",
+        )}
       >
         <ScrollArea className="h-full px-3 py-3">
           <PrimaryNav />
           <FavoritesSection favorites={data.favoriteDocs} />
           <RecentSection data={data} />
-          <WorkspaceSwitcher data={data} />
-          <AINav />
+          <WorkspaceSection data={data} onCreateWorkspace={onCreateWorkspace} />
         </ScrollArea>
       </div>
-      <button
-        type="button"
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        onClick={() => setCollapsed((value) => !value)}
-        className={cn(
-          "absolute right-0 top-5 z-20 flex size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition",
-          !collapsed && "opacity-0 group-hover/home-sidebar:opacity-100",
-        )}
-      >
-        {collapsed ? (
-          <ChevronRight className="size-4" />
-        ) : (
-          <ChevronLeft className="size-4" />
-        )}
-      </button>
+
+      {!isMobile ? (
+        <button
+          type="button"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={() => setCollapsed((value) => !value)}
+          className={cn(
+            "absolute -right-3 top-5 z-20 flex size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-[opacity,transform,box-shadow,color,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-accent hover:text-accent-foreground",
+            collapsed
+              ? "opacity-75 group-hover/home-sidebar:opacity-100 group-hover/home-sidebar:shadow-md"
+              : "-translate-x-1 opacity-0 group-hover/home-sidebar:translate-x-0 group-hover/home-sidebar:opacity-100",
+          )}
+        >
+          {collapsed ? (
+            <ChevronRight className="size-4" />
+          ) : (
+            <ChevronLeft className="size-4" />
+          )}
+        </button>
+      ) : null}
     </aside>
   );
 }

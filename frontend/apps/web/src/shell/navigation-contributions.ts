@@ -11,13 +11,11 @@
  */
 
 import {
-  Bell,
-  Home,
-  Inbox,
-  LifeBuoy,
+  CreditCard,
+  LayoutDashboard,
   MessageSquareText,
   Settings,
-  UserRoundCheck,
+  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -33,48 +31,57 @@ export interface NavigationContribution {
   readonly to: string;
 }
 
-/** Primary workspace navigation items shown in the top nav section. */
+export function resolveWorkspaceNavigationPath(
+  item: NavigationContribution,
+  workspaceId: string,
+): string {
+  return item.to.replace("$workspaceId", workspaceId);
+}
+
+export function isWorkspaceNavigationItemActive(
+  item: NavigationContribution,
+  pathname: string,
+  workspaceId: string,
+): boolean {
+  const target = resolveWorkspaceNavigationPath(item, workspaceId);
+
+  return pathname === target || pathname.startsWith(`${target}/`);
+}
+
+/** Primary workspace navigation items with independently addressable routes. */
 export const PRIMARY_NAV_CONTRIBUTIONS: readonly NavigationContribution[] = [
   {
-    id: "nav-home",
-    label: "Home",
-    icon: Home,
-    to: "/workspaces/$workspaceId",
+    id: "nav-overview",
+    label: "Overview",
+    icon: LayoutDashboard,
+    to: "/workspaces/$workspaceId/dashboard",
   },
   {
-    id: "nav-my-work",
-    label: "My Work",
-    icon: UserRoundCheck,
-    to: "/workspaces/$workspaceId",
-  },
-  {
-    id: "nav-inbox",
-    label: "Inbox",
-    icon: Inbox,
-    to: "/workspaces/$workspaceId",
-  },
-  {
-    id: "nav-notifications",
-    label: "Notifications",
-    icon: Bell,
-    to: "/workspaces/$workspaceId",
-  },
-  {
-    id: "nav-chat-rooms",
-    label: "Chat Rooms",
+    id: "nav-chat",
+    label: "Chat",
     icon: MessageSquareText,
-    to: "/workspaces/$workspaceId",
+    to: "/workspaces/$workspaceId/chat",
   },
 ] as const;
 
+/** Workspace administration items shown below primary navigation. */
+export const WORKSPACE_NAV_CONTRIBUTIONS: readonly NavigationContribution[] = [
+  {
+    id: "nav-members",
+    label: "Members",
+    icon: Users,
+    to: "/workspaces/$workspaceId/members",
+  },
+  {
+    id: "nav-billing",
+    label: "Billing",
+    icon: CreditCard,
+    to: "/workspaces/$workspaceId/billing",
+  },
+];
+
 /** Support navigation items shown at the bottom of the sidebar. */
 export const SUPPORT_NAV_CONTRIBUTIONS: readonly NavigationContribution[] = [
-  {
-    id: "nav-help",
-    label: "Help / Support",
-    icon: LifeBuoy,
-    to: "/workspaces/$workspaceId",
-  },
   {
     id: "nav-settings",
     label: "Settings",

@@ -19,22 +19,19 @@ import type { WorkspaceApiClient } from "../../core";
 
 export function WorkspaceAddViewMenu({
   workspaceId,
-  createViewHook: customCreateViewHook,
   boards = [],
   api,
 }: {
   workspaceId: string;
-  createViewHook?: ReturnType<typeof createUseCreateWorkspaceView>;
   boards?: Array<{ id: string }>;
-  api?: WorkspaceApiClient;
+  api: WorkspaceApiClient;
 }) {
   const navigate = useNavigate();
 
-  const defaultCreateViewHook = useMemo(
-    () => createUseCreateWorkspaceView({ api: api! }),
+  const createViewHook = useMemo(
+    () => createUseCreateWorkspaceView({ api }),
     [api],
   );
-  const createViewHook = customCreateViewHook || defaultCreateViewHook;
   const createView = createViewHook(workspaceId);
 
   async function handleCreate(
@@ -52,14 +49,14 @@ export function WorkspaceAddViewMenu({
       calendarId?: string;
       dashboardId?: string;
     } = {};
-    if (type === "table" || type === "kanban" || type === "timeline") {
-      target = { boardId: firstBoardId || "board-product" };
-    } else if (type === "doc") {
-      target = { pageId: "docs-mvp-spec" };
-    } else if (type === "calendar") {
-      target = { calendarId: "workspace-calendar", boardId: firstBoardId };
-    } else if (type === "dashboard") {
-      target = { dashboardId: "workspace-health" };
+    if (
+      firstBoardId &&
+      (type === "table" ||
+        type === "kanban" ||
+        type === "timeline" ||
+        type === "calendar")
+    ) {
+      target = { boardId: firstBoardId };
     }
 
     const view = await createView.mutateAsync({
