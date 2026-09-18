@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Automation.Rules.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 
@@ -23,5 +24,3 @@ public static class SetAutomationRuleEnabledEndpoint
         return result.ToNoContentResult();
     }
 }
-
-internal sealed record SetAutomationRuleEnabledRequest(bool IsEnabled);

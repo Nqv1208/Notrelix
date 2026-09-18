@@ -11,17 +11,19 @@ public class CalendarIntegrationTests
     private static readonly Guid ConnectionId = Guid.NewGuid();
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
+    private const string WebhookPath = "test-webhook-path";
 
     [Fact]
     public void Create_ShouldSetProperties_AndRaiseEvent()
     {
         var integration = CalendarIntegration.Create(
-            AccountId, WorkspaceId, ConnectionId,
+            AccountId, WorkspaceId, ConnectionId, WebhookPath,
             CalendarProvider.Google, CalendarSyncDirection.Push, Actor, Now);
 
         integration.AccountId.Should().Be(AccountId);
         integration.WorkspaceId.Should().Be(WorkspaceId);
         integration.ConnectionId.Should().Be(ConnectionId);
+        integration.WebhookPath.Should().Be(WebhookPath);
         integration.Provider.Should().Be(CalendarProvider.Google);
         integration.SyncDirection.Should().Be(CalendarSyncDirection.Push);
         integration.IsActive.Should().BeTrue();
@@ -33,7 +35,7 @@ public class CalendarIntegrationTests
     public void Create_WithEmptyAccountId_ShouldThrow()
     {
         var act = () => CalendarIntegration.Create(
-            Guid.Empty, WorkspaceId, ConnectionId,
+            Guid.Empty, WorkspaceId, ConnectionId, WebhookPath,
             CalendarProvider.Google, CalendarSyncDirection.Push, Actor, Now);
 
         act.Should().Throw<BusinessRuleException>();
@@ -43,7 +45,7 @@ public class CalendarIntegrationTests
     public void Create_WithEmptyWorkspaceId_ShouldThrow()
     {
         var act = () => CalendarIntegration.Create(
-            AccountId, Guid.Empty, ConnectionId,
+            AccountId, Guid.Empty, ConnectionId, WebhookPath,
             CalendarProvider.Google, CalendarSyncDirection.Push, Actor, Now);
 
         act.Should().Throw<BusinessRuleException>();
@@ -53,7 +55,27 @@ public class CalendarIntegrationTests
     public void Create_WithEmptyConnectionId_ShouldThrow()
     {
         var act = () => CalendarIntegration.Create(
-            AccountId, WorkspaceId, Guid.Empty,
+            AccountId, WorkspaceId, Guid.Empty, WebhookPath,
+            CalendarProvider.Google, CalendarSyncDirection.Push, Actor, Now);
+
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Create_WithNullWebhookPath_ShouldThrow()
+    {
+        var act = () => CalendarIntegration.Create(
+            AccountId, WorkspaceId, ConnectionId, null!,
+            CalendarProvider.Google, CalendarSyncDirection.Push, Actor, Now);
+
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Create_WithEmptyWebhookPath_ShouldThrow()
+    {
+        var act = () => CalendarIntegration.Create(
+            AccountId, WorkspaceId, ConnectionId, "  ",
             CalendarProvider.Google, CalendarSyncDirection.Push, Actor, Now);
 
         act.Should().Throw<BusinessRuleException>();
@@ -272,7 +294,7 @@ public class CalendarIntegrationTests
         CalendarSyncDirection syncDirection = CalendarSyncDirection.Push)
     {
         return CalendarIntegration.Create(
-            AccountId, WorkspaceId, ConnectionId,
+            AccountId, WorkspaceId, ConnectionId, WebhookPath,
             CalendarProvider.Google, syncDirection, Actor, Now);
     }
 }

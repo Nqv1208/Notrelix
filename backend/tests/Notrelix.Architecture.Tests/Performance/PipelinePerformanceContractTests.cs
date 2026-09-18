@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Security;
 
 namespace Notrelix.Architecture.Tests.Performance;
 
@@ -21,7 +20,7 @@ public sealed class PipelinePerformanceContractTests
             .SelectMany(constructor => constructor.GetParameters())
             .Should().BeEmpty("the policy evaluator must be pure — no injected I/O services");
 
-        var source = SourceOf("Notrelix.Application.Common.Security.AccessPolicyEngine");
+        var source = SourceOf("Notrelix.Application.Features.Governance.Authorization.AccessPolicyEngine");
         source.Should().NotContain("DbContext");
         source.Should().NotContain("HttpClient");
         source.Should().NotContain("ExecuteSql");

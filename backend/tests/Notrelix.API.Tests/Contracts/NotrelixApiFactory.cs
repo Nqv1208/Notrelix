@@ -273,8 +273,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                         ResourceMemberRole: "Manager",
                         HasExplicitResourcePermission: true,
                         PermissionRules: Array.Empty<AccessPermissionRule>(),
-                        HasActiveSubscription: true,
-                        SubscriptionTier: "Test",
+                        SubscriptionRequirementSatisfied: true,
                         FeatureEnabled: true,
                         ActiveResourcePermissionRank: (int)PermissionLevel.Owner,
                         TargetPermissionRank: null));
@@ -354,9 +353,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IRealtimePublisher>();
             services.AddScoped<IRealtimePublisher>(_ => Mock.Of<IRealtimePublisher>());
-
-            services.RemoveAll<IEntitlementChecker>();
-            services.AddScoped<IEntitlementChecker>(_ => Mock.Of<IEntitlementChecker>());
 
             // CompositeIntegrationEventMapper has a circular dependency in the
             // current test host. DomainEventInterceptor only needs the abstraction.

@@ -93,7 +93,7 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                await actions.EnsureWorkspaceInviteeMembershipAsync(
+                await actions.EnsureAccountMembershipAsync(
                     accountId, userId, Guid.CreateVersion7(), FixedTime, ct);
                 return null;
             },
@@ -122,7 +122,7 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                await actions.EnsureWorkspaceInviteeMembershipAsync(
+                await actions.EnsureAccountMembershipAsync(
                     accountId, userId, Guid.CreateVersion7(), FixedTime, ct);
 
                 // Simulate a later workspace-side failure inside the same request.
@@ -156,9 +156,9 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                await actions.EnsureWorkspaceInviteeMembershipAsync(
+                await actions.EnsureAccountMembershipAsync(
                     accountId, userId, invitedBy, FixedTime, ct);
-                await actions.EnsureWorkspaceInviteeMembershipAsync(
+                await actions.EnsureAccountMembershipAsync(
                     accountId, userId, invitedBy, FixedTime.AddMinutes(1), ct);
                 return null;
             },
@@ -196,9 +196,9 @@ public class AccountMembershipTransactionEvidenceTests : IAsyncLifetime
             new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(contextB)));
 
         // Both requests observe "not a member" before either transaction commits.
-        await actionsA.EnsureWorkspaceInviteeMembershipAsync(
+        await actionsA.EnsureAccountMembershipAsync(
             accountId, userId, invitedBy, FixedTime, CancellationToken.None);
-        await actionsB.EnsureWorkspaceInviteeMembershipAsync(
+        await actionsB.EnsureAccountMembershipAsync(
             accountId, userId, invitedBy, FixedTime, CancellationToken.None);
 
         await contextA.SaveChangesAsync();

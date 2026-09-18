@@ -30,14 +30,14 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 90
+Document count: 92
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
 | `architecture` | 22 |
-| `architecture-decision` | 11 |
+| `architecture-decision` | 13 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
@@ -58,7 +58,7 @@ Document count: 90
 
 | Value | Count |
 |:---|---:|
-| `Accepted` | 9 |
+| `Accepted` | 11 |
 | `active` | 76 |
 | `generated` | 3 |
 | `Superseded` | 2 |
@@ -73,6 +73,8 @@ Document count: 90
 | `ADR-004` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-api`, `backend-application`, `backend-security`, `rate-limiting`, `abuse-protection` | [`backend/docs/decisions/ADR-004-rate-limiting-architecture.md`](../../backend/docs/decisions/ADR-004-rate-limiting-architecture.md) |
 | `ADR-005` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-api`, `backend-security`, `browser-authentication`, `csrf` | [`backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md`](../../backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md) |
 | `ADR-006` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline` | [`backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md`](../../backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md) |
+| `ADR-007` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline`, `governance-context` | [`backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md`](../../backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md) |
+| `ADR-008` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-platform-messaging`, `provider-integration` | [`backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md`](../../backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md) |
 | `BE-ACCESS-FACTS-EVIDENCE` | `operations` | `active` | `backend-runtime-operations` | `backend`, `backend-access-control`, `backend-performance` | [`backend/docs/operations/access-facts-query-evidence.md`](../../backend/docs/operations/access-facts-query-evidence.md) |
 | `BE-API-CONTRACTS` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.API`, `backend/tests/Notrelix.API.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/api-and-contracts.md`](../../backend/docs/architecture/api-and-contracts.md) |
 | `BE-APPLICATION-MODEL` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.Application`, `backend/tests/Notrelix.Application.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/application-model.md`](../../backend/docs/architecture/application-model.md) |

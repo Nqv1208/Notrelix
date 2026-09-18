@@ -422,8 +422,15 @@ internal static class InitDb
                 var count = itemsPerGroup + (remainingItems > 0 ? 1 : 0);
                 if (remainingItems > 0) remainingItems--;
 
+                // Sequential canonical keys within the group. A naive decimal
+                // key ("a{10}") is not a legal fractional index ("a10" ends in
+                // a trailing zero fraction digit), so ask the generator for
+                // the next key after the current tail instead.
+                FractionalIndex? previousOrder = null;
                 for (int i = 0; i < count && itemIndex < targets.BoardItemCount; i++, itemIndex++)
                 {
+                    var order = FractionalIndexGenerator.GenerateKeyBetween(previousOrder, null);
+                    previousOrder = order;
                     var creator = boardUsers[i % boardUsers.Count];
                     var itemName = group.Title switch
                     {
@@ -436,7 +443,7 @@ internal static class InitDb
 
                     var item = BoardItem.CreateRoot(
                         account.Id, bs.Board.WorkspaceId, bs.Board.Id, group.Id,
-                        itemName, FractionalIndex.Create($"a{i}"),
+                        itemName, order,
                         creator.Id, Epoch.AddDays(itemIndex));
 
                     context.BoardItems.Add(item);

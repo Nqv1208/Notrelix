@@ -428,7 +428,8 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
                 sp.GetRequiredService<TimeProvider>(),
-                new PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>())));
+                new PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>()),
+                new FakeBillingSubscriptionFacts()));
         services.AddScoped<IWorkspaceGrantProjectionService>(sp =>
             new WorkspaceGrantProjectionServiceAdapter(
                 new AccessGrantProjectionService(sp.GetRequiredService<ApplicationDbContext>())));

@@ -12,6 +12,7 @@ public class IgnoreQueryFiltersArchitectureTests
         "src/Notrelix.Infrastructure/Notifications/Email/EmailTemplateMaterialization.cs",
         "src/Notrelix.Application/Features/Identity/Verification/Services/EmailVerificationTokenIssuer.cs",
         "src/Notrelix.Infrastructure/Identity/Services/ActiveVerificationTokenLocker.cs",
+        "src/Notrelix.Infrastructure/Integrations/Webhooks/CalendarWebhookBindingResolver.cs",
     };
 
     [Fact]

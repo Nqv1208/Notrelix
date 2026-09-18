@@ -64,7 +64,6 @@ governance.resource_permissions   idx_resource_permissions_resource (resource_ty
 governance.permission_rules       idx_permission_rules_workspace_id (workspace_id);
                                   idx_permission_rules_scope_action (scope_type, action);
                                   idx_permission_rules_status (status)
-billing.subscriptions             pk_subscriptions (id)
 billing.entitlements              idx_entitlements_account_id (account_id)
 billing.feature_usage_ledger      pk_feature_usage_ledger (id)
 ```
@@ -140,3 +139,44 @@ indexes added                  : none
 Conclusion unchanged and now methodologically valid: no additional index is
 justified; the rule-aggregation branch is the only measurable cost and is
 bounded by rule selectivity, not by member/rule cardinality scans.
+
+
+## Subscription gate migrated out of this SQL (DEBT-BILL-002)
+
+The shared authorization SQL previously projected two Billing columns —
+`EXISTS(... billing.subscriptions ...)` and a `SELECT s.tier ...` with a
+five-tier `CASE` ladder (`Enterprise`=5 … `Starter`=2 else 1). That ladder
+duplicated the Billing-owned `SubscriptionTier` domain ordering inside the
+authorization plumbing (and again inside `AccessPolicyEngine`), which is a
+semantic-ownership violation the residual-debt closure removes.
+
+The subscription decision now flows through the producer-owned
+`Billing.Public.IBillingSubscriptionFacts` seam and is composed into
+`AccessFacts.SubscriptionRequirementSatisfied` by `PostgresAccessFactsProvider`
+only when the request carries a subscription gate.
+
+Re-measured plan on the same 10k tenant after the removal:
+
+```text
+root Result actual time        : 11.124 ms (still dominated by the permission-rule
+                                   jsonb aggregation; slightly reduced by removing
+                                   two scalar subselects)
+billing.subscriptions          : no longer present in the plan (removed from SQL)
+other scans                    : Index/Bitmap Heap Scan on identity.users,
+                                   account.accounts, account.account_members,
+                                   workspace.workspaces, workspace.workspace_members,
+                                   governance.resource_permissions,
+                                   governance.permission_rules — no Seq Scan on
+                                   hot tables
+width                          : 347 (was 458)
+indexes added                  : none
+```
+
+Evidence harness alignment: the gated `PipelineFreezeEvidenceTests` now binds
+`target_subject_type / target_subject_id / target_permission_id` as NULL,
+mirroring the full provider parameter set so the canonical SQL remains
+runnable for plan verification.
+
+Re-evaluate when the shared SQL regains a `billing.subscriptions` dependency
+(feature migration is a separate follow-up gated behind `NRX-003/004`
+equivalence).

@@ -199,7 +199,8 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
             new Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
                 System.TimeProvider.System,
-                new Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>())));
+                new Notrelix.Infrastructure.Data.Authz.PostgresPageAuthorizationFacts(sp.GetRequiredService<ApplicationDbContext>()),
+                new FakeBillingSubscriptionFacts()));
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
         services.AddSingleton<IOptions<RlsOptions>>(Options.Create(new RlsOptions
         {
@@ -434,7 +435,7 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
             firstCalendarId = first.Id;
             connectionId = first.ConnectionId;
             read.CalendarIntegrations.Add(CalendarIntegration.Create(
-                stack.AccountId, stack.WorkspaceId, connectionId,
+                stack.AccountId, stack.WorkspaceId, connectionId, "outlook-test-webhook-path",
                 CalendarProvider.Outlook, CalendarSyncDirection.Push, stack.OwnerId, Now));
             await read.SaveChangesAsync();
         }

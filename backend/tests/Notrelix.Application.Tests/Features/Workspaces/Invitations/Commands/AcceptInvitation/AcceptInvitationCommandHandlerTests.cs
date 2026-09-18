@@ -164,7 +164,7 @@ public class AcceptInvitationCommandHandlerTests : AcceptInvitationHandlerTestBa
         result.Errors.Should().Contain(
             "This invitation belongs to a different email address.");
         AccountMembershipActionsMock.Verify(
-            a => a.EnsureWorkspaceInviteeMembershipAsync(
+            a => a.EnsureAccountMembershipAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -231,7 +231,7 @@ public class AcceptInvitationCommandHandlerTests : AcceptInvitationHandlerTestBa
         result.Errors.Should().Contain(
             "Cannot accept invitation for an inactive account.");
         AccountMembershipActionsMock.Verify(
-            a => a.EnsureWorkspaceInviteeMembershipAsync(
+            a => a.EnsureAccountMembershipAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -253,7 +253,7 @@ public class AcceptInvitationCommandHandlerTests : AcceptInvitationHandlerTestBa
 
         DbContextMock.Object.WorkspaceInvitations.Single().Status.Should().Be(WorkspaceInvitationStatus.Accepted);
         AccountMembershipActionsMock.Verify(
-            a => a.EnsureWorkspaceInviteeMembershipAsync(
+            a => a.EnsureAccountMembershipAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
             Times.Never,
             "an already-member acceptance must not trigger a second Account membership mutation");
@@ -285,7 +285,7 @@ public class AcceptInvitationCommandHandlerTests : AcceptInvitationHandlerTestBa
         DbContextMock.Object.WorkspaceMembers.Single().WorkspaceId.Should().Be(TestWorkspaceId);
 
         AccountMembershipActionsMock.Verify(
-            a => a.EnsureWorkspaceInviteeMembershipAsync(
+            a => a.EnsureAccountMembershipAsync(
                 TestAccountId, TestUserId, It.IsAny<Guid>(), TestNow, It.IsAny<CancellationToken>()),
             Times.Once);
         GrantProjectionMock.Verify(

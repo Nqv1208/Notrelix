@@ -33,7 +33,7 @@ public static class CalendarEndpoints
             .Produces(StatusCodes.Status204NoContent);
 
         var webhookGroup = app
-            .MapGroup("/api/v1/integrations/calendar/webhooks/{provider}")
+            .MapGroup("/api/v1/integrations/calendar/webhooks/{provider}/{webhookPath}")
             .WithTags("Integrations.Calendar")
             .WithOpenApi();
 
@@ -47,7 +47,8 @@ public static class CalendarEndpoints
         return app;
     }
 
-    private static async Task<IResult> WebhookAsync(string provider, HttpRequest request, ISender sender, CancellationToken cancellationToken)
+    private static async Task<IResult> WebhookAsync(
+        string provider, string webhookPath, HttpRequest request, ISender sender, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(request.Body);
         var rawBody = await reader.ReadToEndAsync(cancellationToken);
@@ -56,9 +57,11 @@ public static class CalendarEndpoints
         var timestamp = request.Headers["X-Calendar-Timestamp"].FirstOrDefault() ?? string.Empty;
 
         // The callback travels the canonical request pipeline (validation,
-        // descriptors, contracts) — not a direct handler invocation.
+        // descriptors, contracts) — not a direct handler invocation. The
+        // route now carries the per-connection webhook path; the legacy
+        // provider-only route no longer exists and fails closed (404).
         var result = await sender.Send(
-            new HandleCalendarWebhookCommand(provider, signature, timestamp, rawBody),
+            new HandleCalendarWebhookCommand(provider, signature, timestamp, rawBody, webhookPath),
             cancellationToken);
 
         return result.Succeeded ? Results.Ok() : Results.Unauthorized();

@@ -146,7 +146,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         }
 
         await _accountMembershipActions
-            .EnsureWorkspaceInviteeMembershipAsync(
+            .EnsureAccountMembershipAsync(
                 workspace.AccountId,
                 currentUserId,
                 invitation.InvitedBy,

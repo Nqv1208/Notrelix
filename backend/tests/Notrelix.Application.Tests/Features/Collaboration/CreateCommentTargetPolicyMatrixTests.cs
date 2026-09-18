@@ -168,8 +168,7 @@ public sealed class CreateCommentTargetPolicyMatrixTests
         ResourceMemberRole: null,
         HasExplicitResourcePermission: hasExplicitResourcePermission,
         PermissionRules: rules ?? [],
-        HasActiveSubscription: false,
-        SubscriptionTier: null,
+        SubscriptionRequirementSatisfied: false,
         FeatureEnabled: false,
         ActiveResourcePermissionRank: hasExplicitResourcePermission ? 2 : null,
         TargetPermissionRank: null);

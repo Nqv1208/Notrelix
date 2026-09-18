@@ -17,6 +17,8 @@ evidence:
   - backend/docs/decisions/ADR-004-rate-limiting-architecture.md
   - backend/docs/decisions/ADR-005-csrf-cross-origin-bootstrap.md
   - backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md
+  - backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md
+  - backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md
 review_on:
   - backend-adr-added
   - backend-adr-status-change
@@ -234,6 +236,9 @@ The registry does not restate the decision body.
 | `ADR-003` | [CSRF Protection via Double Submit Cookie](ADR-003-csrf-protection.md) | `Superseded` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | [ADR-005](ADR-005-csrf-cross-origin-bootstrap.md) |
 | `ADR-004` | [5-Tier Rate Limiting Architecture](ADR-004-rate-limiting-architecture.md) | `Accepted` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | None |
 | `ADR-005` | [Cross-Origin CSRF Bootstrap Protocol](ADR-005-csrf-cross-origin-bootstrap.md) | `Accepted` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | None |
+| `ADR-006` | [Frozen Seven-Behavior Application Pipeline](ADR-006-frozen-seven-behavior-pipeline.md) | `Accepted` | `../architecture/application-model.md` | None |
+| `ADR-007` | [Governance-Owned Authorization Evaluator Behind a Neutral Common Pipeline Seam](ADR-007-governance-owned-authorization-evaluator.md) | `Accepted` | `../architecture/security-tenancy-authorization.md`, `../architecture/application-model.md` | None |
+| `ADR-008` | [Provider Outcome Classification and Durable Settlement for External Webhook Dispatch](ADR-008-provider-outcome-classification-and-settlement.md) | `Accepted` | `../architecture/platform-and-messaging.md`, `../architecture/application-model.md` | None |
 
 Backend ADRs currently recorded here as:
 
@@ -257,12 +262,15 @@ ADR-002
 ADR-003
 ADR-004
 ADR-005
+ADR-006
+ADR-007
+ADR-008
 ```
 
 Therefore the next new backend ADR would normally be:
 
 ```text
-ADR-006
+ADR-009
 ```
 
 provided no concurrent/unmerged backend ADR has already reserved that identifier.
@@ -989,7 +997,17 @@ ADR-004 — 5-Tier Rate Limiting Architecture — Accepted
 ADR-005 — Cross-Origin CSRF Bootstrap Protocol — Accepted
 ```
 
-No additional backend ADR should be invented simply to make the registry look more complete.
+As of the M11 remediation (2026-09-16), the set additionally includes:
+
+```text
+ADR-006 — Frozen Seven-Behavior Application Pipeline — Accepted
+ADR-007 — Governance-Owned Authorization Evaluator — Accepted
+ADR-008 — Provider Outcome Classification and Durable Settlement — Accepted
+```
+
+The full registry table above (§9) is the authoritative listing.
+
+Do not invent additional backend ADRs simply to make the registry look more complete.
 
 ---
 

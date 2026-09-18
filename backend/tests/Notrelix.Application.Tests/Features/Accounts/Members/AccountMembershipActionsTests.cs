@@ -52,7 +52,7 @@ public class AccountMembershipActionsTests
         context.Accounts.Add(CreateAccount(AccountStatus.Active, accountId));
         await context.SaveChangesAsync();
 
-        await sut.EnsureWorkspaceInviteeMembershipAsync(
+        await sut.EnsureAccountMembershipAsync(
             accountId, userId, Guid.CreateVersion7(), TestNow, CancellationToken.None);
         await context.SaveChangesAsync();
 
@@ -72,8 +72,8 @@ public class AccountMembershipActionsTests
         context.Accounts.Add(CreateAccount(AccountStatus.Active, accountId));
         await context.SaveChangesAsync();
 
-        await sut.EnsureWorkspaceInviteeMembershipAsync(accountId, userId, invitedBy, TestNow, CancellationToken.None);
-        await sut.EnsureWorkspaceInviteeMembershipAsync(
+        await sut.EnsureAccountMembershipAsync(accountId, userId, invitedBy, TestNow, CancellationToken.None);
+        await sut.EnsureAccountMembershipAsync(
             accountId, userId, invitedBy, TestNow.AddMinutes(1), CancellationToken.None);
         await context.SaveChangesAsync();
 
@@ -95,9 +95,9 @@ public class AccountMembershipActionsTests
         context.Accounts.Add(CreateAccount(AccountStatus.Active, accountId));
         await context.SaveChangesAsync();
 
-        await sut.EnsureWorkspaceInviteeMembershipAsync(accountId, userId, invitedBy, TestNow, CancellationToken.None);
+        await sut.EnsureAccountMembershipAsync(accountId, userId, invitedBy, TestNow, CancellationToken.None);
         await context.SaveChangesAsync();
-        await sut.EnsureWorkspaceInviteeMembershipAsync(accountId, userId, invitedBy, TestNow, CancellationToken.None);
+        await sut.EnsureAccountMembershipAsync(accountId, userId, invitedBy, TestNow, CancellationToken.None);
 
         context.ChangeTracker.Clear();
         (await context.AccountMembers
@@ -111,7 +111,7 @@ public class AccountMembershipActionsTests
         var context = CreateContext();
         var sut = CreateSut(context);
 
-        var act = async () => await sut.EnsureWorkspaceInviteeMembershipAsync(
+        var act = async () => await sut.EnsureAccountMembershipAsync(
             Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), TestNow, CancellationToken.None);
 
         await act.Should().ThrowAsync<BusinessRuleException>()
@@ -130,7 +130,7 @@ public class AccountMembershipActionsTests
         context.Accounts.Add(CreateAccount(status, accountId));
         await context.SaveChangesAsync();
 
-        var act = async () => await sut.EnsureWorkspaceInviteeMembershipAsync(
+        var act = async () => await sut.EnsureAccountMembershipAsync(
             accountId, Guid.CreateVersion7(), Guid.CreateVersion7(), TestNow, CancellationToken.None);
 
         await act.Should().ThrowAsync<BusinessRuleException>()
@@ -152,7 +152,7 @@ public class AccountMembershipActionsTests
         context.AccountMembers.Add(suspended);
         await context.SaveChangesAsync();
 
-        var act = async () => await sut.EnsureWorkspaceInviteeMembershipAsync(
+        var act = async () => await sut.EnsureAccountMembershipAsync(
             accountId, userId, Guid.CreateVersion7(), TestNow, CancellationToken.None);
 
         await act.Should().ThrowAsync<BusinessRuleException>()

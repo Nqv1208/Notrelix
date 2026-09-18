@@ -97,7 +97,7 @@ public sealed class N8nDispatchConsumerDefinition
 {
     public N8nDispatchConsumerDefinition()
     {
-        EndpointName = "notrelix-automation-n8n-dispatch-v1";
+        EndpointName = N8nDispatchProtocolEndpoints.DispatchEndpointName;
         ConcurrentMessageLimit = 4;
     }
 

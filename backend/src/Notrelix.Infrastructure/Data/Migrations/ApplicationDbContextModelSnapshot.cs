@@ -74,6 +74,61 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("account_settings", "account");
                 });
 
+            modelBuilder.Entity("Notrelix.Application.Features.Analytics.Projections.WorkItemPlacement.WorkspaceWorkItemPlacementProjection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<DateTimeOffset>("LastOccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_occurred_at");
+
+                    b.Property<long>("SourceRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_revision");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_workspace_work_item_placements");
+
+                    b.HasIndex("WorkspaceId", "ItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_work_item_placements_workspace_item");
+
+                    b.ToTable("workspace_work_item_placements", "reporting");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Accounts.Accounts.Account", b =>
                 {
                     b.Property<Guid>("Id")
@@ -901,54 +956,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("dashboard_widgets", "reporting");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Analytics.Placements.WorkspaceWorkItemPlacementProjection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("account_id");
-
-                    b.Property<Guid>("BoardId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("board_id");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("group_id");
-
-                    b.Property<bool>("IsArchived")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_archived");
-
-                    b.Property<Guid>("ItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("item_id");
-
-                    b.Property<DateTimeOffset>("LastOccurredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_occurred_at");
-
-                    b.Property<long>("SourceRevision")
-                        .HasColumnType("bigint")
-                        .HasColumnName("source_revision");
-
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_workspace_work_item_placements");
-
-                    b.HasIndex("WorkspaceId", "ItemId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_workspace_work_item_placements_workspace_item");
-
-                    b.ToTable("workspace_work_item_placements", "reporting");
-                });
-
             modelBuilder.Entity("Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1732,6 +1739,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("feature_code");
 
+                    b.Property<bool>("IsUnlimited")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_unlimited");
+
                     b.Property<int>("Limit")
                         .HasColumnType("integer")
                         .HasColumnName("limit_value");
@@ -2251,6 +2264,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("feature_code");
 
+                    b.Property<Guid?>("LogicalOperationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("logical_operation_id");
+
                     b.Property<string>("Note")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
@@ -2271,6 +2288,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_feature_usage_ledger");
+
+                    b.HasIndex("LogicalOperationId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_feature_usage_ledger_logical_operation")
+                        .HasFilter("\"logical_operation_id\" IS NOT NULL");
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_feature_usage_ledger_workspace_id");
@@ -2435,6 +2457,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_workspace_feature_usages_workspace_id");
+
+                    b.HasIndex("AccountId", "WorkspaceId", "Feature")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_feature_usages_scope");
 
                     b.ToTable("workspace_feature_usages", "billing");
                 });
@@ -4875,12 +4901,22 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1L)
                         .HasColumnName("version");
 
+                    b.Property<string>("WebhookPath")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("webhook_path");
+
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
 
                     b.HasKey("Id")
                         .HasName("pk_calendar_integrations");
+
+                    b.HasIndex("WebhookPath")
+                        .IsUnique()
+                        .HasDatabaseName("ux_calendar_integrations_webhook_path");
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_calendar_integrations_workspace_id");
@@ -8772,13 +8808,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("payload_hash");
 
-                    b.Property<string>("ProtectedPayload")
-                        .HasColumnType("text")
-                        .HasColumnName("protected_payload");
-
                     b.Property<DateTimeOffset?>("ProcessedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
+
+                    b.Property<string>("ProtectedPayload")
+                        .HasColumnType("text")
+                        .HasColumnName("protected_payload");
 
                     b.Property<string>("Provider")
                         .IsRequired()
