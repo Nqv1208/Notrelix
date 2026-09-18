@@ -3,7 +3,6 @@ using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Integrations.Public.Webhooks;
 using Notrelix.Domain.Integrations;
-using Notrelix.Domain.Integrations.Calendar;
 
 namespace Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook;
 

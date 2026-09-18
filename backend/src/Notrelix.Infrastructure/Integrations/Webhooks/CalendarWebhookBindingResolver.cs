@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Features.Integrations.Abstractions;
 
 namespace Notrelix.Infrastructure.Integrations.Webhooks;
