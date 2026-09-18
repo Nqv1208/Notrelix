@@ -34,8 +34,11 @@ export function PendingInvitationsMenu({
     [api, endpoints],
   );
 
-  const { data: invitations = [], isLoading, refetch } =
-    usePendingInvitations();
+  const {
+    data: invitations = [],
+    isLoading,
+    refetch,
+  } = usePendingInvitations();
   const acceptMutation = useAcceptInvitation();
 
   const handleAccept = (invitation: WorkspaceInvitation) => {

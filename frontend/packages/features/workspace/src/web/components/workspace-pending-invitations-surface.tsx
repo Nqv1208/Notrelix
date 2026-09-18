@@ -105,7 +105,8 @@ export function PendingInvitationsMenuSurface({
                 No pending invitations
               </p>
               <p className="max-w-[200px] text-[11px] leading-normal text-muted-foreground/80">
-                When someone invites you to their workspace, it will appear here.
+                When someone invites you to their workspace, it will appear
+                here.
               </p>
             </div>
           ) : (
@@ -143,7 +144,8 @@ export function PendingInvitationsMenuSurface({
                       <div className="flex items-center gap-1.5">
                         <Calendar className="size-3.5 text-primary/75" />
                         <span>
-                          Expires: {new Date(invitation.expiresAt).toLocaleDateString()}
+                          Expires:{" "}
+                          {new Date(invitation.expiresAt).toLocaleDateString()}
                         </span>
                       </div>
                     </div>

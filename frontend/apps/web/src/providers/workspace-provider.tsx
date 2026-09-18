@@ -73,8 +73,7 @@ export function WorkspaceProvider({
     isLoading,
     isError,
     refetch: refetchShellData,
-  } =
-    useWorkspaceShellData(workspaceId);
+  } = useWorkspaceShellData(workspaceId);
   const { data: members = [], refetch: refetchMembers } =
     useWorkspaceMembers(workspaceId);
 

@@ -41,47 +41,47 @@ export function WorkspaceTopbar({
   else if (isMembers) currentPage = "Members";
 
   return (
-      <header className="h-14 border-b bg-card text-card-foreground px-6 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground truncate max-w-[120px]">
-            {workspace?.name || "Workspace"}
-          </span>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <span className="font-medium text-foreground/80 truncate">
-            {currentPage}
-          </span>
-        </div>
+    <header className="h-14 border-b bg-card text-card-foreground px-6 flex items-center justify-between">
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground truncate max-w-[120px]">
+          {workspace?.name || "Workspace"}
+        </span>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="font-medium text-foreground/80 truncate">
+          {currentPage}
+        </span>
+      </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 w-60 justify-start text-muted-foreground gap-2 hidden md:flex font-normal"
-            onClick={onOpenSearch}
-          >
-            <Search className="h-4 w-4" />
-            <span className="text-xs">Search pages, boards...</span>
-            <kbd className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono">
-              ⌘K
-            </kbd>
-          </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 w-60 justify-start text-muted-foreground gap-2 hidden md:flex font-normal"
+          onClick={onOpenSearch}
+        >
+          <Search className="h-4 w-4" />
+          <span className="text-xs">Search pages, boards...</span>
+          <kbd className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono">
+            ⌘K
+          </kbd>
+        </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-muted-foreground"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            title="Toggle theme"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-muted-foreground"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          title="Toggle theme"
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
 
-          <NotificationBell />
-        </div>
-      </header>
+        <NotificationBell />
+      </div>
+    </header>
   );
 }

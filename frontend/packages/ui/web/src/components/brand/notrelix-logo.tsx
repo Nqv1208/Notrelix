@@ -8,8 +8,10 @@ export interface NotrelixLogoProps extends React.HTMLAttributes<HTMLDivElement> 
   showWordmark?: boolean;
 }
 
-export interface NotrelixBrandLoaderProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export interface NotrelixBrandLoaderProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
+> {
   size?: NotrelixLogoSize;
 }
 
@@ -17,9 +19,7 @@ interface NotrelixLogoArtworkProps {
   gradientIdPrefix: string;
 }
 
-function NotrelixLogoArtwork({
-  gradientIdPrefix,
-}: NotrelixLogoArtworkProps) {
+function NotrelixLogoArtwork({ gradientIdPrefix }: NotrelixLogoArtworkProps) {
   const paint0 = `${gradientIdPrefix}_paint0_linear`;
   const paint1 = `${gradientIdPrefix}_paint1_linear`;
   const paint2 = `${gradientIdPrefix}_paint2_linear`;
@@ -157,10 +157,7 @@ export function NotrelixBrandLoader({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
-        className={cn(
-          "shrink-0 motion-reduce:hidden",
-          loaderSizeClasses[size],
-        )}
+        className={cn("shrink-0 motion-reduce:hidden", loaderSizeClasses[size])}
       >
         <defs>
           <mask

@@ -161,7 +161,6 @@ export function WorkspaceSidebar({
           ))}
         </div>
       </div>
-
     </aside>
   );
 }

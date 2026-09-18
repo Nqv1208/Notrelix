@@ -57,7 +57,10 @@ export function WorkspaceLayout() {
                 </main>
               </div>
             </div>
-            <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+            <GlobalSearch
+              open={searchOpen}
+              onClose={() => setSearchOpen(false)}
+            />
           </>
         </WorkspaceGuard>
       </WorkspaceProvider>

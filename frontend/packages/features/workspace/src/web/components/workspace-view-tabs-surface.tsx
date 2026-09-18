@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -83,7 +89,9 @@ export function WorkspaceViewTabsSurface({
 
     if (over && active.id !== over.id) {
       setItems((currentItems) => {
-        const oldIndex = currentItems.findIndex((item) => item.id === active.id);
+        const oldIndex = currentItems.findIndex(
+          (item) => item.id === active.id,
+        );
         const newIndex = currentItems.findIndex((item) => item.id === over.id);
         const reordered = arrayMove(currentItems, oldIndex, newIndex);
         onReorderViews?.(reordered.map((view) => view.id));
@@ -131,17 +139,18 @@ export function WorkspaceViewTabsSurface({
             </SortableContext>
           </DndContext>
         </div>
-        {addViewControl ?? (onAddView ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 rounded-full px-2.5"
-            onClick={onAddView}
-          >
-            <Plus className="size-4" />
-            <span className="sr-only sm:not-sr-only">Add view</span>
-          </Button>
-        ) : null)}
+        {addViewControl ??
+          (onAddView ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 rounded-full px-2.5"
+              onClick={onAddView}
+            >
+              <Plus className="size-4" />
+              <span className="sr-only sm:not-sr-only">Add view</span>
+            </Button>
+          ) : null)}
         {onMoreActions ? (
           <Button
             variant="ghost"
