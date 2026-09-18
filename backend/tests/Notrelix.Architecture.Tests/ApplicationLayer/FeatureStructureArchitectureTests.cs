@@ -45,19 +45,69 @@ public class FeatureStructureArchitectureTests
     // STN-ARCH-001
     // ------------------------------------------------------------------
 
+    private static readonly (string Label, string Root)[] ScannedPlaceholderRoots =
+    {
+        ("Application Features", FeaturesRoot),
+        ("API Contracts", Path.Combine(GetBackendRoot(), "src", "Notrelix.API", "Contracts")),
+        ("Architecture.Tests", Path.Combine(GetBackendRoot(), "tests", "Notrelix.Architecture.Tests")),
+    };
+
     [Fact]
     public void NoFeatureGitkeepPlaceholders()
     {
-        var placeholders = Directory
-            .EnumerateFiles(FeaturesRoot, ".gitkeep", SearchOption.AllDirectories)
-            .Select(Path.GetDirectoryName!)
-            .Select(d => Path.GetRelativePath(FeaturesRoot, d))
-            .OrderBy(p => p, StringComparer.Ordinal)
-            .ToList();
+        var violations = ScanGitkeepPlaceholders(ScannedPlaceholderRoots);
 
-        placeholders.Should().BeEmpty(
-            $"{RuleNoScaffolding}: placeholder feature topology detected at [{string.Join(", ", placeholders)}]. " +
+        violations.Should().BeEmpty(
+            $"{RuleNoScaffolding}: placeholder topology detected at [{string.Join(", ", violations)}]. " +
             "Do not pre-create architecture folders; create the folder together with its first real source type.");
+    }
+
+    private static List<string> ScanGitkeepPlaceholders(IEnumerable<(string Label, string Root)> roots)
+    {
+        var violations = new List<string>();
+        foreach (var (label, root) in roots)
+        {
+            if (!Directory.Exists(root))
+                continue;
+
+            foreach (var placeholder in Directory.EnumerateFiles(root, ".gitkeep", SearchOption.AllDirectories))
+            {
+                var relative = Path.GetRelativePath(root, Path.GetDirectoryName(placeholder)!);
+                violations.Add($"{label}/{relative.Replace('\\', '/')}/");
+            }
+        }
+
+        return violations.OrderBy(v => v, StringComparer.Ordinal).ToList();
+    }
+
+    [Fact]
+    public void GitkeepScan_RejectsPlaceholderAndAcceptsCleanRoot()
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"nrx-stn001-{Guid.NewGuid():N}");
+        try
+        {
+            var clean = Path.Combine(tempRoot, "Clean", "Deep", "Empty");
+            Directory.CreateDirectory(clean);
+            var dirty = Path.Combine(tempRoot, "Dirty", "Placeholder");
+            Directory.CreateDirectory(dirty);
+            File.WriteAllText(Path.Combine(dirty, ".gitkeep"), string.Empty);
+
+            var roots = new (string Label, string Root)[]
+            {
+                ("Clean", Path.Combine(tempRoot, "Clean")),
+                ("Dirty", Path.Combine(tempRoot, "Dirty")),
+            };
+
+            var violations = ScanGitkeepPlaceholders(roots);
+            violations.Should().ContainSingle().Which.Should().Contain("Dirty/Placeholder/");
+
+            ScanGitkeepPlaceholders(roots.Take(1)).Should().BeEmpty();
+        }
+        finally
+        {
+            if (Directory.Exists(tempRoot))
+                Directory.Delete(tempRoot, recursive: true);
+        }
     }
 
     // ------------------------------------------------------------------

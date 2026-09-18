@@ -61,19 +61,22 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
 
     private sealed record ChainGraph(Guid AccountId, Guid WorkspaceId, Guid RuleId, Guid ExecutionId);
 
-    private async Task<ChainGraph> SeedRuleAndExecutionAsync()
+    private async Task<ChainGraph> SeedRuleAndExecutionAsync(bool urlOnlyConfiguration)
     {
         var ownerId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
         var user = User.Create($"n8n-runtime-{Guid.NewGuid():N}@example.com", "Runtime N8N", "hashed", now, true);
-        var account = Notrelix.Domain.Accounts.Accounts.Account.Create(
+        var account = Domain.Accounts.Accounts.Account.Create(
             "Runtime N8N Account", $"runtime-{Guid.NewGuid():N}",
-            Notrelix.Domain.Accounts.Accounts.AccountType.Team, ownerId, now);
+            Domain.Accounts.Accounts.AccountType.Team, ownerId, now);
         var workspace = Workspace.Create(account.Id, ownerId, "Runtime WS", $"runtime-{Guid.NewGuid():N}", now);
 
+        var actionConfiguration = urlOnlyConfiguration
+            ? """{"url":"https://example.com/hooks/generic"}"""
+            : """{"webhookPath":"notrelix-card-assigned"}""";
         var config = AutomationConfiguration.Create(
             AutomationTriggerDefinition.Create("ItemAssigned"),
-            AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}"""));
+            AutomationActionDefinition.Create("Webhook", actionConfiguration));
         var rule = AutomationRule.Create(account.Id, workspace.Id, "Runtime alert", config, ownerId, now);
         rule.Enable(ownerId, now);
         var execution = AutomationExecution.Create(account.Id, workspace.Id, rule.Id, Guid.NewGuid(), now);
@@ -82,8 +85,8 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
         seed.Users.Add(user);
         seed.Accounts.Add(account);
         seed.Workspaces.Add(workspace);
-        seed.WorkspaceMembers.Add(Notrelix.Domain.Workspaces.Members.WorkspaceMember.Create(
-            account.Id, workspace.Id, ownerId, Notrelix.Domain.Workspaces.Members.WorkspaceRole.Owner, ownerId, now));
+        seed.WorkspaceMembers.Add(Domain.Workspaces.Members.WorkspaceMember.Create(
+            account.Id, workspace.Id, ownerId, Domain.Workspaces.Members.WorkspaceRole.Owner, ownerId, now));
         seed.AutomationRules.Add(rule);
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
@@ -95,7 +98,7 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task UnknownOutcome_SettlesFailedWithReconciliation_AndNeverReFires()
     {
-        var graph = await SeedRuleAndExecutionAsync();
+        var graph = await SeedRuleAndExecutionAsync(urlOnlyConfiguration: false);
         var providerN8n = new RecordingN8nClient();
         providerN8n.Queue(N8nWebhookOutcome.UnknownOutcome, "n8n webhook call timed out");
 
@@ -141,7 +144,7 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task RetryableRateLimit_DurableAttemptEvidence_SurvivesRealMassTransitRetry()
     {
-        var graph = await SeedRuleAndExecutionAsync();
+        var graph = await SeedRuleAndExecutionAsync(urlOnlyConfiguration: false);
         var providerN8n = new RecordingN8nClient();
         providerN8n.Queue(N8nWebhookOutcome.RetryableFailure, "n8n returned HTTP 429: busy");
         providerN8n.Queue(N8nWebhookOutcome.Succeeded);
@@ -187,12 +190,71 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task InvalidConfiguration_SettlesTerminalFailure_WithoutInvokingProvider()
+    {
+        var graph = await SeedRuleAndExecutionAsync(urlOnlyConfiguration: true);
+        var providerN8n = new RecordingN8nClient();
+        var tenantRecorder = new TenantObservationRecorder();
+
+        await using var provider = BuildProvider(providerN8n, tenantRecorder);
+        var hostedServices = provider.GetServices<IHostedService>().ToArray();
+        foreach (var hosted in hostedServices)
+        {
+            await hosted.StartAsync(CancellationToken.None);
+        }
+
+        try
+        {
+            var message = NewDispatchMessage(graph);
+            await provider.GetRequiredService<IIntegrationEventBus>().PublishAsync(message);
+
+            var settled = await WaitForAsync(async () =>
+                await ExecutionStatusAsync(graph.ExecutionId) == AutomationExecutionStatus.Failed);
+
+            if (!settled)
+            {
+                settled.Should().BeTrue(await DiagnosticAsync(graph));
+            }
+
+            var stored = await LoadExecutionAsync(graph.ExecutionId);
+            stored.Should().NotBeNull();
+            stored!.Status.Should().Be(AutomationExecutionStatus.Failed,
+                "a Domain-valid rule that is not n8n-dispatchable settles terminally during prepare");
+            stored.Error.Should().Contain("webhookPath",
+                "the terminal error names the missing configuration member");
+
+            providerN8n.CallCount.Should().Be(0,
+                "the provider must never be invoked when the prepare phase settles the intent");
+            RecordingDeduplicationStore.ClaimAttempts(message.EventId, N8nDispatchEndpoint).Should().Be(1,
+                "the config defect settles in one delivery; no redelivery is requested");
+
+            tenantRecorder.ObservedWorkspaceSet.Should().BeTrue(
+                "TenantContextConsumeFilter must restore the Workspace tenant before the consumer pipe runs");
+            tenantRecorder.LastWorkspaceAccountId.Should().Be(graph.AccountId,
+                "the dispatch consumer must observe the authoritative AccountId");
+            tenantRecorder.LastWorkspaceId.Should().Be(graph.WorkspaceId,
+                "the dispatch consumer must observe the authoritative WorkspaceId");
+            tenantRecorder.LastWorkspaceIsSystem.Should().BeFalse(
+                "a Workspace-scoped dispatch must not execute its consumer as System");
+            tenantRecorder.ClearedAfterWorkspace.Should().BeTrue(
+                "TenantContextConsumeFilter must clear tenant state after consume completion");
+        }
+        finally
+        {
+            foreach (var hosted in hostedServices.Reverse())
+            {
+                await hosted.StopAsync(CancellationToken.None);
+            }
+        }
+    }
+
     private static N8nDispatchRequestedV1 NewDispatchMessage(ChainGraph graph) =>
         new(Guid.CreateVersion7(), graph.ExecutionId, graph.RuleId,
             graph.AccountId, graph.WorkspaceId, DateTimeOffset.UtcNow,
             Guid.NewGuid(), SourceEventId: null, CausationId: null);
 
-    private ServiceProvider BuildProvider(IN8nClient providerN8n)
+    private ServiceProvider BuildProvider(IN8nClient providerN8n, TenantObservationRecorder? tenantRecorder = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -240,6 +302,14 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
         // and dedup filter; only the provider port and dedup store are faked.
         builder.Services.AddInfrastructure(configuration, environment.Object);
         builder.AddApplicationServices();
+
+        if (tenantRecorder is not null)
+        {
+            builder.Services.Replace(
+                ServiceDescriptor.Scoped<Notrelix.Application.Common.Context.ICurrentTenantContext>(_ =>
+                    new RecordingCurrentTenantContext(
+                        new Notrelix.Infrastructure.Identity.Services.CurrentTenantContext(), tenantRecorder)));
+        }
 
         builder.Services.Replace(ServiceDescriptor.Singleton<IN8nClient>(providerN8n));
 
@@ -312,6 +382,71 @@ public sealed class N8nDispatchRuntimeChainIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         return tenant;
+    }
+
+    private sealed class TenantObservationRecorder
+    {
+        private readonly object _gate = new();
+
+        public bool ObservedWorkspaceSet { get; private set; }
+        public Guid? LastWorkspaceAccountId { get; private set; }
+        public Guid? LastWorkspaceId { get; private set; }
+        public bool LastWorkspaceIsSystem { get; private set; }
+        public bool ClearedAfterWorkspace { get; private set; }
+
+        public void RecordWorkspace(Guid accountId, Guid workspaceId, bool isSystemContext)
+        {
+            lock (_gate)
+            {
+                ObservedWorkspaceSet = true;
+                LastWorkspaceAccountId = accountId;
+                LastWorkspaceId = workspaceId;
+                LastWorkspaceIsSystem = isSystemContext;
+            }
+        }
+
+        public void RecordClear()
+        {
+            lock (_gate)
+            {
+                if (ObservedWorkspaceSet)
+                {
+                    ClearedAfterWorkspace = true;
+                }
+            }
+        }
+    }
+
+    private sealed class RecordingCurrentTenantContext(Notrelix.Infrastructure.Identity.Services.CurrentTenantContext inner, TenantObservationRecorder recorder)
+        : Notrelix.Application.Common.Context.ICurrentTenantContext
+    {
+        public Guid? AccountId => inner.AccountId;
+        public Guid? WorkspaceId => inner.WorkspaceId;
+        public Guid? UserId => inner.UserId;
+        public bool IsSystemContext => inner.IsSystemContext;
+        public bool IsResolved => inner.IsResolved;
+
+        public Guid RequireAccountId() => inner.RequireAccountId();
+        public Guid RequireWorkspaceId() => inner.RequireWorkspaceId();
+        public Guid RequireUserId() => inner.RequireUserId();
+
+        public void SetUser(Guid userId) => inner.SetUser(userId);
+        public void SetAccountHint(Guid accountId) => inner.SetAccountHint(accountId);
+        public void SetAccount(Guid accountId, Guid? userId) => inner.SetAccount(accountId, userId);
+
+        public void SetWorkspace(Guid accountId, Guid workspaceId, Guid? userId)
+        {
+            inner.SetWorkspace(accountId, workspaceId, userId);
+            recorder.RecordWorkspace(accountId, workspaceId, inner.IsSystemContext);
+        }
+
+        public void SetSystem() => inner.SetSystem();
+
+        public void Clear()
+        {
+            inner.Clear();
+            recorder.RecordClear();
+        }
     }
 
     private sealed class RecordingN8nClient : IN8nClient

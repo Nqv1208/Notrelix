@@ -190,6 +190,51 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AcceptInvitation_FullHandlerGraphInOneComposition_EmitsExactlyOneMembershipOutboxFact()
+    {
+        var graph = await SeedInvitationAsync();
+        await using var context = _db.CreateContext(SystemTenant(), CreateOutboxInterceptor());
+        var session = new EfRequestDataSession(
+            context,
+            new RlsSessionContext(context, Options.Create(new RlsOptions()), SystemTenant()),
+            NullLogger<EfRequestDataSession>.Instance);
+        var grantProjection = new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context));
+        var accountGrantProjection = new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context));
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(r => r.UserId).Returns(graph.UserId);
+        requestContext.Setup(r => r.IsAuthenticated).Returns(true);
+        var dateTime = new Mock<IDateTimeProvider>();
+        dateTime.Setup(d => d.UtcNow).Returns(FixedTime);
+        var handler = new AcceptInvitationCommandHandler(
+            context,
+            new IdentityUserFactsProvider(context),
+            new AccountMembershipActions(context, accountGrantProjection),
+            new AccountMembershipFactsProvider(context),
+            new OneTimeTokenService(),
+            requestContext.Object,
+            dateTime.Object,
+            grantProjection);
+
+        var result = await RunInTransactionAsync(session, handler, graph.RawToken);
+
+        result.Succeeded.Should().BeTrue();
+        using (var probe = _db.CreateContext(SystemTenant()))
+        {
+            var membershipEvents = await probe.Set<MessagingOutboxMessage>()
+                .IgnoreQueryFilters()
+                .Where(m => m.WorkspaceId == graph.WorkspaceId
+                    && m.MessageName == "workspace.member.added")
+                .ToListAsync();
+            membershipEvents.Should().HaveCount(1,
+                "a fresh membership acceptance must stage exactly one producer-owned outward event in the composition");
+            membershipEvents.Single().AccountId.Should().Be(graph.AccountId,
+                "the outbox fact carries the workspace-owning account scope");
+            membershipEvents.Single().WorkspaceId.Should().Be(graph.WorkspaceId);
+        }
+        await context.DisposeAsync();
+    }
+
+    [Fact]
     public async Task AcceptInvitation_WhenWorkspaceSideFails_RollsBackEntireGraph()
     {
         var graph = await SeedInvitationAsync();
