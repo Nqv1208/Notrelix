@@ -187,7 +187,7 @@ function SortableTabItem({
   } = useSortable({ id: view.id });
 
   return (
-    <div
+    <button
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
@@ -197,33 +197,28 @@ function SortableTabItem({
       }}
       {...attributes}
       {...listeners}
+      type="button"
+      role="tab"
+      aria-selected={active}
+      tabIndex={active ? 0 : -1}
+      onClick={(event) => {
+        if (isDraggingParentRef.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        onSelectView?.(view);
+      }}
       className={cn(
-        "inline-flex cursor-grab touch-none select-none rounded-lg active:cursor-grabbing",
+        "relative inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-grab touch-none select-none active:cursor-grabbing",
         isDragging && "bg-accent/40 shadow-md",
+        active && "bg-muted/40 font-semibold text-foreground",
       )}
     >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={active}
-        onClick={(event) => {
-          if (isDraggingParentRef.current) {
-            event.preventDefault();
-            event.stopPropagation();
-            return;
-          }
-          onSelectView?.(view);
-        }}
-        className={cn(
-          "relative inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          active && "bg-muted/40 font-semibold text-foreground",
-        )}
-      >
-        {view.name}
-        {active ? (
-          <span className="absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-primary" />
-        ) : null}
-      </button>
-    </div>
+      {view.name}
+      {active ? (
+        <span className="absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-primary" />
+      ) : null}
+    </button>
   );
 }
