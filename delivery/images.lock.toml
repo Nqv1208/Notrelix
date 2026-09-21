@@ -27,7 +27,7 @@ stateful = false
 [images.postgres]
 class = "runtime"
 source = "postgres:16.15-bookworm"
-ref = "postgres@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825"
+ref = "postgres@sha256:efedf3595f1d6f415c08568ba171029bf54052e754cc9f030e3f2412b21f3d67"
 compose_service = "postgres"
 deploy_env_var = "NOTRELIX_POSTGRES_IMAGE"
 stateful = true
