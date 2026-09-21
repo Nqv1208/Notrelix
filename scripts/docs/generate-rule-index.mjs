@@ -228,6 +228,18 @@ function isCanonicalRuleSource(
       "docs/",
     )
   ) {
+    // Workstream execution packs use identifiers such as WM-FLOW and
+    // WM-REF as catalog/evidence coordinates, not repository rule IDs.
+    // Keep them owned by the execution-pack authority rather than adding
+    // them to the generated repository rule index.
+    if (
+      rel.startsWith(
+        "docs/workstreams/executions/",
+      )
+    ) {
+      return false;
+    }
+
     return true;
   }
 
