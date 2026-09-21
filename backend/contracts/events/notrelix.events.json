@@ -519,6 +519,95 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
+      "consumers": []
+    },
+    {
+      "name": "board.item.created",
+      "version": 2,
+      "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemCreatedIntegrationEventV2",
+      "producerContext": "WorkManagement",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "itemId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "boardId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "revision",
+          "type": "Int64",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
       "consumers": [
         {
           "name": "BoardItemCreatedAutomationConsumer",
@@ -1144,6 +1233,90 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
+      "consumers": []
+    },
+    {
+      "name": "board_item.archived",
+      "version": 2,
+      "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemArchivedIntegrationEventV2",
+      "producerContext": "WorkManagement",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "itemId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "boardId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "revision",
+          "type": "Int64",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
       "consumers": [
         {
           "name": "BoardItemArchived",
@@ -1185,6 +1358,100 @@
           "name": "newGroupId",
           "type": "Guid?",
           "nullable": true
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": []
+    },
+    {
+      "name": "board_item.moved",
+      "version": 2,
+      "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemMovedIntegrationEventV2",
+      "producerContext": "WorkManagement",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "itemId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "boardId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "oldGroupId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "newGroupId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "revision",
+          "type": "Int64",
+          "nullable": false
         },
         {
           "name": "eventId",
@@ -2447,6 +2714,121 @@
         {
           "name": "UserRegisteredConsumer",
           "context": "Identity",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
+      "name": "integrations.calendar-webhook-processing-requested",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Integrations.CalendarWebhookProcessingRequestedV1",
+      "producerContext": "Integrations",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": false,
+        "carriesWorkspaceId": false
+      },
+      "serializedProperties": [
+        {
+          "name": "receiptId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "connectionId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "provider",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "externalEventId",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "payloadHash",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "receivedAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        },
+        {
+          "name": "accountIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "workspaceIdValue",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "CalendarWebhookProcessingRequestedConsumer",
+          "context": "Integrations",
           "maturity": "Implemented"
         }
       ]
