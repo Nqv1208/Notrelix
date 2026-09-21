@@ -3691,7 +3691,13 @@ raw request
 → trusted AccountId/WorkspaceId
 → Infrastructure inbound receipt/dedup
 → provider-neutral Integrations Application input
+→ exact target-context effect
+→ semantic success condition
 ```
+
+Until the target decision exists, the only valid processing outcome is the
+explicit terminal `Blocked` state. A passing intake/receipt test is not a
+semantic success proof.
 
 Cases:
 
@@ -4794,9 +4800,11 @@ poison/non-retryable
 
 Assert exactly one retry owner.
 
-# 117E. TAC-PF-FLOW-05 — Event compatibility and replay
+# 117E. TAC-PF-FLOW-05 — Event compatibility and capability-based recovery
 
-Use real Platform descriptor/upcaster/replay machinery.
+Use the real event descriptor and evolution-policy machinery. Recovery cases
+are selected by the event family's declared capability; do not require a
+retained-event replay proof for families whose recovery is drain or rebuild.
 
 Cases:
 
@@ -4804,9 +4812,10 @@ Cases:
 supported version
 unsupported version
 declared upcast
-checkpoint replay
-resume after interruption
-consumer dedup during replay
+capability-specific cutover/recovery
+checkpoint replay only when a retained source exists
+resume after interruption only when a retained source exists
+consumer dedup during replay only when replay is declared
 ```
 
 # 117F. TAC-PF-FLOW-06 — Background actor security
@@ -6947,4 +6956,22 @@ correct runtime owner
 correct concurrency
 correct evidence
 cannot be absent or bypassed
+```
+
+# 186. Current candidate proof override — PR #158 re-audit
+
+Historical test rows remain historical evidence. Current proof must apply these
+boundaries:
+
+```text
+PF-FLOW-05 tests select recovery cases from the declared event-family
+capability. Checkpoint/resume/retained-payload/dedup cases are mandatory only
+for a family explicitly declared ReplayableSameSchema (or an equivalent
+replay-capable policy with an executable source). DrainBeforeCutover and
+RebuildFromAuthority families must not be made green with synthetic payloads.
+
+AI-FLOW-07 tests must prove the exact target-owned semantic effect and success,
+not only receipt, signature verification, tenant derivation, or
+provider-neutral Application processing. Until that target decision exists,
+the terminal proof state is BLOCKED-DECISION.
 ```

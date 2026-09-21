@@ -2013,6 +2013,8 @@ raw HTTP
 → trusted tenant derivation
 → Infrastructure inbound receipt/dedup
 → provider-neutral Integrations Application input
+→ exact target-context effect
+→ semantic success condition
 ```
 
 Forbidden:
@@ -2026,6 +2028,11 @@ user-session auth as provider auth
 Existing InboundWebhookEvent can remain Domain only after proving user-facing
 lifecycle and removing LegacyGap classification; otherwise intake is technical
 Infrastructure state.
+
+The exact downstream target is a prerequisite decision, not an implementation
+detail. Do not wire a target command or mark a receipt `Processed` until the
+Product/Integrations authority records the target context, action/event,
+authorization, idempotency, and success condition.
 
 ## Exit
 
@@ -2231,9 +2238,21 @@ Run after envelope normalization.
 
 One retry owner.
 
-## PF-FLOW-05 compatibility/replay
+## PF-FLOW-05 compatibility/recovery
 
-Must cover event changes introduced by tenant-envelope and Mention actor fixes.
+Must cover event changes introduced by tenant-envelope and Mention actor fixes
+according to the declared event-family capability:
+
+```text
+ReplayableSameSchema
+Upcastable
+DrainBeforeCutover
+RebuildFromAuthority
+NotReplayable
+```
+
+Work V1→V2 is `SchemaCompatibility.None`, `DrainBeforeCutover`, and
+`RebuildFromAuthority`; it is not certified as generic replay.
 
 ## PF-FLOW-06 background actor/security
 
@@ -3462,6 +3481,27 @@ Platform request/outbox/scoped-envelope/tenant/dedup/retry/version-replay/backgr
 ```
 
 No engineer should infer semantic authority from a nearby class name.
+
+# 103. Current candidate execution override — PR #158 re-audit
+
+The historical execution slices above remain traceability records. The active
+plan for the current candidate is:
+
+```text
+1. Keep PF-FLOW-05 capability-based. Do not implement a universal event store
+   or synthetic replay source solely to satisfy the old generic test shape.
+2. Derive ContractRegistry compatibility from the canonical evolution policy;
+   do not maintain a second Work-event allow-list.
+3. Complete AI-FLOW-06 only through the provider-neutral secret/provider
+   cleanup outcome contract and post-commit delivery; do not invent provider
+   subscription architecture in this TAC pack.
+4. Keep AI-FLOW-07 blocked until an accepted decision names the exact
+   downstream target effect and semantic success condition. Do not wire a
+   fabricated target command.
+5. Treat other BCs as RETAIN/PREVIOUSLY VERIFIED until exact-SHA evidence is
+   recertified. Treat M14 as open until format and runtime-image security
+   gates pass.
+```
 ## Interaction Architecture final-state requirement
 
 At final closure:

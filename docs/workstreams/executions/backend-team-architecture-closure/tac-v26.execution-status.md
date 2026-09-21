@@ -4535,4 +4535,25 @@ pre-Wave-B upgrade boundary no longer exists in a single fresh-development
 baseline. This is a historical migration rewrite only and does not change the
 current blocked provider/AI semantic decisions.
 
+## Current candidate correction — post self-audit
+
+At exact candidate head `4c91e31a2f5ef2ac7d140c96c7193a56e0716bef`, the
+following verdicts supersede older percentage or `VERIFIED` summaries:
+
+```text
+CROSS-BC TAXONOMY       COMPLETE
+MOST OTHER BC FLOWS     RETAIN / PREVIOUSLY VERIFIED pending exact-SHA recertification
+PF-FLOW-05              OPEN / PARTIAL — capability-based recovery policy required
+AI-FLOW-06              LOCAL LIFECYCLE VERIFIED; provider/secret cleanup OPEN
+AI-FLOW-07              BLOCKED-DECISION + AUTHORITY DRIFT
+M14                     OPEN — backend format failure plus runtime image vulnerability
+ARCHITECTURE-CLOSED     NO
+```
+
+PF-FLOW-05 is not limited to Work V1→V2: production replay strategies have no
+retained event source, and ReplayEngine tests use a synthetic test strategy.
+AI-FLOW-07 remains intake/processing-only until Product/Integrations defines
+the exact downstream target effect. Google/Microsoft protocol completeness is
+outside this TAC closure claim.
+
 (status ends here — no further claims)

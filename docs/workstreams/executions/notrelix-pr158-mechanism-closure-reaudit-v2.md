@@ -2649,3 +2649,52 @@ Current result: implementation/evidence is materially advanced for the
 authority, Work evolution, tenant manifest, receipt, transport, and delivery
 slices, but the pack remains `BLOCKED-DECISION + BLOCKED-EVIDENCE` and is not
 `ARCHITECTURE-CLOSED`.
+
+## Post-self-audit correction — 2026-09-21
+
+The earlier assessment in this document is superseded where it conflicts with
+the current authority four-pack and the exact-head audit. In particular:
+
+```text
+PF-FLOW-05
+  OPEN / PARTIAL. The contract is capability-based:
+  ReplayableSameSchema, Upcastable, DrainBeforeCutover,
+  RebuildFromAuthority, or NotReplayable. Work V1 -> V2 uses
+  SchemaCompatibility.None, DrainBeforeCutover, and RebuildFromAuthority.
+  The generic Platform replay strategies and synthetic ReplayPipeline do not
+  prove retained payload replay, checkpoint persistence, resume, or dedup.
+
+AI-FLOW-06
+  Local lifecycle and CAL-CONN-001 remain implementation-closed. Provider or
+  secret cleanup is a separate generic outcome mechanism and remains pending
+  exact-head integration certification. Google/Microsoft subscription
+  lifecycle is outside TAC-XC closure and is not an independently invented
+  TAC blocker.
+
+AI-FLOW-07
+  BLOCKED-DECISION plus authority drift. The canonical SPEC, PLAN, TESTS, and
+  CERTIFICATION now require an exact downstream target context, action/event,
+  authorization/idempotency contract, and target-owned semantic success. The
+  provider-neutral intake boundary cannot be certified as the final effect.
+
+Real Google/Microsoft webhook protocol
+  Remains a production integration gap, but is outside the generic TAC-XC
+  mechanism closure scope and must not be used to relabel the generic intake
+  mechanism as failed.
+
+Migration rebaseline
+  The SchemaBaseline-only dev exception remains acceptable under
+  BE-OPS-DATA-004. Final certification still requires the exact-head
+  migration-discipline gate.
+
+M14 and certification language
+  No percentage score is claimed. Other BCs retain prior certification pending
+  exact-SHA recertification; they are not newly certified CLOSED by source
+  inspection. M14 remains OPEN until the format and runtime-image gates pass.
+  CROSS-BC TAC-XC taxonomy is COMPLETE, but taxonomy completeness is not
+  equivalent to implementation or certification closure.
+```
+
+This correction is the current interpretation of the pack and must be read
+with `tac-v26.execution-status.md`; it does not reopen previously verified
+semantic flows without new contradictory evidence.

@@ -5972,13 +5972,13 @@ STOPConditions: None — accepted semantics and source authority exist
 CompletionEvidence: Platform delivery tests pass
 ```
 
-### PF-FLOW-05 — Contract evolution and replay
+### PF-FLOW-05 — Contract evolution and capability-based recovery
 
 ```text
 FlowId: PF-FLOW-05
 Team: TAC-RAP-PF
 BoundedContext: Platform
-Purpose: Prove compound-key catalog resolution and compatibility behavior for changed event contracts
+Purpose: Prove compound-key catalog resolution, declared compatibility, and the recovery capability of each changed event family
 Disposition: HARDEN-EXISTING
 EntryPoint: IntegrationEventCatalog and EventContractKey
 ProductionReachability: current production source
@@ -5986,8 +5986,8 @@ SemanticOwner: Platform contracts
 WorkflowOwner: Dispatch and replay
 MutationAuthority: NotApplicable — resolution flow
 SourceAuthority: Event name, version, and serialized payload
-TargetAuthority: Resolved CLR contract
-Mechanisms: IntegrationEventCatalog compound key resolution; EventContractKey; generated event manifest; replay deserialization
+TargetAuthority: Resolved CLR contract plus the declared evolution/recovery policy
+Mechanisms: IntegrationEventCatalog compound key resolution; EventContractKey; EventEvolutionPolicyRegistry; generated event manifest; capability-specific recovery
 FlowKind: Platform
 SupportingShapes: PlatformDelivery
 Interactions: [] — no actual cross-BC edge in this Flow Card
@@ -6018,8 +6018,8 @@ BehaviorTests: IntegrationEventCatalogResolutionTests; ScopedEventTenantEnvelope
 IntegrationTests: OutboxDispatchContractTests
 ArchitectureGates: PublicEventContractArchitectureTests; ContractRegistryCompletenessTests
 RemoteSubstitution: NotApplicable — no remote provider
-KnownDebt: FRZ-018 replay fail-closed proof is being added in this task
-STOPConditions: None — accepted semantics and source authority exist
+KnownDebt: Generic replay strategies have no retained event source and are not closure evidence. Replay is permitted only for an event family with an authoritative retained payload source.
+STOPConditions: A ReplayableSameSchema or Upcastable policy without an executable source, checkpoint, resume, and dedup proof stops certification
 CompletionEvidence: Catalog and manifest gates pass
 ```
 
@@ -7234,7 +7234,8 @@ API/Infrastructure raw HTTP request
 → Infrastructure inbound provider-delivery receipt/dedup
 → enqueue/dispatch provider-neutral semantic input
 → Integrations Application translation
-→ approved target-context action/event
+→ exact approved target-context action/event
+→ target-owned semantic success
 ```
 
 ### Inbound-delivery state
@@ -7263,6 +7264,10 @@ received-at
 verification/processing status
 payload hash/reference as technically needed
 ```
+
+The exact target context, action/event contract, authorization, idempotency,
+and success condition are a required Product/Integrations decision. Provider-
+neutral processing alone cannot mark the receipt `Processed`.
 
 ### Authentication and tenant routing
 
@@ -7854,7 +7859,7 @@ poison/non-retryable
 
 The N8n flow is the runtime proof.
 
-## PF-FLOW-05 — Contract evolution/replay
+## PF-FLOW-05 — Contract evolution and recovery capability
 
 Current Platform source contains:
 
@@ -10144,3 +10149,29 @@ The execution is not complete while the answer is:
 ```text
 “look around the repo and decide.”
 ```
+
+# 108. Current candidate authority override — PR #158 re-audit
+
+Historical flow rows in this SPEC remain historical evidence. For the current
+candidate, the active interpretation is:
+
+```text
+PF-FLOW-05 = capability-based contract evolution and recovery.
+Work V1 -> V2 = SchemaCompatibility.None + DrainBeforeCutover
+                + RebuildFromAuthority.
+Generic replay requires a declared retained event source; Platform replay
+skeletons without that source are not closure evidence.
+
+AI-FLOW-06 = local lifecycle and generic CAL-CONN-001 are in scope; provider
+or secret cleanup is a separate outcome-classified post-commit mechanism.
+Provider-specific Google/Microsoft subscription lifecycle is outside TAC-XC
+closure.
+
+AI-FLOW-07 = provider-neutral intake is not semantic completion. Exact
+downstream target context, action/event, authorization/idempotency, and
+target-owned success must be decided by the Product/Integrations authority
+before the flow can be certified.
+```
+
+No percentage score or architecture-closure claim may be derived from source
+inspection alone; affected flows require exact-SHA recertification.

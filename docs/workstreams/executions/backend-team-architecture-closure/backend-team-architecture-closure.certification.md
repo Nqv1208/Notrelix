@@ -1836,6 +1836,8 @@ active CalendarIntegration
 trusted tenant derivation
 Infrastructure inbound receipt/dedup
 provider-neutral Integrations processing
+exact target-context effect
+target-owned semantic success
 ```
 
 Forbidden:
@@ -1845,6 +1847,10 @@ user-session auth as provider authenticity
 untrusted payload selecting tenant
 outbound WebhookDelivery as inbound receipt
 ```
+
+AI-FLOW-07 cannot be `VERIFIED` from provider-neutral processing alone. The
+current candidate remains `BLOCKED-DECISION` until the exact downstream target
+and success contract are accepted and implemented.
 
 AI pack requires TAC-FRZ-019 FROZEN.
 # 45. AI mandatory references
@@ -2549,7 +2555,9 @@ producer mutation
 Assert exact AccountId, WorkspaceId and non-System tenant context.
 
 Event contract changes introduced by tenant/actor corrections must be covered by
-PF-FLOW-05 compatibility/upcast/replay behavior according to Platform policy.
+PF-FLOW-05 compatibility, evolution, and capability-specific recovery behavior
+according to the canonical EventEvolutionPolicyRegistry. Generic replay
+skeletons are not closure evidence.
 
 PF pack requires TAC-FRZ-018 FROZEN.
 # 65. PF mandatory mechanism proof
@@ -5613,6 +5621,15 @@ current candidate is not `ARCHITECTURE-CLOSED`.
 The temporary Interaction Architecture working plan is not a sixth permanent
 authority document.
 
+## Current candidate override — capability-based PF-FLOW-05
+
+The historical `VERIFIED` row for PF-FLOW-05 is superseded for the current
+candidate. The affected Work event-evolution slice is `OPEN / PARTIAL` until
+the canonical capability policy and its focused proof are complete. Work V1→V2
+uses `SchemaCompatibility.None`, `DrainBeforeCutover`, and
+`RebuildFromAuthority`; the Platform replay skeletons do not prove checkpoint
+replay, retained payload recovery, or resume.
+
 ## Development migration rebaseline — 2026-09-21
 
 Under BE-OPS-DATA-004, the development-only EF migration chain is now exactly
@@ -5653,3 +5670,22 @@ an interface was called "service-ready" without transaction/failure analysis
 
 It means the next implementation can proceed without inventing architecture or
 product semantics.
+
+## 179. Current candidate certification override — PR #158 re-audit
+
+Historical certification rows are retained but do not supersede the current
+candidate correction:
+
+```text
+TAC-XC-A..F taxonomy             COMPLETE
+Most other BC flows              RETAIN/PREVIOUSLY VERIFIED pending exact SHA
+PF-FLOW-05                       OPEN / PARTIAL
+AI-FLOW-06                       local lifecycle verified; cleanup certification pending
+AI-FLOW-07                       BLOCKED-DECISION + authority drift
+M14                              OPEN until format and runtime-image gates pass
+ARCHITECTURE-CLOSED              NO
+```
+
+Google/Microsoft provider protocol completeness is a separate production
+integration workstream, not a generic TAC closure blocker. No flow may be
+certified from source inspection or synthetic replay alone.
