@@ -726,10 +726,10 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
             return Task.FromResult(reference);
         }
 
-        public Task RevokeAsync(string secretReference, CancellationToken cancellationToken)
+        public Task<ProviderCleanupResult> RevokeAsync(string secretReference, CancellationToken cancellationToken)
         {
             _revoked.Add(secretReference);
-            return Task.CompletedTask;
+            return Task.FromResult(new ProviderCleanupResult(ProviderCleanupOutcome.Success));
         }
     }
 }

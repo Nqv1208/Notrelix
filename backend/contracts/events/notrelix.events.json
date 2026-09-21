@@ -2834,6 +2834,86 @@
       ]
     },
     {
+      "name": "integrations.integration-connection-revoked",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Integrations.IntegrationConnectionRevokedIntegrationEvent",
+      "producerContext": "Integrations",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "connectionId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "IntegrationConnectionRevokedConsumer",
+          "context": "Integrations",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
       "name": "label.created",
       "version": 1,
       "clrType": "Notrelix.Application.Events.WorkManagement.LabelCreatedIntegrationEvent",

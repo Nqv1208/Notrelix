@@ -6,6 +6,16 @@ public static class ConsumerRegistrySetup
     {
         return
         [
+            new ConsumerDefinition
+            {
+                ConsumerName = "IntegrationConnectionRevokedConsumer",
+                EventName = "integrations.integration-connection-revoked",
+                EventVersion = 1,
+                EndpointName = "notrelix-integrations-connection-revoked-v1",
+                BoundedContext = "Integrations",
+                Description = "Cleans up physical secrets after a connection is revoked",
+                Maturity = ConsumerMaturity.Implemented
+            },
             // ── Identity (5) ─────────────────────────────────────────────
             new ConsumerDefinition
             {
