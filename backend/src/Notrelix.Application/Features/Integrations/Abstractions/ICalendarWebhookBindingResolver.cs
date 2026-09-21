@@ -4,9 +4,13 @@ namespace Notrelix.Application.Features.Integrations.Abstractions;
 
 /// <summary>
 /// Snapshot of an active calendar webhook binding that owns a WebhookPath
-/// locator, resolved across tenant boundaries by stable identity.
+/// locator, resolved across tenant boundaries by stable identity. ConnectionId
+/// is the trusted provenance/binding identity resolved from
+/// WebhookPath → CalendarIntegration → IntegrationConnection (with lifecycle
+/// validation) — it is never derived from the provider payload.
 /// </summary>
 public sealed record CalendarWebhookBindingSnapshot(
+    Guid ConnectionId,
     Guid AccountId,
     Guid WorkspaceId,
     CalendarProvider Provider);
@@ -38,5 +42,7 @@ public interface ICalendarWebhookBindingResolver
     /// tenant. Callers MUST invoke this only after signature verification has
     /// succeeded; every fail-closed branch must avoid it.
     /// </summary>
-    void AdoptDerivedTenant(CalendarWebhookBindingSnapshot binding);
+    Task AdoptDerivedTenantAsync(
+        CalendarWebhookBindingSnapshot binding,
+        CancellationToken cancellationToken);
 }
