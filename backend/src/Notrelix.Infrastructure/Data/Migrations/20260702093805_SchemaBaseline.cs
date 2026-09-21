@@ -7,7 +7,7 @@ using NpgsqlTypes;
 namespace Notrelix.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class SchemaV2Baseline : Migration
+    public partial class SchemaBaseline : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

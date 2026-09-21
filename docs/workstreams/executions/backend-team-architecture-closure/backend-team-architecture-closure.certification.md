@@ -5616,7 +5616,7 @@ authority document.
 ## Development migration rebaseline — 2026-09-21
 
 Under BE-OPS-DATA-004, the development-only EF migration chain is now exactly
-the single `20260702093805_SchemaV2Baseline`. Its generated DDL contains the
+the single `20260702093805_SchemaBaseline`. Its generated DDL contains the
 final receipt schema, connection-scoped dedup index, and folded placement
 source-revision reset semantics. Existing development databases must be reset
 and recreated; this rebaseline is not a production-history certification.

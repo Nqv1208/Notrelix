@@ -3610,7 +3610,7 @@ consumer-owned RLS application.
   Automation Integration subset in Debug, all green. Non-Docker remainder of the
   Integration project was exercised by prior waves at HEAD.
 - dev databases that applied the pre-consolidation migration chain still require
-  `make db-restore-force` (PR #149 baselined M7–M10 into SchemaV2Baseline); this
+  `make db-restore-force` (PR #149 baselined M7–M10 into SchemaBaseline); this
   is operational, unrelated to M11 test evidence (Testcontainers use isolated DBs).
 - This record is uncommitted (docs/workstreams/executions/backend-team-architecture-closure/
   stays local per repository constraint). M11 code/test/ADR changes are staged on
@@ -4524,7 +4524,7 @@ no product or runtime semantics were changed by that tooling correction.
 
 The repository is still in the governed development-only rebaseline window
 defined by BE-OPS-DATA-004. The EF migration chain has been consolidated to the
-single baseline `20260702093805_SchemaV2Baseline`. The former connection-scoped
+single baseline `20260702093805_SchemaBaseline`. The former connection-scoped
 receipt migration, webhook receipt provenance/terminal-state migration, and
 legacy placement source-revision data migration are folded into that baseline;
 the final model snapshot matches the generated baseline model.

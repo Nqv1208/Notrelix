@@ -9,7 +9,7 @@ applies_to:
   - backend-performance
 evidence:
   - backend/src/Notrelix.Infrastructure/Data/Authz/PostgresAccessFactsProvider.cs
-  - backend/src/Notrelix.Infrastructure/Data/Migrations/20260702093805_SchemaV2Baseline.cs
+  - backend/src/Notrelix.Infrastructure/Data/Migrations/20260702093805_SchemaBaseline.cs
 review_on:
   - access-facts-query-shape-change
   - schema-v3-baseline-change
@@ -29,7 +29,7 @@ query path.
 ```text
 statement   : PostgresAccessFactsProvider.Sql (verbatim)
 plan        : EXPLAIN (ANALYZE, BUFFERS)
-schema      : consolidated migration baseline 20260702093805_SchemaV2Baseline
+schema      : consolidated migration baseline 20260702093805_SchemaBaseline
 bindings    : representative UUIDs, resource_type = 'work-management.board-item',
               action = 'UpdateBoardItem', feature_code = NULL
 environment : ephemeral PostgreSQL testcontainer (pipeline-freeze execution,

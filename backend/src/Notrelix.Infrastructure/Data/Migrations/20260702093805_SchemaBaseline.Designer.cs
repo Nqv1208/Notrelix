@@ -13,8 +13,8 @@ using NpgsqlTypes;
 namespace Notrelix.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260702093805_SchemaV2Baseline")]
-    partial class SchemaV2Baseline
+    [Migration("20260702093805_SchemaBaseline")]
+    partial class SchemaBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

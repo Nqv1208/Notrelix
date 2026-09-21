@@ -1055,7 +1055,7 @@ PLAN work units:   Phase 9 OAuth link/unlink
 TEST IDs:          IA-TST-OAUTH-*, UserUnlinkOAuthInvariantTests, CommandMarkerArchitectureTests
 Source baseline:   develop (Phase 9 working tree, uncommitted at record time)
 Candidate SHA:     df90a267 (pushed to origin/develop)
-Migration:         has_pending-model-changes clean; 20260702093805_SchemaV2Baseline DDL
+Migration:         has_pending-model-changes clean; 20260702093805_SchemaBaseline DDL
                    repaired (has_password_credential column restored in baseline CreateTable)
 Architecture evidence: full slnx suite 4310 passed / 0 failed (Domain 2565,
                    Integration 265, API 230, Architecture 372 + remaining)
@@ -1181,7 +1181,7 @@ TEST IDs:          IA-TST-MFA-*, MfaMethodTests, MfaRecoveryBatchTests,
                    LoginTests (MFA challenge branch), MfaFlowTests (integration)
 Source baseline:   develop (Phase 10 working tree, uncommitted at record time)
 Candidate SHA:     93ed5de (pushed to origin/develop)
-Migration:         has-pending-model-changes clean; SchemaV2Baseline DDL extended
+Migration:         has-pending-model-changes clean; SchemaBaseline DDL extended
                    (mfa_recovery_batches + mfa_recovery_codes + FK
                    fk_mfa_recovery_codes_mfa_recovery_batches_batch_id + 4 indexes);
                    migration smoke certified at 145 tables; Designer + snapshot
@@ -1472,7 +1472,7 @@ Commit scope:      6ff3e99 (governance snapshot checks), 3000e0f (credential
                     df8ad8a (real-graph HTTP proof, race gate rename),
                     08c0208 (CI critical-filter pin)
 Migration:         none added — unique index ux_api_tokens_token_hash enforced
-                    on existing baseline migration 20260702093805_SchemaV2Baseline
+                    on existing baseline migration 20260702093805_SchemaBaseline
                     (CreateIndex after api_tokens CreateTable; HasIndex("TokenHash")
                     .IsUnique().HasDatabaseName("ux_api_tokens_token_hash") in
                     Designer; ApplicationDbContextModelSnapshot carries the same
@@ -1958,7 +1958,7 @@ Known pre-existing conditions (NOT introduced by Phase 13 closure):
 
 Phase 14 compatibility result:
   P14-MIG-001 no EF/schema change (CSRF/event work used config+source
-              metadata only; migration head remains SchemaV2Baseline)
+              metadata only; migration head remains SchemaBaseline)
   P14-MIG-002 every production public-event resolution call site passes
               compound key; name-only APIs removed (compiler-enforced) and
               gated by PublicEventContractArchitectureTests
@@ -1999,7 +1999,7 @@ P14-MIG-001 — candidate schema diff review
   Method:     git diff 4efd37bd..HEAD -- backend/src/**/Migrations/**
               + ApplicationDbContextModelSnapshot.cs
   Result:     EMPTY diff — zero schema delta since the audited baseline
-  Migration head: 20260702093805_SchemaV2Baseline (unchanged; single
+  Migration head: 20260702093805_SchemaBaseline (unchanged; single
               consolidated baseline per PR-IA-00 decision note §13)
   Classification: no schema change (no additive/backfill/breaking/index/
               secret-format/ownership-move delta)
@@ -3149,7 +3149,7 @@ Cross-context integration:
 
 Migration:
   Status: CLOSED — §65.4 Phase 14: zero schema delta since audited baseline;
-          migration head 20260702093805_SchemaV2Baseline unchanged;
+          migration head 20260702093805_SchemaBaseline unchanged;
           name-only event resolution eliminated (compiler + architecture
           gate); CSRF staged rollout sequence recorded
 

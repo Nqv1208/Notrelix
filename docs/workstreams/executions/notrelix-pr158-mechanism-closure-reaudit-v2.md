@@ -346,7 +346,7 @@ The migration chain was consolidated under the repository's governed
 development-only exception. The current chain is now exactly:
 
 ```text
-20260702093805_SchemaV2Baseline
+20260702093805_SchemaBaseline
 ```
 
 The former connection-scoped receipt DDL, receipt provenance/terminal-state
@@ -2617,7 +2617,7 @@ dotnet test backend/backend.slnx --no-restore
   5107 passed, 17 existing warnings, 0 test failures.
 
 dotnet ef migrations list
-  contains exactly 20260702093805_SchemaV2Baseline.
+  contains exactly 20260702093805_SchemaBaseline.
 
 dotnet ef migrations has-pending-model-changes
   no pending model changes.
