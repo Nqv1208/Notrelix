@@ -2,14 +2,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Integrations.Webhooks;
-using Notrelix.Infrastructure.Options;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 

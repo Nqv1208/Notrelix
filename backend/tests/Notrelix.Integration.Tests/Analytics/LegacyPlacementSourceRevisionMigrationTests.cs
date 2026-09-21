@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Analytics.Placements.Services;

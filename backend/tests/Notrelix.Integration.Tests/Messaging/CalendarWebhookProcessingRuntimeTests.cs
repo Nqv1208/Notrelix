@@ -20,7 +20,6 @@ using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Infrastructure;
-using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Identity.Services;
 using Notrelix.Infrastructure.Integrations.Webhooks;

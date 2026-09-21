@@ -1,9 +1,7 @@
 using Notrelix.Application.Common.Diagnostics;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Events.Integrations;
 using Notrelix.Application.Features.Integrations.Calendar.Processing;
 using Notrelix.Infrastructure.Data;
-using Notrelix.Infrastructure.Data.Integrations;
 using Notrelix.Infrastructure.Integrations.Webhooks;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Integrations;

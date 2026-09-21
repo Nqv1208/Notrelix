@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.ErrorHandling;
 using Notrelix.API.Extensions;
 using Notrelix.API.Middleware;

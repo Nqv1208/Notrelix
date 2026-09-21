@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http;
-
 namespace Notrelix.API.Middleware;
 
 /// <summary>
