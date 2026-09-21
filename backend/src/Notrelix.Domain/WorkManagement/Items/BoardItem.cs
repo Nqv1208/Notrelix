@@ -108,7 +108,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         };
 
         item.SetAuditOnCreate(createdBy, createdAt);
-        item.RaiseDomainEvent(new BoardItemCreatedDomainEvent(accountId, workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt, parentItemId, itemLevel));
+        item.RaiseDomainEvent(new BoardItemCreatedDomainEvent(accountId, workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt, parentItemId, itemLevel, item.Version));
 
         return item;
     }
@@ -154,7 +154,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         Position = newPosition;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt, Version));
     }
 
     public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
@@ -371,7 +371,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         IsArchived = true;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt, Version));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)

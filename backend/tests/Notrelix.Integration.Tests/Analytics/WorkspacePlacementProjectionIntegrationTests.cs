@@ -15,7 +15,8 @@ namespace Notrelix.Integration.Tests.Analytics;
 
 /// <summary>
 /// TAC-AR-001..012 — the Analytics-owned Work placement projection: live Work
-/// facts update the projection (single producer-timestamp watermark),
+/// facts update the projection (single producer-revision ordering authority
+/// = the aggregate version at fact raise; OccurredAt is metadata),
 /// duplicate/stale/out-of-order delivery cannot regress it, rebuild repairs
 /// drift without overwriting a newer live fact, rows missing from a stale
 /// snapshot are revalidated against the producer before deletion, concurrent
@@ -58,8 +59,8 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         return (context, new WorkspaceWorkItemPlacementService(context, source ?? new StubProjectionSource()));
     }
 
-    private static BoardItemMovedIntegrationEvent MovedEvent(
-        Guid? accountId, Guid workspaceId, Guid itemId, Guid boardId, Guid groupId, DateTimeOffset occurredAt) =>
+    private static BoardItemMovedIntegrationEventV2 MovedEvent(
+        Guid? accountId, Guid workspaceId, Guid itemId, Guid boardId, Guid groupId, long revision, DateTimeOffset occurredAt) =>
         new(
             EventId: Guid.CreateVersion7(),
             AccountId: accountId,
@@ -68,6 +69,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
             WorkspaceId: workspaceId,
             OldGroupId: Guid.CreateVersion7(),
             NewGroupId: groupId,
+            Revision: revision,
             CorrelationId: Guid.CreateVersion7(),
             OccurredAt: occurredAt);
 
@@ -84,18 +86,18 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var firstGroup = Guid.CreateVersion7();
         var secondGroup = Guid.CreateVersion7();
 
-        (await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, firstGroup, false, Now, CancellationToken.None)).Should().BeTrue();
+        (await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, firstGroup, false, revision: 1, Now, CancellationToken.None)).Should().BeTrue();
         await context.SaveChangesAsync();
 
-        (await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, secondGroup, false, Now.AddMinutes(1), CancellationToken.None)).Should().BeTrue();
+        (await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, secondGroup, false, revision: 2, Now.AddMinutes(1), CancellationToken.None)).Should().BeTrue();
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
         var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
         row.GroupId.Should().Be(secondGroup);
         row.IsArchived.Should().BeFalse();
-        row.SourceRevision.Should().Be(Now.AddMinutes(1).UtcTicks,
-            "TAC-AR-012: the stored watermark is the single producer-timestamp scale");
+        row.SourceRevision.Should().Be(2,
+            "TAC-AR-012: the stored ordering authority is the producer aggregate revision");
     }
 
     [Fact]
@@ -109,14 +111,14 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var currentGroup = Guid.CreateVersion7();
         var staleGroup = Guid.CreateVersion7();
 
-        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, currentGroup, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, currentGroup, false, revision: 5, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
-        (await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, staleGroup, false, Now.AddSeconds(-30), CancellationToken.None))
+        (await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, staleGroup, false, revision: 4, Now.AddSeconds(-30), CancellationToken.None))
             .Should().BeFalse("a stale fact must not regress the projection");
-        (await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, staleGroup, false, Now, CancellationToken.None))
-            .Should().BeFalse("a duplicate delivery at the same watermark must not change the projection");
+        (await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, staleGroup, false, revision: 5, Now, CancellationToken.None))
+            .Should().BeFalse("a duplicate delivery at the same revision must not change the projection");
         context.ChangeTracker.Clear();
 
         var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
@@ -135,8 +137,8 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupA = Guid.CreateVersion7();
         var groupB = Guid.CreateVersion7();
 
-        await service.ApplyPlacementAsync(accountId, workspaceA, itemId, boardId, groupA, false, Now, CancellationToken.None);
-        await service.ApplyPlacementAsync(accountId, workspaceB, itemId, boardId, groupB, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceA, itemId, boardId, groupA, false, revision: 5, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceB, itemId, boardId, groupB, false, revision: 5, Now, CancellationToken.None);
         await context.SaveChangesAsync();
 
         context.ChangeTracker.Clear();
@@ -172,7 +174,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
 
         // Drift the projection with a wrong placement.
         var (context, service) = CreateService();
-        await service.ApplyPlacementAsync(accountId, workspace.Id, item.Id, board.Id, group.Id, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspace.Id, item.Id, board.Id, group.Id, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
@@ -194,8 +196,8 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
     [Fact]
     public async Task Rebuild_OlderSnapshot_PreservesNewerLiveState()
     {
-        // AR-FLOW-04: snapshot rev=10 while local is already rev=11 — no xmin
-        // conflict is needed; the watermark guard itself must preserve the newer
+        // AR-FLOW-04: snapshot rev=1 while local is already rev=11 — no xmin
+        // conflict is needed; the revision guard itself must preserve the newer
         // live fact.
         var (context, service) = CreateService();
         var accountId = Guid.CreateVersion7();
@@ -205,13 +207,13 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var liveGroup = Guid.CreateVersion7();
         var staleGroup = Guid.CreateVersion7();
 
-        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, liveGroup, false, Now.AddMinutes(1), CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, liveGroup, false, revision: 11, Now.AddMinutes(1), CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
         var staleSnapshot = new List<WorkItemPlacementSnapshot>
         {
-            new(accountId, itemId, boardId, staleGroup, false, 1, Now),
+            new(accountId, itemId, boardId, staleGroup, false, Revision: 1, LastOccurredAt: Now),
         };
 
         await service.RebuildWorkspaceAsync(workspaceId, staleSnapshot, CancellationToken.None);
@@ -220,7 +222,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
 
         var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
         row.GroupId.Should().Be(liveGroup, "a snapshot older than the local state must never overwrite a newer live fact");
-        row.SourceRevision.Should().Be(Now.AddMinutes(1).UtcTicks);
+        row.SourceRevision.Should().Be(11);
     }
 
     [Fact]
@@ -237,14 +239,14 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var liveGroup = Guid.CreateVersion7();
         var producerGroup = Guid.CreateVersion7();
 
-        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, liveGroup, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, liveGroup, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
         var source = new StubProjectionSource(
             [],
             itemFactory: (ws, item) => new WorkItemPlacementSnapshot(
-                accountId, item, boardId, producerGroup, false, 1, Now.AddMinutes(1)));
+                accountId, item, boardId, producerGroup, false, Revision: 2, LastOccurredAt: Now.AddMinutes(1)));
         var (rebuildContext, rebuildService) = CreateService(source);
 
         await rebuildService.RebuildWorkspaceAsync(workspaceId, [], CancellationToken.None);
@@ -270,7 +272,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var liveGroup = Guid.CreateVersion7();
 
         var (staleContext, staleService) = CreateService();
-        await staleService.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, Guid.CreateVersion7(), false, Now, CancellationToken.None);
+        await staleService.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, Guid.CreateVersion7(), false, revision: 1, Now, CancellationToken.None);
         await staleContext.SaveChangesAsync();
         staleContext.ChangeTracker.Clear();
 
@@ -280,25 +282,25 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
 
         // A live fact commits on a separate transaction after the rebuild read.
         var (liveContext, liveService) = CreateService();
-        (await liveService.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, liveGroup, false, Now.AddMinutes(1), CancellationToken.None))
+        (await liveService.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, liveGroup, false, revision: 2, Now.AddMinutes(1), CancellationToken.None))
             .Should().BeTrue();
         await liveContext.SaveChangesAsync();
         liveContext.ChangeTracker.Clear();
         await liveContext.DisposeAsync();
 
-        // Equal watermark authorizes a drift repair — the payload change makes
+        // Equal revision authorizes a drift repair — the payload change makes
         // the rebuild issue its UPDATE against the now-stale row version.
-        staleRow.Reconcile(boardId, rebuiltGroup, false, Now).Should().BeTrue();
+        staleRow.Reconcile(boardId, rebuiltGroup, false, revision: 2, Now).Should().BeTrue();
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => staleContext.SaveChangesAsync());
         await staleTransaction.RollbackAsync();
 
-        // Retry: reload re-evaluates the watermark and preserves the newer live fact.
+        // Retry: reload re-evaluates the revision and preserves the newer live fact.
         staleContext.ChangeTracker.Clear();
         await using (var retryTransaction = await staleContext.Database.BeginTransactionAsync())
         {
             await staleService.RebuildWorkspaceAsync(
                 workspaceId,
-                [new WorkItemPlacementSnapshot(accountId, itemId, boardId, rebuiltGroup, false, 1, Now)],
+                [new WorkItemPlacementSnapshot(accountId, itemId, boardId, rebuiltGroup, false, Revision: 1, LastOccurredAt: Now)],
                 CancellationToken.None);
             await staleContext.SaveChangesAsync();
             await retryTransaction.CommitAsync();
@@ -307,7 +309,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
 
         var final = await staleContext.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
         final.GroupId.Should().Be(liveGroup, "the older snapshot must not overwrite the committed newer live fact after reload");
-        final.SourceRevision.Should().Be(Now.AddMinutes(1).UtcTicks);
+        final.SourceRevision.Should().Be(2);
     }
 
     [Fact]
@@ -320,7 +322,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupId = Guid.CreateVersion7();
 
         var (context, service) = CreateService();
-        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
@@ -347,16 +349,16 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupB = Guid.CreateVersion7();
 
         var (context, service) = CreateService();
-        await service.ApplyPlacementAsync(accountId, workspaceId, keptItem, boardId, groupA, false, Now, CancellationToken.None);
-        await service.ApplyPlacementAsync(accountId, workspaceId, movedItem, boardId, groupA, false, Now, CancellationToken.None);
-        await service.ApplyPlacementAsync(accountId, workspaceId, removedItem, boardId, groupA, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, keptItem, boardId, groupA, false, revision: 1, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, movedItem, boardId, groupA, false, revision: 1, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, removedItem, boardId, groupA, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
         var snapshot = new List<WorkItemPlacementSnapshot>
         {
-            new(accountId, keptItem, boardId, groupA, false, 1, Now),
-            new(accountId, movedItem, boardId, groupB, false, 2, Now.AddMinutes(1)),
+            new(accountId, keptItem, boardId, groupA, false, Revision: 1, LastOccurredAt: Now),
+            new(accountId, movedItem, boardId, groupB, false, Revision: 2, LastOccurredAt: Now.AddMinutes(1)),
         };
 
         await service.RebuildWorkspaceAsync(workspaceId, snapshot, CancellationToken.None);
@@ -381,13 +383,13 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupId = Guid.CreateVersion7();
 
         var (context, service) = CreateService();
-        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
         var snapshot = new List<WorkItemPlacementSnapshot>
         {
-            new(accountId, itemId, boardId, groupId, true, 2, Now.AddMinutes(1)),
+            new(accountId, itemId, boardId, groupId, true, Revision: 2, LastOccurredAt: Now.AddMinutes(1)),
         };
 
         await service.RebuildWorkspaceAsync(workspaceId, snapshot, CancellationToken.None);
@@ -410,12 +412,12 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupId = Guid.CreateVersion7();
 
         var (context, service) = CreateService();
-        await service.ApplyPlacementAsync(accountId, workspaceId, items[0], boardId, groupId, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, items[0], boardId, groupId, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
         var snapshot = items
-            .Select(item => new WorkItemPlacementSnapshot(accountId, item, boardId, groupId, false, 1, Now))
+            .Select(item => new WorkItemPlacementSnapshot(accountId, item, boardId, groupId, false, Revision: 1, LastOccurredAt: Now))
             .ToList();
 
         await service.RebuildWorkspaceAsync(workspaceId, snapshot, CancellationToken.None);
@@ -445,8 +447,8 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupB = Guid.CreateVersion7();
 
         var (context, service) = CreateService();
-        await service.ApplyPlacementAsync(accountId, workspaceA, itemA, boardId, groupA, false, Now, CancellationToken.None);
-        await service.ApplyPlacementAsync(accountId, workspaceB, itemB, boardId, groupB, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceA, itemA, boardId, groupA, false, revision: 1, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceB, itemB, boardId, groupB, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
@@ -471,13 +473,13 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var producerGroup = Guid.CreateVersion7();
 
         var (context, service) = CreateService();
-        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, driftedGroup, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, driftedGroup, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
         var snapshot = new List<WorkItemPlacementSnapshot>
         {
-            new(accountId, itemId, boardId, producerGroup, false, 2, Now.AddMinutes(1)),
+            new(accountId, itemId, boardId, producerGroup, false, Revision: 2, LastOccurredAt: Now.AddMinutes(1)),
         };
 
         // Producer snapshot fetch fails BEFORE any mutation is staged.
@@ -530,7 +532,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var fakeGroup = Guid.CreateVersion7();
         IWorkItemProjectionSource fakeProducer = new StubProjectionSource(
         [
-            new WorkItemPlacementSnapshot(accountId, item.Id, board.Id, fakeGroup, false, 1, Now.AddMinutes(1)),
+            new WorkItemPlacementSnapshot(accountId, item.Id, board.Id, fakeGroup, false, Revision: 1, LastOccurredAt: Now.AddMinutes(1)),
         ]);
         IWorkItemProjectionSourceAdapter analyticsPort =
             new Infrastructure.CrossContext.Analytics.WorkManagement.WorkItemProjectionSourceAdapter(fakeProducer);
@@ -556,7 +558,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
     {
         // AR-FLOW-02 / TAC-AR-008 + TAC-AR-012: the production query handler
         // reads only the Analytics local projection, scoped by Workspace, and
-        // tracks the canonical watermark.
+        // tracks the producer revision.
         var (context, service) = CreateService();
         var accountId = Guid.CreateVersion7();
         var workspaceA = Guid.CreateVersion7();
@@ -567,8 +569,8 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupA = Guid.CreateVersion7();
         var groupB = Guid.CreateVersion7();
 
-        await service.ApplyPlacementAsync(accountId, workspaceA, itemA, boardId, groupA, false, Now, CancellationToken.None);
-        await service.ApplyPlacementAsync(accountId, workspaceB, itemB, boardId, groupB, false, Now.AddMinutes(1), CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceA, itemA, boardId, groupA, false, revision: 1, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceB, itemB, boardId, groupB, false, revision: 2, Now.AddMinutes(1), CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
@@ -580,7 +582,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         placement.ItemId.Should().Be(itemA);
         placement.GroupId.Should().Be(groupA);
         placement.LastOccurredAt.Should().Be(Now);
-        placement.SourceRevision.Should().Be(Now.UtcTicks, "the query exposes the same single producer-timestamp watermark the projection was projected with");
+        placement.SourceRevision.Should().Be(1, "the query exposes the same producer revision the projection was projected with");
     }
 
     [Fact]
@@ -617,7 +619,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         // Analytics rebuilds its projection from that producer-owned snapshot.
         var source = new StubProjectionSource(snapshot);
         var (context, service) = CreateService(source);
-        await service.ApplyPlacementAsync(accountId, workspace.Id, item.Id, board.Id, groupB.Id, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspace.Id, item.Id, board.Id, groupB.Id, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
@@ -646,8 +648,8 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var (context, service) = CreateService();
         var consumer = new BoardItemMovedPlacementConsumer(
             service, new FakeCurrentTenantContext(), NullLogger<BoardItemMovedPlacementConsumer>.Instance);
-        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemMovedIntegrationEvent>>();
-        consumeContext.SetupGet(c => c.Message).Returns(MovedEvent(accountId, workspaceId, itemId, boardId, groupId, Now));
+        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemMovedIntegrationEventV2>>();
+        consumeContext.SetupGet(c => c.Message).Returns(MovedEvent(accountId, workspaceId, itemId, boardId, groupId, revision: 5, Now));
         consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
 
         await consumer.Consume(consumeContext.Object);
@@ -657,7 +659,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
         row.GroupId.Should().Be(groupId, "the event's own facts drive the move projection");
         row.AccountId.Should().Be(accountId);
-        row.SourceRevision.Should().Be(Now.UtcTicks);
+        row.SourceRevision.Should().Be(5);
     }
 
     [Fact]
@@ -675,8 +677,8 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var (context, service) = CreateService();
         var consumer = new BoardItemMovedPlacementConsumer(
             service, tenant, NullLogger<BoardItemMovedPlacementConsumer>.Instance);
-        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemMovedIntegrationEvent>>();
-        consumeContext.SetupGet(c => c.Message).Returns(MovedEvent(null, workspaceId, itemId, boardId, groupId, Now));
+        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemMovedIntegrationEventV2>>();
+        consumeContext.SetupGet(c => c.Message).Returns(MovedEvent(null, workspaceId, itemId, boardId, groupId, revision: 5, Now));
         consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
 
         await consumer.Consume(consumeContext.Object);
@@ -702,15 +704,16 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
                 accountId, item, boardId, groupId, IsArchived: false, Revision: 1, LastOccurredAt: Now));
         var consumer = new BoardItemCreatedPlacementConsumer(
             service, source, NullLogger<BoardItemCreatedPlacementConsumer>.Instance);
-        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemCreatedIntegrationEvent>>();
+        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemCreatedIntegrationEventV2>>();
         consumeContext.SetupGet(c => c.Message).Returns(
-            new BoardItemCreatedIntegrationEvent(
+            new BoardItemCreatedIntegrationEventV2(
                 EventId: Guid.CreateVersion7(),
                 AccountId: accountId,
                 ItemId: itemId,
                 BoardId: boardId,
                 WorkspaceId: workspaceId,
                 Title: "Task",
+                Revision: 1,
                 CorrelationId: Guid.CreateVersion7(),
                 OccurredAt: Now));
         consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
@@ -721,7 +724,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
 
         var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
         row.GroupId.Should().Be(groupId);
-        row.SourceRevision.Should().Be(Now.UtcTicks, "the fallback snapshot projects on the same producer-timestamp watermark");
+        row.SourceRevision.Should().Be(1, "the created fact projects on the producer snapshot revision");
     }
 
     [Fact]
@@ -734,15 +737,16 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         IWorkItemProjectionSourceAdapter source = new StubProjectionSource();
         var consumer = new BoardItemCreatedPlacementConsumer(
             service, source, NullLogger<BoardItemCreatedPlacementConsumer>.Instance);
-        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemCreatedIntegrationEvent>>();
+        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemCreatedIntegrationEventV2>>();
         consumeContext.SetupGet(c => c.Message).Returns(
-            new BoardItemCreatedIntegrationEvent(
+            new BoardItemCreatedIntegrationEventV2(
                 EventId: Guid.CreateVersion7(),
                 AccountId: Guid.CreateVersion7(),
                 ItemId: itemId,
                 BoardId: Guid.CreateVersion7(),
                 WorkspaceId: workspaceId,
                 Title: "Task",
+                Revision: 1,
                 CorrelationId: Guid.CreateVersion7(),
                 OccurredAt: Now));
         consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
@@ -764,21 +768,22 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var groupId = Guid.CreateVersion7();
 
         var (context, service) = CreateService();
-        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, Now, CancellationToken.None);
+        await service.ApplyPlacementAsync(accountId, workspaceId, itemId, boardId, groupId, false, revision: 1, Now, CancellationToken.None);
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
         var consumer = new BoardItemArchivedPlacementConsumer(
             service, NullLogger<BoardItemArchivedPlacementConsumer>.Instance);
-        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemArchivedIntegrationEvent>>();
+        var consumeContext = new Mock<MassTransit.ConsumeContext<BoardItemArchivedIntegrationEventV2>>();
         var archivedAt = Now.AddMinutes(1);
         consumeContext.SetupGet(c => c.Message).Returns(
-            new BoardItemArchivedIntegrationEvent(
+            new BoardItemArchivedIntegrationEventV2(
                 EventId: Guid.CreateVersion7(),
                 AccountId: accountId,
                 ItemId: itemId,
                 BoardId: boardId,
                 WorkspaceId: workspaceId,
+                Revision: 2,
                 CorrelationId: Guid.CreateVersion7(),
                 OccurredAt: archivedAt));
         consumeContext.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
@@ -790,6 +795,7 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         var row = await context.WorkspaceWorkItemPlacements.SingleAsync(p => p.WorkspaceId == workspaceId && p.ItemId == itemId);
         row.IsArchived.Should().BeTrue("the archived fact must mark the projection row without deleting placement history");
         row.GroupId.Should().Be(groupId);
+        row.SourceRevision.Should().Be(2);
     }
 
     // ── test doubles ─────────────────────────────────────────────────────

@@ -10,5 +10,6 @@ public sealed record BoardItemMovedDomainEvent(
     Guid NewGroupId,
     string NewPosition,
     Guid UpdatedBy,
-    DateTimeOffset OccurredAt
+    DateTimeOffset OccurredAt,
+    long Version
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

@@ -20,7 +20,7 @@ public class WorkItemIntegrationEventMapperTests
             Guid.CreateVersion7(), Guid.CreateVersion7(),
             Guid.CreateVersion7(), Guid.CreateVersion7(),
             Guid.CreateVersion7(), Guid.CreateVersion7(),
-            "a5", Guid.CreateVersion7(), DateTimeOffset.UtcNow);
+            "a5", Guid.CreateVersion7(), DateTimeOffset.UtcNow, Version: 4);
 
         var mapped = _boardMapper.Map(domainEvent);
 
@@ -34,6 +34,8 @@ public class WorkItemIntegrationEventMapperTests
         mapped.NewGroupId.Should().Be(domainEvent.NewGroupId);
         mapped.ActorUserId.Should().Be(domainEvent.UpdatedBy);
         mapped.CorrelationId.Should().Be(domainEvent.EventId);
+        mapped.Revision.Should().Be(domainEvent.Version,
+            "the producer aggregate version is the semantic ordering authority carried by the v2 contract");
         mapped.OccurredAt.Should().Be(domainEvent.OccurredAt);
     }
 
@@ -66,7 +68,7 @@ public class WorkItemIntegrationEventMapperTests
             Guid.CreateVersion7(), Guid.CreateVersion7(),
             Guid.CreateVersion7(), Guid.CreateVersion7(),
             Guid.CreateVersion7(), Guid.CreateVersion7(),
-            "a5", Guid.CreateVersion7(), DateTimeOffset.UtcNow))!;
+            "a5", Guid.CreateVersion7(), DateTimeOffset.UtcNow, Version: 3))!;
 
         moved.Should().BeAssignableTo<Notrelix.Application.Common.Events.IntegrationEvent>(
             "the mapped contract is the pinned WorkManagement-owned integration event, not a raw aggregate");

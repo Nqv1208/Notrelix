@@ -26,14 +26,19 @@ public class WorkIntegrationEventPinningArchitectureTests
 
         foreach (var eventName in PinnedWorkItemEventNames)
         {
-            var contractType = eventsAssembly.Assembly.GetTypes()
-                .Single(t =>
+            var contractTypes = eventsAssembly.Assembly.GetTypes()
+                .Where(t =>
                     t.GetCustomAttribute<EventNameAttribute>() is { } attr
-                    && attr.Name == eventName);
+                    && attr.Name == eventName)
+                .ToList();
 
-            contractType.Namespace.Should().StartWith("Notrelix.Application.Events.WorkManagement",
-                $"event '{eventName}' is produced from WorkManagement ownership");
-            contractType.GetCustomAttribute<EventNameAttribute>()!.Version.Should().BeGreaterThan(0);
+            contractTypes.Should().NotBeEmpty($"event '{eventName}' must be declared");
+            foreach (var contractType in contractTypes)
+            {
+                contractType.Namespace.Should().StartWith("Notrelix.Application.Events.WorkManagement",
+                    $"event '{eventName}' is produced from WorkManagement ownership");
+                contractType.GetCustomAttribute<EventNameAttribute>()!.Version.Should().BeGreaterThan(0);
+            }
         }
     }
 
@@ -63,15 +68,20 @@ public class WorkIntegrationEventPinningArchitectureTests
     {
         foreach (var eventName in PinnedWorkItemEventNames)
         {
-            var contractType = typeof(Notrelix.Application.Events.WorkManagement.BoardItemMovedIntegrationEvent)
+            var contractTypes = typeof(Notrelix.Application.Events.WorkManagement.BoardItemMovedIntegrationEvent)
                 .Assembly.GetTypes()
-                .Single(t => t.GetCustomAttribute<EventNameAttribute>() is { } attr && attr.Name == eventName);
+                .Where(t => t.GetCustomAttribute<EventNameAttribute>() is { } attr && attr.Name == eventName)
+                .ToList();
 
-            contractType.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), inherit: false)
-                .Should().BeFalse("TAC-WM-008: integration contracts are immutable semantic records, never raw aggregates");
-            typeof(Notrelix.Domain.Common.AggregateRoot)
-                .IsAssignableFrom(contractType)
-                .Should().BeFalse("raw mutable Work aggregates must never be serialized outward");
+            contractTypes.Should().NotBeEmpty($"event '{eventName}' must be declared");
+            foreach (var contractType in contractTypes)
+            {
+                contractType.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), inherit: false)
+                    .Should().BeFalse("TAC-WM-008: integration contracts are immutable semantic records, never raw aggregates");
+                typeof(Notrelix.Domain.Common.AggregateRoot)
+                    .IsAssignableFrom(contractType)
+                    .Should().BeFalse("raw mutable Work aggregates must never be serialized outward");
+            }
         }
     }
 }

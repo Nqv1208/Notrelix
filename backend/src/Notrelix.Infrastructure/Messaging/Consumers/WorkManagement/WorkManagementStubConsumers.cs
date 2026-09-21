@@ -83,7 +83,7 @@ public sealed class BoardItemRenamedConsumer : IConsumer<BoardItemRenamedIntegra
     }
 }
 
-public sealed class BoardItemMovedConsumer : IConsumer<BoardItemMovedIntegrationEvent>
+public sealed class BoardItemMovedConsumer : IConsumer<BoardItemMovedIntegrationEventV2>
 {
     private readonly ILogger<BoardItemMovedConsumer> _logger;
 
@@ -92,20 +92,21 @@ public sealed class BoardItemMovedConsumer : IConsumer<BoardItemMovedIntegration
         _logger = logger;
     }
 
-    public Task Consume(ConsumeContext<BoardItemMovedIntegrationEvent> context)
+    public Task Consume(ConsumeContext<BoardItemMovedIntegrationEventV2> context)
     {
         _logger.LogInformation(
-            "[WorkManagement] BoardItemMoved: ItemId={ItemId}, BoardId={BoardId}, OldGroupId={OldGroupId}, NewGroupId={NewGroupId}, WorkspaceId={WorkspaceId}",
+            "[WorkManagement] BoardItemMoved: ItemId={ItemId}, BoardId={BoardId}, OldGroupId={OldGroupId}, NewGroupId={NewGroupId}, WorkspaceId={WorkspaceId}, Revision={Revision}",
             context.Message.ItemId,
             context.Message.BoardId,
             context.Message.OldGroupId,
             context.Message.NewGroupId,
-            context.Message.WorkspaceId);
+            context.Message.WorkspaceId,
+            context.Message.Revision);
         return Task.CompletedTask;
     }
 }
 
-public sealed class BoardItemArchivedConsumer : IConsumer<BoardItemArchivedIntegrationEvent>
+public sealed class BoardItemArchivedConsumer : IConsumer<BoardItemArchivedIntegrationEventV2>
 {
     private readonly ILogger<BoardItemArchivedConsumer> _logger;
 
@@ -114,13 +115,14 @@ public sealed class BoardItemArchivedConsumer : IConsumer<BoardItemArchivedInteg
         _logger = logger;
     }
 
-    public Task Consume(ConsumeContext<BoardItemArchivedIntegrationEvent> context)
+    public Task Consume(ConsumeContext<BoardItemArchivedIntegrationEventV2> context)
     {
         _logger.LogInformation(
-            "[WorkManagement] BoardItemArchived: ItemId={ItemId}, BoardId={BoardId}, WorkspaceId={WorkspaceId}",
+            "[WorkManagement] BoardItemArchived: ItemId={ItemId}, BoardId={BoardId}, WorkspaceId={WorkspaceId}, Revision={Revision}",
             context.Message.ItemId,
             context.Message.BoardId,
-            context.Message.WorkspaceId);
+            context.Message.WorkspaceId,
+            context.Message.Revision);
         return Task.CompletedTask;
     }
 }

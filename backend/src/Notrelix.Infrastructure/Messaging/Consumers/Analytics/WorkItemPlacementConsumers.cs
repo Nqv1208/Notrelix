@@ -12,10 +12,10 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Analytics;
 /// already carry every placement fact in the event project it directly; only
 /// facts the payload genuinely lacks are resolved through the producer-owned
 /// snapshot contract — never through foreign persistence. Ordering uses the
-/// single producer-timestamp watermark.
+/// single producer revision (aggregate version at fact raise).
 /// </summary>
 public sealed class BoardItemMovedPlacementConsumer
-    : IConsumer<BoardItemMovedIntegrationEvent>
+    : IConsumer<BoardItemMovedIntegrationEventV2>
 {
     private readonly WorkspaceWorkItemPlacementService _service;
     private readonly ICurrentTenantContext _tenant;
@@ -31,7 +31,7 @@ public sealed class BoardItemMovedPlacementConsumer
         _logger = logger;
     }
 
-    public async Task Consume(ConsumeContext<BoardItemMovedIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<BoardItemMovedIntegrationEventV2> context)
     {
         var msg = context.Message;
         if (msg.WorkspaceId is null || msg.NewGroupId is null)
@@ -49,6 +49,7 @@ public sealed class BoardItemMovedPlacementConsumer
             msg.BoardId,
             msg.NewGroupId.Value,
             isArchived: false,
+            revision: msg.Revision,
             lastOccurredAt: msg.OccurredAt,
             context.CancellationToken);
 
@@ -58,7 +59,7 @@ public sealed class BoardItemMovedPlacementConsumer
 }
 
 public sealed class BoardItemCreatedPlacementConsumer
-    : IConsumer<BoardItemCreatedIntegrationEvent>
+    : IConsumer<BoardItemCreatedIntegrationEventV2>
 {
     private readonly WorkspaceWorkItemPlacementService _service;
     private readonly IWorkItemProjectionSourceAdapter _projectionSource;
@@ -74,7 +75,7 @@ public sealed class BoardItemCreatedPlacementConsumer
         _logger = logger;
     }
 
-    public async Task Consume(ConsumeContext<BoardItemCreatedIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<BoardItemCreatedIntegrationEventV2> context)
     {
         var msg = context.Message;
         if (msg.WorkspaceId is null)
@@ -98,6 +99,7 @@ public sealed class BoardItemCreatedPlacementConsumer
             snapshot.BoardId,
             snapshot.GroupId,
             snapshot.IsArchived,
+            snapshot.Revision,
             snapshot.LastOccurredAt,
             context.CancellationToken);
 
@@ -107,7 +109,7 @@ public sealed class BoardItemCreatedPlacementConsumer
 }
 
 public sealed class BoardItemArchivedPlacementConsumer
-    : IConsumer<BoardItemArchivedIntegrationEvent>
+    : IConsumer<BoardItemArchivedIntegrationEventV2>
 {
     private readonly WorkspaceWorkItemPlacementService _service;
     private readonly ILogger<BoardItemArchivedPlacementConsumer> _logger;
@@ -120,7 +122,7 @@ public sealed class BoardItemArchivedPlacementConsumer
         _logger = logger;
     }
 
-    public async Task Consume(ConsumeContext<BoardItemArchivedIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<BoardItemArchivedIntegrationEventV2> context)
     {
         var msg = context.Message;
         if (msg.WorkspaceId is null)
@@ -131,6 +133,7 @@ public sealed class BoardItemArchivedPlacementConsumer
         var applied = await _service.MarkArchivedAsync(
             msg.WorkspaceId.Value,
             msg.ItemId,
+            revision: msg.Revision,
             lastOccurredAt: msg.OccurredAt,
             context.CancellationToken);
 

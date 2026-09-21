@@ -79,10 +79,12 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         outbox!.AccountId.Should().Be(graph.AccountId, "TAC-FRZ-018: authoritative tenant envelope");
         outbox.WorkspaceId.Should().Be(graph.WorkspaceId);
         outbox.MessageName.Should().Be("board_item.moved");
-        outbox.SchemaVersion.Should().Be(1);
+        outbox.SchemaVersion.Should().Be(2, "the moved fact was bumped to v2 with the producer revision");
         outbox.PayloadJson.RootElement.GetProperty("itemId").GetGuid().Should().Be(graph.ItemId);
         outbox.PayloadJson.RootElement.GetProperty("oldGroupId").GetGuid().Should().Be(graph.SourceGroupId);
         outbox.PayloadJson.RootElement.GetProperty("newGroupId").GetGuid().Should().Be(graph.TargetGroupId);
+        outbox.PayloadJson.RootElement.GetProperty("revision").GetInt64().Should().Be(2,
+            "the payload carries the aggregate version at fact raise as its ordering authority");
         outbox.PayloadJson.RootElement.GetProperty("accountId").GetGuid().Should().Be(graph.AccountId);
         outbox.PayloadJson.RootElement.GetProperty("workspaceId").GetGuid().Should().Be(graph.WorkspaceId);
         outbox.PayloadJson.RootElement.GetProperty("actorUserId").GetGuid().Should().Be(graph.ExecutorUserId);

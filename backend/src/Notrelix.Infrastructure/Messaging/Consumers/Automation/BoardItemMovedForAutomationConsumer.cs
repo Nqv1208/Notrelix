@@ -9,7 +9,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Automation;
 /// no rule/execution semantics live here.
 /// </summary>
 public sealed class BoardItemMovedAutomationConsumer
-    : IConsumer<BoardItemMovedIntegrationEvent>
+    : IConsumer<BoardItemMovedIntegrationEventV2>
 {
     private readonly N8nAutomationRuleEvaluator _evaluator;
 
@@ -18,7 +18,7 @@ public sealed class BoardItemMovedAutomationConsumer
         _evaluator = evaluator;
     }
 
-    public Task Consume(ConsumeContext<BoardItemMovedIntegrationEvent> context) =>
+    public Task Consume(ConsumeContext<BoardItemMovedIntegrationEventV2> context) =>
         _evaluator.ExecuteAsync(context.Message, context.CancellationToken);
 }
 
@@ -28,7 +28,7 @@ public sealed class BoardItemMovedAutomationConsumer
 /// rule/execution semantics live here.
 /// </summary>
 public sealed class BoardItemCreatedAutomationConsumer
-    : IConsumer<BoardItemCreatedIntegrationEvent>
+    : IConsumer<BoardItemCreatedIntegrationEventV2>
 {
     private readonly N8nAutomationRuleEvaluator _evaluator;
 
@@ -37,6 +37,6 @@ public sealed class BoardItemCreatedAutomationConsumer
         _evaluator = evaluator;
     }
 
-    public Task Consume(ConsumeContext<BoardItemCreatedIntegrationEvent> context) =>
+    public Task Consume(ConsumeContext<BoardItemCreatedIntegrationEventV2> context) =>
         _evaluator.ExecuteAsync(context.Message, context.CancellationToken);
 }
