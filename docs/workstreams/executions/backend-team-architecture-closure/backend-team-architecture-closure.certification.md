@@ -5597,6 +5597,19 @@ This CERTIFICATION file must not resolve a `DEFERRED-*` product/architecture
 decision by itself. It certifies the decision once SPEC/PLAN authority has been
 closed.
 
+## PR #158 mechanism-closure re-audit v2 correction
+
+The historical flow rows in this file are retained as historical certification
+evidence and are superseded for the current PR #158 candidate by
+`notrelix-pr158-mechanism-closure-reaudit-v2.md` at the audited head
+`b9cccc07bf4b3bf2be04d7336b478eba6170f136`.
+
+For the current candidate, AI-FLOW-07 is `BLOCKED-DECISION` at the undefined
+downstream Calendar semantic target; AI-FLOW-06 is only locally verified up to
+the Calendar binding lifecycle while provider cleanup remains open; and the
+affected PF-FLOW-05 Work V1→V2 event-evolution/replay slice is reopened. The
+current candidate is not `ARCHITECTURE-CLOSED`.
+
 The temporary Interaction Architecture working plan is not a sixth permanent
 authority document.
 

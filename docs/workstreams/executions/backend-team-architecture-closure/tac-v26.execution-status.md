@@ -4268,6 +4268,28 @@ FROZEN-DECISION 2's other requirements (bootstrap must resolve path → integrat
 
 (status ends here — no further claims)
 
+## PR #158 mechanism-closure re-audit v2 — R0 authority correction
+
+The earlier M8/M11/M12 rows above are retained as historical evidence for the
+revisions they describe. They are not current closure authority after the
+PR #158 mechanism re-audit at `b9cccc07bf4b3bf2be04d7336b478eba6170f136`.
+
+Current disposition is:
+
+```text
+AI-FLOW-03:E3 ProcessState       NORMALIZED → AutomationExecution
+AI-FLOW-06                     LOCAL CAL-CONN-001 PASS; provider cleanup OPEN
+AI-FLOW-07                     BLOCKED-DECISION at downstream semantic target
+PF-FLOW-05                     AFFECTED SLICE REOPENED: Work V1→V2 evolution/replay
+TAC-FRZ-018                    NOT FROZEN for the affected event-evolution slice
+ARCHITECTURE-CLOSED            NOT JUSTIFIED
+```
+
+The re-audit also rejects the historical interpretation that an accepted
+technical receipt alone completes AI-FLOW-07. Accepted/captured, processing,
+and semantic success remain separate states. No downstream Calendar action is
+invented until the explicit product/integration decision is recorded.
+
 ## WAVE-C-THROUGH-H-REEXECUTION (record 6 — 2026-09-21, post-commit verification)
 
 This record supersedes the implementation-state wording above for the local
