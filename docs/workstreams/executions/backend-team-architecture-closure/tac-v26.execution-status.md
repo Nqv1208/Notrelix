@@ -4268,6 +4268,44 @@ FROZEN-DECISION 2's other requirements (bootstrap must resolve path → integrat
 
 (status ends here — no further claims)
 
+## WAVE-C-THROUGH-H-REEXECUTION (record 6 — 2026-09-21, post-commit verification)
+
+This record supersedes the implementation-state wording above for the local
+reopened branch. The execution work is now committed in the following order:
+
+```text
+52d7b61f  feat(analytics): migrate placement ordering to producer revisions
+2a74a18a  feat(integrations): bind calendar intake to connection-scoped RLS
+3178fe23  feat(api): enforce bounded calendar webhook HTTP intake
+9dafb488  feat(integrations): split calendar receipt processing from intake
+005cd250  docs(architecture): record backend closure wave evidence
+1a48ff85  test(analytics): prove legacy placement revision reset
+997426b0  fix(domain): make money formatting culture invariant
+343465fb  chore(docs): exclude execution catalog IDs from rule index
+3b6c518d  chore(backend): remove unused closure imports
+```
+
+### Post-commit evidence
+
+```text
+Build: 17 projects / 0 errors / 0 warnings
+Full backend solution test: 5103 passed / 0 failed / 0 skipped / 7 projects
+Migration transition proof: 1 passed
+Money culture proof: 16 passed
+OpenAPI export vs tracked artifact: byte-identical
+Docs gate: links, metadata, authority, rule IDs, source inventory, generated drift all PASS
+```
+
+Wave B, C, D, F and the affected Wave G proof are implementation-complete on
+this local chain. Wave E remains `BLOCKED-DECISION` at the explicit terminal:
+the downstream Calendar semantic target/action is still undefined by current
+product and integration authority, so no mutation was invented. Wave H is
+`VERIFIED-LOCAL` only: the local tip is `3b6c518d`, but there is no remote CI
+run ID or clean exact-SHA certification record, and `tmp-tac-m12-record.md`
+remains intentionally outside the commits. Do not mark `ARCHITECTURE-CLOSED`.
+
+(status ends here — no further claims)
+
 ## WAVE-D-IMPLEMENTATION (record 4 — appended 2026-09-20)
 
 Wave D (fix raw HTTP boundary) is implemented and proven at the real HTTP
