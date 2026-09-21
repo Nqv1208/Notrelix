@@ -68,9 +68,9 @@ public sealed class CalendarWebhookProcessingRequestedConsumer
         if (receipt is null)
         {
             _logger.LogWarning(
-                "Calendar webhook processing for receipt {ReceiptId} could not find the claimed receipt; skipping",
+                "Calendar webhook processing for receipt {ReceiptId} could not find the claimed receipt",
                 message.ReceiptId);
-            return;
+            throw new CalendarWebhookReceiptNotFoundException(message.ReceiptId);
         }
 
         if (receipt.Status != "Captured")
@@ -78,6 +78,27 @@ public sealed class CalendarWebhookProcessingRequestedConsumer
             _logger.LogDebug(
                 "Calendar webhook receipt {ReceiptId} already {Status}; convergent no-op",
                 message.ReceiptId, receipt.Status);
+            return;
+        }
+
+        // The receipt is the authoritative provenance record. Message fields
+        // are transport copies only; accepting a mismatch would let a tampered
+        // or stale message redirect processing across connection/provider or
+        // tenant boundaries.
+        if (receipt.AccountId != message.AccountId
+            || receipt.WorkspaceId != message.WorkspaceId
+            || receipt.ConnectionId != message.ConnectionId
+            || !string.Equals(receipt.Provider, message.Provider, StringComparison.Ordinal)
+            || !string.Equals(receipt.ExternalEventId, message.ExternalEventId, StringComparison.Ordinal)
+            || !string.Equals(receipt.PayloadHash, message.PayloadHash, StringComparison.Ordinal)
+            || receipt.ReceivedAt != message.ReceivedAt)
+        {
+            const string detail = "calendar webhook processing message provenance does not match the authoritative receipt";
+            receipt.MarkFailed(detail, _clock.UtcNow, "ProvenanceMismatch");
+            await _db.SaveChangesAsync(ct);
+            _logger.LogError(
+                "Calendar webhook receipt {ReceiptId} was rejected because transport provenance did not match the receipt",
+                message.ReceiptId);
             return;
         }
 
@@ -115,11 +136,11 @@ public sealed class CalendarWebhookProcessingRequestedConsumer
         var outcome = await _useCase.ProcessAsync(
             new CalendarWebhookProcessingInput(
                 message.ReceiptId,
-                message.ConnectionId,
-                message.Provider,
-                message.ExternalEventId,
-                message.PayloadHash,
-                message.ReceivedAt,
+                receipt.ConnectionId!.Value,
+                receipt.Provider,
+                receipt.ExternalEventId,
+                receipt.PayloadHash,
+                receipt.ReceivedAt,
                 decrypted),
             ct);
 
@@ -158,3 +179,7 @@ public sealed class CalendarWebhookProcessingRequestedConsumer
 public sealed class CalendarWebhookProcessingRetryableException(Guid receiptId)
     : InvalidOperationException(
         $"calendar webhook processing for receipt {receiptId} requires another delivery attempt.");
+
+public sealed class CalendarWebhookReceiptNotFoundException(Guid receiptId)
+    : InvalidOperationException(
+        $"calendar webhook processing receipt {receiptId} was not found; the message is unreconcilable.");

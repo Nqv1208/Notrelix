@@ -163,12 +163,9 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
         tenant.WorkspaceId.Should().BeNull();
 
         await using var verify = _db.CreateContext(SystemTenant());
-        var receipt = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
-            .SingleAsync(r => r.Provider == Provider && r.ExternalEventId.StartsWith("rejected:"));
-        receipt.Status.Should().Be("Rejected",
-            "the rejected diagnostic receipt still commits — business rejection != transaction rollback");
-        receipt.FailureReason.Should().NotBeNullOrWhiteSpace();
-        receipt.ProcessedAt.Should().BeNull();
+        (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
+            .AnyAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId))
+            .Should().BeFalse("untrusted callbacks must not create durable receipt rows");
     }
 
     private static (string Body, string Signature, string Timestamp) SignedCallback(

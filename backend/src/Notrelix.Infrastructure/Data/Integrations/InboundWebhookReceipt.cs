@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Notrelix.Infrastructure.Data.Integrations;
 
 /// <summary>
@@ -6,8 +8,8 @@ namespace Notrelix.Infrastructure.Data.Integrations;
 /// captured, verified, and claimed per connection by
 /// (connection, provider, external event id); the provider-neutral processing
 /// message is then consumed by the tenant-scoped processing seam, which
-/// decides the terminal state. Rejected callbacks are recorded for bounded
-/// operational diagnostics only — never business processing state. Forbidden
+/// decides the terminal state. Rejected callbacks are telemetry-only — never
+/// business processing state. Forbidden
 /// by TAC-GATE-024: this is NOT WebhookDelivery (outbound) and NOT
 /// InboundWebhookEvent (frozen Domain legacy gap).
 ///
@@ -17,8 +19,9 @@ namespace Notrelix.Infrastructure.Data.Integrations;
 /// canonical provider event-id only namespaces a delivery within a provider
 /// calendar/connection, so dedup is connection-scoped: UNIQUE(connection_id,
 /// provider, external_event_id)). Legacy rows created under the former
-/// provider-wide dedup domain, and rejected callbacks with no trusted binding,
-/// keep ConnectionId NULL. Provenance identity is not the dedup key by itself.
+/// provider-wide dedup domain are retained only for migration compatibility.
+/// Rejected callbacks are not receipt rows. Provenance identity is not the
+/// dedup key by itself.
 ///
 /// The payload hash is SHA-256 over the exact verified raw bytes (the same
 /// bytes the signature was verified against — never a re-serialization); the
@@ -29,6 +32,8 @@ namespace Notrelix.Infrastructure.Data.Integrations;
 public class InboundWebhookReceipt
 {
     public Guid Id { get; private set; }
+    public Guid? AccountId { get; private set; }
+    public Guid? WorkspaceId { get; private set; }
     public Guid? ConnectionId { get; private set; }
     public string Provider { get; private set; } = null!;
     public string ExternalEventId { get; private set; } = null!;
@@ -37,11 +42,26 @@ public class InboundWebhookReceipt
     public DateTimeOffset ReceivedAt { get; private set; }
     public string Status { get; private set; } = null!;
     public DateTimeOffset? ProcessedAt { get; private set; }
-    public string? FailureReason { get; private set; }
+    public DateTimeOffset? TerminalAt { get; private set; }
+    public string? FailureCode { get; private set; }
+    public string? FailureDetail { get; private set; }
+
+    [NotMapped]
+    public string? FailureReason => FailureDetail;
+
+    public enum ReceiptStatus
+    {
+        Captured,
+        Processed,
+        Blocked,
+        Failed,
+    }
 
     private InboundWebhookReceipt() { }
 
     public static InboundWebhookReceipt Capture(
+        Guid accountId,
+        Guid workspaceId,
         Guid connectionId,
         string provider,
         string externalEventId,
@@ -49,6 +69,10 @@ public class InboundWebhookReceipt
         string? protectedPayload,
         DateTimeOffset receivedAt)
     {
+        if (accountId == Guid.Empty)
+            throw new ArgumentException("Account id is required.", nameof(accountId));
+        if (workspaceId == Guid.Empty)
+            throw new ArgumentException("Workspace id is required.", nameof(workspaceId));
         if (connectionId == Guid.Empty)
             throw new ArgumentException("Connection id is required.", nameof(connectionId));
         if (string.IsNullOrWhiteSpace(provider))
@@ -61,6 +85,8 @@ public class InboundWebhookReceipt
         return new InboundWebhookReceipt
         {
             Id = Guid.CreateVersion7(),
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
             ConnectionId = connectionId,
             Provider = provider,
             ExternalEventId = externalEventId,
@@ -73,16 +99,21 @@ public class InboundWebhookReceipt
 
     public void MarkProcessed(DateTimeOffset processedAt)
     {
-        if (Status is not ("Captured" or "Failed")) return;
+        if (Status is not "Captured") return;
         Status = "Processed";
         ProcessedAt = processedAt;
+        TerminalAt = processedAt;
+        FailureCode = null;
+        FailureDetail = null;
     }
 
-    public void MarkFailed(string reason, DateTimeOffset failedAt)
+    public void MarkFailed(string reason, DateTimeOffset failedAt, string failureCode = "TechnicalFailure")
     {
         if (Status is not "Captured") return;
         Status = "Failed";
-        FailureReason = reason;
+        TerminalAt = failedAt;
+        FailureCode = failureCode;
+        FailureDetail = reason;
     }
 
     /// <summary>
@@ -97,38 +128,8 @@ public class InboundWebhookReceipt
     {
         if (Status is not "Captured") return;
         Status = "Blocked";
-        FailureReason = reason;
-    }
-
-    /// <summary>
-    /// A rejected callback (bad signature/timestamp) is recorded as Rejected
-    /// for bounded diagnostics — never business processing state. There is no
-    /// trusted binding (verification failed before the bootstrap is trusted),
-    /// so ConnectionId stays NULL; the synthetic event id keeps rejected rows
-    /// outside the claim identity.
-    /// </summary>
-    public static InboundWebhookReceipt CaptureRejected(
-        string provider,
-        string payloadHash,
-        string? protectedPayload,
-        string reason,
-        DateTimeOffset receivedAt)
-    {
-        if (string.IsNullOrWhiteSpace(provider))
-            throw new ArgumentException("Provider is required.", nameof(provider));
-        if (string.IsNullOrWhiteSpace(payloadHash))
-            throw new ArgumentException("Payload hash is required.", nameof(payloadHash));
-
-        return new InboundWebhookReceipt
-        {
-            Id = Guid.CreateVersion7(),
-            Provider = provider,
-            ExternalEventId = $"rejected:{Guid.CreateVersion7()}",
-            PayloadHash = payloadHash,
-            ProtectedPayload = protectedPayload,
-            ReceivedAt = receivedAt,
-            Status = "Rejected",
-            FailureReason = reason
-        };
+        TerminalAt = blockedAt;
+        FailureCode = "SemanticTargetUndefined";
+        FailureDetail = reason;
     }
 }

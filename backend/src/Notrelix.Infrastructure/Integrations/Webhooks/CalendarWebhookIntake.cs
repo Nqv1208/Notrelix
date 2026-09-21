@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Integrations.Public.Webhooks;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Integrations;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Notrelix.Infrastructure.Integrations.Webhooks;
 
@@ -20,7 +21,8 @@ namespace Notrelix.Infrastructure.Integrations.Webhooks;
 /// is the trusted binding identity resolved from the WebhookPath bootstrap;
 /// it is never taken from the payload. The payload hash is SHA-256 over the
 /// exact rawBody under the provider's UTF-8 contract; the raw payload is
-/// persisted only encrypted at rest.
+/// persisted only encrypted at rest for accepted callbacks. Rejected/untrusted
+/// callbacks produce bounded telemetry only.
 ///
 /// TAC v2.6 WAVE-E — the claim is written NON-terminal ("Captured"): the
 /// bootstrap only claims the delivery. The terminal receipt state
@@ -34,30 +36,31 @@ public sealed class CalendarWebhookIntake : ICalendarWebhookIntake
 
     private readonly ApplicationDbContext _context;
     private readonly ISecretEncryptor _encryptor;
+    private readonly ILogger<CalendarWebhookIntake> _logger;
 
     public CalendarWebhookIntake(
         ApplicationDbContext context,
-        ISecretEncryptor encryptor)
+        ISecretEncryptor encryptor,
+        ILogger<CalendarWebhookIntake>? logger = null)
     {
         _context = context;
         _encryptor = encryptor;
+        _logger = logger ?? NullLogger<CalendarWebhookIntake>.Instance;
     }
 
     public async Task<CalendarWebhookIntakeResult> AcceptAsync(
-        Guid connectionId,
-        string provider,
-        string externalEventId,
-        string rawBody,
-        DateTimeOffset receivedAt,
+        CalendarWebhookReceiptClaim claim,
         CancellationToken cancellationToken)
     {
         var receipt = InboundWebhookReceipt.Capture(
-            connectionId,
-            provider,
-            externalEventId,
-            ComputePayloadHash(rawBody),
-            Protect(rawBody),
-            receivedAt);
+            claim.AccountId,
+            claim.WorkspaceId,
+            claim.ConnectionId,
+            claim.Provider,
+            claim.ProviderDeliveryId,
+            ComputePayloadHash(claim.RawBody),
+            Protect(claim.RawBody),
+            claim.ReceivedAt);
 
         // The identity claim must be atomic inside the ambient data-session
         // transaction without gambling on a constraint violation aborting that
@@ -70,12 +73,12 @@ public sealed class CalendarWebhookIntake : ICalendarWebhookIntake
         var claimed = await _context.Database
             .SqlQuery<Guid?>($"""
                 INSERT INTO integration.inbound_webhook_receipts
-                    (id, connection_id, provider, external_event_id, payload_hash, protected_payload,
-                     received_at, status, processed_at, failure_reason)
+                    (id, account_id, workspace_id, connection_id, provider, external_event_id, payload_hash, protected_payload,
+                     received_at, status, processed_at, terminal_at, failure_code, failure_detail)
                 VALUES (
-                    {receipt.Id}, {receipt.ConnectionId}, {receipt.Provider}, {receipt.ExternalEventId}, {receipt.PayloadHash},
+                    {receipt.Id}, {receipt.AccountId}, {receipt.WorkspaceId}, {receipt.ConnectionId}, {receipt.Provider}, {receipt.ExternalEventId}, {receipt.PayloadHash},
                     {receipt.ProtectedPayload}, {receipt.ReceivedAt}, {receipt.Status},
-                    {receipt.ProcessedAt}, {receipt.FailureReason})
+                    {receipt.ProcessedAt}, {receipt.TerminalAt}, {receipt.FailureCode}, {receipt.FailureDetail})
                 ON CONFLICT (connection_id, provider, external_event_id) DO NOTHING
                 RETURNING id
                 """)
@@ -108,13 +111,14 @@ public sealed class CalendarWebhookIntake : ICalendarWebhookIntake
         DateTimeOffset receivedAt,
         CancellationToken cancellationToken)
     {
-        _context.InboundWebhookReceipts.Add(InboundWebhookReceipt.CaptureRejected(
+        _logger.LogWarning(
+            "Rejected calendar webhook callback. Provider={Provider}, Reason={Reason}, PayloadHash={PayloadHash}, PayloadSize={PayloadSize}, ReceivedAt={ReceivedAt}",
             provider,
-            ComputePayloadHash(rawBody),
-            Protect(rawBody),
             reason,
-            receivedAt));
-        await _context.SaveChangesAsync(cancellationToken);
+            ComputePayloadHash(rawBody),
+            System.Text.Encoding.UTF8.GetByteCount(rawBody),
+            receivedAt);
+        await Task.CompletedTask;
     }
 
     /// <summary>SHA-256 over the exact rawBody — the same UTF-8 bytes the signature was verified against.</summary>

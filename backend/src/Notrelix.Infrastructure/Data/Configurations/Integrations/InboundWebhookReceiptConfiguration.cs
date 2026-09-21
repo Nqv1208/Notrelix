@@ -21,6 +21,11 @@ public class InboundWebhookReceiptConfiguration : IEntityTypeConfiguration<Inbou
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        // Legacy rows may predate trusted tenant/provenance binding. New
+        // accepted rows are non-null by the Capture factory; the columns stay
+        // nullable so the migration can preserve historical evidence.
+        builder.Property(x => x.AccountId).HasColumnName("account_id");
+        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
         builder.Property(x => x.ConnectionId).HasColumnName("connection_id");
         builder.Property(x => x.Provider).HasColumnName("provider").IsRequired().HasMaxLength(50);
         builder.Property(x => x.ExternalEventId).HasColumnName("external_event_id").IsRequired().HasMaxLength(256);
@@ -29,7 +34,9 @@ public class InboundWebhookReceiptConfiguration : IEntityTypeConfiguration<Inbou
         builder.Property(x => x.ReceivedAt).HasColumnName("received_at");
         builder.Property(x => x.Status).HasColumnName("status").IsRequired().HasMaxLength(20);
         builder.Property(x => x.ProcessedAt).HasColumnName("processed_at");
-        builder.Property(x => x.FailureReason).HasColumnName("failure_reason");
+        builder.Property(x => x.TerminalAt).HasColumnName("terminal_at");
+        builder.Property(x => x.FailureCode).HasColumnName("failure_code").HasMaxLength(100);
+        builder.Property(x => x.FailureDetail).HasColumnName("failure_detail");
 
         builder.HasIndex(x => new { x.ConnectionId, x.Provider, x.ExternalEventId })
             .IsUnique()

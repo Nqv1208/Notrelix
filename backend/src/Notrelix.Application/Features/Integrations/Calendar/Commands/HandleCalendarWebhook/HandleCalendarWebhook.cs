@@ -115,11 +115,14 @@ public class HandleCalendarWebhookCommandHandler : IRequestHandler<HandleCalenda
         // (BE-API-041 provider-contract scope).
         var receivedAt = _clock.UtcNow;
         var intakeResult = await _intake.AcceptAsync(
-            binding.ConnectionId,
-            request.Provider,
-            verification.ExternalEventId!,
-            request.RawBody,
-            receivedAt,
+            new CalendarWebhookReceiptClaim(
+                binding.AccountId,
+                binding.WorkspaceId,
+                binding.ConnectionId,
+                request.Provider,
+                verification.ExternalEventId!,
+                request.RawBody,
+                receivedAt),
             cancellationToken);
 
         if (intakeResult.Outcome == CalendarWebhookIntakeOutcome.Accepted)

@@ -27,6 +27,21 @@ public sealed record CalendarWebhookIntakeResult(
 }
 
 /// <summary>
+/// Trusted receipt provenance assembled after provider verification and binding
+/// resolution. The intake persists this object; the later processing consumer
+/// must compare its message copy with the persisted receipt before invoking any
+/// semantic target.
+/// </summary>
+public sealed record CalendarWebhookReceiptClaim(
+    Guid AccountId,
+    Guid WorkspaceId,
+    Guid ConnectionId,
+    string Provider,
+    string ProviderDeliveryId,
+    string RawBody,
+    DateTimeOffset ReceivedAt);
+
+/// <summary>
 /// M8 AI-FLOW-07 — the technical receipt/dedup boundary for verified inbound
 /// calendar webhooks. Infrastructure owns the physical receipt rows
 /// (integrations.inbound_webhook_receipts); the Application depends only on
@@ -50,16 +65,12 @@ public interface ICalendarWebhookIntake
     /// tenant-scoped processing seam after commit, never by the bootstrap.
     /// </summary>
     Task<CalendarWebhookIntakeResult> AcceptAsync(
-        Guid connectionId,
-        string provider,
-        string externalEventId,
-        string rawBody,
-        DateTimeOffset receivedAt,
+        CalendarWebhookReceiptClaim claim,
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Records a rejected callback (bad signature/timestamp) for bounded
-    /// operational diagnostics only — never business processing state.
+    /// Records bounded telemetry for a rejected callback. Implementations must
+    /// not create an InboundWebhookReceipt or persist the raw body.
     /// </summary>
     Task RecordRejectedAsync(
         string provider,

@@ -19,6 +19,7 @@ public sealed class CalendarWebhookProcessingRequestedConsumerDefinition
         {
             r.Interval(3, TimeSpan.FromMilliseconds(200));
             r.Ignore<ArgumentException>();
+            r.Ignore<CalendarWebhookReceiptNotFoundException>();
         });
     }
 }

@@ -296,11 +296,9 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         tenant.WorkspaceId.Should().BeNull();
 
         await using var verify = _db.CreateContext(SystemTenant());
-        var receipt = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
-            .SingleAsync(r => r.Provider == Provider && r.Status == "Rejected");
-        receipt.FailureReason.Should().Contain("Signature mismatch");
-        receipt.Status.Should().Be("Rejected",
-            "a rejected callback must never become business processing state");
+        (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
+            .AnyAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId))
+            .Should().BeFalse("untrusted callbacks must not create durable receipt rows");
         (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .AnyAsync(r => r.ExternalEventId == externalEventId && (r.Status == "Processed" || r.Status == "Captured")))
             .Should().BeFalse("the rejected callback must produce no accepted technical receipt");
