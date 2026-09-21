@@ -182,8 +182,8 @@
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
-        "carriesAccountId": false,
-        "carriesWorkspaceId": false
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
       },
       "serializedProperties": [
         {
@@ -443,7 +443,7 @@
       "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemCreatedIntegrationEvent",
       "producerContext": "WorkManagement",
       "classification": "Business",
-      "compatibility": "Backward",
+      "compatibility": "None",
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
@@ -527,7 +527,7 @@
       "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemCreatedIntegrationEventV2",
       "producerContext": "WorkManagement",
       "classification": "Business",
-      "compatibility": "Backward",
+      "compatibility": "None",
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
@@ -1162,7 +1162,7 @@
       "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemArchivedIntegrationEvent",
       "producerContext": "WorkManagement",
       "classification": "Business",
-      "compatibility": "Backward",
+      "compatibility": "None",
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
@@ -1241,7 +1241,7 @@
       "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemArchivedIntegrationEventV2",
       "producerContext": "WorkManagement",
       "classification": "Business",
-      "compatibility": "Backward",
+      "compatibility": "None",
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
@@ -1331,7 +1331,7 @@
       "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemMovedIntegrationEvent",
       "producerContext": "WorkManagement",
       "classification": "Business",
-      "compatibility": "Backward",
+      "compatibility": "None",
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
@@ -1420,7 +1420,7 @@
       "clrType": "Notrelix.Application.Events.WorkManagement.BoardItemMovedIntegrationEventV2",
       "producerContext": "WorkManagement",
       "classification": "Business",
-      "compatibility": "Backward",
+      "compatibility": "None",
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
@@ -2728,8 +2728,8 @@
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
-        "carriesAccountId": false,
-        "carriesWorkspaceId": false
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
       },
       "serializedProperties": [
         {
@@ -3838,8 +3838,8 @@
       "deprecated": false,
       "scope": {
         "tenantScope": "Workspace",
-        "carriesAccountId": false,
-        "carriesWorkspaceId": false
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
       },
       "serializedProperties": [
         {

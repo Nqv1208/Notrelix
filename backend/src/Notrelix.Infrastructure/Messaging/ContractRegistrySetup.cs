@@ -22,12 +22,17 @@ public static class ContractRegistrySetup
             if (attr is null)
                 continue;
 
+            var compatibility = attr.Name is "board.item.created" or "board_item.moved" or "board_item.archived"
+                ? SchemaCompatibility.None
+                : SchemaCompatibility.Backward;
+
             definitions.Add(new ContractDefinition
             {
                 Name = attr.Name,
                 Version = attr.Version,
                 IntegrationEventType = type,
                 Classification = EventClassification.Business,
+                Compatibility = compatibility,
             });
         }
 
