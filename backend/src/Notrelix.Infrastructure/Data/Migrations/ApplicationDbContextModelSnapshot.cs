@@ -8845,13 +8845,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
-                    b.Property<Guid?>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
                     b.Property<DateTimeOffset?>("TerminalAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("terminal_at");
+
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
 
                     b.HasKey("Id")
                         .HasName("pk_inbound_webhook_receipts");

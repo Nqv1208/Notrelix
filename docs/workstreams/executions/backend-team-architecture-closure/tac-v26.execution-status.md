@@ -4520,4 +4520,19 @@ namespace, source inventory, and generated-boundary checks. The execution
 catalog identifiers are intentionally excluded from repository rule indexing;
 no product or runtime semantics were changed by that tooling correction.
 
+## Development migration rebaseline — 2026-09-21
+
+The repository is still in the governed development-only rebaseline window
+defined by BE-OPS-DATA-004. The EF migration chain has been consolidated to the
+single baseline `20260702093805_SchemaV2Baseline`. The former connection-scoped
+receipt migration, webhook receipt provenance/terminal-state migration, and
+legacy placement source-revision data migration are folded into that baseline;
+the final model snapshot matches the generated baseline model.
+
+Development databases using the removed migration IDs must be reset and
+recreated. The old migration-chain transition test was retired because the
+pre-Wave-B upgrade boundary no longer exists in a single fresh-development
+baseline. This is a historical migration rewrite only and does not change the
+current blocked provider/AI semantic decisions.
+
 (status ends here — no further claims)

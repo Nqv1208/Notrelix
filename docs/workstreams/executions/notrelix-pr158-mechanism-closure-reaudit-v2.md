@@ -319,11 +319,15 @@ deletion.
 
 ## Migration
 
-Keep:
+Before the dev-stage rebaseline, the placement revision transition was carried
+by:
 
 ```text
 20260919172502_ResetLegacyPlacementSourceRevision
 ```
+
+That historical migration is now folded into the governed single development
+baseline documented below.
 
 Old tick-scale values and aggregate versions are incomparable numeric domains.
 
@@ -335,6 +339,23 @@ DO NOT REDESIGN
 ```
 
 Only event-evolution/cutover work remains.
+
+## Dev-stage migration rebaseline update — 2026-09-21
+
+The migration chain was consolidated under the repository's governed
+development-only exception. The current chain is now exactly:
+
+```text
+20260702093805_SchemaV2Baseline
+```
+
+The former connection-scoped receipt DDL, receipt provenance/terminal-state
+DDL, and legacy placement source-revision reset are present in the single
+baseline generated from the final model. Development databases created from
+the previous chain must be reset rather than upgraded. The historical
+transition-only `LegacyPlacementSourceRevisionMigrationTests` proof was
+retired because the pre-Wave-B migration boundary no longer exists after the
+dev rebaseline.
 
 ---
 
@@ -2596,7 +2617,7 @@ dotnet test backend/backend.slnx --no-restore
   5107 passed, 17 existing warnings, 0 test failures.
 
 dotnet ef migrations list
-  includes 20260921120000_AddCalendarWebhookReceiptProvenanceAndTerminalState.
+  contains exactly 20260702093805_SchemaV2Baseline.
 
 dotnet ef migrations has-pending-model-changes
   no pending model changes.

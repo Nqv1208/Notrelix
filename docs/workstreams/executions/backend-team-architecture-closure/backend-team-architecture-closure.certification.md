@@ -5613,6 +5613,14 @@ current candidate is not `ARCHITECTURE-CLOSED`.
 The temporary Interaction Architecture working plan is not a sixth permanent
 authority document.
 
+## Development migration rebaseline — 2026-09-21
+
+Under BE-OPS-DATA-004, the development-only EF migration chain is now exactly
+the single `20260702093805_SchemaV2Baseline`. Its generated DDL contains the
+final receipt schema, connection-scoped dedup index, and folded placement
+source-revision reset semantics. Existing development databases must be reset
+and recreated; this rebaseline is not a production-history certification.
+
 ---
 
 # 178. Final meaning of v2.6 closure

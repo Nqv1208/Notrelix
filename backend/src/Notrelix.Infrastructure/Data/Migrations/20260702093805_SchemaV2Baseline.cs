@@ -1,4 +1,8 @@
-﻿#nullable disable
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+using NpgsqlTypes;
+
+#nullable disable
 
 namespace Notrelix.Infrastructure.Data.Migrations
 {
@@ -366,13 +370,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     table.PrimaryKey("pk_api_tokens", x => x.id);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "ux_api_tokens_token_hash",
-                schema: "identity",
-                table: "api_tokens",
-                column: "token_hash",
-                unique: true);
-
             migrationBuilder.CreateTable(
                 name: "approval_requests",
                 schema: "work",
@@ -626,9 +623,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
                     connection_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    webhook_path = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     sync_direction = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    webhook_path = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_by = table.Column<Guid>(type: "uuid", nullable: true),
@@ -912,6 +909,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     target_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     feature_code = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     limit_value = table.Column<int>(type: "integer", nullable: false),
+                    is_unlimited = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     source = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -992,6 +990,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     feature_code = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     delta = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     actor_user_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    logical_operation_id = table.Column<Guid>(type: "uuid", nullable: true),
                     reference_resource = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     note = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     occurred_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
@@ -1074,8 +1073,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_idempotency_records", x => x.id);
-                    table.CheckConstraint("ck_idempotency_records_state", "state IN ('Started', 'Completed')");
                     table.CheckConstraint("ck_idempotency_records_completed_result", "(\n  state = 'Started'\n  AND result_json IS NULL\n  AND result_contract IS NULL\n  AND completed_at IS NULL\n)\nOR\n(\n  state = 'Completed'\n  AND result_json IS NOT NULL\n  AND result_contract IS NOT NULL\n  AND completed_at IS NOT NULL\n)");
+                    table.CheckConstraint("ck_idempotency_records_state", "state IN ('Started', 'Completed')");
                 });
 
             migrationBuilder.CreateTable(
@@ -1136,6 +1135,31 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "inbound_webhook_receipts",
+                schema: "integration",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    connection_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    external_event_id = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    payload_hash = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    protected_payload = table.Column<string>(type: "text", nullable: true),
+                    received_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    processed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    terminal_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    failure_code = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    failure_detail = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_inbound_webhook_receipts", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "integration_connections",
                 schema: "integration",
                 columns: table => new
@@ -1162,6 +1186,22 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_integration_connections", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "integration_secret_blobs",
+                schema: "integration",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    encrypted_payload = table.Column<string>(type: "text", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    revoked = table.Column<bool>(type: "boolean", nullable: false),
+                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_integration_secret_blobs", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -1290,11 +1330,32 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     source_workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
                     type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     mentioned_user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    mentioned_by_user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_mentions", x => x.id);
+                    table.CheckConstraint("ck_mentions_mentioned_by_user_id_present", "mentioned_by_user_id <> '00000000-0000-0000-0000-000000000000'");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "mfa_recovery_batches",
+                schema: "identity",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    invalidated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_mfa_recovery_batches", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -1428,20 +1489,20 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     causation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     partition_key = table.Column<string>(type: "character varying(240)", maxLength: 240, nullable: true),
+                    resource_kind = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
+                    resource_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    stream_key = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
+                    stream_version = table.Column<long>(type: "bigint", nullable: true),
                     payload_json = table.Column<string>(type: "jsonb", nullable: false),
                     headers_json = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
                     metadata_json = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
-                    resource_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    resource_kind = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
                     status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, defaultValue: "Pending"),
-                    stream_key = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
-                    stream_version = table.Column<long>(type: "bigint", nullable: true),
                     retry_count = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     max_retries = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
                     next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     processing_started_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    lock_id = table.Column<Guid>(type: "uuid", nullable: true),
                     locked_by = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
+                    lock_id = table.Column<Guid>(type: "uuid", nullable: true),
                     locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     processed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -2259,47 +2320,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "mfa_recovery_batches",
-                schema: "identity",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    invalidated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    created_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_mfa_recovery_batches", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "mfa_recovery_codes",
-                schema: "identity",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    batch_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    code_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    consumed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_mfa_recovery_codes", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_mfa_recovery_codes_mfa_recovery_batches_batch_id",
-                        column: x => x.batch_id,
-                        principalSchema: "identity",
-                        principalTable: "mfa_recovery_batches",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "user_security_settings",
                 schema: "identity",
                 columns: table => new
@@ -2636,6 +2656,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_workspace_usage_daily", x => new { x.workspace_id, x.usage_date });
+                });
+
+            migrationBuilder.CreateTable(
+                name: "workspace_work_item_placements",
+                schema: "reporting",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    item_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    board_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    group_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    is_archived = table.Column<bool>(type: "boolean", nullable: false),
+                    source_revision = table.Column<long>(type: "bigint", nullable: false),
+                    last_occurred_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_workspace_work_item_placements", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -3183,6 +3224,28 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         column: x => x.connection_id,
                         principalSchema: "integration",
                         principalTable: "integration_connections",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "mfa_recovery_codes",
+                schema: "identity",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    batch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    code_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    consumed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_mfa_recovery_codes", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_mfa_recovery_codes_mfa_recovery_batches_batch_id",
+                        column: x => x.batch_id,
+                        principalSchema: "identity",
+                        principalTable: "mfa_recovery_batches",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -4006,19 +4069,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 filter: "\"membership_status\" = 'Active' AND \"revoked_at\" IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "ux_access_grants_account_workspace_user",
-                schema: "authz",
-                table: "access_grants",
-                columns: new[] { "account_id", "workspace_id", "user_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ux_access_grants_account_user_account_level",
                 schema: "authz",
                 table: "access_grants",
                 columns: new[] { "account_id", "user_id" },
                 unique: true,
                 filter: "\"workspace_id\" IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_access_grants_account_workspace_user",
+                schema: "authz",
+                table: "access_grants",
+                columns: new[] { "account_id", "workspace_id", "user_id" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "idx_account_domains_domain",
@@ -4110,6 +4173,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 column: "workspace_id");
 
             migrationBuilder.CreateIndex(
+                name: "ux_api_tokens_token_hash",
+                schema: "identity",
+                table: "api_tokens",
+                column: "token_hash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "idx_approval_steps_request_id",
                 schema: "work",
                 table: "approval_steps",
@@ -4176,6 +4246,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "automation",
                 table: "automation_executions",
                 column: "status");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_automation_executions_rule_trigger",
+                schema: "automation",
+                table: "automation_executions",
+                columns: new[] { "rule_id", "trigger_id" },
+                unique: true,
+                filter: "trigger_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "idx_automation_rules_workspace_id",
@@ -4691,6 +4769,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 column: "workspace_id");
 
             migrationBuilder.CreateIndex(
+                name: "ux_feature_usage_ledger_logical_operation",
+                schema: "billing",
+                table: "feature_usage_ledger",
+                column: "logical_operation_id",
+                unique: true,
+                filter: "\"logical_operation_id\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "idx_field_options_field_id",
                 schema: "work",
                 table: "field_options",
@@ -4785,6 +4871,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 column: "workspace_id");
 
             migrationBuilder.CreateIndex(
+                name: "idx_inbound_webhook_receipts_received_at",
+                schema: "integration",
+                table: "inbound_webhook_receipts",
+                column: "received_at");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_inbound_webhook_receipts_connection_provider_external_event_id",
+                schema: "integration",
+                table: "inbound_webhook_receipts",
+                columns: new[] { "connection_id", "provider", "external_event_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "idx_integration_connections_workspace_id",
                 schema: "integration",
                 table: "integration_connections",
@@ -4795,6 +4894,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "integration",
                 table: "integration_scopes",
                 column: "connection_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_integration_secret_blobs_revoked",
+                schema: "integration",
+                table: "integration_secret_blobs",
+                column: "revoked");
 
             migrationBuilder.CreateIndex(
                 name: "idx_integration_secret_versions_connection_id",
@@ -4897,6 +5002,30 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "collab",
                 table: "mentions",
                 columns: new[] { "source_type", "source_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_batches_invalidated_at",
+                schema: "identity",
+                table: "mfa_recovery_batches",
+                column: "invalidated_at");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_batches_user_id",
+                schema: "identity",
+                table: "mfa_recovery_batches",
+                column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_codes_batch_code",
+                schema: "identity",
+                table: "mfa_recovery_codes",
+                columns: new[] { "batch_id", "code_hash" });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_mfa_recovery_codes_consumed_at",
+                schema: "identity",
+                table: "mfa_recovery_codes",
+                column: "consumed_at");
 
             migrationBuilder.CreateIndex(
                 name: "idx_mirror_snapshots_connection_field",
@@ -5333,6 +5462,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 column: "subject_id");
 
             migrationBuilder.CreateIndex(
+                name: "uq_resource_permissions_active_subject",
+                schema: "governance",
+                table: "resource_permissions",
+                columns: new[] { "workspace_id", "resource_type", "resource_id", "subject_type", "subject_id" },
+                unique: true,
+                filter: "deleted_at IS NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_collab_resource_read_states_user",
                 schema: "collab",
                 table: "resource_read_states",
@@ -5574,30 +5711,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "idx_mfa_recovery_batches_user_id",
-                schema: "identity",
-                table: "mfa_recovery_batches",
-                column: "user_id");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_mfa_recovery_batches_invalidated_at",
-                schema: "identity",
-                table: "mfa_recovery_batches",
-                column: "invalidated_at");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_mfa_recovery_codes_batch_code",
-                schema: "identity",
-                table: "mfa_recovery_codes",
-                columns: new[] { "batch_id", "code_hash" });
-
-            migrationBuilder.CreateIndex(
-                name: "idx_mfa_recovery_codes_consumed_at",
-                schema: "identity",
-                table: "mfa_recovery_codes",
-                column: "consumed_at");
-
-            migrationBuilder.CreateIndex(
                 name: "idx_user_profiles_user_id",
                 schema: "identity",
                 table: "user_profiles",
@@ -5736,6 +5849,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 column: "workspace_id");
 
             migrationBuilder.CreateIndex(
+                name: "ux_workspace_feature_usages_scope",
+                schema: "billing",
+                table: "workspace_feature_usages",
+                columns: new[] { "account_id", "workspace_id", "feature_code" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "idx_workspace_invitations_email",
                 schema: "workspace",
                 table: "workspace_invitations",
@@ -5787,6 +5907,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 descending: new bool[0]);
 
             migrationBuilder.CreateIndex(
+                name: "ux_workspace_work_item_placements_workspace_item",
+                schema: "reporting",
+                table: "workspace_work_item_placements",
+                columns: new[] { "workspace_id", "item_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "idx_workspaces_name",
                 schema: "workspace",
                 table: "workspaces",
@@ -5808,237 +5935,22 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 unique: true,
                 filter: "deleted_at IS NULL");
 
-            migrationBuilder.CreateIndex(
-                name: "ux_automation_executions_rule_trigger",
-                schema: "automation",
-                table: "automation_executions",
-                columns: new[] { "rule_id", "trigger_id" },
-                unique: true,
-                filter: "trigger_id IS NOT NULL");
-
-            migrationBuilder.CreateTable(
-                name: "workspace_work_item_placements",
-                schema: "reporting",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    item_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    board_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    group_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    is_archived = table.Column<bool>(type: "boolean", nullable: false),
-                    source_revision = table.Column<long>(type: "bigint", nullable: false),
-                    last_occurred_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_workspace_work_item_placements", x => x.id);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "ux_workspace_work_item_placements_workspace_item",
-                schema: "reporting",
-                table: "workspace_work_item_placements",
-                columns: new[] { "workspace_id", "item_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "uq_resource_permissions_active_subject",
-                schema: "governance",
-                table: "resource_permissions",
-                columns: new[] { "workspace_id", "resource_type", "resource_id", "subject_type", "subject_id" },
-                unique: true,
-                filter: "deleted_at IS NULL");
-
-            // Consolidated from former 20260907112011_M7MentionMentionedByActor.
-            // Mention creation captures the trusted mentioner actor. The column
-            // adds NOT NULL without a persistent default — the Domain aggregate
-            // already guards non-empty actors, and the database never
-            // fabricates a sentinel.
-            migrationBuilder.AddColumn<Guid>(
-                name: "mentioned_by_user_id",
-                schema: "collab",
-                table: "mentions",
-                type: "uuid",
-                nullable: false);
-
-            migrationBuilder.AddCheckConstraint(
-                name: "ck_mentions_mentioned_by_user_id_present",
-                schema: "collab",
-                table: "mentions",
-                sql: "mentioned_by_user_id <> '00000000-0000-0000-0000-000000000000'");
-
-            // Consolidated from former 20260908071133_M8IntegrationsSecretBlobsAndWebhookReceipts.
-            migrationBuilder.CreateTable(
-                name: "inbound_webhook_receipts",
-                schema: "integration",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    external_event_id = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    payload_hash = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    protected_payload = table.Column<string>(type: "text", nullable: true),
-                    received_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    processed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    failure_reason = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_inbound_webhook_receipts", x => x.id);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "idx_inbound_webhook_receipts_received_at",
-                schema: "integration",
-                table: "inbound_webhook_receipts",
-                column: "received_at");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_inbound_webhook_receipts_provider_external_event_id",
-                schema: "integration",
-                table: "inbound_webhook_receipts",
-                columns: new[] { "provider", "external_event_id" },
-                unique: true);
-
-            migrationBuilder.CreateTable(
-                name: "integration_secret_blobs",
-                schema: "integration",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    encrypted_payload = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    revoked = table.Column<bool>(type: "boolean", nullable: false),
-                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_integration_secret_blobs", x => x.id);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "idx_integration_secret_blobs_revoked",
-                schema: "integration",
-                table: "integration_secret_blobs",
-                column: "revoked");
-
-            // Consolidated from former 20260911112111_M9BillingEntitlementsCapacityBackfill.
-            // The placement-projection xmin row-version token (former
-            // 20260914090515_M10PlacementRowVersion) needs no DDL here: xmin
-            // is a PostgreSQL system column present on every table.
-            migrationBuilder.AddColumn<Guid>(
-                name: "logical_operation_id",
-                schema: "billing",
-                table: "feature_usage_ledger",
-                type: "uuid",
-                nullable: true);
-
-            migrationBuilder.AddColumn<bool>(
-                name: "is_unlimited",
-                schema: "billing",
-                table: "entitlements",
-                type: "boolean",
-                nullable: false,
-                defaultValue: false);
-
-            // BILL-LIMIT-001: legacy rows with limit_value = 0 encoded
-            // "unlimited" by convention. Backfill them to the explicit
-            // representation BEFORE the zero-limit semantic flip makes a
-            // numeric 0 mean "zero capacity". A fresh baseline carries no
-            // legacy rows, so this is a no-op there; it is preserved so the
-            // consolidated migration states the durable data semantics.
+            // Dev-stage consolidation of the former Wave B data migration:
+            // legacy receiver-timestamp placement watermarks are invalid for
+            // the producer-revision contract and must start at zero. A fresh
+            // baseline has no rows yet, so this is intentionally a no-op on
+            // clean databases while preserving the approved data semantics
+            // for any pre-seeded development schema.
             migrationBuilder.Sql(
-                "UPDATE billing.entitlements SET is_unlimited = TRUE WHERE limit_value = 0;");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_workspace_feature_usages_scope",
-                schema: "billing",
-                table: "workspace_feature_usages",
-                columns: new[] { "account_id", "workspace_id", "feature_code" },
-                unique: true);
-
-            // Global dedup identity: LogicalOperationId is unique across every
-            // account and workspace, so a replayed capacity operation can be
-            // detected regardless of scope. NULL rows (operations without an
-            // identity) are excluded from the index.
-            migrationBuilder.CreateIndex(
-                name: "ux_feature_usage_ledger_logical_operation",
-                schema: "billing",
-                table: "feature_usage_ledger",
-                column: "logical_operation_id",
-                unique: true,
-                filter: "\"logical_operation_id\" IS NOT NULL");
+                """
+                UPDATE reporting.workspace_work_item_placements
+                SET source_revision = 0;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Reverse of the consolidated former M7/M8/M9 additions.
-            migrationBuilder.DropIndex(
-                name: "ux_workspace_feature_usages_scope",
-                schema: "billing",
-                table: "workspace_feature_usages");
-
-            migrationBuilder.DropIndex(
-                name: "ux_feature_usage_ledger_logical_operation",
-                schema: "billing",
-                table: "feature_usage_ledger");
-
-            migrationBuilder.DropColumn(
-                name: "logical_operation_id",
-                schema: "billing",
-                table: "feature_usage_ledger");
-
-            // BILL-LIMIT-001 rewind: restore legacy convention (0 = unlimited)
-            // before dropping the explicit representation.
-            migrationBuilder.Sql(
-                "UPDATE billing.entitlements SET is_unlimited = FALSE WHERE limit_value = 0;");
-
-            migrationBuilder.DropColumn(
-                name: "is_unlimited",
-                schema: "billing",
-                table: "entitlements");
-
-            migrationBuilder.DropTable(
-                name: "inbound_webhook_receipts",
-                schema: "integration");
-
-            migrationBuilder.DropTable(
-                name: "integration_secret_blobs",
-                schema: "integration");
-
-            migrationBuilder.DropCheckConstraint(
-                name: "ck_mentions_mentioned_by_user_id_present",
-                schema: "collab",
-                table: "mentions");
-
-            migrationBuilder.DropColumn(
-                name: "mentioned_by_user_id",
-                schema: "collab",
-                table: "mentions");
-
-            migrationBuilder.DropIndex(
-                name: "uq_resource_permissions_active_subject",
-                schema: "governance",
-                table: "resource_permissions");
-
-            migrationBuilder.DropIndex(
-                name: "ux_workspace_work_item_placements_workspace_item",
-                schema: "reporting",
-                table: "workspace_work_item_placements");
-
-            migrationBuilder.DropTable(
-                name: "workspace_work_item_placements",
-                schema: "reporting");
-
-            migrationBuilder.DropIndex(
-                name: "ux_automation_executions_rule_trigger",
-                schema: "automation",
-                table: "automation_executions");
-
             migrationBuilder.DropTable(
                 name: "access_grants",
                 schema: "authz");
@@ -6252,7 +6164,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "integration");
 
             migrationBuilder.DropTable(
+                name: "inbound_webhook_receipts",
+                schema: "integration");
+
+            migrationBuilder.DropTable(
                 name: "integration_scopes",
+                schema: "integration");
+
+            migrationBuilder.DropTable(
+                name: "integration_secret_blobs",
                 schema: "integration");
 
             migrationBuilder.DropTable(
@@ -6290,6 +6210,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
             migrationBuilder.DropTable(
                 name: "mentions",
                 schema: "collab");
+
+            migrationBuilder.DropTable(
+                name: "mfa_recovery_codes",
+                schema: "identity");
 
             migrationBuilder.DropTable(
                 name: "mirror_value_snapshots",
@@ -6508,6 +6432,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "analytics");
 
             migrationBuilder.DropTable(
+                name: "workspace_work_item_placements",
+                schema: "reporting");
+
+            migrationBuilder.DropTable(
                 name: "workspaces",
                 schema: "workspace");
 
@@ -6560,6 +6488,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "integration");
 
             migrationBuilder.DropTable(
+                name: "mfa_recovery_batches",
+                schema: "identity");
+
+            migrationBuilder.DropTable(
                 name: "board_item_connections",
                 schema: "work");
 
@@ -6610,6 +6542,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
             migrationBuilder.DropTable(
                 name: "boards",
                 schema: "work");
+
+            migrationBuilder.AlterDatabase()
+                .OldAnnotation("Npgsql:PostgresExtension:citext", ",,")
+                .OldAnnotation("Npgsql:PostgresExtension:pg_trgm", ",,")
+                .OldAnnotation("Npgsql:PostgresExtension:pgcrypto", ",,");
         }
     }
 }
