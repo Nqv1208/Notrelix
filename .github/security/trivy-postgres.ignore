@@ -4,7 +4,7 @@
 #   - bound to the exact digest below (a re-pinned digest invalidates this file and CI fails)
 # Renewal requires an explicit security decision; this file must never be renewed silently.
 #
-# applies-to-image-ref: postgres@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825
+# applies-to-image-ref: postgres@sha256:efedf3595f1d6f415c08568ba171029bf54052e754cc9f030e3f2412b21f3d67
 # expires: 2026-09-26
 # reassessment: if upstream has not shipped a gosu rebuild (Go >= 1.24.13/1.25.7) by expiry,
 #   reassess building a security-patched postgres runtime image instead of renewing.
