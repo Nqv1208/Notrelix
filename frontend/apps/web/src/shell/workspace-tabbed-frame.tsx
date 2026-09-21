@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { useLocation } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { AlertCircle } from "lucide-react";
 import { Skeleton } from "@notrelix/ui-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
@@ -10,6 +10,10 @@ import {
   createUseReorderWorkspaceViews,
 } from "@notrelix/features-workspace/web";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
+import { createUsePageList } from "@notrelix/docs-state";
+import { useWorkspaceBoards } from "@notrelix/work-management-state";
+import { resolveActiveWorkspaceView } from "./workspace-view-routing";
 
 type WorkspaceTabbedRouteContextValue = {
   workspaceId: string;
@@ -33,33 +37,60 @@ export function useWorkspaceTabbedRouteContext(): WorkspaceTabbedRouteContextVal
 
 export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { api: runtimeClient } = useAppRuntime();
+  const { api, endpoints } = useFeatureRuntimeDependencies();
   const { workspaceId, workspace, views, members, isLoading, isError } =
     useWorkspaceContext();
+
+  const usePageList = useMemo(
+    () => createUsePageList(api, endpoints),
+    [api, endpoints],
+  );
+  const { data: boards = [] } = useWorkspaceBoards(workspaceId);
+  const { data: pages = [] } = usePageList(workspaceId);
 
   const useReorderWorkspaceViews = useMemo(
     () => createUseReorderWorkspaceViews({ api: runtimeClient.api }),
     [runtimeClient],
   );
 
-  const activeView = useMemo(() => {
-    if (!views || views.length === 0) return null;
-    const pathParts = location.pathname.split("/").filter(Boolean);
+  const activeView = useMemo(
+    () => resolveActiveWorkspaceView(views, location.pathname),
+    [views, location.pathname],
+  );
 
-    if (pathParts.includes("boards")) {
-      const boardId = pathParts[pathParts.indexOf("boards") + 1];
-      const found = views.find((v) => v.target.boardId === boardId);
-      if (found) return found;
+  const navigateToView = (view: WorkspaceView) => {
+    switch (view.type) {
+      case "kanban":
+      case "table":
+      case "calendar":
+      case "timeline": {
+        const boardId = view.target.boardId;
+        if (!boardId) return;
+        void navigate({
+          to: "/workspaces/$workspaceId/boards/$boardId",
+          params: { workspaceId, boardId },
+        });
+        return;
+      }
+      case "doc": {
+        const docId = view.target.pageId;
+        if (!docId) return;
+        void navigate({
+          to: "/workspaces/$workspaceId/docs/$docId",
+          params: { workspaceId, docId },
+        });
+        return;
+      }
+      case "dashboard":
+      default:
+        void navigate({
+          to: "/workspaces/$workspaceId/dashboard",
+          params: { workspaceId },
+        });
     }
-
-    if (pathParts.includes("docs")) {
-      const docId = pathParts[pathParts.indexOf("docs") + 1];
-      const found = views.find((v) => v.target.pageId === docId);
-      if (found) return found;
-    }
-
-    return views[0] ?? null;
-  }, [views, location.pathname]);
+  };
 
   const contextValue = useMemo(() => {
     if (!activeView) return null;
@@ -110,6 +141,10 @@ export function WorkspaceTabbedFrame({ children }: { children: ReactNode }) {
         workspaceId={workspaceId}
         views={views}
         activeViewId={activeView?.id}
+        boards={boards.map((board) => ({ id: board.id, title: board.title }))}
+        pages={pages.map((page) => ({ id: page.id, title: page.title }))}
+        onSelectView={navigateToView}
+        onViewCreated={navigateToView}
         reorderHook={useReorderWorkspaceViews}
         api={runtimeClient.api}
       />

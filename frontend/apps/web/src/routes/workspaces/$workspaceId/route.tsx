@@ -47,8 +47,8 @@ export function WorkspaceLayout() {
 
   return (
     <AuthGuard>
-      <WorkspaceProvider workspaceId={workspaceId}>
-        <WorkspaceGuard workspaceId={workspaceId}>
+      <WorkspaceGuard workspaceId={workspaceId}>
+        <WorkspaceProvider workspaceId={workspaceId}>
           <>
             <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
               <AppHeader
@@ -110,8 +110,8 @@ export function WorkspaceLayout() {
               onClose={() => setSearchOpen(false)}
             />
           </>
-        </WorkspaceGuard>
-      </WorkspaceProvider>
+        </WorkspaceProvider>
+      </WorkspaceGuard>
     </AuthGuard>
   );
 }

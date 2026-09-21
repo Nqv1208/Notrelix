@@ -16,7 +16,7 @@ import {
 import { Button, Skeleton } from "@notrelix/ui-web";
 import { useWorkspaceBoards } from "@notrelix/work-management-state";
 import { HomeSurface } from "@/home/home-surface";
-import type { HomeResourceItem, HomeScenario } from "@/home/home-model";
+import type { HomeResourceItem, HomeViewModel } from "@/home/home-model";
 import { AuthGuard } from "@/shell/guards/auth-guard";
 import { HomeShell } from "@/shell/home-shell";
 
@@ -75,7 +75,7 @@ export function HomePage() {
   const { data: boards = [] } = useWorkspaceBoards(primaryWorkspaceId);
   const createWorkspaceMutation = useCreateWorkspace();
 
-  const scenario = useMemo<HomeScenario>(() => {
+  const viewModel = useMemo<HomeViewModel>(() => {
     const pageItems: HomeResourceItem[] = pages.map((page) => ({
       id: page.id,
       kind: "doc",
@@ -108,8 +108,16 @@ export function HomePage() {
         updatedLabel: "Recently updated",
       })),
       continueItems: [...pageItems, ...boardItems],
-      tasks: [],
-      activity: [],
+      tasks: {
+        status: "unavailable",
+        message:
+          "Tasks will appear here when the workspace task feed is available.",
+      },
+      activity: {
+        status: "unavailable",
+        message:
+          "Activity will appear here when the workspace activity feed is available.",
+      },
     };
   }, [
     boards,
@@ -123,20 +131,20 @@ export function HomePage() {
 
   const shellData = useMemo(
     () => ({
-      workspaces: scenario.workspaces,
-      favoriteDocs: scenario.favoriteDocs.map((item) => ({
+      workspaces: viewModel.workspaces,
+      favoriteDocs: viewModel.favoriteDocs.map((item) => ({
         id: item.id,
         title: item.title,
         workspaceId: item.workspaceId,
       })),
-      recentDocs: scenario.continueItems
+      recentDocs: viewModel.continueItems
         .filter((item) => item.kind === "doc")
         .map((item) => ({
           id: item.id,
           title: item.title,
           workspaceId: item.workspaceId,
         })),
-      recentBoards: scenario.continueItems
+      recentBoards: viewModel.continueItems
         .filter((item) => item.kind === "board")
         .map((item) => ({
           id: item.id,
@@ -144,7 +152,7 @@ export function HomePage() {
           workspaceId: item.workspaceId,
         })),
     }),
-    [scenario],
+    [viewModel],
   );
 
   const openResource = (resource: HomeResourceItem) => {
@@ -208,7 +216,7 @@ export function HomePage() {
           </div>
         ) : (
           <HomeSurface
-            data={scenario}
+            data={viewModel}
             onOpenResource={openResource}
             onOpenWorkspace={openWorkspace}
           />

@@ -13,12 +13,12 @@ import { Badge, Input, Kbd, cn } from "@notrelix/ui-web";
 import type {
   HomeActivityItem,
   HomeResourceItem,
-  HomeScenario,
+  HomeViewModel,
   HomeTaskItem,
 } from "./home-model";
 
 export interface HomeSurfaceProps {
-  data: HomeScenario;
+  data: HomeViewModel;
   onOpenResource?: (resource: HomeResourceItem) => void;
   onOpenWorkspace?: (workspaceId: string) => void;
   onToggleTask?: (taskId: string) => void;
@@ -92,7 +92,7 @@ function TaskRow({
 }) {
   const priorityVariant =
     task.priority === "high"
-      ? "destructive"
+      ? "outline"
       : task.priority === "medium"
         ? "secondary"
         : "outline";
@@ -126,7 +126,13 @@ function TaskRow({
           {task.workspaceName} · {task.dueLabel}
         </p>
       </div>
-      <Badge variant={priorityVariant} className="capitalize">
+      <Badge
+        variant={priorityVariant}
+        className={cn(
+          "capitalize",
+          task.priority === "high" && "border-destructive/60",
+        )}
+      >
         {task.priority}
       </Badge>
     </div>
@@ -185,8 +191,9 @@ export function HomeSurface({
   }, [data.continueItems, normalizedQuery]);
 
   const visibleTasks = useMemo(() => {
-    if (!normalizedQuery) return data.tasks;
-    return data.tasks.filter((task) =>
+    if (data.tasks.status !== "ready") return [];
+    if (!normalizedQuery) return data.tasks.items;
+    return data.tasks.items.filter((task) =>
       `${task.title} ${task.workspaceName} ${task.dueLabel}`
         .toLowerCase()
         .includes(normalizedQuery),
@@ -203,7 +210,7 @@ export function HomeSurface({
   }, [data.workspaces, normalizedQuery]);
 
   return (
-    <div className="mx-auto max-w-[1240px] space-y-8">
+    <div className="home-surface-container mx-auto max-w-[1240px] space-y-8">
       <section className="flex flex-col gap-5 border-b border-border pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Welcome back</p>
@@ -236,7 +243,11 @@ export function HomeSurface({
           <SectionHeading
             id="continue-working-title"
             title="Continue working"
-            description="Recent work across your workspaces, not just one workspace."
+            description={
+              data.continueItems[0]?.workspaceName
+                ? `Recent work in ${data.continueItems[0].workspaceName}.`
+                : "Recent work from your selected workspace."
+            }
           />
         </div>
         {visibleContinueItems.length === 0 ? (
@@ -252,7 +263,7 @@ export function HomeSurface({
         )}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="home-work-layout">
         <section
           id="my-work"
           aria-labelledby="my-work-title"
@@ -265,13 +276,21 @@ export function HomeSurface({
               description="Tasks that need your attention next."
             />
             <span className="text-xs text-muted-foreground">
-              {visibleTasks.filter((task) => !task.completed).length} open
+              {data.tasks.status === "ready"
+                ? `${visibleTasks.filter((task) => !task.completed).length} open`
+                : "Unavailable"}
             </span>
           </div>
           <div>
-            {visibleTasks.length === 0 ? (
+            {data.tasks.status === "unavailable" ? (
               <p className="p-5 text-sm text-muted-foreground">
-                No tasks match “{searchQuery}”.
+                {data.tasks.message}
+              </p>
+            ) : visibleTasks.length === 0 ? (
+              <p className="p-5 text-sm text-muted-foreground">
+                {normalizedQuery
+                  ? `No tasks match “${searchQuery}”.`
+                  : "No tasks are available yet."}
               </p>
             ) : (
               visibleTasks.map((task) => (
@@ -293,9 +312,19 @@ export function HomeSurface({
             />
           </div>
           <div>
-            {data.activity.map((item) => (
-              <ActivityRow key={item.id} item={item} />
-            ))}
+            {data.activity.status === "unavailable" ? (
+              <p className="text-sm text-muted-foreground">
+                {data.activity.message}
+              </p>
+            ) : data.activity.items.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No recent activity yet.
+              </p>
+            ) : (
+              data.activity.items.map((item) => (
+                <ActivityRow key={item.id} item={item} />
+              ))
+            )}
           </div>
         </section>
       </div>

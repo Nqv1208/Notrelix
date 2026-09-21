@@ -24,7 +24,6 @@ import {
   SUPPORT_NAV_CONTRIBUTIONS,
   WORKSPACE_NAV_CONTRIBUTIONS,
   isWorkspaceNavigationItemActive,
-  resolveWorkspaceNavigationPath,
   type NavigationContribution,
 } from "../navigation-contributions";
 
@@ -87,27 +86,80 @@ function NavigationLink({
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
-  const target = resolveWorkspaceNavigationPath(item, workspaceId);
   const isActive = isWorkspaceNavigationItemActive(item, pathname, workspaceId);
-
-  return (
-    <Link
-      to={target as "/workspaces/$workspaceId"}
-      onClick={onNavigate}
-      aria-current={isActive ? "page" : undefined}
-      title={collapsed ? item.label : undefined}
-      className={cn(
-        "flex h-9 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        collapsed && "justify-center px-0",
-        isActive && "bg-accent text-accent-foreground",
-      )}
-    >
+  const className = cn(
+    "flex h-9 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    collapsed && "justify-center px-0",
+    isActive && "bg-accent text-accent-foreground",
+  );
+  const content = (
+    <>
       <item.icon className="size-4 shrink-0" />
       <span className={cn("min-w-0 flex-1 truncate", collapsed && "sr-only")}>
         {item.label}
       </span>
-    </Link>
+    </>
   );
+
+  const commonProps = {
+    onClick: onNavigate,
+    "aria-current": isActive ? ("page" as const) : undefined,
+    title: collapsed ? item.label : undefined,
+    className,
+  };
+
+  switch (item.to) {
+    case "/workspaces/$workspaceId/dashboard":
+      return (
+        <Link
+          to="/workspaces/$workspaceId/dashboard"
+          params={{ workspaceId }}
+          {...commonProps}
+        >
+          {content}
+        </Link>
+      );
+    case "/workspaces/$workspaceId/chat":
+      return (
+        <Link
+          to="/workspaces/$workspaceId/chat"
+          params={{ workspaceId }}
+          {...commonProps}
+        >
+          {content}
+        </Link>
+      );
+    case "/workspaces/$workspaceId/members":
+      return (
+        <Link
+          to="/workspaces/$workspaceId/members"
+          params={{ workspaceId }}
+          {...commonProps}
+        >
+          {content}
+        </Link>
+      );
+    case "/workspaces/$workspaceId/billing":
+      return (
+        <Link
+          to="/workspaces/$workspaceId/billing"
+          params={{ workspaceId }}
+          {...commonProps}
+        >
+          {content}
+        </Link>
+      );
+    case "/workspaces/$workspaceId/settings":
+      return (
+        <Link
+          to="/workspaces/$workspaceId/settings"
+          params={{ workspaceId }}
+          {...commonProps}
+        >
+          {content}
+        </Link>
+      );
+  }
 }
 
 export function WorkspaceSidebar({

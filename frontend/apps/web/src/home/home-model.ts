@@ -32,11 +32,21 @@ export interface HomeActivityItem {
   readonly timeLabel: string;
 }
 
-export interface HomeScenario {
+export type HomePanel<T> =
+  | {
+      readonly status: "ready";
+      readonly items: readonly T[];
+    }
+  | {
+      readonly status: "unavailable";
+      readonly message: string;
+    };
+
+export interface HomeViewModel {
   readonly userName: string;
   readonly workspaces: readonly WorkspaceSummary[];
   readonly favoriteDocs: readonly HomeResourceItem[];
   readonly continueItems: readonly HomeResourceItem[];
-  readonly tasks: readonly HomeTaskItem[];
-  readonly activity: readonly HomeActivityItem[];
+  readonly tasks: HomePanel<HomeTaskItem>;
+  readonly activity: HomePanel<HomeActivityItem>;
 }

@@ -70,22 +70,20 @@ describe("workspace web pure surfaces", () => {
           tab.querySelector("button, a, input, select, textarea") === null,
       ),
     ).toBe(true);
-    expect(screen.getByRole("tab", { name: "Board" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(screen.getByRole("tab", { name: "Board" })).toHaveAttribute(
-      "tabindex",
-      "0",
-    );
-    expect(screen.getByRole("tab", { name: "Calendar" })).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
-    expect(screen.getByRole("tab", { name: "Calendar" })).toHaveAttribute(
-      "tabindex",
-      "-1",
-    );
+    expect(
+      screen.getByRole("tab", { name: "Board" }).getAttribute("aria-selected"),
+    ).toBe("true");
+    expect(
+      screen.getByRole("tab", { name: "Board" }).getAttribute("tabindex"),
+    ).toBe("0");
+    expect(
+      screen
+        .getByRole("tab", { name: "Calendar" })
+        .getAttribute("aria-selected"),
+    ).toBe("false");
+    expect(
+      screen.getByRole("tab", { name: "Calendar" }).getAttribute("tabindex"),
+    ).toBe("-1");
   });
 
   it("FUI[workspace.view-tabs:select] preserves focus and keyboard activation semantics", () => {

@@ -28,8 +28,15 @@ export interface NavigationContribution {
    * TanStack Router route path (template, not resolved).
    * WorkspaceSidebar resolves `$workspaceId` from context.
    */
-  readonly to: string;
+  readonly to: WorkspaceNavigationPath;
 }
+
+export type WorkspaceNavigationPath =
+  | "/workspaces/$workspaceId/dashboard"
+  | "/workspaces/$workspaceId/chat"
+  | "/workspaces/$workspaceId/members"
+  | "/workspaces/$workspaceId/billing"
+  | "/workspaces/$workspaceId/settings";
 
 export function resolveWorkspaceNavigationPath(
   item: NavigationContribution,

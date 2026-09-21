@@ -52,7 +52,7 @@ export function HomeShell({
         <div className="hidden h-full md:block">
           <AppSidebar data={data} onCreateWorkspace={onCreateWorkspace} />
         </div>
-        <main className="min-w-0 flex-1 overflow-y-auto rounded-xl bg-card p-4 shadow-sm sm:p-6 md:rounded-l-none lg:p-8">
+        <main className="min-w-0 flex-1 overflow-y-auto rounded-xl bg-background p-4 sm:p-6 md:rounded-l-none lg:p-8">
           {children}
         </main>
       </div>

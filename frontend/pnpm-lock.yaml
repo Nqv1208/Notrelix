@@ -387,6 +387,12 @@ importers:
       '@notrelix/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint-config
+      '@notrelix/testing':
+        specifier: workspace:*
+        version: link:../../tooling/testing
+      '@storybook/react':
+        specifier: 8.6.17
+        version: 8.6.17(@storybook/test@8.6.17(storybook@8.6.17(prettier@3.9.5)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(storybook@8.6.17(prettier@3.9.5))(typescript@5.9.3)
       '@tanstack/react-router-devtools':
         specifier: 'catalog:'
         version: 1.167.0(@tanstack/react-router@1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@tanstack/router-core@1.171.15)(csstype@3.2.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

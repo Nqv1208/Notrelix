@@ -50,6 +50,7 @@ function manifestPaths(): string[] {
     join(FRONTEND_ROOT, "packages/ui/web"),
     join(FRONTEND_ROOT, "packages/product"),
     join(FRONTEND_ROOT, "packages/features"),
+    join(FRONTEND_ROOT, "apps/web"),
   ].flatMap((root) =>
     walkDirectories(root)
       .map((directory) => join(directory, "verification", MANIFEST_FILE_NAME))
