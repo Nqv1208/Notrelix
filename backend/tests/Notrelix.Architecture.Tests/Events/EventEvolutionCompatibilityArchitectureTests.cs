@@ -1,7 +1,4 @@
-using Notrelix.Application.Common.Events;
 using Notrelix.Infrastructure.Messaging;
-using FluentAssertions;
-using Xunit;
 
 namespace Notrelix.Architecture.Tests.Events;
 
@@ -16,5 +13,18 @@ public sealed class EventEvolutionCompatibilityArchitectureTests
 
         definitions.Should().HaveCount(6);
         definitions.Should().OnlyContain(d => d.Compatibility == SchemaCompatibility.None);
+    }
+
+    [Fact]
+    public void ContractRegistry_UsesTheCanonicalEvolutionPolicy()
+    {
+        EventEvolutionPolicyRegistry.GetAll()
+            .Select(policy => policy.EventName)
+            .Should()
+            .BeEquivalentTo("board.item.created", "board_item.moved", "board_item.archived");
+
+        EventEvolutionPolicyRegistry.GetCompatibility("unclassified.event", 1)
+            .Should()
+            .Be(SchemaCompatibility.Backward);
     }
 }

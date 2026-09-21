@@ -1,4 +1,4 @@
-namespace Notrelix.Platform.Messaging.Contracts.Evolution;
+namespace Notrelix.Application.Common.Events;
 
 public enum EventEvolutionDisposition
 {
@@ -19,10 +19,9 @@ public sealed record EventEvolutionPolicy(
     bool SyntheticUpcastAllowed);
 
 /// <summary>
-/// Explicit policy for event transitions whose new schema carries a producer
-/// revision that cannot be reconstructed from a v1 payload. This registry is
-/// intentionally separate from the generic compatibility evaluator: transport
-/// compatibility must not imply replay compatibility.
+/// Single authority for declared event evolution and recovery policy.
+/// Contract registration consumes this policy; it must not maintain a second
+/// event-name compatibility list.
 /// </summary>
 public static class EventEvolutionPolicyRegistry
 {
@@ -36,10 +35,21 @@ public static class EventEvolutionPolicyRegistry
     public static IReadOnlyList<EventEvolutionPolicy> GetAll() => Policies;
 
     public static EventEvolutionPolicy Get(string eventName, int fromVersion, int toVersion) =>
-        Policies.Single(p =>
-            string.Equals(p.EventName, eventName, StringComparison.Ordinal)
-            && p.FromVersion == fromVersion
-            && p.ToVersion == toVersion);
+        Policies.Single(policy =>
+            string.Equals(policy.EventName, eventName, StringComparison.Ordinal)
+            && policy.FromVersion == fromVersion
+            && policy.ToVersion == toVersion);
+
+    public static SchemaCompatibility GetCompatibility(string eventName, int version)
+    {
+        var hasDeclaredEvolution = Policies.Any(policy =>
+            string.Equals(policy.EventName, eventName, StringComparison.Ordinal)
+            && (policy.FromVersion == version || policy.ToVersion == version));
+
+        return hasDeclaredEvolution
+            ? SchemaCompatibility.None
+            : SchemaCompatibility.Backward;
+    }
 
     private static EventEvolutionPolicy Create(string eventName) =>
         new(

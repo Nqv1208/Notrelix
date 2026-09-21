@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Notrelix.Platform.Messaging.Contracts.Evolution;
+using Notrelix.Application.Common.Events;
 using Xunit;
 
 namespace Notrelix.Platform.Tests.Messaging;
