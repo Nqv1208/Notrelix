@@ -58,6 +58,13 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         return (body, signature, timestamp);
     }
 
+    private static DateTimeOffset CanonicalizePersistedTimestamp(DateTimeOffset value)
+    {
+        var utcTicks = value.UtcTicks;
+        var canonicalTicks = utcTicks - utcTicks % TimeSpan.TicksPerMicrosecond;
+        return new DateTimeOffset(canonicalTicks, TimeSpan.Zero);
+    }
+
     private async Task<(Guid ConnectionId, Guid AccountId, Guid WorkspaceId)> SeedBindingAsync(
         string webhookPath,
         CalendarProvider provider = CalendarProvider.Google,
@@ -180,7 +187,7 @@ public sealed class CalendarWebhookIntakeIntegrationTests : IAsyncLifetime
         message.Provider.Should().Be(Provider);
         message.ExternalEventId.Should().Be(externalEventId);
         message.PayloadHash.Should().Be(receipt.PayloadHash);
-        message.ReceivedAt.Should().Be(Now);
+        message.ReceivedAt.Should().Be(CanonicalizePersistedTimestamp(Now));
         message.AccountIdValue.Should().Be(accountId, "the envelope carries the derived tenant, never a payload value");
         message.WorkspaceIdValue.Should().Be(workspaceId);
         message.WorkspaceId.Should().Be(workspaceId);

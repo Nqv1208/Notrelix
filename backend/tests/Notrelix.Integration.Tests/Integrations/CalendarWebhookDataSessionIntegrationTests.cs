@@ -131,7 +131,7 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
         enqueued.Provider.Should().Be(Provider);
         enqueued.ExternalEventId.Should().Be(externalEventId);
         enqueued.PayloadHash.Should().Be(receipt.PayloadHash);
-        enqueued.ReceivedAt.Should().Be(Now);
+        enqueued.ReceivedAt.Should().Be(CanonicalizePersistedTimestamp(Now));
         enqueued.AccountIdValue.Should().Be(accountId);
         enqueued.WorkspaceIdValue.Should().Be(workspaceId);
     }
@@ -176,6 +176,13 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
         var signature = Convert.ToHexString(new HMACSHA256(Encoding.UTF8.GetBytes(ProviderSecret))
             .ComputeHash(Encoding.UTF8.GetBytes($"{timestamp}.{body}")));
         return (body, signature, timestamp);
+    }
+
+    private static DateTimeOffset CanonicalizePersistedTimestamp(DateTimeOffset value)
+    {
+        var utcTicks = value.UtcTicks;
+        var canonicalTicks = utcTicks - utcTicks % TimeSpan.TicksPerMicrosecond;
+        return new DateTimeOffset(canonicalTicks, TimeSpan.Zero);
     }
 
     /// <summary>
