@@ -20,6 +20,7 @@ using Notrelix.Application.Features.Integrations.Public.Webhooks;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
+using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Identity.Services;
@@ -37,9 +38,9 @@ namespace Notrelix.Integration.Tests.Messaging;
 /// transaction, and the real delivery chain (outbox dispatcher → MassTransit
 /// InMemory receive pipeline → TenantContextConsumeFilter → real
 /// <see cref="CalendarWebhookProcessingRequestedConsumer"/>) restores the
-/// workspace tenant before running the consumer, then durably records
-/// "Blocked" (the explicit SemanticTargetUndefined terminal) — never a false
-/// "Processed" and never a poison retry. A duplicate delivery converges to the
+/// workspace tenant before running the consumer, then reconciles the
+/// Integrations CalendarEvent target and durably records "Processed" only
+/// after that target mutation commits. A duplicate delivery converges to the
 /// same single receipt and single enrollment.
 /// </summary>
 [Collection("Database")]
@@ -67,11 +68,12 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task VerifiedCallback_EnrollsExactlyOneOutboxRow_AndConsumerBlocksUnderDerivedTenant()
+    public async Task VerifiedCallback_EnrollsExactlyOneOutboxRow_AndConsumerReconcilesUnderDerivedTenant()
     {
         var (connectionId, accountId, workspaceId) = await SeedBindingAsync(WebhookPath);
         var externalEventId = Guid.NewGuid().ToString();
-        var (body, signature, timestamp) = SignedCallback(externalEventId);
+        var targetId = Guid.NewGuid();
+        var (body, signature, timestamp) = SignedCallback(externalEventId, targetId);
 
         var recorder = new TenantObservationRecorder();
         var transport = new RuntimeTransportObservation();
@@ -135,10 +137,10 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
             var dispatched = await WaitForOutboxProcessedAsync(outboxId);
             dispatched.Should().BeTrue("the dispatcher must deliver the committed processing intent");
 
-            var blocked = await WaitForReceiptStatusAsync(receiptId, outboxId, "Blocked", transport, recorder);
-            blocked.Reached.Should().BeTrue(
-                "the real consumer must record the durable BLOCKED-DECISION terminal state. Snapshot: {0}",
-                blocked.Snapshot);
+            var processed = await WaitForReceiptStatusAsync(receiptId, outboxId, "Processed", transport, recorder);
+            processed.Reached.Should().BeTrue(
+                "the real consumer must commit the CalendarEvent target. Snapshot: {0}",
+                processed.Snapshot);
 
             (await OutboxRowCountAsync(accountId, workspaceId)).Should().Be(1,
                 "exactly one processing enrollment per callback");
@@ -146,10 +148,13 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
             await using var final = _db.CreateContext(SystemTenant());
             var terminal = await final.InboundWebhookReceipts.IgnoreQueryFilters()
                 .SingleAsync(r => r.Id == receiptId);
-            terminal.Status.Should().Be("Blocked",
-                "Wave E: SemanticTargetUndefined is a durable explicit non-success terminal, never a false Processed");
-            terminal.ProcessedAt.Should().BeNull("a Blocked receipt is not a success");
-            terminal.FailureReason.Should().Contain("semantic target undefined");
+            terminal.Status.Should().Be("Processed");
+            terminal.ProcessedAt.Should().NotBeNull();
+
+            var calendarEvent = await final.CalendarEvents.IgnoreQueryFilters()
+                .SingleAsync(e => e.ExternalEventId == externalEventId);
+            calendarEvent.Target.ResourceId.Should().Be(targetId);
+            calendarEvent.Target.WorkspaceId.Should().Be(workspaceId);
         }
         finally
         {
@@ -174,7 +179,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
     {
         var (_, accountId, workspaceId) = await SeedBindingAsync(WebhookPath);
         var externalEventId = Guid.NewGuid().ToString();
-        var (body, signature, timestamp) = SignedCallback(externalEventId);
+        var (body, signature, timestamp) = SignedCallback(externalEventId, Guid.NewGuid());
 
         var recorder = new TenantObservationRecorder();
         var transport = new RuntimeTransportObservation();
@@ -230,10 +235,10 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
 
         try
         {
-            var blocked = await WaitForReceiptStatusAsync(receiptId, outboxId, "Blocked", transport, recorder);
-            blocked.Reached.Should().BeTrue(
-                "the consumer must reach the single durable terminal decision. Snapshot: {0}",
-                blocked.Snapshot);
+            var processed = await WaitForReceiptStatusAsync(receiptId, outboxId, "Processed", transport, recorder);
+            processed.Reached.Should().BeTrue(
+                "the consumer must reach the single durable target reconciliation. Snapshot: {0}",
+                processed.Snapshot);
 
             await using var final = _db.CreateContext(SystemTenant());
             (await final.InboundWebhookReceipts.IgnoreQueryFilters()
@@ -256,6 +261,101 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
             "the single consumer run must still execute under the restored workspace tenant");
         recorder.LastWorkspaceAccountId.Should().Be(accountId);
         recorder.LastWorkspaceId.Should().Be(workspaceId);
+    }
+
+    [Fact]
+    public async Task ProcessingUseCase_RejectsMalformedPayload_AsTerminalFailure()
+    {
+        var (connectionId, _, workspaceId) = await SeedBindingAsync(WebhookPath);
+        await using var db = _db.CreateContext(SystemTenant());
+        var useCase = new CalendarWebhookProcessingUseCase(db);
+
+        var outcome = await useCase.ProcessAsync(
+            new CalendarWebhookProcessingInput(
+                Guid.NewGuid(),
+                connectionId,
+                workspaceId,
+                Provider,
+                "external-event",
+                "payload-hash",
+                DateTimeOffset.UtcNow,
+                "{\"eventId\":\"external-event\",\"resourceKind\":\"work-management.board-item\"}"),
+            CancellationToken.None);
+
+        outcome.Should().Be(CalendarWebhookProcessingOutcome.TerminalFailure);
+    }
+
+    [Fact]
+    public async Task ProcessingUseCase_AcceptsValidMapping_AsCompleted()
+    {
+        var (connectionId, accountId, workspaceId) = await SeedBindingAsync(WebhookPath);
+        var externalEventId = Guid.NewGuid().ToString();
+        var targetId = Guid.NewGuid();
+        var (body, _, _) = SignedCallback(externalEventId, targetId);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(accountId, workspaceId, Guid.NewGuid());
+
+        await using var db = _db.CreateContext(tenant);
+        var outcome = await new CalendarWebhookProcessingUseCase(db).ProcessAsync(
+            new CalendarWebhookProcessingInput(
+                Guid.NewGuid(),
+                connectionId,
+                workspaceId,
+                Provider,
+                externalEventId,
+                "payload-hash",
+                DateTimeOffset.UtcNow,
+                body),
+            CancellationToken.None);
+
+        outcome.Should().Be(CalendarWebhookProcessingOutcome.Completed);
+    }
+
+    [Fact]
+    public async Task ProcessingUseCase_RejectsConflictingMapping_AsTerminalFailure()
+    {
+        var (connectionId, _, workspaceId) = await SeedBindingAsync(WebhookPath);
+        var externalEventId = "external-event";
+        var originalTargetId = Guid.NewGuid();
+        var conflictingTargetId = Guid.NewGuid();
+        var resourceKind = ResourceKind.Create("work-management.board-item");
+
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            var integration = await seed.CalendarIntegrations
+                .IgnoreQueryFilters()
+                .Include(x => x.EventLinks)
+                .SingleAsync(x => x.ConnectionId == connectionId);
+            integration.LinkEvent(originalTargetId, externalEventId, "etag-1");
+            seed.CalendarEvents.Add(CalendarEvent.Create(
+                integration.Id,
+                externalEventId,
+                ResourceRef.Create(resourceKind, originalTargetId, workspaceId),
+                CalendarSyncFingerprint.Create("original", null)));
+            await seed.SaveChangesAsync();
+        }
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            eventId = externalEventId,
+            resourceKind = resourceKind.Value,
+            resourceId = conflictingTargetId,
+        });
+
+        await using var db = _db.CreateContext(SystemTenant());
+        var outcome = await new CalendarWebhookProcessingUseCase(db).ProcessAsync(
+            new CalendarWebhookProcessingInput(
+                Guid.NewGuid(),
+                connectionId,
+                workspaceId,
+                Provider,
+                externalEventId,
+                "payload-hash",
+                DateTimeOffset.UtcNow,
+                payload),
+            CancellationToken.None);
+
+        outcome.Should().Be(CalendarWebhookProcessingOutcome.TerminalFailure);
     }
 
     // ── composition -----------------------------------------------------------
@@ -284,7 +384,7 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         encryptor.Setup(e => e.Protect(Moq.It.IsAny<string>(), Moq.It.IsAny<string>()))
             .Returns<string, string>((plain, purpose) => $"protected:{purpose}:{plain}");
         encryptor.Setup(e => e.Unprotect(Moq.It.IsAny<string>(), Moq.It.IsAny<string>()))
-            .Returns<string, string>((cipher, _) => cipher[(cipher.IndexOf(':') + 1)..][(cipher.IndexOf(':') + 1)..]);
+            .Returns<string, string>((cipher, _) => cipher.Split(':', 3)[2]);
 
         var webhookOptions = Options.Create(new CalendarWebhookOptions
         {
@@ -392,9 +492,18 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         return (connection.Id, accountId, workspaceId);
     }
 
-    private static (string Body, string Signature, string Timestamp) SignedCallback(string externalEventId)
+    private static (string Body, string Signature, string Timestamp) SignedCallback(string externalEventId, Guid targetId)
     {
-        var body = JsonSerializer.Serialize(new { eventId = externalEventId, kind = "calendar#event" });
+        var body = JsonSerializer.Serialize(new
+        {
+            eventId = externalEventId,
+            kind = "calendar#event",
+            resourceKind = "work-management.board-item",
+            resourceId = targetId,
+            title = "Calendar webhook target",
+            dueDate = "2026-09-22T00:00:00Z",
+            etag = "etag-1",
+        });
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         var signature = Convert.ToHexString(new HMACSHA256(Encoding.UTF8.GetBytes(ProviderSecret))
             .ComputeHash(Encoding.UTF8.GetBytes($"{timestamp}.{body}")));

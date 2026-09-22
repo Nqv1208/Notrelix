@@ -7023,12 +7023,13 @@ Pinned entry:
 ConnectCalendarCommand
 ```
 
-Current handler is `NotImplementedException`.
+The current candidate implements Integrations-owned reconciliation of a
+provider-neutral callback into `CalendarEvent` and `CalendarEventLink`.
 
 Disposition:
 
 ```text
-IMPLEMENT-MISSING
+IMPLEMENT + HARDEN
 ```
 
 ### Distinct semantic authorities
@@ -7266,8 +7267,11 @@ payload hash/reference as technically needed
 ```
 
 The exact target context, action/event contract, authorization, idempotency,
-and success condition are a required Product/Integrations decision. Provider-
-neutral processing alone cannot mark the receipt `Processed`.
+and success condition are now fixed for this candidate as the Integrations
+calendar reconciliation above. A verified callback must carry its external
+event identity and an explicit mapped Notrelix resource. The consumer may mark
+the receipt `Processed` only after the tenant-scoped target mutation commits;
+malformed or conflicting mappings are terminal failures.
 
 ### Authentication and tenant routing
 
@@ -10175,3 +10179,31 @@ before the flow can be certified.
 
 No percentage score or architecture-closure claim may be derived from source
 inspection alone; affected flows require exact-SHA recertification.
+
+## Current implementation decision — AI-FLOW-07 and PF-FLOW-05
+
+The accepted AI-FLOW-07 semantic target is Integrations-owned calendar
+reconciliation:
+
+```text
+verified provider callback
+→ provider-neutral calendar payload
+→ CalendarEvent / CalendarEventLink reconciliation
+→ tenant-scoped durable commit
+→ receipt Processed
+```
+
+The normalized payload must carry the verified external event identity and an
+explicit mapped Notrelix resource. A malformed or conflicting mapping is
+terminal failure rather than semantic success.
+
+PF-FLOW-05 policy fields are typed capabilities:
+
+```text
+UpcastMode.Forbidden
+CutoverMode.DrainBeforeCutover
+RecoveryMode.RebuildFromAuthority
+```
+
+Replay strategies without a declared retained event source are unsupported
+runtime capabilities and are not certification evidence.

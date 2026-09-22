@@ -19,8 +19,8 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Integrations;
 ///
 /// <list type="bullet">
 ///   <item>Completed → "Processed" (semantic success, future seam).</item>
-///   <item>SemanticTargetUndefined → "Blocked" — explicit terminal, never a
-///   false Processed and never retried (durable BLOCKED-DECISION state).</item>
+///   <item>TerminalFailure → "Failed" — explicit terminal, never a false
+///   Processed and never retried.</item>
 ///   <item>RetryableFailure → retryable exception; the wrapping dedup claim
 ///   rolls back so delivery retries under the same message identity.</item>
 ///   <item>Non-retryable technical failure (missing/corrupt payload) →
@@ -137,6 +137,7 @@ public sealed class CalendarWebhookProcessingRequestedConsumer
             new CalendarWebhookProcessingInput(
                 message.ReceiptId,
                 receipt.ConnectionId!.Value,
+                receipt.WorkspaceId!.Value,
                 receipt.Provider,
                 receipt.ExternalEventId,
                 receipt.PayloadHash,
@@ -150,19 +151,18 @@ public sealed class CalendarWebhookProcessingRequestedConsumer
                 receipt.MarkProcessed(_clock.UtcNow);
                 break;
 
-            case CalendarWebhookProcessingOutcome.SemanticTargetUndefined:
-                // Durable explicit BLOCKED-DECISION outcome: not Processed,
-                // not retried. The reason is stable for reconciliation.
-                receipt.MarkBlocked(
-                    "semantic target undefined (TAC v2.6 WAVE-E BLOCKED-DECISION)",
-                    _clock.UtcNow);
-                break;
-
             case CalendarWebhookProcessingOutcome.RetryableFailure:
                 _logger.LogWarning(
                     "Calendar webhook processing for receipt {ReceiptId} requires another delivery attempt",
                     message.ReceiptId);
                 throw new CalendarWebhookProcessingRetryableException(message.ReceiptId);
+
+            case CalendarWebhookProcessingOutcome.TerminalFailure:
+                receipt.MarkFailed(
+                    "calendar webhook payload could not be reconciled with the Integrations calendar target",
+                    _clock.UtcNow,
+                    "CalendarTargetReconciliationFailed");
+                break;
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "Unknown processing outcome.");

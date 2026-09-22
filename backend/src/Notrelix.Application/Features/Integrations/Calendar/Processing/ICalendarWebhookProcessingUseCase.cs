@@ -10,6 +10,7 @@ namespace Notrelix.Application.Features.Integrations.Calendar.Processing;
 public sealed record CalendarWebhookProcessingInput(
     Guid ReceiptId,
     Guid ConnectionId,
+    Guid WorkspaceId,
     string Provider,
     string ExternalEventId,
     string PayloadHash,
@@ -22,20 +23,14 @@ public sealed record CalendarWebhookProcessingInput(
 /// </summary>
 public enum CalendarWebhookProcessingOutcome
 {
-    /// <summary>The downstream semantic target action was applied (future completed seam).</summary>
+    /// <summary>The Integrations CalendarEvent target action was applied.</summary>
     Completed = 1,
 
-    /// <summary>
-    /// The provider-neutral input reached the processing seam, but the
-    /// downstream semantic translation/target action is not yet defined
-    /// (TAC v2.6 WAVE-E BLOCKED-DECISION). The consumer records this durably
-    /// as an explicit non-Processed terminal state ("Blocked") — never a false
-    /// success and never retried.
-    /// </summary>
-    SemanticTargetUndefined = 2,
-
     /// <summary>A transient technical failure — the delivery may be retried safely.</summary>
-    RetryableFailure = 3,
+    RetryableFailure = 2,
+
+    /// <summary>The verified payload cannot be reconciled into the target contract.</summary>
+    TerminalFailure = 3,
 }
 
 /// <summary>

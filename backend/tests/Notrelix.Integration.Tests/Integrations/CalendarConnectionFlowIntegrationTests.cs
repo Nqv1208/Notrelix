@@ -1,5 +1,10 @@
+using System.Text.Json;
+using MassTransit;
 using MediatR;
+using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Idempotency;
+using Notrelix.Application.EventMappers.Integrations;
+using Notrelix.Application.Events.Integrations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using FluentValidation;
@@ -15,10 +20,16 @@ using Notrelix.Application.Features.Integrations.Public.Secrets;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
+using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Interceptors;
+using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Events;
+using Notrelix.Infrastructure.Messaging;
+using Notrelix.Infrastructure.Messaging.Consumers.Integrations;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -474,6 +485,87 @@ public sealed class CalendarConnectionFlowIntegrationTests : IAsyncLifetime
         (await verify.IntegrationConnections.IgnoreQueryFilters().SingleAsync(c => c.Id == connectionId))
             .Status.Should().Be(IntegrationConnectionStatus.Revoked,
             "the last binding revokes the generic connection per CAL-CONN-001");
+    }
+
+    [Fact]
+    public async Task RevokedConnection_OutboxEvent_ConsumerRevokesAllSecretReferences()
+    {
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var connection = IntegrationConnection.Create(
+            accountId,
+            workspaceId,
+            IntegrationProvider.Google,
+            actorId,
+            Now);
+        var secretReference = Guid.NewGuid().ToString();
+        connection.RotateSecret("1", SecretRef.Create(secretReference), actorId, Now);
+
+        await using (var seed = _db.CreateContext(SystemTenant()))
+        {
+            seed.IntegrationConnections.Add(connection);
+            seed.IntegrationSecretVersions.Add(
+                IntegrationSecretVersion.Create(
+                    connection.Id,
+                    "1",
+                    SecretRef.Create(secretReference),
+                    Now));
+            await seed.SaveChangesAsync();
+        }
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(accountId, workspaceId, actorId);
+        await using (var revokeContext = _db.CreateContext(
+                         tenant,
+                         CreateConnectionOutboxInterceptor()))
+        {
+            var persisted = await revokeContext.IntegrationConnections
+                .SingleAsync(x => x.Id == connection.Id);
+            persisted.Disconnect(actorId, Now);
+            await revokeContext.SaveChangesAsync();
+        }
+
+        await using var probe = _db.CreateContext(SystemTenant());
+        var outbox = await probe.Set<MessagingOutboxMessage>()
+            .IgnoreQueryFilters()
+            .SingleAsync(x => x.MessageName == "integrations.integration-connection-revoked"
+                              && x.WorkspaceId == workspaceId);
+        var message = JsonSerializer.Deserialize<IntegrationConnectionRevokedIntegrationEvent>(
+            outbox.PayloadJson.RootElement.GetRawText(),
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        message.Should().NotBeNull();
+        message!.ConnectionId.Should().Be(connection.Id);
+
+        var cleanupStore = new RecordingSecretStore();
+        var consumerTenant = new FakeCurrentTenantContext();
+        consumerTenant.SetWorkspace(accountId, workspaceId, actorId);
+        await using var consumerDb = _db.CreateContext(consumerTenant);
+        var consumer = new IntegrationConnectionRevokedConsumer(
+            consumerDb,
+            cleanupStore,
+            NullLogger<IntegrationConnectionRevokedConsumer>.Instance);
+        var consumeContext = new Mock<ConsumeContext<IntegrationConnectionRevokedIntegrationEvent>>();
+        consumeContext.SetupGet(x => x.Message).Returns(message);
+        consumeContext.SetupGet(x => x.CancellationToken).Returns(CancellationToken.None);
+
+        await consumer.Consume(consumeContext.Object);
+
+        cleanupStore.Revoked.Should().ContainSingle().Which.Should().Be(secretReference);
+    }
+
+    private static DomainEventInterceptor CreateConnectionOutboxInterceptor()
+    {
+        return new DomainEventInterceptor(
+            new FixedClock(Now),
+            new EventTypeRegistry(),
+            ClassificationPolicy.CreateBuilder().Build(),
+            DeliveryPolicy.CreateBuilder().Build(),
+            new CompositeIntegrationEventMapper(
+                new ServiceCollection()
+                    .AddScoped<IIntegrationEventMapper, IntegrationConnectionEventMapper>()
+                    .BuildServiceProvider()),
+            new IntegrationEventCollector());
     }
 
     /// <summary>

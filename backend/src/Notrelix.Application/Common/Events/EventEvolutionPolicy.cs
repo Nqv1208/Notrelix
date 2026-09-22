@@ -1,10 +1,19 @@
 namespace Notrelix.Application.Common.Events;
 
-public enum EventEvolutionDisposition
+public enum UpcastMode
+{
+    Forbidden,
+    Allowed,
+}
+
+public enum CutoverMode
 {
     DrainBeforeCutover,
-    Upcastable,
-    ReplayableSameSchema,
+}
+
+public enum RecoveryMode
+{
+    Replay,
     RebuildFromAuthority,
     NotReplayable,
 }
@@ -13,10 +22,17 @@ public sealed record EventEvolutionPolicy(
     string EventName,
     int FromVersion,
     int ToVersion,
-    EventEvolutionDisposition Disposition,
-    string Recovery,
-    string CutoverRequirement,
-    bool SyntheticUpcastAllowed);
+    UpcastMode UpcastMode,
+    CutoverMode CutoverMode,
+    RecoveryMode RecoveryMode)
+{
+    public SchemaCompatibility Compatibility =>
+        UpcastMode == UpcastMode.Forbidden
+            ? SchemaCompatibility.None
+            : SchemaCompatibility.Backward;
+
+    public bool SyntheticUpcastAllowed => UpcastMode == UpcastMode.Allowed;
+}
 
 /// <summary>
 /// Single authority for declared event evolution and recovery policy.
@@ -42,13 +58,11 @@ public static class EventEvolutionPolicyRegistry
 
     public static SchemaCompatibility GetCompatibility(string eventName, int version)
     {
-        var hasDeclaredEvolution = Policies.Any(policy =>
+        var policy = Policies.FirstOrDefault(policy =>
             string.Equals(policy.EventName, eventName, StringComparison.Ordinal)
             && (policy.FromVersion == version || policy.ToVersion == version));
 
-        return hasDeclaredEvolution
-            ? SchemaCompatibility.None
-            : SchemaCompatibility.Backward;
+        return policy?.Compatibility ?? SchemaCompatibility.Backward;
     }
 
     private static EventEvolutionPolicy Create(string eventName) =>
@@ -56,8 +70,7 @@ public static class EventEvolutionPolicyRegistry
             EventName: eventName,
             FromVersion: 1,
             ToVersion: 2,
-            Disposition: EventEvolutionDisposition.DrainBeforeCutover,
-            Recovery: "V1 cannot mutate the V2 revision projection; rebuild from the authoritative Work producer snapshot.",
-            CutoverRequirement: "Drain or quarantine every V1 queue before V2-only consumers become authoritative.",
-            SyntheticUpcastAllowed: false);
+            UpcastMode: UpcastMode.Forbidden,
+            CutoverMode: CutoverMode.DrainBeforeCutover,
+            RecoveryMode: RecoveryMode.RebuildFromAuthority);
 }

@@ -6975,3 +6975,29 @@ not only receipt, signature verification, tenant derivation, or
 provider-neutral Application processing. Until that target decision exists,
 the terminal proof state is BLOCKED-DECISION.
 ```
+
+## Current implementation proof requirements
+
+The accepted Integrations target below supersedes the historical
+`BLOCKED-DECISION` sentence in the retained re-audit block.
+
+AI-FLOW-07 runtime proof must assert that a verified callback with an explicit
+resource mapping creates or updates the Integrations CalendarEvent target and
+its CalendarEventLink, then marks the authoritative receipt `Processed` only
+after the target commit. Duplicate delivery must not create a second receipt,
+outbox enrollment, or target mapping. Invalid and conflicting mappings must be
+terminal failures.
+
+AI-FLOW-06 runtime proof must cover:
+
+```text
+DisconnectCalendar
+→ IntegrationConnectionRevoked domain event
+→ persisted outbox message
+→ IntegrationConnectionRevokedConsumer
+→ RevokeAsync(secret reference)
+```
+
+PF-FLOW-05 tests must assert the typed Work policy values and must reject a
+replay claim when no retained event source is declared. Replay orchestration
+tests using synthetic test strategies are not production replay proof.

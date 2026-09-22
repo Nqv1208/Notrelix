@@ -12,13 +12,7 @@ public sealed class LatestReplayStrategy : ReplayStrategyBase
         IReplayCheckpointStore checkpointStore,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var checkpoint = await checkpointStore.GetLatestAsync(request.EventName, request.WorkspaceId, cancellationToken);
-
-        if (checkpoint is null)
-            yield break;
-
-        // Position-based enumeration happens in the concrete source implementation.
-        // Platform strategy provides the bounds — Infrastructure provides the events.
+        EnsureRetainedEventSource(request);
         yield break;
     }
 }

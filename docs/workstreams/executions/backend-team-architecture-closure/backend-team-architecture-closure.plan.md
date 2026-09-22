@@ -2029,10 +2029,11 @@ Existing InboundWebhookEvent can remain Domain only after proving user-facing
 lifecycle and removing LegacyGap classification; otherwise intake is technical
 Infrastructure state.
 
-The exact downstream target is a prerequisite decision, not an implementation
-detail. Do not wire a target command or mark a receipt `Processed` until the
-Product/Integrations authority records the target context, action/event,
-authorization, idempotency, and success condition.
+The accepted target for this candidate is Integrations-owned reconciliation into
+`CalendarEvent` and `CalendarEventLink`. The normalized payload must carry the
+verified external event identity and an explicit mapped Notrelix resource.
+`Processed` is allowed only after the tenant-scoped target mutation commits;
+malformed or conflicting mappings are terminal failures.
 
 ## Exit
 
@@ -3519,7 +3520,23 @@ permanent competing authority after these changes are merged.
 
 ---
 
-# 102. Final execution rule
+# 102. Current implementation slice — AI-FLOW-07 / AI-FLOW-06 / PF-FLOW-05
+
+AI-FLOW-07 is implemented as an Integrations-owned CalendarEvent and
+CalendarEventLink reconciliation flow. `Processed` is reserved for a
+successful tenant-scoped target commit; invalid or conflicting mapping is
+terminal failure and is not retried.
+
+AI-FLOW-06 evidence includes the production domain-event interceptor,
+persisted `IntegrationConnectionRevoked` outbox event, and cleanup consumer
+invoking the provider-neutral secret-store port. Provider-specific subscription
+lifecycle remains outside this pack.
+
+PF-FLOW-05 uses typed `UpcastMode`, `CutoverMode`, and `RecoveryMode` values.
+Generic replay strategies are not certified without retained payload source,
+checkpoint, resume, and dedup evidence; no synthetic event source is allowed.
+
+## Final execution rule
 
 For every slice:
 

@@ -1849,8 +1849,9 @@ outbound WebhookDelivery as inbound receipt
 ```
 
 AI-FLOW-07 cannot be `VERIFIED` from provider-neutral processing alone. The
-current candidate remains `BLOCKED-DECISION` until the exact downstream target
-and success contract are accepted and implemented.
+accepted current-candidate target is Integrations-owned reconciliation into
+`CalendarEvent` and `CalendarEventLink`; certification remains pending until
+runtime proof demonstrates the target mutation and receipt success contract.
 
 AI pack requires TAC-FRZ-019 FROZEN.
 # 45. AI mandatory references
@@ -5689,3 +5690,21 @@ ARCHITECTURE-CLOSED              NO
 Google/Microsoft provider protocol completeness is a separate production
 integration workstream, not a generic TAC closure blocker. No flow may be
 certified from source inspection or synthetic replay alone.
+
+## Current candidate implementation correction — AI-FLOW-07 / AI-FLOW-06 / PF-FLOW-05
+
+The accepted AI-FLOW-07 target is Integrations-owned reconciliation of a
+provider-neutral callback into `CalendarEvent` and `CalendarEventLink`.
+Receipt `Processed` requires the target mutation to commit under the restored
+tenant. Invalid or conflicting mappings are terminal failures.
+
+AI-FLOW-06 may move from `BLOCKED-EVIDENCE` to `VERIFIED` only after the
+PostgreSQL runtime proof demonstrates the complete revoke → outbox → cleanup
+consumer → secret-store chain. Existing outcome-classification unit tests do
+not substitute for this chain proof.
+
+PF-FLOW-05 is certified as capability-based contract evolution, not universal
+replay. Work V1→V2 must expose `UpcastMode.Forbidden`,
+`CutoverMode.DrainBeforeCutover`, and `RecoveryMode.RebuildFromAuthority`.
+Replay strategies without retained source are unsupported and cannot satisfy
+checkpoint/resume certification.

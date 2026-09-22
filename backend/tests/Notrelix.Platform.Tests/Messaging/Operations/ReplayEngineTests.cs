@@ -166,6 +166,38 @@ public sealed class ReplayEngineTests
         result.TotalFailed.Should().Be(2);
         result.TotalPublished.Should().Be(0);
     }
+
+    [Theory]
+    [InlineData(ReplayStrategyType.Latest)]
+    [InlineData(ReplayStrategyType.Checkpoint)]
+    [InlineData(ReplayStrategyType.Snapshot)]
+    [InlineData(ReplayStrategyType.TimeWindow)]
+    public async Task ProductionStrategies_RequireRetainedEventSource(ReplayStrategyType strategyType)
+    {
+        var request = new ReplayRequest
+        {
+            EventName = "test.replay",
+            WorkspaceId = Guid.NewGuid(),
+            StrategyType = strategyType,
+        };
+        ReplayStrategyBase strategy = strategyType switch
+        {
+            ReplayStrategyType.Latest => new LatestReplayStrategy(),
+            ReplayStrategyType.Checkpoint => new CheckpointReplayStrategy(),
+            ReplayStrategyType.Snapshot => new SnapshotReplayStrategy(),
+            ReplayStrategyType.TimeWindow => new TimeWindowReplayStrategy(),
+            _ => throw new ArgumentOutOfRangeException(nameof(strategyType)),
+        };
+
+        Func<Task> action = async () =>
+        {
+            await foreach (var _ in strategy.GetEventsAsync(request, _checkpointStoreMock.Object))
+            {
+            }
+        };
+
+        await action.Should().ThrowAsync<ReplaySourceUnavailableException>();
+    }
 }
 
 file sealed class TestStrategy : IReplayStrategy

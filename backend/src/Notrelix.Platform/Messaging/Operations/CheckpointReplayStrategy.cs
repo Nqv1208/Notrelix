@@ -12,14 +12,7 @@ public sealed class CheckpointReplayStrategy : ReplayStrategyBase
         IReplayCheckpointStore checkpointStore,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (request.CheckpointId is null)
-            yield break;
-
-        var checkpoint = await checkpointStore.GetByIdAsync(request.CheckpointId.Value, cancellationToken);
-
-        if (checkpoint is null)
-            yield break;
-
+        EnsureRetainedEventSource(request);
         yield break;
     }
 }
