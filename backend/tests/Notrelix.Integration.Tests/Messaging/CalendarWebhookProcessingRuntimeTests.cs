@@ -75,7 +75,14 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
 
         var recorder = new TenantObservationRecorder();
         var transport = new RuntimeTransportObservation();
-        await using var provider = BuildProvider(recorder, transport);
+        // Exercise the DB/JSON timestamp boundary with a value that contains
+        // sub-microsecond .NET precision. PostgreSQL stores timestamp values at
+        // microsecond precision, so the production path must canonicalize this
+        // value before persisting the receipt and outbox payload.
+        await using var provider = BuildProvider(
+            recorder,
+            transport,
+            DateTimeOffset.UtcNow.AddTicks(1));
 
         Guid receiptId;
         Guid outboxId;
@@ -255,7 +262,8 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
 
     private ServiceProvider BuildProvider(
         TenantObservationRecorder recorder,
-        RuntimeTransportObservation transport)
+        RuntimeTransportObservation transport,
+        DateTimeOffset? fixedNow = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -310,6 +318,11 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         // the domain-event outbox collector and the Integrations processing seam.
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddScoped<ICalendarWebhookProcessingUseCase, CalendarWebhookProcessingUseCase>();
+        if (fixedNow is not null)
+        {
+            services.AddScoped<IDateTimeProvider>(_ =>
+                FakeDateTimeProvider.WithFixedTime(fixedNow.Value));
+        }
 
         // The canonical request pipeline around the REAL webhook vertical.
         services.AddSingleton(new MediatRServiceConfiguration());

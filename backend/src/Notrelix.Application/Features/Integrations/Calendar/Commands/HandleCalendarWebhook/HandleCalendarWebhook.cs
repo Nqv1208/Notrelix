@@ -113,7 +113,12 @@ public class HandleCalendarWebhookCommandHandler : IRequestHandler<HandleCalenda
         // provider, external_event_id) because the provider event id only
         // namespaces a delivery within a provider calendar/connection
         // (BE-API-041 provider-contract scope).
-        var receivedAt = _clock.UtcNow;
+        // PostgreSQL timestamp with time zone persists microsecond precision,
+        // while the outbox JSON keeps the full .NET tick precision. Use one
+        // database-compatible canonical value for both the receipt and the
+        // processing message so the consumer's provenance comparison remains
+        // stable after the DB/JSON round-trip.
+        var receivedAt = CanonicalizePersistedTimestamp(_clock.UtcNow);
         var intakeResult = await _intake.AcceptAsync(
             new CalendarWebhookReceiptClaim(
                 binding.AccountId,
@@ -164,5 +169,12 @@ public class HandleCalendarWebhookCommandHandler : IRequestHandler<HandleCalenda
         }
 
         return null;
+    }
+
+    private static DateTimeOffset CanonicalizePersistedTimestamp(DateTimeOffset value)
+    {
+        var utcTicks = value.UtcTicks;
+        var canonicalTicks = utcTicks - utcTicks % TimeSpan.TicksPerMicrosecond;
+        return new DateTimeOffset(canonicalTicks, TimeSpan.Zero);
     }
 }
