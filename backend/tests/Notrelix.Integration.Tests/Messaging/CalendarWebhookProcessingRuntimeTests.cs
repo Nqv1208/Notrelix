@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,7 +74,8 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         var (body, signature, timestamp) = SignedCallback(externalEventId);
 
         var recorder = new TenantObservationRecorder();
-        await using var provider = BuildProvider(recorder);
+        var transport = new RuntimeTransportObservation();
+        await using var provider = BuildProvider(recorder, transport);
 
         Guid receiptId;
         Guid outboxId;
@@ -126,9 +128,10 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
             var dispatched = await WaitForOutboxProcessedAsync(outboxId);
             dispatched.Should().BeTrue("the dispatcher must deliver the committed processing intent");
 
-            var blocked = await WaitForReceiptStatusAsync(receiptId, "Blocked");
-            blocked.Should().BeTrue(
-                "the real consumer must record the durable BLOCKED-DECISION terminal state");
+            var blocked = await WaitForReceiptStatusAsync(receiptId, outboxId, "Blocked", transport, recorder);
+            blocked.Reached.Should().BeTrue(
+                "the real consumer must record the durable BLOCKED-DECISION terminal state. Snapshot: {0}",
+                blocked.Snapshot);
 
             (await OutboxRowCountAsync(accountId, workspaceId)).Should().Be(1,
                 "exactly one processing enrollment per callback");
@@ -167,9 +170,11 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         var (body, signature, timestamp) = SignedCallback(externalEventId);
 
         var recorder = new TenantObservationRecorder();
-        await using var provider = BuildProvider(recorder);
+        var transport = new RuntimeTransportObservation();
+        await using var provider = BuildProvider(recorder, transport);
 
         Guid receiptId;
+        Guid outboxId;
 
         // The same callback is delivered twice (each delivery is its own request
         // scope, as in HTTP): the payload-hash/connection claim must converge
@@ -199,6 +204,10 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
                 "two deliveries produce exactly one non-terminal claim");
             receiptId = receipt.Id;
 
+            var outbox = await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+                .SingleAsync(m => m.MessageName == "integrations.calendar-webhook-processing-requested"
+                               && m.WorkspaceId == workspaceId);
+            outboxId = outbox.Id;
             (await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
                 .CountAsync(m => m.MessageName == "integrations.calendar-webhook-processing-requested"
                                && m.WorkspaceId == workspaceId)).Should().Be(1,
@@ -214,8 +223,10 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
 
         try
         {
-            var blocked = await WaitForReceiptStatusAsync(receiptId, "Blocked");
-            blocked.Should().BeTrue("the consumer must reach the single durable terminal decision");
+            var blocked = await WaitForReceiptStatusAsync(receiptId, outboxId, "Blocked", transport, recorder);
+            blocked.Reached.Should().BeTrue(
+                "the consumer must reach the single durable terminal decision. Snapshot: {0}",
+                blocked.Snapshot);
 
             await using var final = _db.CreateContext(SystemTenant());
             (await final.InboundWebhookReceipts.IgnoreQueryFilters()
@@ -242,7 +253,9 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
 
     // ── composition -----------------------------------------------------------
 
-    private ServiceProvider BuildProvider(TenantObservationRecorder recorder)
+    private ServiceProvider BuildProvider(
+        TenantObservationRecorder recorder,
+        RuntimeTransportObservation transport)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -340,7 +353,12 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         services.AddScoped<IExecutionContextReader>(sp =>
             sp.GetRequiredService<Notrelix.Application.Common.Context.ExecutionContext>());
 
-        return services.BuildServiceProvider();
+        services.AddSingleton(transport);
+
+        var provider = services.BuildServiceProvider();
+        var bus = provider.GetRequiredService<IBusControl>();
+        ((IReceiveObserverConnector)bus).ConnectReceiveObserver(transport);
+        return provider;
     }
 
     // ── seeding ---------------------------------------------------------------
@@ -391,15 +409,62 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         });
     }
 
-    private async Task<bool> WaitForReceiptStatusAsync(Guid receiptId, string status)
+    private async Task<ReceiptStatusWaitResult> WaitForReceiptStatusAsync(
+        Guid receiptId,
+        Guid outboxId,
+        string status,
+        RuntimeTransportObservation transport,
+        TenantObservationRecorder recorder)
     {
-        return await WaitForAsync(async () =>
+        var reached = await WaitForAsync(async () =>
         {
             await using var probe = _db.CreateContext(SystemTenant());
             var receipt = await probe.InboundWebhookReceipts.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r => r.Id == receiptId);
             return receipt?.Status == status;
         });
+
+        return reached
+            ? new ReceiptStatusWaitResult(true, string.Empty)
+            : new ReceiptStatusWaitResult(
+                false,
+                await CaptureSnapshotAsync(receiptId, outboxId, transport, recorder));
+    }
+
+    private async Task<string> CaptureSnapshotAsync(
+        Guid receiptId,
+        Guid outboxId,
+        RuntimeTransportObservation transport,
+        TenantObservationRecorder recorder)
+    {
+        await using var probe = _db.CreateContext(SystemTenant());
+        var receipt = await probe.InboundWebhookReceipts.IgnoreQueryFilters()
+            .SingleOrDefaultAsync(r => r.Id == receiptId);
+        var outbox = await probe.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .SingleOrDefaultAsync(m => m.Id == outboxId);
+        var attempt = outbox is null
+            ? null
+            : await probe.Set<OutboxDeliveryAttempt>().IgnoreQueryFilters()
+                .Where(a => a.OutboxMessageId == outbox.Id)
+                .OrderByDescending(a => a.AttemptNo)
+                .Select(a => new { a.Status, a.ErrorCode })
+                .FirstOrDefaultAsync();
+        var processed = outbox is null
+            ? []
+            : await probe.Set<MessagingProcessedEvent>().IgnoreQueryFilters()
+                .Where(e => e.EventId == outbox.EventId)
+                .OrderBy(e => e.ConsumerName)
+                .Select(e => $"{e.ConsumerName}:{e.Status}:{e.ErrorMessage ?? ""}")
+                .ToListAsync();
+
+        return string.Join(
+            " | ",
+            $"Receipt status={receipt?.Status ?? "missing"} failureCode={receipt?.FailureCode ?? "none"} terminalAt={receipt?.TerminalAt?.ToString("O") ?? "none"}",
+            $"Outbox status={outbox?.Status ?? "missing"} retryCount={outbox?.RetryCount.ToString() ?? "none"} lockId={outbox?.LockId?.ToString() ?? "none"}",
+            $"Attempt status={attempt?.Status ?? "none"} errorCode={attempt?.ErrorCode ?? "none"}",
+            $"Processed=[{string.Join(",", processed)}]",
+            $"MassTransit endpoint={transport.CalendarEndpoint ?? "none"} receive={transport.ReceiveCount} consume={transport.ConsumeCount} fault={transport.FaultCount}",
+            $"Tenant observed={recorder.ObservedWorkspaceSet}");
     }
 
     private static async Task<bool> WaitForAsync(Func<Task<bool>> predicate, int timeoutSeconds = 30)
@@ -416,6 +481,97 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
         }
 
         return false;
+    }
+
+    private sealed record ReceiptStatusWaitResult(bool Reached, string Snapshot);
+
+    private sealed class RuntimeTransportObservation : IReceiveObserver
+    {
+        private readonly object _gate = new();
+
+        public string? CalendarEndpoint { get; private set; }
+        public int ReceiveCount { get; private set; }
+        public int ConsumeCount { get; private set; }
+        public int FaultCount { get; private set; }
+
+        public Task PreReceive(ReceiveContext context)
+        {
+            RecordEndpoint(context.InputAddress, incrementReceive: true);
+            return Task.CompletedTask;
+        }
+
+        public Task PostReceive(ReceiveContext context)
+        {
+            RecordEndpoint(context.InputAddress, incrementReceive: false);
+            return Task.CompletedTask;
+        }
+
+        public Task PostConsume<T>(ConsumeContext<T> context, TimeSpan duration, string consumerType)
+            where T : class
+        {
+            if (IsCalendar(context.ReceiveContext.InputAddress))
+            {
+                lock (_gate)
+                {
+                    ConsumeCount++;
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task ConsumeFault<T>(
+            ConsumeContext<T> context,
+            TimeSpan duration,
+            string consumerType,
+            Exception exception)
+            where T : class
+        {
+            if (IsCalendar(context.ReceiveContext.InputAddress))
+            {
+                lock (_gate)
+                {
+                    FaultCount++;
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task ReceiveFault(ReceiveContext context, Exception exception)
+        {
+            if (IsCalendar(context.InputAddress))
+            {
+                lock (_gate)
+                {
+                    FaultCount++;
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private void RecordEndpoint(Uri? address, bool incrementReceive)
+        {
+            if (!IsCalendar(address))
+            {
+                return;
+            }
+
+            lock (_gate)
+            {
+                CalendarEndpoint = address!.AbsolutePath.Trim('/');
+                if (incrementReceive)
+                {
+                    ReceiveCount++;
+                }
+            }
+        }
+
+        private static bool IsCalendar(Uri? address) =>
+            address?.AbsolutePath.Contains(
+                "integrations-calendar-webhook-processing-requested-v1",
+                StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private static FakeCurrentTenantContext SystemTenant()

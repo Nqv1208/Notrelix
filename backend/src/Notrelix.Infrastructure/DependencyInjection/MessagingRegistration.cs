@@ -37,6 +37,12 @@ public static class MessagingRegistration
         var transport = configuration["Messaging:Transport"] ?? "InMemory";
         var endpointPrefix = configuration["Messaging:EndpointPrefix"] ?? "notrelix";
 
+        services.AddOptions<MessagingEndpointOptions>().Configure(options =>
+        {
+            options.Transport = transport;
+            options.EndpointPrefix = endpointPrefix;
+        });
+
         switch (transport)
         {
             case "InMemory":

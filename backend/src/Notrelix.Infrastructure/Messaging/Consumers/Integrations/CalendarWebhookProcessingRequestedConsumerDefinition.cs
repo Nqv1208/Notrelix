@@ -1,11 +1,16 @@
+using Notrelix.Infrastructure.Messaging.Options;
+
 namespace Notrelix.Infrastructure.Messaging.Consumers.Integrations;
 
 public sealed class CalendarWebhookProcessingRequestedConsumerDefinition
     : ConsumerDefinition<CalendarWebhookProcessingRequestedConsumer>
 {
-    public CalendarWebhookProcessingRequestedConsumerDefinition()
+    public CalendarWebhookProcessingRequestedConsumerDefinition(
+        IOptions<MessagingEndpointOptions> options)
     {
-        EndpointName = "notrelix-integrations-calendar-webhook-processing-requested-v1";
+        EndpointName = MessagingEndpointNames.CalendarWebhookProcessingRequested(
+            options.Value.Transport,
+            options.Value.EndpointPrefix);
         ConcurrentMessageLimit = 4;
     }
 
