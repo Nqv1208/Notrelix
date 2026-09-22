@@ -32,9 +32,10 @@ public static class MessagingRegistration
 
         // Consumer registry (immutable catalog of all registered consumers).
         services.AddSingleton<IConsumerRegistry>(
-            new ConsumerRegistry(ConsumerRegistrySetup.GetConsumerDefinitions()));
+        new ConsumerRegistry(ConsumerRegistrySetup.GetConsumerDefinitions()));
 
         var transport = configuration["Messaging:Transport"] ?? "InMemory";
+        var endpointPrefix = configuration["Messaging:EndpointPrefix"] ?? "notrelix";
 
         switch (transport)
         {
@@ -42,7 +43,7 @@ public static class MessagingRegistration
             case "MassTransitInMemory":
                 services.AddMassTransit(cfg =>
                 {
-                    cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
+                    cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter(endpointPrefix, false));
                     cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
 
                     cfg.UsingInMemory((ctx, mem) =>

@@ -249,6 +249,10 @@ public sealed class CalendarWebhookProcessingRuntimeTests : IAsyncLifetime
             {
                 ["ConnectionStrings:NotrelixDb"] = _db.ConnectionString,
                 ["Messaging:Transport"] = "InMemory",
+                // Each runtime test provider owns an in-memory bus. A unique
+                // endpoint namespace prevents parallel integration tests from
+                // competing for the same MassTransit loopback endpoints.
+                ["Messaging:EndpointPrefix"] = $"notrelix-calendar-{Guid.NewGuid():N}",
                 ["Rls:Enabled"] = "true",
                 ["Rls:SetSessionContext"] = "true",
                 ["DOTNET_ENVIRONMENT"] = "Testing",
