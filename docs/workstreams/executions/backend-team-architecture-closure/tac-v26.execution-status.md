@@ -4268,6 +4268,20 @@ FROZEN-DECISION 2's other requirements (bootstrap must resolve path → integrat
 
 (status ends here — no further claims)
 
+## Current implementation worktree — 2026-09-22
+
+The current implementation applies the accepted semantic and policy decisions
+but is not yet exact-SHA certified:
+
+```text
+AI-FLOW-07  target = CalendarEvent / CalendarEventLink reconciliation
+AI-FLOW-06  runtime revoke → outbox → cleanup proof added; test pending
+PF-FLOW-05  typed capability policy added; generic replay unsupported
+EXACT-SHA    pending commit and CI recertification
+```
+
+No `VERIFIED` or `ARCHITECTURE-CLOSED` claim is made from this dirty worktree.
+
 ## PR #158 mechanism-closure re-audit v2 — R0 authority correction
 
 The earlier M8/M11/M12 rows above are retained as historical evidence for the
@@ -4537,23 +4551,41 @@ current blocked provider/AI semantic decisions.
 
 ## Current candidate correction — post self-audit
 
-At exact candidate head `4c91e31a2f5ef2ac7d140c96c7193a56e0716bef`, the
+At implementation candidate commit `544c68415bacf2504d2bbe8f109f0e10be043f97`, the
 following verdicts supersede older percentage or `VERIFIED` summaries:
 
 ```text
 CROSS-BC TAXONOMY       COMPLETE
 MOST OTHER BC FLOWS     RETAIN / PREVIOUSLY VERIFIED pending exact-SHA recertification
-PF-FLOW-05              OPEN / PARTIAL — capability-based recovery policy required
-AI-FLOW-06              LOCAL LIFECYCLE VERIFIED; provider/secret cleanup OPEN
-AI-FLOW-07              BLOCKED-DECISION + AUTHORITY DRIFT
-M14                     OPEN — backend format failure plus runtime image vulnerability
+PF-FLOW-05              IMPLEMENTED POLICY; local proof PASS, remote pending
+AI-FLOW-06              IMPLEMENTED CLEANUP CHAIN; local proof PASS, remote pending
+AI-FLOW-07              IMPLEMENTED TARGET RECONCILIATION; local proof PASS, remote pending
+M14                     LOCAL FORMAT/BUILD PASS; remote security/exact-head pending
 ARCHITECTURE-CLOSED     NO
 ```
 
 PF-FLOW-05 is not limited to Work V1→V2: production replay strategies have no
 retained event source, and ReplayEngine tests use a synthetic test strategy.
-AI-FLOW-07 remains intake/processing-only until Product/Integrations defines
-the exact downstream target effect. Google/Microsoft protocol completeness is
-outside this TAC closure claim.
+The accepted AI-FLOW-07 target is Integrations-owned reconciliation into
+CalendarEvent and CalendarEventLink; exact-SHA runtime proof remains required.
+Google/Microsoft protocol completeness is outside this TAC closure claim.
+
+## Implementation proof — commit `544c68415bacf2504d2bbe8f109f0e10be043f97`
+
+Local exact-tree evidence for the implementation commit:
+
+```text
+dotnet restore backend.slnx                                  PASS — 17 projects
+dotnet format backend.slnx --verify-no-changes --no-restore  PASS
+dotnet build backend.slnx --no-restore --configuration Release PASS — 0 errors
+focused Platform tests                                       PASS — 12/12
+focused Calendar/AI integration tests                        PASS — 21/21
+full backend.slnx tests                                      PASS — 5124/5124
+documentation governance                                     PASS
+migration discipline (conservative full-range check)         PASS
+```
+
+Remote exact-head CI, runtime security gates, and final certification remain
+pending until the implementation commit is pushed and its CI run completes.
 
 (status ends here — no further claims)
