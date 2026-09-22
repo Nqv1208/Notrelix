@@ -460,7 +460,7 @@ Domain impact: none (AccessGrant is an Infrastructure projection entity;
 Migration: backfill + partial unique index in existing uncommitted
   migration file (amended, not a new migration); DBs where the migration
   already ran need make dev-reset or a manual re-run of the backfill
-  [2026-08-13 later consolidated into SchemaV2Baseline — see §13]
+  [2026-08-13 later consolidated into SchemaBaseline — see §13]
 Tests added:
   Integration Data/Authz/AccessGrantProjectionTests.cs (7): create/update/
   revoke/reactivate/separate-grant semantics against real PostgreSQL
@@ -489,10 +489,10 @@ Phase 5 exit: MET — canonical Account retained, current Account resolution
 Next: Phase 6 — P1 downstream producer contract (IA-X-*) / PR-IA-04
 ```
 
-## 13. Migration consolidation — single SchemaV2Baseline (2026-08-13)
+## 13. Migration consolidation — single SchemaBaseline (2026-08-13)
 
 User decision (dev phase): keep exactly ONE migration file. The two
-incremental migrations were merged into `20260702093805_SchemaV2Baseline`
+incremental migrations were merged into `20260702093805_SchemaBaseline`
 and their files deleted:
 
 ```text
@@ -713,7 +713,7 @@ working tree exactly equals candidate. Full solution suite 4251/4251.
 
 ```text
 IA-GATE-001 core source review — PASS
-  Canonical stores: single users table (SchemaV2Baseline:2298 CreateTable;
+  Canonical stores: single users table (SchemaBaseline:2298 CreateTable;
     FKs at 3305/3338/5528 point to it); single accounts/account_members
     store; no private User/Identity persistence introduced downstream
     (grep-verified across Features/ during exploration; Architecture.Tests
@@ -884,7 +884,7 @@ identical to unknown-user path), then generic failure.
 IA-OAUTH-MIGRATION-001 — migration strategy for the new column:
 
 ```text
-Schema change folded into the consolidated SchemaV2Baseline (Designer +
+Schema change folded into the consolidated SchemaBaseline (Designer +
 ModelSnapshot), per the recorded dev-phase decision (see §13,
 2026-08-13): a consolidated baseline only ever runs against EMPTY
 schemas — therefore NO existing users exist at migration time and
@@ -1366,7 +1366,7 @@ evidence (no prefilled PASS):
 
 ```text
 Candidate:      develop @ 450bea973307980ce03c4bc27b5f32c1ad6c91cf
-Migration head: 20260702093805_SchemaV2Baseline (unchanged)
+Migration head: 20260702093805_SchemaBaseline (unchanged)
 OpenAPI sha256: f4391c79…c9758   drift CLEAN
 Events  sha256: dda01452…fa0f4   drift CLEAN
 Suites:         backend 4496 passed / frontend node 313 passed (all non-zero)

@@ -200,7 +200,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
     private async Task RepublishMovedEventAsync(ServiceProvider provider, BoardGraph graph, Guid eventId)
     {
         var bus = provider.GetRequiredService<MassTransit.IBus>();
-        await bus.Publish(new Notrelix.Application.Events.WorkManagement.BoardItemMovedIntegrationEvent(
+        await bus.Publish(new Notrelix.Application.Events.WorkManagement.BoardItemMovedIntegrationEventV2(
             EventId: eventId,
             AccountId: graph.AccountId,
             ItemId: graph.ItemId,
@@ -208,6 +208,7 @@ public sealed class BoardItemMovedPlacementFailureRecoveryRuntimeTests : IAsyncL
             WorkspaceId: graph.WorkspaceId,
             OldGroupId: graph.SourceGroupId,
             NewGroupId: graph.TargetGroupId,
+            Revision: 2,
             CorrelationId: Guid.CreateVersion7(),
             OccurredAt: DateTimeOffset.UtcNow));
     }

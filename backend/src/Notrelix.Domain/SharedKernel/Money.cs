@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Notrelix.Domain.SharedKernel;
@@ -34,5 +35,6 @@ public sealed class Money : ValueObject
         yield return Currency;
     }
 
-    public override string ToString() => $"{Amount} {Currency}";
+    public override string ToString() =>
+        $"{Amount.ToString(CultureInfo.InvariantCulture)} {Currency}";
 }

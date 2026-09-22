@@ -61,6 +61,35 @@ SELECT ops.apply_scoped_business_policies('integration', 'inbound_webhook_events
 SELECT ops.apply_scoped_business_policies('integration', 'calendar_integrations', true);
 SELECT ops.apply_scoped_business_policies('integration', 'calendar_event_links', true);
 SELECT ops.apply_scoped_business_policies('integration', 'integration_sync_cursors', true);
+
+-- Anonymous provider webhook bootstrap is a deliberately narrow exception to
+-- tenant-scoped app SELECT. The request must set app.webhook_path before the
+-- first lookup, then app.webhook_connection_id before the second lookup. It
+-- never grants worker/system access and remains safe with FORCE RLS enabled.
+DO $$
+BEGIN
+    IF ops.table_exists('integration', 'calendar_integrations') THEN
+        PERFORM ops.create_policy(
+            'integration',
+            'calendar_integrations',
+            'p_app_webhook_bootstrap_select',
+            'SELECT',
+            'notrelix_app',
+            'webhook_path = ops.current_setting_text(''app.webhook_path'')',
+            NULL);
+    END IF;
+
+    IF ops.table_exists('integration', 'integration_connections') THEN
+        PERFORM ops.create_policy(
+            'integration',
+            'integration_connections',
+            'p_app_webhook_connection_select',
+            'SELECT',
+            'notrelix_app',
+            'id = ops.current_setting_uuid(''app.webhook_connection_id'')',
+            NULL);
+    END IF;
+END $$;
 SELECT ops.apply_scoped_business_policies('reporting', 'dashboards', true);
 SELECT ops.apply_scoped_business_policies('reporting', 'dashboard_widgets', true);
 SELECT ops.apply_scoped_business_policies('reporting', 'dashboard_sources', true);

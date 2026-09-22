@@ -190,7 +190,7 @@ Use a new forward migration.
 
 While the project has no production database, the current chain MAY be
 consolidated ("squeezed") into the single
-`20260702093805_SchemaV2Baseline` migration as a governed change:
+`20260702093805_SchemaBaseline` migration as a governed change:
 
 ```text
 fold later entries' DDL/data semantics into the baseline

@@ -19,6 +19,7 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Collaboration.CommentEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Billing.SubscriptionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemMemberAssignedEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Integrations.IntegrationConnectionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, CompositeIntegrationEventMapper>();
 
         // Integration event catalog (immutable, throws on unknown types).
@@ -31,9 +32,16 @@ public static class MessagingRegistration
 
         // Consumer registry (immutable catalog of all registered consumers).
         services.AddSingleton<IConsumerRegistry>(
-            new ConsumerRegistry(ConsumerRegistrySetup.GetConsumerDefinitions()));
+        new ConsumerRegistry(ConsumerRegistrySetup.GetConsumerDefinitions()));
 
         var transport = configuration["Messaging:Transport"] ?? "InMemory";
+        var endpointPrefix = configuration["Messaging:EndpointPrefix"] ?? "notrelix";
+
+        services.AddOptions<MessagingEndpointOptions>().Configure(options =>
+        {
+            options.Transport = transport;
+            options.EndpointPrefix = endpointPrefix;
+        });
 
         switch (transport)
         {
@@ -41,7 +49,7 @@ public static class MessagingRegistration
             case "MassTransitInMemory":
                 services.AddMassTransit(cfg =>
                 {
-                    cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
+                    cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter(endpointPrefix, false));
                     cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
 
                     cfg.UsingInMemory((ctx, mem) =>

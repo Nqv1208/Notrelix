@@ -8792,15 +8792,28 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid?>("ConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connection_id");
+
                     b.Property<string>("ExternalEventId")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("external_event_id");
 
-                    b.Property<string>("FailureReason")
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<string>("FailureDetail")
                         .HasColumnType("text")
-                        .HasColumnName("failure_reason");
+                        .HasColumnName("failure_detail");
 
                     b.Property<string>("PayloadHash")
                         .IsRequired()
@@ -8832,15 +8845,23 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<DateTimeOffset?>("TerminalAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("terminal_at");
+
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
                     b.HasKey("Id")
                         .HasName("pk_inbound_webhook_receipts");
 
                     b.HasIndex("ReceivedAt")
                         .HasDatabaseName("idx_inbound_webhook_receipts_received_at");
 
-                    b.HasIndex("Provider", "ExternalEventId")
+                    b.HasIndex("ConnectionId", "Provider", "ExternalEventId")
                         .IsUnique()
-                        .HasDatabaseName("ux_inbound_webhook_receipts_provider_external_event_id");
+                        .HasDatabaseName("ux_inbound_webhook_receipts_connection_provider_external_event_id");
 
                     b.ToTable("inbound_webhook_receipts", "integration");
                 });

@@ -37,8 +37,8 @@ namespace Notrelix.Integration.Tests.Messaging;
 [Trait("Category", "Integration")]
 public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLifetime
 {
-    private const string MovedConsumerEndpoint = "notrelix-automation-board-item-moved-v1";
-    private const string CreatedConsumerEndpoint = "notrelix-automation-board-item-created-v1";
+    private const string MovedConsumerEndpoint = "notrelix-automation-board-item-moved-v2";
+    private const string CreatedConsumerEndpoint = "notrelix-automation-board-item-created-v2";
 
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
@@ -179,14 +179,14 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
         }
     }
 
-    private static BoardItemMovedIntegrationEvent NewMovedEvent(ChainGraph graph, Guid eventId) =>
+    private static BoardItemMovedIntegrationEventV2 NewMovedEvent(ChainGraph graph, Guid eventId) =>
         new(eventId, graph.AccountId, graph.ItemId, graph.BoardId, graph.WorkspaceId,
-            graph.GroupId, graph.GroupId, Guid.NewGuid(), ActorUserId: graph.OwnerId,
+            graph.GroupId, graph.GroupId, Revision: 2, Guid.NewGuid(), ActorUserId: graph.OwnerId,
             OccurredAt: DateTimeOffset.UtcNow);
 
-    private static BoardItemCreatedIntegrationEvent NewCreatedEvent(ChainGraph graph, Guid eventId) =>
+    private static BoardItemCreatedIntegrationEventV2 NewCreatedEvent(ChainGraph graph, Guid eventId) =>
         new(eventId, graph.AccountId, graph.ItemId, graph.BoardId, graph.WorkspaceId,
-            "Chained item", Guid.NewGuid(), ActorUserId: graph.OwnerId,
+            "Chained item", Revision: 1, Guid.NewGuid(), ActorUserId: graph.OwnerId,
             OccurredAt: DateTimeOffset.UtcNow);
 
     private ServiceProvider BuildProvider()

@@ -88,7 +88,7 @@ public sealed class BoardItemMovedConsumerDefinition : ConsumerDefinition<BoardI
 {
     public BoardItemMovedConsumerDefinition()
     {
-        EndpointName = "notrelix-work-board-item-moved-v1";
+        EndpointName = "notrelix-work-board-item-moved-v2";
         ConcurrentMessageLimit = 2;
     }
 
@@ -109,7 +109,7 @@ public sealed class BoardItemArchivedConsumerDefinition : ConsumerDefinition<Boa
 {
     public BoardItemArchivedConsumerDefinition()
     {
-        EndpointName = "notrelix-work-board-item-archived-v1";
+        EndpointName = "notrelix-work-board-item-archived-v2";
         ConcurrentMessageLimit = 2;
     }
 

@@ -19,7 +19,7 @@ hard-fail, otherwise conservative chain validation runs at HEAD.
 
 Dev-stage re-baseline exception: while the project has no production
 database, the chain may be consolidated into the single
-20260702093805_SchemaV2Baseline migration (see
+20260702093805_SchemaBaseline migration (see
 backend/docs/operations/migrations-and-data-change.md BE-OPS-DATA-004 and
 docs/delivery/migration-policy.md DEL-MIG-028). Such a range is recognized
 only when the HEAD chain consists of exactly that one migration; history
@@ -39,7 +39,7 @@ MIGRATION_PATHS = ("backend/**/Migrations/**", "backend/**/migrations/**")
 MIGRATION_FILE_RE = re.compile(r"backend/.*/[Mm]igrations/.*")
 SNAPSHOT_SUFFIX = "ModelSnapshot.cs"
 DESIGNER_SUFFIX = ".Designer.cs"
-DEV_BASELINE_NAME = "20260702093805_SchemaV2Baseline.cs"
+DEV_BASELINE_NAME = "20260702093805_SchemaBaseline.cs"
 
 
 def is_snapshot(path: str) -> bool:
@@ -101,7 +101,7 @@ def head_chain_migration_names() -> list[str]:
 
 
 def head_is_single_dev_baseline() -> bool:
-    """True when HEAD's chain is exactly the single SchemaV2Baseline migration.
+    """True when HEAD's chain is exactly the single SchemaBaseline migration.
 
     This is the dev-stage re-baseline condition: while the project has no
     production database the whole chain may be consolidated into this one

@@ -444,7 +444,7 @@ Migration files are append-oriented historical persistence evidence.
 
 Do not rewrite already-applied migration history casually.
 
-The only sanctioned deviation is the governed dev-stage re-baseline policy owned by `docs/operations/migrations-and-data-change.md` §8 (BE-OPS-DATA-004): while the project has no production database, the chain may be consolidated into the single `SchemaV2Baseline` development migration, with development databases reset rather than upgraded.
+The only sanctioned deviation is the governed dev-stage re-baseline policy owned by `docs/operations/migrations-and-data-change.md` §8 (BE-OPS-DATA-004): while the project has no production database, the chain may be consolidated into the single `SchemaBaseline` development migration, with development databases reset rather than upgraded.
 
 ---
 

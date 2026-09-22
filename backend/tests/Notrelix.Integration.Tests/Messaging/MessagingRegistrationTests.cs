@@ -1,11 +1,57 @@
+using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Infrastructure;
+using Notrelix.Infrastructure.Messaging.Consumers.Integrations;
 
 namespace Notrelix.Integration.Tests.Messaging;
 
 public class MessagingRegistrationTests
 {
+    [Fact]
+    public void CalendarConsumer_ProductionEndpointName_IsStable()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Messaging:Transport"] = "RabbitMQ",
+                ["Messaging:EndpointPrefix"] = "test-prefix-must-not-leak-to-rabbit",
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddMessaging(configuration);
+
+        using var provider = services.BuildServiceProvider();
+        var definition = provider
+            .GetRequiredService<IConsumerDefinition<CalendarWebhookProcessingRequestedConsumer>>();
+
+        definition.GetEndpointName(new KebabCaseEndpointNameFormatter("ignored", false))
+            .Should().Be("notrelix-integrations-calendar-webhook-processing-requested-v1");
+    }
+
+    [Fact]
+    public void CalendarConsumer_InMemoryEndpointName_UsesConfiguredPrefix()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Messaging:Transport"] = "InMemory",
+                ["Messaging:EndpointPrefix"] = "calendar-test-namespace",
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddMessaging(configuration);
+
+        using var provider = services.BuildServiceProvider();
+        var definition = provider
+            .GetRequiredService<IConsumerDefinition<CalendarWebhookProcessingRequestedConsumer>>();
+
+        definition.GetEndpointName(new KebabCaseEndpointNameFormatter("ignored", false))
+            .Should().Be("calendar-test-namespace-integrations-calendar-webhook-processing-requested-v1");
+    }
+
     [Fact]
     public void AddMessaging_WhenTransportIsNone_InDevelopment_ShouldSucceed()
     {

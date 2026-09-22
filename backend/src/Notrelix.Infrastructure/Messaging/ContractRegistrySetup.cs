@@ -22,12 +22,15 @@ public static class ContractRegistrySetup
             if (attr is null)
                 continue;
 
+            var compatibility = EventEvolutionPolicyRegistry.GetCompatibility(attr.Name, attr.Version);
+
             definitions.Add(new ContractDefinition
             {
                 Name = attr.Name,
                 Version = attr.Version,
                 IntegrationEventType = type,
                 Classification = EventClassification.Business,
+                Compatibility = compatibility,
             });
         }
 

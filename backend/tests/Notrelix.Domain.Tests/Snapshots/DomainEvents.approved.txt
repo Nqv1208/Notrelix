@@ -729,6 +729,7 @@ work-management.board-group-unarchived|1|Notrelix.Domain.WorkManagement.BoardGro
 work-management.board-item-archived|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemArchivedDomainEvent|Workspace|ArchivedBy|System.Guid|False
 work-management.board-item-archived|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemArchivedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-item-archived|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemArchivedDomainEvent|Workspace|ItemId|System.Guid|False
+work-management.board-item-archived|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemArchivedDomainEvent|Workspace|Version|System.Int64|False
 work-management.board-item-completed|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-item-completed|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|Workspace|CompletedAt|System.DateTimeOffset|False
 work-management.board-item-completed|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|Workspace|CompletedBy|System.Guid|False
@@ -740,6 +741,7 @@ work-management.board-item-created|2|Notrelix.Domain.WorkManagement.Items.Events
 work-management.board-item-created|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|Workspace|ItemLevel|System.Int32|False
 work-management.board-item-created|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|Workspace|Name|System.String|False
 work-management.board-item-created|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|Workspace|ParentItemId|System.Guid|True
+work-management.board-item-created|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|Workspace|Version|System.Int64|False
 work-management.board-item-deleted|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemDeletedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-item-deleted|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemDeletedDomainEvent|Workspace|DeletedBy|System.Guid|False
 work-management.board-item-deleted|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemDeletedDomainEvent|Workspace|ItemId|System.Guid|False
@@ -772,6 +774,7 @@ work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.B
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|NewPosition|System.String|False
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|OldGroupId|System.Guid|False
 work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|UpdatedBy|System.Guid|False
+work-management.board-item-moved|1|Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|Workspace|Version|System.Int64|False
 work-management.board-item-parent-assigned|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-item-parent-assigned|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|Workspace|ItemId|System.Guid|False
 work-management.board-item-parent-assigned|2|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|Workspace|NewLevel|System.Int32|False

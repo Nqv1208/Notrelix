@@ -127,6 +127,12 @@ public static class DependencyInjection
         services.AddScoped<
             global::Notrelix.Application.Features.Automation.Executions.Services.AutomationMoveItemUseCase>();
 
+        // Integrations-owned calendar webhook processing seam (provider-neutral
+        // processing under the derived tenant — Wave E of TAC v2.6 closure).
+        services.AddScoped<
+            Notrelix.Application.Features.Integrations.Calendar.Processing.ICalendarWebhookProcessingUseCase,
+            Notrelix.Application.Features.Integrations.Calendar.Processing.CalendarWebhookProcessingUseCase>();
+
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);
     }

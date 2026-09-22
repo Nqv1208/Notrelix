@@ -11,5 +11,6 @@ public sealed record BoardItemCreatedDomainEvent(
     Guid CreatedBy,
     DateTimeOffset OccurredAt,
     Guid? ParentItemId,
-    int ItemLevel
+    int ItemLevel,
+    long Version
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

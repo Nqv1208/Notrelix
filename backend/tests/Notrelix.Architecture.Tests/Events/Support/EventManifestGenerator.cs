@@ -300,8 +300,11 @@ public static class EventManifestGenerator
 
         return new ScopeMetadata(
             TenantScope: tenantScope,
-            CarriesAccountId: parameterNames.Contains("accountId", StringComparer.OrdinalIgnoreCase),
-            CarriesWorkspaceId: parameterNames.Contains("workspaceId", StringComparer.OrdinalIgnoreCase));
+            CarriesAccountId: ContainsScopeParameter(parameterNames, "accountId"),
+            CarriesWorkspaceId: ContainsScopeParameter(parameterNames, "workspaceId"));
+
+        static bool ContainsScopeParameter(IReadOnlySet<string> parameters, string name) =>
+            parameters.Contains(name) || parameters.Contains(name + "Value");
     }
 
     private static IReadOnlySet<string> GetPrimaryConstructorParameterNames(Type type)
