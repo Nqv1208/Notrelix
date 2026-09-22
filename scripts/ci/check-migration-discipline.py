@@ -16,6 +16,15 @@ artifact kinds with different lifecycles:
 
 Unknown or full ranges never silently skip: with a known schema change they
 hard-fail, otherwise conservative chain validation runs at HEAD.
+
+Dev-stage re-baseline exception: while the project has no production
+database, the chain may be consolidated into the single
+20260702093805_SchemaBaseline migration (see
+backend/docs/operations/migrations-and-data-change.md BE-OPS-DATA-004 and
+docs/delivery/migration-policy.md DEL-MIG-028). Such a range is recognized
+only when the HEAD chain consists of exactly that one migration; history
+rewrites and deletions are then downgraded to warnings. Removal condition:
+restore strict append-only handling once a production database exists.
 """
 from __future__ import annotations
 
@@ -30,6 +39,7 @@ MIGRATION_PATHS = ("backend/**/Migrations/**", "backend/**/migrations/**")
 MIGRATION_FILE_RE = re.compile(r"backend/.*/[Mm]igrations/.*")
 SNAPSHOT_SUFFIX = "ModelSnapshot.cs"
 DESIGNER_SUFFIX = ".Designer.cs"
+DEV_BASELINE_NAME = "20260702093805_SchemaBaseline.cs"
 
 
 def is_snapshot(path: str) -> bool:
@@ -72,6 +82,36 @@ def head_chain_duplicates() -> list[str]:
             duplicates.append(f"{path} duplicates chain index of {seen[index]}")
         seen[index] = path
     return duplicates
+
+
+def head_chain_migration_names() -> list[str]:
+    """Migration definition file names tracked in the working tree (HEAD)."""
+    try:
+        files = sh("git", "ls-files", "backend").splitlines()
+    except RuntimeError:
+        return []
+    names = []
+    for path in files:
+        if not MIGRATION_FILE_RE.fullmatch(path):
+            continue
+        if is_designer(path) or is_snapshot(path) or not path.endswith(".cs"):
+            continue
+        names.append(path.rsplit("/", 1)[-1])
+    return names
+
+
+def head_is_single_dev_baseline() -> bool:
+    """True when HEAD's chain is exactly the single SchemaBaseline migration.
+
+    This is the dev-stage re-baseline condition: while the project has no
+    production database the whole chain may be consolidated into this one
+    migration, so folding later entries into it (deleting them, rewriting the
+    baseline and its designer) is a governed exception, not an append-only
+    violation. Once any real migration is appended after the baseline the
+    head chain is no longer a single entry and strict append-only history is
+    enforced again.
+    """
+    return head_chain_migration_names() == [DEV_BASELINE_NAME]
 
 
 def range_changes(base: str, head: str) -> dict[str, list[str]]:
@@ -160,24 +200,41 @@ def main() -> int:
 
         changes = range_changes(args.base_sha, args.head_sha)
         violations: list[str] = []
+        warnings: list[str] = []
+        dev_rebaseline = head_is_single_dev_baseline()
         for path in changes["modified_history"]:
+            if dev_rebaseline:
+                warnings.append(f"dev-stage rebaseline rewrites the single-baseline history: {path}")
+                continue
             violations.append(f"migration history is append-only; changed: {path}")
         for path in changes["deleted_history"]:
+            if dev_rebaseline:
+                warnings.append(f"dev-stage rebaseline consolidates history: {path}")
+                continue
             violations.append(f"migration history is append-only; deleted: {path}")
         for path in changes["snapshot_removed"]:
             violations.append(f"model snapshot cannot be deleted, renamed or type-changed: {path}")
         if not changes["added_migrations"]:
-            for path in changes["snapshot_modified"]:
-                violations.append(f"model snapshot modified without appending a migration: {path}")
-            for path in changes["snapshot_added"]:
-                violations.append(f"model snapshot added without appending a migration: {path}")
+            if dev_rebaseline:
+                for path in changes["snapshot_modified"] + changes["snapshot_added"]:
+                    warnings.append(f"dev-stage rebaseline rewrites the model snapshot: {path}")
+            else:
+                for path in changes["snapshot_modified"]:
+                    violations.append(f"model snapshot modified without appending a migration: {path}")
+                for path in changes["snapshot_added"]:
+                    violations.append(f"model snapshot added without appending a migration: {path}")
         result = {
             "compared": True,
             "ok": not violations,
+            "dev_rebaseline": dev_rebaseline,
             "added_migrations": sorted(changes["added_migrations"]),
             "snapshot_modified": sorted(changes["snapshot_modified"]),
             "violations": sorted(violations),
+            "warnings": sorted(warnings),
         }
+        if warnings:
+            for warning in result["warnings"]:
+                print(f"::warning::[migration-discipline] {warning}", file=sys.stderr)
         if violations:
             for violation in result["violations"]:
                 print(f"::error::[migration-discipline] {violation}", file=sys.stderr)

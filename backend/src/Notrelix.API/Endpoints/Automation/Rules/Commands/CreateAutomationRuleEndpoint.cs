@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Automation.Rules.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
 
@@ -31,9 +32,3 @@ public static class CreateAutomationRuleEndpoint
         return result.ToCreatedResult($"/api/v1/automations/{result.Data}");
     }
 }
-
-internal sealed record CreateAutomationRuleRequest(
-    string Name,
-    string TriggerEvent,
-    string ActionType,
-    string? Configuration);

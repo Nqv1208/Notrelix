@@ -1274,7 +1274,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/integrations/calendar/webhooks/{provider}": {
+    "/api/v1/integrations/calendar/webhooks/{provider}/{webhookPath}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3624,6 +3624,15 @@ export interface components {
         "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
             name?: string | null;
         };
+        "Notrelix.API.Contracts.Automation.Rules.Requests.CreateAutomationRuleRequest": {
+            name?: string | null;
+            triggerEvent?: string | null;
+            actionType?: string | null;
+            configuration?: string | null;
+        };
+        "Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest": {
+            isEnabled?: boolean;
+        };
         "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
             filename?: string | null;
             url?: string | null;
@@ -4034,15 +4043,6 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
-        "Notrelix.API.Endpoints.Automation.Rules.Commands.CreateAutomationRuleRequest": {
-            name?: string | null;
-            triggerEvent?: string | null;
-            actionType?: string | null;
-            configuration?: string | null;
-        };
-        "Notrelix.API.Endpoints.Automation.Rules.Commands.SetAutomationRuleEnabledRequest": {
-            isEnabled?: boolean;
-        };
         "Notrelix.API.Endpoints.Identity.ApiTokens.Commands.CreateApiTokenRequest": {
             name?: string | null;
             /** Format: date-time */
@@ -4435,7 +4435,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Notrelix.API.Endpoints.Automation.Rules.Commands.CreateAutomationRuleRequest"];
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Automation.Rules.Requests.CreateAutomationRuleRequest"];
             };
         };
         responses: {
@@ -4477,7 +4477,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Notrelix.API.Endpoints.Automation.Rules.Commands.SetAutomationRuleEnabledRequest"];
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest"];
             };
         };
         responses: {
@@ -6218,6 +6218,7 @@ export interface operations {
             header?: never;
             path: {
                 provider: string;
+                webhookPath: string;
             };
             cookie?: never;
         };

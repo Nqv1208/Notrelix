@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Security;
 
 namespace Notrelix.Architecture.Tests.Pipeline;
 

@@ -1,7 +1,7 @@
 using Notrelix.Application.Features.Automation.Ports.WorkManagement;
+using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Identity.Ports.Bootstrap;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
-using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Infrastructure.CrossContext.Analytics.WorkManagement;
 using Notrelix.Infrastructure.CrossContext.Automation.WorkManagement;
 using Notrelix.Infrastructure.CrossContext.Identity.Bootstrap;
@@ -31,13 +31,11 @@ public static class CrossContextRegistration
         // Cross-context target-action port: Automation -> WorkManagement
         services.AddScoped<IWorkActionPort, WorkItemActionAdapter>();
 
-        // Cross-context projection-source port: Analytics rebuild -> WorkManagement.
-        // The projection-source runtime binding stays on the current adapter until
-        // the M10 port-ownership normalization closes.
-        services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceAdapter>();
-        services.AddScoped<
-            Notrelix.Infrastructure.Messaging.Consumers.Analytics.IWorkItemProjectionSourceAdapter,
-            WorkItemProjectionSourceAdapter>();
+        // Cross-context projection-source port: Analytics -> WorkManagement.
+        // The Analytics-owned port binds to the delegate adapter, which reaches
+        // the producer-owned Public IWorkItemProjectionSource contract
+        // (registered by the WorkManagement Application).
+        services.AddScoped<IWorkItemProjectionSourceAdapter, WorkItemProjectionSourceAdapter>();
 
         return services;
     }

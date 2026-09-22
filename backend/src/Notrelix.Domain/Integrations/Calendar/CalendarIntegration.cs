@@ -38,6 +38,7 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid ConnectionId { get; private set; }
+    public string WebhookPath { get; private set; } = null!;
     public CalendarProvider Provider { get; private set; }
     public CalendarSyncDirection SyncDirection { get; private set; }
     public bool IsActive { get; private set; }
@@ -47,17 +48,19 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     private CalendarIntegration() : base() { }
 
-    public static CalendarIntegration Create(Guid accountId, Guid workspaceId, Guid connectionId, CalendarProvider provider, CalendarSyncDirection syncDirection, Guid createdBy, DateTimeOffset createdAt)
+    public static CalendarIntegration Create(Guid accountId, Guid workspaceId, Guid connectionId, string webhookPath, CalendarProvider provider, CalendarSyncDirection syncDirection, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(connectionId);
+        Guard.NotNullOrWhiteSpace(webhookPath);
 
         var integration = new CalendarIntegration
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
             ConnectionId = connectionId,
+            WebhookPath = webhookPath,
             Provider = provider,
             SyncDirection = syncDirection,
             IsActive = true

@@ -140,6 +140,7 @@ public class ConnectCalendarCommandHandler : IRequestHandler<ConnectCalendarComm
                     accountId,
                     workspaceId,
                     connection.Id,
+                    GenerateWebhookPath(),
                     calendarProvider,
                     syncDirection,
                     actorId,
@@ -152,5 +153,14 @@ public class ConnectCalendarCommandHandler : IRequestHandler<ConnectCalendarComm
             // returning lets the pipeline persist all staged aggregates.
             return Result<Guid>.Success(calendarIntegrationId);
         }
+    }
+
+    private static string GenerateWebhookPath()
+    {
+        var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+        return Convert.ToBase64String(bytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
     }
 }

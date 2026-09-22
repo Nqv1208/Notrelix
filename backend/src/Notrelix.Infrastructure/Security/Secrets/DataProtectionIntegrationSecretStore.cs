@@ -47,21 +47,26 @@ public sealed class DataProtectionIntegrationSecretStore : IIntegrationSecretSto
     /// e.g. revoking a previous version's blob after a failed rotation).
     /// Unknown/already-revoked references are no-ops.
     /// </summary>
-    public async Task RevokeAsync(string secretReference, CancellationToken cancellationToken)
+    public async Task<ProviderCleanupResult> RevokeAsync(string secretReference, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(secretReference, out var blobId))
         {
-            return;
+            return new ProviderCleanupResult(
+                ProviderCleanupOutcome.Success,
+                "secret reference is already absent from the local store");
         }
 
         var blob = await _context.IntegrationSecretBlobs
             .FirstOrDefaultAsync(b => b.Id == blobId && !b.Revoked, cancellationToken);
         if (blob is null)
         {
-            return;
+            return new ProviderCleanupResult(
+                ProviderCleanupOutcome.Success,
+                "secret blob is already revoked or absent");
         }
 
         blob.Revoke(_clock.UtcNow);
         await _context.SaveChangesAsync(cancellationToken);
+        return new ProviderCleanupResult(ProviderCleanupOutcome.Success);
     }
 }

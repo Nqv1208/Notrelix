@@ -135,7 +135,7 @@ public sealed class N8nAutomationRuleEvaluator
     }
 
     public Task ExecuteAsync(
-        BoardItemMovedIntegrationEvent integrationEvent,
+        BoardItemMovedIntegrationEventV2 integrationEvent,
         CancellationToken cancellationToken)
     {
         var workspaceId = integrationEvent.WorkspaceId
@@ -156,7 +156,7 @@ public sealed class N8nAutomationRuleEvaluator
     }
 
     public Task ExecuteAsync(
-        BoardItemCreatedIntegrationEvent integrationEvent,
+        BoardItemCreatedIntegrationEventV2 integrationEvent,
         CancellationToken cancellationToken)
     {
         var workspaceId = integrationEvent.WorkspaceId

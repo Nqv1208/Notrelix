@@ -205,7 +205,7 @@ public class IntegrationConnectionTests
     {
         var connectionId = Guid.NewGuid();
 
-        var calendar = CalendarIntegration.Create(AccountId, WorkspaceId, connectionId, CalendarProvider.Google, CalendarSyncDirection.Both, Actor, Now);
+        var calendar = CalendarIntegration.Create(AccountId, WorkspaceId, connectionId, "test-webhook-path", CalendarProvider.Google, CalendarSyncDirection.Both, Actor, Now);
         calendar.IsActive.Should().BeTrue();
         calendar.SyncDirection.Should().Be(CalendarSyncDirection.Both);
         calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationConnectedDomainEvent);
@@ -227,7 +227,7 @@ public class IntegrationConnectionTests
     public void CalendarIntegration_LinkEvent_ShouldEnforceUniqueness()
     {
         var connectionId = Guid.NewGuid();
-        var calendar = CalendarIntegration.Create(AccountId, WorkspaceId, connectionId, CalendarProvider.Google, CalendarSyncDirection.Both, Actor, Now);
+        var calendar = CalendarIntegration.Create(AccountId, WorkspaceId, connectionId, "test-webhook-path", CalendarProvider.Google, CalendarSyncDirection.Both, Actor, Now);
 
         var internalId = Guid.NewGuid();
         var externalId = "ext-event-123";

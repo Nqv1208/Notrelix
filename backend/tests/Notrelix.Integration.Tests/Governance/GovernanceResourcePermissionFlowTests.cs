@@ -20,6 +20,7 @@ using Notrelix.Application.Features.Documents.Pages.Commands.ArchivePage;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
+using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetResourcePermissions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
@@ -332,6 +333,134 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         result.Succeeded.Should().BeTrue(
             "an active Manager-level resource permission authorizes ACL management");
+    }
+
+    // ── 41D2 — RevokeResourcePermission authorization (WG-FLOW-04) ──────────
+
+    [Fact]
+    public async Task Revoke_OnPage_ByOwner_RemovesActiveRowAndAudits()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var granted = await SendAsync<Result<ResourcePermissionDto>>(ownerProvider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer"));
+        granted.Succeeded.Should().BeTrue();
+
+        var result = await SendAsync<Result>(ownerProvider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, granted.Data.Id));
+
+        result.Succeeded.Should().BeTrue();
+        await using var verify = _db.CreateContext(SystemTenant());
+        var row = await verify.ResourcePermissions.IgnoreQueryFilters()
+            .SingleAsync(p => p.Id == granted.Data.Id);
+        row.DeletedAt.Should().NotBeNull("revoke soft-deletes the active permission row");
+        await AssertAuditRecordedAsync(workspaceId, ownerId, "RevokeResourcePermission");
+    }
+
+    [Fact]
+    public async Task Revoke_PageManagerRank_RevokeEqualOrLowerTargetRank_Allows()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        var managerId = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, managerId, WorkspaceRole.Member);
+        await SeedResourcePermissionAsync(accountId, workspaceId, "documents.page", pageId, managerId, PermissionLevel.Manager);
+
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var granted = await SendAsync<Result<ResourcePermissionDto>>(ownerProvider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer"));
+        granted.Succeeded.Should().BeTrue();
+
+        using var managerProvider = CreateProvider(accountId, managerId);
+        var result = await SendAsync<Result>(managerProvider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, granted.Data.Id));
+
+        result.Succeeded.Should().BeTrue(
+            "an active Manager-rank authority may revoke an equal-or-lower target rank through the one canonical ceiling");
+    }
+
+    [Fact]
+    public async Task Revoke_AuthorityBelowTargetRank_IsForbidden_AndRowStaysActive()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        var editorId = Guid.NewGuid();
+        await SeedWorkspaceMemberAsync(accountId, workspaceId, editorId, WorkspaceRole.Member);
+        await SeedResourcePermissionAsync(accountId, workspaceId, "documents.page", pageId, editorId, PermissionLevel.Editor);
+
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var granted = await SendAsync<Result<ResourcePermissionDto>>(ownerProvider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Manager"));
+        granted.Succeeded.Should().BeTrue();
+
+        using var editorProvider = CreateProvider(accountId, editorId);
+        var act = () => SendAsync<Result>(editorProvider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, granted.Data.Id));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "revoke requires authority >= the target's existing rank");
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.ResourcePermissions.IgnoreQueryFilters()
+            .SingleAsync(p => p.Id == granted.Data.Id)).DeletedAt
+            .Should().BeNull("a denied revoke must leave the permission row untouched");
+    }
+
+    [Fact]
+    public async Task Revoke_SubjectWithoutManagementAuthority_IsForbidden_EvenOnOwnRankRow()
+    {
+        // Being the subject of a permission row is not ACL-management
+        // authority: the ManagePagePermission ladder gates the revoke path
+        // exactly like the read/grant paths.
+        var (accountId, ownerId, _, pageId, memberId) = await SeedPageStackAsync();
+
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var granted = await SendAsync<Result<ResourcePermissionDto>>(ownerProvider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer"));
+        granted.Succeeded.Should().BeTrue();
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var act = () => SendAsync<Result>(memberProvider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, granted.Data.Id));
+
+        await act.Should().ThrowAsync<AppForbidden>(
+            "a Viewer subject holds no page-management authority");
+    }
+
+    [Fact]
+    public async Task Revoke_UnknownPermission_IsNotFound()
+    {
+        var (accountId, ownerId, _, pageId, _) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var act = () => SendAsync<Result>(provider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, Guid.NewGuid()));
+
+        await act.Should().ThrowAsync<AppNotFound>();
+    }
+
+    [Fact]
+    public async Task Revoke_ForeignAccountTarget_IsNotFound_AndForeignRowStaysActive()
+    {
+        // Cross-account existence must stay hidden on the mutation path too:
+        // the foreign permission id neither leaks through Forbidden nor is
+        // revoked.
+        var (accountA, ownerA, _, _, _) = await SeedPageStackAsync();
+        var (accountB, ownerB, _, pageB, memberB) = await SeedPageStackAsync();
+
+        using var providerB = CreateProvider(accountB, ownerB);
+        var granted = await SendAsync<Result<ResourcePermissionDto>>(providerB,
+            new GrantResourcePermissionCommand("documents.page", pageB, "User", memberB, "Viewer"));
+        granted.Succeeded.Should().BeTrue();
+
+        using var providerA = CreateProvider(accountA, ownerA);
+        var act = () => SendAsync<Result>(providerA,
+            new RevokeResourcePermissionCommand("documents.page", pageB, granted.Data.Id));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "a foreign-account permission must be hidden from the revoke mutation");
+        await using var verify = _db.CreateContext(SystemTenant());
+        (await verify.ResourcePermissions.IgnoreQueryFilters()
+            .SingleAsync(p => p.Id == granted.Data.Id)).DeletedAt
+            .Should().BeNull("the foreign row must remain active after the hidden attempt");
     }
 
     // ── 41F — Canonical authorization pipeline routing ───────────────────────
@@ -1052,6 +1181,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddSingleton<IRequestDescriptorRegistry>(
             RequestDescriptorRegistry.Create(typeof(GrantResourcePermissionCommand).Assembly));
         services.AddTransient<IValidator<GrantResourcePermissionCommand>, GrantResourcePermissionCommandValidator>();
+        services.AddTransient<IValidator<RevokeResourcePermissionCommand>, RevokeResourcePermissionCommandValidator>();
         services.AddTransient<IValidator<GetResourcePermissionsQuery>, GetResourcePermissionsQueryValidator>();
         services.AddTransient<IValidator<CreatePageCommand>, CreatePageCommandValidator>();
         services.AddTransient<IValidator<CreateCommentCommand>, CreateCommentCommandValidator>();
@@ -1092,7 +1222,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             new PostgresAccessFactsProvider(
                 sp.GetRequiredService<ApplicationDbContext>(),
                 sp.GetRequiredService<TimeProvider>(),
-                sp.GetRequiredService<global::Notrelix.Application.Features.Documents.Public.PageAuthorization.IPageAuthorizationFacts>()));
+                sp.GetRequiredService<global::Notrelix.Application.Features.Documents.Public.PageAuthorization.IPageAuthorizationFacts>(),
+                new FakeBillingSubscriptionFacts()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
@@ -1123,6 +1254,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<GrantResourcePermissionCommand, Result<ResourcePermissionDto>>,
             GrantResourcePermissionCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<RevokeResourcePermissionCommand, Result>,
+            RevokeResourcePermissionCommandHandler>();
         services.AddScoped<
             IRequestHandler<GetResourcePermissionsQuery, Result<List<ResourcePermissionDto>>>,
             GetResourcePermissionsQueryHandler>();

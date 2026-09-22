@@ -6,3 +6,5 @@ global using MediatR;
 // Application Common (capability folders)
 global using Notrelix.Application.Common.Events;
 global using Notrelix.Application.Common.Requests;
+
+global using Notrelix.Application.Features.Governance.Authorization;

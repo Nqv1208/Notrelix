@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
+using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Domain.Automation.RulesEngine;
 
@@ -23,17 +24,20 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBillingCapabilityFacts _billingCapabilityFacts;
+    private readonly IBillingCapacityActions _billingCapacityActions;
 
     public CreateAutomationRuleCommandHandler(
         IAutomationDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IBillingCapabilityFacts billingCapabilityFacts)
+        IBillingCapabilityFacts billingCapabilityFacts,
+        IBillingCapacityActions billingCapacityActions)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _billingCapabilityFacts = billingCapabilityFacts;
+        _billingCapacityActions = billingCapacityActions;
     }
 
     public async Task<Result<Guid>> Handle(CreateAutomationRuleCommand request, CancellationToken cancellationToken)
@@ -64,6 +68,24 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
             _dateTimeProvider.UtcNow);
 
         _context.AutomationRules.Add(rule);
+
+        // BOUND-TX-003: the capacity consume and the rule create share the
+        // request transaction (same ApplicationDbContext, one SaveChanges owned
+        // by the data session). If the capacity slot is lost to a concurrent
+        // request the whole mutation rolls back; no separate compensation is
+        // needed. The rule identity is the stable logical operation id, so a
+        // retry after a partial infrastructure failure never double-consumes.
+        await _billingCapacityActions.ConsumeAsync(
+            new ConsumeCapacityRequest(new BillingCapacityOperationIdentity(
+                AccountId: _requestContext.RequireAccountId(),
+                WorkspaceId: request.WorkspaceId,
+                CapabilityCode: BillingCapabilityCode.AutomationRule,
+                Amount: 1,
+                LogicalOperationId: rule.Id,
+                SourceResource: rule.Id.ToString(),
+                ActorUserId: _requestContext.UserId,
+                OccurredAt: _dateTimeProvider.UtcNow)),
+            cancellationToken);
 
         return Result<Guid>.Success(rule.Id);
     }

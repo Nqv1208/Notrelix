@@ -8,6 +8,18 @@ namespace Notrelix.Application.Features.Integrations.Public.Secrets;
 /// material to the Domain and can be swapped (DataProtection blob store now,
 /// cloud KMS/Vault later) without touching the aggregate contract.
 /// </summary>
+public enum ProviderCleanupOutcome
+{
+    Success,
+    Retryable,
+    Terminal,
+    Unknown,
+}
+
+public sealed record ProviderCleanupResult(
+    ProviderCleanupOutcome Outcome,
+    string? Detail = null);
+
 public interface IIntegrationSecretStore
 {
     /// <summary>
@@ -17,7 +29,8 @@ public interface IIntegrationSecretStore
 
     /// <summary>
     /// Revokes the physical secret behind the reference. Revoking an unknown
-    /// or already-revoked reference is a no-op.
+    /// or already-revoked reference is an idempotent success. Provider-specific
+    /// failures are classified without exposing provider SDK types.
     /// </summary>
-    Task RevokeAsync(string secretReference, CancellationToken cancellationToken);
+    Task<ProviderCleanupResult> RevokeAsync(string secretReference, CancellationToken cancellationToken);
 }

@@ -6,7 +6,7 @@
 Branch: develop
 HEAD: f91c203bb63e799e3d7979433d9c1d799b5fe794
 Solution: backend/backend.slnx
-Migration head: 20260702093805_SchemaV2Baseline
+Migration head: 20260702093805_SchemaBaseline
 ```
 
 This record implements PLAN Phases 0-2. It records source facts and semantic

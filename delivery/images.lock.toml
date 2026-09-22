@@ -27,7 +27,7 @@ stateful = false
 [images.postgres]
 class = "runtime"
 source = "postgres:16.15-bookworm"
-ref = "postgres@sha256:bb3e1a57e5407e0a5280b4211980a5e537f4abd234a87014ac979849a78dd825"
+ref = "postgres@sha256:efedf3595f1d6f415c08568ba171029bf54052e754cc9f030e3f2412b21f3d67"
 compose_service = "postgres"
 deploy_env_var = "NOTRELIX_POSTGRES_IMAGE"
 stateful = true
@@ -35,7 +35,7 @@ stateful = true
 [images.redis]
 class = "runtime"
 source = "redis:7-alpine"
-ref = "redis@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf"
+ref = "redis@sha256:ca0acbb137c1dc3339c8b147a58fd6f42775d4599327b50e7b116c23de501af2"
 compose_service = "redis"
 deploy_env_var = "NOTRELIX_REDIS_IMAGE"
 stateful = true

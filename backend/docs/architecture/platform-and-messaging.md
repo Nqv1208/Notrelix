@@ -159,7 +159,6 @@ PoisonDetector
 RetryPolicy
 CircuitBreaker
 ReplayEngine
-RabbitMqTransportAdapter
 InMemoryTransportAdapter
 NullTransportAdapter
 ```
@@ -1246,10 +1245,15 @@ ITransportAdapter
 IConnectionManager
 ITransportPolicy
 DefaultTransportPolicy
-RabbitMqTransportAdapter
 InMemoryTransportAdapter
 NullTransportAdapter
 ```
+
+The former `RabbitMqTransportAdapter` placeholder was retired because it had no
+composition root registration and its send operation was non-operational.
+RabbitMQ delivery is owned by the configured MassTransit/Infrastructure
+transport path; this Platform abstraction must not advertise a second,
+unfinished broker stack.
 
 Platform contract should not require RabbitMQ semantics where generic transport semantics suffice.
 
@@ -1257,7 +1261,7 @@ Platform contract should not require RabbitMQ semantics where generic transport 
 
 # 78. BE-PLT-036 — Transport adapter is replaceable behind Platform contract
 
-RabbitMQ/InMemory/Null are mechanisms.
+InMemory/Null are mechanisms.
 
 Do not encode product behavior based on:
 

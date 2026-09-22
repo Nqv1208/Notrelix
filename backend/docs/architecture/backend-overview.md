@@ -1857,7 +1857,11 @@ provider Port + adapter                → Integrations Public IN8nWebhookAction
                                          + Ports/Providers IN8nClient
                                          + Infrastructure N8nClient adapter
 capability/entitlement read            → Billing.Public IBillingCapabilityFacts
-                                         (consumer: CreateAutomationRule)
+                                          (consumer: CreateAutomationRule)
+subscription decision (authz gate)     → Billing.Public IBillingSubscriptionFacts
+                                          (consumer: access-facts provider composes
+                                          the neutral AccessFacts boolean; the shared
+                                          authz SQL never reads billing.subscriptions)
 transaction exception                  → BOUND-TX-002: Accounts↔Workspaces
                                          shared request transaction (AcceptInvitation)
 ```
@@ -1872,7 +1876,7 @@ never — foreign DbContext access, Common business vocabulary, plan-tier
         process state model, a parallel authorization stack
 ```
 
-Enforcement lives in the architecture gates (ARCH-BC-001..008, STN-ARCH-001..008)
+Enforcement lives in the architecture gates (ARCH-BC-001..008, STN-ARCH-001/002/005/006/007/008)
 plus the pack gates (Events/AutomationProcessReference, Contracts
 PublicSemanticContract, PlatformReferenceCompleteness). A new cross-context
 interaction that cannot classify into the mechanisms above is a stop condition.

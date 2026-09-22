@@ -186,6 +186,41 @@ which destroys reproducibility.
 
 Use a new forward migration.
 
+## Dev-stage re-baseline exception (explicit safe development-only policy)
+
+While the project has no production database, the current chain MAY be
+consolidated ("squeezed") into the single
+`20260702093805_SchemaBaseline` migration as a governed change:
+
+```text
+fold later entries' DDL/data semantics into the baseline
+→ regenerate the baseline designer from the final model
+→ remove the consolidated migration files
+→ keep the model snapshot equal to the final model
+```
+
+The executable gate (`scripts/ci/check-migration-discipline.py`) recognizes
+this only while the HEAD chain is exactly the single baseline file, and then
+downgrades the rewrite/delete of history entries to warnings.
+
+Consequences:
+
+```text
+development databases created against an older chain shape are reset,
+not upgraded;
+
+the consolidated baseline preserves hand-authored data semantics (for
+example the BILL-LIMIT-001 zero-limit backfill) with provenance
+comments;
+
+PostgreSQL system-column mappings (the placement-projection xmin
+row-version) stay DDL-free inside the baseline.
+```
+
+Removal condition: once a production database exists, this exception is
+retired and history is strictly append-only again — corrections then require
+new forward migrations.
+
 ---
 
 # 9. Clean database versus upgrade

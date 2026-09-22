@@ -15,4 +15,8 @@ public static class ErrorCodes
     public const string IdempotencyPayloadMismatch = "idempotency_payload_mismatch";
     public const string IdempotencyStateIncomplete = "idempotency_state_incomplete";
     public const string InternalServerError = "internal_server_error";
+    public const string WebhookUnsupportedMediaType = "webhook.unsupported_media_type";
+    public const string WebhookPayloadTooLarge = "webhook.payload_too_large";
+    public const string WebhookEmptyBody = "webhook.empty_body";
+    public const string WebhookMalformedBody = "webhook.malformed_body";
 }

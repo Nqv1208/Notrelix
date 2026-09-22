@@ -3,14 +3,18 @@ using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Features.Accounts.Members;
+using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Public.ItemMovement;
+using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Application.Common.Integrations.N8n;
 using Notrelix.Application.Features.Automation.Executions.Services;
+using Notrelix.Application.Features.Billing.Capacity;
 using Notrelix.Application.Features.Billing.Entitlements.Services;
+using Notrelix.Application.Features.Billing.Public.Capacity;
 using Notrelix.Application.Features.Billing.Public.Facts;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Identity.Users.Services;
@@ -109,13 +113,25 @@ public static class DependencyInjection
         services.AddScoped<IWorkItemActions, WorkItemActions>();
         services.AddScoped<IWorkItemActionAuthorizer, WorkItemActionAuthorizer>();
 
+        // Producer-owned public projection source (WorkManagement placement facts)
+        services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();
+
         // Producer-owned public capability surface (Billing)
         services.AddScoped<IBillingCapabilityFacts, BillingCapabilityFactsProvider>();
+
+        // Producer-owned public capacity action (Billing hard-quota consume/release)
+        services.AddScoped<IBillingCapacityActions, BillingCapacityActions>();
 
         // Automation-owned dispatch use cases (process progression)
         services.AddScoped<N8nDispatchUseCase>();
         services.AddScoped<
             global::Notrelix.Application.Features.Automation.Executions.Services.AutomationMoveItemUseCase>();
+
+        // Integrations-owned calendar webhook processing seam (provider-neutral
+        // processing under the derived tenant — Wave E of TAC v2.6 closure).
+        services.AddScoped<
+            Notrelix.Application.Features.Integrations.Calendar.Processing.ICalendarWebhookProcessingUseCase,
+            Notrelix.Application.Features.Integrations.Calendar.Processing.CalendarWebhookProcessingUseCase>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

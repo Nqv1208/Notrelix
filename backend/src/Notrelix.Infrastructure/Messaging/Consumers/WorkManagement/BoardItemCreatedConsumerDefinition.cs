@@ -4,7 +4,7 @@ public sealed class BoardItemCreatedConsumerDefinition : ConsumerDefinition<Boar
 {
     public BoardItemCreatedConsumerDefinition()
     {
-        EndpointName = "notrelix-work-board-item-created-v1";
+        EndpointName = "notrelix-work-board-item-created-v2";
         ConcurrentMessageLimit = 4;
     }
 

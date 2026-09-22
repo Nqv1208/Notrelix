@@ -6,6 +6,16 @@ public static class ConsumerRegistrySetup
     {
         return
         [
+            new ConsumerDefinition
+            {
+                ConsumerName = "IntegrationConnectionRevokedConsumer",
+                EventName = "integrations.integration-connection-revoked",
+                EventVersion = 1,
+                EndpointName = "notrelix-integrations-connection-revoked-v1",
+                BoundedContext = "Integrations",
+                Description = "Cleans up physical secrets after a connection is revoked",
+                Maturity = ConsumerMaturity.Implemented
+            },
             // ── Identity (5) ─────────────────────────────────────────────
             new ConsumerDefinition
             {
@@ -115,8 +125,8 @@ public static class ConsumerRegistrySetup
             {
                 ConsumerName = "BoardItemCreatedConsumer",
                 EventName = "board.item.created",
-                EventVersion = 1,
-                EndpointName = "notrelix-work-board-item-created-v1",
+                EventVersion = 2,
+                EndpointName = "notrelix-work-board-item-created-v2",
                 BoundedContext = "WorkManagement",
                 Description = "Handles board item creation",
                 Maturity = ConsumerMaturity.Implemented
@@ -301,8 +311,8 @@ public static class ConsumerRegistrySetup
             {
                 ConsumerName = "BoardItemMoved",
                 EventName = "board_item.moved",
-                EventVersion = 1,
-                EndpointName = "notrelix-work-board-item-moved-v1",
+                EventVersion = 2,
+                EndpointName = "notrelix-work-board-item-moved-v2",
                 BoundedContext = "WorkManagement",
                 Description = "Board item moved",
                 Maturity = ConsumerMaturity.Stub
@@ -311,8 +321,8 @@ public static class ConsumerRegistrySetup
             {
                 ConsumerName = "BoardItemArchived",
                 EventName = "board_item.archived",
-                EventVersion = 1,
-                EndpointName = "notrelix-work-board-item-archived-v1",
+                EventVersion = 2,
+                EndpointName = "notrelix-work-board-item-archived-v2",
                 BoundedContext = "WorkManagement",
                 Description = "Board item archived",
                 Maturity = ConsumerMaturity.Stub
@@ -486,8 +496,8 @@ public static class ConsumerRegistrySetup
             {
                 ConsumerName = "BoardItemMovedAutomationConsumer",
                 EventName = "board_item.moved",
-                EventVersion = 1,
-                EndpointName = "notrelix-automation-board-item-moved-v1",
+                EventVersion = 2,
+                EndpointName = "notrelix-automation-board-item-moved-v2",
                 BoundedContext = "Automation",
                 Description = "Evaluates item-moved automation rules after commit",
                 Maturity = ConsumerMaturity.Implemented
@@ -496,8 +506,8 @@ public static class ConsumerRegistrySetup
             {
                 ConsumerName = "BoardItemCreatedAutomationConsumer",
                 EventName = "board.item.created",
-                EventVersion = 1,
-                EndpointName = "notrelix-automation-board-item-created-v1",
+                EventVersion = 2,
+                EndpointName = "notrelix-automation-board-item-created-v2",
                 BoundedContext = "Automation",
                 Description = "Evaluates item-created automation rules after commit",
                 Maturity = ConsumerMaturity.Implemented
@@ -520,6 +530,16 @@ public static class ConsumerRegistrySetup
                 EndpointName = "notrelix-automation-n8n-dispatch-v1",
                 BoundedContext = "Automation",
                 Description = "Dispatches durable automation executions to n8n",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "CalendarWebhookProcessingRequestedConsumer",
+                EventName = "integrations.calendar-webhook-processing-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-integrations-calendar-webhook-processing-requested-v1",
+                BoundedContext = "Integrations",
+                Description = "Executes the provider-neutral calendar webhook processing seam under the derived tenant (Wave E)",
                 Maturity = ConsumerMaturity.Implemented
             },
 

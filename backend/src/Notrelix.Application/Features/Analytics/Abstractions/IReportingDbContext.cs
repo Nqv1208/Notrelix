@@ -1,5 +1,5 @@
+using Notrelix.Application.Features.Analytics.Projections.WorkItemPlacement;
 using Notrelix.Domain.Analytics.Dashboards;
-using Notrelix.Domain.Analytics.Placements;
 // ReSharper disable InconsistentNaming — intentionally mirrors DbContext member naming
 
 namespace Notrelix.Application.Features.Analytics.Abstractions;

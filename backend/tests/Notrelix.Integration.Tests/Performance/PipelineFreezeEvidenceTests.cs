@@ -74,6 +74,12 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
         cmd.Parameters.AddWithValue("resource_id", Guid.NewGuid());
         cmd.Parameters.AddWithValue("resource_was_located", true);
         cmd.Parameters.AddWithValue("action", "UpdateBoardItem");
+        // Mirror the full provider parameter set: a resource request without a
+        // permission-target carries these as NULL. The canonical SQL references
+        // them, so the EXPLAIN harness must bind all of them to execute.
+        cmd.Parameters.Add(new NpgsqlParameter("target_subject_type", NpgsqlTypes.NpgsqlDbType.Text) { Value = DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("target_subject_id", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("target_permission_id", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = DBNull.Value });
         cmd.Parameters.Add(new NpgsqlParameter("feature_code", NpgsqlTypes.NpgsqlDbType.Text) { Value = DBNull.Value });
         cmd.Parameters.AddWithValue("feature_amount", 0);
         cmd.Parameters.AddWithValue("now", DateTimeOffset.UtcNow);

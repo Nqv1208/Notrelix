@@ -11,11 +11,11 @@ public sealed class BoardEventMapper :
     IIntegrationEventMapper<BoardRenamedDomainEvent, BoardRenamedIntegrationEvent>,
     IIntegrationEventMapper<BoardArchivedDomainEvent, BoardArchivedIntegrationEvent>,
     IIntegrationEventMapper<BoardUnarchivedDomainEvent, BoardUnarchivedIntegrationEvent>,
-    IIntegrationEventMapper<BoardItemCreatedDomainEvent, BoardItemCreatedIntegrationEvent>,
+    IIntegrationEventMapper<BoardItemCreatedDomainEvent, BoardItemCreatedIntegrationEventV2>,
     IIntegrationEventMapper<BoardItemFieldValueChangedDomainEvent, BoardItemFieldValueChangedIntegrationEvent>,
     IIntegrationEventMapper<BoardItemRenamedDomainEvent, BoardItemRenamedIntegrationEvent>,
-    IIntegrationEventMapper<BoardItemMovedDomainEvent, BoardItemMovedIntegrationEvent>,
-    IIntegrationEventMapper<BoardItemArchivedDomainEvent, BoardItemArchivedIntegrationEvent>,
+    IIntegrationEventMapper<BoardItemMovedDomainEvent, BoardItemMovedIntegrationEventV2>,
+    IIntegrationEventMapper<BoardItemArchivedDomainEvent, BoardItemArchivedIntegrationEventV2>,
     IIntegrationEventMapper<BoardFieldCreatedDomainEvent, BoardFieldCreatedIntegrationEvent>,
     IIntegrationEventMapper<BoardFieldUpdatedDomainEvent, BoardFieldUpdatedIntegrationEvent>,
     IIntegrationEventMapper<BoardFieldDeletedDomainEvent, BoardFieldDeletedIntegrationEvent>,
@@ -85,15 +85,16 @@ public sealed class BoardEventMapper :
         );
     }
 
-    public BoardItemCreatedIntegrationEvent? Map(BoardItemCreatedDomainEvent domainEvent)
+    public BoardItemCreatedIntegrationEventV2? Map(BoardItemCreatedDomainEvent domainEvent)
     {
-        return new BoardItemCreatedIntegrationEvent(
+        return new BoardItemCreatedIntegrationEventV2(
             EventId: Guid.CreateVersion7(),
             AccountId: domainEvent.AccountId,
             ItemId: domainEvent.ItemId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
             Title: domainEvent.Name,
+            Revision: domainEvent.Version,
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.CreatedBy,
             CausationId: null,
@@ -136,9 +137,9 @@ public sealed class BoardEventMapper :
         );
     }
 
-    public BoardItemMovedIntegrationEvent? Map(BoardItemMovedDomainEvent domainEvent)
+    public BoardItemMovedIntegrationEventV2? Map(BoardItemMovedDomainEvent domainEvent)
     {
-        return new BoardItemMovedIntegrationEvent(
+        return new BoardItemMovedIntegrationEventV2(
             EventId: Guid.CreateVersion7(),
             AccountId: domainEvent.AccountId,
             ItemId: domainEvent.ItemId,
@@ -146,6 +147,7 @@ public sealed class BoardEventMapper :
             WorkspaceId: domainEvent.WorkspaceId,
             OldGroupId: domainEvent.OldGroupId,
             NewGroupId: domainEvent.NewGroupId,
+            Revision: domainEvent.Version,
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.UpdatedBy,
             CausationId: null,
@@ -153,14 +155,15 @@ public sealed class BoardEventMapper :
         );
     }
 
-    public BoardItemArchivedIntegrationEvent? Map(BoardItemArchivedDomainEvent domainEvent)
+    public BoardItemArchivedIntegrationEventV2? Map(BoardItemArchivedDomainEvent domainEvent)
     {
-        return new BoardItemArchivedIntegrationEvent(
+        return new BoardItemArchivedIntegrationEventV2(
             EventId: Guid.CreateVersion7(),
             AccountId: domainEvent.AccountId,
             ItemId: domainEvent.ItemId,
             BoardId: domainEvent.BoardId,
             WorkspaceId: domainEvent.WorkspaceId,
+            Revision: domainEvent.Version,
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.ArchivedBy,
             CausationId: null,

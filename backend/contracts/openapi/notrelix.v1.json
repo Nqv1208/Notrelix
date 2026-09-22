@@ -298,7 +298,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Automation.Rules.Commands.CreateAutomationRuleRequest"
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Automation.Rules.Requests.CreateAutomationRuleRequest"
               }
             }
           },
@@ -361,7 +361,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Automation.Rules.Commands.SetAutomationRuleEnabledRequest"
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest"
               }
             }
           },
@@ -3283,7 +3283,7 @@
         ]
       }
     },
-    "/api/v1/integrations/calendar/webhooks/{provider}": {
+    "/api/v1/integrations/calendar/webhooks/{provider}/{webhookPath}": {
       "post": {
         "tags": [
           "Integrations.Calendar"
@@ -3293,6 +3293,14 @@
         "parameters": [
           {
             "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "webhookPath",
             "in": "path",
             "required": true,
             "schema": {
@@ -13488,6 +13496,37 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Automation.Rules.Requests.CreateAutomationRuleRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "triggerEvent": {
+            "type": "string",
+            "nullable": true
+          },
+          "actionType": {
+            "type": "string",
+            "nullable": true
+          },
+          "configuration": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Automation.Rules.Requests.SetAutomationRuleEnabledRequest": {
+        "type": "object",
+        "properties": {
+          "isEnabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
         "type": "object",
         "properties": {
@@ -14772,37 +14811,6 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
-          }
-        },
-        "additionalProperties": false
-      },
-      "Notrelix.API.Endpoints.Automation.Rules.Commands.CreateAutomationRuleRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "triggerEvent": {
-            "type": "string",
-            "nullable": true
-          },
-          "actionType": {
-            "type": "string",
-            "nullable": true
-          },
-          "configuration": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "Notrelix.API.Endpoints.Automation.Rules.Commands.SetAutomationRuleEnabledRequest": {
-        "type": "object",
-        "properties": {
-          "isEnabled": {
-            "type": "boolean"
           }
         },
         "additionalProperties": false

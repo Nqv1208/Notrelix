@@ -12,7 +12,7 @@ public sealed class TimeWindowReplayStrategy : ReplayStrategyBase
         IReplayCheckpointStore checkpointStore,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await Task.CompletedTask;
+        EnsureRetainedEventSource(request);
         yield break;
     }
 }

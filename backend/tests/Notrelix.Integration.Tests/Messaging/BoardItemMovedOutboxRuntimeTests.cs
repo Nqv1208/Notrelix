@@ -2,6 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -77,10 +79,12 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         outbox!.AccountId.Should().Be(graph.AccountId, "TAC-FRZ-018: authoritative tenant envelope");
         outbox.WorkspaceId.Should().Be(graph.WorkspaceId);
         outbox.MessageName.Should().Be("board_item.moved");
-        outbox.SchemaVersion.Should().Be(1);
+        outbox.SchemaVersion.Should().Be(2, "the moved fact was bumped to v2 with the producer revision");
         outbox.PayloadJson.RootElement.GetProperty("itemId").GetGuid().Should().Be(graph.ItemId);
         outbox.PayloadJson.RootElement.GetProperty("oldGroupId").GetGuid().Should().Be(graph.SourceGroupId);
         outbox.PayloadJson.RootElement.GetProperty("newGroupId").GetGuid().Should().Be(graph.TargetGroupId);
+        outbox.PayloadJson.RootElement.GetProperty("revision").GetInt64().Should().Be(2,
+            "the payload carries the aggregate version at fact raise as its ordering authority");
         outbox.PayloadJson.RootElement.GetProperty("accountId").GetGuid().Should().Be(graph.AccountId);
         outbox.PayloadJson.RootElement.GetProperty("workspaceId").GetGuid().Should().Be(graph.WorkspaceId);
         outbox.PayloadJson.RootElement.GetProperty("actorUserId").GetGuid().Should().Be(graph.ExecutorUserId);
@@ -199,6 +203,11 @@ public sealed class BoardItemMovedOutboxRuntimeTests : IAsyncLifetime
         services.AddObservability(configuration);
         services.AddBackgroundJobs(configuration);
         services.AddCrossContextBindings();
+        // The cross-context Analytics adapter delegates to the producer-owned
+        // Public placement contract, which the production composition registers
+        // through AddApplicationServices. This granular graph must bind it too
+        // for the real placement consumer to activate.
+        services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
 
         return services.BuildServiceProvider();

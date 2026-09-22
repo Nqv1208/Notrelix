@@ -11,8 +11,12 @@ using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Integrations.Abstractions;
+using Notrelix.Application.Events.Integrations;
 using Notrelix.Application.Features.Integrations.Calendar.Commands.HandleCalendarWebhook;
 using Notrelix.Application.Features.Integrations.Public.Webhooks;
+using Notrelix.Domain.Integrations;
+using Notrelix.Domain.Integrations.Calendar;
+using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Integrations.Webhooks;
@@ -24,14 +28,20 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Integrations;
 
 /// <summary>
-/// TAC-AI-FLOW-07 — the frozen Option-A mechanism proof: the webhook command
+/// TAC-AI-FLOW-07 / C6 — the frozen Option-A mechanism proof: the webhook command
 /// is write-classified, so a delivery travels ISender → the canonical request
 /// pipeline (RequestContract → ExecutionContext → DataSession) → the real
 /// EfRequestDataSession transaction → the real verifier → the real intake →
-/// PostgreSQL. Case 1 commits the Processed receipt; case 2 pins a semantic
-/// that is not obvious: a business/security rejection is a Result.Failure,
-/// not an exception — the transaction still commits exactly one Rejected
-/// diagnostic receipt.
+/// PostgreSQL. The handler resolves the per-connection WebhookPath binding
+/// BEFORE any payload trust, and ONLY after signature verification does it
+/// derive the owning Account/Workspace as the execution tenant for the receipt.
+/// Case 1 commits the Captured NON-TERMINAL claim with the derived tenant and
+/// enrolls exactly one provider-neutral processing-requested event; the
+/// terminal receipt state is decided by the tenant-scoped consumer (Wave E),
+/// never by the bootstrap. Case 2 pins a semantic that is not obvious: a
+/// business/security rejection is a Result.Failure, not an exception — the
+/// transaction still commits exactly one Rejected diagnostic receipt without
+/// tenant adoption.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
@@ -41,6 +51,7 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
 
     private const string Provider = "google";
     private const string ProviderSecret = "calendar-google-webhook-secret";
+    private const string WebhookPath = "ds-test-webhook-path-abc123";
 
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
@@ -58,55 +69,103 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    [Fact]
-    public async Task VerifiedCallback_ThroughCanonicalPipeline_CommitsProcessedReceipt()
+    private async Task<(Guid ConnectionId, Guid AccountId, Guid WorkspaceId)> SeedBindingAsync(string webhookPath)
     {
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var connection = IntegrationConnection.Create(
+            accountId, workspaceId, IntegrationProvider.Google, Guid.NewGuid(), Now);
+        var binding = CalendarIntegration.Create(
+            accountId, workspaceId, connection.Id, webhookPath,
+            CalendarProvider.Google, CalendarSyncDirection.Pull, Guid.NewGuid(), Now);
+        await using var seed = _db.CreateContext(SystemTenant());
+        seed.IntegrationConnections.Add(connection);
+        seed.CalendarIntegrations.Add(binding);
+        await seed.SaveChangesAsync();
+        return (connection.Id, accountId, workspaceId);
+    }
+
+    [Fact]
+    public async Task VerifiedCallback_ThroughCanonicalPipeline_CommitsCapturedClaimAndEnqueuesProcessingRequest()
+    {
+        var (connectionId, accountId, workspaceId) = await SeedBindingAsync(WebhookPath);
         var externalEventId = Guid.NewGuid().ToString();
         var (body, signature, timestamp) = SignedCallback(externalEventId, Now);
 
-        await using var provider = CreateProvider();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+
+        await using var provider = CreateProvider(tenant);
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<ISender>()
-            .Send(new HandleCalendarWebhookCommand(Provider, signature, timestamp, body));
+            .Send(new HandleCalendarWebhookCommand(Provider, signature, timestamp, body, WebhookPath));
 
         result.Succeeded.Should().BeTrue("the data session commits the accepted claim");
 
-        // The command has returned; the data-session transaction is committed —
-        // read the durable receipt from a fresh context.
+        // Tenant derived from binding, not from system context.
+        tenant.AccountId.Should().Be(accountId,
+            "the canonical pipeline must derive tenant from the verified binding");
+        tenant.WorkspaceId.Should().Be(workspaceId);
+
+        // The command has returned; the claim must be NON-TERMINAL ("Captured")
+        // and the outbox enrollment intent must be present — exactly one
+        // provider-neutral processing event with the provenance-bound envelope.
+        var collector = scope.ServiceProvider.GetRequiredService<IIntegrationEventCollector>();
+        var enqueued = collector.CapturePending().Events
+            .OfType<CalendarWebhookProcessingRequestedV1>()
+            .Should().ContainSingle("the bootstrap enqueues exactly one processing-requested event")
+            .Subject;
+
         await using var verify = _db.CreateContext(SystemTenant());
         var receipt = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
             .SingleAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId);
-        receipt.Status.Should().Be("Processed",
-            "the canonical write pipeline committed the claim inside the data-session transaction");
+        receipt.Status.Should().Be("Captured",
+            "Wave E: the commit is a non-terminal claim; the terminal state is decided by the consumer");
+        receipt.ProcessedAt.Should().BeNull("no consumer has decided a terminal state yet");
+        receipt.ConnectionId.Should().Be(connectionId);
         receipt.PayloadHash.Should().NotBeNullOrWhiteSpace();
+
+        enqueued.ReceiptId.Should().Be(receipt.Id);
+        enqueued.ConnectionId.Should().Be(connectionId);
+        enqueued.Provider.Should().Be(Provider);
+        enqueued.ExternalEventId.Should().Be(externalEventId);
+        enqueued.PayloadHash.Should().Be(receipt.PayloadHash);
+        enqueued.ReceivedAt.Should().Be(CanonicalizePersistedTimestamp(Now));
+        enqueued.AccountIdValue.Should().Be(accountId);
+        enqueued.WorkspaceIdValue.Should().Be(workspaceId);
     }
 
     [Fact]
     public async Task RejectedCallback_IsBusinessFailure_NotTransactionRollback()
     {
+        await SeedBindingAsync(WebhookPath);
         var externalEventId = Guid.NewGuid().ToString();
         var (body, _, timestamp) = SignedCallback(externalEventId, Now);
         var forgedSignature = Convert.ToHexString(new HMACSHA256(Encoding.UTF8.GetBytes("wrong-secret"))
             .ComputeHash(Encoding.UTF8.GetBytes($"{timestamp}.{body}")));
 
-        await using var provider = CreateProvider();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+
+        await using var provider = CreateProvider(tenant);
         await using var scope = provider.CreateAsyncScope();
 
         // A forged callback fails verification as a RESULT, not an exception —
         // the DataSession has no exception to roll back on.
         var result = await scope.ServiceProvider.GetRequiredService<ISender>()
-            .Send(new HandleCalendarWebhookCommand(Provider, forgedSignature, timestamp, body));
+            .Send(new HandleCalendarWebhookCommand(Provider, forgedSignature, timestamp, body, WebhookPath));
 
         result.Succeeded.Should().BeFalse("a forged signature is a security rejection");
 
+        // Tenant must NOT have been adopted — verification failed.
+        tenant.AccountId.Should().BeNull("an invalid signature must not derive any tenant");
+        tenant.WorkspaceId.Should().BeNull();
+
         await using var verify = _db.CreateContext(SystemTenant());
-        var receipt = await verify.InboundWebhookReceipts.IgnoreQueryFilters()
-            .SingleAsync(r => r.Provider == Provider && r.ExternalEventId.StartsWith("rejected:"));
-        receipt.Status.Should().Be("Rejected",
-            "the rejected diagnostic receipt still commits — business rejection != transaction rollback");
-        receipt.FailureReason.Should().NotBeNullOrWhiteSpace();
-        receipt.ProcessedAt.Should().BeNull();
+        (await verify.InboundWebhookReceipts.IgnoreQueryFilters()
+            .AnyAsync(r => r.Provider == Provider && r.ExternalEventId == externalEventId))
+            .Should().BeFalse("untrusted callbacks must not create durable receipt rows");
     }
 
     private static (string Body, string Signature, string Timestamp) SignedCallback(
@@ -119,26 +178,26 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
         return (body, signature, timestamp);
     }
 
+    private static DateTimeOffset CanonicalizePersistedTimestamp(DateTimeOffset value)
+    {
+        var utcTicks = value.UtcTicks;
+        var canonicalTicks = utcTicks - utcTicks % TimeSpan.TicksPerMicrosecond;
+        return new DateTimeOffset(canonicalTicks, TimeSpan.Zero);
+    }
+
     /// <summary>
     /// The canonical pipeline composition around the REAL verifier and the
     /// REAL intake — no webhook seam is mocked. Only transport-adjacent
     /// identity plumbing is faked (the intake is anonymous and global).
     /// </summary>
-    private ServiceProvider CreateProvider()
+    private ServiceProvider CreateProvider(FakeCurrentTenantContext tenant)
     {
-        var tenant = new FakeCurrentTenantContext();
-        tenant.SetSystem();
-
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(Now);
 
-        // The intake is anonymous and global — no credential context exists;
-        // the pipeline still requires the ambient service to be present.
         var credentialMock = new Mock<ICurrentCredentialContext>();
         credentialMock.Setup(c => c.Kind).Returns(CredentialKind.None);
 
-        // Payload protection uses the real purpose-scoped envelope contract;
-        // the key material itself is exercised by the Security suite.
         var encryptor = new Mock<ISecretEncryptor>();
         encryptor.Setup(e => e.Protect(Moq.It.IsAny<string>(), Moq.It.IsAny<string>()))
             .Returns<string, string>((plain, purpose) => $"protected:{purpose}:{plain}");
@@ -168,10 +227,18 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
         services.AddSingleton<ICurrentCredentialContext>(credentialMock.Object);
         services.AddSingleton(webhookOptions);
 
+        // The bootstrap enqueues the provider-neutral processing intent here;
+        // in production the DomainEventInterceptor writes it to the outbox in
+        // the same transaction. This graph has no interceptor, so the event
+        // stays pending on the scoped collector for assertion.
+        services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
+
         services.AddScoped<ICalendarWebhookVerifier, CalendarWebhookVerifier>();
         services.AddScoped<ICalendarWebhookIntake, CalendarWebhookIntake>();
+        services.AddScoped<ICalendarWebhookBindingResolver, CalendarWebhookBindingResolver>();
         services.AddScoped<CalendarWebhookVerifier>();
         services.AddScoped<CalendarWebhookIntake>();
+        services.AddScoped<CalendarWebhookBindingResolver>();
         services.AddScoped<
             IRequestHandler<HandleCalendarWebhookCommand, Result>,
             HandleCalendarWebhookCommandHandler>();
@@ -200,7 +267,8 @@ public sealed class CalendarWebhookDataSessionIntegrationTests : IAsyncLifetime
             Enabled = true,
             SetSessionContext = true,
         }));
-        services.AddScoped<IRlsSessionContext, RlsSessionContext>();
+        services.AddScoped<RlsSessionContext>();
+        services.AddScoped<IRlsSessionContext>(sp => sp.GetRequiredService<RlsSessionContext>());
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
 
         services.AddOptions<IdempotencyOptions>().Configure(_ => { });

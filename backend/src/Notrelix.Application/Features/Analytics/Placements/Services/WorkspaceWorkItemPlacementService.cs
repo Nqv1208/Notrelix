@@ -1,26 +1,36 @@
 using Notrelix.Application.Features.Analytics.Abstractions;
+using Notrelix.Application.Features.Analytics.Projections.WorkItemPlacement;
 using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
-using Notrelix.Domain.Analytics.Placements;
 
 namespace Notrelix.Application.Features.Analytics.Placements.Services;
 
 /// <summary>
 /// Analytics-owned placement projection maintenance. Event consumers and the
 /// rebuild use case delegate here so live updates and rebuilds converge on the
-/// same derived-state semantics: last-write-wins by producer revision.
+/// same derived-state semantics: the producer revision (the aggregate version
+/// at fact raise). Live facts apply only when strictly newer; rebuild
+/// snapshots may repair at an equal revision but never overwrite a newer live
+/// fact. Rows the rebuild snapshot lacks are revalidated against the producer
+/// before deletion so a fact that arrived after the snapshot was taken cannot
+/// be dropped.
 /// </summary>
 public sealed class WorkspaceWorkItemPlacementService
 {
     private readonly IReportingDbContext _context;
+    private readonly IWorkItemProjectionSourceAdapter _source;
 
-    public WorkspaceWorkItemPlacementService(IReportingDbContext context)
+    public WorkspaceWorkItemPlacementService(
+        IReportingDbContext context,
+        IWorkItemProjectionSourceAdapter source)
     {
         _context = context;
+        _source = source;
     }
 
     /// <summary>
-    /// Applies a Work placement fact. Returns false when the fact is stale or a
-    /// duplicate delivery (revision not newer than the projection state).
+    /// Applies a Work placement fact at its producer revision.
+    /// Returns false when the fact is stale or a duplicate delivery
+    /// (revision not newer than the projection state).
     /// </summary>
     public async Task<bool> ApplyPlacementAsync(
         Guid accountId,
@@ -29,7 +39,7 @@ public sealed class WorkspaceWorkItemPlacementService
         Guid boardId,
         Guid groupId,
         bool isArchived,
-        long sourceRevision,
+        long revision,
         DateTimeOffset lastOccurredAt,
         CancellationToken cancellationToken)
     {
@@ -39,11 +49,11 @@ public sealed class WorkspaceWorkItemPlacementService
         if (existing is null)
         {
             _context.WorkspaceWorkItemPlacements.Add(WorkspaceWorkItemPlacementProjection.Upsert(
-                accountId, workspaceId, itemId, boardId, groupId, isArchived, sourceRevision, lastOccurredAt));
+                accountId, workspaceId, itemId, boardId, groupId, isArchived, revision, lastOccurredAt));
             return true;
         }
 
-        return existing.ApplyNewer(boardId, groupId, isArchived, sourceRevision, lastOccurredAt);
+        return existing.ApplyNewer(boardId, groupId, isArchived, revision, lastOccurredAt);
     }
 
     /// <summary>
@@ -53,7 +63,7 @@ public sealed class WorkspaceWorkItemPlacementService
     public async Task<bool> MarkArchivedAsync(
         Guid workspaceId,
         Guid itemId,
-        long sourceRevision,
+        long revision,
         DateTimeOffset lastOccurredAt,
         CancellationToken cancellationToken)
     {
@@ -67,13 +77,16 @@ public sealed class WorkspaceWorkItemPlacementService
             existing.BoardId,
             existing.GroupId,
             isArchived: true,
-            sourceRevision,
+            revision,
             lastOccurredAt);
     }
 
     /// <summary>
-    /// Rebuild path: replaces the Workspace's projection rows with the
-    /// producer-owned snapshot. Removes rows for items no longer present.
+    /// Rebuild path: reconciles the Workspace's projection rows against the
+    /// producer-owned snapshot. Existing rows are only rewritten when the
+    /// snapshot revision is at or ahead of local state; rows the snapshot
+    /// lacks are revalidated through the producer item lookup and removed only
+    /// when the producer no longer reports the item at all.
     /// </summary>
     public async Task RebuildWorkspaceAsync(
         Guid workspaceId,
@@ -91,11 +104,18 @@ public sealed class WorkspaceWorkItemPlacementService
             if (byItem.TryGetValue(row.ItemId, out var source))
             {
                 row.Reconcile(source.BoardId, source.GroupId, source.IsArchived, source.Revision, source.LastOccurredAt);
+                continue;
             }
-            else
-            {
+
+            // The row arrived (or drifted in) after the snapshot was taken —
+            // deletion requires proof the producer no longer has the item.
+            var revalidated = await _source.GetItemPlacementAsync(
+                workspaceId, row.ItemId, cancellationToken);
+
+            if (revalidated is null)
                 _context.WorkspaceWorkItemPlacements.Remove(row);
-            }
+            else
+                row.Reconcile(revalidated.BoardId, revalidated.GroupId, revalidated.IsArchived, revalidated.Revision, revalidated.LastOccurredAt);
         }
 
         var knownIds = existing.Select(p => p.ItemId).ToHashSet();

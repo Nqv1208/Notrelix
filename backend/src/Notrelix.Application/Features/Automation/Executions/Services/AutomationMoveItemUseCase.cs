@@ -111,10 +111,13 @@ public sealed class AutomationMoveItemUseCase
             await _context.SaveChangesAsync(cancellationToken);
             return true;
         }
-        catch (BusinessRuleException)
+        catch (Exception ex) when (ex is BusinessRuleException or ForbiddenException or NotFoundException)
         {
-            // Target business rejection (not found, unauthorized, scope
-            // mismatch) is a terminal business failure of the automation.
+            // Target business rejection (rule violation, not found,
+            // unauthorized, scope mismatch) is a terminal business failure
+            // of the automation. Retrying cannot repair a deterministic
+            // target-owned rejection, so the execution fails closed instead
+            // of entering the technical retry loop.
             execution.Fail("Target action business rejection.", _clock.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
             return true;

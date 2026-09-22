@@ -354,7 +354,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
         var decision = Engine.Evaluate(
             Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresSubscription: true),
             Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
-            Facts(hasActiveSubscription: true, subscriptionTier: "Pro"),
+            Facts(subscriptionRequirementSatisfied: true),
             SubscriptionRequest(null));
 
         decision.Kind.Should().Be(AccessDecisionKind.Allowed);
@@ -366,7 +366,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
         var decision = Engine.Evaluate(
             Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresSubscription: true),
             Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
-            Facts(hasActiveSubscription: false),
+            Facts(subscriptionRequirementSatisfied: false),
             SubscriptionRequest(null));
 
         decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
@@ -375,10 +375,14 @@ public sealed class AccessPolicyEngineCharacterizationTests
     [Fact]
     public void MinimumTierNotMet_ThrowsForbidden()
     {
+        // Billing reports "requirement not satisfied" when the active tier is
+        // below the requested minimum (that ladder lives in the Billing
+        // producer, not the engine). The engine only consumes the neutral
+        // boolean — decision matrix is unchanged from the frozen characterization.
         var decision = Engine.Evaluate(
             Descriptor(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account, RequiresSubscription: true),
             Context(ApplicationPrincipalKind.Authenticated, ApplicationScopeKind.Account),
-            Facts(hasActiveSubscription: true, subscriptionTier: "Free"),
+            Facts(subscriptionRequirementSatisfied: false),
             SubscriptionRequest("Pro"));
 
         decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
@@ -687,7 +691,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private static AccessFacts NoFacts => new(
-        false, false, false, null, false, null, false, null, null, false, [], false, null, false, null, null);
+        false, false, false, null, false, null, false, null, null, false, [], false, false, null, null);
 
     private static AccessFacts Facts(
         bool userExists = false,
@@ -699,8 +703,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
         string? resourceMemberRole = null,
         bool hasExplicitResourcePermission = false,
         IReadOnlyList<AccessPermissionRule>? rules = null,
-        bool hasActiveSubscription = false,
-        string? subscriptionTier = null,
+        bool subscriptionRequirementSatisfied = false,
         bool featureEnabled = false,
         PermissionLevel? activeResourcePermissionLevel = null,
         PermissionLevel? targetPermissionLevel = null) => new(
@@ -715,8 +718,7 @@ public sealed class AccessPolicyEngineCharacterizationTests
         resourceMemberRole,
         hasExplicitResourcePermission,
         rules ?? [],
-        hasActiveSubscription,
-        subscriptionTier,
+        subscriptionRequirementSatisfied,
         featureEnabled,
         activeResourcePermissionLevel is null ? null : (int)activeResourcePermissionLevel,
         targetPermissionLevel is null ? null : (int)targetPermissionLevel);

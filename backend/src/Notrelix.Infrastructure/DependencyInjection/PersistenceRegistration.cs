@@ -114,7 +114,8 @@ public static class PersistenceRegistration
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();
-        services.AddScoped<IRlsSessionContext, RlsSessionContext>();
+        services.AddScoped<RlsSessionContext>();
+        services.AddScoped<IRlsSessionContext>(sp => sp.GetRequiredService<RlsSessionContext>());
 
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 

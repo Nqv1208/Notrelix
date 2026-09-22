@@ -28,7 +28,7 @@ public sealed class BoardItemMovedAutomationConsumerDefinition
 {
     public BoardItemMovedAutomationConsumerDefinition()
     {
-        EndpointName = "notrelix-automation-board-item-moved-v1";
+        EndpointName = "notrelix-automation-board-item-moved-v2";
         ConcurrentMessageLimit = 4;
     }
 
@@ -51,7 +51,7 @@ public sealed class BoardItemCreatedAutomationConsumerDefinition
 {
     public BoardItemCreatedAutomationConsumerDefinition()
     {
-        EndpointName = "notrelix-automation-board-item-created-v1";
+        EndpointName = "notrelix-automation-board-item-created-v2";
         ConcurrentMessageLimit = 4;
     }
 
@@ -97,7 +97,7 @@ public sealed class N8nDispatchConsumerDefinition
 {
     public N8nDispatchConsumerDefinition()
     {
-        EndpointName = "notrelix-automation-n8n-dispatch-v1";
+        EndpointName = N8nDispatchProtocolEndpoints.DispatchEndpointName;
         ConcurrentMessageLimit = 4;
     }
 

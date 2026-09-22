@@ -267,7 +267,7 @@ public sealed class PipelineObservabilityTests
     }
 
     private static AccessFacts Facts(bool userExists = false, bool emailVerified = false) => new(
-        userExists, emailVerified, false, null, false, null, false, null, null, false, [], false, null, false, null, null);
+        userExists, emailVerified, false, null, false, null, false, null, null, false, [], false, false, null, null);
 
     private sealed class ActivityRecorder : IDisposable
     {
