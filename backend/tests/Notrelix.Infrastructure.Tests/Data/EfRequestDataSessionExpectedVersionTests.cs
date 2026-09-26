@@ -15,7 +15,8 @@ namespace Notrelix.Infrastructure.Tests.Data;
 
 /// <summary>
 /// IA-TST-EV-UNIT — fail-closed binding semantics of the data-session
-/// expected-version primitive (file 02 §7/§9.2), exercised against the change
+/// expected-version primitive (see
+/// <c>backend/docs/architecture/application-model.md</c>), exercised against the change
 /// tracker without provider-specific transaction behavior.
 /// </summary>
 public sealed class EfRequestDataSessionExpectedVersionTests : IDisposable

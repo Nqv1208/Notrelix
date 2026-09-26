@@ -2,7 +2,8 @@
 namespace Notrelix.Architecture.Tests.Pipeline;
 
 /// <summary>
-/// IA-TST-FREEZE — canonical executable specification of ADR-006 (freeze file 05).
+/// IA-TST-FREEZE — canonical executable specification of ADR-006
+/// (<c>backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md</c>).
 /// Proves the production pipeline registers exactly the seven frozen behaviors in
 /// order, that no legacy orchestration implementation survives, and that durable
 /// automation has no process-local accepted-work path.

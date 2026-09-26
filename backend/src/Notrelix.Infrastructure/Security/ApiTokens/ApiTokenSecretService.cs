@@ -5,9 +5,10 @@ using Notrelix.Infrastructure.Security.Tokens;
 namespace Notrelix.Infrastructure.Security.ApiTokens;
 
 /// <summary>
-/// API token secret factory (v4 §8.3). The raw secret is a versioned, URL-safe,
+/// API token secret factory. The raw secret is a versioned, URL-safe,
 /// CSPRNG-backed opaque value shown exactly once at issuance; only its SHA-256
-/// digest is persisted and used for lookup/verification.
+/// digest is persisted and used for lookup/verification. See
+/// <c>backend/docs/architecture/security-tenancy-authorization.md</c>.
 /// </summary>
 public sealed class ApiTokenSecretService : IApiTokenSecretService
 {

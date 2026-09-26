@@ -6,7 +6,7 @@ namespace Notrelix.Architecture.Tests.DomainPurity;
 /// DOM-BOUND-001..002: verifies bounded-context isolation over the complete
 /// compiled signature surface and every production Domain source file.
 /// Implemented by <see cref="DomainReferenceGraph"/> (see
-/// 05-ARCHITECTURE-INFRASTRUCTURE-CONTRACTS.md section 1).
+/// <c>backend/docs/architecture/domain-modeling.md</c>).
 /// </summary>
 public class DomainBoundedContextSignatureTests
 {

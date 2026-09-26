@@ -19,7 +19,7 @@ namespace Notrelix.Infrastructure.Tests.Data;
 /// <summary>
 /// Actual-model EF ownership gate (FZ-INF-01).
 ///
-/// Technical ownership map follows 03-design-contracts-and-migration-matrix.md §4.
+/// Technical ownership follows <c>backend/docs/architecture/infrastructure-and-data.md</c>.
 /// Every entity in the real ApplicationDbContext model must have exactly one owner:
 ///   - technical owners for the Infrastructure persistence records listed in the matrix;
 ///   - a business owner derived from its Domain namespace for everything else.

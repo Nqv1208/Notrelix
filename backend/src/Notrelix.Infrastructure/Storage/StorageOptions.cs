@@ -1,8 +1,9 @@
 namespace Notrelix.Infrastructure.Storage;
 
 /// <summary>
-/// Options for file/object storage (v4 §9). The DB only stores metadata +
-/// storage key; binaries live in the storage provider.
+/// Options for file/object storage. The database stores metadata and a storage
+/// key; binaries live in the storage provider. See
+/// <c>backend/docs/architecture/infrastructure-and-data.md</c>.
 /// </summary>
 public sealed class StorageOptions
 {

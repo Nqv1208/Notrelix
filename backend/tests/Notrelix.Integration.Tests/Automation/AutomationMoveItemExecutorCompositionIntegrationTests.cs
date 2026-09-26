@@ -27,15 +27,12 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Automation;
 
 /// <summary>
-/// TAC-AI-011A composition (M12A) — the production Automation MoveItem entry
-/// point running over the real Automation→Work chain: executor → real
-/// WorkItemActionAdapter → real WorkItemActions → MoveBoardItemUseCase, all on
-/// one ApplicationDbContext against real PostgreSQL. The entry is the executor
-/// (never IWorkActionPort alone, per backend/tests.md #71). Target business
-/// rejections surfaced by the real Work chain (not found, unauthorized, wrong
-/// workspace, business rule) are terminal Automation failures, while technical
-/// failures stay retryable under the stable ExecutionId — the classification
-/// runs in the executor, which is the only placement that can see both sides.
+/// Verifies the Automation MoveItem executor at the production composition
+/// boundary. Work-owned business rejections are terminal Automation failures;
+/// infrastructure failures remain retryable under the same durable execution
+/// identity. The test uses the real Work action path and PostgreSQL so the
+/// classification and mutation outcome are observed at their authoritative
+/// boundaries.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]

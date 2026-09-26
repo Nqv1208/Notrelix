@@ -2,9 +2,10 @@
 namespace Notrelix.Infrastructure.Storage.Providers;
 
 /// <summary>
-/// Minimal local-filesystem storage provider (v4 §9). Suitable for development;
+/// Minimal local-filesystem storage provider. Suitable for development;
 /// production should swap in an S3/R2 provider via <c>StorageRegistration</c>
-/// without any change to the Application layer. Inert until an upload is invoked.
+/// without changing the Application layer. See
+/// <c>backend/docs/architecture/infrastructure-and-data.md</c>.
 /// </summary>
 public sealed class LocalStorageProvider : IStorageService
 {

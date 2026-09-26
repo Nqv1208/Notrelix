@@ -3,7 +3,8 @@ namespace Notrelix.Architecture.Tests.Performance;
 
 /// <summary>
 /// IA-TST-PERF-STRUCT — deterministic structural performance contract for the
-/// frozen pipeline (ADR-006 / freeze file 04 §10 Tier A). Enforced in normal CI:
+/// frozen pipeline (ADR-006 and <c>backend/docs/architecture/application-model.md</c>).
+/// Enforced in normal CI:
 /// these invariants bound datastore work per request without asserting latency.
 /// </summary>
 public sealed class PipelinePerformanceContractTests

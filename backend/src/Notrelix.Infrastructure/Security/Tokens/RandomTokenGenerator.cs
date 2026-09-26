@@ -1,8 +1,9 @@
 namespace Notrelix.Infrastructure.Security.Tokens;
 
 /// <summary>
-/// Cryptographically-secure opaque token generator (v4 §8.3). Pure/inert — used
-/// for refresh tokens, share-link secrets, API tokens etc. No persistence here.
+/// Cryptographically secure opaque token generator. Pure/inert — used for
+/// refresh tokens, share-link secrets, API tokens, and similar secrets. No
+/// persistence here; see <c>backend/docs/architecture/security-tenancy-authorization.md</c>.
 /// </summary>
 public sealed class RandomTokenGenerator
 {

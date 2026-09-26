@@ -13,7 +13,8 @@ internal sealed record DomainReferenceViolation(
 
 /// <summary>
 /// FZ-DOM-GATE-01: bounded-context reference graph over compiled signatures and
-/// C# source names. See 05-ARCHITECTURE-INFRASTRUCTURE-CONTRACTS.md section 1.
+/// C# source names. See <c>backend/docs/architecture/domain-modeling.md</c>
+/// and <c>backend/docs/architecture/backend-overview.md</c>.
 /// </summary>
 internal static class DomainReferenceGraph
 {

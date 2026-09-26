@@ -7,7 +7,8 @@ namespace Notrelix.Integration.Tests.Performance;
 
 /// <summary>
 /// IA-TST-PERF-EVIDENCE — AccessFacts plan evidence over a representative large
-/// tenant (freeze file 04 §8). Gated behind RUN_FREEZE_EVIDENCE=1 so normal CI
+/// tenant (see <c>backend/docs/operations/access-facts-query-evidence.md</c>).
+/// Gated behind RUN_FREEZE_EVIDENCE=1 so normal CI
 /// stays fast; the final freeze acceptance runs it explicitly from the final HEAD.
 ///
 ///   RUN_FREEZE_EVIDENCE=1 dotnet test --filter FullyQualifiedName~PipelineFreezeEvidenceTests

@@ -1,8 +1,12 @@
 namespace Notrelix.Domain.Automation.Actions;
 
 /// <summary>
-/// Experimental — runtime action configuration. Schema and required properties are not yet defined.
-/// Frozen automation definitions use AutomationActionDefinition in RulesEngine instead.
+/// Experimental runtime action configuration. Schema and required properties
+/// are not yet defined; frozen automation definitions use
+/// <c>AutomationActionDefinition</c> in RulesEngine instead. Promotion requires
+/// an accepted product/architecture decision under
+/// <c>docs/governance/decision-and-exception-policy.md</c> §36, and isolation is
+/// enforced by <c>ExperimentalRuntimeIsolationTests</c>.
 /// </summary>
 public sealed class ActionConfig : ValueObject
 {
