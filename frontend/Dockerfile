@@ -1,7 +1,7 @@
 # Notrelix authenticated web container. Build/runtime bases are digest-pinned
 # and updated centrally through delivery/images.lock.toml.
 ARG NODE_BASE_IMAGE=node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
-ARG NGINX_BASE_IMAGE=nginx:alpine@sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913
+ARG NGINX_BASE_IMAGE=nginx:alpine@sha256:1ed1b0e1d7652937d6cbdaf4018c7b6fc009a7dd6c3047351e2eddda745de43f
 
 FROM ${NODE_BASE_IMAGE} AS base
 RUN corepack enable && corepack prepare pnpm@10.0.0 --activate
@@ -24,23 +24,6 @@ COPY --from=pruner /repo/frontend/out/full/ ./
 RUN pnpm --filter @notrelix/app-web build
 
 FROM ${NGINX_BASE_IMAGE} AS production
-# Explicit, version-pinned remediation for CVE-2026-14456 (HIGH): the locked
-# nginx:alpine digest still ships libcrypto3/libssl3 3.5.7-r0 while the alpine
-# v3.24 repository already publishes the fixed 3.5.8-r0 and no upstream image
-# rebuild exists yet. Exact-version pinning keeps builds reproducible; remove
-# this layer once the base-image lock advances past the fixed revision.
-#
-# CVE-2026-66046 (HIGH): the same digest ships libexpat 2.8.2-r0 while alpine
-# v3.24 publishes the fixed 2.8.4-r0. Pin it explicitly for the same reason.
-#
-# CVE-2026-53612/53613/53614/76642/78408/78409/78410 (HIGH): the same digest
-# ships libuuid 2.42.1-r0 while alpine v3.24 publishes 2.42.3-r1. Pin to at
-# least 2.42.3-r1 because CVE-2026-78408 is only addressed from r1 onward.
-RUN apk add --no-cache \
-    libcrypto3=3.5.8-r0 \
-    libssl3=3.5.8-r0 \
-    libexpat=2.8.4-r0 \
-    libuuid=2.42.3-r1
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.
