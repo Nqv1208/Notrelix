@@ -19,7 +19,8 @@ export function BoardPage() {
   const { board } = useFullBoard(boardId, workspaceId);
 
   const handleViewChange = (newView: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // TanStack Router's generated search type does not expose this dynamic view key.
+    // Keep the cast local until the route contract models the supported view values.
     navigate({ search: { view: newView } } as any);
   };
 

@@ -1,3 +1,6 @@
-// @notrelix/feature-activity — barrel export
-// TODO: Populate during Milestone 5 (Feature Extraction)
-export {};
+/**
+ * @notrelix/features-activity — public activity capability exports.
+ */
+
+export type { ActivityAction, ActivityEntry } from "./core/types/activity";
+export { activityQueryKeys } from "./core/query/keys";

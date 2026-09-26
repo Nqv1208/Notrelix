@@ -1,6 +1,5 @@
 import { defineMockOperation } from "../../operations/types";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ok, notFound, created } from "../../transport/create-response";
+import { ok, notFound } from "../../transport/create-response";
 type HistoryDtoApi = any;
 
 export const historyOperations = [

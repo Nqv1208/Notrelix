@@ -194,14 +194,7 @@ writeFileSync(
  * @notrelix/features-${featureName} — ${featureName} feature package.
  */
 
-// Core
 export type {} from './core';
-
-// Web
-// export {} from './web';
-
-// Mobile
-// export {} from './mobile';
 `,
 );
 
@@ -212,11 +205,6 @@ writeFileSync(
  * @notrelix/features-${featureName}/core — Core types and API contracts.
  */
 
-// Types
-// export type {} from './model/${featureName}.types';
-
-// API
-// export { create${featureName.charAt(0).toUpperCase() + featureName.slice(1)}Api } from './api/${featureName}.api';
 `,
 );
 
