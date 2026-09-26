@@ -1598,6 +1598,13 @@ Work Management component
 
 Shared test tooling can remain centralized.
 
+For authenticated web-host surfaces whose composition is intentionally owned
+by `apps/web`, the app is also a valid verification owner. These surfaces must
+keep a pure presentation seam and an owner-local
+`apps/web/verification/ui-evidence.manifest.json`; the shared Storybook and UI
+evidence tooling discovers the app root alongside package owners. Router,
+query, auth, and API adapters remain outside the registered pure entry.
+
 ---
 
 # 119. Theme testing

@@ -39,6 +39,14 @@ Fixtures create one deterministic value or entity with explicit overrides. Scena
 
 Storybook is the shared renderer and discovery host. Product, feature, and UI stories live beside their owners and import owner-owned fixtures/scenarios/controllers. Story files are examples, not reusable data authority.
 
+Authenticated web-host presentation surfaces may remain owned by `apps/web`
+when their route integration is host-specific. In that case the app keeps the
+same contract: a pure entry, owner-local verification fixtures/scenarios,
+Storybook stories, interaction markers, and an app-local evidence manifest.
+The shared Storybook and evidence discovery roots include this app-owned
+verification tree; route/query/auth adapters remain excluded from the pure
+entry.
+
 Use pure UI tests for presentation behavior. `renderPureUi` is the pure component harness; it must not install application providers. Registered pure entries are checked for forbidden transitive imports and story/component network access.
 
 Application mock backend work is a separate integration lane. It can prove full-app offline flows, but it is not required evidence for UI DONE.

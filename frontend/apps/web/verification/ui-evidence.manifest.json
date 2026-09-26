@@ -1,0 +1,417 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/app-web",
+  "inventory": {
+    "excludedSources": [
+      {
+        "path": "src/routes/home.tsx",
+        "category": "route",
+        "reason": "The route owns authenticated queries and router navigation; HomeSurface owns the verifiable presentation contract."
+      },
+      {
+        "path": "src/components/global-error-boundary.tsx",
+        "category": "application-adapter",
+        "reason": "Global error composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/components/root-suspense-fallback.tsx",
+        "category": "application-adapter",
+        "reason": "Root suspense composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/composition/application-services-context.tsx",
+        "category": "application-adapter",
+        "reason": "Application service composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/main.tsx",
+        "category": "application-adapter",
+        "reason": "The browser composition root is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/providers/app-providers.tsx",
+        "category": "provider",
+        "reason": "Application providers are intentionally excluded from pure Home evidence."
+      },
+      {
+        "path": "src/providers/global-error-boundary.tsx",
+        "category": "provider",
+        "reason": "Provider-level error handling is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/providers/realtime-lifecycle.tsx",
+        "category": "provider",
+        "reason": "Realtime lifecycle ownership is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/providers/runtime-error-boundary.tsx",
+        "category": "provider",
+        "reason": "Runtime error handling is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/providers/workspace-provider.tsx",
+        "category": "provider",
+        "reason": "Workspace query state is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/index.tsx",
+        "category": "route",
+        "reason": "Router composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/route-tree.tsx",
+        "category": "route",
+        "reason": "Generated route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/routes/account.routes.tsx",
+        "category": "route",
+        "reason": "Account route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/routes/base.routes.tsx",
+        "category": "route",
+        "reason": "Base route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/routes/billing.routes.tsx",
+        "category": "route",
+        "reason": "Billing route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/routes/chat.routes.tsx",
+        "category": "route",
+        "reason": "Chat route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/routes/documents.routes.tsx",
+        "category": "route",
+        "reason": "Document route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/routes/search.routes.tsx",
+        "category": "route",
+        "reason": "Search route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/routes/work-management.routes.tsx",
+        "category": "route",
+        "reason": "Work-management route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/router/routes/workspace.routes.tsx",
+        "category": "route",
+        "reason": "Workspace route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/__root.tsx",
+        "category": "route",
+        "reason": "Root route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/auth-layout.tsx",
+        "category": "route",
+        "reason": "Auth layout composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/forgot-password.tsx",
+        "category": "route",
+        "reason": "Password recovery route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/index.tsx",
+        "category": "route",
+        "reason": "Index route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/invite/$token.tsx",
+        "category": "route",
+        "reason": "Invitation route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/sign-in.tsx",
+        "category": "route",
+        "reason": "Sign-in route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/sign-up.tsx",
+        "category": "route",
+        "reason": "Sign-up route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/account.tsx",
+        "category": "route",
+        "reason": "Workspace account route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/account/appearance.tsx",
+        "category": "route",
+        "reason": "Workspace appearance route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/account/notifications.tsx",
+        "category": "route",
+        "reason": "Workspace notification route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/account/profile.tsx",
+        "category": "route",
+        "reason": "Workspace profile route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/account/security.tsx",
+        "category": "route",
+        "reason": "Workspace security route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/billing.tsx",
+        "category": "route",
+        "reason": "Workspace billing route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/boards/$boardId.tsx",
+        "category": "route",
+        "reason": "Board route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/chat.tsx",
+        "category": "route",
+        "reason": "Workspace chat route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/dashboard.tsx",
+        "category": "route",
+        "reason": "Workspace dashboard route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/docs/$docId.tsx",
+        "category": "route",
+        "reason": "Document route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/members.tsx",
+        "category": "route",
+        "reason": "Workspace members route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/route.tsx",
+        "category": "route",
+        "reason": "Workspace shell route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/search.tsx",
+        "category": "route",
+        "reason": "Workspace search route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/routes/workspaces/$workspaceId/settings.tsx",
+        "category": "route",
+        "reason": "Workspace settings route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/account-sidebar.tsx",
+        "category": "application-adapter",
+        "reason": "Account shell composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/boundaries/root-error-boundary.tsx",
+        "category": "application-adapter",
+        "reason": "Root shell error composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/boundaries/route-loading.tsx",
+        "category": "application-adapter",
+        "reason": "Route loading composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/global-search.tsx",
+        "category": "application-adapter",
+        "reason": "Global search shell composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/guards/auth-guard.tsx",
+        "category": "application-adapter",
+        "reason": "Authentication guard composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/guards/workspace-guard.tsx",
+        "category": "application-adapter",
+        "reason": "Workspace access guard composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/home/app-header.tsx",
+        "category": "application-adapter",
+        "reason": "Home header route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/home/user-menu.tsx",
+        "category": "application-adapter",
+        "reason": "Authenticated user-menu composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/sidebar/sidebar.tsx",
+        "category": "application-adapter",
+        "reason": "Workspace sidebar route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/sidebar/workspace-switcher.tsx",
+        "category": "application-adapter",
+        "reason": "Workspace switcher route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/topbar/topbar.tsx",
+        "category": "application-adapter",
+        "reason": "Workspace topbar composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/workspace-tabbed-frame.tsx",
+        "category": "application-adapter",
+        "reason": "Workspace tabbed route composition is outside the Home pure presentation surface."
+      },
+      {
+        "path": "src/shell/home/app-sidebar.tsx",
+        "category": "application-adapter",
+        "reason": "The app adapter supplies typed TanStack Router links to HomeSidebarSurface."
+      },
+      {
+        "path": "src/shell/home-shell.tsx",
+        "category": "nonvisual-composition",
+        "reason": "The shell owns authenticated header, mobile sheet, and layout composition; the pure surfaces are verified independently."
+      }
+    ]
+  },
+  "surfaces": [
+    {
+      "surfaceId": "home.surface",
+      "owner": "@notrelix/app-web",
+      "surfaceKind": "data",
+      "pureEntry": "src/home/home-surface.tsx",
+      "coveredSources": ["src/home/home-model.ts"],
+      "stories": [
+        {
+          "id": "home-home-ui-surfaces--default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "home-home-ui-surfaces--empty",
+          "state": "Empty",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "home-home-ui-surfaces--unavailable",
+          "state": "Unavailable",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        },
+        {
+          "id": "home-home-ui-surfaces--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "Unavailable", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The route owns loading presentation before the resolved pure HomeSurface is mounted.",
+            "authority": "frontend/docs/architecture/testing-and-quality-gates.md"
+          },
+          {
+            "state": "Error",
+            "reason": "The route owns workspace query error and retry presentation outside the pure HomeSurface.",
+            "authority": "frontend/docs/architecture/testing-and-quality-gates.md"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "Home uses bounded recent-work and workspace projections; high-density rendering is owned by the workspace directory surface.",
+            "authority": "frontend/docs/architecture/testing-and-quality-gates.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Home does not expose an authoritative read-only interaction mode at this baseline.",
+            "authority": "frontend/docs/architecture/testing-and-quality-gates.md"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "Permission-limited workspace rendering is owned by the authoritative workspace access flow.",
+            "authority": "frontend/docs/architecture/testing-and-quality-gates.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/home/__tests__/home-ui-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "search",
+          "testFile": "src/home/__tests__/home-ui-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "home.sidebar",
+      "owner": "@notrelix/app-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/home/home-sidebar-surface.tsx",
+      "coveredSources": ["src/shell/home/types.ts"],
+      "stories": [
+        {
+          "id": "home-home-ui-surfaces--sidebar-default",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "home-home-ui-surfaces--sidebar-collapsed",
+          "state": "Default",
+          "visualTargets": [
+            { "viewport": "mobile", "theme": "light" },
+            { "viewport": "tablet", "theme": "light" },
+            { "viewport": "desktop", "theme": "light" },
+            { "viewport": "desktop", "theme": "dark" }
+          ]
+        },
+        {
+          "id": "home-home-ui-surfaces--sidebar-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [{ "viewport": "desktop", "theme": "light" }]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "No authoritative read-only Home navigation contract exists at this baseline.",
+            "authority": "frontend/docs/architecture/testing-and-quality-gates.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "rail",
+          "testFile": "src/home/__tests__/home-ui-surfaces.interaction.component.test.tsx"
+        }
+      ]
+    }
+  ]
+}

@@ -8,6 +8,7 @@ const config: StorybookConfig = {
     "../../../../packages/ui/web/src/**/*.stories.@(ts|tsx)",
     "../../../../packages/product/*/web/src/**/*.stories.@(ts|tsx)",
     "../../../../packages/features/*/src/**/*.stories.@(ts|tsx)",
+    "../../../../apps/web/src/**/*.stories.@(ts|tsx)",
   ],
   addons: ["@storybook/addon-a11y"],
   framework: {
