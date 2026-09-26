@@ -1,6 +1,6 @@
 ---
-document_id: WRK-PLAN-WORKSPACE-GOVERNANCE
-document_type: workstream-plan
+document_id: WRK-SPEC-WORKSPACE-GOVERNANCE
+document_type: workstream-spec
 status: active
 owner: workspace-governance-team
 applies_to:
@@ -14,2017 +14,1468 @@ applies_to:
   - spaces
   - workspace-rules
   - provisioning
+  - workspace-settings
   - resource-kind
-  - actions
+  - resource-action
   - permissions
   - permission-rules
   - roles
   - policies
   - resource-permissions
   - share-links
-  - audit
-  - security-events
+  - governance-templates
   - authorization
-  - workmanagement-handoff
+  - audit-security-evidence
+  - tenant-isolation
 evidence:
-  - docs/workstreams/execution/workspace-governance/workspace-governance.spec.md
+  - docs/product/workspaces.md
+  - docs/product/governance.md
+  - docs/architecture/bounded-context-map.md
+  - docs/architecture/contract-boundaries.md
+  - docs/architecture/data-ownership-and-consistency.md
+  - docs/architecture/events-realtime-and-delivery-boundary.md
+  - docs/delivery/team-ownership.md
   - docs/workstreams/backend-roadmap.md
+  - docs/workstreams/capability-delivery-map.md
+  - docs/workstreams/cross-team-dependencies.md
   - docs/workstreams/teams/workspace-governance.md
   - docs/workstreams/teams/identity-accounts.md
   - docs/workstreams/teams/platform-foundation.md
-  - docs/workstreams/cross-team-dependencies.md
+  - docs/workstreams/executions/identity-accounts/identity-accounts.spec.md
+  - docs/workstreams/executions/backend-team-architecture-closure/backend-team-architecture-closure.spec.md
+  - backend/docs/architecture/backend-overview.md
   - backend/docs/architecture/domain-modeling.md
   - backend/docs/architecture/application-model.md
   - backend/docs/architecture/infrastructure-and-data.md
   - backend/docs/architecture/api-and-contracts.md
   - backend/docs/architecture/security-tenancy-authorization.md
   - backend/docs/architecture/testing-and-quality-gates.md
+  - backend/docs/generated/project-map.md
 review_on:
-  - workspace-governance-spec-change
-  - p1-contract-change
+  - workspace-boundary-change
+  - governance-boundary-change
+  - account-workspace-contract-change
   - membership-model-change
-  - resource-action-model-change
+  - invitation-model-change
+  - resource-action-contract-change
   - permission-model-change
-  - authorization-pipeline-change
-  - governance-overlap-resolution
-  - workmanagement-resource-contract-change
-  - migration-change
+  - role-model-change
+  - authorization-enforcement-change
+  - access-facts-change
+  - rls-authorization-change
+  - share-link-security-change
+  - downstream-resource-registration-change
+  - application-persistence-exception-change
   - p2-exit-gate-change
 ---
 
-# PLAN — Workspace & Governance
+# SPEC — Workspace & Governance
 
 ## 1. Purpose
 
-This PLAN converts `workspace-governance.spec.md` into a deterministic execution sequence for Priority 2.
+This is the master **WHAT** contract for the Workspace & Governance workstream on the backend critical path.
 
-Its goal is to move the backend from the current Workspaces/Governance source state to a stable P2 producer contract that allows WorkManagement and other downstream product contexts to implement protected business capabilities without inventing local authorization logic.
-
-This revision is candidate-SHA/source-first. Any static tree/model examples in SPEC/PLAN/TESTS are hints,
-not authority over source. Existing canonical authorization mechanisms are hardened and extended; they
-are not rebuilt for P2 merely because the execution vocabulary is cleaner than current source naming.
-
-This PLAN defines:
+It is intentionally brownfield and source-first. The document defines the target invariants while explicitly separating:
 
 ```text
-what source must be inspected first
-which ambiguous models must be classified before coding
-what constitutes the P2 critical path
-what can run in parallel
-what must wait
-which migrations are allowed
-which cross-context handshakes must be proven
-which PR boundaries are preferred
-which conditions require STOP
-what must be handed to TESTS and CERTIFICATION
+source exists
+!= capability is complete
+!= capability is verified
+!= capability is stable for downstream consumers
 ```
 
-## 2. Master P2 execution objective
-
-The required P2 critical path is:
+The P2 protected-slice output is:
 
 ```text
-Candidate SHA + current authorization baseline
-        ↓
-P1 Actor + Account contract
-        ↓
-Workspace identity + Account containment
-        ↓
-Workspace membership baseline
-        ↓
-Existing resource category / ResourceId / Action contract
-(ResourceType/ResourceKind naming is classified, not preselected)
-        ↓
-Permission + built-in role semantics
-        ↓
-Harden existing AuthorizationBehavior / decision-store path
-(or candidate-SHA canonical equivalent)
-        ↓
-Resource-owner authorization facts-provider boundary
-        ↓
-WorkManagement Board representative handshake
-        ↓
-P2 PROTECTED-SLICE CERTIFIED
+stable Account → Workspace containment
++ stable Workspace membership
++ stable ResourceKind / ResourceId / PermissionAction contract
++ stable permission / built-in-role semantics
++ one canonical Application access-control path
++ source-owned authorization facts
++ RLS defense-in-depth
++ named P3 resource handshake
 ```
 
-P3 is opened in two stages: Domain/Data work may parallelize earlier after the D4 producer contracts are
-stable; protected Application/API release waits for the P2 protected-slice gate. Governance therefore
-protects product execution without serializing all WorkManagement implementation behind Policy D5.
+Implementation order belongs to `workspace-governance.plan.md`.
+Verification mapping belongs to `workspace-governance.tests.md`.
+Executed evidence and D4/D5 status belong to `workspace-governance.certification.md`.
 
-Secondary Governance/Workspace features continue in parallel:
+No requirement in this SPEC may be marked complete merely because a class, table, endpoint, migration or test file exists.
+
+## 2. Revision intent and compatibility
+
+This revision aligns the Workspace & Governance execution contract with the audited `develop` source while preserving the established product/bounded-context model.
+
+It deliberately corrects stale execution-document assumptions:
+
+1. the canonical Application layout is module-first under `Features/Workspaces` and `Features/Governance`;
+2. the current access-control seam is `AccessControlBehavior`, not an older `AuthorizationBehavior`/decision-store description;
+3. `IWorkspaceDbContext` and `IGovernanceDbContext` currently exist inside Application and expose EF `DbSet` as an approved local exception, but they are not public cross-context contracts;
+4. Governance Domain breadth is materially larger than current Governance Application/API breadth;
+5. RLS is persistence defense-in-depth, not the business authorization engine;
+6. current `AccessFactsQuery` is runtime evidence and must not be expanded into an ungoverned cross-context query surface;
+7. documentation paths use `docs/workstreams/executions/...` and `docs/workstreams/capability-delivery-map.md`.
+
+This SPEC does **not** authorize a mass source refactor merely to make paths resemble documentation.
+
+## 3. Authority and precedence
+
+For conflicts, use this order:
 
 ```text
-advanced invitations
-Teams
-Spaces
-custom roles
-advanced policies
-resource ACL depth
-share links
-governance templates
-advanced audit/security-event surfaces
+approved product/bounded-context authority
+→ accepted backend architecture / ADR / architecture-closure decisions
+→ exact candidate source behavior
+→ this workstream SPEC
+→ PLAN implementation steps
+→ TESTS verification mapping
+→ CERTIFICATION executed status
 ```
 
-## 3. Critical distinction: P2 core vs complete team scope
+If product authority and source disagree materially, execution stops and records a decision instead of silently choosing the easier implementation.
 
-P2 protected-slice core MUST be completed before P3 protected Application/API release.
+## 4. Relationship to Identity & Accounts
 
-P3 Domain/Data implementation MAY begin earlier once Workspace/containment/resource-action producer
-contracts are D4+ and do not depend on unstable Governance internals.
+P2 consumes the P1 producer contract for stable:
 
-P2 full team scope does NOT have to be 100% complete before P3.
+- Actor/User identity;
+- Account identity;
+- current Account/tenant semantics;
+- authentication/session principal formation;
+- tenant-isolation prerequisites.
 
-### P2 core
+Workspace & Governance MUST NOT reconstruct credentials, sessions, User profile ownership, Account identity or API-token authentication.
 
-Mandatory:
+Workspace membership is not Account membership, and Workspace containment is not authorization.
+
+## 5. Workspaces vs Governance ownership
+
+The canonical split is:
 
 ```text
-Workspace
-Account containment
-WorkspaceMember baseline
-resource authorization category + ResourceId (preserve valid source naming)
-resource-owned Action vocabulary
-Permission
-Built-in Role baseline
-Effective authorization
-Central authorization handoff
-WorkManagement resource handshake
+Facts       → resource-owning bounded context
+Policy      → Governance
+Enforcement → Application access-control pipeline
+Persistence isolation → Infrastructure/RLS defense-in-depth
+Transport protection  → API
 ```
 
-### P2 secondary
+### 5.1 Workspaces owns
 
-May continue after P3 opens:
+- Workspace aggregate/lifecycle and `AccountId` containment;
+- WorkspaceMember state and owner/admin safety;
+- WorkspaceInvitation lifecycle;
+- Team/TeamMember and Space state;
+- Workspace settings and true Workspace rules;
+- personal Workspace provisioning semantics owned by Workspaces;
+- Workspace-originated facts/events.
+
+### 5.2 Governance owns
+
+- permission/action policy semantics;
+- PermissionRule semantics;
+- ResourcePermission semantics;
+- built-in role-to-authority interpretation where Governance policy consumes Workspace role facts;
+- CustomRole/MemberRoleAssignment semantics;
+- WorkspacePolicy semantics;
+- ShareLink access-capability semantics;
+- PermissionTemplate semantics;
+- final policy evaluation implementation behind the Application security port.
+
+### 5.3 Resource owner retains
+
+A resource-owning context retains:
+
+- resource lifecycle;
+- resource containment and visibility facts;
+- resource-specific membership/relationship facts;
+- resource-specific action vocabulary and business meaning;
+- its private persistence.
+
+Governance does not gain ownership of Board/Page/etc. merely because it authorizes access.
+
+## 6. Physical architecture constraint
+
+The production backend remains:
 
 ```text
-advanced Invitation behavior
-Teams
-Spaces
-custom roles
-advanced Policies
-advanced ResourcePermissions
-ShareLinks
-Templates
-advanced Audit/SecurityEvents
+Notrelix.Domain
+Notrelix.Application
+Notrelix.Infrastructure
+Notrelix.Platform
+Notrelix.API
 ```
 
-## 4. Current source evidence to preserve
+P2 does not create new production projects such as `Notrelix.Governance.Service` or `Notrelix.Authorization.Service`.
 
-The source tree below is preparation-time context only. Phase 0 candidate-SHA discovery is authoritative;
-the coding agent MUST NOT create folders/types solely because this document lists them.
+Logical bounded-context ownership exists inside the modular monolith and survives any future extraction.
 
-Current/known Domain source contains Workspaces areas conceptually:
+## 7. Audited source snapshot — preparation evidence only
+
+Preparation audit:
 
 ```text
-Workspaces/
-├── Invitations
-├── Members
-├── Rules
-├── Spaces
-├── Teams
-├── Workspaces
-└── WorkspaceRuleCodes.cs (or candidate-SHA equivalent)
+branch: develop
+commit: 35702d0fa9fb01ed68b0667bab500030d60bd028
+tree:   271f825cb27ca06c0a7931804b70515fe3e2bae1
 ```
 
-and Governance areas conceptually:
+PLAN Phase 0 MUST recapture the exact execution candidate. This SHA is not automatically the implementation/certification SHA.
+
+Approximate file evidence at this audit snapshot:
+
+| Surface | Files observed | Meaning |
+|---|---:|---|
+| Domain/Workspaces | 68 | broad Domain model exists |
+| Domain/Governance | 55 | broad Governance Domain exists |
+| Application/Features/Workspaces | 94 | broad Workspace use-case surface exists |
+| Application/Features/Governance | 13 | Governance Application surface is much narrower than Domain |
+| API Workspaces contracts/endpoints | 79 | Workspace transport surface is broad |
+| API Governance contracts/endpoints | 9 | Governance transport is currently limited |
+| Infrastructure paths related to Workspace/Governance/Authz | ~57 | persistence/authz/messaging adapters exist |
+| tests matching Workspace names | ~85 | significant but not certification by itself |
+| tests matching Governance/Authz names | ~27 | significant but not certification by itself |
+
+Counts are discovery evidence, not acceptance criteria.
+
+## 8. Current source inventory that execution must classify
+
+### 8.1 Domain — Workspaces
+
+Observed capability families:
 
 ```text
-Governance/
-├── Permissions
-├── Policies
-├── Roles
-├── ShareLinks
-├── Templates
-└── GovernanceRuleCodes.cs (or candidate-SHA equivalent)
+Workspaces/Workspaces
+  Workspace
+  WorkspaceSettings
+  WorkspaceStatus
+  WorkspaceFactory
+  lifecycle Domain events
+
+Workspaces/Members
+  WorkspaceMember
+  WorkspaceRole { Guest, Member, Admin, Owner }
+  WorkspaceMemberStatus
+  owner/member rules
+  membership Domain events
+
+Workspaces/Invitations
+  WorkspaceInvitation
+  WorkspaceInvitationStatus
+  InvitationTokenHash
+  token generation/hash version/expiry
+  invitation Domain events
+
+Workspaces/Teams
+  Team
+  TeamMember
+  TeamMemberRole / TeamMemberStatus / TeamStatus
+
+Workspaces/Spaces
+  Space
+  SpaceType / SpaceVisibility / SpaceStatus
 
-Audit/SecurityEvent capability surfaces are discovered from actual candidate-SHA source;
-do not create Domain folders from documentation scope alone.
-```
-
-Current Application source also contains explicit Workspaces and Governance feature surfaces including:
-
-```text
-Workspaces:
-Abstractions
-DTOs
-Events
-Invitations
-Members
-Provisioning
-Settings
-Spaces
-Teams
-WorkspaceHome
-Workspaces
-
-Governance:
-AuditLogs
-DTOs
-PermissionRules
-Permissions
-Policies
-ResourcePermissions
-Roles
-SecurityEvents
-ShareLinks
-```
-
-The PLAN MUST use this source reality as evidence.
-
-It MUST NOT reorganize folders simply because the SPEC uses a cleaner conceptual model.
-
-## 5. Source-first rule
-
-For every capability:
-
-```text
-inspect current Domain
-inspect current Application
-inspect Infrastructure mapping
-inspect API
-inspect tests
-inspect downstream consumers
-classify existing semantics
-then change
-```
-
-## 6. Prohibited implementation pattern
-
-Forbidden:
-
-```text
-read SPEC
-→ create idealized Role/Permission/Policy engine
-→ retrofit current code
-```
-
-Required:
-
-```text
-inventory current model
-→ identify overlap/debt
-→ preserve valid semantics
-→ resolve only required ambiguity
-→ implement P2 critical path
-```
-
-# Master phases
-
-## 7. Phase map
-
-```text
-Phase 0  Baseline + full source + existing authorization inventory
-Phase 1  Upstream P1 contract verification
-Phase 2  Workspace/Governance/security semantic-overlap classification
-Phase 3  Workspace core
-Phase 4  Membership core
-Phase 5  Invitation baseline (parallel side-stream; not P2 critical-path dependency)
-Phase 6  Existing resource category / ResourceId / Action contract
-Phase 7  Permission model
-Phase 8  Built-in roles
-Phase 9  Existing authorization path hardening (no second pipeline)
-Phase 10 WorkManagement resource-owner facts-provider handshake
-Phase 11 P2 protected-slice verification + staged P3 handoff
-
-Phase 12 Provisioning / Settings / WorkspaceHome
-Phase 13 Teams / Spaces / Workspace Rules
-Phase 14 Custom roles / Policies / ResourcePermissions
-Phase 15 ShareLinks
-Phase 16 Audit / SecurityEvents / Templates
-
-Phase 17 API / Events / Authorization harmonization
-Phase 18 Persistence / Migration / Compatibility
-Phase 19 Security hardening
-Phase 20 Concurrency / Reliability
-Phase 21 Observability / Performance
-Phase 22 Cross-context integration hardening
-Phase 23 TESTS handoff
-Phase 24 Docs / generated-contract handoff
-Phase 25 CERTIFICATION handoff
-```
-
-Phase 5 may run after Membership semantics are stable and MUST NOT block Phase 6 unless the selected
-representative product slice truly requires invitation acceptance to establish membership.
-
-P3-A Domain/Data work may begin after the Phase 6 D4 producer contract and required Workspace/Membership
-preconditions are stable. Phases 12–16 may partially overlap after Phase 11/P3-B as release scope permits.
-
-Phases 17–22 run continuously as needed, but have explicit hardening passes before final certification.
-
-# Phase 0 — Baseline and source inventory
-
-## 8. WG-INV-001 — capture exact baseline
-
-Record:
-
-```text
-branch
-HEAD SHA
-backend solution
-migration head
-test project inventory
-relevant CI jobs
-```
-
-Use canonical repository commands.
-
-Minimum:
-
-```bash
-git status --short
-git branch --show-current
-git rev-parse HEAD
-```
-
-Stop implementation if unrelated working-tree changes make ownership/evidence ambiguous.
-
-## 9. WG-INV-002 — Domain Workspaces inventory
-
-Run source-equivalent discovery:
-
-```bash
-find backend/src/Notrelix.Domain/Workspaces -type f | sort
-```
-
-For every type, record:
-
-```text
-Type
-Namespace
-Aggregate/Entity/VO/Enum
-Owner
-ID type
-Parent scope
-Lifecycle
-Invariants
-Events
-Cross-context references
-Persistence-sensitive assumptions
-WGREQ coverage
-```
-
-Mandatory areas:
-
-```text
-Workspaces
-Members
-Invitations
-Teams
-Spaces
-Rules
-```
-
-## 10. WG-INV-003 — Domain Governance inventory
-
-Run:
-
-```bash
-find backend/src/Notrelix.Domain/Governance -type f | sort
-```
-
-Inventory:
-
-```text
-Permissions
-Policies
-Roles
-Security
-ShareLinks
-Templates
-Audit
-```
-
-For each type record:
-
-```text
-semantic purpose
-scope
-subject type
-resource type
-action relation
-tenant/workspace relation
-persistence
-overlap with other Governance types
-```
-
-## 11. WG-INV-004 — Application Workspaces inventory
-
-Run:
-
-```bash
-find backend/src/Notrelix.Application/Features/Workspaces -type f | sort
-```
-
-Classify:
-
-```text
-Abstractions
-DTOs
-Events
-Invitations
-Members
-Provisioning
-Settings
-Spaces
-Teams
-WorkspaceHome
-Workspaces
-```
-
-For each:
-
-```text
-commands
-queries
-handlers
-validators
-authorization declarations
-idempotency
-transactions
-external dependencies
-tests
-```
-
-## 12. WG-INV-005 — Application Governance inventory
-
-Run:
-
-```bash
-find backend/src/Notrelix.Application/Features/Governance -type f | sort
-```
-
-Classify:
-
-```text
-AuditLogs
-DTOs
-PermissionRules
-Permissions
-Policies
-ResourcePermissions
-Roles
-SecurityEvents
-ShareLinks
-```
-
-Special attention:
-
-```text
-PermissionRules
-Permissions
-Policies
-ResourcePermissions
-```
-
-because these are most likely to overlap semantically.
-
-## 13. WG-INV-006 — Infrastructure inventory
-
-Search actual source:
-
-```bash
-rg -n \
-  "Workspace|WorkspaceMember|Invitation|Team|Space|Role|Permission|Policy|ResourcePermission|ShareLink|Audit" \
-  backend/src/Notrelix.Infrastructure
-```
-
-Record:
-
-- EF configurations;
-- DbSets;
-- repositories/adapters;
-- unique indexes;
-- membership constraints;
-- role/permission tables;
-- resource/action persistence;
-- policy storage;
-- share/invitation secret protection;
-- caches;
-- RLS/query filters;
-- migrations.
-
-## 14. WG-INV-007 — API inventory
-
-Search:
-
-```bash
-rg -n \
-  "Workspace|Member|Invitation|Team|Space|Role|Permission|Policy|ShareLink|Audit|SecurityEvent" \
-  backend/src/Notrelix.API
-```
-
-Record each endpoint:
-
-```text
-route
-method
-Application use case
-authentication
-authorization declaration
-request/response
-error mapping
-OpenAPI
-WGREQ coverage
-```
-
-## 15. WG-INV-008 — test inventory
-
-Search:
-
-```bash
-rg -n \
-  "Workspace|Member|Invitation|Team|Space|Role|Permission|Policy|ResourcePermission|ShareLink|Authorization" \
-  backend/tests
-```
-
-Classify into:
-
-```text
-Architecture
-Domain
-Application
-Infrastructure
-API
-Integration
-Platform where pipeline-related
-```
-
-## 16A. WG-INV-AUTH-001 — existing Application security authority
-
-Before creating any P2 authorization abstraction, inventory the candidate SHA under the existing security
-and pipeline areas, including at minimum current equivalents of:
-
-```text
-AuthorizationBehavior
-IAuthorizationDecisionStore
-IPermissionEvaluator
-IPermissionService
-IResourceReferenceResolver
-IResourceScopeResolver
-PermissionContext
-PermissionDecision
-WorkspacePermissionService
-resource-scoped request contracts
-```
-
-Record:
-
-```text
-canonical interface
-current source name (ResourceType/ResourceKind/etc.)
-who constructs PermissionContext
-who evaluates
-who resolves resource scope/reference
-production DI owner
-pipeline order
-cache semantics
-failure behavior
-```
-
-STOP if a proposed P2 type duplicates an existing canonical responsibility without an explicit replacement
-and migration decision.
-
-## 16. WG-INV-009 — downstream authorization consumers
-
-Search for:
-
-```bash
-rg -n \
-  "ResourceKind|ResourceType|Permission|Authorize|Authorization|Role|IsAdmin|IsOwner" \
-  backend/src/Notrelix.Application/Features \
-  backend/src/Notrelix.Domain
-```
-
-Review especially:
-
-```text
-WorkManagement
-Documents
-Collaboration
-Billing
-Automation
-Integrations
-```
-
-Record local role/permission logic that may duplicate Governance.
-
-## 17. WG-INV-010 — resource-kind/action inventory
-
-Search all backend source for existing resource/action identifiers.
-
-Build table:
-
-```text
-ResourceKind
-Owner context
-Resource ID source
-Supported actions
-Persisted?
-Referenced by role/policy?
-Referenced by API?
-Referenced by tests?
-```
-
-## 18. WG-INV-011 — duplicate auth mechanism scan
-
-Find:
-
-- handler role-name checks;
-- endpoint-local permission checks;
-- policy checks outside canonical mechanism;
-- owner checks that may actually be auth policy;
-- direct ResourcePermission lookups.
-
-Classify each as:
-
-```text
-Domain invariant
-canonical Governance
-legacy
-duplicate
-source debt
-```
-
-## 19. Phase 0 exit
-
-Must know:
-
-```text
-Workspace aggregate/model
-Member model
-Invitation model
-Team/Space meaning
-Workspace Rules meaning candidates
-Permission model
-PermissionRule model
-Policy model
-ResourcePermission model
-Role model
-ShareLink model
-authorization pipeline integration
-downstream role-check debt
-```
-
-# Phase 1 — Upstream P1 contract verification
-
-## 20. Purpose
-
-P2 depends on P1.
-
-Before hardening Workspace/Governance, verify the actual available contract.
-
-## 21. WG-P1-001 — Actor contract
-
-Verify:
-
-- trusted Actor abstraction;
-- stable User ID;
-- production DI;
-- no handler payload impersonation.
-
-If P1 is not fully implemented yet, use approved interface contract from P1 execution package without creating local alternatives.
-
-## 22. WG-P1-002 — Account contract
-
-Verify:
-
-```text
-stable Account ID
-Account/Tenant meaning
-current Account resolution
-tenant isolation
-Account active/inactive semantics
-```
-
-## 23. WG-P1-003 — Account→Workspace target relationship
-
-Confirm canonical product/architecture relation.
-
-Do not infer from FK shape.
-
-Expected logical relationship:
-
-```text
-Account
-→ one or more Workspaces
-```
-
-only if canonical authority confirms it.
-
-## 24. WG-P1-004 — Identity lifecycle dependency
-
-Determine expected behavior when:
-
-- User disabled;
-- User deleted/tombstoned;
-- session invalid;
-- Account disabled.
-
-Workspace/Governance must consume upstream state, not duplicate it.
-
-## 25. Phase 1 blocker
-
-If Account/Actor semantics are materially unresolved:
-
-```text
-continue inventory/design only
-STOP hardening P2 core
-```
-
-# Phase 2 — Semantic-overlap classification
-
-## 26. Why this phase exists
-
-Current source contains several concept families that could overlap:
-
-```text
 Workspaces/Rules
-Governance/PermissionRules
-Governance/Policies
+  WorkspaceRules
+  WorkspaceOwnerRules
+  WorkspaceMemberRules
+  WorkspaceInvitationRules
+  TeamRules / TeamLeadRules / SpaceRules
+```
+
+### 8.2 Domain — Governance
+
+Observed capability families:
+
+```text
 Governance/Permissions
-Governance/ResourcePermissions
+  PermissionAction
+  PermissionLevel
+  PermissionEffect
+  PermissionScope / PermissionScopeType
+  PermissionSubjectType
+  PermissionRule
+  ResourcePermission
+  FieldPermission
+
+Governance/Roles
+  CustomRole
+  CustomRolePermission
+  MemberRoleAssignment
+
+Governance/Policies
+  WorkspacePolicy
+  GuestAccessPolicy
+  ResourcePolicy
+  SharingPolicy
+
+Governance/ShareLinks
+  ShareLink
+  ShareLinkTokenHash
+  ShareLinkAccessMode
+  ShareLinkStatus
+
+Governance/Templates
+  PermissionTemplate
+  PermissionTemplateDefinition
+  PermissionTemplateEntry
+  PermissionTemplateScope / Status
 ```
 
-P2 cannot be safely expanded until their boundaries are understood.
+Domain presence MUST be classified separately from delivered Application/API capability.
 
-## 27. WG-SEM-001 — classify Workspaces Rules
+### 8.3 Application — current module-first topology
 
-For every rule type under Workspaces:
-
-Classify as:
+Observed Workspaces feature areas:
 
 ```text
-A. Workspace business invariant
-B. Workspace configurable setting/rule
-C. Governance authorization policy
-D. Automation rule
-E. validation helper
-F. legacy/dead code
+Features/Workspaces/
+  Abstractions
+  DTOs
+  Invitations
+  Members
+  Provisioning
+  Settings
+  Spaces
+  Teams
+  WorkspaceHome
+  Workspaces
 ```
 
-Target action:
+Observed Governance feature areas:
 
 ```text
-RETAIN
-REHOME
-RENAME
-DEPRECATE
-REMOVE
+Features/Governance/
+  Abstractions
+  Authorization
+  DTOs
+  ResourcePermissions
+  ShareLinks
 ```
 
-No action without source evidence.
+This asymmetry is important. It means `CustomRole`, `WorkspacePolicy`, `PermissionTemplate`, etc. cannot be called Application/API complete merely because Domain/persistence types exist.
 
-## 28. WG-SEM-002 — classify Permission
+### 8.4 API surface
 
-Determine whether Permission is:
-
-- stable permission catalog entry;
-- resource+action tuple;
-- named capability;
-- role assignment payload;
-- another model.
-
-Record:
+Observed Workspace endpoint families:
 
 ```text
-ID
-scope
-resource relation
-action relation
-persistence
-consumer
+Activity
+Invitations
+Members
+Settings
+Spaces
+Teams
+Workspaces
 ```
 
-## 29. WG-SEM-003 — classify PermissionRule
-
-Determine whether PermissionRule is:
+Observed Governance endpoint families:
 
 ```text
-policy condition
-stored grant rule
-role rule
-resource ACL rule
-application query abstraction
+ResourcePermissions
+ShareLinks
 ```
 
-Do not assume "rule" implies a DSL.
+PLAN must inventory exact commands/queries/routes/OpenAPI at its candidate SHA.
 
-## 30. WG-SEM-004 — classify Policy
+### 8.5 Persistence and runtime authorization evidence
 
-Determine:
+Current owner-local Application abstractions include:
 
 ```text
-what a Policy evaluates
-what subject it applies to
-what resource/action it constrains
-how it composes
-how it persists
+IWorkspaceDbContext
+IGovernanceDbContext
 ```
 
-## 31. WG-SEM-005 — classify ResourcePermission
+They currently expose EF `DbSet` and are an approved Application EF exception under `application-model.md`.
 
-Determine whether it is:
+Normative restriction:
 
 ```text
-direct ACL
-subject-resource binding
-role-resource binding
-override
-exception
+owner-local persistence abstraction
+!= Producer.Public contract
+!= cross-context integration API
 ```
 
-## 32. WG-SEM-006 — build authorization semantic hierarchy
-
-Create source-backed model:
+Current canonical protected-request seam:
 
 ```text
-Actor/Subject
-Membership
-Role
-Permission
-Policy/Rule
-ResourcePermission
-Resource
-Action
-Decision
+Request descriptor
+→ ExecutionContextSnapshot
+→ AccessControlBehavior<TRequest,TResponse>
+→ IAccessFactsProvider
+→ AccessFacts
+→ IAccessPolicyEvaluator
+→ AccessPolicyEngine
+→ allow / unauthorized / forbidden / not-found / security-misconfiguration
+→ handler only when allowed
 ```
 
-For each arrow, define ownership and meaning.
-
-## 33. WG-SEM-007 — identify duplicate authority
-
-If two models produce the same effective permission independently:
+Current Infrastructure facts implementation includes:
 
 ```text
-STOP expansion
-→ classify canonical/legacy
+PostgresAccessFactsProvider
+AccessFactsQuery
 ```
 
-## 34. WG-SEM-008 — record semantic-resolution note
+`AccessFactsQuery` is an important brownfield boundary: at the audited SHA it still reads several shared-schema tables directly for user/account/workspace membership, WorkManagement Board facts, Governance permission state and feature-entitlement state. That source is **current mechanism evidence**, not proof that every direct read is the preferred future cross-context contract. PLAN Phase 0 must classify each read against the backend architecture-closure taxonomy before expanding it.
 
-Execution evidence must contain:
+Current source already demonstrates the safer composition direction in two places:
+
+- Documents Page authorization facts are composed through the Documents-owned `IPageAuthorizationFacts` contract;
+- Billing subscription requirements are composed through `IBillingSubscriptionFacts`.
+
+New resource families MUST prefer producer-owned facts/Public contracts where required by architecture. Do not add a new foreign table branch to `AccessFactsQuery` merely because the database is physically shared.
+
+Current source also includes `WorkspaceGrantProjectionServiceAdapter` and RLS/session-context infrastructure. PLAN/TESTS must verify how membership lifecycle changes project into database access grants and whether suspension/removal/revocation reaches the RLS defense layer correctly.
+
+Current RLS scripts/policies exist under Infrastructure and remain **defense-in-depth**.
+
+### 8.6 Events/messaging evidence
+
+Current source contains Workspace integration events and consumers for flows such as:
+
+- registration → personal Workspace provisioning;
+- invitation delivery;
+- Workspace created;
+- Workspace member added/removed;
+- activity/realtime downstream consumers where registered.
+
+Only mapped/published integration contracts are public facts. A Domain event is not automatically an external contract.
+
+## 9. Capability status vocabulary for PLAN/CERTIFICATION
+
+Every capability discovered in source must be classified using evidence such as:
 
 ```text
-Workspaces Rules:
-Permission:
-PermissionRule:
-Policy:
-ResourcePermission:
-Role:
-Effective decision source:
-Legacy/debt:
-Migration impact:
-Architecture decision required:
+NOT_FOUND
+DOMAIN_PRESENT
+APPLICATION_PRESENT
+INFRA_PRESENT
+API_PRESENT
+TEST_PRESENT
+INTEGRATED
+VERIFIED (D4)
+STABLE (D5)
+SOURCE_DEBT
+BLOCKED
+NOT_APPLICABLE
 ```
 
-## 35. Phase 2 exit
+Do not skip intermediate classification by writing `implemented` from folder presence.
 
-The team must be able to explain one coherent authorization model without relying on folder names.
+## 10. P2 core vs secondary scope
 
-# Phase 3 — Workspace core
+### P2 mandatory protected slice
 
-## 36. WG-WSP-001 — validate Workspace aggregate/model
+P2 cannot open protected P3 release until these are evidence-backed:
 
-Requirements:
+1. Workspace identity and Account containment;
+2. WorkspaceMember baseline and owner safety;
+3. stable ResourceKind / ResourceId contract;
+4. stable `PermissionAction` contract for representative downstream resources;
+5. permission/default-deny semantics;
+6. built-in Workspace role facts and deterministic authority interpretation;
+7. canonical `AccessControlBehavior` handshake;
+8. source-owned authorization facts;
+9. tenant/RLS defense-in-depth;
+10. representative WorkManagement Board protected flow.
+
+### P2 secondary scope
+
+May continue after the P3 protected slice is opened, unless a dependency promotes it to a blocker:
+
+- advanced invitation UX/lifecycle hardening;
+- Teams/Spaces depth;
+- CustomRole administration;
+- WorkspacePolicy administration;
+- PermissionRule authoring depth;
+- ResourcePermission advanced lifecycle/inheritance;
+- ShareLink lifecycle breadth;
+- PermissionTemplate application;
+- governance audit/security UX;
+- advanced caches/projections.
+
+Secondary does not mean unowned or undocumented.
+
+## 11. Capability map
 
 ```text
-WGREQ001–WGREQ007
+WG-WSP-01 Workspace identity/lifecycle
+WG-WSP-02 Account containment
+WG-WSP-03 Workspace settings/home
+WG-WSP-04 personal Workspace provisioning
+
+WG-MEM-01 membership identity/lifecycle
+WG-MEM-02 owner/admin safety
+WG-MEM-03 membership authorization facts
+
+WG-INV-01 invitation lifecycle
+WG-INV-02 token/expiry/replay security
+
+WG-TEAM-01 Team lifecycle/membership
+WG-SPACE-01 Space lifecycle/visibility
+
+WG-GOV-01 ResourceKind / ResourceId
+WG-GOV-02 PermissionAction
+WG-GOV-03 PermissionRule
+WG-GOV-04 ResourcePermission
+WG-GOV-05 built-in role interpretation
+WG-GOV-06 CustomRole
+WG-GOV-07 WorkspacePolicy
+WG-GOV-08 effective authorization
+WG-GOV-09 request declaration/enforcement
+WG-GOV-10 facts-provider handshake
+
+WG-SHR-01 ShareLink lifecycle/security
+WG-TPL-01 PermissionTemplate
+WG-AUD-01 governance audit/security evidence
+
+WG-X-01 Identity/Accounts
+WG-X-02 WorkManagement
+WG-X-03 Documents/Collaboration
+WG-X-04 Billing/Entitlements
+WG-X-05 Automation/Integrations
+WG-X-06 Analytics/Reporting
 ```
 
-Inspect current Workspaces aggregate.
+# Workspace core
 
-Confirm:
+## 12. WGREQ001 — Workspace is a business boundary beneath Account
 
-- stable ID;
-- Account containment;
-- lifecycle;
-- metadata;
-- events;
-- soft-delete/archive semantics;
-- concurrency/version semantics.
+`Workspace` is an Account-scoped aggregate (`IAccountScoped`) and is the collaborative/product container beneath Account; it is not Account, Team, Space, Board or Subscription.
 
-## 37. WG-WSP-002 — Account containment
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
 
-Implement/verify:
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 13. WGREQ002 — stable Workspace identity
+
+Workspace identity is the aggregate `Id`; name/slug are mutable lookup/display attributes and MUST NOT become foreign-key identity.
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+## 14. WGREQ003 — Account containment
+
+Every Workspace carries `AccountId`. Cross-account Workspace access is invalid even when a WorkspaceId is guessed correctly.
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 15. WGREQ004 — containment is not authorization
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+## 16. WGREQ005 — Workspace lifecycle
+
+Current Domain supports Active/Archived plus soft-delete/restore semantics. New states require product/domain authority rather than documentation invention.
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+## 17. WGREQ006 — Workspace delete/archive effects
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+## 18. WGREQ007 — Workspace update
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+## 19. WGREQ008 — Workspace provisioning
+
+Current source includes `ProvisionPersonalWorkspaceCommand` and an Identity-registration consumer. Provisioning must orchestrate owned writes without creating a cross-context mega-aggregate.
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+## 20. WGREQ009 — provisioning idempotency
+
+Provisioning/retry must not duplicate Workspace, member or bootstrap grant state; idempotency evidence belongs to PLAN/TESTS.
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+## 21. WGREQ010 — Workspace settings
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+## 22. WGREQ011 — Workspace home/composition
+
+Workspaces owns this semantic and MUST preserve `AccountId` containment, stable `WorkspaceId`, and explicit lifecycle state without treating membership as equivalent to containment.
+
+
+# Membership
+
+## 23. WGREQ012 — WorkspaceMember is a Workspace concept
+
+`WorkspaceMember` currently stores `AccountId`, `WorkspaceId`, `UserId`, `WorkspaceRole`, `WorkspaceMemberStatus`; it does not own Identity credentials/profile.
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 24. WGREQ013 — membership identity
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 25. WGREQ014 — one effective membership relation
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 26. WGREQ015 — membership lifecycle
+
+Current member states are source-defined; Active/Suspended/Removed transitions and versioning must be preserved unless an approved product change exists.
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 27. WGREQ016 — add member authorization
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 28. WGREQ017 — remove member authorization
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 29. WGREQ018 — self-leave semantics
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 30. WGREQ019 — last-admin/owner protection
+
+Owner safety is a Domain invariant (`WorkspaceOwnerRules`) and must be proven under concurrent downgrade/suspend/remove/transfer flows.
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 31. WGREQ020 — member role association
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 32. WGREQ021 — member suspension/inactive behavior
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 33. WGREQ022 — Identity deactivation interaction
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+## 34. WGREQ023 — membership historical attribution
+
+Membership MUST remain Workspace-owned, reference stable upstream user identity, and be enforced with persisted/concurrency-safe invariants rather than UI-only checks.
+
+
+# Invitations
+
+## 35. WGREQ024 — Invitation is not Membership
+
+`WorkspaceInvitation` currently holds target email, role intent, token hash/version/generation, status, expiry and inviter; acceptance creates/activates membership through Application semantics, not by treating pending invite as membership.
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 36. WGREQ025 — stable invitation identity
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+
+## 37. WGREQ026 — invite target
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+
+## 38. WGREQ027 — invitation role/access intent
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+
+## 39. WGREQ028 — invitation expiry
+
+Current invitation expiry is persisted and checked on acceptance. Expired credentials cannot be accepted merely because a transport token is structurally valid.
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+
+## 40. WGREQ029 — invitation revoke
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+
+## 41. WGREQ030 — invitation replay
+
+Repeated acceptance must not duplicate active membership or grants. Resend rotates token material/generation rather than reviving the old bearer secret.
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 42. WGREQ031 — invitation race
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+
+## 43. WGREQ032 — invite enumeration resistance
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+
+## 44. WGREQ033 — invitation secret safety
+
+Current Domain stores `InvitationTokenHash`, not a reusable raw token. Raw invitation secret must remain transport-only and secret-safe.
+
+Invitation state MUST be distinct from active membership. Token material, expiry, replay and accept/revoke races MUST be handled as security-sensitive state transitions.
+
+
+# Teams
+
+## 45. WGREQ034 — Team belongs to Workspace
+
+Team semantics remain inside Workspaces. Team membership MUST NOT become a second Workspace membership truth or a bypass around Governance policy.
+
+
+## 46. WGREQ035 — Team membership
+
+Team semantics remain inside Workspaces. Team membership MUST NOT become a second Workspace membership truth or a bypass around Governance policy.
+
+
+## 47. WGREQ036 — Team lifecycle
+
+Team semantics remain inside Workspaces. Team membership MUST NOT become a second Workspace membership truth or a bypass around Governance policy.
+
+
+## 48. WGREQ037 — Team as authorization subject
+
+`PermissionSubjectType.Team` exists, but Team-as-subject effective authorization must not be certified until facts/evaluation/application coverage is executed and proven.
+
+Team semantics remain inside Workspaces. Team membership MUST NOT become a second Workspace membership truth or a bypass around Governance policy.
+
+
+# Spaces and Workspace rules
+
+## 49. WGREQ038 — Space semantics
+
+Space/Workspace-rule behavior remains Workspace-owned only where it describes Workspace business state. Generic authorization or automation policy MUST NOT be duplicated here.
+
+
+## 50. WGREQ039 — Space lifecycle
+
+Space/Workspace-rule behavior remains Workspace-owned only where it describes Workspace business state. Generic authorization or automation policy MUST NOT be duplicated here.
+
+
+## 51. WGREQ040 — Space authorization
+
+Space/Workspace-rule behavior remains Workspace-owned only where it describes Workspace business state. Generic authorization or automation policy MUST NOT be duplicated here.
+
+
+## 52. WGREQ041 — Space visibility
+
+Current Space visibility values are `Private` and `Workspace`; visibility is a resource fact and not automatically a complete permission decision.
+
+Space/Workspace-rule behavior remains Workspace-owned only where it describes Workspace business state. Generic authorization or automation policy MUST NOT be duplicated here.
+
+
+## 53. WGREQ042 — Workspace Rules boundary
+
+Space/Workspace-rule behavior remains Workspace-owned only where it describes Workspace business state. Generic authorization or automation policy MUST NOT be duplicated here.
+
+
+## 54. WGREQ043 — no rule-engine duplication
+
+`Workspaces/Rules/*` are Domain rule helpers. They MUST NOT evolve into a generic policy engine competing with Governance `PermissionRule`/policy evaluation or Automation rules.
+
+Space/Workspace-rule behavior remains Workspace-owned only where it describes Workspace business state. Generic authorization or automation policy MUST NOT be duplicated here.
+
+
+# Governance resource model
+
+## 55. WGREQ044 — resource ownership remains with business context
+
+The resource-owning bounded context owns lifecycle, containment and resource-specific facts. Governance consumes stable resource identity/kind and MUST NOT take ownership of foreign aggregates.
+
+
+## 56. WGREQ045 — resource authorization category is semantic, not CLR type identity
+
+Use stable semantic resource kinds (for example `work-management.board`, `documents.page`, `workspaces.workspace`) rather than CLR namespace/type names.
+
+The resource-owning bounded context owns lifecycle, containment and resource-specific facts. Governance consumes stable resource identity/kind and MUST NOT take ownership of foreign aggregates.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 57. WGREQ046 — resource ID is opaque to Governance
+
+The resource-owning bounded context owns lifecycle, containment and resource-specific facts. Governance consumes stable resource identity/kind and MUST NOT take ownership of foreign aggregates.
+
+
+## 58. WGREQ047 — resource containment scope
+
+The resource-owning bounded context owns lifecycle, containment and resource-specific facts. Governance consumes stable resource identity/kind and MUST NOT take ownership of foreign aggregates.
+
+
+## 59. WGREQ048 — resource registration
+
+Resource registration means the owning context publishes a stable resource kind, identity, actions and authorization facts contract. It does not mean copying the resource into Governance.
+
+The resource-owning bounded context owns lifecycle, containment and resource-specific facts. Governance consumes stable resource identity/kind and MUST NOT take ownership of foreign aggregates.
+
+
+## 60. WGREQ049 — resource registration ownership
+
+The resource-owning bounded context owns lifecycle, containment and resource-specific facts. Governance consumes stable resource identity/kind and MUST NOT take ownership of foreign aggregates.
+
+
+# Actions
+
+## 61. WGREQ050 — Action is business meaningful
+
+Current `PermissionAction` includes Workspace, Board, Page, Comment and Integration capabilities. Additions/removals are contract changes and must be traceable to the owning context.
+
+Actions are stable business capabilities, not HTTP verbs or handler names. Their identity is part of the Governance contract and changes require compatibility review.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 62. WGREQ051 — action uniqueness
+
+Actions are stable business capabilities, not HTTP verbs or handler names. Their identity is part of the Governance contract and changes require compatibility review.
+
+
+## 63. WGREQ052 — action versioning/migration
+
+Actions are stable business capabilities, not HTTP verbs or handler names. Their identity is part of the Governance contract and changes require compatibility review.
+
+
+## 64. WGREQ053 — no HTTP verb equivalence
+
+Actions are stable business capabilities, not HTTP verbs or handler names. Their identity is part of the Governance contract and changes require compatibility review.
+
+
+# Permissions
+
+## 65. WGREQ054 — Permission connects action to authorization semantics
+
+Permission semantics are Governance-owned and MUST evaluate within explicit Account/Workspace/resource scope. Default behavior is deny/fail-closed unless an accepted rule grants access.
+
+
+## 66. WGREQ055 — permission persistence stability
+
+Permission semantics are Governance-owned and MUST evaluate within explicit Account/Workspace/resource scope. Default behavior is deny/fail-closed unless an accepted rule grants access.
+
+
+## 67. WGREQ056 — permission evaluation scope
+
+Permission semantics are Governance-owned and MUST evaluate within explicit Account/Workspace/resource scope. Default behavior is deny/fail-closed unless an accepted rule grants access.
+
+
+## 68. WGREQ057 — deny semantics
+
+Explicit deny at the highest applicable priority wins over allow at that priority in the current `AccessPolicyEngine`; changes require a deliberate authorization-policy decision and tests.
+
+Permission semantics are Governance-owned and MUST evaluate within explicit Account/Workspace/resource scope. Default behavior is deny/fail-closed unless an accepted rule grants access.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 69. WGREQ058 — default-deny principle
+
+Unknown/unsupported protected operations must deny rather than fall through to broad role-based allow.
+
+Permission semantics are Governance-owned and MUST evaluate within explicit Account/Workspace/resource scope. Default behavior is deny/fail-closed unless an accepted rule grants access.
+
+
+## 70. WGREQ059 — permission cache
+
+Permission semantics are Governance-owned and MUST evaluate within explicit Account/Workspace/resource scope. Default behavior is deny/fail-closed unless an accepted rule grants access.
+
+
+# Permission rules
+
+## 71. WGREQ060 — PermissionRule ownership
+
+Current `PermissionRule` is persisted Governance state with scope/subject/action/effect/condition/priority/time window/status. Its evaluator semantics must remain singular and deterministic.
+
+PermissionRule evaluation MUST be deterministic, time/scope aware, and based only on trusted inputs. Competing rule engines are prohibited.
+
+
+## 72. WGREQ061 — deterministic rule evaluation
+
+PermissionRule evaluation MUST be deterministic, time/scope aware, and based only on trusted inputs. Competing rule engines are prohibited.
+
+
+## 73. WGREQ062 — rule input trust
+
+PermissionRule evaluation MUST be deterministic, time/scope aware, and based only on trusted inputs. Competing rule engines are prohibited.
+
+
+# Roles
+
+## 74. WGREQ063 — Role is a Governance concept
+
+Built-in Workspace roles currently are `Guest`, `Member`, `Admin`, `Owner`; `CustomRole` is a separate Governance aggregate. Do not collapse them by string convention alone.
+
+Role vocabulary and role-to-permission semantics are Governance-owned. Workspace membership may reference role state but MUST NOT independently redefine permission meaning.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 75. WGREQ064 — built-in roles
+
+Role vocabulary and role-to-permission semantics are Governance-owned. Workspace membership may reference role state but MUST NOT independently redefine permission meaning.
+
+
+## 76. WGREQ065 — built-in role identity stability
+
+Role vocabulary and role-to-permission semantics are Governance-owned. Workspace membership may reference role state but MUST NOT independently redefine permission meaning.
+
+
+## 77. WGREQ066 — role assignment
+
+Role vocabulary and role-to-permission semantics are Governance-owned. Workspace membership may reference role state but MUST NOT independently redefine permission meaning.
+
+
+## 78. WGREQ067 — role assignment scope
+
+Role vocabulary and role-to-permission semantics are Governance-owned. Workspace membership may reference role state but MUST NOT independently redefine permission meaning.
+
+
+## 79. WGREQ068 — custom roles
+
+`CustomRole` exists in Domain and persistence, but current Application/API feature surface is not equivalent to full custom-role administration. PLAN must classify the missing delivery layers before claiming capability complete.
+
+Role vocabulary and role-to-permission semantics are Governance-owned. Workspace membership may reference role state but MUST NOT independently redefine permission meaning.
+
+
+## 80. WGREQ069 — custom-role mutation
+
+Role vocabulary and role-to-permission semantics are Governance-owned. Workspace membership may reference role state but MUST NOT independently redefine permission meaning.
+
+
+## 81. WGREQ070 — role deletion
+
+Role vocabulary and role-to-permission semantics are Governance-owned. Workspace membership may reference role state but MUST NOT independently redefine permission meaning.
+
+
+# Policies
+
+## 82. WGREQ071 — Policy semantics
+
+`WorkspacePolicy` currently models guest/resource/sharing policy values. Domain existence is not evidence that these policies are integrated into every effective authorization decision.
+
+Policy composition MUST be deterministic and versionable. Current Domain policy types are source evidence, not proof that an Application/API administration flow is complete.
+
+
+## 83. WGREQ072 — policy evaluation
+
+Policy composition MUST be deterministic and versionable. Current Domain policy types are source evidence, not proof that an Application/API administration flow is complete.
+
+
+## 84. WGREQ073 — policy composition
+
+Policy composition MUST be deterministic and versionable. Current Domain policy types are source evidence, not proof that an Application/API administration flow is complete.
+
+
+## 85. WGREQ074 — policy versioning
+
+Policy composition MUST be deterministic and versionable. Current Domain policy types are source evidence, not proof that an Application/API administration flow is complete.
+
+
+## 86. WGREQ075 — policy failure
+
+Policy composition MUST be deterministic and versionable. Current Domain policy types are source evidence, not proof that an Application/API administration flow is complete.
+
+
+# Resource permissions
+
+## 87. WGREQ076 — ResourcePermission meaning
+
+`ResourcePermission` currently captures `ResourceKind`, `ResourceId`, `SubjectType`, `SubjectId`, `PermissionLevel`, effect/condition/priority and soft-delete lifecycle.
+
+ResourcePermission is explicit Governance grant state scoped by Account, Workspace, resource kind/id and subject. Grant/revoke/level semantics must respect authority ceilings and resource ownership.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 88. WGREQ077 — direct grant scope
+
+ResourcePermission is explicit Governance grant state scoped by Account, Workspace, resource kind/id and subject. Grant/revoke/level semantics must respect authority ceilings and resource ownership.
+
+
+## 89. WGREQ078 — inheritance
+
+ResourcePermission is explicit Governance grant state scoped by Account, Workspace, resource kind/id and subject. Grant/revoke/level semantics must respect authority ceilings and resource ownership.
+
+
+## 90. WGREQ079 — revocation
+
+Revoke is a security-state change. Stale caches/projections must not keep revoked permission effective.
+
+ResourcePermission is explicit Governance grant state scoped by Account, Workspace, resource kind/id and subject. Grant/revoke/level semantics must respect authority ceilings and resource ownership.
+
+
+# Effective authorization and enforcement
+
+## 91. WGREQ080 — one effective authorization decision
+
+One Application request gets one authoritative access decision before protected handler effects. Secondary helpers may supply facts, not parallel final decisions.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 92. WGREQ081 — authentication vs authorization
+
+Authentication establishes principal identity; authorization establishes permission for Account/Workspace/resource/action. A valid JWT/session/API token alone is never sufficient resource authorization.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 93. WGREQ082 — membership precondition
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 94. WGREQ083 — effective permission sources
+
+Effective permission sources currently include account/workspace membership, permission rules, explicit resource permissions and resource-owned visibility/membership facts. Future sources require explicit precedence.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 95. WGREQ084 — precedence
+
+Current engine is deny-sensitive at the minimum rule priority and applies explicit authority checks for grant/revoke/resource management. This precedence must be captured by tests rather than implied by UI behavior.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 96. WGREQ085 — fail closed
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 97. WGREQ086 — resource-not-found privacy
+
+For restricted resources, unauthorized visibility may normalize to NotFound to avoid resource enumeration where the canonical policy requires it.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 98. WGREQ087 — Application declares resource/action requirement
+
+Protected Application requests declare security through request descriptors/interfaces such as `IRequirePermission`; resource/action context must be explicit and validated.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 99. WGREQ088 — pipeline owns enforcement
+
+At the audited baseline, canonical enforcement is `AccessControlBehavior<TRequest,TResponse>` using `IExecutionContextReader`, `IAccessFactsProvider`, and `IAccessPolicyEvaluator` before `next()`.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 100. WGREQ089 — handler-local role checks are not canonical enforcement
+
+A handler may enforce Domain invariants but must not implement a second authorization engine with `if (role == ...)` as canonical request protection.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 101. WGREQ090 — API endpoint does not own business authorization
+
+Minimal API endpoints may map host metadata and contracts, but business permission outcome is owned by the Application security pipeline.
+
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+## 102. WGREQ091 — background authorization
+An operation does not become trusted merely because it runs outside HTTP.
+
+The principal model distinguishes ordinary background/message execution from an explicitly classified trusted system request.
+
+An `ISystemInternalRequest` MAY use the repository's approved System-principal path, including the current `AccessPolicyEngine` System fast-path, only when the use case is intentionally classified as System and the surrounding runtime contract supplies the required trusted scope and operation metadata.
+
+Representative approved pattern:
 
 ```text
-Workspace.AccountId
+Identity committed event
+→ MassTransit tenant envelope
+→ deduplication
+→ WorkspaceProvisioningConsumer
+→ ProvisionPersonalWorkspaceCommand
+   : ISystemInternalRequest
+   : ISystemOperation
+   : IMessageTriggeredRequest
+   : IGlobalRequest
+→ Workspaces-owned mutation
 ```
 
-or canonical equivalent.
+For that class of request:
 
-Required:
+- absence of an HTTP user does not make the operation invalid;
+- the System principal is explicit in the request contract rather than inferred from execution environment;
+- tenant/account information is derived from a trusted event/envelope or other approved source;
+- idempotency/deduplication and system-operation audit metadata remain mandatory where the flow requires them;
+- System classification MUST NOT be used to convert an ordinary authenticated/resource request into an authorization bypass.
 
-- cannot attach to invalid Account;
-- tenant scope preserved;
-- cross-Account move behavior explicit if supported.
+Ordinary authenticated/background work that represents a User MUST still satisfy the normal `AccessControlBehavior → AccessFacts → AccessPolicyEngine` authorization contract.
 
-Do not add Workspace reparenting unless product requires it.
+The frozen `SystemInternalRequest_WithoutUser_BypassesAuth_CallsHandler` characterization is therefore an approved special contract, not a general rule that background work bypasses security.
 
-## 38. WG-WSP-003 — Workspace lifecycle
 
-Map source transitions.
+## 103. WGREQ092 — authorization idempotency/order interaction
 
-For each:
+Protected use cases MUST converge on the canonical Application access-control pipeline; ad-hoc endpoint/handler role checks cannot become a parallel authorization authority.
+
+
+# Resource-team handshake
+
+## 104. WGREQ093 — downstream resource registration contract
+
+Downstream P3+ requests must be able to state `Actor + Account + Workspace + ResourceKind + ResourceId + PermissionAction` (or the canonical descriptor equivalent) without importing Governance persistence types.
+
+Downstream resource teams publish stable resource/action/facts contracts. Governance evaluates policy but does not query/mutate their private persistence as a normal integration contract.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 105. WGREQ094 — Governance does not invent WorkManagement semantics
+
+WorkManagement owns Board/BoardItem lifecycle, visibility and action meaning. Governance only evaluates policy over published facts/actions.
+
+Downstream resource teams publish stable resource/action/facts contracts. Governance evaluates policy but does not query/mutate their private persistence as a normal integration contract.
+
+
+## 106. WGREQ095 — product context does not invent role names
+
+Downstream resource teams publish stable resource/action/facts contracts. Governance evaluates policy but does not query/mutate their private persistence as a normal integration contract.
+
+
+## 107. WGREQ096 — resource lookup contract
+
+Resource facts provider contracts must be owner-safe. The current code already composes Documents page facts through the Documents public authorization contract; new contexts must follow the same ownership discipline or an accepted architecture decision.
+
+Downstream resource teams publish stable resource/action/facts contracts. Governance evaluates policy but does not query/mutate their private persistence as a normal integration contract.
+
+
+# Share links
+
+## 108. WGREQ097 — ShareLink is a Governance access mechanism
+
+`ShareLink` is Governance state over a foreign/current resource reference; it does not transfer ownership of that resource into Governance.
+
+Share links are bearer-capability security objects. Raw reusable secrets MUST not be persisted or logged; scope, expiry, revocation and least privilege are mandatory.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 109. WGREQ098 — share-link secret
+
+Current source stores `ShareLinkTokenHash`; raw share tokens must not be logged/persisted in ordinary state or returned by list APIs.
+
+Share links are bearer-capability security objects. Raw reusable secrets MUST not be persisted or logged; scope, expiry, revocation and least privilege are mandatory.
+
+
+## 110. WGREQ099 — share-link scope
+
+Share links are bearer-capability security objects. Raw reusable secrets MUST not be persisted or logged; scope, expiry, revocation and least privilege are mandatory.
+
+
+## 111. WGREQ100 — share-link least privilege
+
+Share links are bearer-capability security objects. Raw reusable secrets MUST not be persisted or logged; scope, expiry, revocation and least privilege are mandatory.
+
+
+## 112. WGREQ101 — share-link expiry
+
+Public share links currently require expiry in Domain. Any relaxation is a security/product decision, not a coding convenience.
+
+Share links are bearer-capability security objects. Raw reusable secrets MUST not be persisted or logged; scope, expiry, revocation and least privilege are mandatory.
+
+
+## 113. WGREQ102 — share-link revocation
+
+Share links are bearer-capability security objects. Raw reusable secrets MUST not be persisted or logged; scope, expiry, revocation and least privilege are mandatory.
+
+
+## 114. WGREQ103 — share-link enumeration
+
+Share links are bearer-capability security objects. Raw reusable secrets MUST not be persisted or logged; scope, expiry, revocation and least privilege are mandatory.
+
+
+## 115. WGREQ104 — share-link audit
+
+Share links are bearer-capability security objects. Raw reusable secrets MUST not be persisted or logged; scope, expiry, revocation and least privilege are mandatory.
+
+
+# Audit and security events
+
+## 116. WGREQ105 — Audit ownership
+
+Audit/security evidence must preserve Account/Workspace/actor/resource/action correlation without becoming a secret sink or a mutable substitute for source business state.
+
+
+## 117. WGREQ106 — immutable history semantics
+
+Audit/security evidence must preserve Account/Workspace/actor/resource/action correlation without becoming a secret sink or a mutable substitute for source business state.
+
+
+## 118. WGREQ107 — audit actor/resource/action
+
+Audit/security evidence must preserve Account/Workspace/actor/resource/action correlation without becoming a secret sink or a mutable substitute for source business state.
+
+
+## 119. WGREQ108 — security events
+
+Audit/security evidence must preserve Account/Workspace/actor/resource/action correlation without becoming a secret sink or a mutable substitute for source business state.
+
+
+## 120. WGREQ109 — no secret material
+
+Audit/security evidence must preserve Account/Workspace/actor/resource/action correlation without becoming a secret sink or a mutable substitute for source business state.
+
+
+## 121. WGREQ110 — audit tenant isolation
+
+Audit/security evidence must preserve Account/Workspace/actor/resource/action correlation without becoming a secret sink or a mutable substitute for source business state.
+
+
+# Governance templates
+
+## 122. WGREQ111 — template meaning
+
+`PermissionTemplate` supports System and Workspace scope in Domain. System templates are immutable through workspace mutation paths.
+
+Permission templates are Governance-owned reusable definitions. System/workspace scope and application semantics must remain explicit and must not silently mutate unrelated authorization state.
+
+
+## 123. WGREQ112 — template application
+
+Permission templates are Governance-owned reusable definitions. System/workspace scope and application semantics must remain explicit and must not silently mutate unrelated authorization state.
+
+
+## 124. WGREQ113 — template versioning
+
+Permission templates are Governance-owned reusable definitions. System/workspace scope and application semantics must remain explicit and must not silently mutate unrelated authorization state.
+
+
+# Cross-context contracts
+
+## 125. WGREQ114 — consume stable Actor/User only
+
+Workspaces/Governance consume stable Identity contract.
+
+They MUST NOT reference:
+
+- password;
+- OAuth tokens;
+- Session EF entity;
+- MFA secrets.
+
+## 126. WGREQ115 — consume stable Account
+
+Workspace Account containment must use P1 canonical Account ID.
+
+No second tenant identifier may be invented.
+
+## 127. WGREQ116 — Account disabled behavior
+
+When upstream Account becomes disabled/inactive according to contract, Workspace/Governance protected operations must fail according to lifecycle policy.
+
+## 128. WGREQ117 — User disabled behavior
+
+When Identity Actor becomes invalid, Governance must not continue authorizing based solely on stale membership cache.
+
+# WorkManagement integration
+
+## 129. WGREQ118 — Board resource registration
+
+WorkManagement must be able to register/declare Board resources/actions without Governance depending on WorkManagement internals.
+
+## 130. WGREQ119 — BoardItem resource registration
+
+If BoardItem has independently governable actions, the contract must be explicit.
+
+Do not assume every nested entity requires independent ACL.
+
+## 131. WGREQ120 — WorkManagement staged entry gates
+
+P3 is opened in two stages so Governance does not become an unnecessary bottleneck for resource-owned
+Domain/Data work while protected execution remains safe.
+
+**P3-A — Domain/Data parallelization gate** may open when:
 
 ```text
-create
-rename/update
-archive/disable
-delete
-restore if canonical
+Workspace identity + Account containment are stable enough for downstream references (D4+)
+Workspace/resource containment contract is stable (D4+)
+resource authorization category + resource-owned Action vocabulary are stable (D4+)
+WorkManagement can model its own invariants without importing Governance internals
 ```
 
-record downstream effects.
+At P3-A, WorkManagement may implement Domain/Data transactional core and unprotected internal fixtures,
+but MUST NOT release protected Application/API operations that rely on incomplete authorization semantics.
 
-## 39. WG-WSP-004 — Workspace lifecycle authorization
-
-Each protected lifecycle operation must declare resource/action authorization.
-
-No role-string checks.
-
-## 40. WG-WSP-005 — Workspace event baseline
-
-Emit/verify only meaningful producer-owned lifecycle facts needed downstream.
-
-Do not emit every property mutation as an integration event automatically.
-
-## 41. WG-WSP-006 — Workspace persistence
-
-Verify:
-
-- required indexes;
-- Account FK/scope;
-- unique names/slugs only if product-defined;
-- concurrency token if used;
-- migration.
-
-## 42. WG-WSP-007 — Account disabled interaction
-
-If Account inactive:
-
-Workspace protected operations must follow canonical failure policy.
-
-Do not mutate Account state from Workspace.
-
-## 43. Phase 3 exit
-
-Workspace identity and Account containment must be D4-ready.
-
-# Phase 4 — Membership core
-
-## 44. WG-MEM-001 — validate WorkspaceMember model
-
-Requirements:
+**P3-B — Protected Application/API gate** requires:
 
 ```text
-WGREQ012–WGREQ023
+Workspace / Account containment release-ready
+WorkspaceMember baseline D4+
+resource category/action contract release-ready
+Permission semantics D5 for the representative slice
+built-in role policy D4+
+existing central authorization enforcement D5
+resource facts provider/lookup boundary proven and source ownership explicitly classified
+representative allow / deny / cross-tenant deny proven
 ```
 
-Confirm:
+P3 product release/certification uses P3-B, not P3-A.
 
-- User/Actor reference;
-- Workspace reference;
-- status/state;
-- role assignment relation;
-- lifecycle;
-- uniqueness;
-- events.
+## 132. WGREQ121 — WorkManagement local ownership invariant
 
-## 45. WG-MEM-002 — membership uniqueness
+WorkManagement may still enforce Domain invariants such as valid state transition.
 
-Enforce no duplicate active membership according to canonical semantics.
+Governance authorization must not absorb WorkManagement business rules.
 
-Use DB constraint/transaction safety where required.
+# Documents/Collaboration integration
 
-## 46. WG-MEM-003 — add member
+## 133. WGREQ122 — Page/Document resource
 
-Implement/verify:
+Documents defines Page/Document action semantics.
+
+Governance evaluates access.
+
+## 134. WGREQ123 — comment authorization target
+
+Collaboration authorization should depend on the target resource access contract rather than owning target resource tables.
+
+# Billing integration
+
+## 135. WGREQ124 — billing administration
+
+Billing defines business actions such as managing subscription/payment methods.
+
+Governance controls which Account actors may perform those actions.
+
+## 136. WGREQ125 — entitlement vs authorization
+
+Billing Entitlement answers:
 
 ```text
-authorization
-User identity validation
-Workspace scope
-duplicate prevention
-role bootstrap if applicable
-event
+is this product capability available under plan/usage?
 ```
 
-## 47. WG-MEM-004 — remove member
-
-Define:
-
-- authorization;
-- last-admin invariant;
-- role/resource grant cleanup;
-- historical attribution;
-- event.
-
-## 48. WG-MEM-005 — self leave
-
-Only if supported.
-
-Verify last-admin/owner behavior.
-
-## 49. WG-MEM-006 — membership state changes
-
-If suspend/disable exists:
-
-- authorization;
-- effective permission impact;
-- cache invalidation;
-- event.
-
-## 50. WG-MEM-007 — role association
-
-Membership references Governance roles through approved contract.
-
-Do not embed permission list inside Member if Governance owns it.
-
-## 51. WG-MEM-008 — Identity deactivation
-
-Verify disabled User cannot continue authorization because membership cache is stale.
-
-## 52. WG-MEM-009 — membership query contract
-
-Provide approved query/read model for:
-
-- list members;
-- get current member;
-- membership status;
-
-without exposing Identity private state.
-
-## 53. WG-MEM-010 — concurrency hardening
-
-Test:
+Governance answers:
 
 ```text
-concurrent add
-concurrent remove
-concurrent demote/remove last admin
+may this actor perform this action?
 ```
 
-where relevant.
+They MUST NOT be conflated.
 
-## 54. Phase 4 exit
+An operation may require both.
 
-WorkspaceMember reaches at least D4.
+# Automation / Integrations
 
-# Phase 5 — Invitation baseline
+## 137. WGREQ126 — automation actor/authorization
 
-## 55. Purpose
+Automation execution may act on behalf of a User/system principal according to approved actor model.
 
-Invitations matter for real Workspace access but advanced invitation features do not need to block P2 core if membership can otherwise be established for tests/initial product.
+Governance must evaluate business authorization where appropriate.
 
-## 56. WG-INVITE-001 — invitation model
+## 138. WGREQ127 — Integration administration
 
-Requirements:
+Creating/managing provider connections is a governable resource/action owned semantically by Integrations and authorized by Governance.
+
+# Analytics
+
+## 139. WGREQ128 — governance analytics facts
+
+Analytics may consume derived facts such as:
+
+- membership counts;
+- role assignments;
+- authorization/security events;
+
+subject to privacy.
+
+Analytics MUST NOT use Governance private tables as an uncontrolled source of truth.
+
+# Data ownership
+
+## 140. WGREQ129 — Workspace persistence private
+
+Other contexts MUST NOT mutate Workspace/Member/Invitation/Team/Space tables directly.
+
+## 141. WGREQ130 — Governance persistence private
+
+Other contexts MUST NOT mutate Role/Permission/Policy/ResourcePermission/ShareLink tables directly.
+
+## 142. WGREQ131 — no dual membership truth
+
+There MUST NOT be one Workspace membership model in Workspaces and another canonical membership model in Governance.
+
+Governance references/authorizes membership; Workspaces owns membership state.
+
+## 143. WGREQ132 — no dual role truth
+
+Role semantics must have one canonical owner in Governance.
+
+Workspace/Identity/Product contexts must not maintain their own business role enums that independently authorize the same actions.
+
+## 144. WGREQ133 — no private cross-context joins as contract
+
+Same physical database does not authorize Governance to join private WorkManagement/Documents/Billing tables as its public business contract.
+
+# API
+
+## 145. WGREQ134 — Workspace API categories
+
+Workspace APIs may include release-scoped:
 
 ```text
-WGREQ024–WGREQ033
+Workspace lifecycle
+Members
+Invitations
+Teams
+Spaces
+Settings
+Provisioning
+WorkspaceHome
 ```
 
-Verify:
+Exact endpoints follow current API architecture.
 
-- target;
-- Workspace;
-- intended role/access;
-- expiry;
-- status;
-- secret/token model;
-- events.
+## 146. WGREQ135 — Governance API categories
 
-## 57. WG-INVITE-002 — create
-
-Protected operation.
-
-Must ensure inviter cannot grant access beyond permitted authority.
-
-## 58. WG-INVITE-003 — accept
-
-Required sequence:
+Governance APIs may include:
 
 ```text
-validate invitation
-validate target identity
-validate expiry/revocation
-validate intended access
-create/activate membership
-mark invitation accepted
+Roles
+Permissions
+Policies
+ResourcePermissions
+PermissionRules
+ShareLinks
+AuditLogs
+SecurityEvents
 ```
 
-Transaction boundary must avoid duplicate membership.
+Only release-scoped/canonical surfaces are implemented.
 
-## 59. WG-INVITE-004 — revoke
+## 147. WGREQ136 — API error taxonomy
 
-Revoked invitation cannot later create access.
-
-## 60. WG-INVITE-005 — replay/idempotency
-
-Repeated accept must be safe.
-
-## 61. WG-INVITE-006 — race
-
-Accept vs revoke/expiry.
-
-Authoritative final state must not grant revoked access.
-
-## 62. WG-INVITE-007 — secret safety
-
-No raw bearer invitation secret in ordinary logs/list responses.
-
-## 63. Phase 5 exit
-
-Baseline invitation can remain D3/D4 if not required for P3 gate.
-
-Membership itself must remain stable.
-
-# Phase 6 — Resource authorization category / ResourceId / Action contract
-
-## 64. Purpose
-
-Stabilize the **existing** resource authorization vocabulary and the resource-owner facts boundary that
-unlocks WorkManagement and later Documents/Billing/Automation/Integrations. This phase does not authorize
-a `ResourceType`→`ResourceKind` rename by documentation preference.
-
-## 65. WG-RES-001 — inventory existing resource abstractions
-
-Search candidate source for:
-
-```text
-ResourceKind
-ResourceType
-ResourceId
-ResourceReference
-ResourceScope
-Subject
-Action
-AuthorizationRequirement / IRequirePermission
-PermissionContext
-IResourceReferenceResolver
-IResourceScopeResolver
-```
-
-Record every variant, persisted consumer and current canonical usage.
-
-## 66. WG-RES-002 — select canonical resource category without forced rename
-
-Use the existing source model when it already provides:
-
-```text
-stable semantic category
-resource ID
-tenant/workspace scope
-transport-neutral authorization request representation
-```
-
-If source currently uses `ResourceType` and its semantics are correct, keep it. Rename to `ResourceKind`
-only with explicit ADR/source decision plus persisted role/permission/policy/downstream migration proof.
-
-Do NOT create another resource abstraction merely to match SPEC vocabulary.
-
-## 67. WG-RES-003 — resource/action ownership
-
-For every resource/action:
-
-```text
-resource owner context
-authorization category semantic name
-resource-specific Action owner
-persisted identity?
-permission/role/policy consumers?
-```
-
-Resource teams own resource identity, lifecycle and business Action meaning. Governance may own generic
-registry/mapping mechanics but cannot invent product actions on behalf of WorkManagement/Documents/etc.
-
-## 68. WG-RES-004 — define authorization FACTS contract
-
-For resources whose authorization depends on facts not already available in request/tenant context, define
-a minimal transport-neutral facts projection. Example categories only when source-approved:
-
-```text
-WorkspaceId / AccountId
-resource lifecycle accessibility
-visibility/audience fact
-actor↔resource relationship fact
-parent scope
-```
-
-Do not return full foreign aggregates. Do not return `CanEdit/CanDelete/...` if those are Governance policy
-decisions rather than resource-owned facts.
-
-## 68A. WG-RES-005 — provider ownership and adapter placement
-
-Canonical direction:
-
-```text
-Application/Common/Security or approved neutral SPI
-                  ↑
-resource-owner Infrastructure implementation
-                  ↓
-resource-owner private persistence
-```
-
-For Board, any implementation that reads `Boards`, `BoardMembers`, `BoardRole`, `BoardVisibility` or
-`IWorkManagementDbContext` belongs to WorkManagement infrastructure/adapter ownership.
-
-Forbidden:
-
-```text
-Notrelix.Infrastructure.Governance.*
-  → directly queries IWorkManagementDbContext / Boards / BoardMembers
-```
-
-If a current class such as `BoardAuthorizationSnapshotResolver` has that dependency while living under
-Governance ownership, STOP and rehome/redesign before building further policy on top of it.
-
-## 68B. WG-RES-006 — facts vs policy classification
-
-For every projected field/mapping, record:
-
-```text
-source-owned fact?
-Governance policy?
-stable cross-context vocabulary?
-migration impact?
-```
-
-Examples such as `BoardRole.Observer → Viewer` or `BoardVisibility.Workspace → WorkspaceAudience` are
-not accepted automatically. They require proof that the target vocabulary is a fact projection rather
-than a hidden second permission hierarchy.
-
-## 69. WG-RES-007 — Account/Workspace consistency
-
-Ensure authorization context cannot pair Account A with Workspace/resource belonging to Account B and
-still evaluate as valid.
-
-## 70. WG-RES-008 — transport-neutral evolution seam
-
-The provider contract MUST NOT expose EF, gRPC, HTTP or message-broker types. Implementations may evolve:
-
-```text
-now:    in-process resource-owner query / EF read model
-later:  gRPC client to extracted owner service
-or:     event-fed local authorization projection
-or:     cache / hybrid freshness verification
-```
-
-Future extraction changes adapters, not business ownership or authorization request semantics.
-
-## 71. WG-RES-009 — module-first slice placement
-
-When touching Workspaces/Governance Application code, follow the candidate-SHA canonical module-first
-layout. Do not add new production use cases to deprecated legacy feature paths just to minimize diff.
-
-## 73. Phase 6 exit
-
-Required D4 producer contract:
-
-- stable resource category using canonical current source naming;
-- stable resource-owned Action vocabulary;
-- resource-owner facts lookup/provider ownership defined;
-- no Governance private EF read of downstream contexts;
-- representative Board contract can be implemented without private-context coupling;
-- P3-A Domain/Data work may open if Workspace/containment prerequisites are also D4+.
-
-# Phase 7 — Permission model
-
-## 74. WG-PERM-001 — canonical Permission model
-
-Requirements:
-
-```text
-WGREQ054–WGREQ062
-```
-
-Using Phase 2 semantic map, establish one canonical meaning.
-
-## 75. WG-PERM-002 — permission identity
-
-Ensure stable ID/key if persisted.
-
-Document migration semantics.
-
-## 76. WG-PERM-003 — tenant/resource scope
-
-Permission evaluation must include correct Workspace/resource context.
-
-## 77. WG-PERM-004 — default deny
-
-Verify absence of grant/policy produces denied protected action according to architecture.
-
-## 78. WG-PERM-005 — explicit deny only if current model supports it
-
-Do not introduce deny precedence casually.
-
-If current model already supports deny, document exact precedence and test it.
-
-## 79. WG-PERM-006 — PermissionRule integration
-
-After classification:
-
-- retain valid rules;
-- remove/deprecate duplicate legacy model only through migration;
-- no new DSL.
-
-## 80. WG-PERM-007 — permission cache
-
-If present:
-
-```text
-key
-scope
-invalidation
-security window
-tenant isolation
-```
-
-must be explicit.
-
-## 81. WG-PERM-008 — DB/index hardening
-
-Verify indexes for:
-
-```text
-subject
-workspace
-resource
-action
-role
-```
-
-as relevant.
-
-## 82. Phase 7 exit
-
-Permission semantics D4/D5-ready.
-
-# Phase 8 — Built-in roles
-
-## 83. WG-ROLE-001 — role model audit
-
-Requirements:
-
-```text
-WGREQ063–WGREQ070
-```
-
-Record:
-
-```text
-role ID
-scope
-built-in/custom
-permissions
-subject assignment
-deletion
-events
-```
-
-## 84. WG-ROLE-002 — built-in role baseline
-
-Select only product-approved roles already present/defined.
-
-Do not invent role taxonomy.
-
-## 85. WG-ROLE-003 — stable role identity
-
-Display-name change must not break persisted role assignments.
-
-## 86. WG-ROLE-004 — permission mapping
-
-Built-in role → permission mapping must be deterministic and version/migration-safe.
-
-## 87. WG-ROLE-005 — assignment
-
-Verify:
-
-- member/team subject;
-- Workspace scope;
-- authorization;
-- duplicates;
-- revocation.
-
-## 88. WG-ROLE-006 — last-admin invariant
-
-If admin/owner role encodes required Workspace administration, enforce concurrency-safe invariant.
-
-## 89. WG-ROLE-007 — custom-role deferral
-
-If custom roles are not required for P3:
-
-```text
-do not block P2 core
-```
-
-## 90. Phase 8 exit
-
-Built-in role baseline at least D4.
-
-# Phase 9 — Existing authorization path hardening
-
-## 91. Purpose
-
-Bind accepted Governance semantics behind the **existing canonical Application authorization path**.
-Do not create a second behavior/evaluator/decision-store stack if candidate source already has one.
-
-## 92. WG-AUTHZ-001 — inventory central authorization behavior
-
-Search:
-
-```bash
-rg -n \
-  "AuthorizationBehavior|IAuthorizationDecisionStore|IPermissionEvaluator|PermissionContext|IRequirePermission|ResourceType|ResourceKind|Permission" \
-  backend/src backend/tests
-```
-
-Record:
-
-- implementation;
-- interfaces;
-- DI registration;
-- pipeline ordering;
-- error type;
-- cache/dependency;
-- tests.
-
-Decision rule:
-
-```text
-existing responsibility is valid → reuse/harden
-existing responsibility is incomplete → extend behind same contract
-existing responsibility conflicts semantically → stop + explicit migration decision
-new parallel authorization stack → forbidden
-```
-
-## 93. WG-AUTHZ-002 — production registration
-
-Prove central behavior is registered in production DI.
-
-## 94. WG-AUTHZ-003 — pipeline ordering
-
-Inspect ordering relative to:
-
-```text
-validation
-authorization
-idempotency
-transaction
-logging
-```
-
-Do not reorder unless architecture evidence requires it.
-
-## 95. WG-AUTHZ-004 — canonical decision inputs
-
-Ensure the pipeline can receive:
-
-```text
-Actor
-Account
-Workspace/resource context
-ResourceCategory (canonical source name, currently possibly ResourceType)
-ResourceId
-Action
-```
-
-using current abstractions.
-
-## 96. WG-AUTHZ-005 — effective decision evaluator
-
-Connect:
-
-```text
-membership
-role
-permission
-policy/resource permission where supported
-```
-
-to one decision path.
-
-## 97. WG-AUTHZ-006 — fail closed
-
-Missing/invalid context or evaluator failure must not grant access.
-
-## 98. WG-AUTHZ-007 — unauthorized handler side effect proof
-
-Representative protected handler:
-
-```text
-authorization denied
-→ handler protected work does not commit
-```
-
-## 99. WG-AUTHZ-008 — role-check debt inventory
-
-Review local checks found in Phase 0.
-
-For each:
-
-```text
-keep as Domain invariant
-migrate to Governance
-remove duplicate
-defer with source debt
-```
-
-Do not mass-rewrite without semantic proof.
-
-## 100. WG-AUTHZ-009 — API-only checks
-
-Where endpoint has business permission logic:
-
-move declaration/enforcement to approved Application path while preserving transport adaptation.
-
-## 101. WG-AUTHZ-010 — background actor
-
-For relevant background operations:
-
-verify explicit principal/authorization semantics.
-
-No global bypass.
-
-## 102. Phase 9 exit
-
-Authorization integration reaches D4/D5 for representative resources.
-
-# Phase 10 — WorkManagement handshake
-
-## 103. Purpose
-
-This is the required representative consumer proof before P3-B protected Application/API release.
-P3-A Domain/Data work may already be running under the Phase 6 producer contract.
-
-## 104. WG-WM-001 — identify first WorkManagement resource
-
-Default candidate:
-
-```text
-Board
-```
-
-because Board is P3 transactional root.
-
-Do not start with every WorkManagement resource.
-
-## 105. WG-WM-002 — Board resource authorization category
-
-WorkManagement owns semantic declaration.
-
-Governance consumes:
-
-```text
-kind
-resource ID
-Workspace/Account scope
-supported actions
-```
-
-## 106. WG-WM-003 — Board actions
-
-Select only current product-approved Board actions needed for first vertical slice.
-
-Examples are not authoritative.
-
-Do not predesign every future Board action.
-
-## 107. WG-WM-004 — resource lookup
-
-If authorization requires Board→Workspace or actor↔Board facts:
-
-- use an approved transport-neutral authorization facts SPI/resource-owner contract;
-- implement the Board data access adapter under WorkManagement ownership;
-- keep `Board`, `BoardMember`, `BoardRole`, `BoardVisibility` and `IWorkManagementDbContext` knowledge behind that adapter;
-- Governance consumes facts and evaluates policy.
-
-Do not place a Board resolver under `Infrastructure.Governance` if it directly queries WorkManagement private persistence.
-
-## 108. WG-WM-005 — representative allow path
-
-Test:
-
-```text
-Actor with valid Workspace membership + permission
-→ Board action allowed
-```
-
-## 109. WG-WM-006 — representative deny path
-
-Test:
-
-```text
-Actor lacks permission
-→ Board action denied
-→ handler does not commit
-```
-
-## 110. WG-WM-007 — cross-tenant deny
-
-Test:
-
-```text
-Actor in Account A
-→ Board in Workspace under Account B
-→ denied
-```
-
-## 111. WG-WM-008 — no role-string dependency
-
-WorkManagement handler must not know Governance role display names.
-
-## 112. WG-WM-009 — BoardItem deferral
-
-Only add BoardItem independent resource contract if current product requires independent authorization.
-
-Do not create per-entity ACL by default.
-
-## 113. Phase 10 exit
-
-WorkManagement handshake proven.
-
-# Phase 11 — P2 protected-slice verification and staged P3 handoff
-
-## 114. P3-A producer gate
-
-This gate enables WorkManagement Domain/Data parallelization, not protected product release.
-
-| Contract | Target |
-|---|---|
-| Workspace identity | D4+ |
-| Account→Workspace containment | D4+ |
-| resource authorization category / ResourceId | D4+ |
-| resource-owned Action vocabulary | D4+ |
-| no Governance private downstream persistence dependency | proven |
-
-When this gate passes, WorkManagement may implement its resource-owned transactional core in parallel.
-
-## 115. P3-B protected-slice gate
-
-Required before representative protected Application/API release:
-
-| Contract | Target |
-|---|---|
-| Workspace | D5 |
-| Account→Workspace containment | D5 |
-| WorkspaceMember | D4+ |
-| resource category/resource | D5 |
-| Action | D5 |
-| Permission | D5 for representative slice |
-| Built-in role baseline | D4+ |
-| existing central authorization path | D5 |
-| resource-owner facts provider boundary | D5 |
-| WorkManagement Board handshake | D5 |
-
-## 116. WG-GATE-001 — architecture proof
-
-Required:
-
-- Workspaces and Governance remain separate logical contexts;
-- resource contexts own resource/action/facts semantics;
-- Governance owns permission/role/policy decision semantics;
-- Application pipeline owns enforcement;
-- no Governance adapter queries private WorkManagement/Documents/Billing/etc. persistence;
-- no second authorization pipeline/evaluator stack;
-- no forced `ResourceType`→`ResourceKind` rename without migration decision;
-- Domain purity and production project topology preserved.
-
-## 117. WG-GATE-002 — representative security proof
-
-Required scenarios:
-
-```text
-Account A → Workspace A allowed
-Account A → Workspace B under Account B denied
-member removed → no stale access
-role removed → no stale access
-Board allow through canonical AuthorizationBehavior/decision path
-Board deny before handler side effects
-Board cross-tenant deny
-resource lookup unavailable/invalid → fail closed according to canonical policy
-```
-
-## 118. WG-GATE-003 — cross-context ownership proof
-
-For WorkManagement representative adapter verify:
-
-```text
-interface/contract is transport-neutral
-implementation owner = WorkManagement
-private DB access = WorkManagement only
-Governance receives facts, not Board aggregate/private EF model
-no policy decision hidden inside resource facts provider
-```
-
-Repeat the same architecture rule for Documents/Billing/Automation/Integrations when they onboard.
-
-## 119. WG-GATE-004 — migration proof
-
-If schema or persisted authorization identifiers changed:
-
-- clean DB;
-- supported upgrade DB;
-- no pending model changes;
-- persisted permission/role/policy/resource-action compatibility;
-- seed/init if affected.
-
-## 120. WG-GATE-005 — staged P3 handoff
-
-```text
-P3-A passed → Domain/Data parallel work allowed
-P3-B passed → protected Application/API slice + release certification allowed
-```
-
-Secondary Workspace/Governance scope continues in parallel and must not change the frozen producer contract
-without reopening review gates.
-
-# Phase 12 — Provisioning / Settings / WorkspaceHome
-
-## 120. WG-PROV-001 — provisioning source audit
-
-Inspect Application `Provisioning`.
-
-Determine whether it creates:
-
-```text
-Workspace
-Member
-roles
-Team
-Space
-Account-related state
-```
-
-## 121. WG-PROV-002 — orchestration ownership
-
-For every created object:
-
-```text
-owner context
-transaction boundary
-idempotency
-event
-partial failure
-```
-
-No giant aggregate.
-
-## 122. WG-PROV-003 — provisioning idempotency
-
-Retry must not duplicate:
-
-- Workspace;
-- bootstrap member;
-- role assignment;
-- Team/Space.
-
-## 123. WG-PROV-004 — partial failure
-
-If multi-context:
-
-define compensation/retry/partial state.
-
-## 124. WG-SET-001 — Settings classification
-
-Inspect current `Settings`.
-
-Classify each setting:
-
-```text
-Workspace
-Governance
-Identity/User
-Account
-Product-specific
-```
-
-## 125. WG-HOME-001 — WorkspaceHome classification
-
-Determine whether WorkspaceHome is:
-
-- persisted business aggregate/read model;
-- composition query;
-- UI-oriented DTO;
-- placeholder.
-
-Do not promote composition DTO into Domain model without evidence.
-
-# Phase 13 — Teams / Spaces / Workspace Rules
-
-## 126. WG-TEAM-001 — Team model
-
-Requirements:
-
-```text
-WGREQ034–WGREQ037
-```
-
-Verify:
-
-- Workspace containment;
-- membership;
-- lifecycle;
-- optional Governance subject role.
-
-## 127. WG-TEAM-002 — Team membership
-
-Only Workspace members may become Team members unless product says otherwise.
-
-## 128. WG-TEAM-003 — Team authorization subject
-
-If supported, integrate through Governance subject abstraction.
-
-No automatic permission escalation.
-
-## 129. WG-SPACE-001 — Space model
-
-Requirements:
-
-```text
-WGREQ038–WGREQ041
-```
-
-Classify exact business meaning before expanding.
-
-## 130. WG-SPACE-002 — containment
-
-If Space is Workspace child:
-
-enforce same-Workspace/Account consistency.
-
-## 131. WG-SPACE-003 — authorization
-
-If governable, register Space resource/actions through same handshake.
-
-## 132. WG-RULE-001 — implement classification from Phase 2
-
-For Workspaces Rules:
-
-- retain Workspace rules;
-- rehome Governance rules only with migration;
-- separate Automation rules;
-- remove legacy only when proven unused.
-
-# Phase 14 — Custom Roles / Policies / ResourcePermissions
-
-## 133. WG-CROLE-001 — custom role release scope
-
-Only implement if product release requires it.
-
-P3 is already allowed to proceed after P2 core.
-
-## 134. WG-CROLE-002 — create/update/delete
-
-Must define:
-
-- authorization;
-- permission assignment;
-- subject impact;
-- cache invalidation;
-- deletion migration.
-
-## 135. WG-POL-001 — Policy semantics
-
-Use Phase 2 classification.
-
-Do not broaden policy language.
-
-## 136. WG-POL-002 — policy evaluation
-
-Verify deterministic, tenant-scoped, fail-closed behavior.
-
-## 137. WG-POL-003 — policy versioning
-
-Persisted schema requires migration/versioning.
-
-## 138. WG-RPERM-001 — ResourcePermission implementation
-
-Use canonical meaning only.
-
-If direct ACL:
-
-define:
-
-```text
-subject
-resource
-actions/permissions
-scope
-expiry if any
-```
-
-## 139. WG-RPERM-002 — inheritance
-
-Only if existing product/model supports it.
-
-No speculative inheritance tree.
-
-## 140. WG-RPERM-003 — revoke
-
-Invalidate effective-access cache safely.
-
-# Phase 15 — ShareLinks
-
-## 141. WG-SHARE-001 — source audit
-
-Inspect Domain/Application/Infrastructure/API model.
-
-Map:
-
-```text
-resource
-secret/token
-permissions/actions
-expiry
-revocation
-anonymous/authenticated use
-audit
-```
-
-## 142. WG-SHARE-002 — secure issuance
-
-Use approved secure random/secret protection.
-
-## 143. WG-SHARE-003 — bounded access
-
-A valid link grants only intended resource/action.
-
-No Workspace-wide escalation unless product explicitly says so.
-
-## 144. WG-SHARE-004 — expiry/revocation
-
-Prove stale cache cannot preserve access beyond accepted window.
-
-## 145. WG-SHARE-005 — non-member semantics
-
-Do not auto-create normal membership unless explicit flow requires it.
-
-## 146. WG-SHARE-006 — secret response policy
-
-Raw secret only in intended issuance/share flow.
-
-No ordinary list readback.
-
-# Phase 16 — Audit / SecurityEvents / Templates
-
-## 147. WG-AUD-001 — AuditLogs source audit
-
-Classify:
-
-```text
-governance audit
-general activity
-observability log
-```
-
-Governance should not duplicate every system event.
-
-## 148. WG-AUD-002 — critical change audit
-
-Ensure critical:
-
-- membership;
-- role;
-- permission;
-- policy;
-- share-link
-
-changes produce appropriate audit evidence.
-
-## 149. WG-AUD-003 — audit query security
-
-Audit APIs themselves require permission and tenant scope.
-
-## 150. WG-SEC-EVT-001 — SecurityEvents classification
-
-Distinguish:
-
-```text
-security fact
-infrastructure exception
-general activity
-```
-
-## 151. WG-TPL-001 — Templates
-
-Verify current Domain `Templates` semantics.
-
-Do not assume template automatically becomes role/policy live state.
-
-## 152. WG-TPL-002 — template apply
-
-Validate permission/action compatibility at application time.
-
-# Phase 17 — API / Events / Authorization harmonization
-
-## 153. WG-API-001 — endpoint inventory reconciliation
-
-Every endpoint maps to approved Application use case.
-
-## 154. WG-API-002 — error taxonomy
-
-Normalize:
+API must distinguish according to canonical policy:
 
 ```text
 unauthenticated
@@ -2032,1246 +1483,828 @@ forbidden
 not found/privacy
 validation
 conflict
-expired/revoked link/invite
-invalid state transition
-```
-
-## 155. WG-API-003 — sensitive responses
-
-Invitation/share secret leakage prohibited.
-
-## 156. WG-API-004 — OpenAPI
-
-Update drift/generation when API contracts change.
-
-## 157. WG-EVT-001 — event inventory
-
-Map:
-
-```text
-producer
-event meaning
-payload
-Account
-Workspace
-subject/resource
-consumers
-security/PII
-```
-
-## 158. WG-EVT-002 — consumer compatibility
-
-WorkManagement/Billing/Analytics consumers use stable events/contracts.
-
-## 159. WG-AUTHZ-HARM-001 — resource/action declaration scan
-
-Ensure all protected P2 endpoints/handlers use approved authorization path.
-
-# Phase 18 — Persistence / Migration / Compatibility
-
-## 160. WG-MIG-001 — schema diff inventory
-
-Classify every change:
-
-```text
-additive
-constraint
-backfill
-resource/action ID migration
-role/permission migration
-policy schema migration
-secret-format migration
-ownership move
-```
-
-## 161. WG-MIG-002 — membership
-
-Preserve:
-
-- User reference;
-- Workspace reference;
-- role assignments;
-- audit.
-
-## 162. WG-MIG-003 — resource/action identifiers
-
-If renaming:
-
-update:
-
-```text
-permissions
-roles
-policies
-resource permissions
-share links
-consumer declarations
-fixtures
-tests
-```
-
-## 163. WG-MIG-004 — built-in roles
-
-Semantic change to a built-in role requires migration/impact analysis for existing Workspaces.
-
-## 164. WG-MIG-005 — policy schema
-
-Backfill/version stored policies.
-
-## 165. WG-MIG-006 — invitation/share secret
-
-Define compatibility/rotation/revocation.
-
-## 166. WG-MIG-007 — clean DB
-
-Required after schema changes.
-
-## 167. WG-MIG-008 — upgrade DB
-
-Required from supported prior state.
-
-## 168. WG-MIG-009 — pending model
-
-Must be none.
-
-Do not suppress warning.
-
-# Phase 19 — Security hardening
-
-## 169. WG-HARD-SEC-001 — privilege escalation matrix
-
-Test:
-
-```text
-self role elevation
-grant beyond authority
-invite with excessive role
-Team membership escalation
-cross-Workspace resource grant
-policy mutation without authority
-```
-
-## 170. WG-HARD-SEC-002 — stale cache matrix
-
-Test revocation of:
-
-```text
-membership
-role
-permission
-policy
-share link
-```
-
-## 171. WG-HARD-SEC-003 — cross-tenant matrix
-
-Test Account/Workspace/resource mismatch combinations.
-
-## 172. WG-HARD-SEC-004 — bearer secret leakage
-
-Search/capture:
-
-```text
-invitation secret
-share-link secret
-authorization header
-session/API token
-```
-
-must not appear in ordinary logs/events/responses.
-
-## 173. WG-HARD-SEC-005 — fail closed
-
-Simulate:
-
-- missing policy data;
-- permission evaluator failure;
-- resource lookup failure.
-
-Protected action must not become allowed.
-
-## 174. WG-HARD-SEC-006 — background path
-
-No global/bypass principal without approved semantics.
-
-# Phase 20 — Concurrency / Reliability
-
-## 175. WG-CONC-001 — duplicate membership
-
-Concurrent add/accept.
-
-## 176. WG-CONC-002 — last admin
-
-Concurrent demote/remove.
-
-## 177. WG-CONC-003 — invitation race
-
-Accept vs revoke/expire.
-
-## 178. WG-CONC-004 — role assignment race
-
-Assign/remove.
-
-## 179. WG-CONC-005 — policy stale update
-
-If versioned concurrency exists.
-
-## 180. WG-CONC-006 — share revoke
-
-Revoke vs use/refresh.
-
-## 181. WG-REL-001 — provisioning partial failure
-
-Verify defined behavior.
-
-## 182. WG-REL-002 — evaluator dependency outage
-
-Fail safely.
-
-## 183. WG-REL-003 — event publication
-
-Use existing outbox/transaction semantics.
-
-## 184. WG-REL-004 — cache outage
-
-Fallback must not default-allow.
-
-# Phase 21 — Observability / Performance
-
-## 185. WG-OBS-001 — authorization trace
-
-Ensure safe correlation:
-
-```text
-Actor
-Account
-Workspace
-ResourceKind
-ResourceId
-Action
-Decision
-```
-
-## 186. WG-OBS-002 — admin mutation auditability
-
-Membership/role/policy/share changes traceable.
-
-## 187. WG-OBS-003 — secret-safe telemetry
-
-No bearer tokens/secrets.
-
-## 188. WG-PERF-001 — authorization hot path
-
-Inspect:
-
-- DB calls;
-- cache calls;
-- policy evaluation count;
-- resource-parent lookups.
-
-## 189. WG-PERF-002 — membership lookup
-
-Ensure correct indexes/caching.
-
-## 190. WG-PERF-003 — permission lookup
-
-Avoid unbounded scans.
-
-## 191. WG-PERF-004 — list pagination
-
-Member/audit/permission lists use canonical pagination strategy.
-
-## 192. No invented performance thresholds
-
-Use current quality authority/baseline.
-
-## Cross-context handshake rule used by Phase 22
-
-For every producer/consumer pair, produce a contract card:
-
-```text
-Producer context:
-Consumer context:
-Owned business state:
-Stable IDs:
-Authorization facts exported:
-Actions owned by producer:
-Policy mapping owned by Governance:
-Synchronous lookup required?:
-Events/projection available?:
-Consistency/freshness requirement:
-Failure mode / fail-closed rule:
-Current in-process adapter:
-Future extraction seam (gRPC/event projection/cache/hybrid):
-Migration/versioning:
-Forbidden private dependencies:
-```
-
-Do not select gRPC now unless extraction is actually being implemented. The seam must make gRPC possible
-later without making the modular monolith behave like a distributed system today.
-
-# Phase 22 — Cross-context integration hardening
-
-## 193. WG-X-001 — Identity/Accounts
-
-Prove no credential/private Identity dependency.
-
-## 194. WG-X-002 — WorkManagement
-
-Mandatory P2 handoff.
-
-Prove:
-
-```text
-Board resource/action declaration
-allow
-deny
-cross-tenant deny
-no role-name coupling
-```
-
-## 195. WG-X-003 — Documents
-
-Prove Page/Document can use same Governance handshake when ready.
-
-## 196. WG-X-004 — Collaboration
-
-Comment authorization uses target resource access contract, not target private tables.
-
-## 197. WG-X-005 — Billing
-
-Billing admin action can combine:
-
-```text
-Governance authorization
-+
-Billing entitlement/business rule
-```
-
-without conflation.
-
-## 198. WG-X-006 — Automation/Integrations
-
-Administration actions use Governance; background execution uses approved actor semantics.
-
-## 199. WG-X-007 — Analytics
-
-Audit/governance facts exposed through approved events/read contracts only.
-
-# Phase 23 — TESTS handoff
-
-## 200. Purpose
-
-Produce deterministic input for:
-
-```text
-workspace-governance.tests.md
-```
-
-## 201. WG-TEST-HO-001 — requirement matrix
-
-Build:
-
-```text
-WGREQ
-Capability
-PLAN work unit
-Existing test
-Missing test
-Test layer
-Security/concurrency?
-Migration?
-CI gate
-```
-
-## 202. WG-TEST-HO-002 — mandatory test families
-
-TESTS must include:
-
-```text
-Workspace
-Membership
-Invitation
-Teams/Spaces if release scope
-resource authorization category / Action
-Permission
-Role
-Policy
-ResourcePermission
-Authorization pipeline
-ShareLinks
-Audit/SecurityEvents
-Tenant isolation
-Privilege escalation
-Concurrency
-Migration
-WorkManagement handoff
-```
-
-## 203. WG-TEST-HO-003 — production graph tests
-
-Flag tests requiring:
-
-- real DI;
-- DB;
-- authorization behavior;
-- cache;
-- tenant isolation;
-- migration.
-
-## 204. WG-TEST-HO-004 — architecture tests
-
-Must enforce:
-
-```text
-Domain purity
-Workspaces/Governance separation
-no private downstream EF dependency
-pipeline-owned authorization
-```
-
-## 205. WG-TEST-HO-005 — P2 gate tests
-
-TESTS must define a dedicated P2 core gate group.
-
-# Phase 24 — Docs / generated-contract handoff
-
-## 206. WG-DOC-001 — canonical docs
-
-Update only changed canonical product/architecture authorities.
-
-Potential:
-
-```text
-workspaces.md
-governance.md
-security-tenancy-authorization.md
-application-model.md
-API contracts
-ADR if architecture changes
-```
-
-## 207. WG-DOC-002 — OpenAPI/generated
-
-Regenerate/check if API changed.
-
-## 208. WG-DOC-003 — workstream state
-
-Only mark D4/D5 when evidence exists.
-
-## 209. WG-DOC-004 — no authority duplication
-
-Do not copy full role/permission catalogs into multiple docs if source/generated evidence is canonical.
-
-# Phase 25 — CERTIFICATION handoff
-
-## 210. Required certification milestones
-
-`workspace-governance.certification.md` must define:
-
-```text
-MILESTONE A
-P2 CORE CERTIFIED
-→ WorkManagement may rely on P2
-
-MILESTONE B
-WORKSPACE & GOVERNANCE FULL SCOPE CERTIFIED
-→ release-scoped secondary capabilities complete
-```
-
-## 211. WG-CERT-HO-001 — P2 core inputs
-
-Must include:
-
-```text
-Workspace D5
-containment D5
-Member D4+
-Resource/Action D5
-Permission D5
-Built-in Role D4+
-Authorization D5
-WorkManagement handshake D5
-Architecture
-Security
-Migration
-CI exact SHA
-```
-
-## 212. WG-CERT-HO-002 — secondary scope
-
-Separate certification for:
-
-```text
-Invitations
-Teams
-Spaces
-custom roles
-advanced policies
-ResourcePermissions
-ShareLinks
-Audit/SecurityEvents
-Templates
-```
-
-only when release-scoped.
-
-# Layer-by-layer execution contract
-
-## 213. Domain
-
-Allowed:
-
-- Workspace/Member/Invitation/Team/Space invariants;
-- Governance Role/Permission/Policy/ShareLink semantics;
-- Domain events.
-
-Forbidden:
-
-- EF;
-- HTTP;
-- authorization pipeline code;
-- provider/cache mechanism;
-- WorkManagement private state.
-
-## 214. Application
-
-Owns:
-
-- use cases;
-- validation;
-- authorization declaration;
-- orchestration;
-- interfaces;
-- transactions;
-- result/error mapping.
-
-## 215. Infrastructure
-
-Owns:
-
-- persistence;
-- indexes;
-- migrations;
-- secret verification storage;
-- cache implementation;
-- resource lookup adapters where architecture assigns them.
-
-Infrastructure MUST NOT decide permission semantics.
-
-## 216. API
-
-Owns:
-
-- transport;
-- endpoint mapping;
-- HTTP errors;
-- OpenAPI.
-
-API MUST NOT be sole business authorization enforcement.
-
-## 217. Platform
-
-Touched only for generic mechanism:
-
-- authorization pipeline;
-- generic cache/rate/observability;
-- messaging.
-
-Do not move Governance business state to Platform.
-
-# File-change discipline
-
-## 218. Before changing Workspaces Domain
-
-Inspect:
-
-```text
-backend/src/Notrelix.Domain/Workspaces/**
-relevant Domain tests
-downstream Workspace references
-```
-
-## 219. Before changing Governance Domain
-
-Inspect:
-
-```text
-backend/src/Notrelix.Domain/Governance/**
-relevant Domain tests
-Application Governance consumers
-```
-
-## 220. Before changing Application
-
-Inspect:
-
-```text
-backend/src/Notrelix.Application/Features/Workspaces/**
-backend/src/Notrelix.Application/Features/Governance/**
-current authorization/common pipeline abstractions
-```
-
-## 221. Before changing Infrastructure
-
-Inspect actual configuration/storage/migration files discovered in Phase 0.
-
-Do not assume paths.
-
-## 222. Before changing API
-
-Inspect current Workspace/Governance endpoints and auth extensions.
-
-## 223. Files/areas not to change casually
-
-Do not change merely to simplify P2:
-
-```text
-Identity credential/session internals
-WorkManagement Domain
-Documents Domain
-Billing Domain
-Platform messaging
-production project topology
-global architecture rules
-```
-
-# PR decomposition
-
-## 224. PR strategy
-
-Prefer contract-first vertical slices.
-
-Do not create one giant "rewrite authorization" PR.
-
-## 225. PR-WG-00 — semantic inventory/decision
-
-Contains:
-
-- overlap classification;
-- source debt record;
-- migration decisions if required.
-
-Minimal/no production change if possible.
-
-## 226. PR-WG-01 — Workspace core
-
-Scope:
-
-- Workspace identity;
-- Account containment;
-- lifecycle;
-- persistence/migration;
-- tests.
-
-## 227. PR-WG-02 — Membership core
-
-Scope:
-
-- Member model;
-- add/remove;
-- active/inactive;
-- last-admin invariant;
-- tests.
-
-## 228. PR-WG-03 — Resource/Action contract
-
-Scope:
-
-- canonical resource/action model;
-- resource registration mechanism;
-- tests.
-
-No WorkManagement business changes except minimal consumer fixture/contract if necessary.
-
-## 229. PR-WG-04 — Permission + built-in Role
-
-Scope:
-
-- permission semantics;
-- built-in roles;
-- effective mapping;
-- tests.
-
-## 230. PR-WG-05 — Authorization pipeline integration
-
-Scope:
-
-- Governance evaluator;
-- Application enforcement;
-- role-check debt migration limited to representative P2 paths;
-- architecture tests.
-
-## 231. PR-WG-06 — WorkManagement handshake / P2 gate
-
-Scope:
-
-- Board resource/action integration;
-- allow/deny/cross-tenant proof;
-- P2 certification evidence.
-
-## 232. PR-WG-07 — Invitations / Provisioning
-
-As release scope requires.
-
-## 233. PR-WG-08 — Teams / Spaces
-
-Independent after core where possible.
-
-## 234. PR-WG-09 — Custom roles / Policies / ResourcePermissions
-
-Keep policy complexity isolated from P2 core PRs.
-
-## 235. PR-WG-10 — ShareLinks
-
-Focused security review.
-
-## 236. PR-WG-11 — Audit / SecurityEvents / Templates
-
-Only release-scoped work.
-
-## 237. PR-WG-12 — hardening/migration cleanup
-
-Use only for residual cross-cutting fixes, not miscellaneous refactor.
-
-# Parallelization
-
-## 238. Before P2 core gate
-
-Safe parallelism after Phase 2 semantics resolved:
-
-```text
-Workspace core
-Membership core
-Resource/Action contract
-TESTS drafting from source inventory
-```
-
-Permission/Role work may overlap once resource/action semantics are stable.
-
-## 239. After P2 core gate
-
-Parallel:
-
-```text
-WorkManagement starts
-Invitations/provisioning
-Teams/Spaces
-custom roles/policies
-ShareLinks
-Audit/SecurityEvents
-```
-
-## 240. Unsafe parallelism
-
-Do not concurrently redesign:
-
-- Permission in one PR;
-- Policy in another;
-- ResourcePermission in another
-
-without shared semantic hierarchy established in Phase 2.
-
-## 241. Shared-file rule
-
-If two workstreams modify same evaluator/model:
-
-- one owner;
-- explicit sequence;
-- no merge-conflict semantic reconciliation by convenience.
-
-# Migration order
-
-## 242. Resource/action migration before downstream hardening
-
-If persisted resource-category/Action IDs change (whether named ResourceType, ResourceKind or equivalent), complete the approved migration before downstream consumers harden against the new contract.
-
-## 243. Role/permission compatibility
-
-Prefer additive migration:
-
-```text
-add new semantic identifier
-migrate assignments/policies
-update consumers
-remove legacy last
-```
-
-when deployment cannot be atomic.
-
-## 244. Security links
-
-For invitation/share-token format changes:
-
-define:
-
-```text
-existing link validity
-rotation
-forced revoke
-compatibility window
-```
-
-# Error handling
-
-## 245. Workspace errors
-
-Potential categories:
-
-```text
-Workspace not found
-Workspace inaccessible
-Workspace inactive
-member conflict
-last-admin violation
+expired/revoked invitation/share link
 invalid lifecycle
 ```
 
-Use canonical API taxonomy.
+## 148. WGREQ137 — no secret response leakage
 
-## 246. Governance errors
+Invitation/share-link secret material must be minimized according to issuance/read lifecycle.
 
-Potential:
+## 149. WGREQ138 — OpenAPI compatibility
 
-```text
-forbidden
-unknown resource/action
-invalid policy
-role conflict
-permission conflict
-expired/revoked share link
-```
+API changes update OpenAPI/generated contract evidence where required.
 
-Do not expose sensitive policy internals.
+# Events
 
-# Coding-agent reporting
+## 150. WGREQ139 — Workspace event ownership
 
-## 247. Required report per work unit
+Workspaces owns facts such as:
 
 ```text
-Work unit:
-WGREQ IDs:
-Source inspected:
-Files changed:
-Why:
-Workspaces impact:
-Governance impact:
-Application impact:
-Infrastructure impact:
-API impact:
-Migration:
-Downstream contract:
-Tests:
-Commands:
-Result:
-Source debt:
-Architecture/product decision:
-Stop condition:
+Workspace lifecycle
+membership lifecycle
+invitation lifecycle
+Team/Space lifecycle
 ```
 
-## 248. No hidden semantic decisions
+where cross-context consumers need them.
 
-Any change to:
+## 151. WGREQ140 — Governance event ownership
+
+Governance owns facts such as:
 
 ```text
-membership ownership
-Permission meaning
-Policy precedence
-ResourcePermission meaning
-role identity
-resource/action identity
+role/policy/permission change
+share link lifecycle
+security/governance event
 ```
 
-must be explicitly tied to WGREQ/source decision.
+where externally meaningful.
 
-# Stop registry
+## 152. WGREQ141 — event scope
 
-## 249. WG-PLAN-STOP-001 — P1 upstream unstable
-
-Stop affected hardening.
-
-## 250. WG-PLAN-STOP-002 — Account/Workspace ambiguity
-
-Do not encode containment until resolved.
-
-## 251. WG-PLAN-STOP-003 — membership ownership conflict
-
-Do not create duplicate membership.
-
-## 252. WG-PLAN-STOP-004 — Workspaces Rules overlap
-
-Resolve classification first.
-
-## 253. WG-PLAN-STOP-005 — Permission/PermissionRule/Policy overlap
-
-Do not expand model until hierarchy is explicit.
-
-## 254. WG-PLAN-STOP-006 — ResourcePermission ambiguity
-
-Do not add ACL depth.
-
-## 255. WG-PLAN-STOP-007 — resource/action persistence consumers unknown
-
-No rename/removal.
-
-## 256. WG-PLAN-STOP-008 — local handler checks needed
-
-Do not bypass central architecture.
-
-## 257. WG-PLAN-STOP-009 — background global bypass
-
-Not allowed.
-
-## 258. WG-PLAN-STOP-010 — share security undefined
-
-Stop ShareLink release only; P2 core may continue.
-
-## 259. WG-PLAN-STOP-011 — migration model drift
-
-No pending-model suppression.
-
-## 260. WG-PLAN-STOP-012 — architecture gate conflict
-
-Do not weaken test.
-
-## WG-PLAN-STOP-013 — foreign persistence adapter under Governance
-
-If a Governance-owned implementation directly references another bounded context's DbContext/private
-aggregate/table (for example Board authorization resolver → `IWorkManagementDbContext`), STOP and restore
-resource-owner adapter ownership before continuing.
-
-## WG-PLAN-STOP-014 — duplicate authorization mechanism
-
-If new resolver/evaluator/behavior duplicates an existing `Application/Common/Security` responsibility,
-STOP until reuse/extension/replacement is explicitly classified.
-
-## WG-PLAN-STOP-015 — forced resource naming migration
-
-If implementation renames `ResourceType`/equivalent to `ResourceKind` solely because this execution package
-uses that vocabulary, STOP. Require semantic + migration evidence.
-
-## WG-PLAN-STOP-016 — facts become policy
-
-If a resource facts provider returns or derives Governance decisions (`CanEdit`, effective permission sets,
-implicit manager-is-allow hierarchy) without explicit ownership approval, STOP and separate facts from policy.
-
-## WG-PLAN-STOP-017 — transport leakage
-
-If canonical Application/Domain contracts expose gRPC/HTTP/message-specific DTOs to prepare for future split,
-STOP. Keep the contract transport-neutral and adapt at Infrastructure boundaries.
-
-# Phase acceptance
-
-## 261. Phase 0
-
-Source model known.
-
-## 262. Phase 1
-
-P1 contracts sufficient.
-
-## 263. Phase 2
-
-Authorization semantics coherent.
-
-## 264. Phase 3
-
-Workspace D4-ready.
-
-## 265. Phase 4
-
-Membership D4+.
-
-## 266. Phase 6
-
-Resource/Action D4+.
-
-## 267. Phase 7
-
-Permission D4/D5-ready.
-
-## 268. Phase 8
-
-Built-in role D4+.
-
-## 269. Phase 9
-
-Authorization enforcement D5-ready.
-
-## 270. Phase 10
-
-WorkManagement handshake proven.
-
-## 271. Phase 11
-
-P3-B protected-slice gate passed; protected P3 Application/API release open.
-
-## 272. Phases 12–16
-
-Secondary features independently D4/D5 according to release scope.
-
-## 273. Phases 17–22
-
-Cross-cutting hardening complete.
-
-## 274. Phase 23
-
-TESTS has complete traceability input.
-
-## 275. Phase 25
-
-CERTIFICATION can evaluate exact evidence.
-
-# Required discovery commands
-
-## 276. Domain structure
-
-```bash
-find backend/src/Notrelix.Domain/Workspaces -type f | sort
-find backend/src/Notrelix.Domain/Governance -type f | sort
-```
-
-## 277. Application structure
-
-```bash
-find backend/src/Notrelix.Application/Features/Workspaces -type f | sort
-find backend/src/Notrelix.Application/Features/Governance -type f | sort
-```
-
-## 278. Governance semantics
-
-```bash
-rg -n \
-  "PermissionRule|ResourcePermission|Policy|Permission|Role|ResourceKind|ResourceType|Action" \
-  backend/src backend/tests
-```
-
-## 279. Workspace semantics
-
-```bash
-rg -n \
-  "WorkspaceMember|Invitation|Team|Space|WorkspaceRule|WorkspaceId|AccountId|TenantId" \
-  backend/src backend/tests
-```
-
-## 280. Authorization debt
-
-```bash
-rg -n \
-  "IsAdmin|IsOwner|Role ==|Role !=|HasPermission|Authorize|Forbidden" \
-  backend/src
-```
-
-## 281. Downstream resource declarations
-
-```bash
-rg -n \
-  "ResourceKind|ResourceType|Action|Permission" \
-  backend/src/Notrelix.Application/Features/WorkManagement \
-  backend/src/Notrelix.Application/Features/Documents \
-  backend/src/Notrelix.Application/Features/Billing
-```
-
-# Required certification commands
-
-## 282. Build
-
-Use canonical backend build, for example:
-
-```bash
-dotnet build backend/backend.slnx
-```
-
-only if still current.
-
-## 283. Tests
-
-Run canonical project/suite commands for:
-
-```text
-Architecture
-Domain
-Application
-Infrastructure
-API
-Integration
-Platform if authorization pipeline mechanism changed
-```
-
-Exact mapping belongs to TESTS.
-
-## 284. Migration
-
-Use canonical EF migration/check tooling.
-
-Do not mutate production DB from this plan.
-
-## 285. Docs
-
-When integrated:
-
-```bash
-make docs-generate
-make docs-check
-```
-
-# Definition of Done — P2 Core
-
-## 286. Functional DoD
-
-- Workspace stable;
-- Account containment stable;
-- membership baseline stable;
-- resource/action contract stable;
-- permission semantics stable;
-- built-in role baseline;
-- one effective authorization decision;
-- WorkManagement handshake proven.
-
-## 287. Architecture DoD
-
-- Workspaces and Governance remain separate contexts;
-- no new service/project;
-- no private WorkManagement persistence dependency;
-- Domain pure;
-- pipeline-owned enforcement preserved.
-
-## 288. Security DoD
-
-- cross-tenant denied;
-- stale membership/role revocation safe;
-- privilege escalation tests;
-- fail closed;
-- no bearer secret leakage.
-
-## 289. Migration DoD
-
-- schema migration complete;
-- resource/action/role/permission compatibility handled;
-- clean DB;
-- upgrade DB;
-- no pending model changes.
-
-## 290. Testing DoD
-
-P2 gate scenarios mapped in TESTS and executed before certification.
-
-## 291. Handoff DoD
-
-WorkManagement can implement Board protected operations without asking:
-
-```text
-Which role string should I check?
-Which permission table should I query?
-How do I identify current Workspace?
-How do I bypass Governance?
-```
-
-It only consumes stable contracts.
-
-# Definition of Done — full team scope
-
-## 292. Workspace secondary scope
-
-Release-scoped:
-
-- Invitations;
-- Provisioning;
-- Teams;
-- Spaces;
-- Settings/Home.
-
-## 293. Governance secondary scope
-
-Release-scoped:
-
-- custom roles;
-- policies;
-- resource permissions;
-- share links;
-- audit/security events;
-- templates.
-
-## 294. Full-scope quality
-
-All release-scoped secondary capabilities meet:
-
-```text
-security
-migration
-integration
-CI
-documentation
-```
-
-requirements without destabilizing P2 core.
-
-# Final execution output
-
-## 295. Required package
-
-At team completion:
-
-```text
-workspace-governance.spec.md
-workspace-governance.plan.md
-workspace-governance.tests.md
-workspace-governance.certification.md
-```
-
-## 296. Required code outcome
-
-The final model must remain conceptually:
+Cross-context events must include enough stable:
 
 ```text
 Account
-↓
 Workspace
-↓
-Membership
-        \
-         → Governance subject context
-
-Resource-owning context
-→ resource category / ResourceId / resource-owned Action
-                   \
-                    → Governance
-                       Role / Permission / Policy
-                              ↓
-                     Effective decision
-                              ↓
-                 Application pipeline enforcement
+subject/resource identity
 ```
 
-## 297. Required sequencing outcome
+to consume without private table access.
 
-Sequencing is staged:
+## 153. WGREQ142 — event security
+
+Events must not expose privileged secrets or unnecessary personal data.
+
+## 154. WGREQ143 — event compatibility
+
+Once downstream consumers rely on D4/D5 events, breaking changes require migration/rollout coordination.
+
+# Concurrency
+
+## 155. WGREQ144 — membership uniqueness concurrency
+
+Concurrent add/accept operations must not create duplicate active membership.
+
+## 156. WGREQ145 — last-admin concurrency
+
+Concurrent remove/demote operations cannot leave a Workspace in an invalid no-admin state if such invariant exists.
+
+## 157. WGREQ146 — invitation accept/revoke race
+
+Final state must be deterministic and cannot grant access after authoritative revocation.
+
+## 158. WGREQ147 — role assignment concurrency
+
+Concurrent assignment/removal must not create duplicate or contradictory effective authorization records.
+
+## 159. WGREQ148 — policy update concurrency
+
+If policies are versioned/edited concurrently, stale writes must be handled according to current concurrency architecture.
+
+## 160. WGREQ149 — share-link revoke race
+
+A revoked link must not be reactivated by stale writes/caches.
+
+# Security
+
+## 161. WGREQ150 — authorization is high sensitivity
+
+Changes to:
+
+- resource/action semantics;
+- roles;
+- permissions;
+- policies;
+- share links;
+- membership admin;
+- invitation admin;
+
+require negative/security verification.
+
+## 162. WGREQ151 — fail closed on evaluation failure
+
+An authorization evaluation exception/missing rule must not become allow.
+
+## 163. WGREQ152 — tenant spoofing resistance
+
+Actor/Account/Workspace/resource scope must agree.
+
+Client-provided Workspace/Resource IDs cannot cross tenants.
+
+## 164. WGREQ153 — stale authorization cache
+
+Revoked membership/role/permission/share link must stop granting access within accepted security window.
+
+## 165. WGREQ154 — privilege escalation resistance
+
+Users cannot:
+
+- assign themselves a stronger role;
+- create a grant above their authority;
+- invite with stronger access than permitted;
+- mutate policies they cannot manage;
+- use Team membership to escape Workspace membership.
+
+## 166. WGREQ155 — authorization decision privacy
+
+Denial/error output should not leak sensitive policy structure or hidden resource existence beyond canonical API policy.
+
+## 167. WGREQ156 — share-link bearer security
+
+Share links are bearer credentials where applicable and require:
+
+- entropy;
+- safe comparison/verification;
+- no ordinary log exposure;
+- revocation/expiry enforcement.
+
+## 168. WGREQ157 — audit access security
+
+Audit/security-event APIs require explicit Governance permission.
+
+# Reliability
+
+## 169. WGREQ158 — provisioning partial failure
+
+If Workspace provisioning orchestrates Account/Workspace/Governance bootstrap, partial failure behavior must be explicit.
+
+The system must not report a fully provisioned Workspace when required authoritative pieces failed.
+
+## 170. WGREQ159 — authorization dependency failure
+
+If required resource/policy data cannot be resolved, protected operations fail safely.
+
+## 171. WGREQ160 — event publication failure
+
+State-changing Governance/Workspace operations that require integration events must follow existing transactional outbox/delivery architecture.
+
+## 172. WGREQ161 — cache outage
+
+Authorization cache failure must have an explicit safe fallback.
+
+Do not default to allow.
+
+# Observability
+
+## 173. WGREQ162 — authorization traceability
+
+A denied/allowed protected operation should be diagnosable with safe metadata:
 
 ```text
-P3-A producer gate
-→ WorkManagement Domain/Data core may run in parallel
-
-P3-B protected-slice gate
-→ protected WorkManagement Application/API slice may release/certify
+correlation
+actor
+Account
+Workspace
+resource kind/id
+action
+decision
+policy/permission category where safe
 ```
 
-Workspace/Governance continues secondary depth in parallel without changing the frozen producer contract.
+## 174. WGREQ163 — membership/admin change observability
 
-## 298. Final rule
+Critical membership/role/policy/share-link changes should be observable/auditable.
 
-When source structure and conceptual model differ:
+## 175. WGREQ164 — no secret telemetry
+
+Logs/traces must not contain invitation/share-link bearer secrets or authentication credentials.
+
+## 176. WGREQ165 — denial metrics
+
+The system may expose safe aggregate authorization-denial/security metrics through existing observability mechanisms.
+
+No new vendor/framework is implied.
+
+# Performance
+
+## 177. WGREQ166 — authorization is a hot path
+
+Effective authorization may execute on most protected product requests.
+
+It must avoid unbounded:
+
+- cross-context database calls;
+- policy scans;
+- role scans;
+- recursive resource traversal.
+
+## 178. WGREQ167 — membership lookup efficiency
+
+Workspace membership resolution should use appropriate indexing/cache while preserving revocation correctness.
+
+## 179. WGREQ168 — resource permission lookup efficiency
+
+Resource-level permissions must be indexed/scoped by relevant tenant/resource/subject dimensions.
+
+## 180. WGREQ169 — cache correctness over raw speed
+
+Any authorization cache must specify:
 
 ```text
-do not force folder symmetry
+key dimensions
+invalidation triggers
+maximum stale security window
+tenant isolation
 ```
 
-Instead:
+## 181. WGREQ170 — list/query scaling
+
+Member/audit/permission lists need pagination/filter behavior consistent with API quality standards.
+
+# Migration
+
+## 182. WGREQ171 — membership migration
+
+Changing membership identity/state schema requires preserving:
+
+- User references;
+- Workspace references;
+- role assignments;
+- historical audit.
+
+## 183. WGREQ172 — resource/action migration
+
+Renaming resource kinds/actions is a contract migration, not merely code refactor.
+
+Must update:
+
+- persisted permissions;
+- roles;
+- policies;
+- share links;
+- downstream declarations;
+- tests.
+
+## 184. WGREQ173 — role/permission migration
+
+Changing built-in role semantics requires explicit impact analysis for existing Workspaces.
+
+## 185. WGREQ174 — policy schema migration
+
+Persisted policy changes require compatibility/backfill/versioning.
+
+## 186. WGREQ175 — invitation/share-link secret migration
+
+Changing token/hash format requires validity/rotation/revocation policy for existing links.
+
+## 187. WGREQ176 — clean/upgrade database
+
+Every schema-affecting P2 delivery requires both fresh DB and supported upgrade evidence.
+
+## 188. WGREQ177 — no pending model changes
+
+P2 completion cannot suppress EF pending-model warnings.
+
+# P2 core producer contract
+
+## 189. P2 mandatory core
+
+The critical P2 core is:
 
 ```text
-identify semantic owner
-preserve valid existing code
-migrate only conflicts
-stabilize the producer contract
+Workspace identity
+Account→Workspace containment
+WorkspaceMember baseline
+resource kind/resource contract
+Action contract
+Permission semantics
+built-in role baseline
+central authorization integration
 ```
 
-The purpose of this PLAN is to make P2 a reliable authorization backbone, not to create the most elaborate RBAC system possible.
+## 190. P2 secondary scope
+
+The following may continue after P3 WorkManagement starts:
+
+```text
+advanced invitations
+Teams advanced features
+Spaces advanced features
+custom roles
+advanced policies
+advanced share links
+governance templates
+advanced audit UX/query
+```
+
+provided they do not change the already stable P2 producer contract.
+
+## 191. WGREQ178 — Workspace D5 gate
+
+Workspace reaches D5 when:
+
+- stable identity;
+- Account containment;
+- lifecycle baseline;
+- membership baseline;
+- tenant isolation;
+- downstream resource containment contract
+
+are verified.
+
+## 192. WGREQ179 — Resource/Action D5 gate
+
+Resource/action contract reaches D5 when WorkManagement can register/declare a resource/action without Governance/private coupling.
+
+## 193. WGREQ180 — Permission D5 gate
+
+Permission semantics reach D5 when:
+
+- stable identifier/meaning;
+- tenant scope;
+- role mapping;
+- effective decision;
+- revocation;
+- migration
+
+are verified.
+
+## 194. WGREQ181 — built-in Role D4+ gate
+
+Built-in roles must be sufficiently verified for initial product actions.
+
+Custom roles are not required to open P3 unless product says otherwise.
+
+## 195. WGREQ182 — authorization integration D5 gate
+
+Protected representative operations must be rejected before handler side effects when authorization fails.
+
+## 196. P2 → P3 exit contract
+
+The P2→P3 dependency is intentionally non-serial:
+
+```text
+P3-A Domain/Data work:
+  Workspace + containment + resource category/action contract D4+
+
+P3-B protected Application/API and release:
+  Workspace D5
+  Account→Workspace containment D5
+  WorkspaceMember D4+
+  resource category/resource contract D5
+  Action D5
+  Permission D5 for representative protected slice
+  Built-in role policy D4+
+  current AccessControlBehavior + IAccessFactsProvider + IAccessPolicyEvaluator/AccessPolicyEngine path D5
+  resource-owner facts-provider ownership proven
+  representative WorkManagement allow/deny/cross-tenant proof
+```
+
+Secondary Governance features do not block P3-B unless they are part of the initial product contract.
+
+# Source-synchronization and architecture-closure amendments
+
+## 197. WGREQ183 — current module-first Application topology is authoritative for touched use cases
+
+The audited Application topology is `Notrelix.Application/Features/Workspaces` and `.../Governance`. New/touched P2 use cases follow this module-first topology; deprecated legacy paths are not extended.
+
+This amendment synchronizes the execution contract with the current `develop` architecture and is mandatory for all touched P2 work.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 198. WGREQ184 — bounded-context DbContext interfaces are local persistence abstractions, not public cross-context contracts
+
+`IWorkspaceDbContext`/`IGovernanceDbContext` may remain as current owner-local persistence abstractions under the documented EF exception. They MUST NOT be re-exported through Public or injected into foreign-context adapters/handlers.
+
+This amendment synchronizes the execution contract with the current `develop` architecture and is mandatory for all touched P2 work.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 199. WGREQ185 — AccessControlBehavior is the canonical Application enforcement seam
+
+Do not introduce a second `AuthorizationBehavior`, `IAuthorizationDecisionStore`, endpoint filter or handler-level engine. The audited canonical seam is `AccessControlBehavior` + request descriptor + execution context + facts provider + policy evaluator.
+
+This amendment synchronizes the execution contract with the current `develop` architecture and is mandatory for all touched P2 work.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 200. WGREQ186 — authorization facts are source-owned and composed without expanding foreign persistence coupling
+
+`PostgresAccessFactsProvider`/`AccessFactsQuery` is current runtime evidence, not a license to add arbitrary foreign-table reads. New resource facts should come from producer-owned Public contracts/adapters where architecture requires that ownership split.
+
+This amendment synchronizes the execution contract with the current `develop` architecture and is mandatory for all touched P2 work.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 201. WGREQ187 — RLS remains defense-in-depth and cannot replace Application authorization
+
+PostgreSQL RLS and request data-session context constrain persistence as defense-in-depth. A row being visible under RLS does not mean the actor is authorized for a business action.
+
+This amendment synchronizes the execution contract with the current `develop` architecture and is mandatory for all touched P2 work.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 202. WGREQ188 — Domain presence does not imply Application/API delivery completeness
+
+Domain-only capabilities (notably CustomRole/WorkspacePolicy/PermissionTemplate and parts of ShareLink/ResourcePermission lifecycle) must be classified `DOMAIN_PRESENT`, `APPLICATION_PRESENT`, `API_PRESENT`, `TESTED`, or `DELIVERED`; no layer may infer another.
+
+This amendment synchronizes the execution contract with the current `develop` architecture and is mandatory for all touched P2 work.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 203. WGREQ189 — source evidence and certification status are separate
+
+SPEC/PLAN may record source presence. Only CERTIFICATION may declare VERIFIED/STABLE after exact-SHA commands, test counts, CI evidence and named contract proof are recorded.
+
+This amendment synchronizes the execution contract with the current `develop` architecture and is mandatory for all touched P2 work.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+## 204. WGREQ190 — P2 handoff requires exact-SHA evidence and named downstream contract proof
+
+P2 opens protected P3 release only after the candidate SHA proves Workspace/containment/membership + resource/action + permission/built-in-role + central access-control handshake against a representative WorkManagement resource.
+
+This amendment synchronizes the execution contract with the current `develop` architecture and is mandatory for all touched P2 work.
+
+Acceptance evidence MUST be mapped in `workspace-governance.tests.md`; execution status belongs only in `workspace-governance.certification.md`.
+
+
+# Cross-cutting acceptance criteria
+
+## Functional acceptance
+
+### WGAC001 — Workspace
+
+Workspace creation/read/update/lifecycle must preserve canonical Account containment and source-defined Domain invariants.
+
+### WGAC002 — Membership
+
+Membership operations must preserve uniqueness, owner safety, inactive-member access removal and historical attribution.
+
+### WGAC003 — Invitation
+
+Invitation create/resend/accept/decline/revoke/expiry paths must be token-safe, replay-safe and race-aware.
+
+### WGAC004 — Resource/action handshake
+
+At least one representative downstream resource must prove stable ResourceKind/ResourceId/PermissionAction declaration and owner-provided facts.
+
+### WGAC005 — Permission/effective authorization
+
+Allowed and denied paths must converge on one Application access-control seam with deterministic Governance policy.
+
+### WGAC006 — Built-in roles
+
+Guest/Member/Admin/Owner behavior used by protected P2/P3 flows must be explicit, testable and free from endpoint/handler-local parallel policy.
+
+### WGAC007 — Resource permissions
+
+Grant/revoke/list plus authority-ceiling behavior must be scoped to the correct Account/Workspace/resource and fail closed for stale/missing target authority.
+
+### WGAC008 — Share links
+
+Where exposed, share-link creation/use/disable/expiry must preserve secret safety, bounded scope, revocation and resource existence/privacy semantics.
+
+### WGAC009 — Cross-context ownership
+
+No downstream consumer may require `IWorkspaceDbContext`, `IGovernanceDbContext`, Governance entities or private tables as its public integration contract.
+
+### WGAC010 — P3 handoff
+
+WorkManagement can consume stable Workspace/Governance contracts without owning Workspace/Governance policy or persistence.
+
+## Non-functional acceptance
+
+### WGAC011 — Architecture
+
+- Domain remains framework/persistence independent according to canonical Domain rules.
+- Application remains orchestration/policy declaration; current EF Core use is contained to approved local abstractions and is not expanded as precedent.
+- Infrastructure owns concrete EF/PostgreSQL/RLS/adapters.
+- API owns transport/composition only.
+- no new production project/service is introduced by this workstream.
+
+### WGAC012 — Security
+
+- negative authorization tests exist for protected representative flows;
+- tenant spoofing and cross-workspace access are denied;
+- suspended/removed/revoked state is not accepted from stale authority;
+- invitation/share secrets are not logged or returned through ordinary read models;
+- authorization dependency failure is fail-closed.
+
+### WGAC013 — Data ownership
+
+- Workspaces writes Workspace-owned state;
+- Governance writes Governance-owned state;
+- foreign bounded contexts do not mutate those tables directly;
+- shared physical DB does not become shared semantic ownership.
+
+### WGAC014 — Migration
+
+- clean database path passes;
+- supported upgrade path passes;
+- RLS/bootstrap lifecycle is verified where applicable;
+- no unintended pending EF model changes remain.
+
+### WGAC015 — Concurrency
+
+Representative evidence covers:
+
+- duplicate member/add;
+- owner transfer/removal/demotion races;
+- invitation accept/revoke/resend races;
+- resource permission grant/revoke conflict;
+- stale version/concurrency behavior on aggregate mutations.
+
+### WGAC016 — Observability
+
+Authorization and critical membership/admin operations carry bounded correlation and result telemetry without secrets/high-cardinality raw resource URLs.
+
+### WGAC017 — Performance
+
+Authorization facts and representative membership/resource permission queries must have bounded call/query behavior under realistic data size. Cache is not accepted as a correctness substitute.
+
+### WGAC018 — CI
+
+The exact certification SHA must pass all required backend, architecture, integration, OpenAPI, docs and security gates selected by TESTS/CERTIFICATION. Docs-only CI is not backend certification.
+
+# Requirement traceability contract
+
+Every `WGREQxxx` MUST resolve to one of:
+
+```text
+TEST-ID
+STATIC/ARCHITECTURE GUARD
+EXECUTED MIGRATION/DB PROOF
+NAMED CROSS-CONTEXT CONTRACT PROOF
+DOCUMENTED NOT_APPLICABLE rationale
+BLOCKER / SOURCE_DEBT record
+```
+
+A row that only says "covered by existing tests" is insufficient.
+
+Minimum traceability columns:
+
+| Requirement | Capability | Source authority | Execution work unit | Test/evidence ID | Status | Blocking debt |
+|---|---|---|---|---|---|---|
+
+`workspace-governance.tests.md` owns the mapping; `workspace-governance.certification.md` records executed outcomes.
+
+# Source-audit rules
+
+Before changing code, PLAN must inventory exact candidate paths for:
+
+```text
+Domain/Workspaces
+Domain/Governance
+Application/Features/Workspaces
+Application/Features/Governance
+Application/Common request/security pipeline
+Infrastructure Data/Authz/RLS/configurations
+Infrastructure messaging consumers/projections
+API Workspaces/Governance contracts/endpoints
+Domain/Application/Infrastructure/API/Architecture/Integration tests
+named downstream consumers
+```
+
+Every discovered capability is classified `RETAIN`, `HARDEN`, `COMPLETE`, `REHOME`, `DEPRECATE`, `NOT_APPLICABLE`, `SOURCE_DEBT`, or `BLOCKED` before material implementation.
+
+Source-first does not mean source is automatically correct. It means execution begins from observed reality rather than inventing a parallel system.
+
+# Explicit prohibited patterns
+
+P2 MUST NOT introduce:
+
+```text
+endpoint-only role authorization
+handler-local authorization engine
+second global authorization pipeline
+Governance adapter reading arbitrary foreign DbContexts
+consumer injecting IWorkspaceDbContext/IGovernanceDbContext
+resource lifecycle moved into Governance
+RLS used as the only business authorization decision
+raw invitation/share token persistence/logging
+plan-tier logic encoded as Governance role policy
+Workspace Rules used as generic Automation/Permission engine
+duplicate Workspace membership table/source of truth
+CustomRole reported complete from Domain presence alone
+hand-edited OpenAPI as contract authority
+new production service/project to solve folder-boundary concerns
+```
+
+# Expected verification layers
+
+The revised TESTS artifact must map requirements to the smallest layer that proves the claim.
+
+```text
+T0  static/source/document guards
+T1  Domain unit tests
+T2  Application handler/policy tests
+T3  Infrastructure adapter/persistence tests
+T4  API/contract/OpenAPI tests
+T5  Architecture boundary tests
+T6  Integration tests with production-like DI/PostgreSQL
+T7  security negative tests
+T8  concurrency/race tests
+T9  migration/RLS/clean-upgrade tests
+T10 performance/reliability evidence
+T11 cross-context producer/consumer contract tests
+```
+
+Rules:
+
+- do not use an API unit test to claim a Domain invariant;
+- do not use EF InMemory to claim PostgreSQL RLS behavior;
+- do not use a Domain event unit test to claim public integration-event delivery;
+- do not use source grep alone to claim effective authorization semantics;
+- do not use a green docs-only workflow as backend exact-SHA certification.
+
+# Coding-agent decision boundary
+
+## Agent MAY decide locally
+
+When all canonical semantics are already fixed, an implementation agent may decide:
+
+- private method extraction;
+- local naming consistent with repository conventions;
+- test fixture organization;
+- query implementation details that preserve the contract;
+- validation placement within the already-approved Application/API boundary;
+- refactoring of touched code that does not change ownership/public contracts.
+
+## Agent MUST NOT decide locally
+
+The agent must stop/record a decision for:
+
+- changing Account ↔ Workspace ownership;
+- changing WorkspaceRole meaning or inventing a new built-in role;
+- changing allow/deny precedence;
+- treating CustomRole as equivalent to WorkspaceRole without a decision;
+- adding a new ResourceKind or PermissionAction whose business owner is unclear;
+- adding arbitrary foreign-table reads to shared authorization SQL;
+- creating a new global authorization pipeline;
+- weakening RLS or bypassing the request data-session model;
+- changing invitation/share-token protection strategy;
+- exposing owner-local DbContext interfaces as cross-context contracts;
+- promoting a secondary Governance capability into the P2 blocking gate without dependency evidence;
+- declaring VERIFIED/STABLE without certification evidence.
+
+# Stop conditions
+
+Execution stops and records a blocker when any of the following is true:
+
+## WGSTOP001 — P1 producer contract is not sufficiently stable
+
+P2 cannot harden against an unresolved Actor/Account/tenant contract.
+
+## WGSTOP002 — Account vs Workspace tenancy semantics conflict
+
+Do not duplicate tenant roots to make a handler work.
+
+## WGSTOP003 — duplicate membership truth is required
+
+A second active Workspace membership authority is not allowed.
+
+## WGSTOP004 — role/permission engines compete
+
+If `WorkspaceRole`, `CustomRole`, `PermissionRule`, `WorkspacePolicy` or resource permissions imply contradictory authority, resolve semantics before adding new rules.
+
+## WGSTOP005 — resource permission meaning is ambiguous
+
+Do not expose new grant APIs until subject/scope/resource/authority-ceiling semantics are fixed.
+
+## WGSTOP006 — PermissionRule vs WorkspacePolicy precedence is unknown for the touched flow
+
+Do not guess allow/deny order.
+
+## WGSTOP007 — Workspace Rules overlap Governance or Automation
+
+Classify semantic owner first.
+
+## WGSTOP008 — resource/action compatibility risk is unknown
+
+Do not rename/remove resource kinds/actions with unknown consumers.
+
+## WGSTOP009 — background/global path bypasses canonical access control
+
+Do not certify while protected non-HTTP execution has an unbounded bypass.
+
+## WGSTOP010 — share-link security policy is missing
+
+Do not ship reusable public bearer access without explicit scope/expiry/revocation/secret handling.
+
+## WGSTOP011 — handler-local role checks are necessary for correctness
+
+This signals the canonical access-control contract is incomplete; fix the contract rather than normalize the bypass.
+
+## WGSTOP012 — cross-context private persistence is required
+
+Create/consume an owner-safe Public contract/Port/adapter or reopen the architecture decision.
+
+## WGSTOP013 — architecture gate contradicts proposed implementation
+
+Do not weaken the test merely to merge feature code.
+
+## WGSTOP014 — pending migration/model drift exists
+
+Certification is blocked until persistence state is deliberate and reproducible.
+
+## WGSTOP015 — stale execution-document topology
+
+If PLAN/TESTS/CERT reference `docs/workstreams/execution/...`, old Application non-module paths, obsolete authorization types, or missing canonical files, fix the docs before using them as coding authority.
+
+## WGSTOP016 — Domain-only capability is being reported as delivered
+
+The capability must be classified by layer and proven by its actual intended delivery surface.
+
+# P2 readiness model
+
+## D4 VERIFIED
+
+A P2 capability is D4 only when:
+
+- requirement and source owner are resolved;
+- implementation exists on the candidate SHA;
+- mapped tests/evidence were executed;
+- required integration/security/migration evidence passes;
+- blocking debt for that capability is zero or explicitly prevents D4.
+
+## D5 STABLE
+
+D5 additionally requires:
+
+- named consumer compatibility;
+- contract stability/change protocol;
+- no known blocking source debt;
+- exact-SHA CI evidence;
+- operationally relevant revocation/tenant/failure semantics proven for the capability.
+
+# Downstream handoff contract
+
+P3 protected WorkManagement work may consume:
+
+```text
+stable AccountId
+stable WorkspaceId
+stable active Workspace/member facts
+canonical ResourceKind
+canonical ResourceId
+canonical PermissionAction
+canonical request security declaration
+central AccessControlBehavior decision
+Governance policy semantics
+source-owner facts contract
+```
+
+P3 MUST NOT consume:
+
+```text
+Workspace/Governance DbContext interfaces
+Governance EF entities
+raw private tables as a public contract
+handler-local role-name policy
+RLS visibility as business permission
+```
+
+# Documentation handoff
+
+The complete execution package is:
+
+```text
+docs/workstreams/executions/workspace-governance/
+  workspace-governance.spec.md
+  workspace-governance.plan.md
+  workspace-governance.tests.md
+  workspace-governance.certification.md
+  decisions/
+    PR-WG-00-semantic-inventory.md
+    ...execution decision/evidence records as required
+```
+
+References MUST use `executions` (plural).
+
+# Final Definition of Done — SPEC contract
+
+This SPEC is ready to govern implementation only when:
+
+- current source topology and canonical access-control mechanism are correctly described;
+- every Workspace/Governance source capability has an explicit owner/classification path;
+- P2 core vs secondary scope is explicit;
+- local EF/persistence exception is constrained and not exported as a cross-context API;
+- RLS is explicitly defense-in-depth;
+- Domain presence is separated from delivered capability status;
+- all requirements can be traced by the revised TESTS artifact;
+- PLAN can execute from exact-SHA inventory without inventing a new architecture;
+- CERTIFICATION can record D4/D5 independently from this SPEC.
+
+The final operating invariant is:
+
+```text
+Identity/Accounts provides principal + tenant identity
+        ↓
+Workspaces owns collaborative containment + membership facts
+        ↓
+resource owner provides resource/action/visibility facts
+        ↓
+Governance owns policy semantics
+        ↓
+Application AccessControlBehavior enforces one decision
+        ↓
+handler executes only after allow
+        ↓
+Infrastructure/RLS constrains persistence as defense-in-depth
+```
+
+No layer may silently replace another layer's authority.
