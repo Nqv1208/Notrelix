@@ -24,6 +24,12 @@ COPY --from=pruner /repo/frontend/out/full/ ./
 RUN pnpm --filter @notrelix/app-web build
 
 FROM ${NGINX_BASE_IMAGE} AS production
+# CVE-2026-93990 (HIGH): the locked nginx:alpine digest (alpine 3.24.2) still
+# bakes libexpat 2.8.4-r0 while alpine v3.24 publishes the fixed 2.8.5-r0 and no
+# newer upstream digest is available yet. The floor constraint rolls forward with
+# the repository instead of hard-breaking the build on the next point release;
+# remove this layer once the base-image lock advances past libexpat 2.8.5-r0.
+RUN apk add --no-cache "libexpat>=2.8.5"
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.
