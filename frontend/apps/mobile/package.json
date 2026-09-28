@@ -18,7 +18,7 @@
     "expo-linking": "latest",
     "expo-router": "latest",
     "react": "latest",
-    "react-native": "~0.81.5",
+    "react-native": "~0.87.1",
     "react-native-gesture-handler": "latest",
     "react-native-reanimated": "latest",
     "react-native-safe-area-context": "latest",
