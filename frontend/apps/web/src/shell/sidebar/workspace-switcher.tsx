@@ -26,7 +26,11 @@ import {
 } from "@notrelix/ui-web";
 import { ChevronsUpDown, Plus } from "lucide-react";
 
-export function WorkspaceSwitcher() {
+export function WorkspaceSwitcher({
+  collapsed = false,
+}: {
+  collapsed?: boolean;
+}) {
   const navigate = useNavigate();
   const { api: runtimeClient } = useAppRuntime();
   const { workspaceId, workspace: activeWorkspace } = useWorkspaceContext();
@@ -86,7 +90,9 @@ export function WorkspaceSwitcher() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full flex items-center justify-between px-2 py-1.5 h-12 hover:bg-muted/50 border border-transparent hover:border-muted-foreground/10 rounded-lg"
+            aria-label={`Current workspace: ${activeWorkspace?.name || "Loading"}`}
+            title={collapsed ? activeWorkspace?.name : undefined}
+            className={`w-full flex items-center ${collapsed ? "justify-center px-1" : "justify-between px-2"} py-1.5 h-12 hover:bg-muted/50 border border-transparent hover:border-muted-foreground/10 rounded-lg`}
           >
             <div className="flex items-center gap-2.5 overflow-hidden">
               <Avatar className="h-8 w-8 rounded-lg">
@@ -98,18 +104,22 @@ export function WorkspaceSwitcher() {
                   {activeWorkspace?.name?.substring(0, 2).toUpperCase() || "WX"}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col items-start overflow-hidden text-left">
-                <span className="font-semibold text-sm truncate leading-tight w-36">
-                  {activeWorkspace?.name || "Loading..."}
-                </span>
-                <span className="text-xs text-muted-foreground truncate w-36">
-                  {activeWorkspace?.plan
-                    ? `${activeWorkspace.plan.toUpperCase()} Plan`
-                    : ""}
-                </span>
-              </div>
+              {!collapsed ? (
+                <div className="flex flex-col items-start overflow-hidden text-left">
+                  <span className="font-semibold text-sm truncate leading-tight w-36">
+                    {activeWorkspace?.name || "Loading..."}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate w-36">
+                    {activeWorkspace?.plan
+                      ? `${activeWorkspace.plan.toUpperCase()} Plan`
+                      : ""}
+                  </span>
+                </div>
+              ) : null}
             </div>
-            <ChevronsUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
+            {!collapsed ? (
+              <ChevronsUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
+            ) : null}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64" align="start">

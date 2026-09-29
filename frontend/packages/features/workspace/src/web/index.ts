@@ -19,6 +19,7 @@ export { createUseWorkspaceShellData } from "./query/hooks/use-workspace-shell-d
 
 export { WorkspaceCompactHeader } from "./components/workspace-compact-header";
 export { WorkspaceDirectory } from "./components/workspace-directory";
+export { WorkspaceDirectorySurface } from "./components/workspace-directory-surface";
 export { WorkspaceViewTabs } from "./components/workspace-view-tabs";
 export { WorkspaceContextualToolbar } from "./components/workspace-contextual-toolbar";
 export { WorkspaceAddViewMenu } from "./components/workspace-add-view-menu";

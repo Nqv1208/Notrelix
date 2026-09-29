@@ -1,13 +1,25 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, Navigate, useParams } from "@tanstack/react-router";
 import { workspaceRoute } from "./base.routes";
 import { DashboardPage } from "../../routes/workspaces/$workspaceId/dashboard";
 import { SettingsPage } from "../../routes/workspaces/$workspaceId/settings";
 import { MembersPage } from "../../routes/workspaces/$workspaceId/members";
 
+function WorkspaceIndexRedirect() {
+  const { workspaceId } = useParams({ from: "/workspaces/$workspaceId" });
+
+  return (
+    <Navigate
+      to="/workspaces/$workspaceId/dashboard"
+      params={{ workspaceId }}
+      replace
+    />
+  );
+}
+
 export const workspaceIndexRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/",
-  component: DashboardPage,
+  component: WorkspaceIndexRedirect,
 });
 
 export const dashboardRoute = createRoute({

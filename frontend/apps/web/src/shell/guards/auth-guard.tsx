@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@notrelix/features-auth";
-import { LoadingState } from "@notrelix/ui-web";
+import { NotrelixBrandLoader } from "@notrelix/ui-web";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -31,7 +31,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-background">
-        <LoadingState title="Loading" description="Verifying session..." />
+        <NotrelixBrandLoader size="lg" aria-label="Verifying session" />
       </div>
     );
   }

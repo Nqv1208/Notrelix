@@ -2,7 +2,7 @@ import { type ReactNode, useMemo } from "react";
 import { Navigate, useParams } from "@tanstack/react-router";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { createUseWorkspaceList } from "@notrelix/features-workspace";
-import { LoadingState } from "@notrelix/ui-web";
+import { NotrelixBrandLoader } from "@notrelix/ui-web";
 
 interface WorkspaceGuardProps {
   workspaceId?: string;
@@ -36,9 +36,9 @@ export function WorkspaceGuard({
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-background">
-        <LoadingState
-          title="Loading"
-          description="Verifying workspace access..."
+        <NotrelixBrandLoader
+          size="lg"
+          aria-label="Verifying workspace access"
         />
       </div>
     );

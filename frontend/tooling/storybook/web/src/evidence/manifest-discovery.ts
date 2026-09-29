@@ -40,6 +40,7 @@ export function discoverUiEvidenceManifests(
     join(frontendRoot, "packages/ui/web"),
     join(frontendRoot, "packages/product"),
     join(frontendRoot, "packages/features"),
+    join(frontendRoot, "apps/web"),
   ];
   const diagnostics: string[] = [];
   const manifests: DiscoveredUiEvidenceManifest[] = [];
@@ -82,5 +83,5 @@ export function discoverUiEvidenceManifests(
 }
 
 export function resolveFrontendRootFromHere(): string {
-  return resolve(dirname(new URL(import.meta.url).pathname), "../../../../");
+  return resolve(dirname(new URL(import.meta.url).pathname), "../../../../../");
 }
