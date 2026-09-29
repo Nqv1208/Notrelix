@@ -5,12 +5,20 @@
 # Renewal requires an explicit security decision; this file must never be renewed silently.
 #
 # applies-to-image-ref: postgres@sha256:efedf3595f1d6f415c08568ba171029bf54052e754cc9f030e3f2412b21f3d67
-# expires: 2026-09-26
+# expires: 2026-10-27
 # reassessment: if upstream has not shipped a gosu rebuild (Go >= 1.24.13/1.25.7) by expiry,
 #   reassess building a security-patched postgres runtime image instead of renewing.
+# renewal-2: 2026-09-28 — explicit security decision by repository owner.
+#   libpcre2 waiver (CVE-2026-86145, CVE-2026-89161) RESOLVED: pinned digest bakes
+#   libpcre2-8-0 10.42-1+deb12u1 (verified in-container); debian scan clean.
+#   gosu waiver retained: upstream rebuild absent — pinned efedf3595 and latest
+#   16.15-bookworm digest efdf07c2 ship identical gosu (BuildID 8cb1150240, Go 1.24.6);
+#   Trivy 0.70.0 flags 22 stdlib findings (CVE-2025-68121 CRITICAL + 21 HIGH).
+#   Renewed 30 days on the existing pin; building a security-patched postgres runtime
+#   image reassessed and deferred to a follow-up delivery change.
 #
 # ============================================================================
-# Waiver block 1 of 2 — gosu / embedded Go stdlib 1.24.6 (usr/local/bin/gosu)
+# Waiver block 1 of 1 — gosu / embedded Go stdlib 1.24.6 (usr/local/bin/gosu)
 # Reachability evidence: gosu (tianon/gosu) imports only
 #   os, os/exec, runtime, syscall, github.com/moby/sys/user, golang.org/x/sys/unix.
 # Go links only reachable code, so stdlib packages absent from that import set
@@ -40,15 +48,6 @@
 # CVE-2026-56860 os.Root '..' path resolution - gosu imports os but never constructs os.Root
 # CVE-2026-56862 crypto/tls handshake state - gosu imports no crypto/tls
 #
-# ============================================================================
-# Waiver block 2 of 2 — libpcre2-8-0 10.42-1 (Debian bookworm base package)
-# Separate from the gosu waiver. Fixes exist upstream (10.42-1+deb12u1); the
-# official postgres image build predates them. Tracked for removal by the same
-# expiry/reassessment above.
-# ============================================================================
-# CVE-2026-86145 libpcre2-8-0 out-of-bounds write, fixed 10.42-1+deb12u1
-# CVE-2026-89161 libpcre2-8-0 memory corruption, fixed 10.42-1+deb12u1
-#
 # Only these CVEs are suppressed. Anything else must fail the scan.
 CVE-2025-68121
 CVE-2025-61726
@@ -72,5 +71,3 @@ CVE-2026-56858
 CVE-2026-56859
 CVE-2026-56860
 CVE-2026-56862
-CVE-2026-86145
-CVE-2026-89161

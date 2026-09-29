@@ -5,7 +5,8 @@ namespace Notrelix.Architecture.Tests.Pipeline;
 
 /// <summary>
 /// IA-TST-EV-ARCH — executable specification of the fail-closed
-/// expected-version contract (ADR-006 / freeze file 02).
+/// expected-version contract (ADR-006 and
+/// <c>backend/docs/architecture/application-model.md</c>).
 ///
 /// A concrete versioned request that is absent from <see cref="ExpectedVersionTargetMap"/>
 /// fails this test in CI before it can silently skip concurrency enforcement at runtime.
@@ -128,6 +129,6 @@ public sealed class ExpectedVersionArchitectureTests
 
         discovered.Should().HaveCount(ExpectedVersionInventory.RequestKindBySimpleName.Count,
             "a new versioned request requires an inventory row AND a target-map entry; " +
-            "update both together (freeze file 02 §4)");
+            "update both together with the expected-version contract in backend/docs/architecture/application-model.md");
     }
 }

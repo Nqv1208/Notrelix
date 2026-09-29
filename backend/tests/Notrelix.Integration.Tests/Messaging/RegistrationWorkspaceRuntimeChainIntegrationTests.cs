@@ -18,14 +18,10 @@ using Notrelix.Application.Features.Workspaces.Members.Services;
 namespace Notrelix.Integration.Tests.Messaging;
 
 /// <summary>
-/// TAC-IA-FLOW-03 — full production runtime chain proof: registration →
-/// IdentityRegistrationCompleted outbox → dispatcher → MassTransit receive
-/// pipeline → TenantContextConsumeFilter → DeduplicationConsumeFilter →
-/// WorkspaceProvisioningConsumer → ProvisionPersonalWorkspaceCommand → personal
-/// Workspace + Owner member persisted under the Account tenant.
-///
-/// Mirrors WorkspaceMemberAddedScopedTenantRuntimeChainIntegrationTests
-/// (the scoped runtime-chain pattern the flow card references).
+/// Verifies that registration publishes one durable provisioning intent and that
+/// the consumer processes it under the Account tenant. The resulting personal
+/// Workspace and owner membership must be persisted exactly once through the
+/// production delivery boundary.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]

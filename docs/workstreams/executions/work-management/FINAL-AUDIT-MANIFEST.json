@@ -1,0 +1,33 @@
+{
+  "baseline_branch": "develop",
+  "baseline_sha": "35702d0fa9fb01ed68b0667bab500030d60bd028",
+  "wmreq_count": 154,
+  "plan_work_unit_count": 40,
+  "substantive_test_family_count": 93,
+  "semantic_requirement_mapping": "154/154",
+  "plan_to_test_mapping": "40/40",
+  "broken_internal_references": 0,
+  "final_baseline_decision": "BLOCKED until implementation evidence exists",
+  "files": {
+    "work-management.spec.md": {
+      "bytes": 37996,
+      "lines": 805,
+      "sha256": "d90f242724553329aa8eb732cedea1237dab7e519d4041a700ef6de1602d4606"
+    },
+    "work-management.plan.md": {
+      "bytes": 37029,
+      "lines": 1236,
+      "sha256": "772c7bdc841f61c7f81fd1936a691e54f641c53a939a3add15b1ff3dc6898dfc"
+    },
+    "work-management.tests.md": {
+      "bytes": 46896,
+      "lines": 1559,
+      "sha256": "29ca8182038638e517c5c11f0285d2d87fb67a719d7b9faa41170caec9e043b2"
+    },
+    "work-management.certification.md": {
+      "bytes": 34534,
+      "lines": 1338,
+      "sha256": "6aca8650b33370b13e9a569cb727de3efeb5a633890c609bed894a0d653be6ea"
+    }
+  }
+}

@@ -1,7 +1,10 @@
 namespace Notrelix.Domain.Automation.Triggers;
 
 /// <summary>
-/// Experimental — runtime trigger entity. Discriminator and config schema are not yet finalized.
+/// Experimental runtime trigger entity. Its discriminator and config schema are
+/// not finalized. Promotion requires the governance decision described in
+/// <c>docs/governance/decision-and-exception-policy.md</c> §36; isolation is
+/// enforced by <c>ExperimentalRuntimeIsolationTests</c>.
 /// </summary>
 public class AutomationTrigger : Entity
 {

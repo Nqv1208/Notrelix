@@ -1,8 +1,9 @@
 namespace Notrelix.Infrastructure.Security.Hashing;
 
 /// <summary>
-/// One-way hasher for opaque tokens (v4 §8.3). Tokens/secrets are never stored
-/// in plaintext — only their hash. Pure/inert. Constant-time comparison provided.
+/// One-way hasher for opaque tokens. Tokens/secrets are never stored in
+/// plaintext — only their hash. Pure/inert. Constant-time comparison is
+/// provided; see <c>backend/docs/architecture/security-tenancy-authorization.md</c>.
 /// </summary>
 public sealed class TokenHasher
 {

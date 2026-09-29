@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Work Management — Cards, Checklists, and Comments context handlers.
  *
@@ -183,7 +182,6 @@ export const cardsOperations = [
     } as any,
     method: "PATCH",
     route: "/board-items/:id",
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async handle({ params, body, store }) {
       const data = (body ?? {}) as {
         title?: string;

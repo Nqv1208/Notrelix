@@ -106,7 +106,9 @@ public class ProductionAdapterGraphTests
     }
 
     // ------------------------------------------------------------------
-    // PRE-M4 CrossContext runtime composition proof (tests.md §24K2 / P2/P4).
+    // PRE-M4 CrossContext runtime composition proof. The canonical ownership
+    // rule is in backend/docs/architecture/backend-overview.md and
+    // backend/docs/architecture/infrastructure-and-data.md.
     //
     // Cross-context Port/Adapter runtime registrations must be owned by the
     // dedicated CrossContextRegistration/AddCrossContextBindings owner, not by

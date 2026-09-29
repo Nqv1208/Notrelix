@@ -3,8 +3,9 @@ namespace Notrelix.Infrastructure;
 /// <summary>
 /// Infrastructure composition root. This type only orchestrates per-capability
 /// registrations (see the *Registration classes under DependencyInjection/).
-/// Per v4 §19 it must stay thin — add capability wiring in the matching
-/// registration class, not here.
+/// It must stay thin — add capability wiring in the matching registration
+/// class, not here. See <c>backend/docs/architecture/backend-overview.md</c>
+/// and <c>backend/docs/architecture/infrastructure-and-data.md</c>.
 /// </summary>
 public static class DependencyInjection
 {

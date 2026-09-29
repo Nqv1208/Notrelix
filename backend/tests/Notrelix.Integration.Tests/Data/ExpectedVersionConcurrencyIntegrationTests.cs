@@ -35,7 +35,9 @@ namespace Notrelix.Integration.Tests.Data;
 
 /// <summary>
 /// IA-TST-EV-DB — fail-closed optimistic-concurrency acceptance on real
-/// PostgreSQL (freeze file 02 §7/§9): binding misconfigurations are server-side
+/// PostgreSQL (see <c>backend/docs/architecture/application-model.md</c> and
+/// <c>backend/docs/architecture/infrastructure-and-data.md</c>): binding
+/// misconfigurations are server-side
 /// failures, stale versions are client precondition failures that roll back the
 /// whole authoritative transaction, and concurrent writers with the same declared
 /// version produce exactly one winner.

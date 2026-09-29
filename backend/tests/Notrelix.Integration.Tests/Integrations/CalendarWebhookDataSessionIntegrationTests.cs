@@ -28,20 +28,12 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Integrations;
 
 /// <summary>
-/// TAC-AI-FLOW-07 / C6 — the frozen Option-A mechanism proof: the webhook command
-/// is write-classified, so a delivery travels ISender → the canonical request
-/// pipeline (RequestContract → ExecutionContext → DataSession) → the real
-/// EfRequestDataSession transaction → the real verifier → the real intake →
-/// PostgreSQL. The handler resolves the per-connection WebhookPath binding
-/// BEFORE any payload trust, and ONLY after signature verification does it
-/// derive the owning Account/Workspace as the execution tenant for the receipt.
-/// Case 1 commits the Captured NON-TERMINAL claim with the derived tenant and
-/// enrolls exactly one provider-neutral processing-requested event; the
-/// terminal receipt state is decided by the tenant-scoped consumer (Wave E),
-/// never by the bootstrap. Case 2 pins a semantic that is not obvious: a
-/// business/security rejection is a Result.Failure, not an exception — the
-/// transaction still commits exactly one Rejected diagnostic receipt without
-/// tenant adoption.
+/// Verifies the calendar webhook intake contract. A trusted callback must
+/// resolve its connection before payload trust, derive the owning tenant only
+/// after signature verification, and commit one non-terminal receipt plus one
+/// processing intent. Business/security rejection is recorded as a diagnostic
+/// receipt without adopting an untrusted tenant; terminal processing is owned
+/// by the tenant-scoped consumer.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]

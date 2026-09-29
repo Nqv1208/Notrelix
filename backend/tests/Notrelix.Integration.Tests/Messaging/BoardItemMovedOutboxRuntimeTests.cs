@@ -21,13 +21,10 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Messaging;
 
 /// <summary>
-/// TAC-WM-009 + TAC-FRZ-018 — Work integration-event runtime ownership:
-/// a valid Work mutation enrolls exactly one board_item.moved fact in the
-/// same committed transaction, a rolled-back mutation enrolls none, and the
-/// production delivery chain (outbox dispatcher → MassTransit receive pipeline
-/// → TenantContextConsumeFilter → real Analytics placement consumer) restores
-/// the Workspace tenant before consuming and projects the placement exactly
-/// once under that tenant.
+/// Verifies the Work integration-event contract at the production delivery
+/// boundary. A committed move enrolls one tenant-scoped fact, a rolled-back
+/// move enrolls none, and the Analytics consumer projects the placement exactly
+/// once after restoring the Workspace tenant.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]

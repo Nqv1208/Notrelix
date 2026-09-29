@@ -1,6 +1,7 @@
 import createNextIntlPlugin from "next-intl/plugin";
 import type { NextConfig } from "next";
 
+// Next's webpack callback exposes an untyped compiler configuration object.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const withNextIntl = createNextIntlPlugin();

@@ -24,17 +24,12 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Automation;
 
 /// <summary>
-/// TAC-PF-FLOW-04 (M11) — production-composition proof for the n8n dispatch
-/// chain: N8nDispatchRequestedV1 travels TenantContextConsumeFilter →
-/// DeduplicationConsumeFilter (consumer-owned path) → the real
-/// N8nDispatchConsumer with its own transaction + RLS → the provider adapter
-/// port. Exactly the shipped graph; only the provider port and the dedup/claim
-/// store are replaced with a recording fake. Proves: (1) an unknown provider
-/// outcome settles the execution as Failed with a reconciliation marker and
-/// never auto re-fires, and (2) a retryable outcome persists durable attempt
-/// evidence across real MassTransit retries (the first attempt's attempt-count
-/// survives before the retry re-runs the consumer without re-acquiring under a
-/// new identity).
+/// Verifies the n8n dispatch failure contract at the production consumer
+/// boundary. Unknown provider outcomes settle as Failed with reconciliation
+/// evidence and do not auto-fire again; retryable outcomes preserve durable
+/// attempt evidence while the same execution identity is retried. Only the
+/// provider port and dedup store are substituted because the test targets the
+/// consumer, tenant, transaction, and retry boundaries.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]

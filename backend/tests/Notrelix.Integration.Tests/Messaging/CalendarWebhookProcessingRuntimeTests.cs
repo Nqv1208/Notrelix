@@ -32,16 +32,10 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Messaging;
 
 /// <summary>
-/// TAC v2.6 WAVE-E — the Wave-E split production graph: the bootstrap commits a
-/// NON-TERMINAL "Captured" claim plus exactly one provider-neutral
-/// <c>calendar_webhook_processing_requested</c> outbox row in the same real
-/// transaction, and the real delivery chain (outbox dispatcher → MassTransit
-/// InMemory receive pipeline → TenantContextConsumeFilter → real
-/// <see cref="CalendarWebhookProcessingRequestedConsumer"/>) restores the
-/// workspace tenant before running the consumer, then reconciles the
-/// Integrations CalendarEvent target and durably records "Processed" only
-/// after that target mutation commits. A duplicate delivery converges to the
-/// same single receipt and single enrollment.
+/// Verifies the calendar webhook processing contract after intake. The consumer
+/// must restore the workspace tenant before applying the target mutation,
+/// record a terminal receipt only after that mutation commits, and converge
+/// duplicate delivery to one durable outcome.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]

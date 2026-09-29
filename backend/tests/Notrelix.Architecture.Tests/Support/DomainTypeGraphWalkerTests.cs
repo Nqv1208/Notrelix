@@ -1,8 +1,6 @@
 using System.Reflection;
 using Notrelix.Domain.Common;
 
-#pragma warning disable CS0649
-
 namespace Notrelix.Architecture.Tests;
 
 public class DomainTypeGraphWalkerTests

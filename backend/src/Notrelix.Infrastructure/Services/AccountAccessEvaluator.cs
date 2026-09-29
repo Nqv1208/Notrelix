@@ -3,8 +3,10 @@ using Notrelix.Application.Features.Accounts.Abstractions;
 namespace Notrelix.Infrastructure.Services;
 
 /// <summary>
-/// Stub implementation - replace with real account membership query
-/// once account bounded context is fully modeled.
+/// Legacy seam retained for compatibility with the account-access abstraction.
+/// TenantBootstrapStore and the RLS helpers are the authoritative enforcement
+/// paths; this type is intentionally not used for request authorization
+/// (NRX-006, PR-IA-00 decision note).
 /// </summary>
 public sealed class AccountAccessEvaluator : IAccountAccessEvaluator
 {
@@ -17,14 +19,12 @@ public sealed class AccountAccessEvaluator : IAccountAccessEvaluator
 
     public async Task<bool> HasAccountAccess(Guid accountId, CancellationToken cancellationToken = default)
     {
-        // TODO: Replace with real account membership query
         return await _context.Accounts
             .AnyAsync(a => a.Id == accountId, cancellationToken);
     }
 
     public Task<bool> IsAccountAdmin(Guid accountId, CancellationToken cancellationToken = default)
     {
-        // TODO: Replace with real admin check
         return Task.FromResult(false);
     }
 }

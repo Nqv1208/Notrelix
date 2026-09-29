@@ -36,7 +36,9 @@ namespace Notrelix.Integration.Tests.Automation;
 
 /// <summary>
 /// IA-TST-N8N-DB — durable automation/N8n acceptance on real PostgreSQL
-/// (freeze file 03): execution + outbox intent commit atomically, duplicate
+/// (see <c>backend/docs/architecture/application-model.md</c> and
+/// <c>backend/docs/architecture/platform-and-messaging.md</c>): execution +
+/// outbox intent commit atomically, duplicate
 /// source triggers cannot create a second execution (database-enforced), the
 /// broker consumer propagates the stable ExecutionId, and transient network
 /// failures rethrow so the broker retries without losing durable state.
