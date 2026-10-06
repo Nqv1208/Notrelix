@@ -3,15 +3,20 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using Testcontainers.PostgreSql;
+using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Workspaces.Members;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Domain.Builders;
 using Notrelix.Testing.Integration;
@@ -403,6 +408,149 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         var unrelatedTitles = await QueryBoardTitlesAsAppRoleAsync(userId: unrelatedId);
         unrelatedTitles.Should().BeEmpty(
             "a user without a runtime-written grant must see nothing under the enforced app role");
+    }
+
+    /// <summary>
+    /// Drives the production membership chain (CreateWorkspace -> AddMember ->
+    /// Board) so the revocation tests prove the real handler + grant-projection
+    /// path rather than a hand-seeded grant. Returns the workspace the member
+    /// was added to and the member's user id.
+    /// </summary>
+    private async Task<(Guid WorkspaceId, Guid MemberId)> SeedWorkspaceWithMemberAndBoardAsync()
+    {
+        var creatorId = Guid.Parse("00000000-0000-0000-0000-000000000D01");
+        var memberId = Guid.Parse("00000000-0000-0000-0000-000000000D02");
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(r => r.UserId).Returns(creatorId);
+        requestContext.Setup(r => r.RequireAccountId()).Returns(AccountA);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(FixedTime);
+
+        var projection = new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context));
+
+        var createHandler = new CreateWorkspaceCommandHandler(
+            context, requestContext.Object, clock.Object, projection);
+        var created = await createHandler.Handle(new CreateWorkspaceCommand("Runtime Revocation Workspace", null, false), default);
+        created.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+        var workspaceId = created.Data;
+
+        var addHandler = new AddMemberCommandHandler(
+            context, requestContext.Object, clock.Object, projection);
+        var added = await addHandler.Handle(new AddMemberCommand(workspaceId, memberId, WorkspaceRole.Member), default);
+        added.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+
+        context.Boards.Add(new BoardBuilder()
+            .WithAccountId(AccountA)
+            .WithWorkspaceId(workspaceId)
+            .WithCreatedBy(creatorId)
+            .WithTitle("Revocation Board")
+            .WithCreatedAt(FixedTime)
+            .Build());
+        await context.SaveChangesAsync();
+
+        var memberGrant = await context.AccessGrants.SingleAsync(
+            g => g.AccountId == AccountA && g.WorkspaceId == workspaceId && g.UserId == memberId);
+        memberGrant.MembershipStatus.Should().Be("Active");
+        memberGrant.RevokedAt.Should().BeNull();
+
+        var memberTitles = await QueryBoardTitlesAsAppRoleAsync(userId: memberId);
+        memberTitles.Should().BeEquivalentTo(["Revocation Board"],
+            "the member grant written by AddMember must be usable under the enforced app role");
+
+        return (workspaceId, memberId);
+    }
+
+    /// <summary>
+    /// WG-TST-MEM-INT-001 / WG-TEST-GAP-003: suspending a member through the
+    /// production SuspendMember handler must revoke the workspace access grant,
+    /// and the RLS predicate must deny the previously visible row immediately.
+    /// </summary>
+    [Fact]
+    public async Task RuntimeMembershipSuspend_RevokesGrant_AndDeniesUnderAppRole()
+    {
+        var creatorId = Guid.Parse("00000000-0000-0000-0000-000000000D01");
+        var (workspaceId, memberId) = await SeedWorkspaceWithMemberAndBoardAsync();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(r => r.UserId).Returns(creatorId);
+        requestContext.Setup(r => r.RequireAccountId()).Returns(AccountA);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(FixedTime);
+
+        var handler = new SuspendMemberCommandHandler(
+            context, requestContext.Object, clock.Object,
+            new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
+            new WorkspaceOwnerUpdateLocker(context));
+
+        var result = await handler.Handle(new SuspendMemberCommand(workspaceId, memberId), default);
+        result.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+
+        var member = await context.WorkspaceMembers.SingleAsync(
+            m => m.WorkspaceId == workspaceId && m.UserId == memberId);
+        member.Status.Should().Be(WorkspaceMemberStatus.Suspended, "the production handler must suspend the member");
+
+        var grant = await context.AccessGrants.SingleAsync(
+            g => g.AccountId == AccountA && g.WorkspaceId == workspaceId && g.UserId == memberId);
+        grant.RevokedAt.Should().NotBeNull("suspension must revoke the workspace access grant");
+
+        var memberTitles = await QueryBoardTitlesAsAppRoleAsync(userId: memberId);
+        memberTitles.Should().BeEmpty(
+            "a suspended member's revoked grant must not preserve RLS visibility");
+    }
+
+    /// <summary>
+    /// WG-TST-MEM-INT-001 / WG-TEST-GAP-003: removing a member through the
+    /// production RemoveMember handler must revoke the workspace access grant
+    /// and deny the previously visible row under the app role.
+    /// </summary>
+    [Fact]
+    public async Task RuntimeMembershipRemoval_RevokesGrant_AndDeniesUnderAppRole()
+    {
+        var creatorId = Guid.Parse("00000000-0000-0000-0000-000000000D01");
+        var (workspaceId, memberId) = await SeedWorkspaceWithMemberAndBoardAsync();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.Setup(r => r.UserId).Returns(creatorId);
+        requestContext.Setup(r => r.RequireAccountId()).Returns(AccountA);
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(c => c.UtcNow).Returns(FixedTime);
+
+        var handler = new RemoveMemberCommandHandler(
+            context, requestContext.Object, clock.Object,
+            new WorkspaceGrantProjectionServiceAdapter(new AccessGrantProjectionService(context)),
+            new WorkspaceOwnerUpdateLocker(context));
+
+        var result = await handler.Handle(new RemoveMemberCommand(workspaceId, memberId), default);
+        result.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+
+        var member = await context.WorkspaceMembers.SingleAsync(
+            m => m.WorkspaceId == workspaceId && m.UserId == memberId);
+        member.Status.Should().Be(WorkspaceMemberStatus.Removed, "the production handler must remove the member");
+
+        var grant = await context.AccessGrants.SingleAsync(
+            g => g.AccountId == AccountA && g.WorkspaceId == workspaceId && g.UserId == memberId);
+        grant.RevokedAt.Should().NotBeNull("removal must revoke the workspace access grant");
+
+        var memberTitles = await QueryBoardTitlesAsAppRoleAsync(userId: memberId);
+        memberTitles.Should().BeEmpty(
+            "a removed member's revoked grant must not preserve RLS visibility");
     }
 
     [Fact]
