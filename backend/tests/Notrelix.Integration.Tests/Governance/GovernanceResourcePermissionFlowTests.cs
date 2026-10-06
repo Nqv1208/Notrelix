@@ -25,6 +25,7 @@ using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetRe
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Relations.DTOs;
 using Notrelix.Application.Features.WorkManagement.Relations.Queries.ListBoardRelations;
@@ -1043,6 +1044,30 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     /// <summary>
+    /// WG-TST-WM-X-003 / WG-TEST-GAP-005 (P2B-CERT-011): a Board owned by
+    /// another account must not be reachable through the production pipeline for
+    /// a legitimate member of a different account — even when that member holds
+    /// a valid grant in their own account. The result is NotFound, never
+    /// Forbidden, so cross-tenant existence does not leak.
+    /// </summary>
+    [Fact]
+    public async Task GetBoard_FromForeignAccount_IsNotFound_AndForeignBoardStaysUntouched()
+    {
+        var (accountA, _, _, _, memberA) = await SeedBoardStackAsync();
+        var (_, _, _, boardB, _) = await SeedBoardStackAsync();
+
+        using var provider = CreateProvider(accountA, memberA);
+        var act = () => SendAsync<Result<BoardDto>>(provider, new GetBoardQuery(boardB));
+
+        await act.Should().ThrowAsync<AppNotFound>(
+            "a foreign-account board must be invisible to a granted account-A member");
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var foreignBoard = await verify.Boards.IgnoreQueryFilters().SingleAsync(b => b.Id == boardB);
+        foreignBoard.Title.Should().NotBeNull("the foreign board must remain intact");
+    }
+
+    /// <summary>
     /// M7 RESOURCE-SCOPE freeze — same account, two real workspaces. The
     /// resource-scoped request follows the authoritative resource location:
     /// a workspace-W2 member comments on a W2 board item with the request
@@ -1276,6 +1301,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<ListBoardRelationsQuery, Result<List<BoardRelationDto>>>,
             ListBoardRelationsQueryHandler>();
+        services.AddScoped<
+            IRequestHandler<GetBoardQuery, Result<BoardDto>>,
+            GetBoardQueryHandler>();
 
         return services.BuildServiceProvider();
     }
