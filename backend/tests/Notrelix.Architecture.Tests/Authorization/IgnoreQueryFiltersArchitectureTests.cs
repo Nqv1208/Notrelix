@@ -106,6 +106,9 @@ public class IgnoreQueryFiltersArchitectureTests
         ["ActiveVerificationTokenLocker.cs"] = new("ActiveVerificationTokenLocker.cs", AllowlistClassification.Intentional,
             "Token locker bypasses EF query filter to lock active verification tokens across tenant boundaries",
             "Keep as Intentional — cross-tenant token locking"),
+        ["WorkspaceOwnerUpdateLocker.cs"] = new("WorkspaceOwnerUpdateLocker.cs", AllowlistClassification.Intentional,
+            "Workspace locker bypasses EF query filter and status filter is encoded in raw SQL to take SELECT ... FOR UPDATE on the active workspace row; the row lock is held for the owning request transaction to serialize owner-affecting membership operations",
+            "Keep as Intentional — PostgreSQL row-lock serialization for last-owner invariants"),
     };
 
     [Fact]
