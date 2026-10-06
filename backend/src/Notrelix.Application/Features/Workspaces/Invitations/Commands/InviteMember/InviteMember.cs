@@ -47,7 +47,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
     {
         var workspace = await _workspaceContext.Workspaces
             .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

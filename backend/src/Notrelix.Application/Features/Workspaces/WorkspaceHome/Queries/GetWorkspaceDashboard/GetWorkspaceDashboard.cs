@@ -45,11 +45,11 @@ public class GetWorkspaceDashboardQueryHandler : IRequestHandler<GetWorkspaceDas
 
         var spaceCount = await _context.Spaces
             .AsNoTracking()
-            .CountAsync(s => s.WorkspaceId == request.WorkspaceId && !s.IsDeleted, ct);
+            .CountAsync(s => s.WorkspaceId == request.WorkspaceId && s.DeletedAt == null, ct);
 
         var teamCount = await _context.Teams
             .AsNoTracking()
-            .CountAsync(t => t.WorkspaceId == request.WorkspaceId && !t.IsDeleted, ct);
+            .CountAsync(t => t.WorkspaceId == request.WorkspaceId && t.DeletedAt == null, ct);
 
         var invitationCount = await _context.WorkspaceInvitations
             .AsNoTracking()

@@ -30,7 +30,7 @@ public class CreateSpaceCommandHandler : IRequestHandler<CreateSpaceCommand, Res
     public async Task<Result<Guid>> Handle(CreateSpaceCommand request, CancellationToken ct)
     {
         var workspace = await _context.Workspaces
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

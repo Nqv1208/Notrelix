@@ -25,7 +25,7 @@ public class GetWorkspaceSpacesQueryHandler : IRequestHandler<GetWorkspaceSpaces
     {
         var spaces = await _context.Spaces
             .AsNoTracking()
-            .Where(s => s.WorkspaceId == request.WorkspaceId && !s.IsDeleted)
+            .Where(s => s.WorkspaceId == request.WorkspaceId && s.DeletedAt == null)
             .OrderBy(s => s.Name)
             .ToListAsync(ct);
 

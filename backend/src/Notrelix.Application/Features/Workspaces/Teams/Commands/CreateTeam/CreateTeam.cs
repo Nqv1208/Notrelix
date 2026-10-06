@@ -29,7 +29,7 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Resul
     public async Task<Result<Guid>> Handle(CreateTeamCommand request, CancellationToken ct)
     {
         var workspace = await _context.Workspaces
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

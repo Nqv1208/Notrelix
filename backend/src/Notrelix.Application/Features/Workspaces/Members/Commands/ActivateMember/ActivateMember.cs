@@ -31,7 +31,7 @@ public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberComman
     public async Task<Result> Handle(ActivateMemberCommand request, CancellationToken ct)
     {
         var workspace = await _context.Workspaces
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
