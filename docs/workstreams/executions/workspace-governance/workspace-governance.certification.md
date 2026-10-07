@@ -458,7 +458,10 @@ Architecture evidence: DbContextBoundaryArchitectureTests executed green inside 
 Security evidence: NOT_EVALUATED — no executed test proves the P3-A ownership boundary at runtime.
 Integration evidence: NOT_EVALUATED — representative WorkManagement handshake is NOT_APPLICABLE to this milestone slice.
 CI evidence: NOT_EVALUATED — no aggregate CI run recorded for this SHA (CERT-CI-001..009).
-Blocking debt: WG-DEBT-CERT-006 remains OPEN ARCHITECTURE DEBT.
+Blocking debt: None recorded for this capability. The Board-specific cross-account case this
+  record used to cite as open is now explicit and proven by the executed foreign-account
+  negative test (`GetBoard_FromForeignAccount_IsNotFound_AndForeignBoardStaysUntouched`), so
+  that debt is closed; the residual `runtime ownership handoff not proven` stays in the Status line.
 Status: PARTIALLY_VERIFIED — static boundary proven; runtime ownership handoff not proven.
 Reviewer: opencode-agent (workspace-governance execution)
 Decision date: 2026-10-06
