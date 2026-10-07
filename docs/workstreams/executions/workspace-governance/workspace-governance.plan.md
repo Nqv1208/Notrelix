@@ -403,6 +403,16 @@ and `make docs-check` 6/6). All 31 `CERT-*` records now carry an honest disposit
 8 VERIFIED, 13 PARTIALLY_VERIFIED, 9 NOT_EVALUATED (all `CERT-CI-*`, blocked on CI),
 1 migration record VERIFIED-clean-DB / NOT_APPLICABLE-upgrade.
 
+Phase 2 blocker closure is complete. `WG-TEST-GAP-001/002/003/005/007` are CLOSED by executed
+runtime evidence, and the matching semantic debts `WG-DEBT-008/009/010` are recorded as
+CLOSED BY EXECUTED EVIDENCE. `WG-TEST-GAP-008` remains PARTIAL because no repository
+secret-scan gate exists (§8.5) and `WG-TEST-GAP-009` remains NOT-CHANGED because the baseline
+is greenfield (§8.6), both exactly as this plan already allows.
+
+The code tree is now frozen as immutable candidate `34b51bfc`, verified on a clean detached
+worktree at 5149/5149 local tests with 0 failures. Every commit after it is docs-only and does
+not change the tested code tree, so `34b51bfc` is the SHA an aggregate CI run must target.
+
 Phase 4 is deliberately **not** published. The gate requires a CI candidate-gate PASS and
 STABLE/D5 maturity; `P2B-CERT-015` is BLOCKED because no CI run exists for this SHA, and no
 record can honestly be lifted to STABLE/D5 without it. Publishing a stable handoff now would

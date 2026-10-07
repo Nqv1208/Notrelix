@@ -312,8 +312,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: WorkspaceTests, WorkspaceTenantOwnershipTests executed green inside Domain suite 2595/2595; one canonical Workspace aggregate, no second Workspace source of truth.
@@ -356,8 +358,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: CanonicalKindValidatorsTests, AuthPipelineArchitectureTests executed green inside Architecture suite 620/620; ResourceKind/ResourceId are canonical enum-backed values.
@@ -399,8 +403,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: PermissionAction remains an unchanged canonical enum; no identifier drift introduced by this execution.
@@ -442,8 +448,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: DbContextBoundaryArchitectureTests executed green inside Architecture suite 620/620; ownership boundary enforced statically.
@@ -551,8 +559,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: WorkspaceTests, WorkspaceMutationTests executed green inside Domain suite 2595/2595.
@@ -597,8 +607,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: WorkspaceMemberTests, WorkspaceOwnerRulesTests executed green inside Domain suite 2595/2595.
@@ -645,8 +657,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: NOT_EVALUATED — grant projection has no dedicated architecture gate in this execution.
@@ -694,8 +708,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: AccessControlBehaviorTests executed green inside Application suite 742/742.
@@ -742,8 +758,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: WorkspaceRole remains unchanged by this execution; canonical role surface intact.
@@ -789,8 +807,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: PipelineOrderTests, AuthPipelineArchitectureTests, HandlerAuthorizationBypassArchitectureTests, UseCaseSecurityClassificationTests executed green inside Architecture suite 620/620.
@@ -836,8 +856,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: AuthPipelineArchitectureTests executed green inside Architecture suite 620/620; SystemContextUsageTests enforces the System principal boundary.
@@ -883,8 +905,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: NOT_EVALUATED — AccessFacts composition has no dedicated architecture gate in this execution.
@@ -928,8 +952,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: AuthPipelineArchitectureTests :: AuthorizationPolicyEngine_MustNotReadPersistence and :: EvaluatorSeam_HasExactlyOneImplementation executed green inside Architecture suite 620/620.
@@ -974,8 +1000,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: RlsPolicyVerificationTests.AllWorkspaceScopedTables_HaveRlsEnabled executed green but does NOT cover the workspace/governance/authz schemas — coverage gap recorded as a documentation limitation in CERT-DATA-002.
@@ -1018,8 +1046,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: NOT_EVALUATED — management ceiling has no dedicated architecture gate in this execution.
@@ -1063,8 +1093,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: AuthPipelineArchitectureTests executed green inside Architecture suite 620/620.
@@ -1113,8 +1145,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: DbContextBoundaryArchitectureTests, AuthPipelineArchitectureTests, HandlerAuthorizationBypassArchitectureTests executed green inside Architecture suite 620/620.
@@ -1157,8 +1191,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: VERIFIED — MigrationSmokeTests 4/4 and MigrationResiliencyTests executed green; no pending model changes; single greenfield baseline.
 Architecture evidence: NOT_APPLICABLE — startup/migration is not an architecture-boundary capability.
 Security evidence: RLS deployment objects validated by RlsRuntimeEnforcementTests 18/18 with the policy pack applied.
@@ -1205,8 +1241,10 @@ These are source/evidence candidates only. They are not a recorded PASS until ex
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: PARTIALLY_VERIFIED — clean-DB migrate green with no pending model changes (CERT-MIG-001);
   no supported-upgrade chain exists for this greenfield baseline (WG-DEBT-CERT-009 open)
 Architecture evidence: HandlerAuthorizationBypassArchitectureTests executed green inside Architecture suite 620/620.
@@ -1248,15 +1286,18 @@ TESTS: WG-TST-P2-CORE-001, WG-TST-P2-CORE-002, WG-TST-P2-CORE-003, WG-TST-P2-COR
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; evidence ran on a dirty worktree
-  layered on it, so the SHA alone does not identify the tested tree — an immutable candidate is
-  still required before promotion)
+  layered on it, so the SHA alone does not identify the tested tree. Immutable candidate
+  34b51bfc froze the code tree afterwards and was verified on a clean detached worktree
+  (5149/5149 local tests, 0 failures); every commit after it is docs-only and does not
+  change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: NOT_EVALUATED — depends on the candidate CI run, which does not exist.
 Architecture evidence: NOT_EVALUATED — depends on the candidate CI run (local Architecture 620/620 does not satisfy the gate).
 Security evidence: NOT_EVALUATED — depends on the candidate CI run (local suites do not satisfy the gate).
 Integration evidence: NOT_EVALUATED — depends on the candidate CI run (local Integration 587/587 does not satisfy the gate).
 CI evidence: NOT_EVALUATED — no aggregate CI run recorded for this SHA (CERT-CI-001..009).
-Blocking debt: No immutable candidate commit has been authorized; WG-CERT-HO-001 remains NOT PUBLISHED.
-Status: BLOCKED — requires an immutable candidate commit and an aggregate CI run on that exact SHA.
+Blocking debt: Immutable candidate 34b51bfc exists and is clean-tree verified (5149/5149 local tests,
+  0 failures), but no aggregate CI run has been recorded for it; WG-CERT-HO-001 remains NOT PUBLISHED.
+Status: BLOCKED — requires an aggregate CI run on accepted candidate 34b51bfc.
 Reviewer: opencode-agent (workspace-governance execution)
 Decision date: 2026-10-06
 ```
@@ -1316,8 +1357,8 @@ NOT MET
 
 Reason: `WG-GATE-002` is not satisfied. Blocking conditions:
 
-- `P2B-CERT-015` = BLOCKED — no immutable candidate commit, therefore no aggregate CI run on an
-  accepted SHA; `CERT-CI-001..009` remain NOT_EVALUATED.
+- `P2B-CERT-015` = BLOCKED — immutable candidate 34b51bfc exists and is clean-tree verified
+  (5149/5149), but no aggregate CI run has been recorded on it; `CERT-CI-001..009` remain NOT_EVALUATED.
 - `P2B-CERT-014` = PARTIALLY_VERIFIED — no repository secret-scan gate exists and no local scanner
   is available (`WG-DEBT-CERT-008`).
 - `WG-DEBT-CERT-014` OPEN — `SecurityAuditMiddleware` very likely never persists security audit
@@ -2251,8 +2292,10 @@ TESTS: WG-TST-INV-CONC-001
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; this evidence ran on a
-  dirty worktree layered on top of it, so the SHA alone does not identify the tested tree —
-  an immutable candidate is still required before promotion)
+  dirty worktree layered on top of it, so the SHA alone does not identify the tested tree.
+  Immutable candidate 34b51bfc froze the code tree afterwards and was verified on a clean
+  detached worktree (5149/5149 local tests, 0 failures); every commit after it is docs-only
+  and does not change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: No schema change. Both races are already closed by existing mechanisms:
   (a) aggregate-level optimistic concurrency — ApplicationDbContext.OnModelCreating maps
   AggregateRoot.Version as a concurrency token for every AggregateRoot
@@ -2453,8 +2496,10 @@ TESTS: WG-TST-OBS-INT-001, WG-TST-OBS-INT-002, WG-TST-OBS-SEC-001, WG-TST-OBS-ME
 
 ```text
 Candidate SHA: e74bbc75f3713d99cead9b535cc935f211a7c47e (base commit; this evidence ran on a
-  dirty worktree layered on top of it, so the SHA alone does not identify the tested tree —
-  an immutable candidate is still required before promotion)
+  dirty worktree layered on top of it, so the SHA alone does not identify the tested tree.
+  Immutable candidate 34b51bfc froze the code tree afterwards and was verified on a clean
+  detached worktree (5149/5149 local tests, 0 failures); every commit after it is docs-only
+  and does not change tested code. Aggregate CI on 34b51bfc remains required before promotion)
 Migration impact: None. New counter on the existing canonical pipeline meter
   (PipelineMetrics.MeterName = Notrelix.Application.Pipeline); no schema, contract, or migration change.
   Change made: the pipeline access-control stage now emits a real authorization decision signal
@@ -3486,9 +3531,9 @@ interpreted as independent or competing debt catalogs.
 | `WG-DEBT-005` | OPEN / BOUNDED CORE SUBSET | `P2B-CERT-004` | unsupported subject kinds remain outside certified core |
 | `WG-DEBT-006` | OPEN ARCHITECTURE DEBT | `P2A-CERT-004`, `P2B-CERT-007`, `CERT-X-002` | MUST be named in P3 handoff; no silent expansion of `AccessFactsQuery` foreign-table reads |
 | `WG-DEBT-007` | OPEN DOWNSTREAM CONTRACT DEBT | `P2B-CERT-011`, `CERT-X-002` | MUST be named in P3 handoff; full generic `ManageBoard` semantics are not D5 |
-| `WG-DEBT-008` | OPEN EVIDENCE DEBT | `WG-DEBT-CERT-004`, `P2B-CERT-003` | blocks Milestone B until suspend/remove grant revocation is proven |
-| `WG-DEBT-009` | OPEN EVIDENCE DEBT | `WG-DEBT-CERT-003`, `CERT-CONC-001` | blocks Milestone B until concurrent last-owner safety is proven |
-| `WG-DEBT-010` | OPEN EVIDENCE DEBT | `WG-DEBT-CERT-002`, `CERT-CONC-001` | blocks Milestone B until duplicate-membership race protection is proven |
+| `WG-DEBT-008` | CLOSED BY EXECUTED EVIDENCE | `WG-DEBT-CERT-004`, `P2B-CERT-003`; suspend/remove grant revocation proven by `RlsRuntimeEnforcementTests` under the RLS app role on real PostgreSQL | no longer blocks Milestone B; residual stale-grant convergence after revoke stays open in `P2B-CERT-003` |
+| `WG-DEBT-009` | CLOSED BY EXECUTED EVIDENCE | `WG-DEBT-CERT-003`, `CERT-CONC-001`; `ConcurrentDemoteAndRemoveOwners_NeverLeavesZeroActiveOwners` PASS (FOR UPDATE row lock) | no longer blocks Milestone B |
+| `WG-DEBT-010` | CLOSED BY EXECUTED EVIDENCE | `WG-DEBT-CERT-002`, `CERT-CONC-001`; `ConcurrentDuplicateMembershipAdds_DatabaseAllowsOnlyOneMember` PASS (unique-constraint loser) | no longer blocks Milestone B |
 | `WG-DEBT-011` | OPEN SECONDARY | `WG-DEBT-CERT-012`, `FULL-CERT-POL-001` | blocks WorkspacePolicy full-release claim only |
 | `WG-DEBT-012` | OPEN SECONDARY | `WG-DEBT-CERT-011`, `FULL-CERT-CROLE-001` | blocks CustomRole full-release claim only |
 | `WG-DEBT-013` | OPEN SECONDARY | `WG-DEBT-CERT-010`, `FULL-CERT-SHARE-001` | blocks public ShareLink capability claim only |
@@ -3697,7 +3742,8 @@ unchecked items require an exact-candidate aggregate CI run that does not exist 
       (durable security audit is very likely never persisted) which is **not fixed** and is out of
       Milestone B scope but blocks any claim that API-level 401/403/429 events are durably recorded.
 - [ ] required CI executes on accepted candidate — BLOCKED: `P2B-CERT-015`, `CERT-CI-001..009`
-      NOT_EVALUATED. Requires an immutable candidate commit, which has not been authorized.
+      NOT_EVALUATED. Immutable candidate 34b51bfc exists and is clean-tree verified (5149/5149,
+      0 failures); only the aggregate CI run on that SHA is missing.
 - [ ] P3-B handoff packet complete — `WG-CERT-HO-001 = NOT PUBLISHED`
 
 # Milestone C checklist — Full Scope
