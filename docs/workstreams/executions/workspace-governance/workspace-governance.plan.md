@@ -409,9 +409,11 @@ CLOSED BY EXECUTED EVIDENCE. `WG-TEST-GAP-008` remains PARTIAL because no reposi
 secret-scan gate exists (§8.5) and `WG-TEST-GAP-009` remains NOT-CHANGED because the baseline
 is greenfield (§8.6), both exactly as this plan already allows.
 
-The code tree is now frozen as immutable candidate `34b51bfc`, verified on a clean detached
-worktree at 5149/5149 local tests with 0 failures. Every commit after it is docs-only and does
-not change the tested code tree, so `34b51bfc` is the SHA an aggregate CI run must target.
+The tested code tree is now frozen as immutable candidate `4878dd0a`, verified on a clean
+detached worktree at 5152/5152 local tests with 0 failures (the intermediate frozen candidate was
+`34b51bfc`; `4878dd0a` added only the `PermissionActionInventoryTests` architecture test). Every
+commit after it is docs-only and does not change the tested code tree, so `4878dd0a` is the SHA
+an aggregate CI run must target.
 
 Phase 4 is deliberately **not** published. The gate requires a CI candidate-gate PASS and
 STABLE/D5 maturity; `P2B-CERT-015` is BLOCKED because no CI run exists for this SHA, and no

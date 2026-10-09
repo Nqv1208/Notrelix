@@ -1351,11 +1351,16 @@ Preparation evidence state: PARTIAL-SOURCE
 
 ### Certification evidence
 
-- Static inventory/architecture evidence.
+- Executed: `PermissionActionInventoryTests.cs` (added in candidate `4878dd0a`, green inside the
+  Architecture suite 623/623) — freezes the declared action set, asserts uniqueness (WGREQ051),
+  rejects HTTP-verb names (WGREQ053), and asserts every action is consumed by an
+  `IRequirePermission` request or explicitly documented (WGREQ050).
 
 ### Gap / follow-up
 
-- A dedicated action ownership registry/gate may need extension for full coverage.
+- CLOSED — the dedicated action ownership gate now exists as `PermissionActionInventoryTests`,
+  executed green locally on candidate `4878dd0a` (623/623 Architecture). An aggregate CI run on
+  the candidate is still required for release-level certification (`CERT-CI-001..009`).
 
 ## 25. WG-TST-RES-X-001 — resource facts come from approved semantic owner
 
