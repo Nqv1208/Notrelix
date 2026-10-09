@@ -23,7 +23,7 @@ public class ListApprovalRequestsQueryHandler : IRequestHandler<ListApprovalRequ
     {
         var approvals = await _context.ApprovalRequests
             .AsNoTracking()
-            .Where(a => a.Target.ResourceId == request.BoardId && !a.IsDeleted)
+            .Where(a => a.Target.ResourceId == request.BoardId && a.DeletedAt == null)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync(ct);
 

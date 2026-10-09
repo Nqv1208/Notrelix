@@ -28,11 +28,11 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
     public async Task<Result<Guid>> Handle(DuplicateBoardItemCommand request, CancellationToken ct)
     {
         var source = await _context.BoardItems
-            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
+            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (source is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var lastItem = await _context.BoardItems
-            .Where(c => c.GroupId == source.GroupId && !c.IsDeleted)
+            .Where(c => c.GroupId == source.GroupId && c.DeletedAt == null)
             .OrderByDescending(c => c.Position)
             .FirstOrDefaultAsync(ct);
 

@@ -36,7 +36,7 @@ public class SetDefaultViewCommandHandler : IRequestHandler<SetDefaultViewComman
         var now = _dateTimeProvider.UtcNow;
 
         var otherDefaults = await _context.BoardViews
-            .Where(v => v.BoardId == request.BoardId && v.Id != request.ViewId && v.IsDefault && !v.IsDeleted)
+            .Where(v => v.BoardId == request.BoardId && v.Id != request.ViewId && v.IsDefault && v.DeletedAt == null)
             .ToListAsync(ct);
 
         foreach (var other in otherDefaults)

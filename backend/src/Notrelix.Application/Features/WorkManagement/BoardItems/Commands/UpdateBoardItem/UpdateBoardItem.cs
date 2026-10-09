@@ -30,7 +30,7 @@ public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemComm
     public async Task<Result> Handle(UpdateBoardItemCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
-            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
+            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var now = _timeProvider.UtcNow;

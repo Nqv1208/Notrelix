@@ -33,7 +33,7 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var statusFields = await _context.BoardFields
-            .Where(f => f.BoardId == card.BoardId && f.Type == FieldType.Status && !f.IsDeleted)
+            .Where(f => f.BoardId == card.BoardId && f.Type == FieldType.Status && f.DeletedAt == null)
             .ToListAsync(ct);
 
         var statusField = statusFields.FirstOrDefault();

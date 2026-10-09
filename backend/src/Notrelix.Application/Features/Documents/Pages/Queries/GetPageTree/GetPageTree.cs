@@ -18,7 +18,7 @@ public class GetPageTreeQueryHandler : IRequestHandler<GetPageTreeQuery, Result<
     public async Task<Result<List<PageTreeItemDto>>> Handle(GetPageTreeQuery request, CancellationToken ct)
     {
         var pages = await _context.Pages.AsNoTracking()
-            .Where(page => page.WorkspaceId == request.WorkspaceId && !page.IsDeleted && page.Status != PageStatus.Archived)
+            .Where(page => page.WorkspaceId == request.WorkspaceId && page.DeletedAt == null && page.Status != PageStatus.Archived)
             .OrderBy(page => page.Title)
             .ToListAsync(ct);
 
