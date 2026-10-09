@@ -26,7 +26,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
     public async Task<Result<BoardItemDto>> Handle(GetBoardItemQuery request, CancellationToken ct)
     {
         var card = await _context.BoardItems.AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
+            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
 
         if (card is null) throw new NotFoundException("BoardItem", request.BoardItemId);
 

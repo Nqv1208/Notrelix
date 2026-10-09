@@ -25,7 +25,7 @@ public class GetWorkspacePagesQueryHandler : IRequestHandler<GetWorkspacePagesQu
         // Pages are filtered by WorkspaceId directly.
 
         var pageEntities = await _context.Pages.AsNoTracking()
-            .Where(page => page.WorkspaceId == request.WorkspaceId && !page.IsDeleted && page.Status != PageStatus.Archived)
+            .Where(page => page.WorkspaceId == request.WorkspaceId && page.DeletedAt == null && page.Status != PageStatus.Archived)
             .OrderBy(page => page.Title)
             .ToListAsync(ct);
 

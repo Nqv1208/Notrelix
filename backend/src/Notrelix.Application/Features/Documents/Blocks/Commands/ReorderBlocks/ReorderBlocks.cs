@@ -30,7 +30,7 @@ public class ReorderBlocksCommandHandler : IRequestHandler<ReorderBlocksCommand,
     {
         var blockIds = request.Items.Select(item => item.BlockId).ToHashSet();
         var blocks = await _context.Blocks
-            .Where(block => block.PageId == request.PageId && blockIds.Contains(block.Id) && !block.IsDeleted)
+            .Where(block => block.PageId == request.PageId && blockIds.Contains(block.Id) && block.DeletedAt == null)
             .ToDictionaryAsync(block => block.Id, ct);
 
         var now = _dateTimeProvider.UtcNow;
@@ -47,7 +47,7 @@ public class ReorderBlocksCommandHandler : IRequestHandler<ReorderBlocksCommand,
             else
             {
                 var parentBlock = await _context.Blocks
-                    .FirstOrDefaultAsync(b => b.Id == item.NewParentBlockId.Value && b.PageId == request.PageId && !b.IsDeleted, ct);
+                    .FirstOrDefaultAsync(b => b.Id == item.NewParentBlockId.Value && b.PageId == request.PageId && b.DeletedAt == null, ct);
                 if (parentBlock is null)
                     return Result.Failure(new ApplicationError("docs.block.parent-not-found", $"Parent block '{item.NewParentBlockId}' was not found on page '{request.PageId}'.", ApplicationErrorType.NotFound));
 

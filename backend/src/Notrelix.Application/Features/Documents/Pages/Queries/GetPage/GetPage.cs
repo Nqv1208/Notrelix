@@ -19,7 +19,7 @@ public class GetPageQueryHandler : IRequestHandler<GetPageQuery, Result<PageDto>
     public async Task<Result<PageDto>> Handle(GetPageQuery request, CancellationToken ct)
     {
         var page = await _context.Pages.AsNoTracking()
-            .FirstOrDefaultAsync(page => page.Id == request.PageId && !page.IsDeleted, ct);
+            .FirstOrDefaultAsync(page => page.Id == request.PageId && page.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
         return Result<PageDto>.Success(DocumentDtoMapper.ToPageDto(page));

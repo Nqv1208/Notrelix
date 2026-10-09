@@ -23,7 +23,7 @@ public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Res
 
     public async Task<Result> Handle(DeleteBlockCommand request, CancellationToken ct)
     {
-        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && !block.IsDeleted, ct);
+        var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && block.DeletedAt == null, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
         block.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);

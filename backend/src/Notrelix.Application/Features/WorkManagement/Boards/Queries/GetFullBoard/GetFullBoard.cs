@@ -43,7 +43,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
         var listIds = lists.Select(list => list.Id).ToList();
         var cards = await _context.BoardItems
             .AsNoTracking()
-            .Where(card => listIds.Contains(card.GroupId) && !card.IsDeleted)
+            .Where(card => listIds.Contains(card.GroupId) && card.DeletedAt == null)
             .OrderBy(card => card.Position)
             .ToListAsync(cancellationToken);
 
@@ -158,7 +158,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.DefaultValue == null ? null : column.DefaultValue.Data.Value,
                 column.Position.Value,
                 column.IsSystem,
-                column.IsDeleted
+                column.DeletedAt != null
             ))
             .ToListAsync(cancellationToken);
 

@@ -19,11 +19,11 @@ public class GetPageBlocksQueryHandler : IRequestHandler<GetPageBlocksQuery, Res
     public async Task<Result<List<BlockDto>>> Handle(GetPageBlocksQuery request, CancellationToken ct)
     {
         var pageExists = await _context.Pages.AsNoTracking()
-            .AnyAsync(page => page.Id == request.PageId && !page.IsDeleted, ct);
+            .AnyAsync(page => page.Id == request.PageId && page.DeletedAt == null, ct);
         if (!pageExists) throw new NotFoundException(nameof(Page), request.PageId);
 
         var blockEntities = await _context.Blocks.AsNoTracking()
-            .Where(block => block.PageId == request.PageId && !block.IsDeleted)
+            .Where(block => block.PageId == request.PageId && block.DeletedAt == null)
             .OrderBy(block => block.Position)
             .ToListAsync(ct);
 

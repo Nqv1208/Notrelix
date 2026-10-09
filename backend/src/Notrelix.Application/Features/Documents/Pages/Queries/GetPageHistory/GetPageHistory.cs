@@ -18,7 +18,7 @@ public class GetPageHistoryQueryHandler : IRequestHandler<GetPageHistoryQuery, R
     public async Task<Result<List<PageHistoryDto>>> Handle(GetPageHistoryQuery request, CancellationToken ct)
     {
         var pageExists = await _context.Pages.AsNoTracking()
-            .AnyAsync(page => page.Id == request.PageId && !page.IsDeleted, ct);
+            .AnyAsync(page => page.Id == request.PageId && page.DeletedAt == null, ct);
         if (pageExists == false) throw new NotFoundException(nameof(Page), request.PageId);
 
         return Result<List<PageHistoryDto>>.Success(new List<PageHistoryDto>());
