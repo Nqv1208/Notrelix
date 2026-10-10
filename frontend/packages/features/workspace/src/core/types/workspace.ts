@@ -15,8 +15,8 @@ export type WorkspaceViewVisibility = "private" | "workspace" | "public";
 export type WorkspaceRole = "owner" | "admin" | "member" | "guest";
 
 /**
- * Membership status as the producer reports it. `ListMembers` does not report
- * it yet (open item, WX-MEM-001), so the adapter leaves it `undefined`.
+ * Membership status as `ListMembers` reports it (`Active` or `Suspended`; removed
+ * members are not listed). `undefined` only when a row carries no known status.
  */
 export type WorkspaceMembershipStatus = "active" | "suspended";
 
@@ -44,9 +44,10 @@ export interface WorkspaceMember {
 }
 
 /**
- * Invitation lifecycle as far as the producer reports it. The list DTO only
- * carries `isAccepted` and `expiresAt`; revoked invitations are not
- * distinguishable yet (open item, WX-MEM-001).
+ * Invitation lifecycle as shown. `ListWorkspaceInvitations` reports the status
+ * (`Pending`, `Accepted`, `Revoked`, `Expired`, `Declined`); revoked and declined
+ * invitations are dropped by the adapter, and a pending one past `expiresAt` is
+ * shown as expired.
  */
 export type WorkspaceInvitationState = "pending" | "accepted" | "expired";
 
@@ -68,9 +69,9 @@ export interface WorkspaceInvitation {
 export interface WorkspaceSummary {
   id: string;
   /**
-   * Optimistic-concurrency version of the workspace, when the producer reports
-   * it. `GetWorkspace` does not yet (open item, WX-SET-001); profile, settings
-   * and archive writes require it.
+   * Optimistic-concurrency version of the workspace, as `GetWorkspace` and the
+   * workspace lists report it; profile, settings and archive writes send it
+   * back as `expectedVersion`.
    */
   version?: number;
   slug: string;

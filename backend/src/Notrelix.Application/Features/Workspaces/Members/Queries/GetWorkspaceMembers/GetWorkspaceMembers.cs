@@ -33,7 +33,7 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
 
         var members = await _context.WorkspaceMembers
             .AsNoTracking()
-            .Where(m => m.WorkspaceId == request.WorkspaceId)
+            .Where(m => m.WorkspaceId == request.WorkspaceId && m.Status != WorkspaceMemberStatus.Removed)
             .ToListAsync(ct);
 
         var userIds = members.Select(m => m.UserId).Distinct().ToList();
@@ -48,7 +48,8 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
                 actor?.Name ?? "Unknown",
                 actor?.AvatarUrl,
                 m.Role.ToString(),
-                m.CreatedAt.DateTime
+                m.CreatedAt.DateTime,
+                m.Status.ToString()
             );
         }).ToList();
 

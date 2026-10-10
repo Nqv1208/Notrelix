@@ -28,10 +28,9 @@ export interface WorkspaceInvitationsEndpoints {
 
 /**
  * `ListWorkspaceInvitations` returns `WorkspaceInvitationDto[]` (`id`,
- * `email`, `role` as the enum name, `expiresAt`, `isAccepted`, `createdAt`);
- * the generated contract types it as `System.Void`, so rows are parsed
- * defensively. A `status` field is read when the producer adds one (revoked
- * invitations are otherwise indistinguishable from pending ones).
+ * `email`, `role` and `status` as enum names, `expiresAt`, `isAccepted`,
+ * `createdAt`). Revoked and declined invitations are dropped; accepted and
+ * expired ones are kept with their state.
  */
 interface InvitationWire {
   readonly id?: unknown;

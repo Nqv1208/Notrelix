@@ -59,7 +59,7 @@ export function isWorkspaceAdmin(role: WorkspaceRole | null): boolean {
   return role === "owner" || role === "admin";
 }
 
-/** Owners the client can see. Suspended owners are not distinguishable yet. */
+/** Owners who still hold the role actively (suspended owners do not count). */
 export function countOwners(members: readonly WorkspaceMember[]): number {
   return members.filter(
     (member) => member.role === "owner" && member.membership !== "suspended",
@@ -113,7 +113,6 @@ export function memberCapabilities(
   if (isOwner && viewer.role !== "owner") return blocked("owner-by-transfer");
 
   const suspended = member.membership === "suspended";
-  const known = member.membership !== undefined;
   return {
     // The producer rejects role changes of suspended members.
     assignableRoles: suspended
@@ -124,10 +123,10 @@ export function memberCapabilities(
     roleBlockedBy: suspended ? "suspended" : null,
     canRemove: true,
     removeBlockedBy: null,
-    // When the producer does not report the status, both are offered; each
-    // is a no-op on the producer when already in that state.
-    canSuspend: !suspended,
-    canActivate: suspended || !known,
+    // Driven by the producer's status: an active member can be suspended, a
+    // suspended one reactivated. Without a reported status neither is offered.
+    canSuspend: member.membership === "active",
+    canActivate: suspended,
     suspendBlockedBy: null,
   };
 }
@@ -155,6 +154,28 @@ export function pendingInvitations(
   return invitations
     .filter((invitation) => invitationState(invitation, now) === "pending")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/**
+ * The invitation already waiting for an answer at `email`, if any. Mirrors the
+ * producer's rule (one pending, unexpired invitation per address, compared
+ * case-insensitively) so the invite form can say so before sending, in the
+ * member's language. The producer still decides.
+ */
+export function pendingInvitationFor(
+  invitations: readonly WorkspaceInvitation[],
+  email: string,
+  now: number,
+): WorkspaceInvitation | null {
+  const address = email.trim().toLowerCase();
+  if (!address) return null;
+  return (
+    invitations.find(
+      (invitation) =>
+        invitation.email.trim().toLowerCase() === address &&
+        invitationState(invitation, now) === "pending",
+    ) ?? null
+  );
 }
 
 /** A permissive e-mail shape check for the invite form (the producer decides). */

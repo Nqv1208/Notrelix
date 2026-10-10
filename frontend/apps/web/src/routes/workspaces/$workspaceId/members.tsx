@@ -3,6 +3,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   isWorkspaceAdmin,
+  pendingInvitationFor,
   type WorkspaceFailure,
   type WorkspaceInvitation,
   type WorkspaceMember,
@@ -143,6 +144,19 @@ export function MembersPage() {
   const onInvite = useCallback(
     (input: { email: string; role: Exclude<WorkspaceRole, "owner"> }) => {
       setInviteError(null);
+      // One pending invitation per address (the producer's rule): say so in
+      // the member's language before sending. The producer still decides.
+      const waiting = pendingInvitationFor(
+        invitations.data ?? [],
+        input.email,
+        now,
+      );
+      if (waiting) {
+        setInviteError(
+          formatCopy(copy.invitations.alreadyPending, { email: waiting.email }),
+        );
+        return;
+      }
       createInvitation.mutate(input, {
         onSuccess: () => {
           setInviteResetKey((key) => key + 1);
@@ -169,7 +183,7 @@ export function MembersPage() {
         },
       });
     },
-    [copy, createInvitation, hint],
+    [copy, createInvitation, hint, invitations.data, now],
   );
 
   const onRevoke = useCallback(

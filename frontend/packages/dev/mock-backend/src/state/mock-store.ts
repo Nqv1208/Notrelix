@@ -77,6 +77,13 @@ export interface MockWorkspaceSettingsRecord {
 export type MockMemberChange =
   "ok" | "not-found" | "last-owner" | "owner-direct" | "inactive";
 
+/**
+ * Outcome of a versioned workspace write (`expectedVersion`, WX-SET-001):
+ * `stale` mirrors the producer's 412 when the version the member last read is
+ * not the current one; nothing changes in that case.
+ */
+export type MockVersionedWrite = "ok" | "not-found" | "stale";
+
 // ─── MockStore ────────────────────────────────────────────────────────────────
 
 export class MockStore {
@@ -123,6 +130,12 @@ export class MockStore {
     string,
     MockWorkspaceSettingsRecord
   >();
+  /** Workspace aggregate version (`WorkspaceDto.version`); absent = 1. */
+  private workspaceVersionById = new Map<string, number>();
+  /** Workspace description (`WorkspaceDto.description`). */
+  private workspaceDescriptionById = new Map<string, string>();
+  /** Archived workspaces drop out of the list and detail reads. */
+  private archivedWorkspaceIds = new Set<string>();
   /** Items completed through `WorkManagement.BoardItems.Complete`. */
   private completedCardIds = new Set<string>();
 
@@ -652,6 +665,12 @@ export class MockStore {
     this.loggedOutUserIds.clear();
     this.navigationByMember.clear();
     this.navigationTick = 0;
+    this.suspendedMembershipIds.clear();
+    this.invitationsById.clear();
+    this.settingsByWorkspaceId.clear();
+    this.workspaceVersionById.clear();
+    this.workspaceDescriptionById.clear();
+    this.archivedWorkspaceIds.clear();
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -1838,6 +1857,70 @@ export class MockStore {
       this.settingsByWorkspaceId.set(workspaceId, settings);
     }
     return settings;
+  }
+
+  // ─── Versioned workspace writes (WX-SET-001) ─────────────────────────────
+
+  getWorkspaceVersion(workspaceId: string): number {
+    return this.workspaceVersionById.get(workspaceId) ?? 1;
+  }
+
+  getWorkspaceDescription(workspaceId: string): string | null {
+    return this.workspaceDescriptionById.get(workspaceId) ?? null;
+  }
+
+  isWorkspaceArchived(workspaceId: string): boolean {
+    return this.archivedWorkspaceIds.has(workspaceId);
+  }
+
+  /** Runs `apply` only when `expectedVersion` is current, then advances it. */
+  private versionedWorkspaceWrite(
+    workspaceId: string,
+    expectedVersion: unknown,
+    apply: () => void,
+  ): MockVersionedWrite {
+    if (!this.getWorkspace(workspaceId) || this.isWorkspaceArchived(workspaceId))
+      return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    apply();
+    this.workspaceVersionById.set(
+      workspaceId,
+      this.getWorkspaceVersion(workspaceId) + 1,
+    );
+    return "ok";
+  }
+
+  updateWorkspaceProfile(
+    workspaceId: string,
+    expectedVersion: unknown,
+    profile: { name?: string | null; description?: string | null },
+  ): MockVersionedWrite {
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      const workspace = this.getWorkspace(workspaceId)!;
+      if (typeof profile.name === "string") workspace.name = profile.name;
+      if (typeof profile.description === "string")
+        this.workspaceDescriptionById.set(workspaceId, profile.description);
+    });
+  }
+
+  updateWorkspaceSettings(
+    workspaceId: string,
+    expectedVersion: unknown,
+    settings: MockWorkspaceSettingsRecord,
+  ): MockVersionedWrite {
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      this.settingsByWorkspaceId.set(workspaceId, { ...settings });
+    });
+  }
+
+  archiveWorkspace(
+    workspaceId: string,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      this.archivedWorkspaceIds.add(workspaceId);
+    });
   }
 
   // ─── My work (WX-BE-005) ─────────────────────────────────────────────────

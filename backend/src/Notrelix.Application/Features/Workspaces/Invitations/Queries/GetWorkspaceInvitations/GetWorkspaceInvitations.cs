@@ -41,7 +41,8 @@ public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceI
             invitation.Role.ToString(),
             invitation.ExpiresAt.DateTime,
             invitation.Status == WorkspaceInvitationStatus.Accepted,
-            invitation.CreatedAt.DateTime
+            invitation.CreatedAt.DateTime,
+            invitation.Status.ToString()
         )).ToList();
 
         return Result<List<WorkspaceInvitationDto>>.Success(result);

@@ -10,7 +10,8 @@ public static class GetUserPendingInvitationsEndpoint
         group.MapAuthenticatedGet("/pending", HandleAsync)
             .WithName("Workspaces.Invitations.GetUserPendingInvitations")
             .WithTags("Workspaces.Invitations")
-            .WithSummary("Get pending invitations for the current logged-in user");
+            .WithSummary("Get pending invitations for the current logged-in user")
+            .Produces<List<UserPendingInvitationDto>>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

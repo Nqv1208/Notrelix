@@ -9,10 +9,10 @@ import type {
 import type { WorkspaceApiClient } from "./workspace.service";
 
 /**
- * `Workspaces.Members.ListMembers` returns `WorkspaceMemberDto[]`
- * (`userId`, `name`, `avatar`, `role` as the enum name, `joinedAt`); the
- * generated contract types the response as `System.Void`, so the adapter
- * parses it defensively and drops rows without an id or a known role.
+ * `Workspaces.Members.ListMembers` returns `WorkspaceMemberDto[]` (`userId`,
+ * `name`, `avatar`, `role` and `status` as enum names, `joinedAt`). Removed
+ * members are not listed by the producer; the adapter still drops rows without
+ * an id or a known role, and any row marked removed.
  */
 interface MemberWire {
   readonly userId?: unknown;

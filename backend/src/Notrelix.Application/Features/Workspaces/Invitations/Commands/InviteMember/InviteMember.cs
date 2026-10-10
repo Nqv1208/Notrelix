@@ -62,7 +62,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
                            && i.ExpiresAt > now, ct);
 
         if (hasActiveInvitation)
-            return Result<Guid>.Failure("Đã có một lời mời đang chờ xử lý dành cho email này.");
+            return Result<Guid>.Failure("A pending invitation already exists for this email address.");
 
         var issuedToken = _oneTimeTokenService.Generate(TokenPurpose.WorkspaceInvitation);
         var invitationTokenHash = InvitationTokenHash.Create(issuedToken.TokenHash);

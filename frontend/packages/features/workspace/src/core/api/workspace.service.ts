@@ -1,4 +1,7 @@
-import type { OperationRequestBody } from "@notrelix/contracts";
+import type {
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import { parseWorkspaceRole } from "../model/members";
 import type {
   CreateWorkspaceInput,
@@ -38,9 +41,21 @@ type SettingsBody =
 type ArchiveBody =
   OperationRequestBody<"Workspaces.Workspaces.ArchiveWorkspace">;
 
-/** Reads the workspace record; `version` is kept only when it is a number. */
+/** `Workspaces.Workspaces.GetWorkspace` (and each row of the workspace lists). */
+type WorkspaceDto = OperationResponse<"Workspaces.Workspaces.GetWorkspace", 200>;
+type WorkspaceSettingsDto = OperationResponse<
+  "Workspaces.Settings.GetWorkspaceSettings",
+  200
+>;
+
+/**
+ * Reads the workspace record. `version` is the aggregate version the profile,
+ * settings and archive writes send back; it is kept only when it is a
+ * positive number, so a malformed row can never produce a write.
+ */
 export function parseWorkspaceSummary(payload: unknown): WorkspaceSummary {
-  const summary = payload as WorkspaceSummary & { version?: unknown };
+  const summary = payload as Omit<WorkspaceSummary, "version"> &
+    Pick<WorkspaceDto, "version">;
   const { version, ...rest } = summary;
   return typeof version === "number" && version > 0
     ? { ...rest, version }
@@ -48,12 +63,13 @@ export function parseWorkspaceSummary(payload: unknown): WorkspaceSummary {
 }
 
 /**
- * `GetWorkspaceSettings` returns `WorkspaceSettingsDto` (typed `System.Void`
- * in the generated contract); unknown values fall back to the producer's
- * defaults only for display, never for a write.
+ * `GetWorkspaceSettings` returns `WorkspaceSettingsDto`; unknown values fall
+ * back to the producer's defaults only for display, never for a write.
  */
 export function parseWorkspaceSettings(payload: unknown): WorkspaceSettings {
-  const raw = (payload ?? {}) as Record<string, unknown>;
+  const raw = (payload ?? {}) as Partial<
+    Record<keyof WorkspaceSettingsDto, unknown>
+  >;
   const role = parseWorkspaceRole(raw.defaultMemberRole);
   return {
     defaultMemberRole: role && role !== "owner" ? role : "member",
@@ -75,7 +91,8 @@ export function createWorkspaceService(
 ) {
   return {
     async getList(): Promise<WorkspaceSummary[]> {
-      return api.get<WorkspaceSummary[]>(endpoints.workspaces.list);
+      const rows = await api.get<unknown>(endpoints.workspaces.list);
+      return Array.isArray(rows) ? rows.map(parseWorkspaceSummary) : [];
     },
 
     async getDetail(id: string): Promise<WorkspaceSummary> {

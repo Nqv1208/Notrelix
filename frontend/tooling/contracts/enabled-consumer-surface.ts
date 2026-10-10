@@ -486,6 +486,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.UpdateWorkspaceProfile",
+    operationId: "Workspaces.Workspaces.UpdateWorkspaceProfile",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Settings.UpdateWorkspaceSettings",
+    operationId: "Workspaces.Settings.UpdateWorkspaceSettings",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.ArchiveWorkspace",
+    operationId: "Workspaces.Workspaces.ArchiveWorkspace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useMyWorkItems",
     consumerFile:
       "frontend/apps/web/src/shell/workspace/work-management-bridge.ts",

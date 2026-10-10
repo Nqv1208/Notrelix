@@ -16,6 +16,12 @@ import {
   createCommentApi,
 } from "../../../../product/work-management/state/src/index";
 import { createAccountService } from "../../../../features/account/src/core/api/account.service";
+import {
+  createWorkspaceService,
+  createWorkspaceSettingsService,
+} from "../../../../features/workspace/src/core/api/workspace.service";
+import { createMembersService } from "../../../../features/workspace/src/core/api/members.service";
+import { createWorkspaceInvitationsService } from "../../../../features/workspace/src/core/api/invitations.service";
 
 describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
   it("T-MFB-001: real createNotrelixClient loads endpoints via mockFetch", async () => {
@@ -316,6 +322,108 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(security.twoFactorEnabled).toBe(false);
 
     // Relational Invariants preserved
+    store.assertInvariants();
+  });
+
+  it("T-MFB-028: workspace profile, defaults and archive are versioned (save, 412, archive) and member and invitation rows carry status", async () => {
+    const store = new MockStore();
+    const client = createNotrelixClient({
+      baseUrl: "http://localhost:8000/api/v1",
+      fetchImpl: createMockFetch(store),
+    });
+    const workspaceId = mockIds.workspaces.primary;
+    expect(["owner", "admin"]).toContain(
+      store.getCurrentMemberRole(workspaceId),
+    );
+    const workspaces = createWorkspaceService(client.api, endpoints);
+    const settings = createWorkspaceSettingsService(client.api, endpoints);
+
+    // The detail and the list report the version the writes require.
+    const initial = await workspaces.getDetail(workspaceId);
+    expect(initial.version).toBe(1);
+    expect(
+      (await workspaces.getList()).find((w) => w.id === workspaceId)?.version,
+    ).toBe(1);
+
+    // Save: the profile write is accepted and advances the version.
+    await settings.updateProfile(workspaceId, {
+      name: "Renamed workspace",
+      description: "What we work on",
+      expectedVersion: 1,
+    });
+    const renamed = await workspaces.getDetail(workspaceId);
+    expect(renamed.name).toBe("Renamed workspace");
+    expect(renamed.description).toBe("What we work on");
+    expect(renamed.version).toBe(2);
+
+    // Conflict: a stale version is a 412 and changes nothing.
+    await expect(
+      settings.updateProfile(workspaceId, {
+        name: "Lost update",
+        description: "",
+        expectedVersion: 1,
+      }),
+    ).rejects.toMatchObject({ status: 412 });
+    const afterConflict = await workspaces.getDetail(workspaceId);
+    expect(afterConflict.name).toBe("Renamed workspace");
+    expect(afterConflict.version).toBe(2);
+
+    // Defaults save with the current version.
+    const defaults = await settings.getSettings(workspaceId);
+    await settings.updateSettings(
+      workspaceId,
+      { ...defaults, invitationExpiryDays: 14 },
+      2,
+    );
+    expect((await settings.getSettings(workspaceId)).invitationExpiryDays).toBe(
+      14,
+    );
+    expect((await workspaces.getDetail(workspaceId)).version).toBe(3);
+
+    // Member rows carry status; a removed member is not listed.
+    const members = createMembersService(client.api);
+    const listed = await members.getList(workspaceId);
+    const viewerId = store.getCurrentUser().id;
+    const others = listed.filter((m) => m.userId !== viewerId);
+    expect(others.length).toBeGreaterThanOrEqual(2);
+    await members.suspend(workspaceId, others[0]!.userId);
+    await members.removeMember(workspaceId, others[1]!.userId);
+    const relisted = await members.getList(workspaceId);
+    expect(relisted.every((m) => m.membership !== undefined)).toBe(true);
+    expect(
+      relisted.find((m) => m.userId === others[0]!.userId)?.membership,
+    ).toBe("suspended");
+    expect(relisted.some((m) => m.userId === others[1]!.userId)).toBe(false);
+
+    // Invitation rows carry status; a revoked one is no longer listed as pending.
+    const invitations = createWorkspaceInvitationsService(client.api, endpoints);
+    const kept = await invitations.create(workspaceId, {
+      email: "kept@example.com",
+      role: "member",
+    });
+    const revoked = await invitations.create(workspaceId, {
+      email: "revoked@example.com",
+      role: "guest",
+    });
+    await invitations.revoke(workspaceId, revoked!);
+    const raw = await client.api.get<{ id: string; status: string }[]>(
+      endpoints.workspaces.invitations(workspaceId),
+    );
+    expect(raw.find((i) => i.id === kept)?.status).toBe("Pending");
+    expect(raw.find((i) => i.id === revoked)?.status).toBe("Revoked");
+    expect(
+      (await invitations.getList(workspaceId)).map((i) => i.id),
+    ).not.toContain(revoked);
+
+    // Archive: a stale version is a 412; the current one archives.
+    await expect(settings.archive(workspaceId, 2)).rejects.toMatchObject({
+      status: 412,
+    });
+    await settings.archive(workspaceId, 3);
+    await expect(workspaces.getDetail(workspaceId)).rejects.toMatchObject({
+      status: 404,
+    });
+
     store.assertInvariants();
   });
 

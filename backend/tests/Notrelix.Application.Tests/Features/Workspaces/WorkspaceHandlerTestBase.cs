@@ -182,7 +182,7 @@ internal class TestAsyncQueryProvider<T> : IAsyncQueryProvider
     }
 }
 
-internal class TestAsyncEnumerable<T> : IAsyncEnumerable<T>, IQueryable<T>
+internal class TestAsyncEnumerable<T> : IAsyncEnumerable<T>, IOrderedQueryable<T>
 {
     private readonly IQueryable<T> _queryable;
 

@@ -246,7 +246,7 @@ describe("WorkspaceMembersSurface invitations", () => {
     const email = screen.getByLabelText(copy.invitations.emailLabel);
     expect(email.getAttribute("aria-invalid")).toBe("true");
     expect(
-      screen.getByText("Đã có một lời mời đang chờ xử lý dành cho email này."),
+      screen.getByText("A pending invitation already exists for this email address."),
     ).toBeTruthy();
     expect(screen.getByText(copy.invitations.empty)).toBeTruthy();
   });

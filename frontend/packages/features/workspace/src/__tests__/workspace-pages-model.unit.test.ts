@@ -12,6 +12,7 @@ import {
   parseMembers,
 } from "../core/api/members.service";
 import {
+  createWorkspaceService,
   createWorkspaceSettingsService,
   parseWorkspaceSettings,
   parseWorkspaceSummary,
@@ -22,6 +23,7 @@ import {
   invitationState,
   memberCapabilities,
   parseWorkspaceRole,
+  pendingInvitationFor,
   pendingInvitations,
 } from "../core/model/members";
 import {
@@ -146,9 +148,10 @@ describe("Member capabilities and the last-owner invariant (WSP-008)", () => {
     ).toBe("self");
   });
 
-  it("offers both suspend and reactivate when the producer does not report the status", () => {
+  it("offers suspend or reactivate from the producer's status, and neither when it is unknown", () => {
     const unknown = memberCapabilities(member("u-m", "member"), owner, 1);
-    expect(unknown.canSuspend && unknown.canActivate).toBe(true);
+    expect(unknown.canSuspend).toBe(false);
+    expect(unknown.canActivate).toBe(false);
     const suspended = memberCapabilities(
       member("u-m", "member", { membership: "suspended" }),
       owner,
@@ -163,6 +166,7 @@ describe("Member capabilities and the last-owner invariant (WSP-008)", () => {
       1,
     );
     expect(active.canActivate).toBe(false);
+    expect(active.canSuspend).toBe(true);
   });
 
   it("parses producer role names and enum values", () => {
@@ -229,6 +233,80 @@ describe("Invitations", () => {
     expect(
       pendingInvitations(invitations, NOW).map((entry) => entry.id),
     ).toEqual(["4", "1"]);
+  });
+
+  it("reads the producer status: revoked and declined drop, expired stays expired", () => {
+    const invitations = parseInvitations([
+      {
+        id: "p",
+        email: "p@x.io",
+        role: "Member",
+        expiresAt: iso(DAY),
+        isAccepted: false,
+        createdAt: iso(-DAY),
+        status: "Pending",
+      },
+      {
+        id: "x",
+        email: "x@x.io",
+        role: "Member",
+        expiresAt: iso(DAY),
+        isAccepted: false,
+        createdAt: iso(-DAY),
+        status: "Expired",
+      },
+      {
+        id: "d",
+        email: "d@x.io",
+        role: "Member",
+        expiresAt: iso(DAY),
+        isAccepted: false,
+        createdAt: iso(-DAY),
+        status: "Declined",
+      },
+    ]);
+    expect(invitations.map((invitation) => invitation.id)).toEqual(["p", "x"]);
+    expect(invitationState(invitations[1]!, NOW)).toBe("expired");
+  });
+
+  it("finds the invitation already waiting at an address, ignoring case and spaces", () => {
+    const invitations = parseInvitations([
+      {
+        id: "pending",
+        email: "an@x.io",
+        role: "Member",
+        expiresAt: iso(DAY),
+        isAccepted: false,
+        createdAt: iso(-DAY),
+        status: "Pending",
+      },
+      {
+        id: "lapsed",
+        email: "old@x.io",
+        role: "Member",
+        expiresAt: iso(-DAY),
+        isAccepted: false,
+        createdAt: iso(-8 * DAY),
+        status: "Pending",
+      },
+      {
+        id: "revoked",
+        email: "gone@x.io",
+        role: "Member",
+        expiresAt: iso(DAY),
+        isAccepted: false,
+        createdAt: iso(-DAY),
+        status: "Revoked",
+      },
+    ]);
+    expect(pendingInvitationFor(invitations, " AN@x.io ", NOW)?.id).toBe(
+      "pending",
+    );
+    // A lapsed or revoked invitation does not block a new one (the producer
+    // only rejects a pending, unexpired invitation to the same address).
+    expect(pendingInvitationFor(invitations, "old@x.io", NOW)).toBeNull();
+    expect(pendingInvitationFor(invitations, "gone@x.io", NOW)).toBeNull();
+    expect(pendingInvitationFor(invitations, "  ", NOW)).toBeNull();
   });
 
   it("invites on the members route with the role name and revokes by id", async () => {
@@ -392,6 +470,26 @@ describe("Producer adapters", () => {
     expect(
       parseWorkspaceSettings({ defaultMemberRole: "Owner" }).defaultMemberRole,
     ).toBe("member");
+  });
+
+  it("reads the version on every row of the workspace list", async () => {
+    const api = {
+      get: vi.fn().mockResolvedValue([
+        { id: "a", name: "A", version: 3 },
+        { id: "b", name: "B" },
+      ]),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+    const service = createWorkspaceService(api, {
+      workspaces: { list: "/workspaces", detail: (id) => `/workspaces/${id}` },
+    });
+    const list = await service.getList();
+    expect(list.map((workspace) => workspace.version)).toEqual([3, undefined]);
+    api.get.mockResolvedValueOnce(null);
+    await expect(service.getList()).resolves.toEqual([]);
   });
 
   it("keeps the workspace version only when the producer reports a positive number", () => {

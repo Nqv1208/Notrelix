@@ -366,7 +366,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // that the In-Memory test provider does not support.
             MockWorkspaceHandler<GetWorkspaceQuery, Result<WorkspaceDto>>(services,
                 Result<WorkspaceDto>.Success(new WorkspaceDto(
-                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null)));
+                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null, 1)));
             MockWorkspaceHandler<UpdateWorkspaceProfileCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ArchiveWorkspaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RestoreWorkspaceCommand, Result>(services, Result.Success());
@@ -412,7 +412,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<List<WorkspaceDto>>.Success(new List<WorkspaceDto>()));
             MockWorkspaceHandler<ResolveSlugQuery, Result<WorkspaceDto>>(services,
                 Result<WorkspaceDto>.Success(new WorkspaceDto(
-                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null)));
+                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null, 1)));
             MockWorkspaceHandler<GetWorkspaceSettingsQuery, Result<WorkspaceSettingsDto>>(services,
                 Result<WorkspaceSettingsDto>.Success(new WorkspaceSettingsDto(false, false, false, "Member", 7)));
             MockWorkspaceHandler<UpdateWorkspaceSettingsCommand, Result>(services, Result.Success());

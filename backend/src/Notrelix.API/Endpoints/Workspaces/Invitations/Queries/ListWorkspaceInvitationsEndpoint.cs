@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
 
@@ -10,7 +11,8 @@ public static class ListWorkspaceInvitationsEndpoint
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Invitations.ListWorkspaceInvitations")
             .WithTags("Workspaces.Invitations")
-            .WithSummary("Get workspace invitations");
+            .WithSummary("Get workspace invitations")
+            .Produces<List<WorkspaceInvitationDto>>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

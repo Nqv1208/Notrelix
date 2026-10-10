@@ -4577,6 +4577,75 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            slug?: string | null;
+            description?: string | null;
+            isPersonal?: boolean;
+            plan?: string | null;
+            iconType?: string | null;
+            iconValue?: string | null;
+            coverUrl?: string | null;
+            isArchived?: boolean;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            settings?: string | null;
+            /** Format: int64 */
+            version?: number;
+        };
+        "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto": {
+            /** Format: uuid */
+            id?: string;
+            email?: string | null;
+            role?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+            isAccepted?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            status?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            avatar?: string | null;
+            role?: string | null;
+            /** Format: date-time */
+            joinedAt?: string;
+            status?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto": {
+            workspaceSlug?: string | null;
+            /** Format: uuid */
+            workspaceId?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.WorkspaceInvitationDto": {
+            /** Format: uuid */
+            id?: string;
+            workspaceName?: string | null;
+            inviterName?: string | null;
+            email?: string | null;
+            role?: string | null;
+            isExpired?: boolean;
+            isAccepted?: boolean;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations.UserPendingInvitationDto": {
+            /** Format: uuid */
+            id?: string;
+            workspaceName?: string | null;
+            workspaceSlug?: string | null;
+            inviterName?: string | null;
+            email?: string | null;
+            role?: string | null;
+            token?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+        };
         "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto": {
             kind?: string | null;
             /** Format: uuid */
@@ -4590,6 +4659,36 @@ export interface components {
             resourceId?: string;
             /** Format: date-time */
             lastOpenedAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings.WorkspaceSettingsDto": {
+            allowPublicSharing?: boolean;
+            enforceMfa?: boolean;
+            allowGuestInvites?: boolean;
+            defaultMemberRole?: string | null;
+            /** Format: int32 */
+            invitationExpiryDays?: number;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            visibility?: string | null;
+            spaceType?: string | null;
+            isArchived?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            isArchived?: boolean;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: date-time */
+            createdAt?: string;
         };
         /**
          * Format: int32
@@ -11560,7 +11659,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto"][];
                 };
             };
         };
@@ -11606,7 +11705,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -11653,7 +11752,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations.UserPendingInvitationDto"][];
                 };
             };
         };
@@ -11677,7 +11776,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation.AcceptInvitationResultDto"];
                 };
             };
         };
@@ -11723,7 +11822,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken.WorkspaceInvitationDto"];
                 };
             };
         };
@@ -11745,7 +11844,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"][];
                 };
             };
         };
@@ -11765,13 +11864,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -12046,7 +12145,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings.WorkspaceSettingsDto"];
                 };
             };
         };
@@ -12094,7 +12193,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"][];
                 };
             };
         };
@@ -12114,13 +12213,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -12143,7 +12242,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"];
                 };
             };
         };
@@ -12365,7 +12464,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"][];
                 };
             };
         };
@@ -12385,13 +12484,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -12414,7 +12513,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto"];
                 };
             };
         };
@@ -12659,7 +12758,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"][];
                 };
             };
         };
@@ -12681,7 +12780,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"];
                 };
             };
         };
@@ -12853,7 +12952,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"][];
                 };
             };
         };
@@ -12873,13 +12972,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": string;
                 };
             };
         };
@@ -12902,7 +13001,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto"];
+                };
             };
         };
     };

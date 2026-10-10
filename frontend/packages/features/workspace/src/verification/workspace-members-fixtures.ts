@@ -32,6 +32,8 @@ export function memberFixture(
   return {
     id: overrides.userId,
     joinedAt: at(-120 * DAY),
+    // `ListMembers` reports every listed member's status.
+    membership: "active",
     ...overrides,
   };
 }
@@ -185,7 +187,7 @@ export function membersInvitationsEmptyScenario(): MembersScenario {
     ...membersDefaultScenario(),
     tab: "invitations",
     invitations: { status: "ready", data: [] },
-    inviteError: "Đã có một lời mời đang chờ xử lý dành cho email này.",
+    inviteError: "A pending invitation already exists for this email address.",
   };
 }
 
