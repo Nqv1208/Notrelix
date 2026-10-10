@@ -25,9 +25,28 @@ public sealed class WorkPlacementResolver
 {
     private readonly IWorkOrderingScopeLock _scopeLock;
 
-    public WorkPlacementResolver(IWorkOrderingScopeLock scopeLock)
+    private readonly WorkOrderingMetrics? _metrics;
+
+    public WorkPlacementResolver(IWorkOrderingScopeLock scopeLock, WorkOrderingMetrics? metrics = null)
     {
         _scopeLock = scopeLock;
+        _metrics = metrics;
+    }
+
+    /// <summary>Records the resolved key length, or a stale-placement rejection.</summary>
+    private FractionalIndex Observe(WorkOrderingScope scope, Func<FractionalIndex> place)
+    {
+        try
+        {
+            var key = place();
+            _metrics?.KeyResolved(scope, key);
+            return key;
+        }
+        catch (ConflictException ex) when (ex.ErrorCode == WorkOrderingErrorCodes.StalePlacement)
+        {
+            _metrics?.StalePlacement(scope);
+            throw;
+        }
     }
 
     /// <param name="loadActiveSiblings">
@@ -58,7 +77,7 @@ public sealed class WorkPlacementResolver
             return current;
         }
 
-        return Place(ordered.Where(sibling => sibling.Id != movedEntityId).ToList(), intent);
+        return Observe(scope, () => Place(ordered.Where(sibling => sibling.Id != movedEntityId).ToList(), intent));
     }
 
     /// <summary>
@@ -78,11 +97,14 @@ public sealed class WorkPlacementResolver
             .ThenBy(sibling => sibling.Id)
             .ToList();
 
-        var index = IndexOf(ordered, anchorId);
-        if (index < 0) throw StalePlacement();
+        return Observe(scope, () =>
+        {
+            var index = IndexOf(ordered, anchorId);
+            if (index < 0) throw StalePlacement();
 
-        var successor = index + 1 < ordered.Count ? ordered[index + 1].Id : (Guid?)null;
-        return Place(ordered, new WorkPlacementIntent(anchorId, successor));
+            var successor = index + 1 < ordered.Count ? ordered[index + 1].Id : (Guid?)null;
+            return Place(ordered, new WorkPlacementIntent(anchorId, successor));
+        });
     }
 
     /// <summary>
@@ -108,7 +130,7 @@ public sealed class WorkPlacementResolver
         if (holder < 0) return null;
 
         var successor = holder + 1 < ordered.Count ? ordered[holder + 1].Id : (Guid?)null;
-        return Place(ordered, new WorkPlacementIntent(ordered[holder].Id, successor));
+        return Observe(scope, () => Place(ordered, new WorkPlacementIntent(ordered[holder].Id, successor)));
     }
 
     private static bool TryKeepCurrent(

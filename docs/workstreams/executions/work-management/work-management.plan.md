@@ -1306,7 +1306,10 @@ Versioned SQL policy deployment.
 None
 
 ### Exit
-- [ ] Security source READY_FOR_CERTIFICATION.
+- [x] Security source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION`. Flexible JSON is bounded in the Domain before shape validation (`FieldJsonBounds`, SPEC WM-V3-DEC-020): field settings and each field value at most 64 KiB serialized and 16 levels deep, rejected with `WorkManagement_FieldSettings_TooLarge` / `WorkManagement_FieldValue_TooLarge`; no Work handler or Infrastructure path logs a raw settings/value payload. List/read queries cannot cross workspaces: a member asking for another workspace's board schema, items or checklists in the same account is denied through the real pipeline before any read, and RLS covers every `work` table (WM-V3-DATA-003). Evidence: `FieldJsonBoundsTests` (5), `WorkQueryTenantIsolationIntegrationTests` (real pipeline on PostgreSQL), `WorkChildTableRlsIntegrationTests`, `RlsRuntimeEnforcementTests`.
 
 ## WM-V3-QUAL-002 — Performance and ordering-health closure
 
@@ -1334,6 +1337,11 @@ None
 
 ### Exit
 - [ ] Performance/observability source READY_FOR_CERTIFICATION.
+
+### Status
+Partially delivered; one decision is open. Done: `WorkOrderingMetrics` (meter `Notrelix.WorkManagement.Ordering`, label `ordering.scope` registered as code-bounded) records `work_ordering_key_length` for every resolved key, `work_ordering_stale_placement`, `work_ordering_conflict` (HTTP path, in `EfRequestDataSession`) and `work_ordering_rebalance_runs`; a normal drag rewrites exactly one key (siblings keep theirs); the authorization facts read is one bounded SQL statement per request (`AccessFactsQuery`). Evidence: `WorkOrderingMetricsTests` (3, real `MeterListener`), `WorkItemPlacementIntegrationTests.NormalDrag_RewritesOnlyTheMovedItemsKey`, `PipelineMetricLabelCardinalityTests`. Automation-path ordering conflicts surface as consumer redelivery and are not counted by this meter.
+
+UNRESOLVED (stop condition, not guessed): large Board reads are not bounded. `GetBoardItems` (`GET /boards/{id}/items`) and `GetFullBoard` (`GET /boards/{id}/full`, used by the web kanban and table to render the whole board) return every item. Bounding them needs a contract decision: cursor shape over (group, position, id) using the existing `CursorPage<T>`, default and maximum page size, and how the full-board surface pages or is replaced; a server-side cap without client paging would silently drop items. The exit stays open until that decision exists (SPEC WMREQ147).
 
 ## WM-V3-TEST-001 — Enforce semantic WMREQ coverage
 

@@ -116,6 +116,10 @@ The P3 item ordering scope is the active root items (`parent_item_id IS NULL`) o
 
 Fractional keys of soft-deleted rows can be reissued to active siblings, because placement only considers active rows. Restoring a soft-deleted root item keeps its previous key when that key is free in the Group; otherwise it is placed directly after the active item that now holds the key, resolved under the GroupItems lock and applied in the same restore version. Restore never fails with an ordering conflict. P3 has no restore command for Groups, Fields or Checklists; a future one follows the same rule.
 
+### WM-V3-DEC-020 — Flexible JSON bounds (V3.1, provisional)
+
+Board field settings and each field value are capped at 64 KiB of compact JSON and 16 levels of nesting (`FieldJsonBounds`), checked in the Domain before type-specific shape validation. Option lists live in `field_options`, not in settings, so the settings cap does not bound the number of options. The values are engineering defaults chosen to satisfy WMREQ146 without a product limit; changing them is a constant change plus a rule-code-preserving test update.
+
 ### WM-V3-DEC-017 — Backend-first producer cut-over (V3.1)
 
 The only enabled consumers of the P3 producer API are the first-party web app and the dev mock backend; the mobile app is a stub that calls no Work endpoint. Delivery is **backend-first** (approved 2026-10-10): each backend unit changes the producer, re-exports OpenAPI and regenerates the frontend client in the same change, without a compatibility window, while web adapters and the mock backend migrate later in the consolidated frontend unit WM-V3-FE-001 (Phase 11). Until then, first-party web calls to changed operations may fail; that window is accepted and is recorded per unit. The P3 certification cannot reach STABLE before FE-001 closes. If an external or mobile consumer is enabled before cut-over, this decision is void and expand/contract applies (NRX-008).

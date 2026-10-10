@@ -19,9 +19,12 @@ public sealed class WorkOrderingRebalancer
 {
     private readonly IWorkOrderingScopeLock _scopeLock;
 
-    public WorkOrderingRebalancer(IWorkOrderingScopeLock scopeLock)
+    private readonly WorkOrderingMetrics? _metrics;
+
+    public WorkOrderingRebalancer(IWorkOrderingScopeLock scopeLock, WorkOrderingMetrics? metrics = null)
     {
         _scopeLock = scopeLock;
+        _metrics = metrics;
     }
 
     /// <param name="loadActiveSiblings">Invoked only after the scope lock is held.</param>
@@ -48,6 +51,7 @@ public sealed class WorkOrderingRebalancer
         var positions = siblings.Select((sibling, index) => new RebalancedPosition(sibling.Id, keys[index])).ToList();
 
         await applyPositions(positions, cancellationToken);
+        _metrics?.Rebalanced(scope);
 
         return new WorkOrderingRebalanceResult(
             siblings.Count,

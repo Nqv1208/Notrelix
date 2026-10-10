@@ -29,6 +29,8 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Field_OptionUsedByDefault = "WorkManagement_Field_OptionUsedByDefault";
 
     // ── FieldSettings ─────────────────────────────────────────────────────
+    public const string WorkManagement_FieldSettings_TooLarge = "WorkManagement_FieldSettings_TooLarge";
+    public const string WorkManagement_FieldValue_TooLarge = "WorkManagement_FieldValue_TooLarge";
     public const string WorkManagement_FieldSettings_InvalidJsonFormat = "WorkManagement_FieldSettings_InvalidJsonFormat";
     public const string WorkManagement_FieldSettings_NumberMinMustBeNumber = "WorkManagement_FieldSettings_NumberMinMustBeNumber";
     public const string WorkManagement_FieldSettings_NumberMaxMustBeNumber = "WorkManagement_FieldSettings_NumberMaxMustBeNumber";

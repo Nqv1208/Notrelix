@@ -269,6 +269,29 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task NormalDrag_RewritesOnlyTheMovedItemsKey()
+    {
+        var a = await CreateAsync("A");
+        var b = await CreateAsync("B");
+        var c = await CreateAsync("C");
+        var before = await KeysAsync();
+
+        await MoveAsync(a, _todoId, previous: b, next: c);
+
+        var after = await KeysAsync();
+        after.Where(kv => kv.Key != a).Should().BeEquivalentTo(before.Where(kv => kv.Key != a),
+            "a normal drag is a single-entity mutation (WM-V3-QUAL-002); siblings keep their keys");
+        after[a].Should().NotBe(before[a]);
+        (await OrderInGroupAsync(_todoId)).Should().Equal(b, a, c);
+    }
+
+    private async Task<Dictionary<Guid, string>> KeysAsync()
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        return await context.BoardItems.Where(i => i.GroupId == _todoId).ToDictionaryAsync(i => i.Id, i => i.Position.Value);
+    }
+
+    [Fact]
     public async Task RestoreItem_WhoseKeyWasReissued_LandsRightAfterItsHolder_WithoutAConflict()
     {
         var a = await CreateAsync("A");

@@ -19,14 +19,18 @@ public sealed class EfRequestDataSession : IRequestDataSession
     private readonly ExpectedVersionTargetMap _expectedVersionTargets;
     private readonly PipelineMetrics _metrics;
 
+    private readonly Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? _orderingMetrics;
+
     public EfRequestDataSession(
         ApplicationDbContext dbContext,
         IRlsSessionContext rls,
         ILogger<EfRequestDataSession> logger,
         IOutboxWakeSignal? outboxWakeSignal = null,
         ExpectedVersionTargetMap? expectedVersionTargets = null,
-        PipelineMetrics? metrics = null)
+        PipelineMetrics? metrics = null,
+        Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics? orderingMetrics = null)
     {
+        _orderingMetrics = orderingMetrics;
         _dbContext = dbContext;
         _rls = rls;
         _logger = logger;
@@ -85,6 +89,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
                 catch (DbUpdateException exception) when (WorkOrderingConstraints.IsOrderingViolation(exception))
                 {
                     // A named ordering uniqueness guard caught a placement collision.
+                    _orderingMetrics?.Conflict();
                     // SaveChanges runs after the handler returns, so this is never
                     // retried here; the caller reloads and rebases (WM-V3-ORDER-003).
                     throw new ConflictException(

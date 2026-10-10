@@ -18,6 +18,8 @@ public class PipelineMetricLabelCardinalityTests : ArchitectureTestBase
         "decision.kind",
         "error.category",
         "stage",
+        // WM-V3-QUAL-002: one of the six WorkOrderingScopeKind names (kebab-case enum).
+        "ordering.scope",
     ];
 
     private static readonly Regex LabelKeyPattern =
