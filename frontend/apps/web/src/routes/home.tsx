@@ -1,160 +1,41 @@
 import { useMemo } from "react";
-import { Link } from "@tanstack/react-router";
-import { Activity, Clock3, FileText, Search, SquareKanban } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   createUseDocsFavorites,
   createUsePageList,
 } from "@notrelix/docs-state";
+import { useCurrentUser } from "@notrelix/features-auth";
 import {
+  createUseCreateWorkspace,
   createUseWorkspaceList,
-  WorkspaceDirectory,
 } from "@notrelix/features-workspace/web";
-import type { WorkspaceSummary } from "@notrelix/features-workspace/core";
 import {
-  useFeatureRuntimeDependencies,
   useAppRuntime,
+  useFeatureRuntimeDependencies,
 } from "@notrelix/runtime-web";
-import { useWorkspaceBoards } from "@notrelix/work-management-state";
 import { Button, Skeleton } from "@notrelix/ui-web";
+import { useWorkspaceBoards } from "@notrelix/work-management-state";
+import { HomeSurface } from "@/home/home-surface";
+import type { HomeResourceItem, HomeViewModel } from "@/home/home-model";
 import { AuthGuard } from "@/shell/guards/auth-guard";
 import { HomeShell } from "@/shell/home-shell";
 
-function HomeContent({
-  workspaceId,
-  workspaces,
-  pages,
-  boards,
-  pagesLoading,
-  boardsLoading,
-}: {
-  workspaceId: string;
-  workspaces: readonly WorkspaceSummary[];
-  pages: readonly { id: string; title: string }[];
-  boards: readonly { id: string; title: string; description?: string }[];
-  pagesLoading: boolean;
-  boardsLoading: boolean;
-}) {
+function slugifyWorkspaceName(name: string): string {
   return (
-    <div className="mx-auto max-w-[1240px] space-y-6">
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-[rgba(205,208,223,0.22)_0px_2px_24px]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-              <Clock3 className="size-3.5 text-primary" />
-              Work hub
-            </div>
-            <h1 className="text-3xl font-semibold tracking-[-0.015em] text-foreground">
-              Home
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Jump back into recent workspaces, docs, boards, and team updates.
-            </p>
-          </div>
-          <Button variant="outline" className="w-fit bg-card">
-            <Search className="size-4" />
-            Search all work
-          </Button>
-        </div>
-      </section>
-
-      <WorkspaceDirectory workspaces={workspaces} />
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <FileText className="size-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">
-              Recent docs
-            </h2>
-          </div>
-          {pagesLoading ? (
-            <div className="grid gap-3 md:grid-cols-3">
-              {[0, 1, 2].map((item) => (
-                <Skeleton key={item} className="h-28 rounded-xl" />
-              ))}
-            </div>
-          ) : pages.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No recent documents.
-            </p>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-3">
-              {pages.slice(0, 3).map((page) => (
-                <Link
-                  key={page.id}
-                  to="/workspaces/$workspaceId/docs/$docId"
-                  params={{ workspaceId, docId: page.id }}
-                  className="rounded-xl border border-border bg-muted p-4 transition hover:bg-card"
-                >
-                  <span className="mb-4 block text-2xl">📝</span>
-                  <h3 className="line-clamp-1 text-sm font-semibold text-foreground">
-                    {page.title}
-                  </h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Recently updated
-                  </p>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Activity className="size-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Activity</h2>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            No recent workspace activity.
-          </p>
-        </section>
-      </div>
-
-      <section className="rounded-2xl border border-border bg-card p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <SquareKanban className="size-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">
-            Recent boards
-          </h2>
-        </div>
-        {boardsLoading ? (
-          <div className="grid gap-3 md:grid-cols-3">
-            {[0, 1, 2].map((item) => (
-              <Skeleton key={item} className="h-24 rounded-xl" />
-            ))}
-          </div>
-        ) : boards.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No recent boards.</p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-3">
-            {boards.slice(0, 3).map((board) => (
-              <Link
-                key={board.id}
-                to="/workspaces/$workspaceId/boards/$boardId"
-                params={{ workspaceId, boardId: board.id }}
-                className="rounded-xl border border-border p-4 transition hover:bg-muted"
-              >
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-primary" />
-                  <h3 className="text-sm font-semibold text-foreground">
-                    {board.title}
-                  </h3>
-                </div>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {board.description || "Recently updated"}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "workspace"
   );
 }
 
 export function HomePage() {
+  const navigate = useNavigate();
+  const user = useCurrentUser();
   const { api: runtimeClient } = useAppRuntime();
   const { api, endpoints } = useFeatureRuntimeDependencies();
+
   const useWorkspaceList = useMemo(
     () =>
       createUseWorkspaceList({
@@ -163,13 +44,14 @@ export function HomePage() {
       }),
     [runtimeClient],
   );
-  const {
-    data: workspaces = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useWorkspaceList();
-  const primaryWorkspaceId = workspaces[0]?.id ?? "";
+  const useCreateWorkspace = useMemo(
+    () =>
+      createUseCreateWorkspace({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
+    [runtimeClient],
+  );
   const usePageList = useMemo(
     () => createUsePageList(api, endpoints),
     [api, endpoints],
@@ -178,34 +60,141 @@ export function HomePage() {
     () => createUseDocsFavorites(api, endpoints),
     [api, endpoints],
   );
-  const { data: pages = [], isLoading: pagesLoading } =
-    usePageList(primaryWorkspaceId);
-  const { data: favoriteDocs = [] } = useDocsFavorites(primaryWorkspaceId);
-  const { data: boards = [], isLoading: boardsLoading } =
-    useWorkspaceBoards(primaryWorkspaceId);
 
-  const shellData = {
-    workspaces,
-    favoriteDocs: favoriteDocs.map((page) => ({
+  const {
+    data: workspaces = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useWorkspaceList();
+  const primaryWorkspace = workspaces[0];
+  const primaryWorkspaceId = primaryWorkspace?.id ?? "";
+  const primaryWorkspaceName = primaryWorkspace?.name ?? "Workspace";
+  const { data: pages = [] } = usePageList(primaryWorkspaceId);
+  const { data: favoriteDocs = [] } = useDocsFavorites(primaryWorkspaceId);
+  const { data: boards = [] } = useWorkspaceBoards(primaryWorkspaceId);
+  const createWorkspaceMutation = useCreateWorkspace();
+
+  const viewModel = useMemo<HomeViewModel>(() => {
+    const pageItems: HomeResourceItem[] = pages.map((page) => ({
       id: page.id,
+      kind: "doc",
       title: page.title,
       workspaceId: primaryWorkspaceId,
-    })),
-    recentDocs: pages.map((page) => ({
-      id: page.id,
-      title: page.title,
-      workspaceId: primaryWorkspaceId,
-    })),
-    recentBoards: boards.map((board) => ({
+      workspaceName: primaryWorkspaceName,
+      subtitle: "Document",
+      updatedLabel: "Recently updated",
+    }));
+    const boardItems: HomeResourceItem[] = boards.map((board) => ({
       id: board.id,
+      kind: "board",
       title: board.title,
       workspaceId: primaryWorkspaceId,
-    })),
+      workspaceName: primaryWorkspaceName,
+      subtitle: board.description || "Board",
+      updatedLabel: "Recently updated",
+    }));
+
+    return {
+      userName: user?.name || "there",
+      workspaces,
+      favoriteDocs: favoriteDocs.map((page) => ({
+        id: page.id,
+        kind: "doc",
+        title: page.title,
+        workspaceId: primaryWorkspaceId,
+        workspaceName: primaryWorkspaceName,
+        subtitle: "Document",
+        updatedLabel: "Recently updated",
+      })),
+      continueItems: [...pageItems, ...boardItems],
+      tasks: {
+        status: "unavailable",
+        message:
+          "Tasks will appear here when the workspace task feed is available.",
+      },
+      activity: {
+        status: "unavailable",
+        message:
+          "Activity will appear here when the workspace activity feed is available.",
+      },
+    };
+  }, [
+    boards,
+    favoriteDocs,
+    pages,
+    primaryWorkspaceId,
+    primaryWorkspaceName,
+    user?.name,
+    workspaces,
+  ]);
+
+  const shellData = useMemo(
+    () => ({
+      workspaces: viewModel.workspaces,
+      favoriteDocs: viewModel.favoriteDocs.map((item) => ({
+        id: item.id,
+        title: item.title,
+        workspaceId: item.workspaceId,
+      })),
+      recentDocs: viewModel.continueItems
+        .filter((item) => item.kind === "doc")
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          workspaceId: item.workspaceId,
+        })),
+      recentBoards: viewModel.continueItems
+        .filter((item) => item.kind === "board")
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          workspaceId: item.workspaceId,
+        })),
+    }),
+    [viewModel],
+  );
+
+  const openResource = (resource: HomeResourceItem) => {
+    if (resource.kind === "board") {
+      navigate({
+        to: "/workspaces/$workspaceId/boards/$boardId",
+        params: { workspaceId: resource.workspaceId, boardId: resource.id },
+      });
+      return;
+    }
+
+    navigate({
+      to: "/workspaces/$workspaceId/docs/$docId",
+      params: { workspaceId: resource.workspaceId, docId: resource.id },
+    });
+  };
+
+  const openWorkspace = (workspaceId: string) => {
+    navigate({ to: "/workspaces/$workspaceId", params: { workspaceId } });
+  };
+
+  const createWorkspace = (name: string) => {
+    createWorkspaceMutation.mutate(
+      {
+        name,
+        slug: slugifyWorkspaceName(name),
+        isPersonal: false,
+      },
+      {
+        onSuccess: (workspace) => {
+          navigate({
+            to: "/workspaces/$workspaceId",
+            params: { workspaceId: workspace.id },
+          });
+        },
+      },
+    );
   };
 
   return (
     <AuthGuard>
-      <HomeShell data={shellData}>
+      <HomeShell data={shellData} onCreateWorkspace={createWorkspace}>
         {isLoading ? (
           <div className="mx-auto max-w-[1240px] space-y-6">
             <Skeleton className="h-40 rounded-2xl" />
@@ -226,13 +215,10 @@ export function HomePage() {
             </Button>
           </div>
         ) : (
-          <HomeContent
-            workspaceId={primaryWorkspaceId}
-            workspaces={workspaces}
-            pages={pages}
-            boards={boards}
-            pagesLoading={pagesLoading}
-            boardsLoading={boardsLoading}
+          <HomeSurface
+            data={viewModel}
+            onOpenResource={openResource}
+            onOpenWorkspace={openWorkspace}
           />
         )}
       </HomeShell>

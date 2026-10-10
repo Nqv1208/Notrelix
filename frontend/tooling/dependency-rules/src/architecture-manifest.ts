@@ -501,6 +501,7 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
       "@notrelix/features-collaboration",
       "@notrelix/dev-mock-backend",
     ],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/app-marketing",

@@ -370,6 +370,14 @@
         {
           "id": "render",
           "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "select",
+          "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "reorder",
+          "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
         }
       ]
     },

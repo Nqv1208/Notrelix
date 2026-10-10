@@ -28,33 +28,37 @@ test("loads auth and workspace routes without backend network", async ({
   }
 
   await expect(page).toHaveURL(/\/home$/);
-  await expect(page.getByText("Notrelix Sandbox")).toHaveCount(0);
-  await expect(page.getByText("work management")).toBeVisible();
+  const primaryNavigation = page.getByRole("navigation", {
+    name: "Primary navigation",
+  });
+  await expect(primaryNavigation).toBeVisible();
   await expect(
-    page.getByRole("navigation", { name: "Primary navigation" }),
-  ).toBeVisible();
-  await expect(page.getByText("Favorites", { exact: true })).toBeVisible();
-  await expect(
-    page.getByText("Recently viewed", { exact: true }),
+    primaryNavigation.getByRole("link", { name: "Home" }),
   ).toBeVisible();
   await expect(
-    page.getByText("Workspaces", { exact: true }).first(),
+    primaryNavigation.getByRole("link", { name: "My work" }),
   ).toBeVisible();
-  await expect(page.getByText("Notrelix AI", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Favorites" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Recently viewed" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Workspaces", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Search home content" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Continue working" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My work" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Your workspaces" }),
   ).toBeVisible();
-  await expect(page.getByText(/Notrelix Product Lab/).first()).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Recent docs" }),
+    page.getByRole("button", { name: /Notrelix Product Lab/ }).first(),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Recent boards" }),
-  ).toBeVisible();
-  await expect(page.getByText("Product Roadmap").last()).toBeVisible();
-  await expect(page.getByText("Product specification").last()).toBeVisible();
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Your workspaces" }),
@@ -62,39 +66,61 @@ test("loads auth and workspace routes without backend network", async ({
   await expect(page).not.toHaveURL(/sign-in/);
 
   await page.getByRole("button", { name: "User settings" }).click();
-  await expect(page.getByRole("menu", { name: "User settings" })).toBeVisible();
-  await expect(page.getByText("Account", { exact: true })).toBeVisible();
-  await expect(page.getByText("Explore", { exact: true })).toBeVisible();
+  const userMenu = page.getByRole("menu");
+  await expect(userMenu).toBeVisible();
   await expect(
-    page.getByRole("menuitem", { name: "My profile" }),
+    userMenu.getByRole("menuitem", { name: "My profile" }),
   ).toBeEnabled();
   await expect(
-    page.getByRole("menuitem", { name: "Marketplace" }),
-  ).toBeDisabled();
-  await page.getByRole("menuitem", { name: "My profile" }).click();
+    userMenu.getByRole("menuitem", { name: "Notifications" }),
+  ).toBeEnabled();
+  await expect(
+    userMenu.getByRole("menuitem", { name: "Appearance" }),
+  ).toBeEnabled();
+  await expect(
+    userMenu.getByRole("button", { name: "Light theme" }),
+  ).toBeVisible();
+  await expect(
+    userMenu.getByRole("button", { name: "Dark theme" }),
+  ).toBeVisible();
+  await expect(
+    userMenu.getByRole("button", { name: "System theme" }),
+  ).toBeVisible();
+  await expect(
+    userMenu.getByRole("menuitem", { name: "Log out" }),
+  ).toBeEnabled();
+  await userMenu.getByRole("menuitem", { name: "My profile" }).click();
   await expect(page).toHaveURL(
     /\/workspaces\/mock-workspace-primary\/account\/profile$/,
   );
 
   await page.goto("/home");
   await page.getByRole("button", { name: "User settings" }).click();
-  await page.getByRole("button", { name: "Dark theme" }).click();
+  await page
+    .getByRole("menu")
+    .getByRole("button", { name: "Dark theme" })
+    .click();
   await expect(page.locator("html")).toHaveClass(/dark/);
 
   await page.goto("/workspaces/mock-workspace-primary/dashboard");
   await expect(page.locator("[data-home-sidebar]")).toHaveCount(0);
   await expect(
-    page.getByText("Search workspace", { exact: true }),
+    page.getByRole("complementary", { name: "Workspace navigation" }),
   ).toBeVisible();
-  await expect(page.getByText("Quick access", { exact: true })).toBeVisible();
-  await expect(page.getByText("Team online", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Search workspace" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Team online" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Active Boards" }),
   ).toBeVisible();
 
   await page.goto("/home");
   await page.getByRole("button", { name: "User settings" }).click();
-  await page.getByRole("menuitem", { name: "Log out" }).click();
+  await page
+    .getByRole("menu")
+    .getByRole("menuitem", { name: "Log out" })
+    .click();
   await expect(page).toHaveURL(/\/sign-in/);
 
   // Verify no backend escapes after full flow

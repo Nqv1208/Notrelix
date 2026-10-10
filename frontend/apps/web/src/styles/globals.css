@@ -201,6 +201,22 @@
   --badge-low-text: #475569;
 }
 
+.home-surface-container {
+  container: home-surface / inline-size;
+}
+
+.home-work-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@container home-surface (min-width: 960px) {
+  .home-work-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 22.5rem);
+  }
+}
+
 .dark {
   --background: oklch(0.148 0.025 265);
   --foreground: oklch(0.967 0.006 260);
