@@ -12,7 +12,8 @@ public class DuplicateBoardGroupTests : WorkManagementHandlerTestBase
         _handler = new DuplicateBoardGroupCommandHandler(
             DbContextMock.Object,
             RequestContextMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            Placement);
     }
 
     [Fact]

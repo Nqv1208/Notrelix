@@ -114,7 +114,8 @@ public sealed class WorkP3ManifestArchitectureTests
         // BoardGroup
         ["BoardGroups.CreateBoardGroupCommand"] = new(Disposition.Harden, "APP-GROUP-001"),
         ["BoardGroups.UpdateBoardGroupCommand"] = new(Disposition.Harden, "CONC-001", VersionedTarget: true),
-        ["BoardGroups.ReorderBoardGroupsCommand"] = new(Disposition.Harden, "APP-GROUP-001 (replaced by relative move), CONC-001", VersionedTarget: true),
+        ["BoardGroups.ReorderBoardGroupsCommand"] = new(Disposition.Retire, "APP-GROUP-001 (full-list drag replaced by MoveBoardGroup; deletion pending)"),
+        ["BoardGroups.MoveBoardGroupCommand"] = new(Disposition.Harden, "APP-GROUP-001 (done), CONC-001", VersionedTarget: true),
         ["BoardGroups.DuplicateBoardGroupCommand"] = new(Disposition.Harden, "APP-GROUP-001"),
         ["BoardGroups.ArchiveBoardGroupCommand"] = new(Disposition.Keep, "-"),
         ["BoardGroups.UnarchiveBoardGroupCommand"] = new(Disposition.Keep, "-"),
@@ -163,6 +164,7 @@ public sealed class WorkP3ManifestArchitectureTests
         [
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/CreateBoardGroup/CreateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/ReorderBoardGroups/ReorderBoardGroups.cs",
+            "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/MoveBoardGroup/MoveBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/Boards/Commands/CreateBoardInWorkspace/CreateBoardInWorkspace.cs",
             "Notrelix.Application/Features/WorkManagement/Boards/Commands/CreateBoardBySlug/CreateBoardBySlug.cs",

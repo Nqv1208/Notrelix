@@ -1584,6 +1584,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-groups/{groupId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a group relative to its neighbors */
+        post: operations["WorkManagement.BoardGroups.Move"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/board-groups/{groupId}/archive": {
         parameters: {
             query?: never;
@@ -3759,9 +3776,17 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.CreateBoardGroupRequest": {
             title?: string | null;
-            /** Format: double */
-            position?: number | null;
             color?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.MoveBoardGroupRequest": {
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.UpdateBoardGroupRequest": {
             title?: string | null;
@@ -4170,9 +4195,6 @@ export interface components {
             /** Format: uuid */
             boardItemId?: string;
             title?: string | null;
-            descriptionMd?: string | null;
-            priority?: string | null;
-            cover?: string | null;
             /** Format: date-time */
             dueDate?: string | null;
             /** Format: date-time */
@@ -7092,6 +7114,51 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardGroups.Move": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.MoveBoardGroupRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

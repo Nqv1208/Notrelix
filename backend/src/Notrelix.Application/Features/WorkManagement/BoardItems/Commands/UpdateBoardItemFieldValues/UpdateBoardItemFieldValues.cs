@@ -13,6 +13,12 @@ public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Gui
 
 public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBoardItemFieldValuesCommand, Result>
 {
+    private static readonly HashSet<string> SupportedSemanticFields = new(StringComparer.Ordinal)
+    {
+        "title", "status", "priority", "due_date", "linked_page", "assignees",
+        "text", "number", "checkbox", "date", "timeline", "progress", "select", "multi_select",
+    };
+
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
@@ -42,6 +48,16 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             .Include(f => f.Options)
             .Where(column => column.BoardId == card.BoardId && request.Values.Keys.Contains(column.Id))
             .ToDictionaryAsync(column => column.Id, ct);
+
+        // All-or-nothing (WMREQ025): every field is validated before any value is
+        // applied, because a failed Result still commits the data session.
+        var unsupported = request.Values.Keys.FirstOrDefault(id => id != card.BoardId && !columns.ContainsKey(id));
+        if (unsupported != Guid.Empty)
+            return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{unsupported}'.", ApplicationErrorType.Validation));
+
+        var unsupportedType = columns.Values.FirstOrDefault(column => !SupportedSemanticFields.Contains(ResolveSemanticField(column)));
+        if (unsupportedType is not null)
+            return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{unsupportedType.Name}'.", ApplicationErrorType.Validation));
 
         foreach (var (columnId, value) in request.Values)
         {

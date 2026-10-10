@@ -21,6 +21,7 @@ public static class MapBoardGroupEndpoints
 
         group.MapUpdateBoardGroup();
         group.MapDuplicateBoardGroup();
+        group.MapMoveBoardGroup();
         group.MapArchiveBoardGroup();
         group.MapUnarchiveBoardGroup();
         group.MapDeleteBoardGroup();

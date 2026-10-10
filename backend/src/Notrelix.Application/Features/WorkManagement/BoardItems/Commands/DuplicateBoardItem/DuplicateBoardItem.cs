@@ -2,7 +2,8 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
-using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Features.WorkManagement.Ordering;
+
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
 
 [IdempotencyOperation("work-management.board-items.duplicate-board-item.v1")]
@@ -17,12 +18,14 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly WorkPlacementResolver _placement;
 
-    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider)
+    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement)
     {
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
+        _placement = placement;
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardItemCommand request, CancellationToken ct)
@@ -31,14 +34,12 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (source is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var lastItem = await _context.BoardItems
-            .Where(c => c.GroupId == source.GroupId && c.DeletedAt == null)
-            .OrderByDescending(c => c.Position)
-            .FirstOrDefaultAsync(ct);
-
-        var nextPosition = lastItem != null
-            ? FractionalIndex.Create(lastItem.Position.Value + "1")
-            : FractionalIndex.Initial();
+        // The copy goes directly after its source, under the group's ordering lock (WMREQ049).
+        var nextPosition = await _placement.ResolveAfterAsync(
+            new WorkOrderingScope(WorkOrderingScopeKind.GroupItems, source.GroupId),
+            source.Id,
+            token => GroupItemSiblings.LoadAsync(_context, source.GroupId, token),
+            ct);
 
         var now = _timeProvider.UtcNow;
 

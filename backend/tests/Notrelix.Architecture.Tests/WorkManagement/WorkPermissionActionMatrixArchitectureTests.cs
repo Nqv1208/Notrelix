@@ -76,7 +76,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
 
         ["BoardGroups.CreateBoardGroupCommand"] = PermissionAction.ManageBoard,
         ["BoardGroups.UpdateBoardGroupCommand"] = PermissionAction.ManageBoard,
-        ["BoardGroups.ReorderBoardGroupsCommand"] = PermissionAction.ManageBoard,
+        ["BoardGroups.MoveBoardGroupCommand"] = PermissionAction.ManageBoard,
         ["BoardGroups.DuplicateBoardGroupCommand"] = PermissionAction.ManageBoard,
         ["BoardGroups.ArchiveBoardGroupCommand"] = PermissionAction.ManageBoard,
         ["BoardGroups.UnarchiveBoardGroupCommand"] = PermissionAction.ManageBoard,

@@ -38,7 +38,8 @@ export function createGroupApi(client: NotrelixClient) {
     async createGroup(input: CreateGroupInput): Promise<void> {
       const body: CreateGroupBody = {
         title: input.title,
-        position: input.position,
+        // Backend-first cut-over (SPEC WM-V3-DEC-017): the server owns placement and
+        // expects neighbor ids; until WM-V3-FE-001 maps them, omitting both appends.
         color: input.color,
       };
       await api.post<CreateGroupResponse>(

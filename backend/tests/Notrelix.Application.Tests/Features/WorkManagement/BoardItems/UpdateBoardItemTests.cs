@@ -22,7 +22,7 @@ public class UpdateBoardItemTests : WorkManagementHandlerTestBase
         var item = CreateBoardItem();
         SetupBoardItems(item);
 
-        var command = new UpdateBoardItemCommand(item.Id, "Updated Title", null, null, null, null, null);
+        var command = new UpdateBoardItemCommand(item.Id, "Updated Title", null, null);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -36,7 +36,7 @@ public class UpdateBoardItemTests : WorkManagementHandlerTestBase
         SetupBoardItems(item);
         var dueDate = new DateTime(2025, 3, 1);
 
-        var command = new UpdateBoardItemCommand(item.Id, null, null, null, null, dueDate, null);
+        var command = new UpdateBoardItemCommand(item.Id, null, dueDate, null);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -46,7 +46,7 @@ public class UpdateBoardItemTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ItemNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateBoardItemCommand(Guid.CreateVersion7(), "Title", null, null, null, null, null);
+        var command = new UpdateBoardItemCommand(Guid.CreateVersion7(), "Title", null, null);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -59,7 +59,7 @@ public class UpdateBoardItemTests : WorkManagementHandlerTestBase
         item.Delete(TestUserId, TestNow);
         SetupBoardItems(item);
 
-        var command = new UpdateBoardItemCommand(item.Id, "Title", null, null, null, null, null);
+        var command = new UpdateBoardItemCommand(item.Id, "Title", null, null);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -71,7 +71,7 @@ public class UpdateBoardItemTests : WorkManagementHandlerTestBase
         var item = CreateBoardItem();
         SetupBoardItems(item);
 
-        var command = new UpdateBoardItemCommand(item.Id, null, null, null, null, null, null);
+        var command = new UpdateBoardItemCommand(item.Id, null, null, null);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

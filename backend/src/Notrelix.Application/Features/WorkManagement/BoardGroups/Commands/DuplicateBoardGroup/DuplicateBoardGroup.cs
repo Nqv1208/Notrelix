@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
@@ -16,12 +17,14 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly WorkPlacementResolver _placement;
 
-    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider)
+    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement)
     {
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
+        _placement = placement;
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardGroupCommand request, CancellationToken ct)
@@ -31,14 +34,14 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
             .FirstOrDefaultAsync(l => l.Id == request.GroupId && l.DeletedAt == null, ct);
         if (source is null) throw new NotFoundException(nameof(BoardGroup), request.GroupId);
 
-        var lastGroup = await _context.BoardGroups
-            .Where(l => l.BoardId == source.BoardId && l.DeletedAt == null)
-            .OrderByDescending(l => l.Position)
-            .FirstOrDefaultAsync(ct);
-
-        var nextPosition = lastGroup != null
-            ? FractionalIndex.Create(lastGroup.Position.Value + "1")
-            : FractionalIndex.Initial();
+        // The copy goes directly after its source group, under the board's group
+        // ordering lock; its cloned items keep their relative keys because they
+        // enter a new, empty group (WMREQ048).
+        var nextPosition = await _placement.ResolveAfterAsync(
+            new WorkOrderingScope(WorkOrderingScopeKind.BoardGroups, source.BoardId),
+            source.Id,
+            token => BoardGroupSiblings.LoadAsync(_context, source.BoardId, token),
+            ct);
 
         var board = await _context.Boards
             .AsNoTracking()

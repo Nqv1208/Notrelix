@@ -759,6 +759,9 @@ None
 ### Exit
 - [ ] Item mutation source READY_FOR_CERTIFICATION.
 
+### Status
+Partially delivered. Done: Duplicate places the copy directly after its source through `WorkPlacementResolver.ResolveAfterAsync` under the GroupItems lock; `UpdateBoardItemCommand` no longer carries `DescriptionMd`/`Priority`/`Cover`; `UpdateBoardItemFieldValues` validates every field and field type before applying any value (SPEC WM-V3-GAP-029). Evidence: `WorkItemPlacementIntegrationTests` (duplicate and bulk cases; the bulk case fails on the previous handler). Open: single-value validation review, `ClearFieldValue` canonical null, and Item `Version` on reads (WM-V3-CONC-002).
+
 ## WM-V3-APP-GROUP-001 — Replace Group normal reorder with locked relative move
 
 **Phase:** Phase 6  
@@ -786,7 +789,10 @@ None
 None
 
 ### Exit
-- [ ] Group source READY_FOR_CERTIFICATION.
+- [x] Group source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION` for placement. `CreateBoardGroup` takes neighbor ids instead of a client position (SPEC WM-V3-GAP-028); the new `MoveBoardGroupCommand` (`POST /api/v1/board-groups/{groupId}/move`) moves one group under the BoardGroups lock with the semantic no-op rule; `DuplicateBoardGroup` places the copy directly after its source and keeps the cloned items' relative keys. `ReorderBoardGroupsCommand` is classified RETIRE (full-list drag); deleting it, its endpoint and the web reorder call is pending, and it keeps WM-V3-DATA-002 blocked for the BoardGroups scope. Evidence: `WorkItemPlacementIntegrationTests` (group case). Open: Group `Version` on reads (WM-V3-CONC-002).
 
 ## WM-V3-APP-FIELD-001 — Close Field create/update/move
 

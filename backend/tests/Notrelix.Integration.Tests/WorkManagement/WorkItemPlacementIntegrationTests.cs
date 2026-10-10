@@ -1,4 +1,9 @@
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.MoveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Ordering;
@@ -15,7 +20,7 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.WorkManagement;
 
 /// <summary>
-/// ITEM-APP-001 (WM-V3-APP-ITEM-001). Item create and move run through the real
+/// ITEM-APP-001 / ITEM-APP-002 / ORDER-DUP-001 (WM-V3-APP-ITEM-001/002, WM-V3-APP-GROUP-001). Item create and move run through the real
 /// handlers, the PostgreSQL ordering lock and the placement resolver, each inside
 /// a transaction as the data session runs them. Created items get distinct
 /// ordered keys (the baseline wrote "a0" for every item), neighbor intents are
@@ -127,6 +132,77 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
         (await VersionAsync(middle)).Should().Be(versionBefore, "re-placing an item where it already is changes nothing");
         (await OrderInGroupAsync(_todoId)).Should().Equal(first, middle, last);
+    }
+
+    [Fact]
+    public async Task DuplicateItem_IsPlacedDirectlyAfterItsSource()
+    {
+        var first = await CreateAsync("first");
+        var second = await CreateAsync("second");
+
+        var copy = await InTransactionAsync(async context =>
+            (await new DuplicateBoardItemCommandHandler(context, Request(), Clock(), Resolver(context))
+                .Handle(new DuplicateBoardItemCommand(first), CancellationToken.None)).Data);
+
+        (await OrderInGroupAsync(_todoId)).Should().Equal(first, copy, second);
+    }
+
+    [Fact]
+    public async Task Groups_AreCreatedMovedAndDuplicatedRelativeToTheirNeighbors()
+    {
+        var third = await CreateGroupAsync("third");
+
+        await InTransactionAsync(async context =>
+            await new MoveBoardGroupCommandHandler(context, Request(), Clock(), Resolver(context))
+                .Handle(new MoveBoardGroupCommand(third, _todoId, _doneId), CancellationToken.None));
+        (await GroupOrderAsync()).Should().Equal(_todoId, third, _doneId);
+
+        var a = await CreateAsync("a");
+        var b = await CreateAsync("b");
+        var copy = await InTransactionAsync(async context =>
+            (await new DuplicateBoardGroupCommandHandler(context, Request(), Clock(), Resolver(context))
+                .Handle(new DuplicateBoardGroupCommand(_todoId), CancellationToken.None)).Data);
+
+        (await GroupOrderAsync()).Should().Equal(_todoId, copy, third, _doneId);
+        var clonedTitles = await TitlesInGroupAsync(copy);
+        clonedTitles.Should().Equal("a", "b");
+        (await OrderInGroupAsync(_todoId)).Should().Equal(a, b);
+    }
+
+    [Fact]
+    public async Task BulkFieldValues_WithAnUnsupportedField_ChangeNothing()
+    {
+        var item = await CreateAsync("original");
+
+        var result = await InTransactionAsync(async context =>
+            await new UpdateBoardItemFieldValuesCommandHandler(context, Request(), Clock(), Mock.Of<IResourceLocator>())
+                .Handle(new UpdateBoardItemFieldValuesCommand(item, new Dictionary<Guid, object?>
+                {
+                    [_boardId] = "renamed",
+                    [Guid.NewGuid()] = "unknown field",
+                }), CancellationToken.None));
+
+        result.Succeeded.Should().BeFalse();
+        (await TitlesInGroupAsync(_todoId)).Should().Equal(["original"], "a rejected bulk update must not apply any value (WMREQ025)");
+    }
+
+    private async Task<Guid> CreateGroupAsync(string title, Guid? previous = null, Guid? next = null) =>
+        await InTransactionAsync(async context =>
+            (await new CreateBoardGroupCommandHandler(context, Request(), Clock(), Resolver(context))
+                .Handle(new CreateBoardGroupCommand(_boardId, title, null, previous, next), CancellationToken.None)).Data);
+
+    private async Task<List<Guid>> GroupOrderAsync()
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        var rows = await context.BoardGroups.Where(g => g.BoardId == _boardId).Select(g => new { g.Id, g.Position }).ToListAsync();
+        return rows.OrderBy(r => r.Position).ThenBy(r => r.Id).Select(r => r.Id).ToList();
+    }
+
+    private async Task<List<string>> TitlesInGroupAsync(Guid groupId)
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        var rows = await context.BoardItems.Where(i => i.GroupId == groupId).Select(i => new { i.Name, i.Position }).ToListAsync();
+        return rows.OrderBy(r => r.Position).Select(r => r.Name).ToList();
     }
 
     private async Task<Guid> CreateAsync(string title, Guid? group = null, Guid? previous = null, Guid? next = null)

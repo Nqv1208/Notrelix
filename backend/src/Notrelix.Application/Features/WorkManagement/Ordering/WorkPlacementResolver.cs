@@ -61,6 +61,30 @@ public sealed class WorkPlacementResolver
         return Place(ordered.Where(sibling => sibling.Id != movedEntityId).ToList(), intent);
     }
 
+    /// <summary>
+    /// Places a new entity immediately after <paramref name="anchorId"/> (between the
+    /// anchor and its current successor), under the scope lock. Used by duplicate.
+    /// </summary>
+    public async Task<FractionalIndex> ResolveAfterAsync(
+        WorkOrderingScope scope,
+        Guid anchorId,
+        Func<CancellationToken, Task<IReadOnlyList<OrderedSibling>>> loadActiveSiblings,
+        CancellationToken cancellationToken)
+    {
+        await _scopeLock.AcquireAsync(scope, cancellationToken);
+
+        var ordered = (await loadActiveSiblings(cancellationToken))
+            .OrderBy(sibling => sibling.Position)
+            .ThenBy(sibling => sibling.Id)
+            .ToList();
+
+        var index = IndexOf(ordered, anchorId);
+        if (index < 0) throw StalePlacement();
+
+        var successor = index + 1 < ordered.Count ? ordered[index + 1].Id : (Guid?)null;
+        return Place(ordered, new WorkPlacementIntent(anchorId, successor));
+    }
+
     private static bool TryKeepCurrent(
         IReadOnlyList<OrderedSibling> ordered, Guid movedId, WorkPlacementIntent intent, out FractionalIndex current)
     {

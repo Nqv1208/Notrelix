@@ -150,6 +150,8 @@ Added in V3.1 from source inspection at `8400a4c0`:
 - **WM-V3-GAP-024** — The automation move path (`AutomationMoveItemUseCase`) commits through the consumer transaction with its own `SaveChangesAsync`, outside `EfRequestDataSession`; it would neither hold the ordering lock nor map ordering conflicts.
 - **WM-V3-GAP-026** — Four owned-collection `work` tables (`board_view_filter_rules`, `board_view_sort_rules`, `saved_filter_rules`, `saved_filter_sort_rules`) are listed in no RLS script and run with RLS disabled; found by the fail-closed verification. Outside the `work` schema, `automation.automation_execution_steps` has the same defect and is owned by the Automation package.
 - **WM-V3-GAP-027** — `CreateBoardBySlugCommand` is a global request with no `IRequirePermission`, resolves a workspace by slug without checking its account, duplicates the authorized `CreateBoardInWorkspaceCommand`, and is mapped by no endpoint.
+- **WM-V3-GAP-028** — `CreateBoardGroup` persisted a client-supplied position string (the API passed `double?.ToString()`), violating WMREQ041.
+- **WM-V3-GAP-029** — `UpdateBoardItemFieldValues` returned a failed `Result` after applying earlier values; because the data session commits a failed `Result`, a rejected bulk update was partially persisted (WMREQ025).
 - **WM-V3-GAP-025** — Governance handoff debts `WG-DEBT-006` (AccessFactsQuery composite read of Work Board persistence) and `WG-DEBT-007` (`PermissionAction.ManageBoard` broader than the classified Work command matrix) must be named and dispositioned by P3.
 
 # Normative requirements
