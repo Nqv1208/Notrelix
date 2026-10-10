@@ -3988,78 +3988,6 @@
         ]
       }
     },
-    "/api/v1/boards/{boardId}/fields/reorder": {
-      "post": {
-        "tags": [
-          "WorkManagement.BoardFields"
-        ],
-        "summary": "Reorder board fields",
-        "operationId": "WorkManagement.BoardFields.Reorder",
-        "parameters": [
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
-            "required": true,
-            "schema": {
-              "maxLength": 128,
-              "minLength": 8,
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields.ReorderBoardFieldsCommand"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "headers": {
-              "Idempotency-Replayed": {
-                "description": "true when this response is a replay of a stored result",
-                "schema": {
-                  "type": "boolean"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/System.Void"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Idempotency key reused with a different payload"
-          },
-          "503": {
-            "description": "Operation still being processed; retry after the indicated delay"
-          }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
-      }
-    },
     "/api/v1/boards/{boardId}/fields/{fieldId}/move": {
       "post": {
         "tags": [
@@ -4390,13 +4318,13 @@
         ]
       }
     },
-    "/api/v1/boards/{boardId}/fields/{fieldId}/options/reorder": {
+    "/api/v1/boards/{boardId}/fields/{fieldId}/options/{optionId}/move": {
       "post": {
         "tags": [
           "WorkManagement.BoardFields"
         ],
-        "summary": "Reorder field options",
-        "operationId": "WorkManagement.BoardFields.ReorderFieldOptions",
+        "summary": "Move a field option relative to its neighbors",
+        "operationId": "WorkManagement.BoardFields.MoveFieldOption",
         "parameters": [
           {
             "name": "boardId",
@@ -4409,6 +4337,15 @@
           },
           {
             "name": "fieldId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "optionId",
             "in": "path",
             "required": true,
             "schema": {
@@ -4432,7 +4369,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Notrelix.API.Endpoints.WorkManagement.BoardFields.ReorderFieldOptionsRequest"
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.WorkManagement.BoardFields.MoveFieldOptionRequest"
               }
             }
           },
@@ -4543,79 +4480,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.CreateBoardGroupRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "headers": {
-              "Idempotency-Replayed": {
-                "description": "true when this response is a replay of a stored result",
-                "schema": {
-                  "type": "boolean"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/System.Void"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Idempotency key reused with a different payload"
-          },
-          "503": {
-            "description": "Operation still being processed; retry after the indicated delay"
-          }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          }
-        ]
-      }
-    },
-    "/api/v1/boards/{boardId}/groups/reorder": {
-      "post": {
-        "tags": [
-          "WorkManagement.BoardGroups",
-          "WorkManagement.BoardGroups"
-        ],
-        "summary": "Reorder groups in a board",
-        "operationId": "WorkManagement.BoardGroups.Reorder",
-        "parameters": [
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
-            "required": true,
-            "schema": {
-              "maxLength": 128,
-              "minLength": 8,
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups.ReorderBoardGroupsCommand"
               }
             }
           },
@@ -15219,22 +15083,30 @@
             "type": "string",
             "nullable": true
           },
-          "position": {
+          "previousSiblingId": {
             "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "nextSiblingId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           }
         },
         "additionalProperties": false
       },
-      "Notrelix.API.Endpoints.WorkManagement.BoardFields.ReorderFieldOptionsRequest": {
+      "Notrelix.API.Endpoints.WorkManagement.BoardFields.MoveFieldOptionRequest": {
         "type": "object",
         "properties": {
-          "orderedOptionIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
+          "previousSiblingId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "nextSiblingId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           }
         },
@@ -15385,52 +15257,6 @@
         },
         "additionalProperties": false
       },
-      "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields.ReorderBoardFieldsCommand": {
-        "type": "object",
-        "properties": {
-          "boardId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ReorderItem"
-            },
-            "nullable": true
-          },
-          "action": {
-            "$ref": "#/components/schemas/Notrelix.Domain.Governance.Permissions.PermissionAction"
-          },
-          "resource": {
-            "$ref": "#/components/schemas/Notrelix.Domain.SharedKernel.ResourceRef"
-          }
-        },
-        "additionalProperties": false
-      },
-      "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups.ReorderBoardGroupsCommand": {
-        "type": "object",
-        "properties": {
-          "boardId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ReorderItem"
-            },
-            "nullable": true
-          },
-          "action": {
-            "$ref": "#/components/schemas/Notrelix.Domain.Governance.Permissions.PermissionAction"
-          },
-          "resource": {
-            "$ref": "#/components/schemas/Notrelix.Domain.SharedKernel.ResourceRef"
-          }
-        },
-        "additionalProperties": false
-      },
       "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem.UpdateBoardItemCommand": {
         "type": "object",
         "properties": {
@@ -15498,20 +15324,6 @@
           },
           "resource": {
             "$ref": "#/components/schemas/Notrelix.Domain.SharedKernel.ResourceRef"
-          }
-        },
-        "additionalProperties": false
-      },
-      "Notrelix.Application.Features.WorkManagement.Common.DTOs.ReorderItem": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "newPosition": {
-            "type": "number",
-            "format": "double"
           }
         },
         "additionalProperties": false

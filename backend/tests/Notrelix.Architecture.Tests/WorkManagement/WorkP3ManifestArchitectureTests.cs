@@ -32,7 +32,7 @@ public sealed class WorkP3ManifestArchitectureTests
     /// <summary>Modules that belong to the P3 transactional core.</summary>
     private static readonly HashSet<string> P3Modules = new(StringComparer.Ordinal)
     {
-        "Boards", "BoardItems", "BoardFields", "FieldOptions", "BoardGroups", "Checklists", "BoardSchema", "Labels",
+        "Boards", "BoardItems", "BoardFields", "BoardGroups", "Checklists", "BoardSchema", "Labels",
     };
 
     /// <summary>Modules outside P3 (Views/Forms/Approvals and other P4 surfaces).</summary>
@@ -65,7 +65,6 @@ public sealed class WorkP3ManifestArchitectureTests
         ["Boards.GetBoardsBySlugQuery"] = new(Disposition.Keep, "-"),
         ["Boards.GetBoardMembersQuery"] = new(Disposition.Keep, "-"),
         ["Boards.CreateBoardInWorkspaceCommand"] = new(Disposition.Harden, "APP-BOARD-001 (default-schema ordering writer)"),
-        ["Boards.CreateBoardBySlugCommand"] = new(Disposition.Retire, "GATE-002 (unreachable and unauthorized, SPEC WM-V3-GAP-027; deletion pending)"),
         ["Boards.UpdateBoardCommand"] = new(Disposition.Harden, "APP-BOARD-001, CONC-001", VersionedTarget: true),
         ["Boards.UpdateBoardVisibilityCommand"] = new(Disposition.Keep, "-"),
         ["Boards.ArchiveBoardCommand"] = new(Disposition.Keep, "-"),
@@ -100,22 +99,16 @@ public sealed class WorkP3ManifestArchitectureTests
         // BoardField / FieldOption (BoardField-owned family is canonical, SPEC WM-V3-DEC-009)
         ["BoardFields.CreateBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001 (done)"),
         ["BoardFields.UpdateBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001, CONC-001", VersionedTarget: true),
-        ["BoardFields.ReorderBoardFieldsCommand"] = new(Disposition.Retire, "APP-FIELD-001 (full-list drag replaced by MoveBoardField; deletion pending)"),
         ["BoardFields.MoveBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001 (done), CONC-001", VersionedTarget: true),
         ["BoardFields.DeleteBoardFieldCommand"] = new(Disposition.Keep, "-"),
-        ["BoardFields.AddFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001, CONC-001", VersionedTarget: true),
-        ["BoardFields.UpdateFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001, CONC-001", VersionedTarget: true),
-        ["BoardFields.RemoveFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001, CONC-001", VersionedTarget: true),
-        ["BoardFields.ReorderFieldOptionsCommand"] = new(Disposition.Harden, "APP-OPTION-001 (maintenance-only)"),
-        ["FieldOptions.CreateFieldOptionCommand"] = new(Disposition.Retire, "APP-OPTION-001"),
-        ["FieldOptions.UpdateFieldOptionCommand"] = new(Disposition.Retire, "APP-OPTION-001"),
-        ["FieldOptions.DeleteFieldOptionCommand"] = new(Disposition.Retire, "APP-OPTION-001"),
-        ["FieldOptions.ReorderFieldOptionsCommand"] = new(Disposition.Retire, "APP-OPTION-001"),
+        ["BoardFields.AddFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001 (done), CONC-001", VersionedTarget: true),
+        ["BoardFields.MoveFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001 (done), CONC-001", VersionedTarget: true),
+        ["BoardFields.UpdateFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001 (done), CONC-001", VersionedTarget: true),
+        ["BoardFields.RemoveFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001 (done), CONC-001", VersionedTarget: true),
 
         // BoardGroup
         ["BoardGroups.CreateBoardGroupCommand"] = new(Disposition.Harden, "APP-GROUP-001"),
         ["BoardGroups.UpdateBoardGroupCommand"] = new(Disposition.Harden, "CONC-001", VersionedTarget: true),
-        ["BoardGroups.ReorderBoardGroupsCommand"] = new(Disposition.Retire, "APP-GROUP-001 (full-list drag replaced by MoveBoardGroup; deletion pending)"),
         ["BoardGroups.MoveBoardGroupCommand"] = new(Disposition.Harden, "APP-GROUP-001 (done), CONC-001", VersionedTarget: true),
         ["BoardGroups.DuplicateBoardGroupCommand"] = new(Disposition.Harden, "APP-GROUP-001"),
         ["BoardGroups.ArchiveBoardGroupCommand"] = new(Disposition.Keep, "-"),
@@ -164,26 +157,21 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardGroups (board_groups: board_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/CreateBoardGroup/CreateBoardGroup.cs",
-            "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/ReorderBoardGroups/ReorderBoardGroups.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/MoveBoardGroup/MoveBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/BoardGroups/Commands/DuplicateBoardGroup/DuplicateBoardGroup.cs",
             "Notrelix.Application/Features/WorkManagement/Boards/Commands/CreateBoardInWorkspace/CreateBoardInWorkspace.cs",
-            "Notrelix.Application/Features/WorkManagement/Boards/Commands/CreateBoardBySlug/CreateBoardBySlug.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["BoardFields (board_fields: board_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/CreateBoardField/CreateBoardField.cs",
-            "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/ReorderBoardFields/ReorderBoardFields.cs",
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveBoardField/MoveBoardField.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["FieldOptions (field_options: field_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/AddFieldOption/AddFieldOption.cs",
-            "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/ReorderFieldOptions/ReorderFieldOptions.cs",
-            "Notrelix.Application/Features/WorkManagement/FieldOptions/Commands/CreateFieldOption/CreateFieldOption.cs",
-            "Notrelix.Application/Features/WorkManagement/FieldOptions/Commands/ReorderFieldOptions/ReorderFieldOptions.cs",
+            "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveFieldOption/MoveFieldOption.cs",
         ],
         ["ItemChecklists (checklists: item_id)"] =
         [
@@ -282,6 +270,32 @@ public sealed class WorkP3ManifestArchitectureTests
     }
 
     private sealed record WorkRequest(Type Type, string Module, string Key);
+
+    /// <summary>
+    /// Authorities removed by their owning unit. Re-adding one (or any request in the
+    /// legacy FieldOptions module) recreates a second ordering or option authority.
+    /// </summary>
+    private static readonly string[] RetiredRequestNames =
+    [
+        "CreateBoardBySlugCommand",
+        "ReorderBoardGroupsCommand",
+        "ReorderBoardFieldsCommand",
+        "ReorderFieldOptionsCommand",
+        "CreateFieldOptionCommand",
+        "DeleteFieldOptionCommand",
+    ];
+
+    [Fact]
+    public void RetiredWorkAuthorities_AreAbsent()
+    {
+        var discovered = DiscoverWorkRequests();
+
+        discovered.Should().NotBeEmpty("the scan must inspect real Work requests (NRX-016)");
+        discovered.Where(r => r.Module == "FieldOptions").Should().BeEmpty(
+            "the BoardField-owned option family is the only FieldOption authority (WM-V3-APP-OPTION-001)");
+        discovered.Select(r => r.Type.Name).Intersect(RetiredRequestNames).Should().BeEmpty(
+            "full-list reorder and legacy create/delete authorities were retired (WM-V3-APP-OPTION-001, APP-GROUP-001, APP-FIELD-001, GATE-002)");
+    }
 
     private static List<WorkRequest> DiscoverWorkRequests() =>
         typeof(IExpectedVersionRequest).Assembly.GetTypes()

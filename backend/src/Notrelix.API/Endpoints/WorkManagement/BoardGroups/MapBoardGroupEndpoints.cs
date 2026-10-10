@@ -12,7 +12,6 @@ public static class MapBoardGroupEndpoints
             .WithOpenApi();
 
         boardGroup.MapCreateBoardGroup();
-        boardGroup.MapReorderBoardGroups();
 
         var group = app
             .MapGroup("/api/v1/board-groups/{groupId:guid}")

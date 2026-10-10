@@ -891,6 +891,11 @@ work-management.field-option-added|1|Notrelix.Domain.WorkManagement.Fields.Event
 work-management.field-option-added|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionAddedDomainEvent|Workspace|FieldId|System.Guid|False
 work-management.field-option-added|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionAddedDomainEvent|Workspace|Name|System.String|False
 work-management.field-option-added|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionAddedDomainEvent|Workspace|OptionId|System.Guid|False
+work-management.field-option-moved|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionMovedDomainEvent|Workspace|BoardId|System.Guid|False
+work-management.field-option-moved|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionMovedDomainEvent|Workspace|FieldId|System.Guid|False
+work-management.field-option-moved|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionMovedDomainEvent|Workspace|NewPosition|Notrelix.Domain.SharedKernel.Ordering.FractionalIndex|False
+work-management.field-option-moved|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionMovedDomainEvent|Workspace|OptionId|System.Guid|False
+work-management.field-option-moved|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionMovedDomainEvent|Workspace|UpdatedBy|System.Guid|False
 work-management.field-option-removed|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionRemovedDomainEvent|Workspace|FieldId|System.Guid|False
 work-management.field-option-removed|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionRemovedDomainEvent|Workspace|OptionId|System.Guid|False
 work-management.field-option-removed|1|Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionRemovedDomainEvent|Workspace|RemovedBy|System.Guid|False

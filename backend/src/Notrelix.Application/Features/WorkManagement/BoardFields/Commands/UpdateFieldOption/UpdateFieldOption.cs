@@ -35,6 +35,7 @@ public class UpdateFieldOptionCommandHandler : IRequestHandler<UpdateFieldOption
     public async Task<Result> Handle(UpdateFieldOptionCommand request, CancellationToken ct)
     {
         var field = await _context.BoardFields
+            .Include(f => f.Options)
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == request.BoardId, ct);
         if (field is null) throw new NotFoundException(nameof(BoardFieldEntity), request.FieldId);
 

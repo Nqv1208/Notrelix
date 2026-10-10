@@ -70,7 +70,7 @@ export const endpoints = {
     create: (boardId: string) => `/boards/${boardId}/groups`,
     detail: (groupId: string) => `/board-groups/${groupId}`,
     duplicate: (groupId: string) => `/board-groups/${groupId}/duplicate`,
-    reorder: (boardId: string) => `/boards/${boardId}/groups/reorder`,
+    move: (groupId: string) => `/board-groups/${groupId}/move`,
     archive: (groupId: string) => `/board-groups/${groupId}/archive`,
   },
   boardItems: {
@@ -94,7 +94,8 @@ export const endpoints = {
     create: (boardId: string) => `/boards/${boardId}/fields`,
     detail: (boardId: string, fieldId: string) =>
       `/boards/${boardId}/fields/${fieldId}`,
-    reorder: (boardId: string) => `/boards/${boardId}/fields/reorder`,
+    move: (boardId: string, fieldId: string) =>
+      `/boards/${boardId}/fields/${fieldId}/move`,
   },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,

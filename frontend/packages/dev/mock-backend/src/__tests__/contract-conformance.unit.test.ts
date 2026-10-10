@@ -144,12 +144,19 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(createdGroup?.color).toBe("#00FFFF");
 
     // Reorder groups
-    await groupApi.reorderGroups(boardId, [
-      { id: "list-done", position: 0 },
-      { id: "list-inprogress", position: 1 },
-      { id: "list-todo", position: 2 },
-      { id: listId, position: 3 },
-    ]);
+    // The adapter applies a complete desired order (WM-V3-FE-001 replaces it
+    // with one neighbor-relative move), so pass every group of the board.
+    const beforeReorder = await boardApi.getFullBoard(boardId, {
+      workspaceId: mockIds.workspaces.primary,
+    });
+    const desiredOrder = [
+      "list-done",
+      ...beforeReorder.groups.map((g) => g.id).filter((id) => id !== "list-done"),
+    ];
+    await groupApi.reorderGroups(
+      boardId,
+      desiredOrder.map((id, position) => ({ id, position })),
+    );
     const reorderedBoard = await boardApi.getFullBoard(boardId, {
       workspaceId: mockIds.workspaces.primary,
     });

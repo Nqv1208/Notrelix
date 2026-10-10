@@ -1,8 +1,8 @@
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RemoveFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
-using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderFieldOptions;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardFields;
 
@@ -22,10 +22,10 @@ public static class FieldOptionEndpoints
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.UpdateFieldOption")
             .WithSummary("Update a field option's name and color");
-        group.MapResourcePost("/{fieldId:guid}/options/reorder", HandleReorderFieldOptions)
+        group.MapResourcePost("/{fieldId:guid}/options/{optionId:guid}/move", HandleMoveFieldOption)
             .WithIdempotencyKey()
-            .WithName("WorkManagement.BoardFields.ReorderFieldOptions")
-            .WithSummary("Reorder field options");
+            .WithName("WorkManagement.BoardFields.MoveFieldOption")
+            .WithSummary("Move a field option relative to its neighbors");
         return group;
     }
 
@@ -37,7 +37,7 @@ public static class FieldOptionEndpoints
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new AddFieldOptionCommand(
-            boardId, fieldId, body.Name, body.Color, body.Position), cancellationToken);
+            boardId, fieldId, body.Name, body.Color, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToCreatedResult();
     }
 
@@ -65,19 +65,20 @@ public static class FieldOptionEndpoints
         return result.ToApiResult();
     }
 
-    private static async Task<IResult> HandleReorderFieldOptions(
+    private static async Task<IResult> HandleMoveFieldOption(
         Guid boardId,
         Guid fieldId,
-        ReorderFieldOptionsRequest body,
+        Guid optionId,
+        MoveFieldOptionRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ReorderFieldOptionsCommand(
-            boardId, fieldId, body.OrderedOptionIds), cancellationToken);
+        var result = await sender.Send(new MoveFieldOptionCommand(
+            boardId, fieldId, optionId, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToNoContentResult();
     }
 }
 
-public record AddFieldOptionRequest(string Name, string Color, string? Position);
+public record AddFieldOptionRequest(string Name, string Color, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null);
 public record UpdateFieldOptionRequest(string Name, string Color);
-public record ReorderFieldOptionsRequest(List<Guid> OrderedOptionIds);
+public record MoveFieldOptionRequest(Guid? PreviousSiblingId = null, Guid? NextSiblingId = null);

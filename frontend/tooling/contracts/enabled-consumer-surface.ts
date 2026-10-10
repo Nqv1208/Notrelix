@@ -955,11 +955,11 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
-    capability: "WorkManagement.BoardFields.Reorder",
+    capability: "WorkManagement.BoardFields.Move",
     consumerSymbol: "TODO",
     consumerFile: "frontend/packages/product/work-management/state/src/api/",
     classification: "CANONICAL_MOCKED",
-    operationId: "WorkManagement.BoardFields.Reorder",
+    operationId: "WorkManagement.BoardFields.Move",
     method: "POST", // dummy
     pathTemplate: "/api/v1/",
     mutation: true,
@@ -1054,11 +1054,11 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Work Management",
-    capability: "WorkManagement.BoardGroups.Reorder",
+    capability: "WorkManagement.BoardGroups.Move",
     consumerSymbol: "TODO",
     consumerFile: "frontend/packages/product/work-management/state/src/api/",
     classification: "CANONICAL_MOCKED",
-    operationId: "WorkManagement.BoardGroups.Reorder",
+    operationId: "WorkManagement.BoardGroups.Move",
     method: "POST", // dummy
     pathTemplate: "/api/v1/",
     mutation: true,

@@ -12,7 +12,7 @@
  *   boards.columns.create  — POST /boards/:boardId/fields
  *   boards.columns.update  — PATCH /boards/:boardId/fields/:columnId
  *   boards.columns.delete  — DELETE /boards/:boardId/fields/:columnId
- *   boards.columns.reorder — POST /boards/:boardId/fields/reorder
+ *   boards.columns.move — POST /boards/:boardId/fields/:fieldId/move
  *   boards.labels.list     — GET /boards/:boardId/labels
  *   boards.labels.create   — POST /boards/:boardId/labels
  *   boards.labels.update   — PATCH /boards/:boardId/labels/:labelId
@@ -320,25 +320,29 @@ export const boardsOperations = [
     },
   }),
 
-  // ─── POST /boards/:boardId/fields/reorder ────────────────────────────────
+  // ─── POST /boards/:boardId/fields/:fieldId/move ─────────────────────────
 
   defineMockOperation<
-    { boardId: string },
-    { items: { id: string; newPosition: number }[] },
+    { boardId: string; fieldId: string },
+    { previousSiblingId?: string | null; nextSiblingId?: string | null },
     void
   >({
-    id: "boards.columns.reorder",
+    id: "boards.columns.move",
     contract: {
       kind: "openapi",
-      operationId: "WorkManagement.BoardFields.Reorder",
+      operationId: "WorkManagement.BoardFields.Move",
     } as any,
     method: "POST",
-    route: "/boards/:boardId/fields/reorder",
+    route: "/boards/:boardId/fields/:fieldId/move",
     async handle({ params, body, store }) {
-      const data = (body ?? { items: [] }) as {
-        items: { id: string; newPosition: number }[];
-      };
-      store.reorderColumns(params.boardId, data.items);
+      const data = (body ?? {}) as { previousSiblingId?: string | null; nextSiblingId?: string | null };
+      const moved = store.moveColumn(
+        params.boardId,
+        params.fieldId,
+        data.previousSiblingId,
+        data.nextSiblingId,
+      );
+      if (!moved) return notFound("Column not found");
       return ok<void>(undefined);
     },
   }),

@@ -152,6 +152,7 @@ Added in V3.1 from source inspection at `8400a4c0`:
 - **WM-V3-GAP-027** — `CreateBoardBySlugCommand` is a global request with no `IRequirePermission`, resolves a workspace by slug without checking its account, duplicates the authorized `CreateBoardInWorkspaceCommand`, and is mapped by no endpoint.
 - **WM-V3-GAP-028** — `CreateBoardGroup` persisted a client-supplied position string (the API passed `double?.ToString()`), violating WMREQ041.
 - **WM-V3-GAP-029** — `UpdateBoardItemFieldValues` returned a failed `Result` after applying earlier values; because the data session commits a failed `Result`, a rejected bulk update was partially persisted (WMREQ025).
+- **WM-V3-GAP-030** — No BoardField-owned option handler loaded the `Options` collection, which is not auto-included: `UpdateFieldOption`/`RemoveFieldOption` from a fresh request always failed with OptionNotFound, and `AddFieldOption`'s case-insensitive duplicate-name rule never saw persisted options. Fixed in WM-V3-APP-OPTION-001 by loading the collection in every option handler, proven against PostgreSQL from a fresh context.
 - **WM-V3-GAP-025** — Governance handoff debts `WG-DEBT-006` (AccessFactsQuery composite read of Work Board persistence) and `WG-DEBT-007` (`PermissionAction.ManageBoard` broader than the classified Work command matrix) must be named and dispositioned by P3.
 
 # Normative requirements

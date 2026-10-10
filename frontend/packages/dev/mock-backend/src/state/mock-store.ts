@@ -962,17 +962,39 @@ export class MockStore {
     return true;
   }
 
-  reorderColumns(
+
+  /**
+   * Neighbor-relative placement over numeric mock positions, mirroring the
+   * backend move contract: no neighbors appends, otherwise place between them.
+   */
+  private placeBetween(
+    siblings: { id: string; position: number }[],
+    previousSiblingId?: string | null,
+    nextSiblingId?: string | null,
+  ): number {
+    const byId = new Map(siblings.map((s) => [s.id, s.position]));
+    const max = siblings.reduce((m, s) => Math.max(m, s.position), 0);
+    const prev = previousSiblingId ? byId.get(previousSiblingId) : undefined;
+    const next = nextSiblingId ? byId.get(nextSiblingId) : undefined;
+    if (prev === undefined && next === undefined) return max + 1;
+    if (prev !== undefined && next === undefined) return prev + 1;
+    if (prev === undefined && next !== undefined) return next - 1;
+    return ((prev as number) + (next as number)) / 2;
+  }
+
+  moveColumn(
     boardId: string,
-    items: { id: string; newPosition: number }[],
+    columnId: string,
+    previousSiblingId?: string | null,
+    nextSiblingId?: string | null,
   ): boolean {
-    if (!this.boardsById.has(boardId)) return false;
-    for (const item of items) {
-      const col = this.columnsById.get(item.id);
-      if (col && col.boardId === boardId) {
-        this.columnsById.set(item.id, { ...col, position: item.newPosition });
-      }
-    }
+    const col = this.columnsById.get(columnId);
+    if (!col || col.boardId !== boardId) return false;
+    const siblings = Array.from(this.columnsById.values()).filter(
+      (c) => c.boardId === boardId && c.id !== columnId,
+    );
+    const position = this.placeBetween(siblings, previousSiblingId, nextSiblingId);
+    this.columnsById.set(columnId, { ...col, position });
     return true;
   }
 
@@ -1132,17 +1154,18 @@ export class MockStore {
     return newList;
   }
 
-  reorderLists(
-    boardId: string,
-    items: { id: string; newPosition: number }[],
+  moveList(
+    listId: string,
+    previousSiblingId?: string | null,
+    nextSiblingId?: string | null,
   ): boolean {
-    if (!this.boardsById.has(boardId)) return false;
-    for (const item of items) {
-      const list = this.listsById.get(item.id);
-      if (list && list.boardId === boardId) {
-        this.listsById.set(item.id, { ...list, position: item.newPosition });
-      }
-    }
+    const list = this.listsById.get(listId);
+    if (!list) return false;
+    const siblings = Array.from(this.listsById.values()).filter(
+      (l) => l.boardId === list.boardId && l.id !== listId,
+    );
+    const position = this.placeBetween(siblings, previousSiblingId, nextSiblingId);
+    this.listsById.set(listId, { ...list, position });
     return true;
   }
 

@@ -124,7 +124,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardFieldUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
-    public void AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
+    public FieldOption AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(addedBy);
@@ -142,6 +142,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new FieldOptionAddedDomainEvent(AccountId, WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
+        return option;
     }
 
     public void RemoveOption(Guid optionId, Guid removedBy, DateTimeOffset removedAt)
@@ -191,6 +192,34 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, normalizedName, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Normal option drag (WM-V3-APP-OPTION-001): moves one option to a position the
+    /// caller resolved under the FieldOptions ordering lock, rewriting only its key.
+    /// Moving an option to the key it already has is a semantic no-op.
+    /// </summary>
+    public void MoveOption(Guid optionId, FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(position);
+        Guard.NotEmpty(updatedBy);
+
+        var option = _options.FirstOrDefault(o => o.Id == optionId)
+            ?? throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
+
+        if (option.Position.Value == position.Value) return;
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+        option.UpdatePosition(position);
+        ApplyAuditUpdate(audit);
+        IncrementVersion();
+        RaiseDomainEvent(new FieldOptionMovedDomainEvent(AccountId, WorkspaceId, BoardId, Id, optionId, position, updatedBy, updatedAt));
+    }
+
+    /// <summary>
+    /// Maintenance rebalance only (WM-V3-APP-OPTION-001): regenerates evenly spaced
+    /// keys for the given complete order. No user-facing request calls it; normal
+    /// drag uses <see cref="MoveOption"/>.
+    /// </summary>
     public void ReorderOptions(IReadOnlyList<Guid> orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

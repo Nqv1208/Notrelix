@@ -12,8 +12,8 @@ type CreateFieldBody = OperationRequestBody<CreateFieldOp>;
 type UpdateFieldOp = "WorkManagement.BoardFields.Update";
 type UpdateFieldBody = OperationRequestBody<UpdateFieldOp>;
 
-type ReorderFieldsOp = "WorkManagement.BoardFields.Reorder";
-type ReorderFieldsBody = OperationRequestBody<ReorderFieldsOp>;
+type MoveFieldOp = "WorkManagement.BoardFields.Move";
+type MoveFieldBody = OperationRequestBody<MoveFieldOp>;
 
 export type CreateColumnInput = {
   boardId: string;
@@ -74,13 +74,15 @@ export function createColumnApi(client: NotrelixClient) {
       boardId: string,
       columns: Pick<BoardTableColumn, "id">[] | string[],
     ): Promise<void> {
-      const body: ReorderFieldsBody = {
-        items: columns.map((column, index) => ({
-          id: typeof column === "string" ? column : column.id,
-          newPosition: index + 1,
-        })),
-      };
-      await api.post<void>(endpoints.boardFields.reorder(boardId), body);
+      // Transitional (WM-V3-FE-001 sends one neighbor-relative move per drag):
+      // the full-list reorder route is retired, so the desired order is applied
+      // by appending each column in turn; appending the current last column is
+      // a server-side no-op.
+      const body: MoveFieldBody = {};
+      for (const column of columns) {
+        const columnId = typeof column === "string" ? column : column.id;
+        await api.post<void>(endpoints.boardFields.move(boardId, columnId), body);
+      }
     },
   };
 }

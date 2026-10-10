@@ -3,7 +3,6 @@ using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
-using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
@@ -30,11 +29,6 @@ public static class MapBoardFieldEndpoints
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Delete")
             .WithSummary("Delete a field from a board");
-        group.MapResourcePost("/reorder", HandleReorderBoardFields)
-            .WithIdempotencyKey()
-            .WithName("WorkManagement.BoardFields.Reorder")
-            .WithSummary("Reorder board fields");
-
         group.MapResourcePost("/{fieldId:guid}/move", HandleMoveBoardField)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Move")
@@ -105,16 +99,6 @@ public static class MapBoardFieldEndpoints
     {
         await sender.Send(new DeleteBoardFieldCommand(boardId, fieldId), cancellationToken);
         return Results.NoContent();
-    }
-
-    private static async Task<IResult> HandleReorderBoardFields(
-        Guid boardId,
-        ReorderBoardFieldsCommand command,
-        ISender sender,
-        CancellationToken cancellationToken)
-    {
-        var result = await sender.Send(command with { BoardId = boardId }, cancellationToken);
-        return result.ToNoContentResult();
     }
 
     private static async Task<IResult> HandleGetBoardSchema(

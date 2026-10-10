@@ -76,18 +76,15 @@ using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardsBySlug;
-using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
-using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
-using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
@@ -478,14 +475,11 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<List<BoardMemberDto>>.Success(new List<BoardMemberDto>()));
             MockWorkspaceHandler<GetBoardsBySlugQuery, Result<List<BoardDto>>>(services,
                 Result<List<BoardDto>>.Success(new List<BoardDto>()));
-            MockWorkspaceHandler<CreateBoardBySlugCommand, Result<Guid>>(services,
-                Result<Guid>.Success(Guid.NewGuid()));
             // Board fields
             MockWorkspaceHandler<CreateBoardFieldCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
             MockWorkspaceHandler<UpdateBoardFieldCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<DeleteBoardFieldCommand, Result>(services, Result.Success());
-            MockWorkspaceHandler<ReorderBoardFieldsCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<GetBoardSchemaQuery, BoardSchemaDto>(services,
                 new BoardSchemaDto(Guid.NewGuid(), "Test Board", null,
                     new List<BoardFieldSchemaDto>(), new List<BoardGroupSchemaDto>()));
@@ -497,7 +491,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<UnarchiveBoardGroupCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<DuplicateBoardGroupCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
-            MockWorkspaceHandler<ReorderBoardGroupsCommand, Result>(services, Result.Success());
             // Board items
             MockWorkspaceHandler<CreateBoardItemCommand, BoardItemSlimDto>(services,
                 new BoardItemSlimDto(Guid.NewGuid(), Guid.NewGuid(), "Test Item", "a0",

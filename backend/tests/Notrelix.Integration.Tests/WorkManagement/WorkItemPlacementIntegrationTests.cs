@@ -1,4 +1,8 @@
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RemoveFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
@@ -222,6 +226,75 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
         var loaded = await verify.BoardFields.SingleAsync(f => f.Id == field);
         loaded.Name.Should().Be("Stage");
         (await FieldSettingsAsync(field)).Should().Be(settingsBefore);
+    }
+
+    [Fact]
+    public async Task Options_AreAddedAndMovedRelativeToTheirNeighbors_UnderTheFieldLock()
+    {
+        var field = await CreateFieldAsync("Priority", type: "Select");
+        var a = await AddOptionAsync(field, "A");
+        var b = await AddOptionAsync(field, "B");
+        var c = await AddOptionAsync(field, "C", previous: a, next: b);
+        (await OptionOrderAsync(field)).Should().Equal(a, c, b);
+
+        await MoveOptionAsync(field, a, previous: b, next: null);
+        (await OptionOrderAsync(field)).Should().Equal(c, b, a);
+
+        var versionBefore = await FieldVersionAsync(field);
+        await MoveOptionAsync(field, a, previous: b, next: null);
+        (await FieldVersionAsync(field)).Should().Be(versionBefore, "moving an option to its current place is a semantic no-op");
+    }
+
+    [Fact]
+    public async Task Options_AreUpdatedRemovedAndDeduplicated_FromAFreshRequest()
+    {
+        var field = await CreateFieldAsync("Priority", type: "Select");
+        var a = await AddOptionAsync(field, "A");
+        var b = await AddOptionAsync(field, "B");
+
+        await InTransactionAsync(async context =>
+            await new UpdateFieldOptionCommandHandler(context, CurrentUser(), Clock())
+                .Handle(new UpdateFieldOptionCommand(_boardId, field, a, "Alpha", "#112233"), CancellationToken.None));
+        await InTransactionAsync(async context =>
+            await new RemoveFieldOptionCommandHandler(context, CurrentUser(), Clock())
+                .Handle(new RemoveFieldOptionCommand(_boardId, field, b), CancellationToken.None));
+        var duplicate = () => AddOptionAsync(field, "alpha");
+
+        await duplicate.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>(
+            "the option set must be loaded with the field, so the duplicate-name rule sees persisted options");
+        await using var verify = _db.CreateContext(SystemTenant());
+        var options = await verify.FieldOptions.Where(o => o.FieldId == field).ToListAsync();
+        options.Should().ContainSingle().Which.Name.Should().Be("Alpha");
+    }
+
+    private async Task<Guid> AddOptionAsync(Guid fieldId, string name, Guid? previous = null, Guid? next = null) =>
+        await InTransactionAsync(async context =>
+            (await new AddFieldOptionCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
+                .Handle(new AddFieldOptionCommand(_boardId, fieldId, name, "#808080", previous, next), CancellationToken.None)).Data);
+
+    private Task MoveOptionAsync(Guid fieldId, Guid optionId, Guid? previous, Guid? next) =>
+        InTransactionAsync(async context =>
+            await new MoveFieldOptionCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
+                .Handle(new MoveFieldOptionCommand(_boardId, fieldId, optionId, previous, next), CancellationToken.None));
+
+    private async Task<List<Guid>> OptionOrderAsync(Guid fieldId)
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        var rows = await context.FieldOptions.Where(o => o.FieldId == fieldId).Select(o => new { o.Id, o.Position }).ToListAsync();
+        return rows.OrderBy(r => r.Position).ThenBy(r => r.Id).Select(r => r.Id).ToList();
+    }
+
+    private async Task<long> FieldVersionAsync(Guid fieldId)
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        return await context.BoardFields.Where(f => f.Id == fieldId).Select(f => f.Version).SingleAsync();
+    }
+
+    private ICurrentUser CurrentUser()
+    {
+        var currentUser = new Mock<ICurrentUser>();
+        currentUser.Setup(u => u.UserId).Returns(_userId);
+        return currentUser.Object;
     }
 
     private async Task<Guid> CreateFieldAsync(string name, string type = "Text", Guid? previous = null, Guid? next = null) =>

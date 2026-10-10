@@ -190,7 +190,7 @@ None
 - [x] WG-DEBT-006 and WG-DEBT-007 dispositions recorded in CERTIFICATION.
 
 ### Status
-Dispositions are executable in `WorkPermissionActionMatrixArchitectureTests` (GOV-DEBT-001): the AccessFactsQuery read of Work persistence is frozen to `work.boards` and `work.board_members`, and every active P3 request has a pinned `PermissionAction`. `CreateBoardBySlugCommand` (SPEC WM-V3-GAP-027) is classified RETIRE instead of hardened; it has no endpoint, and deleting its two files is the remaining step (the manifest, the three security allowlists and the API test factory keep it listed until then). The P3-B allow/deny/cross-tenant/revoked matrix remains open and is still gated by Workspace & Governance Milestone B.
+Dispositions are executable in `WorkPermissionActionMatrixArchitectureTests` (GOV-DEBT-001): the AccessFactsQuery read of Work persistence is frozen to `work.boards` and `work.board_members`, and every active P3 request has a pinned `PermissionAction`. `CreateBoardBySlugCommand` (SPEC WM-V3-GAP-027) is classified RETIRE instead of hardened; it had no endpoint and was deleted with WM-V3-APP-OPTION-001, together with its manifest, security-allowlist and API-factory entries. The P3-B allow/deny/cross-tenant/revoked matrix remains open and is still gated by Workspace & Governance Milestone B.
 
 ## WM-V3-LIFE-001 — Hydrate soft-delete lifecycle and make Restore reachable
 
@@ -792,7 +792,7 @@ None
 - [x] Group source READY_FOR_CERTIFICATION.
 
 ### Status
-`READY_FOR_CERTIFICATION` for placement. `CreateBoardGroup` takes neighbor ids instead of a client position (SPEC WM-V3-GAP-028); the new `MoveBoardGroupCommand` (`POST /api/v1/board-groups/{groupId}/move`) moves one group under the BoardGroups lock with the semantic no-op rule; `DuplicateBoardGroup` places the copy directly after its source and keeps the cloned items' relative keys. `ReorderBoardGroupsCommand` is classified RETIRE (full-list drag); deleting it, its endpoint and the web reorder call is pending, and it keeps WM-V3-DATA-002 blocked for the BoardGroups scope. Evidence: `WorkItemPlacementIntegrationTests` (group case). Open: Group `Version` on reads (WM-V3-CONC-002).
+`READY_FOR_CERTIFICATION` for placement. `CreateBoardGroup` takes neighbor ids instead of a client position (SPEC WM-V3-GAP-028); the new `MoveBoardGroupCommand` (`POST /api/v1/board-groups/{groupId}/move`) moves one group under the BoardGroups lock with the semantic no-op rule; `DuplicateBoardGroup` places the copy directly after its source and keeps the cloned items' relative keys. `ReorderBoardGroupsCommand` (full-list drag) was retired and deleted with WM-V3-APP-OPTION-001, with its endpoint; until WM-V3-FE-001 the web adapters apply a complete desired order as sequential append moves. Evidence: `WorkItemPlacementIntegrationTests` (group case). Open: Group `Version` on reads (WM-V3-CONC-002).
 
 ## WM-V3-APP-FIELD-001 — Close Field create/update/move
 
@@ -827,7 +827,7 @@ None
 - [x] Field source READY_FOR_CERTIFICATION.
 
 ### Status
-`READY_FOR_CERTIFICATION` except the version contract. Done: `BoardField.Rename` (trim, max 100, no-op, one version, `BoardFieldRenamedDomainEvent`, rejected on a deleted field); unknown or numeric field types fail closed in the validator and the handler (`FieldTypeNames`); create takes neighbor ids under the BoardFields lock and no longer forces `"{}"` settings (so the Status default applies); ordinary PATCH is `Name?`/`Settings?` with `FieldType` removed; the new `MoveBoardFieldCommand` (`POST /api/v1/boards/{boardId}/fields/{fieldId}/move`, `PermissionAction.UpdateField`) moves one field with the no-op rule; `ReorderBoardFieldsCommand` is classified RETIRE (deletion pending, keeps DATA-002 blocked for the BoardFields scope). Evidence: `BoardFieldRenameTests` (6), `FieldTypeNamesTests` (8), `WorkItemPlacementIntegrationTests` field cases (2). Open: required `ExpectedVersion` and BoardField `Version` on reads (WM-V3-CONC-001/002). Decision to review: field move uses `UpdateField` instead of the reorder's `ManageBoard`, narrowing per WG-DEBT-007.
+`READY_FOR_CERTIFICATION` except the version contract. Done: `BoardField.Rename` (trim, max 100, no-op, one version, `BoardFieldRenamedDomainEvent`, rejected on a deleted field); unknown or numeric field types fail closed in the validator and the handler (`FieldTypeNames`); create takes neighbor ids under the BoardFields lock and no longer forces `"{}"` settings (so the Status default applies); ordinary PATCH is `Name?`/`Settings?` with `FieldType` removed; the new `MoveBoardFieldCommand` (`POST /api/v1/boards/{boardId}/fields/{fieldId}/move`, `PermissionAction.UpdateField`) moves one field with the no-op rule; `ReorderBoardFieldsCommand` was retired and deleted with WM-V3-APP-OPTION-001 (route `POST /boards/{boardId}/fields/reorder` removed). Evidence: `BoardFieldRenameTests` (6), `FieldTypeNamesTests` (8), `WorkItemPlacementIntegrationTests` field cases (2). Open: required `ExpectedVersion` and BoardField `Version` on reads (WM-V3-CONC-001/002). Decision to review: field move uses `UpdateField` instead of the reorder's `ManageBoard`, narrowing per WG-DEBT-007.
 
 ## WM-V3-APP-OPTION-001 — Retire legacy FieldOption authority and close option move
 
@@ -855,7 +855,10 @@ None
 None
 
 ### Exit
-- [ ] Exactly one FieldOption authority and one normal move mechanism remain.
+- [x] Exactly one FieldOption authority and one normal move mechanism remain.
+
+### Status
+`READY_FOR_CERTIFICATION` except the version contract. Done: the legacy `Features/WorkManagement/FieldOptions/**` family and both full-list `ReorderFieldOptionsCommand`s are deleted with their route (`POST .../options/reorder`), so the BoardField-owned family is the only option authority; `AddFieldOptionCommand` takes neighbor ids instead of a raw `Position` string and resolves placement under the FieldOptions lock (`FieldOptionSiblings` reads the option set from storage under the lock); the new `MoveFieldOptionCommand` (`POST /api/v1/boards/{boardId}/fields/{fieldId}/options/{optionId}/move`, `PermissionAction.UpdateField`) moves one option through `BoardField.MoveOption` (one key rewritten, semantic no-op, one version, `FieldOptionMovedDomainEvent`); `BoardField.ReorderOptions` remains as the maintenance rebalance primitive with no user-facing caller. Live defect fixed (SPEC WM-V3-GAP-030): no option handler loaded `Options`, so update/remove from a fresh request always failed with OptionNotFound and the duplicate-name rule never saw persisted options. The same commit deletes the other pending RETIRE requests (`CreateBoardBySlug`, `ReorderBoardGroups`, `ReorderBoardFields`), which unblocks WM-V3-DATA-002 for the BoardGroups, BoardFields and FieldOptions scopes. Evidence: `FieldOptionMoveTests` (5), `WorkP3ManifestArchitectureTests.RetiredWorkAuthorities_AreAbsent`, `WorkItemPlacementIntegrationTests` option cases (2, PostgreSQL with the real lock; the fresh-request case fails on the previous handlers), `BoardFieldsEndpointTests` (retired routes unmapped, move routed). Open: required `ExpectedVersion` on option mutations (WM-V3-CONC-001).
 
 ## WM-V3-APP-CHK-001 — Route all child mutation through Checklist
 
