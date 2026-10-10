@@ -182,13 +182,14 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         FieldValueValidator.Validate(newValue, field.Type, field.Settings);
 
-        if (field.Type is FieldType.Select or FieldType.Status)
+        // Clearing (canonical JSON null) needs no option; FieldValueValidator accepts it.
+        if (!newValue.IsEmpty && field.Type is FieldType.Select or FieldType.Status)
         {
             var optionId = ParseOptionId(newValue, WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue);
             if (!field.Options.Any(option => option.Id == optionId))
                 throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
         }
-        else if (field.Type == FieldType.MultiSelect)
+        else if (!newValue.IsEmpty && field.Type == FieldType.MultiSelect)
         {
             var selectedIds = ParseDistinctOptionIds(newValue);
             var allowedIds = field.Options.Select(option => option.Id).ToHashSet();

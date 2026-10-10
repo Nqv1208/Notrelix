@@ -29,14 +29,19 @@ public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueComm
     public async Task<Result> Handle(ClearFieldValueCommand request, CancellationToken ct)
     {
         var item = await _context.BoardItems
+            // The value collection and the field options are loaded: an existing value
+            // is updated in place (unique per item/field) and option-backed values are
+            // validated against the persisted options (SPEC WM-V3-GAP-032).
+            .Include(i => i.FieldValues)
             .FirstOrDefaultAsync(i => i.Id == request.ItemId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.ItemId);
 
         var field = await _context.BoardFields
+            .Include(f => f.Options)
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == item.BoardId, ct);
         if (field is null) throw new NotFoundException(nameof(BoardField), request.FieldId);
 
-        var emptyValue = FieldValue.Create(JsonValue.Create("null"));
+        var emptyValue = FieldValue.Empty();
         item.UpdateFieldValue(field, emptyValue, _currentUser.UserId, _timeProvider.UtcNow);
         return Result.Success();
     }

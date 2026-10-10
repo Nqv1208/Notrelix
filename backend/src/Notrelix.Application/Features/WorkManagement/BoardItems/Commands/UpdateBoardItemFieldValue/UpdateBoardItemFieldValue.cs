@@ -34,12 +34,17 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
     public async Task<BoardItemSlimDto> Handle(UpdateBoardItemFieldValueCommand request, CancellationToken cancellationToken)
     {
         var item = await _context.BoardItems
+            // The value collection and the field options are loaded: an existing value
+            // is updated in place (unique per item/field) and option-backed values are
+            // validated against the persisted options (SPEC WM-V3-GAP-032).
+            .Include(i => i.FieldValues)
             .FirstOrDefaultAsync(item => item.Id == request.ItemId, cancellationToken);
 
         if (item == null)
             throw new NotFoundException("BoardItem", request.ItemId);
 
         var field = await _context.BoardFields
+            .Include(f => f.Options)
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == item.BoardId, cancellationToken);
 
         if (field == null)

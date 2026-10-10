@@ -3,6 +3,7 @@ using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Requests;
 using Notrelix.Domain.Common;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
@@ -44,6 +45,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
     private Guid _itemId;
     private Guid _checklistItemId;
     private Guid _checklistId;
+    private Guid _boardId;
 
     public WorkExpectedVersionIntegrationTests(PostgresTestContainer db)
     {
@@ -63,6 +65,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
         var checklist = Checklist.Create(_accountId, workspace.Id, item.Id, "Checklist", FractionalIndex.Create("a0"), _userId, Now);
         var checklistItem = checklist.AddItem("Step", FractionalIndex.Create("a0"), _userId, Now);
         (_workspaceId, _todoId, _doneId, _itemId, _checklistId, _checklistItemId) = (workspace.Id, todo.Id, done.Id, item.Id, checklist.Id, checklistItem.Id);
+        _boardId = board.Id;
 
         await using var seed = _db.CreateContext(SystemTenant());
         seed.Workspaces.Add(workspace);
@@ -118,6 +121,23 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
         await stale.Should().ThrowAsync<PreconditionFailedException>();
         await using var verify = _db.CreateContext(SystemTenant());
         (await verify.ChecklistItems.SingleAsync(i => i.Id == _checklistItemId)).IsDone.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateBoard_MapsEveryAcceptedField_AndRejectsAStaleWriter()
+    {
+        var readVersion = await VersionAsync<Board>(_boardId);
+
+        await RunAsync(new UpdateBoardCommand(_boardId, "Renamed", "Described", null, null, readVersion), (context, command) =>
+            new UpdateBoardCommandHandler(context, CurrentUser(), Clock()).Handle(command, CancellationToken.None));
+        var stale = () => RunAsync(new UpdateBoardCommand(_boardId, "Lost update", null, null, null, readVersion), (context, command) =>
+            new UpdateBoardCommandHandler(context, CurrentUser(), Clock()).Handle(command, CancellationToken.None));
+
+        await stale.Should().ThrowAsync<PreconditionFailedException>();
+        await using var verify = _db.CreateContext(SystemTenant());
+        var board = await verify.Boards.SingleAsync(b => b.Id == _boardId);
+        board.Title.Should().Be("Renamed");
+        board.Description.Should().Be("Described");
     }
 
     private Task MoveAsync(Guid groupId, long expectedVersion) =>

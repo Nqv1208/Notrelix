@@ -29,10 +29,15 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
     public async Task<Result> Handle(UpdateBoardItemStatusCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
+            // The value collection and the field options are loaded: an existing value
+            // is updated in place (unique per item/field) and option-backed values are
+            // validated against the persisted options (SPEC WM-V3-GAP-032).
+            .Include(c => c.FieldValues)
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var statusFields = await _context.BoardFields
+            .Include(f => f.Options)
             .Where(f => f.BoardId == card.BoardId && f.Type == FieldType.Status && f.DeletedAt == null)
             .ToListAsync(ct);
 

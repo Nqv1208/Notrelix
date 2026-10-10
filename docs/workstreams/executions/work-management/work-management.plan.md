@@ -603,7 +603,10 @@ Forward EF migration only for true persistence-width changes.
 None
 
 ### Exit
-- [ ] Board Domain source READY_FOR_CERTIFICATION.
+- [x] Board Domain source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION` (verified, no source change). Every Board mutation (Rename, UpdateDescription, UpdateBackground, ChangeVisibility, Archive/Unarchive, Delete/Restore, SetDefaultGroup) normalizes, returns before audit/version/event on a semantic no-op, and otherwise increments the version once and raises one event; identity and containment are never reassigned. Evidence: `BoardTests`, `BoardEventTests`, `BoardIdempotencyTests` (default schema created once), `WorkSoftDeleteLifecycleIntegrationTests` (lifecycle on reloaded state).
 
 ## WM-V3-DOM-ITEM-001 — Preserve and close BoardItem Domain core
 
@@ -627,7 +630,10 @@ None
 None
 
 ### Exit
-- [ ] BoardItem Domain source READY_FOR_CERTIFICATION.
+- [x] BoardItem Domain source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION`. `MoveToGroup` takes one resolved key, rejects cross-workspace/board groups, is a no-op for the same group and key, and its event carries the final group, key and version. Field values: the canonical cleared value (JSON null) is now accepted for option-backed fields (`FieldValue.IsEmpty`; previously Clear failed on every Select/MultiSelect/Status field), while a non-empty value must still name a configured option. Live defects fixed in the Application handlers (SPEC WM-V3-GAP-032). Evidence: `BoardItemTests`, `BoardItemMoveToGroupTests`, `BoardItemEventTests`, `BoardItemHierarchyTests`, `BoardItemFieldValueClearTests` (3), `WorkItemFieldValueIntegrationTests` (3, PostgreSQL, fresh request per write).
 
 ## WM-V3-DOM-FIELD-001 — Close BoardField/FieldValue semantics
 
@@ -652,7 +658,10 @@ None
 None
 
 ### Exit
-- [ ] Field/Value Domain source READY_FOR_CERTIFICATION.
+- [x] Field/Value Domain source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION`. FieldType is not patchable (WM-V3-APP-FIELD-001); `AddOption` returns the option and `MoveOption` consumes an already-resolved key through the aggregate (WM-V3-APP-OPTION-001); `ReorderOptions` is maintenance-only; the BoardField-owned family is the only option authority. Evidence: `BoardFieldTests`, `BoardFieldDefaultValueTests`, `BoardFieldRenameTests`, `FieldOptionMoveTests`, `FieldValueValidatorContractTests`, `WorkP3ManifestArchitectureTests.RetiredWorkAuthorities_AreAbsent`.
 
 ## WM-V3-DOM-CHK-001 — Close Checklist aggregate semantics
 
@@ -677,7 +686,10 @@ None
 None
 
 ### Exit
-- [ ] Checklist Domain source READY_FOR_CERTIFICATION.
+- [x] Checklist Domain source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION` with WM-V3-APP-CHK-001: aggregate-owned add/remove/rename/move/set-completion/toggle, `SetItemCompletion` no-op on the desired state, toggle a separate inversion. Due date and assignee child mutations are not part of the final API (removed from PATCH), so no Domain behavior is added for them. Evidence: `ChecklistChildMutationTests` (14).
 
 ## WM-V3-APP-BOARD-001 — Close protected Board use cases
 
@@ -703,7 +715,10 @@ None
 None
 
 ### Exit
-- [ ] Board protected source READY_FOR_CERTIFICATION.
+- [x] Board protected source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION`. `UpdateBoardCommand` maps exactly Title/Description/Background/Visibility, each to an owned Domain method (WMREQ010), with the required `ExpectedVersion` (WM-V3-CONC-001); Board reads return `Version` (WM-V3-CONC-002); create keeps the single default schema. Evidence: `WorkExpectedVersionIntegrationTests.UpdateBoard_MapsEveryAcceptedField_AndRejectsAStaleWriter`, `CreateBoardInWorkspacePipelineTests` (owner allowed, outsider forbidden through the real pipeline), `WorkPermissionActionMatrixArchitectureTests`.
 
 ## WM-V3-APP-ITEM-001 — Replace Item create/move with locked relative placement
 
@@ -766,10 +781,10 @@ None
 None
 
 ### Exit
-- [ ] Item mutation source READY_FOR_CERTIFICATION.
+- [x] Item mutation source READY_FOR_CERTIFICATION.
 
 ### Status
-Partially delivered. Done: Duplicate places the copy directly after its source through `WorkPlacementResolver.ResolveAfterAsync` under the GroupItems lock; `UpdateBoardItemCommand` no longer carries `DescriptionMd`/`Priority`/`Cover`; `UpdateBoardItemFieldValues` validates every field and field type before applying any value (SPEC WM-V3-GAP-029). Evidence: `WorkItemPlacementIntegrationTests` (duplicate and bulk cases; the bulk case fails on the previous handler). Open: single-value validation review, `ClearFieldValue` canonical null, and Item `Version` on reads (WM-V3-CONC-002).
+`READY_FOR_CERTIFICATION`. Done: Duplicate places the copy directly after its source through `WorkPlacementResolver.ResolveAfterAsync` under the GroupItems lock; `UpdateBoardItemCommand` no longer carries `DescriptionMd`/`Priority`/`Cover`; `UpdateBoardItemFieldValues` validates every field and field type before applying any value (SPEC WM-V3-GAP-029). Evidence: `WorkItemPlacementIntegrationTests` (duplicate and bulk cases; the bulk case fails on the previous handler). Closed later: single-value writes and Clear now load the item's values and the field's options (SPEC WM-V3-GAP-032), Clear stores the canonical JSON null for option fields, and Item `Version` is on reads (WM-V3-CONC-002).
 
 ## WM-V3-APP-GROUP-001 — Replace Group normal reorder with locked relative move
 
@@ -1004,6 +1019,9 @@ None
 
 ### Exit
 - [ ] One canonical mutation attempt has one idempotency identity end-to-end; changed-payload rebase starts a new attempt.
+
+### Status
+Server side `READY_FOR_CERTIFICATION`; frontend key ownership remains with WM-V3-FE-001 (backend-first, SPEC WM-V3-DEC-017). Evidence: `WorkIdempotencyIntegrationTests` (3, real pipeline with `IdempotencyBehavior` and the PostgreSQL store): same key + same payload has one effect and replays the first result; same key + different payload raises `IdempotencyPayloadMismatchException` with no second effect; a failed (stale-placement) attempt rolls back without completing the key, so the same-key retry executes. The exit box stays open until the web adapters own one key per canonical attempt.
 
 ## WM-V3-EVT-001 — Reverify P3 events/outbox after contract changes
 
