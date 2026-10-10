@@ -4,6 +4,7 @@ public class MoveBoardItemCommandValidator : AbstractValidator<MoveBoardItemComm
 {
     public MoveBoardItemCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(v => v.ItemId)
             .NotEmpty().WithMessage("ItemId is required.");
 

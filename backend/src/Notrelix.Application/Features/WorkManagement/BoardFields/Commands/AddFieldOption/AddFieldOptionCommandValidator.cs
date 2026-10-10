@@ -4,6 +4,7 @@ public class AddFieldOptionCommandValidator : AbstractValidator<AddFieldOptionCo
 {
     public AddFieldOptionCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.FieldId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);

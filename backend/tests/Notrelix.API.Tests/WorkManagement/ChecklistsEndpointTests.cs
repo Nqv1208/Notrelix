@@ -35,7 +35,7 @@ public class ChecklistsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateChecklist_WithValidData_ReturnsOk()
     {
-        var body = new { Title = "Updated Checklist" };
+        var body = new { Title = "Updated Checklist", ExpectedVersion = 1 };
         var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/checklists/{ChecklistId}")
         {
             Content = JsonContent(body)
@@ -53,7 +53,7 @@ public class ChecklistsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task CreateChecklistItem_WithValidData_ReturnsCreated()
     {
-        var body = new { Title = "New Item" };
+        var body = new { Title = "New Item", ExpectedVersion = 1 };
         var response = await _client.PostAsync($"/api/v1/checklists/{ChecklistId}/items", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NotFound);
     }
@@ -61,7 +61,7 @@ public class ChecklistsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateChecklistItem_WithValidData_ReturnsOk()
     {
-        var body = new { IsChecked = true };
+        var body = new { IsChecked = true, ExpectedVersion = 1 };
         var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/checklist-items/{ChecklistItemId}")
         {
             Content = JsonContent(body)
@@ -72,7 +72,7 @@ public class ChecklistsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task DeleteChecklistItem_ReturnsNoContent()
     {
-        var response = await _client.DeleteAsync($"/api/v1/checklist-items/{ChecklistItemId}");
+        var response = await _client.DeleteAsync($"/api/v1/checklist-items/{ChecklistItemId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

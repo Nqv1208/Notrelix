@@ -7,7 +7,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Updat
 public record UpdateBoardItemFieldValueCommand(
     Guid ItemId,
     Guid FieldId,
-    object? Value) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    object? Value,
+    long ExpectedVersion) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);
@@ -66,7 +67,8 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
             item.Name,
             item.Position.Value,
             memberIds,
-            labelIds
+            labelIds,
+            item.Version
         );
         if (_realtime is not null && _events is not null)
             _events.Add(_realtime.Map(request, response, item.Version));

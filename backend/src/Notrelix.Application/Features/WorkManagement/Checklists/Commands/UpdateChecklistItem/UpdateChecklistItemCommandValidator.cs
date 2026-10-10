@@ -4,6 +4,7 @@ public class UpdateChecklistItemCommandValidator : AbstractValidator<UpdateCheck
 {
     public UpdateChecklistItemCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ItemId)
             .NotEmpty();
         RuleFor(x => x.Title!)

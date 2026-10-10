@@ -10,8 +10,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.Move
 /// Replaces the full-list ReorderBoardFields for drag.
 /// </summary>
 [IdempotencyOperation("work-management.board-fields.move-board-field.v1")]
-public record MoveBoardFieldCommand(Guid BoardId, Guid FieldId, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record MoveBoardFieldCommand(Guid BoardId, Guid FieldId, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);

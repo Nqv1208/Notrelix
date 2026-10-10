@@ -10,8 +10,8 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveC
 /// (WM-V3-APP-CHK-001); its current place is a semantic no-op.
 /// </summary>
 [IdempotencyOperation("work-management.checklists.move-checklist-item.v1")]
-public record MoveChecklistItemCommand(Guid ItemId, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record MoveChecklistItemCommand(Guid ItemId, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist-item"), ItemId);

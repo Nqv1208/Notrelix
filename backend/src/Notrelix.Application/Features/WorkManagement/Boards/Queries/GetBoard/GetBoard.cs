@@ -32,7 +32,8 @@ public class GetBoardQueryHandler : IRequestHandler<GetBoardQuery, Result<BoardD
         return Result<BoardDto>.Success(new BoardDto(
             board.Id, board.WorkspaceId, board.Title, board.Description,
             board.Background, board.Visibility.ToString(), board.IsArchived,
-            memberCount, listCount, board.CreatedAt.DateTime
+            memberCount, listCount, board.CreatedAt.DateTime,
+            board.Version
         ));
     }
 }

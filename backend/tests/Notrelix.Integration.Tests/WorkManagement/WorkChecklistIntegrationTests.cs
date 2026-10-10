@@ -76,7 +76,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         (await ChecklistOrderAsync()).Should().Equal(a, c, b);
 
         await InTransactionAsync(context => new MoveChecklistCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
-            .Handle(new MoveChecklistCommand(a, b, null), CancellationToken.None));
+            .Handle(new MoveChecklistCommand(a, 1, b, null), CancellationToken.None));
 
         (await ChecklistOrderAsync()).Should().Equal(c, b, a);
     }
@@ -94,7 +94,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         (await ChecklistVersionAsync(checklist)).Should().Be(versionBefore + 3, "each item add versions the owning checklist once");
 
         await InTransactionAsync(context => new MoveChecklistItemCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
-            .Handle(new MoveChecklistItemCommand(first, second, null), CancellationToken.None));
+            .Handle(new MoveChecklistItemCommand(first, 1, second, null), CancellationToken.None));
 
         (await ItemOrderAsync(checklist)).Should().Equal(middle, second, first);
     }
@@ -124,7 +124,7 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
         await AddItemAsync(drop, "Owned by the deleted checklist");
 
         await InTransactionAsync(context => new DeleteChecklistItemCommandHandler(context, CurrentUser(), Clock())
-            .Handle(new DeleteChecklistItemCommand(item), CancellationToken.None));
+            .Handle(new DeleteChecklistItemCommand(item, 1), CancellationToken.None));
         await InTransactionAsync(context => new DeleteChecklistCommandHandler(context, CurrentUser(), Clock())
             .Handle(new DeleteChecklistCommand(drop), CancellationToken.None));
 
@@ -142,11 +142,11 @@ public sealed class WorkChecklistIntegrationTests : IAsyncLifetime
 
     private async Task<Guid> AddItemAsync(Guid checklistId, string title, Guid? previous = null, Guid? next = null) =>
         (await InTransactionAsync(context => new CreateChecklistItemCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
-            .Handle(new CreateChecklistItemCommand(checklistId, title, previous, next), CancellationToken.None))).Data;
+            .Handle(new CreateChecklistItemCommand(checklistId, title, 1, previous, next), CancellationToken.None))).Data;
 
     private Task PatchItemAsync(Guid itemId, string? title, bool? isChecked) =>
         InTransactionAsync(context => new UpdateChecklistItemCommandHandler(context, CurrentUser(), Clock())
-            .Handle(new UpdateChecklistItemCommand(itemId, title, isChecked), CancellationToken.None));
+            .Handle(new UpdateChecklistItemCommand(itemId, 1, title, isChecked), CancellationToken.None));
 
     private async Task<List<Notrelix.Application.Features.WorkManagement.Common.DTOs.ChecklistDto>> GetChecklistsAsync()
     {

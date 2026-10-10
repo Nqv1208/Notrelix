@@ -62,6 +62,23 @@ public class WorkMutationTransportRegressionTests : IClassFixture<NotrelixApiFac
         recorder.Received.Should().ContainSingle().Which.ExpectedVersion.Should().Be(4);
     }
 
+    [Fact]
+    public async Task VersionedMutation_WithoutExpectedVersion_IsRejectedAsAClientError()
+    {
+        // WM-V3-CONC-001: a missing version binds as 0 and is a 400, not a guaranteed 412.
+        var recorder = new Recorder<UpdateBoardFieldCommand>();
+        var client = CreateClient(recorder);
+
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Patch,
+            $"/api/v1/boards/{Guid.NewGuid()}/fields/{Guid.NewGuid()}")
+        {
+            Content = Json(new { Name = "Renamed" })
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        recorder.Received.Should().BeEmpty("validation rejects the request before the handler");
+    }
+
     private HttpClient CreateClient<TCommand>(Recorder<TCommand> recorder)
         where TCommand : IRequest<Result>
     {

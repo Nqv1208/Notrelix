@@ -4,6 +4,7 @@ public class CreateChecklistItemCommandValidator : AbstractValidator<CreateCheck
 {
     public CreateChecklistItemCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ChecklistId)
             .NotEmpty();
 

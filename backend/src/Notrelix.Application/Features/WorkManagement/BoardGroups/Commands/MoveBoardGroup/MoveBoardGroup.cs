@@ -10,8 +10,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Move
 /// Replaces the full-list ReorderBoardGroups for drag.
 /// </summary>
 [IdempotencyOperation("work-management.board-groups.move-board-group.v1")]
-public record MoveBoardGroupCommand(Guid GroupId, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record MoveBoardGroupCommand(Guid GroupId, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);

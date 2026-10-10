@@ -4,6 +4,7 @@ public class UpdateBoardItemFieldValuesCommandValidator : AbstractValidator<Upda
 {
     public UpdateBoardItemFieldValuesCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardItemId).NotEmpty();
         RuleFor(x => x.Values).NotNull().Must(v => v.Count > 0);
     }

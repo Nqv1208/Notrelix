@@ -7,8 +7,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveB
 public record MoveBoardItemCommand(
     Guid ItemId,
     Guid NewGroupId,
+    long ExpectedVersion,
     Guid? PreviousSiblingId = null,
-    Guid? NextSiblingId = null) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    Guid? NextSiblingId = null) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.MoveItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);

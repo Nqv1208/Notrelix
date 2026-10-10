@@ -9,7 +9,8 @@ public record BoardFieldDto(
     string? DefaultValue,
     string Position,
     bool IsSystem,
-    bool IsDeleted
+    bool IsDeleted,
+    long Version
 );
 
 public record BoardFieldSchemaDto(
@@ -19,4 +20,5 @@ public record BoardFieldSchemaDto(
     string Settings,
     string? DefaultValue,
     string Position,
-    bool IsSystem);
+    bool IsSystem,
+    long Version);

@@ -64,7 +64,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task AddFieldOption_WithValidData_ReturnsCreated()
     {
-        var body = new { Name = "High Priority", Color = "#FF0000", PreviousSiblingId = (Guid?)null, NextSiblingId = (Guid?)null };
+        var body = new { Name = "High Priority", Color = "#FF0000", ExpectedVersion = 1, PreviousSiblingId = (Guid?)null, NextSiblingId = (Guid?)null };
         var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NotFound);
     }
@@ -73,7 +73,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task RemoveFieldOption_ReturnsNoContent()
     {
         var optionId = Guid.NewGuid();
-        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{optionId}");
+        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{optionId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
@@ -81,7 +81,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task UpdateFieldOption_WithValidData_ReturnsOk()
     {
         var optionId = Guid.NewGuid();
-        var body = new { Name = "Updated Option", Color = "#00FF00" };
+        var body = new { Name = "Updated Option", Color = "#00FF00", ExpectedVersion = 1 };
         var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{optionId}")
         {
             Content = JsonContent(body)
@@ -92,7 +92,7 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task MoveFieldOption_WithNeighborIntent_IsRouted()
     {
-        var body = new { PreviousSiblingId = Guid.NewGuid(), NextSiblingId = (Guid?)null };
+        var body = new { ExpectedVersion = 1, PreviousSiblingId = Guid.NewGuid(), NextSiblingId = (Guid?)null };
         var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{Guid.NewGuid()}/move", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }

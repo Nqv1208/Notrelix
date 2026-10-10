@@ -301,6 +301,51 @@ public sealed class WorkP3ManifestArchitectureTests
     }
 
     [Fact]
+    public void EveryVersionedTarget_RequiresAPositiveExpectedVersion_AndHasExactlyOneTargetMapping()
+    {
+        var types = DiscoverWorkRequests().ToDictionary(r => r.Key, r => r.Type, StringComparer.Ordinal);
+        var targets = P3Requests.Where(e => e.Value.VersionedTarget).Select(e => e.Key).ToList();
+        var validators = typeof(IExpectedVersionRequest).Assembly.GetTypes()
+            .Where(t => t is { IsAbstract: false, IsGenericTypeDefinition: false } && typeof(FluentValidation.IValidator).IsAssignableFrom(t))
+            .Select(t => (Validator: t, Validated: t.BaseType is { IsGenericType: true } b ? b.GetGenericArguments()[0] : null))
+            .Where(v => v.Validated is not null)
+            .ToLookup(v => v.Validated!, v => v.Validator);
+
+        targets.Should().HaveCount(22, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
+        var violations = new List<string>();
+        foreach (var key in targets)
+        {
+            var type = types[key];
+            if (!typeof(IExpectedVersionRequest).IsAssignableFrom(type))
+            {
+                violations.Add($"{key}: does not declare IExpectedVersionRequest");
+                continue;
+            }
+
+            var property = type.GetProperty(nameof(IExpectedVersionRequest.ExpectedVersion));
+            if (property?.PropertyType != typeof(long))
+                violations.Add($"{key}: ExpectedVersion must be a required non-nullable long (no nullable→0 sentinel)");
+            if (type.GetConstructors().All(c => c.GetParameters().All(p => p.Name != "ExpectedVersion" || p.HasDefaultValue)))
+                violations.Add($"{key}: ExpectedVersion must be a required constructor parameter");
+            if (!Notrelix.Infrastructure.Data.Concurrency.ExpectedVersionTargetMap.Default.Contains(type))
+                violations.Add($"{key}: no ExpectedVersionTargetMap entry");
+
+            var missing = (IExpectedVersionRequest)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(type);
+            var rejectsMissingVersion = validators[type].Any(v =>
+                ((FluentValidation.IValidator)Activator.CreateInstance(v)!)
+                    .Validate(new FluentValidation.ValidationContext<object>(
+                        missing,
+                        new FluentValidation.Internal.PropertyChain(),
+                        new FluentValidation.Internal.MemberNameValidatorSelector([nameof(IExpectedVersionRequest.ExpectedVersion)])))
+                    .Errors.Any(e => e.PropertyName == nameof(IExpectedVersionRequest.ExpectedVersion)));
+            if (!rejectsMissingVersion)
+                violations.Add($"{key}: no validator rejects a missing (0) ExpectedVersion");
+        }
+
+        violations.Should().BeEmpty("WM-V3-CONC-001: every manifest request has a required version and one target mapping");
+    }
+
+    [Fact]
     public void ChecklistItems_AreNeverAddedOrRemovedOutsideTheChecklistAggregate()
     {
         var featureRoot = Path.Combine(FindSrcRoot(), "Notrelix.Application", "Features");

@@ -3,12 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 
-public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, DateTime? DueDate, DateTime? StartDate, long? ExpectedVersion = null) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
+public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, DateTime? DueDate, DateTime? StartDate, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
-    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
-    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemCommand, Result>

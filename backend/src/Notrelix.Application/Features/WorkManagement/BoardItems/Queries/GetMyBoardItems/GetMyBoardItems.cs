@@ -74,7 +74,8 @@ public class GetMyBoardItemsQueryHandler(
                 0,
                 item.Position.Value,
                 item.CreatedAt.UtcDateTime,
-                item.UpdatedAt?.UtcDateTime);
+                item.UpdatedAt?.UtcDateTime,
+                item.Version);
         }).ToList();
 
         return Result<List<BoardItemSummaryDto>>.Success(result);

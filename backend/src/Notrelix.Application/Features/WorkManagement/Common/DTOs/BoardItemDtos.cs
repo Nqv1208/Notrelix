@@ -12,7 +12,8 @@ public record BoardItemSummaryDto(
     int AttachmentCount,
     string Position,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    long Version
 );
 
 public record BoardItemDto(
@@ -28,7 +29,8 @@ public record BoardItemDto(
     int AttachmentCount,
     string Position,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    long Version
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);
@@ -40,4 +42,5 @@ public record BoardItemSlimDto(
     string Name,
     string Position,
     List<Guid> MemberIds,
-    List<Guid> LabelIds);
+    List<Guid> LabelIds,
+    long Version);

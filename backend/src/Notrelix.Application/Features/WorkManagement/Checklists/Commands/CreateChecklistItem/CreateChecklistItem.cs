@@ -9,8 +9,8 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Creat
 /// relative to the requested neighbors under the checklist's ChecklistItems lock.
 /// </summary>
 [IdempotencyOperation("work-management.checklists.create-checklist-item.v1")]
-public record CreateChecklistItemCommand(Guid ChecklistId, string Title, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
-    : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record CreateChecklistItemCommand(Guid ChecklistId, string Title, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
+    : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist"), ChecklistId);

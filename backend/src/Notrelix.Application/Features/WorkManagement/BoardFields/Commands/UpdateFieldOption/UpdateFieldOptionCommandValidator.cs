@@ -4,6 +4,7 @@ public class UpdateFieldOptionCommandValidator : AbstractValidator<UpdateFieldOp
 {
     public UpdateFieldOptionCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.FieldId).NotEmpty();
         RuleFor(x => x.OptionId).NotEmpty();

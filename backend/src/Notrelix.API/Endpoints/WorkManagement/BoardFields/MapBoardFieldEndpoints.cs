@@ -71,7 +71,7 @@ public static class MapBoardFieldEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MoveBoardFieldCommand(boardId, fieldId, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+        var result = await sender.Send(new MoveBoardFieldCommand(boardId, fieldId, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToNoContentResult();
     }
 

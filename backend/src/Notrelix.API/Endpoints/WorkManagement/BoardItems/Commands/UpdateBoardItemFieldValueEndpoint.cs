@@ -25,7 +25,8 @@ public static class UpdateBoardItemFieldValueEndpoint
         var result = await sender.Send(new UpdateBoardItemFieldValueCommand(
             itemId,
             fieldId,
-            body.Value), cancellationToken);
+            body.Value,
+            body.ExpectedVersion), cancellationToken);
         return Results.Ok(result);
     }
 }

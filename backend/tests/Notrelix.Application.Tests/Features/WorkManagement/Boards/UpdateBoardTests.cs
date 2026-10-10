@@ -24,7 +24,7 @@ public class UpdateBoardTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new UpdateBoardCommand(board.Id, "Updated Title", null, null, null, null);
+        var command = new UpdateBoardCommand(board.Id, "Updated Title", null, null, null, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -34,7 +34,7 @@ public class UpdateBoardTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_BoardNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateBoardCommand(Guid.CreateVersion7(), "Title", null, null, null, null);
+        var command = new UpdateBoardCommand(Guid.CreateVersion7(), "Title", null, null, null, 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -46,7 +46,7 @@ public class UpdateBoardTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new UpdateBoardCommand(board.Id, null, "New description", null, null, null);
+        var command = new UpdateBoardCommand(board.Id, null, "New description", null, null, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -59,7 +59,7 @@ public class UpdateBoardTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new UpdateBoardCommand(board.Id, null, null, null, BoardVisibility.PublicLink, null);
+        var command = new UpdateBoardCommand(board.Id, null, null, null, BoardVisibility.PublicLink, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -72,7 +72,7 @@ public class UpdateBoardTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new UpdateBoardCommand(board.Id, null, null, "{\"type\":\"image\",\"value\":\"url\"}", null, null);
+        var command = new UpdateBoardCommand(board.Id, null, null, "{\"type\":\"image\",\"value\":\"url\"}", null, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -86,7 +86,7 @@ public class UpdateBoardTests : WorkManagementHandlerTestBase
         board.Archive(TestUserId, TestNow);
         SetupBoards(board);
 
-        var command = new UpdateBoardCommand(board.Id, "New Title", null, null, null, null);
+        var command = new UpdateBoardCommand(board.Id, "New Title", null, null, null, 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
@@ -98,7 +98,7 @@ public class UpdateBoardTests : WorkManagementHandlerTestBase
         var board = CreateBoard();
         SetupBoards(board);
 
-        var command = new UpdateBoardCommand(board.Id, null, null, null, null, null);
+        var command = new UpdateBoardCommand(board.Id, null, null, null, null, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

@@ -69,7 +69,8 @@ public sealed class MoveBoardItemUseCase
                 item.Name,
                 item.Position.Value,
                 memberIds,
-                labelIds),
+                labelIds,
+                item.Version),
             item.Version);
     }
 }

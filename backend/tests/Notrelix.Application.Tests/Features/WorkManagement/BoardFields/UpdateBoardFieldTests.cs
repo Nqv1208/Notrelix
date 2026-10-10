@@ -24,7 +24,7 @@ public class UpdateBoardFieldTests : WorkManagementHandlerTestBase
         var field = CreateBoardField();
         SetupBoardFields(field);
 
-        var command = new UpdateBoardFieldCommand(field.BoardId, field.Id, null, "{\"newSetting\":\"value\"}");
+        var command = new UpdateBoardFieldCommand(field.BoardId, field.Id, null, "{\"newSetting\":\"value\"}", 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -34,7 +34,7 @@ public class UpdateBoardFieldTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_FieldNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateBoardFieldCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), null, null);
+        var command = new UpdateBoardFieldCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), null, null, 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -48,7 +48,7 @@ public class UpdateBoardFieldTests : WorkManagementHandlerTestBase
         var field = CreateBoardField(boardId: boardId1);
         SetupBoardFields(field);
 
-        var command = new UpdateBoardFieldCommand(boardId2, field.Id, null, null);
+        var command = new UpdateBoardFieldCommand(boardId2, field.Id, null, null, 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -60,7 +60,7 @@ public class UpdateBoardFieldTests : WorkManagementHandlerTestBase
         var field = CreateBoardField();
         SetupBoardFields(field);
 
-        var command = new UpdateBoardFieldCommand(field.BoardId, field.Id, null, null);
+        var command = new UpdateBoardFieldCommand(field.BoardId, field.Id, null, null, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

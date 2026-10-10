@@ -25,8 +25,6 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
             .Must(v => v is null || Enum.IsDefined(typeof(BoardVisibility), v))
             .WithMessage("Visibility must be a valid board visibility value.");
 
-        RuleFor(x => x.ExpectedVersion)
-            .GreaterThan(0)
-            .When(x => x.ExpectedVersion.HasValue);
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
     }
 }

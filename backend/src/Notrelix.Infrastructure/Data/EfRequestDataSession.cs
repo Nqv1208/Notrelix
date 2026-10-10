@@ -139,7 +139,7 @@ public sealed class EfRequestDataSession : IRequestDataSession
 
         var tracked = _dbContext.ChangeTracker.Entries()
             .Where(candidate => target.AggregateType.IsInstanceOfType(candidate.Entity))
-            .Where(candidate => ((AggregateRoot)candidate.Entity).Id == constraint.Resource.ResourceId)
+            .Where(candidate => target.Matches((AggregateRoot)candidate.Entity, constraint.Resource.ResourceId))
             .ToArray();
 
         if (tracked.Length == 0)

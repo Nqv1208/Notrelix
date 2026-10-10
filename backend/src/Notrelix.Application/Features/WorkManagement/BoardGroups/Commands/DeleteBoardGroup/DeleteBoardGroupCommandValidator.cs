@@ -4,6 +4,7 @@ public class DeleteBoardGroupCommandValidator : AbstractValidator<DeleteBoardGro
 {
     public DeleteBoardGroupCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.GroupId).NotEmpty();
     }
 }

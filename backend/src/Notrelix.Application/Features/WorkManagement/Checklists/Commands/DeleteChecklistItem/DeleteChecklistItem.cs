@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Delet
 
 /// <summary>Removes an item through the owning Checklist aggregate (WM-V3-APP-CHK-001).</summary>
 [IdempotencyOperation("work-management.checklists.delete-checklist-item.v1")]
-public record DeleteChecklistItemCommand(Guid ItemId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record DeleteChecklistItemCommand(Guid ItemId, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist-item"), ItemId);

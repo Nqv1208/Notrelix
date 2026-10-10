@@ -3787,6 +3787,8 @@ export interface components {
             nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.MoveBoardFieldRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             previousSiblingId?: string | null;
             /** Format: uuid */
@@ -3796,7 +3798,7 @@ export interface components {
             name?: string | null;
             settingsJson?: string | null;
             /** Format: int64 */
-            expectedVersion?: number | null;
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.CreateBoardGroupRequest": {
             title?: string | null;
@@ -3807,12 +3809,16 @@ export interface components {
             nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.MoveBoardGroupRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.UpdateBoardGroupRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             title?: string | null;
             color?: string | null;
         };
@@ -3844,6 +3850,8 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveBoardItemRequest": {
             /** Format: uuid */
             groupId?: string;
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             previousSiblingId?: string | null;
             /** Format: uuid */
@@ -3857,8 +3865,12 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemFieldValueRequest": {
             value?: unknown;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemFieldValuesRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             values?: {
                 [key: string]: unknown;
             } | null;
@@ -3919,6 +3931,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CreateChecklistItemRequest": {
             title?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             previousSiblingId?: string | null;
             /** Format: uuid */
@@ -3932,22 +3946,30 @@ export interface components {
             nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistItemRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             title?: string | null;
             isChecked?: boolean | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             title?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.AddFormQuestionRequest": {
@@ -4166,12 +4188,16 @@ export interface components {
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.AddFieldOptionRequest": {
             name?: string | null;
             color?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
         };
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.MoveFieldOptionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
             /** Format: uuid */
             previousSiblingId?: string | null;
             /** Format: uuid */
@@ -4180,6 +4206,8 @@ export interface components {
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.UpdateFieldOptionRequest": {
             name?: string | null;
             color?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
@@ -4230,7 +4258,7 @@ export interface components {
             /** Format: date-time */
             startDate?: string | null;
             /** Format: int64 */
-            expectedVersion?: number | null;
+            expectedVersion?: number;
             action?: components["schemas"]["Notrelix.Domain.Governance.Permissions.PermissionAction"];
             resource?: components["schemas"]["Notrelix.Domain.SharedKernel.ResourceRef"];
         };
@@ -4242,7 +4270,7 @@ export interface components {
             background?: string | null;
             visibility?: components["schemas"]["Notrelix.Domain.WorkManagement.Boards.BoardVisibility"];
             /** Format: int64 */
-            expectedVersion?: number | null;
+            expectedVersion?: number;
             action?: components["schemas"]["Notrelix.Domain.Governance.Permissions.PermissionAction"];
             resource?: components["schemas"]["Notrelix.Domain.SharedKernel.ResourceRef"];
         };
@@ -6792,7 +6820,9 @@ export interface operations {
     };
     "WorkManagement.BoardFields.RemoveFieldOption": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -7881,7 +7911,9 @@ export interface operations {
     };
     "WorkManagement.BoardItems.ClearFieldValue": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -9475,7 +9507,9 @@ export interface operations {
     };
     "WorkManagement.Checklists.DeleteItem": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -9561,7 +9595,9 @@ export interface operations {
     };
     "WorkManagement.Checklists.ToggleItem": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;

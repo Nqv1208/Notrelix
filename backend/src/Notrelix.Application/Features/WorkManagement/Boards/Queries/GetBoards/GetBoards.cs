@@ -31,7 +31,8 @@ public class GetBoardsQueryHandler : IRequestHandler<GetBoardsQuery, Result<List
             b.Background, b.Visibility.ToString(), b.IsArchived,
             _context.BoardMembers.Count(m => m.BoardId == b.Id),
             _context.BoardGroups.Count(l => l.BoardId == b.Id && l.DeletedAt == null),
-            b.CreatedAt.DateTime
+            b.CreatedAt.DateTime,
+            b.Version
         )).ToList();
 
         return Result<List<BoardDto>>.Success(result);

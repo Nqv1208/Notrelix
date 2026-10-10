@@ -69,7 +69,8 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
             item.Name,
             item.Position.Value,
             new List<Guid>(),
-            new List<Guid>()
+            new List<Guid>(),
+            item.Version
         );
         if (_realtime is not null && _events is not null)
             _events.Add(_realtime.Map(request, response, item.Version));

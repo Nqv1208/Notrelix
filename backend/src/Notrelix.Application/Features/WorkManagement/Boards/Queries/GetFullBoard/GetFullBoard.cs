@@ -130,7 +130,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         collaborationStats?.AttachmentCount ?? 0,
                         card.Position.Value,
                         card.CreatedAt.DateTime,
-                        card.UpdatedAt?.DateTime
+                        card.UpdatedAt?.DateTime,
+                        card.Version
                     );
                 })
                 .ToList());
@@ -142,7 +143,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 list.Color.ToString(),
                 list.Position.Value,
                 list.DeletedAt != null,
-                cardsByListId.GetValueOrDefault(list.Id) ?? []))
+                cardsByListId.GetValueOrDefault(list.Id) ?? [],
+                list.Version))
             .ToList();
 
         var columns = await _context.BoardFields
@@ -158,7 +160,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.DefaultValue == null ? null : column.DefaultValue.Data.Value,
                 column.Position.Value,
                 column.IsSystem,
-                column.DeletedAt != null
+                column.DeletedAt != null,
+                column.Version
             ))
             .ToListAsync(cancellationToken);
 
@@ -173,7 +176,9 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 null,
                 "a0",
                 true,
-                false
+                false,
+                // Synthetic, read-only title column; it has no aggregate version.
+                0
             ));
         }
 
@@ -205,7 +210,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             board.Visibility.ToString(),
             columns,
             listDtos,
-            members
+            members,
+            board.Version
         ));
     }
 

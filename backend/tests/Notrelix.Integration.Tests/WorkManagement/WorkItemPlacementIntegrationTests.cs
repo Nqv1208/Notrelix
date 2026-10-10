@@ -162,7 +162,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
         await InTransactionAsync(async context =>
             await new MoveBoardGroupCommandHandler(context, Request(), Clock(), Resolver(context))
-                .Handle(new MoveBoardGroupCommand(third, _todoId, _doneId), CancellationToken.None));
+                .Handle(new MoveBoardGroupCommand(third, 1, _todoId, _doneId), CancellationToken.None));
         (await GroupOrderAsync()).Should().Equal(_todoId, third, _doneId);
 
         var a = await CreateAsync("a");
@@ -188,7 +188,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
                 {
                     [_boardId] = "renamed",
                     [Guid.NewGuid()] = "unknown field",
-                }), CancellationToken.None));
+                }, 1), CancellationToken.None));
 
         result.Succeeded.Should().BeFalse();
         (await TitlesInGroupAsync(_todoId)).Should().Equal(["original"], "a rejected bulk update must not apply any value (WMREQ025)");
@@ -204,7 +204,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
         await InTransactionAsync(async context =>
             await new MoveBoardFieldCommandHandler(context, Request(), Clock(), Resolver(context))
-                .Handle(new MoveBoardFieldCommand(_boardId, a, b, null), CancellationToken.None));
+                .Handle(new MoveBoardFieldCommand(_boardId, a, 1, b, null), CancellationToken.None));
 
         (await FieldOrderAsync()).Should().Equal(c, b, a);
     }
@@ -220,7 +220,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
             var currentUser = new Mock<ICurrentUser>();
             currentUser.Setup(u => u.UserId).Returns(_userId);
             return await new UpdateBoardFieldCommandHandler(context, currentUser.Object, Clock())
-                .Handle(new UpdateBoardFieldCommand(_boardId, field, "Stage", null), CancellationToken.None);
+                .Handle(new UpdateBoardFieldCommand(_boardId, field, "Stage", null, 1), CancellationToken.None);
         });
 
         await using var verify = _db.CreateContext(SystemTenant());
@@ -255,10 +255,10 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
         await InTransactionAsync(async context =>
             await new UpdateFieldOptionCommandHandler(context, CurrentUser(), Clock())
-                .Handle(new UpdateFieldOptionCommand(_boardId, field, a, "Alpha", "#112233"), CancellationToken.None));
+                .Handle(new UpdateFieldOptionCommand(_boardId, field, a, "Alpha", "#112233", 1), CancellationToken.None));
         await InTransactionAsync(async context =>
             await new RemoveFieldOptionCommandHandler(context, CurrentUser(), Clock())
-                .Handle(new RemoveFieldOptionCommand(_boardId, field, b), CancellationToken.None));
+                .Handle(new RemoveFieldOptionCommand(_boardId, field, b, 1), CancellationToken.None));
         var duplicate = () => AddOptionAsync(field, "alpha");
 
         await duplicate.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>(
@@ -296,12 +296,12 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
     private async Task<Guid> AddOptionAsync(Guid fieldId, string name, Guid? previous = null, Guid? next = null) =>
         await InTransactionAsync(async context =>
             (await new AddFieldOptionCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
-                .Handle(new AddFieldOptionCommand(_boardId, fieldId, name, "#808080", previous, next), CancellationToken.None)).Data);
+                .Handle(new AddFieldOptionCommand(_boardId, fieldId, name, "#808080", 1, previous, next), CancellationToken.None)).Data);
 
     private Task MoveOptionAsync(Guid fieldId, Guid optionId, Guid? previous, Guid? next) =>
         InTransactionAsync(async context =>
             await new MoveFieldOptionCommandHandler(context, CurrentUser(), Clock(), Resolver(context))
-                .Handle(new MoveFieldOptionCommand(_boardId, fieldId, optionId, previous, next), CancellationToken.None));
+                .Handle(new MoveFieldOptionCommand(_boardId, fieldId, optionId, 1, previous, next), CancellationToken.None));
 
     private async Task<List<Guid>> OptionOrderAsync(Guid fieldId)
     {
@@ -377,7 +377,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
             var currentUser = new Mock<ICurrentUser>();
             currentUser.Setup(u => u.UserId).Returns(_userId);
             var handler = new MoveBoardItemCommandHandler(new MoveBoardItemUseCase(context, Clock(), Resolver(context)), currentUser.Object);
-            await handler.Handle(new MoveBoardItemCommand(itemId, group, previous, next), CancellationToken.None);
+            await handler.Handle(new MoveBoardItemCommand(itemId, group, 1, previous, next), CancellationToken.None);
             return true;
         });
 

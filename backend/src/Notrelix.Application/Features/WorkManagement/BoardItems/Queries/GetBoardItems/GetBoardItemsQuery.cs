@@ -54,7 +54,8 @@ public class GetBoardItemsQueryHandler : IRequestHandler<GetBoardItemsQuery, Lis
             item.Name,
             item.Position.Value,
             memberIds.GetValueOrDefault(item.Id) ?? [],
-            labelIds.GetValueOrDefault(item.Id) ?? []
+            labelIds.GetValueOrDefault(item.Id) ?? [],
+            item.Version
         )).ToList();
     }
 }

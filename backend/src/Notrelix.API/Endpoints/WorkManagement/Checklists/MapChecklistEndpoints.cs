@@ -58,7 +58,7 @@ public static class MapChecklistEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateChecklistItemCommand(checklistId, body.Title, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+        var result = await sender.Send(new CreateChecklistItemCommand(checklistId, body.Title, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToCreatedResult();
     }
 
@@ -68,7 +68,7 @@ public static class MapChecklistEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MoveChecklistCommand(checklistId, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+        var result = await sender.Send(new MoveChecklistCommand(checklistId, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToNoContentResult();
     }
 
@@ -78,7 +78,7 @@ public static class MapChecklistEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MoveChecklistItemCommand(itemId, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+        var result = await sender.Send(new MoveChecklistItemCommand(itemId, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

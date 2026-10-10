@@ -9,8 +9,8 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Updat
 /// current state is a no-op. Runs through the owning Checklist aggregate.
 /// </summary>
 [IdempotencyOperation("work-management.checklists.update-checklist-item.v1")]
-public record UpdateChecklistItemCommand(Guid ItemId, string? Title = null, bool? IsChecked = null)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UpdateChecklistItemCommand(Guid ItemId, long ExpectedVersion, string? Title = null, bool? IsChecked = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist-item"), ItemId);

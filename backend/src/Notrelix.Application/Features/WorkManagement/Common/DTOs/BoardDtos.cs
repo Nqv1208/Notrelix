@@ -10,7 +10,8 @@ public record BoardDto(
     bool IsArchived,
     int MemberCount,
     int ListCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    long Version
 );
 
 public record FullBoardDto(
@@ -22,7 +23,8 @@ public record FullBoardDto(
     string Visibility,
     List<BoardFieldDto> Columns,
     List<BoardGroupDto> Lists,
-    List<BoardMemberDto> Members
+    List<BoardMemberDto> Members,
+    long Version
 );
 
 public record BoardMemberDto(

@@ -8,7 +8,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.Remo
 public record RemoveFieldOptionCommand(
     Guid BoardId,
     Guid FieldId,
-    Guid OptionId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    Guid OptionId,
+    long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);

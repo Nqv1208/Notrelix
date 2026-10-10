@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Updat
 /// through <c>MoveChecklistCommand</c> (WM-V3-APP-CHK-001).
 /// </summary>
 [IdempotencyOperation("work-management.checklists.update-checklist.v1")]
-public record UpdateChecklistCommand(Guid ChecklistId, string? Title) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UpdateChecklistCommand(Guid ChecklistId, string? Title, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist"), ChecklistId);

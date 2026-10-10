@@ -9,8 +9,8 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveC
 /// ItemChecklists ordering lock (WM-V3-APP-CHK-001); its current place is a no-op.
 /// </summary>
 [IdempotencyOperation("work-management.checklists.move-checklist.v1")]
-public record MoveChecklistCommand(Guid ChecklistId, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record MoveChecklistCommand(Guid ChecklistId, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist"), ChecklistId);

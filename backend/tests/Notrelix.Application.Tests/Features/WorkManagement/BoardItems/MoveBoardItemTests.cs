@@ -32,7 +32,7 @@ public class MoveBoardItemTests : WorkManagementHandlerTestBase
         SetupBoardGroups(sourceGroup, targetGroup);
         SetupBoardItems(item);
 
-        var command = new MoveBoardItemCommand(item.Id, targetGroup.Id);
+        var command = new MoveBoardItemCommand(item.Id, targetGroup.Id, 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -43,7 +43,7 @@ public class MoveBoardItemTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ItemNotFound_ThrowsNotFoundException()
     {
-        var command = new MoveBoardItemCommand(Guid.CreateVersion7(), Guid.CreateVersion7());
+        var command = new MoveBoardItemCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -55,7 +55,7 @@ public class MoveBoardItemTests : WorkManagementHandlerTestBase
         var item = CreateBoardItem();
         SetupBoardItems(item);
 
-        var command = new MoveBoardItemCommand(item.Id, Guid.CreateVersion7());
+        var command = new MoveBoardItemCommand(item.Id, Guid.CreateVersion7(), 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -74,7 +74,7 @@ public class MoveBoardItemTests : WorkManagementHandlerTestBase
         SetupBoardGroups(targetGroup);
         SetupBoardItems(item);
 
-        var command = new MoveBoardItemCommand(item.Id, targetGroup.Id);
+        var command = new MoveBoardItemCommand(item.Id, targetGroup.Id, 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

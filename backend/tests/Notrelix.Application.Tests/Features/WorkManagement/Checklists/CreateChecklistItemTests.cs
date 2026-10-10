@@ -25,7 +25,7 @@ public class CreateChecklistItemTests : WorkManagementHandlerTestBase
         var version = checklist.Version;
         SetupChecklists(checklist);
 
-        var result = await _handler.Handle(new CreateChecklistItemCommand(checklist.Id, "  Buy milk "), CancellationToken.None);
+        var result = await _handler.Handle(new CreateChecklistItemCommand(checklist.Id, "  Buy milk ", 1), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         checklist.Items.Should().ContainSingle(i => i.Id == result.Data).Which.Title.Should().Be("Buy milk");
@@ -41,7 +41,7 @@ public class CreateChecklistItemTests : WorkManagementHandlerTestBase
         SetupChecklists(checklist);
         SetupChecklistItems(first);
 
-        var result = await _handler.Handle(new CreateChecklistItemCommand(checklist.Id, "Second"), CancellationToken.None);
+        var result = await _handler.Handle(new CreateChecklistItemCommand(checklist.Id, "Second", 1), CancellationToken.None);
 
         checklist.Items.Single(i => i.Id == result.Data).Position.CompareTo(first.Position).Should().BePositive();
     }
@@ -49,7 +49,7 @@ public class CreateChecklistItemTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_UnknownChecklist_ThrowsNotFound_AndAddsNothing()
     {
-        await _handler.Invoking(h => h.Handle(new CreateChecklistItemCommand(Guid.CreateVersion7(), "Task"), CancellationToken.None))
+        await _handler.Invoking(h => h.Handle(new CreateChecklistItemCommand(Guid.CreateVersion7(), "Task", 1), CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
     }
 }

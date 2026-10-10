@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 
-public record UpdateBoardItemFieldValuesRequest(Dictionary<Guid, object?>? Values = null, Guid? FieldDefinitionId = null, object? Value = null);
+public record UpdateBoardItemFieldValuesRequest(long ExpectedVersion, Dictionary<Guid, object?>? Values = null, Guid? FieldDefinitionId = null, object? Value = null);

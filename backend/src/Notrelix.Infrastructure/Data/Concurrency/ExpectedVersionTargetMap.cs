@@ -1,3 +1,22 @@
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RemoveFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.MoveBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklist;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.MoveChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
+using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Approvals;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
@@ -43,7 +62,17 @@ namespace Notrelix.Infrastructure.Data.Concurrency;
 /// </summary>
 public sealed class ExpectedVersionTargetMap
 {
-    public sealed record TargetDefinition(string ExpectedResourceKind, Type AggregateType);
+    /// <param name="OwnsResource">
+    /// For a child resource whose concurrency authority is its owning aggregate
+    /// (SPEC WM-V3-DEC-007, e.g. a ChecklistItem protected by its Checklist): selects
+    /// the tracked aggregate that owns the declared resource id. Null means the
+    /// declared resource id is the aggregate id.
+    /// </param>
+    public sealed record TargetDefinition(string ExpectedResourceKind, Type AggregateType, Func<AggregateRoot, Guid, bool>? OwnsResource = null)
+    {
+        public bool Matches(AggregateRoot aggregate, Guid resourceId) =>
+            OwnsResource?.Invoke(aggregate, resourceId) ?? aggregate.Id == resourceId;
+    }
 
     private readonly IReadOnlyDictionary<Type, TargetDefinition> _targets;
 
@@ -83,6 +112,12 @@ public sealed class ExpectedVersionTargetMap
     private const string BoardFieldKind = "work-management.board-field";
     private const string BoardGroupKind = "work-management.board-group";
     private const string BoardItemKind = "work-management.board-item";
+    private const string ChecklistKind = "work-management.checklist";
+    private const string ChecklistItemKind = "work-management.checklist-item";
+
+    // A method, not a static field: Default is initialized before later static fields.
+    private static bool ChecklistOwnsItem(AggregateRoot aggregate, Guid itemId) =>
+        aggregate is Checklist checklist && checklist.Items.Any(item => item.Id == itemId);
     private const string FormKind = "work-management.form";
     private const string SavedFilterKind = "work-management.saved-filter";
     private const string WorkspaceKind = "workspaces.workspace";
@@ -96,10 +131,30 @@ public sealed class ExpectedVersionTargetMap
         [typeof(DeleteApprovalRequestCommand)] = new(ApprovalRequestKind, typeof(ApprovalRequest)),
 
         // Work Management — boards / fields / groups / items
+        // (the P3 versioned-request manifest, SPEC WM-V3-DEC-007 / WM-V3-CONC-001)
         [typeof(UpdateBoardCommand)] = new(BoardKind, typeof(Board)),
         [typeof(UpdateBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(MoveBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(AddFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(MoveFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(UpdateFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(RemoveFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
+        [typeof(UpdateBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
+        [typeof(MoveBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(DeleteBoardGroupCommand)] = new(BoardGroupKind, typeof(BoardGroup)),
         [typeof(UpdateBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(MoveBoardItemCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(UpdateBoardItemFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(UpdateBoardItemFieldValuesCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        [typeof(ClearFieldValueCommand)] = new(BoardItemKind, typeof(BoardItem)),
+        // Work Management — checklists; item mutations are guarded by the owning Checklist
+        [typeof(UpdateChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
+        [typeof(MoveChecklistCommand)] = new(ChecklistKind, typeof(Checklist)),
+        [typeof(CreateChecklistItemCommand)] = new(ChecklistKind, typeof(Checklist)),
+        [typeof(MoveChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
+        [typeof(UpdateChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
+        [typeof(ToggleChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
+        [typeof(DeleteChecklistItemCommand)] = new(ChecklistItemKind, typeof(Checklist), ChecklistOwnsItem),
 
         // Work Management — forms
         [typeof(UpdateFormDetailsCommand)] = new(FormKind, typeof(Form)),

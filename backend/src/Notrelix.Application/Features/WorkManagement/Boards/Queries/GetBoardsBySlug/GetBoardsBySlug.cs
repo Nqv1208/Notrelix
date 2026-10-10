@@ -49,7 +49,8 @@ public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery,
             b.Background, b.Visibility.ToString(), b.IsArchived,
             memberCounts.GetValueOrDefault(b.Id),
             groupCounts.GetValueOrDefault(b.Id),
-            b.CreatedAt.DateTime
+            b.CreatedAt.DateTime,
+            b.Version
         )).ToList();
 
         return Result<List<BoardDto>>.Success(result);

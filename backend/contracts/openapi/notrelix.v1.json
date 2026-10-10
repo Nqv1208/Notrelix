@@ -4186,6 +4186,15 @@
             }
           },
           {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
@@ -6041,6 +6050,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
             }
           },
           {
@@ -8688,6 +8706,15 @@
             }
           },
           {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
@@ -8748,6 +8775,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
             }
           },
           {
@@ -14077,6 +14113,10 @@
       "Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.MoveBoardFieldRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "previousSiblingId": {
             "type": "string",
             "format": "uuid",
@@ -14103,8 +14143,7 @@
           },
           "expectedVersion": {
             "type": "integer",
-            "format": "int64",
-            "nullable": true
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -14136,6 +14175,10 @@
       "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.MoveBoardGroupRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "previousSiblingId": {
             "type": "string",
             "format": "uuid",
@@ -14152,6 +14195,10 @@
       "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.UpdateBoardGroupRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "title": {
             "type": "string",
             "nullable": true
@@ -14235,6 +14282,10 @@
             "type": "string",
             "format": "uuid"
           },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "previousSiblingId": {
             "type": "string",
             "format": "uuid",
@@ -14269,6 +14320,10 @@
         "properties": {
           "value": {
             "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -14276,6 +14331,10 @@
       "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.UpdateBoardItemFieldValuesRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "values": {
             "type": "object",
             "additionalProperties": {
@@ -14480,6 +14539,10 @@
             "type": "string",
             "nullable": true
           },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "previousSiblingId": {
             "type": "string",
             "format": "uuid",
@@ -14516,6 +14579,10 @@
       "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistItemRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "previousSiblingId": {
             "type": "string",
             "format": "uuid",
@@ -14532,6 +14599,10 @@
       "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "previousSiblingId": {
             "type": "string",
             "format": "uuid",
@@ -14548,6 +14619,10 @@
       "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistItemRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "title": {
             "type": "string",
             "nullable": true
@@ -14562,6 +14637,10 @@
       "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "title": {
             "type": "string",
             "nullable": true
@@ -15264,6 +15343,10 @@
             "type": "string",
             "nullable": true
           },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "previousSiblingId": {
             "type": "string",
             "format": "uuid",
@@ -15280,6 +15363,10 @@
       "Notrelix.API.Endpoints.WorkManagement.BoardFields.MoveFieldOptionRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
           "previousSiblingId": {
             "type": "string",
             "format": "uuid",
@@ -15303,6 +15390,10 @@
           "color": {
             "type": "string",
             "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -15461,8 +15552,7 @@
           },
           "expectedVersion": {
             "type": "integer",
-            "format": "int64",
-            "nullable": true
+            "format": "int64"
           },
           "action": {
             "$ref": "#/components/schemas/Notrelix.Domain.Governance.Permissions.PermissionAction"
@@ -15497,8 +15587,7 @@
           },
           "expectedVersion": {
             "type": "integer",
-            "format": "int64",
-            "nullable": true
+            "format": "int64"
           },
           "action": {
             "$ref": "#/components/schemas/Notrelix.Domain.Governance.Permissions.PermissionAction"

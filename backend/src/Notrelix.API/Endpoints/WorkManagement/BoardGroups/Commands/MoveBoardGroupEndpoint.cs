@@ -22,7 +22,7 @@ public static class MoveBoardGroupEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MoveBoardGroupCommand(groupId, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+        var result = await sender.Send(new MoveBoardGroupCommand(groupId, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

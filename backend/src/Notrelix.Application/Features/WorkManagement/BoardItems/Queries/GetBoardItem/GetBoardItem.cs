@@ -83,7 +83,8 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             members, labels, checklists,
             itemCounts.CommentCount, itemCounts.AttachmentCount,
             card.Position.Value,
-            card.CreatedAt.DateTime, card.UpdatedAt?.DateTime
+            card.CreatedAt.DateTime, card.UpdatedAt?.DateTime,
+            card.Version
         ));
     }
 }

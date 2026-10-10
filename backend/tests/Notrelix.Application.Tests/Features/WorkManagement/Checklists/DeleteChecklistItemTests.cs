@@ -26,7 +26,7 @@ public class DeleteChecklistItemTests : WorkManagementHandlerTestBase
         var version = checklist.Version;
         SetupChecklists(checklist);
 
-        await _handler.Handle(new DeleteChecklistItemCommand(item.Id), CancellationToken.None);
+        await _handler.Handle(new DeleteChecklistItemCommand(item.Id, 1), CancellationToken.None);
 
         checklist.Items.Should().BeEmpty();
         checklist.Version.Should().Be(version + 1);
@@ -36,7 +36,7 @@ public class DeleteChecklistItemTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_UnknownItem_ThrowsNotFound()
     {
-        await _handler.Invoking(h => h.Handle(new DeleteChecklistItemCommand(Guid.CreateVersion7()), CancellationToken.None))
+        await _handler.Invoking(h => h.Handle(new DeleteChecklistItemCommand(Guid.CreateVersion7(), 1), CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
     }
 }

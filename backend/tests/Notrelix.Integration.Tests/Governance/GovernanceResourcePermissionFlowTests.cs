@@ -481,7 +481,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 .Set($"gov-move-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
 
             await scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new MoveBoardItemCommand(itemId, groupId));
+                .Send(new MoveBoardItemCommand(itemId, groupId, 1));
         }
     }
 
@@ -504,7 +504,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 .Set($"gov-move-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
 
             var act = () => scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new MoveBoardItemCommand(itemId, groupId));
+                .Send(new MoveBoardItemCommand(itemId, groupId, 1));
 
             await act.Should().ThrowAsync<AppForbidden>(
                 "the canonical pipeline currently denies member item moves; no second evaluator may bypass it");

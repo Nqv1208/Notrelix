@@ -65,7 +65,9 @@ public sealed class WorkItemActionAuthorizer : IWorkItemActionAuthorizer
         // The public action is governed by the same canonical decision as the
         // HTTP command: MoveItem over the board-item resource.
         var descriptor = _descriptors.GetRequired(typeof(MoveBoardItemCommand));
-        var request = new MoveBoardItemCommand(itemId, newGroupId);
+        // Authorization descriptor only: the automation move is not client-versioned
+        // and never passes through the data session's expected-version binding.
+        var request = new MoveBoardItemCommand(itemId, newGroupId, ExpectedVersion: 0);
         var snapshot = new ExecutionContextSnapshot(
             execution.ExecutorUserId,
             location.AccountId,

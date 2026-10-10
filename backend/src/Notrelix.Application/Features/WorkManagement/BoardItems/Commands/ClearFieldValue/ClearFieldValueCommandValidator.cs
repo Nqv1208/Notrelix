@@ -4,6 +4,7 @@ public class ClearFieldValueCommandValidator : AbstractValidator<ClearFieldValue
 {
     public ClearFieldValueCommandValidator()
     {
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
         RuleFor(x => x.ItemId).NotEmpty();
         RuleFor(x => x.FieldId).NotEmpty();
     }

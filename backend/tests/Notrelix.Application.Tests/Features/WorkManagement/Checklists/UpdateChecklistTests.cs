@@ -22,7 +22,7 @@ public class UpdateChecklistTests : WorkManagementHandlerTestBase
         var checklist = CreateChecklist();
         SetupChecklists(checklist);
 
-        var command = new UpdateChecklistCommand(checklist.Id, "New Title");
+        var command = new UpdateChecklistCommand(checklist.Id, "New Title", 1);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -37,7 +37,7 @@ public class UpdateChecklistTests : WorkManagementHandlerTestBase
         var version = checklist.Version;
         SetupChecklists(checklist);
 
-        await _handler.Handle(new UpdateChecklistCommand(checklist.Id, null), CancellationToken.None);
+        await _handler.Handle(new UpdateChecklistCommand(checklist.Id, null, 1), CancellationToken.None);
 
         checklist.Title.Should().Be("Test Checklist");
         checklist.Version.Should().Be(version, "placement is not part of PATCH; an empty PATCH is a no-op");
@@ -46,7 +46,7 @@ public class UpdateChecklistTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_ChecklistNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateChecklistCommand(Guid.CreateVersion7(), "Title");
+        var command = new UpdateChecklistCommand(Guid.CreateVersion7(), "Title", 1);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

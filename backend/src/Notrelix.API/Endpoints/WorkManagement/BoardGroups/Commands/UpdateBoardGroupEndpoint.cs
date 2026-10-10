@@ -22,7 +22,7 @@ public static class UpdateBoardGroupEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateBoardGroupCommand(groupId, body.Title, body.Color), cancellationToken);
+        var result = await sender.Send(new UpdateBoardGroupCommand(groupId, body.Title, body.ExpectedVersion, body.Color), cancellationToken);
         return result.ToApiResult();
     }
 }

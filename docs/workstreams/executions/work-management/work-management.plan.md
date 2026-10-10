@@ -930,7 +930,10 @@ None
 None
 
 ### Exit
-- [ ] Every manifest request has required version and one target mapping.
+- [x] Every manifest request has required version and one target mapping.
+
+### Status
+`READY_FOR_CERTIFICATION` for the producer. All 22 requests of the P3 versioned-request manifest declare `IExpectedVersionRequest` with a required non-nullable `long ExpectedVersion` constructor parameter (the nullable→0 sentinel is gone from UpdateBoard/UpdateBoardField/UpdateBoardItem) and a validator rule `MustBeAnAuthoritativeVersion` (> 0, HTTP 400 for a missing version instead of a guaranteed 412); `ExpectedVersionTargetMap` holds exactly one entry each. ChecklistItem mutations declare the `checklist-item` resource for authorization and bind to the owning Checklist through the new `TargetDefinition.OwnsResource` matcher (SPEC WM-V3-DEC-007). Transport: bodies carry `expectedVersion`; DELETE/remove-option/clear-value/toggle take `?expectedVersion=`. The automation move builds `MoveBoardItemCommand` only as an authorization descriptor and is not version-guarded. Evidence: `WorkP3ManifestArchitectureTests.EveryVersionedTarget_RequiresAPositiveExpectedVersion_AndHasExactlyOneTargetMapping` (verified to fail when one validator rule is removed), `ExpectedVersionArchitectureTests` inventory (+18), `WorkExpectedVersionIntegrationTests` (3, real handlers inside the real `EfRequestDataSession` on PostgreSQL: read version commits, stale version 412 with full rollback, stale no-op still 412, ChecklistItem bound to the Checklist version), `WorkMutationTransportRegressionTests.VersionedMutation_WithoutExpectedVersion_IsRejectedAsAClientError`, request-execution baseline (18 requests now `expectedVersion: true`). Breaking for first-party callers until WM-V3-FE-001: the web adapters do not send `expectedVersion`, so these mutations now return 400 at runtime; the OpenAPI schema does not mark the field required (no request contract in the repository declares requiredness), so the generated client does not flag the omission at compile time (WM-V3-API-001).
 
 ## WM-V3-CONC-002 — Propagate Version through canonical reads
 
@@ -964,7 +967,10 @@ None
 None
 
 ### Exit
-- [ ] Every first-party versioned mutation can obtain its ExpectedVersion from an authoritative read.
+- [x] Every first-party versioned mutation can obtain its ExpectedVersion from an authoritative read.
+
+### Status
+`READY_FOR_CERTIFICATION`. `Version` (the aggregate version) is projected in `BoardDto`, `FullBoardDto`, `BoardSchemaDto`, `BoardGroupDto`, `BoardGroupSchemaDto`, `BoardFieldDto`, `BoardFieldSchemaDto`, `BoardItemDto`, `BoardItemSummaryDto` and `BoardItemSlimDto` (also on create/move/field-value mutation responses), and `ChecklistDto` carries the parent Checklist version (WM-V3-APP-CHK-001); ChecklistItem and FieldOption carry none, their parent is the concurrency authority. The synthetic title column of `GetFullBoard` reports 0 (not mutable). Evidence: the read version is the one `WorkExpectedVersionIntegrationTests` writes with; OpenAPI and the generated client regenerated.
 
 ## WM-V3-IDEMP-001 — Move idempotency-key ownership to mutation intent
 

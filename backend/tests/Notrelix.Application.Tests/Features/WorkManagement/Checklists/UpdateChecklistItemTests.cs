@@ -29,9 +29,9 @@ public class UpdateChecklistItemTests : WorkManagementHandlerTestBase
     {
         var (checklist, item) = Arrange();
 
-        await _handler.Handle(new UpdateChecklistItemCommand(item.Id, IsChecked: true), CancellationToken.None);
+        await _handler.Handle(new UpdateChecklistItemCommand(item.Id, 1, IsChecked: true), CancellationToken.None);
         var versionAfterFirst = checklist.Version;
-        await _handler.Handle(new UpdateChecklistItemCommand(item.Id, IsChecked: true), CancellationToken.None);
+        await _handler.Handle(new UpdateChecklistItemCommand(item.Id, 1, IsChecked: true), CancellationToken.None);
 
         item.Status.Should().Be(ChecklistItemStatus.Done, "a repeated desired state must not invert the item");
         checklist.Version.Should().Be(versionAfterFirst);
@@ -43,7 +43,7 @@ public class UpdateChecklistItemTests : WorkManagementHandlerTestBase
         var (checklist, item) = Arrange();
         var version = checklist.Version;
 
-        await _handler.Handle(new UpdateChecklistItemCommand(item.Id, IsChecked: false), CancellationToken.None);
+        await _handler.Handle(new UpdateChecklistItemCommand(item.Id, 1, IsChecked: false), CancellationToken.None);
 
         item.Status.Should().Be(ChecklistItemStatus.Open);
         checklist.Version.Should().Be(version);
@@ -54,7 +54,7 @@ public class UpdateChecklistItemTests : WorkManagementHandlerTestBase
     {
         var (_, item) = Arrange();
 
-        await _handler.Handle(new UpdateChecklistItemCommand(item.Id, Title: " Renamed "), CancellationToken.None);
+        await _handler.Handle(new UpdateChecklistItemCommand(item.Id, 1, Title: " Renamed "), CancellationToken.None);
 
         item.Title.Should().Be("Renamed");
         item.Status.Should().Be(ChecklistItemStatus.Open);
@@ -65,7 +65,7 @@ public class UpdateChecklistItemTests : WorkManagementHandlerTestBase
     {
         Arrange();
 
-        await _handler.Invoking(h => h.Handle(new UpdateChecklistItemCommand(Guid.CreateVersion7(), IsChecked: true), CancellationToken.None))
+        await _handler.Invoking(h => h.Handle(new UpdateChecklistItemCommand(Guid.CreateVersion7(), 1, IsChecked: true), CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
     }
 }

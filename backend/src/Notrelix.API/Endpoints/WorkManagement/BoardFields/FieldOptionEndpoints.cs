@@ -37,7 +37,7 @@ public static class FieldOptionEndpoints
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new AddFieldOptionCommand(
-            boardId, fieldId, body.Name, body.Color, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+            boardId, fieldId, body.Name, body.Color, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToCreatedResult();
     }
 
@@ -45,10 +45,11 @@ public static class FieldOptionEndpoints
         Guid boardId,
         Guid fieldId,
         Guid optionId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RemoveFieldOptionCommand(boardId, fieldId, optionId), cancellationToken);
+        var result = await sender.Send(new RemoveFieldOptionCommand(boardId, fieldId, optionId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 
@@ -61,7 +62,7 @@ public static class FieldOptionEndpoints
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new UpdateFieldOptionCommand(
-            boardId, fieldId, optionId, body.Name, body.Color), cancellationToken);
+            boardId, fieldId, optionId, body.Name, body.Color, body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();
     }
 
@@ -74,11 +75,11 @@ public static class FieldOptionEndpoints
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new MoveFieldOptionCommand(
-            boardId, fieldId, optionId, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+            boardId, fieldId, optionId, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToNoContentResult();
     }
 }
 
-public record AddFieldOptionRequest(string Name, string Color, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null);
-public record UpdateFieldOptionRequest(string Name, string Color);
-public record MoveFieldOptionRequest(Guid? PreviousSiblingId = null, Guid? NextSiblingId = null);
+public record AddFieldOptionRequest(string Name, string Color, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null);
+public record UpdateFieldOptionRequest(string Name, string Color, long ExpectedVersion);
+public record MoveFieldOptionRequest(long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null);
