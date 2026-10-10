@@ -69,7 +69,12 @@ public sealed class AccessControlBehaviorTests
 
         return new Fixture<TRequest>(
             new AccessControlBehavior<TRequest, string>(
-                descriptors.Object, context.Object, provider.Object, new AccessPolicyEngine(), new PipelineMetrics()),
+                descriptors.Object,
+                context.Object,
+                provider.Object,
+                new AccessPolicyEngine(),
+                new PipelineMetrics(),
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<AccessControlBehavior<TRequest, string>>.Instance),
             provider);
     }
 

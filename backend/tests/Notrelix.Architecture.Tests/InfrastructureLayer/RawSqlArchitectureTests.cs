@@ -26,6 +26,10 @@ public class RawSqlArchitectureTests
 
         // Reason: lock active verification tokens with FromSqlInterpolated
         "src/Notrelix.Infrastructure/Identity/Services/ActiveVerificationTokenLocker.cs",
+
+        // Reason: serialize owner-affecting workspace membership ops with
+        // SELECT ... FOR UPDATE on the workspace row (PostgreSQL row lock)
+        "src/Notrelix.Infrastructure/Workspaces/Members/WorkspaceOwnerUpdateLocker.cs",
     };
 
     [Fact]

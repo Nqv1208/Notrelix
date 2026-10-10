@@ -15,6 +15,7 @@ public abstract class WorkspaceHandlerTestBase
     protected readonly Mock<ICurrentRequestContext> RequestContextMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();
     protected readonly Mock<IWorkspaceGrantProjectionService> GrantProjectionMock = new();
+    protected readonly Mock<IWorkspaceOwnerUpdateLocker> LockerMock = new();
 
     protected readonly Guid TestAccountId = Guid.CreateVersion7();
     protected readonly Guid TestWorkspaceId = Guid.CreateVersion7();
@@ -36,8 +37,14 @@ public abstract class WorkspaceHandlerTestBase
         DbContextMock.Setup(c => c.TeamMembers).Returns(CreateAsyncDbSet(new List<TeamMember>()));
     }
 
-    protected void SetupWorkspaces(params Workspace[] workspaces) =>
+    protected void SetupWorkspaces(params Workspace[] workspaces)
+    {
         DbContextMock.Setup(c => c.Workspaces).Returns(CreateAsyncDbSet(workspaces.ToList()));
+        LockerMock.Setup(l => l.LockWorkspaceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                (Guid workspaceId, CancellationToken _) =>
+                    workspaces.SingleOrDefault(w => w.Id == workspaceId));
+    }
 
     protected void SetupMembers(params WorkspaceMember[] members) =>
         DbContextMock.Setup(c => c.WorkspaceMembers).Returns(CreateAsyncDbSet(members.ToList()));

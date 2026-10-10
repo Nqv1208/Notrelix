@@ -39,7 +39,7 @@ public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery,
             .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);
 
         var groupCounts = await _context.BoardGroups.AsNoTracking()
-            .Where(l => boardIds.Contains(l.BoardId) && !l.IsDeleted)
+            .Where(l => boardIds.Contains(l.BoardId) && l.DeletedAt == null)
             .GroupBy(l => l.BoardId)
             .Select(g => new { BoardId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);

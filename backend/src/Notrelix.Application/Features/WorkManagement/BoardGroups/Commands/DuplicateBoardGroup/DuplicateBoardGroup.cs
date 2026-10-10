@@ -28,11 +28,11 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
     {
         var source = await _context.BoardGroups
             .AsNoTracking()
-            .FirstOrDefaultAsync(l => l.Id == request.GroupId && !l.IsDeleted, ct);
+            .FirstOrDefaultAsync(l => l.Id == request.GroupId && l.DeletedAt == null, ct);
         if (source is null) throw new NotFoundException(nameof(BoardGroup), request.GroupId);
 
         var lastGroup = await _context.BoardGroups
-            .Where(l => l.BoardId == source.BoardId && !l.IsDeleted)
+            .Where(l => l.BoardId == source.BoardId && l.DeletedAt == null)
             .OrderByDescending(l => l.Position)
             .FirstOrDefaultAsync(ct);
 
@@ -53,7 +53,7 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
 
         var cards = await _context.BoardItems
             .AsNoTracking()
-            .Where(c => c.GroupId == source.Id && !c.IsDeleted)
+            .Where(c => c.GroupId == source.Id && c.DeletedAt == null)
             .OrderBy(c => c.Position)
             .ToListAsync(ct);
 

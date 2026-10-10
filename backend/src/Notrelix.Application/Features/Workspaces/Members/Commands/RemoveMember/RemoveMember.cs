@@ -19,23 +19,25 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceGrantProjectionService _grantProjection;
+    private readonly IWorkspaceOwnerUpdateLocker _locker;
 
     public RemoveMemberCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IWorkspaceGrantProjectionService grantProjection)
+        IWorkspaceGrantProjectionService grantProjection,
+        IWorkspaceOwnerUpdateLocker locker)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _grantProjection = grantProjection;
+        _locker = locker;
     }
 
     public async Task<Result> Handle(RemoveMemberCommand request, CancellationToken ct)
     {
-        var workspace = await _context.Workspaces
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+        var workspace = await _locker.LockWorkspaceAsync(request.WorkspaceId, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

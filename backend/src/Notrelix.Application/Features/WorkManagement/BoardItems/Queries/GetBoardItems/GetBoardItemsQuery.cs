@@ -28,7 +28,7 @@ public class GetBoardItemsQueryHandler : IRequestHandler<GetBoardItemsQuery, Lis
 
         var items = await _context.BoardItems
             .AsNoTracking()
-            .Where(item => boardGroupIds.Contains(item.GroupId) && !item.IsDeleted)
+            .Where(item => boardGroupIds.Contains(item.GroupId) && item.DeletedAt == null)
             .OrderBy(item => item.Position)
             .ToListAsync(cancellationToken);
 

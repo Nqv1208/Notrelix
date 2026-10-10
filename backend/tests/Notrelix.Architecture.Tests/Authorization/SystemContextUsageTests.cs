@@ -31,6 +31,7 @@ public class SystemContextUsageTests
         "EmailTemplateMaterialization.cs",
         "EmailVerificationTokenIssuer.cs",
         "ActiveVerificationTokenLocker.cs",
+        "WorkspaceOwnerUpdateLocker.cs",
         "CalendarWebhookBindingResolver.cs",
     ];
 

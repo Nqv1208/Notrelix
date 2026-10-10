@@ -25,7 +25,7 @@ public class GetWorkspaceTeamsQueryHandler : IRequestHandler<GetWorkspaceTeamsQu
     {
         var teams = await _context.Teams
             .AsNoTracking()
-            .Where(t => t.WorkspaceId == request.WorkspaceId && !t.IsDeleted)
+            .Where(t => t.WorkspaceId == request.WorkspaceId && t.DeletedAt == null)
             .OrderBy(t => t.Name)
             .ToListAsync(ct);
 

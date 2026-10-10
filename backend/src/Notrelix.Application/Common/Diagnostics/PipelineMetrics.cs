@@ -62,6 +62,10 @@ public sealed class PipelineMetrics : IDisposable
         DbOperationsPerRequest = _meter.CreateHistogram<long>(
             "db_operations_per_request",
             unit: "{operation}");
+        AuthorizationDecisions = _meter.CreateCounter<long>(
+            "authorization_decisions",
+            unit: "{decision}",
+            description: "Authorization decisions produced by the pipeline access-control stage.");
     }
 
     /// <summary>Times a canonical stage and records pipeline_stage_duration{stage}.</summary>
@@ -118,6 +122,13 @@ public sealed class PipelineMetrics : IDisposable
     public Counter<long> HandlerExecutions { get; }
 
     public Histogram<long> DbOperationsPerRequest { get; }
+
+    /// <summary>
+    /// Records authorization_decisions. Label 'decision.kind' carries the
+    /// code-bounded access decision category name only — never a message,
+    /// resource/principal identifier, or policy payload.
+    /// </summary>
+    public Counter<long> AuthorizationDecisions { get; }
 
     public static readonly KeyValuePair<string, object?>[] NoLabels = [];
 

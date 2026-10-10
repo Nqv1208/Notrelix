@@ -2,19 +2,22 @@
 document_id: WRK-PLAN-WORK-MANAGEMENT
 document_type: workstream-plan
 status: active
-revision: final-audit-v3
+revision: v3.1-source-reconciled
 owner: work-management-team
 candidate_baseline:
   branch: develop
-  sha: 35702d0fa9fb01ed68b0667bab500030d60bd028
+  sha: 8400a4c0
+previous_baseline_sha: 35702d0fa9fb01ed68b0667bab500030d60bd028
 supersedes: work-management.plan.v2.md
 ---
 
-# PLAN — Work Management Transactional Core (Final-Audit V3)
+# PLAN — Work Management Transactional Core (V3.1)
 
 ## 1. Purpose
 
-This is the final normative **HOW** plan for Work Management P3. It is designed so a coding agent does not need to invent ordering, concurrency, migration, RLS, idempotency or certification mechanics.
+This is the normative **HOW** plan for Work Management P3. It is designed so a coding agent does not need to invent ordering, concurrency, migration, RLS, idempotency or certification mechanics.
+
+V3.1 re-sequences V3 after source inspection at `8400a4c0` (see SPEC §1 and WM-V3-GAP-017..025): live defects move to the front, unique ordering indexes move after every compliant writer, brownfield normalization is replaced by the approved reset path, and the missing units for restore, unreachable mutations, the automation writer and inherited Governance debts are added.
 
 ## 2. Non-negotiable implementation rules
 - Do not add a production project/service.
@@ -24,32 +27,41 @@ This is the final normative **HOW** plan for Work Management P3. It is designed 
 - Do not use a client numeric/fractional position as authoritative state.
 - Do not retry SaveChanges-time ordering conflicts inside a handler.
 - Do not read ordering siblings before acquiring the target-scope transaction lock.
-- Do not add unique ordering indexes before brownfield normalization.
+- Do not add unique ordering indexes before the ordering preflight passes and every ordering writer (HTTP and automation) is compliant (SPEC WM-V3-DEC-014).
+- Do not bypass the soft-delete filter without re-applying the tenant predicate explicitly (SPEC WM-V3-DEC-013).
+- Every unit that changes a producer operation migrates the web adapters, the dev mock backend and its contract-conformance test in the same PR (SPEC WM-V3-DEC-017).
 - Do not treat `notrelix_worker` unrestricted policy as tenant-safe worker execution.
 - Do not hand-edit generated OpenAPI/client output.
 - Do not mark a work unit D5; work units become READY_FOR_CERTIFICATION and CERT alone grants VERIFIED/STABLE.
 
 ## 3. Final execution sequence
-- Phase 0 — baseline/source/consumer manifests
-- Phase 1 — P3-A and P3-B dependency gates
-- Phase 2 — ordering infrastructure contract (lock/placement/conflict)
-- Phase 3 — brownfield ordering inventory + normalization migration preparation
-- Phase 4 — relational/RLS data safety
-- Phase 5 — Domain core hardening
-- Phase 6 — protected Application use cases
-- Phase 7 — Field/FieldOption + Checklist closure
-- Phase 8 — ExpectedVersion read/write propagation + idempotency ownership
-- Phase 9 — events/cross-context/realtime
-- Phase 10 — API/OpenAPI/first-party coordinated cutover
-- Phase 11 — migration/RLS deployment execution
-- Phase 12 — security/performance/observability
-- Phase 13 — semantic traceability + exact-SHA certification
+V3.1 sequence. Unit IDs are unchanged from V3; each unit's **Phase** line below is authoritative.
+
+| Phase | Scope | Units |
+|---|---|---|
+| 0 | baseline/source/consumer manifests | INV-001, INV-002 |
+| 1 | P3-A/P3-B gates + inherited Governance debt disposition | GATE-001, GATE-002 |
+| 2 | live-defect stabilization: soft-delete lifecycle, unreachable mutations, first-party idempotency keys | LIFE-001, FIX-001, IDEMP-001 |
+| 3 | relational/RLS data safety for every `work` table + width/validator parity | DATA-003, DATA-004 |
+| 4 | ordering infrastructure (lock/placement/conflict/rebalance/automation path) | ORDER-001..005 |
+| 5 | Domain core hardening | DOM-BOARD-001, DOM-ITEM-001, DOM-FIELD-001, DOM-CHK-001 |
+| 6 | protected Board/Item/Group use cases (compliant writers) | APP-BOARD-001, APP-ITEM-001, APP-ITEM-002, APP-GROUP-001 |
+| 7 | Field/FieldOption + Checklist closure (compliant writers) | APP-FIELD-001, APP-OPTION-001, APP-CHK-001 |
+| 8 | ordering persistence: reset path + preflight, collation/type, unique indexes | MIG-ORDER-001, DATA-001, DATA-002 |
+| 9 | ExpectedVersion read/write propagation | CONC-001, CONC-002 |
+| 10 | events/cross-context/realtime | EVT-001, X-001 |
+| 11 | remaining API/OpenAPI/consumer cut-over + Application boundary | API-001, FE-001, APP-BOUNDARY-001/002 |
+| 12 | deployment execution (relational + RLS pack) | DEPLOY-001, DEPLOY-002 |
+| 13 | security/performance/observability | QUAL-001, QUAL-002 |
+| 14 | semantic traceability + exact-SHA certification | TEST-001, CERT-001 |
+
+Retired in V3.1: `WM-V3-MIG-ORDER-002` (brownfield normalization), replaced by the reset path in `WM-V3-MIG-ORDER-001` per SPEC WM-V3-DEC-006.
 
 
 ## WM-V3-INV-001 — Refresh candidate and P3 source manifest
 
 **Phase:** Phase 0  
-**SPEC:** WMREQ001–154  
+**SPEC:** WMREQ001–156  
 
 ### Source surfaces
 - `develop ref`
@@ -64,6 +76,8 @@ This is the final normative **HOW** plan for Work Management P3. It is designed 
 - Generate explicit P3 mutation manifest and P3 versioned-request manifest.
 - Classify every active handler KEEP/HARDEN/RETIRE/OUT_OF_SCOPE.
 - Record every ordering scope and owning parent ID.
+- Record every ordering **writer** per scope, including non-HTTP paths (automation `AutomationMoveItemUseCase` → `IWorkActionPort` → `WorkItemActions`), as the input to the WM-V3-DEC-014 cut-over gate.
+- Record every soft-deletable P3 aggregate and its Restore handler.
 
 ### Must not
 - Do not let a meta inventory test substitute for semantic tests.
@@ -90,7 +104,9 @@ None
 - `group.api.ts`
 - `field.api.ts`
 - `checklist.api.ts`
-- `frontend/packages/product/work-management/**/hooks/**`
+- `frontend/packages/product/work-management/state/src/mutations/**` (mutation owners)
+- `frontend/packages/product/work-management/state/src/hooks/**`
+- `frontend/packages/dev/mock-backend/**` (handlers + `__tests__/contract-conformance.unit.test.ts`)
 - `frontend/packages/foundation/query/src/optimistic-command.ts`
 - `frontend/packages/foundation/contracts/src/client/api-client.ts`
 
@@ -99,6 +115,8 @@ None
 - Record where current aggregate Version originates.
 - Record where one canonical mutation-attempt/idempotency key is created.
 - Record auth/CSRF/network retry path.
+- Record which enabled calls currently omit a required `Idempotency-Key` or `ExpectedVersion` (WM-V3-GAP-018/019).
+- Record mobile as a non-consumer (stub screens, no Work API calls) so WM-V3-DEC-017 stays valid.
 
 ### Must not
 - Do not assume API adapter invocation equals one canonical mutation attempt; unchanged-payload transport retry must reuse the same attempt/key.
@@ -152,9 +170,11 @@ None
 ### Required implementation
 - Verify canonical resource/action mapping for Board/Item/Field/Group/Checklist.
 - Run allow/deny/cross-tenant/revoked reference slice.
+- Disposition the inherited Governance debts (SPEC WMREQ155): `WG-DEBT-006` (AccessFactsQuery composite read of Work Board persistence) and `WG-DEBT-007` (`ManageBoard` broader than the Work command matrix: today 9 Board and 7 Group commands use it, and every Checklist mutation reuses `UpdateItem`). Record each one as closed by a named change or accepted with owner, risk and removal trigger.
 
 ### Must not
 - Do not add local Work role ladders.
+- Do not expand the AccessFactsQuery composite read or authorize a new command with `ManageBoard` only because it is broadest.
 
 ### Evidence
 - authorization architecture + production-composition tests
@@ -164,10 +184,67 @@ None
 
 ### Exit
 - [ ] P3-B prerequisite VERIFIED before protected release cutover.
+- [ ] WG-DEBT-006 and WG-DEBT-007 dispositions recorded in CERTIFICATION.
+
+## WM-V3-LIFE-001 — Hydrate soft-delete lifecycle and make Restore reachable
+
+**Phase:** Phase 2  
+**SPEC:** WMREQ004, WMREQ014, WMAC015; WM-V3-DEC-013; WM-V3-GAP-017  
+
+### Source surfaces
+- `Domain/Common/SoftDeletableAggregateRoot.cs`, `Domain/Common/SoftDeletableEntity.cs`
+- Work Restore handlers: `RestoreBoard`, `RestoreBoardItem`, `RestoreBoardView`, `RestoreForm`, `RestoreApprovalRequest`, `RestoreSavedFilter`
+- Workspaces Restore handlers (`RestoreWorkspace`, `RestoreSpace`, `RestoreTeam`) as existing consumers of the same base type
+- `Infrastructure/Data/Configurations/**` `Ignore(x => x.IsDeleted)` entries
+
+### Required implementation
+- Derive `IsDeleted` from `DeletedAt` (`public bool IsDeleted => DeletedAt is not null;`) and stop assigning it, so guards hold after reload. `WorkspaceRoute` maps its own `is_deleted` column and must be checked separately.
+- Restore handlers load the target with `IgnoreQueryFilters()` **plus** an explicit Account/Workspace predicate from the resolved execution context.
+- Restore of an active entity remains a semantic no-op; restore of an entity outside the tenant is NotFound.
+
+### Must not
+- Do not drop the tenant predicate when bypassing the soft-delete filter.
+- Do not add a stored `is_deleted` column.
+
+### Evidence
+- PostgreSQL integration: delete then restore in separate DbContexts succeeds, bumps version once, raises one restored event; foreign-tenant restore is NotFound
+- Domain tests unchanged and green
+
+### Migration / deployment
+None (no persisted shape change).
+
+### Exit
+- [ ] Every P3 soft-deletable aggregate restores from a fresh request against PostgreSQL.
+
+## WM-V3-FIX-001 — Repair unreachable and lossy Work mutations
+
+**Phase:** Phase 2  
+**SPEC:** WMREQ010, WMREQ030, WMREQ110; WM-V3-GAP-020/021  
+
+### Source surfaces
+- `BoardGroups/Commands/DeleteBoardGroup`
+- `API/Endpoints/WorkManagement/BoardFields/MapBoardFieldEndpoints.cs` (update/create mapping)
+
+### Required implementation
+- `DeleteBoardGroup` carries a real `ExpectedVersion` consistent with its target-map entry, or stops implementing `IExpectedVersionRequest` until CONC-001 fixes its contract; it must not hard-code `0`.
+- Field PATCH must not substitute `"{}"` for omitted settings; omission means unchanged.
+- Field create must not depend on culture-sensitive `double.ToString()`; ordering input is replaced fully by APP-FIELD-001.
+
+### Must not
+- Do not widen these fixes into the APP-FIELD-001 contract redesign.
+
+### Evidence
+- Application/Integration regression tests for each defect
+
+### Migration / deployment
+None
+
+### Exit
+- [ ] DeleteBoardGroup can succeed; rename-only Field PATCH preserves settings.
 
 ## WM-V3-ORDER-001 — Introduce ordering-scope lock port
 
-**Phase:** Phase 2  
+**Phase:** Phase 4  
 **SPEC:** WMREQ041–55  
 
 ### Source surfaces
@@ -180,9 +257,10 @@ None
 - Application calls `AcquireAsync(kind,parentId,ct)` inside active request transaction.
 - Infrastructure computes stable lock key from UTF-8 `${kind}:${parentId:N}`, SHA-256, first 8 bytes big-endian signed Int64, then executes `SELECT pg_advisory_xact_lock(@key)` on current transaction connection.
 - Lock is transaction-scoped and has no manual release.
+- Precedent for port shape: `Infrastructure/Workspaces/Members/WorkspaceOwnerUpdateLocker.cs` (lock on the request transaction).
 
 ### Must not
-- Do not use the TODO JobLockService.
+- Do not use the table-lease `JobLockManager` (`ops.job_locks`); it is a job lease, not a transaction-scoped lock.
 - Do not use process-local Semaphore.
 - Do not start a second transaction.
 
@@ -199,7 +277,7 @@ None
 
 ## WM-V3-ORDER-002 — Introduce canonical placement resolver
 
-**Phase:** Phase 2  
+**Phase:** Phase 4  
 **SPEC:** WMREQ042–45,131–132  
 
 ### Source surfaces
@@ -231,7 +309,7 @@ None
 
 ## WM-V3-ORDER-003 — Map named ordering uniqueness conflicts
 
-**Phase:** Phase 2  
+**Phase:** Phase 4  
 **SPEC:** WMREQ050–52,114,138  
 
 ### Source surfaces
@@ -240,8 +318,8 @@ None
 
 ### Required implementation
 - Define named constraint allowlist: `ux_work_board_items_group_position_active`, `ux_work_board_groups_board_position_active`, `ux_work_board_fields_board_position_active`, `ux_work_checklists_item_position_active`, `ux_work_checklist_items_checklist_position`, `ux_work_field_options_field_position`.
-- Catch provider DbUpdateException after SaveChanges only for those named constraints.
-- Map to typed `OrderingConflictException(code: work.ordering.conflict)`; API maps to HTTP 409.
+- Catch the provider `DbUpdateException` in `EfRequestDataSession` beside the existing `DbUpdateConcurrencyException` catch, and match only those named constraints via `PostgresException.ConstraintName` (SPEC WM-V3-DEC-015).
+- Add an optional stable error code to `ConflictException` and emit it from `ProblemDetailsMapper` (uncoded conflicts keep `concurrency.conflict`); throw it with `work.ordering.conflict`. `ExceptionMappingBehavior` passes typed application exceptions through, so no eighth behavior is needed.
 - Do not retry inside handler; client reload/rebase may retry same logical operation.
 
 ### Must not
@@ -260,7 +338,7 @@ None
 
 ## WM-V3-ORDER-004 — Define explicit rebalance maintenance contract
 
-**Phase:** Phase 2  
+**Phase:** Phase 4  
 **SPEC:** WMREQ053–55  
 
 ### Source surfaces
@@ -287,66 +365,64 @@ None
 ### Exit
 - [ ] Operational rebalance path exists and preserves exact order.
 
-## WM-V3-MIG-ORDER-001 — Inventory brownfield ordering data
+## WM-V3-ORDER-005 — Bring the automation writer under the ordering contract
 
-**Phase:** Phase 3  
-**SPEC:** WMREQ055,098–102  
-
-### Source surfaces
-- `all Work ordering tables`
-- `migration preflight tooling/script`
-
-### Required implementation
-- For each scope, detect invalid FractionalIndex grammar, duplicate positions, nulls and current max key length.
-- Before changing collation, snapshot the **current production-effective database order** using the existing column collation and stable entity ID as the tie-breaker for equal position strings.
-- Produce counts by table/scope and a stop list for relationally corrupt/unrecoverable data.
-
-### Must not
-- Do not add unique indexes before this report is clean/repairable.
-- Do not silently choose arbitrary order for an ambiguous scope without recorded deterministic rule.
-
-### Evidence
-- preflight integration fixture
-
-### Migration / deployment
-Pre-migration data audit; no schema mutation yet.
-
-### Exit
-- [ ] All affected scopes are classified clean or deterministically normalizable.
-
-## WM-V3-MIG-ORDER-002 — Normalize legacy ordering deterministically
-
-**Phase:** Phase 3  
-**SPEC:** WMREQ055,100–102  
+**Phase:** Phase 4  
+**SPEC:** WMREQ019, WMREQ156; WM-V3-GAP-024  
 
 ### Source surfaces
-- `forward migration/data migration step`
-- `FractionalIndex normalization helper`
+- `Automation ... AutomationMoveItemUseCase`
+- `WorkManagement/Public/ItemMovement/IWorkItemActions` / `WorkItemActions`
+- `BoardItems/Services/MoveBoardItemUseCase`
+- `Infrastructure/Messaging/DeduplicationConsumeFilter.cs` (consumer transaction owner)
 
 ### Required implementation
-- For each affected scope, preserve the preflight identity sequence exactly and assign `GenerateNKeysBetween(null,null,count)` results in that sequence.
-- Stable entity ID is only the deterministic tie-breaker for rows whose prior position strings compare equal under the pre-migration database collation.
-- Record changed row/scope counts.
+- The automation move acquires the GroupItems scope lock inside the consumer transaction and uses the shared placement resolver with semantic placement intent.
+- Its `SaveChangesAsync` call maps the named ordering constraints to the same stable conflict as WM-V3-ORDER-003, classified as a deterministic (non-retryable within the same transaction) failure.
+- The catch path must not attempt a second `SaveChanges` inside the aborted PostgreSQL transaction.
 
 ### Must not
-- Do not normalize clean scopes unnecessarily.
-- Do not change logical order.
+- Do not route automation around the lock to avoid contention.
 
 ### Evidence
-- upgrade fixture before/after identity-order assertion
+- PostgreSQL integration: concurrent HTTP move and automation move into the same gap serialize; injected collision yields the stable conflict without a second write attempt
 
 ### Migration / deployment
-Forward data migration before unique-index creation.
-
-### Stop conditions
-- If parent/scope relations are corrupt or another condition prevents a deterministic preflight identity sequence, stop migration and require explicit operator resolution.
+None
 
 ### Exit
-- [ ] No invalid/duplicate canonical positions remain before uniqueness install.
+- [ ] Automation and HTTP writers share one lock, resolver and conflict contract.
+
+## WM-V3-MIG-ORDER-001 — Reset path and fail-closed ordering preflight
+
+**Phase:** Phase 8  
+**SPEC:** WMREQ055, WMREQ100–102; WM-V3-DEC-006  
+
+### Source surfaces
+- `ordering forward EF migration (preflight step)`
+- `backend/docs/operations/migrations-and-data-change.md` (reset path)
+
+### Required implementation
+- Development/staging databases are reset before this migration is applied (approved V3.1 decision; no production database exists).
+- The migration begins with a preflight that aborts with a named, operator-readable error if any active ordering scope contains duplicate, null or grammar-invalid positions. It never reorders data.
+- Record in CERTIFICATION that no production database existed at cut-over; if one exists, stop (SPEC WMSTOP004) and restore the V3 normalization units.
+
+### Must not
+- Do not add unique indexes before the preflight passes.
+- Do not normalize or reorder data silently.
+
+### Evidence
+- preflight integration fixture: clean scope passes; duplicate scope aborts with the named error and leaves the schema unchanged
+
+### Migration / deployment
+Pre-migration guard inside the forward migration; environments reset beforehand.
+
+### Exit
+- [ ] Clean database passes the preflight; a duplicate-position database is rejected without mutation.
 
 ## WM-V3-DATA-001 — Canonicalize ordering persistence representation
 
-**Phase:** Phase 4  
+**Phase:** Phase 8  
 **SPEC:** WMREQ046–47,098–104  
 
 ### Source surfaces
@@ -371,14 +447,14 @@ Forward data migration before unique-index creation.
 - DB-vs-Domain ordering parity tests with uppercase/lowercase/base62 boundary keys
 
 ### Migration / deployment
-Forward EF migration after data normalization step is available.
+Forward EF migration after the WM-V3-MIG-ORDER-001 preflight.
 
 ### Exit
 - [ ] Database ORDER BY and Domain CompareTo produce identical order for canonical test corpus.
 
 ## WM-V3-DATA-002 — Install unique active ordering indexes
 
-**Phase:** Phase 4  
+**Phase:** Phase 8  
 **SPEC:** WMREQ050,098–100  
 
 ### Source surfaces
@@ -386,23 +462,24 @@ Forward EF migration after data normalization step is available.
 
 ### Required implementation
 - Create the six named unique constraints/indexes from WM-V3-ORDER-003.
-- Use soft-delete filter where entity supports soft delete.
+- Use soft-delete filter where entity supports soft delete; the item index is additionally filtered to root items (`parent_item_id IS NULL`, SPEC WM-V3-DEC-016).
+- Index naming follows the existing `ux_` convention; the plan's `ux_work_*` names are authoritative for these six.
 
 ### Must not
-- Do not install before WM-V3-MIG-ORDER-002 passes.
+- Do not install before WM-V3-MIG-ORDER-001 passes and every writer recorded by INV-001 is compliant (SPEC WM-V3-DEC-014).
 
 ### Evidence
 - real PostgreSQL uniqueness tests
 
 ### Migration / deployment
-Forward EF migration; migration ordering is normalize → alter collation/type → unique indexes.
+Forward EF migration; migration ordering is preflight → alter collation/type → unique indexes.
 
 ### Exit
 - [ ] All six target scopes reject duplicate active position.
 
 ## WM-V3-DATA-003 — Implement explicit parent-derived app RLS
 
-**Phase:** Phase 4  
+**Phase:** Phase 3  
 **SPEC:** WMREQ080–93  
 
 ### Source surfaces
@@ -414,7 +491,9 @@ Forward EF migration; migration ordering is normalize → alter collation/type �
 - FieldOption app policy derives through BoardField.
 - ChecklistItem app policy derives through Checklist.
 - BoardItemValue app write/read validates Item and Field are current tenant and same Board.
-- Verification requires these explicit policies and cannot count generic-helper skip as coverage.
+- BoardMember app policy derives through Board (`board_members` is currently absent from every RLS script and holds authorization data).
+- ApprovalStep and RelationFieldConfig app policies derive through their parent; they are outside P3 feature scope but inside the `work` schema RLS invariant (SPEC WMREQ080).
+- Verification requires these explicit policies and cannot count generic-helper skip as coverage. `RlsPolicyApplier` must evaluate `011_verification.sql` results and fail when any RLS_DISABLED / NO_POLICY row exists; today the rows are discarded.
 
 ### Must not
 - Do not add duplicate tenant columns.
@@ -428,11 +507,12 @@ Forward EF migration; migration ordering is normalize → alter collation/type �
 RLS embedded SQL deployment, separate from EF migration.
 
 ### Exit
-- [ ] App-role same-tenant allowed and cross-tenant denied for all three child tables.
+- [ ] App-role same-tenant allowed and cross-tenant denied for all six scope-less tables.
+- [ ] RLS verification fails closed on a deliberately policyless fixture table.
 
 ## WM-V3-DATA-004 — Fix Domain/storage/validator compatibility
 
-**Phase:** Phase 4  
+**Phase:** Phase 3  
 **SPEC:** WMREQ094–97  
 
 ### Source surfaces
@@ -442,9 +522,9 @@ RLS embedded SQL deployment, separate from EF migration.
 - `other touched P3 validators`
 
 ### Required implementation
-- Increase Board Description persistence capacity to >=5000.
+- Increase Board Description persistence capacity to >=5000 (today EF caps it at 1024 while Domain allows 5000).
 - Keep wider DB title capacity if safe.
-- Align Application validation limits with Domain, including BoardField Name 100.
+- Align Application validation limits with Domain, including BoardField Name 100 and the three divergent Board Description validator limits (2000 / 2000 / 500).
 
 ### Must not
 - Do not loosen Domain to match DB.
@@ -598,7 +678,8 @@ None
 - Acquire GroupItems scope lock.
 - Resolve adjacency with WM-V3-ORDER-002.
 - Generate one key.
-- Use same producer-local path for HTTP and Automation.
+- Use same producer-local path for HTTP and Automation (automation lock/conflict behavior is owned by WM-V3-ORDER-005).
+- Replace the ignored `double Position` contract with neighbor IDs and migrate the web adapter and mock backend handler in the same PR.
 
 ### Must not
 - Do not full-list rewrite.
@@ -660,6 +741,7 @@ None
 
 ### Must not
 - Do not full-list rewrite for drag.
+- Do not keep the reorder request body bound directly to the Application command (today it leaks `action`/`resource` into OpenAPI).
 
 ### Evidence
 - Group placement/duplicate/version tests
@@ -764,7 +846,7 @@ None
 
 ## WM-V3-CONC-001 — Normalize P3 ExpectedVersion write contract
 
-**Phase:** Phase 8  
+**Phase:** Phase 9  
 **SPEC:** WMREQ110–14,137  
 
 ### Source surfaces
@@ -792,7 +874,7 @@ None
 
 ## WM-V3-CONC-002 — Propagate Version through canonical reads
 
-**Phase:** Phase 8  
+**Phase:** Phase 9  
 **SPEC:** WMREQ111,137,139–142  
 
 ### Source surfaces
@@ -826,7 +908,7 @@ None
 
 ## WM-V3-IDEMP-001 — Move idempotency-key ownership to mutation intent
 
-**Phase:** Phase 8  
+**Phase:** Phase 2  
 **SPEC:** WMREQ115–17,143  
 
 ### Source surfaces
@@ -835,7 +917,9 @@ None
 - `foundation api-client`
 
 ### Required implementation
-- Mutation/command layer creates one UUID/key for one canonical request payload attempt.
+- This unit is delivered in Phase 2 because missing keys are a live 400 defect (SPEC WM-V3-GAP-018), not only an ownership refactor.
+- Every enabled Work call to an endpoint marked `.WithIdempotencyKey()` sends a key.
+- Mutation/command layer creates one random UUID key for one canonical request payload attempt (SPEC WM-V3-DEC-018); replace the module-counter `commandId` used as key by `optimistic-command.ts`.
 - Pass key into adapter request options.
 - Adapter never creates a replacement key during auth/CSRF/network retry of that unchanged payload.
 - If stale-placement/order-conflict/precondition requires reload/rebase and changes neighbor IDs, ExpectedVersion or another canonical field, create a **new attempt and new key**.
@@ -857,7 +941,7 @@ None
 
 ## WM-V3-EVT-001 — Reverify P3 events/outbox after contract changes
 
-**Phase:** Phase 9  
+**Phase:** Phase 10  
 **SPEC:** WMREQ118–126  
 
 ### Source surfaces
@@ -886,7 +970,7 @@ None
 
 ## WM-V3-X-001 — Reverify Automation/Analytics/Collaboration boundaries
 
-**Phase:** Phase 9  
+**Phase:** Phase 10  
 **SPEC:** WMREQ127–129  
 
 ### Source surfaces
@@ -913,7 +997,7 @@ None
 
 ## WM-V3-API-001 — Cut producer contract to V3 shapes
 
-**Phase:** Phase 10  
+**Phase:** Phase 11  
 **SPEC:** WMREQ130–138  
 
 ### Source surfaces
@@ -941,7 +1025,7 @@ None
 
 ## WM-V3-FE-001 — Migrate first-party Work consumers
 
-**Phase:** Phase 10  
+**Phase:** Phase 11  
 **SPEC:** WMREQ139–143  
 
 ### Source surfaces
@@ -973,7 +1057,7 @@ None
 
 ## WM-V3-APP-BOUNDARY-001 — Cap Application EF exception
 
-**Phase:** Phase 10  
+**Phase:** Phase 11  
 **SPEC:** WMREQ069–79  
 
 ### Source surfaces
@@ -1000,7 +1084,7 @@ None
 
 ## WM-V3-APP-BOUNDARY-002 — Close BoardSchema read skeleton
 
-**Phase:** Phase 10  
+**Phase:** Phase 11  
 **SPEC:** WMREQ072  
 
 ### Source surfaces
@@ -1024,15 +1108,15 @@ None
 
 ## WM-V3-DEPLOY-001 — Execute relational upgrade in fixed order
 
-**Phase:** Phase 11  
+**Phase:** Phase 12  
 **SPEC:** WMREQ094–104  
 
 ### Source surfaces
 - `forward EF migration(s)`
-- `preflight/normalization tooling`
+- `ordering preflight (WM-V3-MIG-ORDER-001)`
 
 ### Required implementation
-- Upgrade order: preflight → normalize affected ordering scopes → alter position type/collation → add unique indexes → widen Board Description → update snapshot.
+- Upgrade order: reset pre-production database → preflight → alter position type/collation → add unique indexes → widen Board Description → update snapshot.
 - Record row/scope counts and constraint names.
 
 ### Must not
@@ -1051,7 +1135,7 @@ Forward EF relational migration/data migration.
 
 ## WM-V3-DEPLOY-002 — Apply and verify RLS pack separately
 
-**Phase:** Phase 11  
+**Phase:** Phase 12  
 **SPEC:** WMREQ082–93,104  
 
 ### Source surfaces
@@ -1078,7 +1162,7 @@ Versioned SQL policy deployment.
 
 ## WM-V3-QUAL-001 — Security closure
 
-**Phase:** Phase 12  
+**Phase:** Phase 13  
 **SPEC:** WMREQ146  
 
 ### Source surfaces
@@ -1103,7 +1187,7 @@ None
 
 ## WM-V3-QUAL-002 — Performance and ordering-health closure
 
-**Phase:** Phase 12  
+**Phase:** Phase 13  
 **SPEC:** WMREQ147–150  
 
 ### Source surfaces
@@ -1130,20 +1214,20 @@ None
 
 ## WM-V3-TEST-001 — Enforce semantic WMREQ coverage
 
-**Phase:** Phase 13  
-**SPEC:** WMREQ001–154  
+**Phase:** Phase 14  
+**SPEC:** WMREQ001–156  
 
 ### Source surfaces
-- `work-management.tests.v3.md`
+- `work-management.tests.md`
 - `traceability verification`
 
 ### Required implementation
-- Maintain one row for each WMREQ001–154 mapping to at least one substantive test family.
+- Maintain one row for each WMREQ001–156 mapping to at least one substantive test family.
 - Meta families `BASE`, `TRACE`, `CI`, `INVENTORY` do not count as semantic coverage.
 - CI fails if any requirement lacks substantive mapping.
 
 ### Must not
-- Do not claim 154/154 because one meta-test references the whole range.
+- Do not claim 156/156 because one meta-test references the whole range.
 
 ### Evidence
 - traceability parser test
@@ -1152,12 +1236,12 @@ None
 None
 
 ### Exit
-- [ ] Semantic coverage = 154/154.
+- [ ] Semantic coverage = 156/156.
 
 ## WM-V3-CERT-001 — Run exact-SHA certification
 
-**Phase:** Phase 13  
-**SPEC:** WMREQ151–154  
+**Phase:** Phase 14  
+**SPEC:** WMREQ151–156  
 
 ### Source surfaces
 - `all P3 source/tests/docs/migrations/RLS/OpenAPI/frontend`
@@ -1187,23 +1271,24 @@ None
 # 4. PR decomposition
 | PR | Scope |
 |---|---|
-| `PR-WM-00` | baseline manifests + decision closure |
-| `PR-WM-01` | ordering lock/placement/conflict + brownfield preflight |
-| `PR-WM-02` | ordering normalization + canonical collation/type + unique indexes + mapping width |
-| `PR-WM-03` | parent-derived RLS + deployment verification |
-| `PR-WM-04` | Board/Item protected core + relative ordering |
-| `PR-WM-05` | Group/Field/FieldOption + legacy option retirement |
-| `PR-WM-06` | Checklist aggregate + desired-state PATCH + relative ordering |
-| `PR-WM-07` | ExpectedVersion read/write propagation + idempotency-intent ownership |
-| `PR-WM-08` | events/cross-context + BoardSchema/boundary cleanup |
-| `PR-WM-09` | API/OpenAPI/frontend coordinated cutover |
+| `PR-WM-00` | V3.1 docs reconciliation + baseline/consumer/writer manifests + gate and Governance-debt disposition |
+| `PR-WM-01` | soft-delete lifecycle + restore (LIFE-001) + unreachable/lossy mutation repair (FIX-001) |
+| `PR-WM-02` | first-party idempotency keys (IDEMP-001) |
+| `PR-WM-03` | RLS for every `work` table + fail-closed verification + width/validator parity |
+| `PR-WM-04` | ordering lock/placement/conflict/rebalance + automation writer path |
+| `PR-WM-05` | Domain hardening + Board/Item/Group compliant writers with API + web + mock cut-over |
+| `PR-WM-06` | Field/FieldOption/Checklist compliant writers + legacy option retirement + desired-state PATCH |
+| `PR-WM-07` | ordering persistence: preflight + collation/type + unique indexes (only after PR-WM-04..06) |
+| `PR-WM-08` | ExpectedVersion read/write propagation |
+| `PR-WM-09` | events/cross-context + remaining API/consumer cut-over + BoardSchema/boundary cleanup |
 | `PR-WM-10` | quality + semantic traceability + exact-SHA certification |
 
 # 5. Deployment order
 ```text
-code capable of scope-lock/relative placement
-→ ordering preflight
-→ deterministic normalization
+lifecycle/idempotency/RLS stabilization
+→ code capable of scope-lock/relative placement on every writer (HTTP + automation)
+→ reset pre-production databases
+→ ordering preflight (fail closed)
 → ALTER position => text COLLATE "C"
 → add named unique ordering indexes
 → other relational fixes
@@ -1217,7 +1302,9 @@ code capable of scope-lock/relative placement
 # 6. Global stop conditions
 - P3-A/P3-B required dependency is not verified.
 - Current transaction is unavailable when ordering lock port is called.
-- Ordering scope contains ambiguous brownfield data that cannot be deterministically normalized.
+- A production database exists while the V3.1 reset decision (SPEC WM-V3-DEC-006) is in force.
+- A unique ordering index would deploy while a non-compliant ordering writer is reachable.
+- Restore or any other filter bypass would require dropping the tenant predicate.
 - Database collation parity with Domain cannot be demonstrated.
 - Read model cannot expose concurrency Version before write contract becomes required.
 - Enabled first-party consumer cannot coordinate breaking API cutover.
@@ -1228,7 +1315,7 @@ code capable of scope-lock/relative placement
 # 7. PLAN Definition of Done
 - [ ] Every material implementation decision is fixed by SPEC/PLAN.
 - [ ] Ordering uses transaction-scope lock + exact adjacency + one-entity normal mutation.
-- [ ] Brownfield normalization/collation/uniqueness order is explicit.
+- [ ] Reset/preflight/collation/uniqueness order is explicit and writers precede uniqueness.
 - [ ] Read-side Version and write-side ExpectedVersion are paired.
 - [ ] Idempotency identity is owned above retryable API adapter.
 - [ ] RLS relational/policy deployment channels are separate.

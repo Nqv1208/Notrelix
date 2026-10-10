@@ -27,7 +27,7 @@ public class ResolveSlugQueryHandler : IRequestHandler<ResolveSlugQuery, Result<
                 w => w.AccountId == request.AccountId
                     && w.Slug == request.Slug
                     && w.Status == WorkspaceStatus.Active
-                    && !w.IsDeleted,
+                    && w.DeletedAt == null,
                 ct);
 
         if (workspace is null)

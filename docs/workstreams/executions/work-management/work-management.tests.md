@@ -2,19 +2,22 @@
 document_id: WRK-TESTS-WORK-MANAGEMENT
 document_type: workstream-tests
 status: active
-revision: final-audit-v3
+revision: v3.1-source-reconciled
 owner: work-management-team
 candidate_baseline:
   branch: develop
-  sha: 35702d0fa9fb01ed68b0667bab500030d60bd028
+  sha: 8400a4c0
+previous_baseline_sha: 35702d0fa9fb01ed68b0667bab500030d60bd028
 supersedes: work-management.tests.v2.md
 ---
 
-# TESTS — Work Management Transactional Core (Final-Audit V3)
+# TESTS — Work Management Transactional Core (V3.1)
 
 ## 1. Purpose
 
-V3 restores the foundational semantic coverage that V2 accidentally deemphasized while retaining the audited correction tests. For WMREQ001–150, inventory/trace/CI tests do **not** count as semantic coverage.
+V3 restores the foundational semantic coverage that V2 accidentally deemphasized while retaining the audited correction tests. For WMREQ001–150 and WMREQ155–156, inventory/trace/CI tests do **not** count as semantic coverage.
+
+V3.1 replaces mechanical mappings (one family attached to a whole requirement range regardless of the property it proves) with per-requirement mappings, corrects family dispositions where the target file already exists (`NEW` → `EXPAND`), adds families for the V3.1 gaps, and retires brownfield normalization evidence per SPEC WM-V3-DEC-006.
 
 ## 2. Evidence rules
 - Real PostgreSQL is mandatory for RLS, advisory locks, collation parity, unique constraints, migrations, transaction/outbox and real concurrency.
@@ -25,6 +28,8 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 - A green legacy test encoding retired behavior is replaced, not counted.
 - API certification uses exact status/error contracts.
 - Every WMREQ row below must reference at least one substantive family.
+- A family is mapped to a requirement only when its stated **Proof** exercises that requirement's property; range-wide padding is not coverage.
+- Lifecycle tests (restore, guards after reload) must load state in a fresh DbContext from PostgreSQL; a test that mutates and restores the same tracked instance does not prove WMREQ004/014.
 
 ## 3. Substantive test family catalog
 
@@ -104,7 +109,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### AUTH-ARCH-001 — Canonical Governance authorization descriptors
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Architecture  
 
 **Proof:**
@@ -227,7 +232,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### BOARD-SCHEMA-001 — Single BoardSchema read authority
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Architecture/Application  
 
 **Proof:**
@@ -326,7 +331,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### CHK-STATE-001 — Checklist desired-state vs toggle semantics
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Domain/Application/API  
 
 **Proof:**
@@ -361,7 +366,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### EVT-CONTRACT-001 — Published event contract versioning
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Application/Architecture  
 
 **Proof:**
@@ -449,7 +454,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### FIELD-APP-001 — Field create/update exact contract
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Application/API  
 
 **Proof:**
@@ -567,7 +572,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### ITEM-APP-001 — Item create/move producer semantics
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Application  
 
 **Proof:**
@@ -581,7 +586,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### ITEM-APP-002 — Item update/value semantics
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Application  
 **Runtime:** real PostgreSQL required  
 
@@ -638,7 +643,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 **Target surfaces:**
 - `BoardItemArchivedTests.cs`
 - `BoardItemEventTests.cs`
-- `BoardItemMemberTests.cs`
+- `BoardItemMemberTests.cs` (missing at `8400a4c0`; create)
 
 ### ITEM-IDEMP-001 — Item create idempotency
 
@@ -710,9 +715,9 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 **Runtime:** real PostgreSQL required  
 
 **Proof:**
-- pre-V3 fixture upgrades
-- stable IDs unchanged
-- logical order unchanged
+- a pre-V3 database whose ordering data passes the preflight upgrades
+- stable IDs and logical order unchanged
+- a database failing the preflight is rejected, not reordered
 
 **Target surfaces:**
 - `WorkP3V3MigrationTests.cs`
@@ -823,7 +828,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### ORDER-DUP-001 — Duplicate Item/Group ordering
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Application  
 
 **Proof:**
@@ -851,7 +856,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### ORDER-NORM-001 — Brownfield normalization preserves deterministic order
 
-**Disposition:** `NEW`  
+**Disposition:** `RETIRED in V3.1` — superseded by the reset path (SPEC WM-V3-DEC-006). Restore only if a production database exists before cut-over.  
 **Layer:** Migration  
 **Runtime:** real PostgreSQL required  
 
@@ -885,8 +890,9 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 **Runtime:** real PostgreSQL required  
 
 **Proof:**
-- invalid/duplicate/null/max-length keys reported by scope
-- clean and ambiguous scopes distinguished
+- clean scope passes and the migration continues
+- duplicate/null/grammar-invalid keys abort the migration with a named error
+- an aborted preflight leaves schema and data unchanged
 
 **Target surfaces:**
 - `WorkOrderingMigrationPreflightTests.cs`
@@ -1023,7 +1029,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 
 ### RLS-SESSION-001 — RLS pooled session hygiene
 
-**Disposition:** `NEW`  
+**Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
 **Layer:** Integration/Security  
 **Runtime:** real PostgreSQL required  
 
@@ -1235,6 +1241,112 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 **Target surfaces:**
 - `WorkIntegrationBoundaryArchitectureTests.cs`
 
+### V3.1 families
+
+### LIFE-RESTORE-001 — Restore from persisted soft-deleted state
+
+**Disposition:** `NEW`  
+**Layer:** Integration  
+**Runtime:** real PostgreSQL required  
+
+**Proof:**
+- delete in one DbContext, restore in a fresh DbContext through the real handler
+- version increments once and one restored event is raised
+- restore of an active aggregate is a no-op
+- restore of a foreign-tenant aggregate is NotFound and leaves it deleted
+
+**Target surfaces:**
+- `WorkSoftDeleteLifecycleIntegrationTests.cs`
+
+### LIFE-GUARD-001 — Lifecycle guards hold after reload
+
+**Disposition:** `NEW`  
+**Layer:** Domain/Integration  
+
+**Proof:**
+- `IsDeleted` is derived from `DeletedAt`
+- a mutation of a reloaded deleted aggregate is rejected by `EnsureNotDeleted`
+
+**Target surfaces:**
+- `SoftDeletableAggregateRootTests.cs`
+- `WorkSoftDeleteLifecycleIntegrationTests.cs`
+
+### FIX-MUT-001 — Previously unreachable or lossy mutations
+
+**Disposition:** `NEW`  
+**Layer:** Application/API  
+
+**Proof:**
+- DeleteBoardGroup succeeds with a valid version
+- rename-only Field PATCH preserves settings
+
+**Target surfaces:**
+- `DeleteBoardGroupTests.cs`
+- `UpdateBoardFieldTests.cs`
+
+### IDEMP-HEADER-001 — Every required idempotency header is sent
+
+**Disposition:** `NEW`  
+**Layer:** Frontend  
+
+**Proof:**
+- every enabled Work adapter call to an endpoint marked `.WithIdempotencyKey()` sends `Idempotency-Key`
+- keys are random UUIDs, never a module counter
+
+**Target surfaces:**
+- `work-management-idempotency-coverage.unit.test.ts`
+
+### ORDER-AUT-001 — Automation writer uses the ordering contract
+
+**Disposition:** `NEW`  
+**Layer:** Integration/Concurrency  
+**Runtime:** real PostgreSQL required  
+
+**Proof:**
+- automation move and HTTP move into the same gap serialize on the same scope lock
+- a named ordering collision on the automation path yields the stable conflict without a second write in the aborted transaction
+
+**Target surfaces:**
+- `AutomationWorkItemOrderingIntegrationTests.cs`
+
+### RLS-WORK-ALL-001 — Every `work` table is RLS-protected
+
+**Disposition:** `NEW`  
+**Layer:** Integration/Security  
+**Runtime:** real PostgreSQL required  
+
+**Proof:**
+- catalog check: every `work` table has RLS enabled and at least one policy
+- `board_members`, `approval_steps`, `relation_field_configs` same-tenant allowed, cross-tenant denied under the app role
+
+**Target surfaces:**
+- `WorkChildTableRlsIntegrationTests.cs`
+
+### RLS-VERIFY-001 — RLS verification fails closed
+
+**Disposition:** `NEW`  
+**Layer:** Integration  
+**Runtime:** real PostgreSQL required  
+
+**Proof:**
+- a policyless or RLS-disabled protected table makes `RlsPolicyApplier` fail
+- verification output is evaluated, not discarded
+
+**Target surfaces:**
+- `WorkRlsDeploymentTests.cs`
+
+### GOV-DEBT-001 — Inherited Governance debts are dispositioned
+
+**Disposition:** `NEW`  
+**Layer:** Architecture/Certification  
+
+**Proof:**
+- AccessFactsQuery Work persistence read does not grow beyond the recorded baseline
+- every Work command's `PermissionAction` matches the classified command matrix; `ManageBoard` users are listed explicitly
+
+**Target surfaces:**
+- `WorkPermissionActionMatrixArchitectureTests.cs`
+
 ## 4. Requirement → substantive evidence matrix
 
 | Requirement | Substantive test family/families |
@@ -1242,28 +1354,28 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 | `WMREQ001` | `BOARD-DOM-001`, `BOARD-APP-001` |
 | `WMREQ002` | `BOARD-DOM-001`, `BOARD-APP-001` |
 | `WMREQ003` | `BOARD-DOM-001`, `BOARD-APP-001` |
-| `WMREQ004` | `BOARD-DOM-001`, `BOARD-APP-001` |
+| `WMREQ004` | `BOARD-DOM-001`, `BOARD-APP-001`, `LIFE-RESTORE-001`, `LIFE-GUARD-001` |
 | `WMREQ005` | `BOARD-DOM-001`, `BOARD-APP-001`, `BOARD-CONC-001` |
 | `WMREQ006` | `BOARD-DOM-001`, `BOARD-APP-001`, `BOARD-AUTH-001` |
 | `WMREQ007` | `BOARD-DOM-001`, `BOARD-APP-001`, `BOARD-AUTH-001` |
 | `WMREQ008` | `BOARD-DOM-001`, `BOARD-APP-001`, `BOARD-DOM-002` |
 | `WMREQ009` | `BOARD-DOM-001`, `BOARD-APP-001`, `BOARD-DOM-002` |
 | `WMREQ010` | `BOARD-DOM-001`, `BOARD-APP-001` |
-| `WMREQ011` | `ITEM-DOM-001`, `ITEM-APP-002` |
-| `WMREQ012` | `ITEM-DOM-001`, `ITEM-APP-002` |
-| `WMREQ013` | `ITEM-DOM-001`, `ITEM-APP-002` |
-| `WMREQ014` | `ITEM-DOM-001`, `ITEM-APP-002`, `ITEM-DOM-002` |
-| `WMREQ015` | `ITEM-DOM-001`, `ITEM-APP-002` |
-| `WMREQ016` | `ITEM-DOM-001`, `ITEM-APP-002`, `ITEM-IDEMP-001` |
-| `WMREQ017` | `ITEM-DOM-001`, `ITEM-APP-002`, `ITEM-APP-001`, `ORDER-LOCK-001` |
-| `WMREQ018` | `ITEM-DOM-001`, `ITEM-APP-002`, `ITEM-APP-001`, `ORDER-LOCK-001` |
-| `WMREQ019` | `ITEM-DOM-001`, `ITEM-APP-002`, `ITEM-APP-001`, `X-AUT-001` |
-| `WMREQ020` | `ITEM-DOM-001`, `ITEM-APP-002`, `API-UPDATES-001` |
-| `WMREQ021` | `ITEM-DOM-001`, `ITEM-APP-002`, `ITEM-DOM-002` |
-| `WMREQ022` | `ITEM-DOM-001`, `ITEM-APP-002`, `ITEM-DOM-002` |
-| `WMREQ023` | `ITEM-DOM-001`, `ITEM-APP-002`, `ITEM-DOM-002` |
-| `WMREQ024` | `ITEM-DOM-001`, `ITEM-APP-002` |
-| `WMREQ025` | `ITEM-DOM-001`, `ITEM-APP-002` |
+| `WMREQ011` | `ITEM-DOM-001` |
+| `WMREQ012` | `ITEM-DOM-001` |
+| `WMREQ013` | `ITEM-DOM-001` |
+| `WMREQ014` | `ITEM-DOM-002`, `LIFE-RESTORE-001`, `LIFE-GUARD-001` |
+| `WMREQ015` | `ITEM-DOM-001` |
+| `WMREQ016` | `ITEM-IDEMP-001` |
+| `WMREQ017` | `ITEM-APP-001`, `ORDER-LOCK-001` |
+| `WMREQ018` | `ITEM-APP-001`, `ORDER-LOCK-001` |
+| `WMREQ019` | `ITEM-APP-001`, `X-AUT-001`, `ORDER-AUT-001` |
+| `WMREQ020` | `ITEM-APP-002`, `API-UPDATES-001` |
+| `WMREQ021` | `ITEM-DOM-002` |
+| `WMREQ022` | `ITEM-DOM-002` |
+| `WMREQ023` | `ITEM-DOM-002` |
+| `WMREQ024` | `ITEM-APP-002`, `VALUE-DOM-001` |
+| `WMREQ025` | `ITEM-APP-002` |
 | `WMREQ026` | `FIELD-DOM-001`, `VALUE-DOM-001` |
 | `WMREQ027` | `FIELD-DOM-001`, `VALUE-DOM-001`, `FIELD-APP-001` |
 | `WMREQ028` | `FIELD-DOM-001`, `VALUE-DOM-001` |
@@ -1280,33 +1392,33 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 | `WMREQ039` | `FIELD-DOM-001`, `VALUE-DOM-001` |
 | `WMREQ040` | `FIELD-DOM-001`, `VALUE-DOM-001`, `VALUE-CONC-001` |
 | `WMREQ041` | `ORDER-PLACE-001`, `ORDER-DOM-001` |
-| `WMREQ042` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-LOCK-001` |
-| `WMREQ043` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-STALE-001` |
-| `WMREQ044` | `ORDER-PLACE-001`, `ORDER-DOM-001` |
-| `WMREQ045` | `ORDER-PLACE-001`, `ORDER-DOM-001` |
-| `WMREQ046` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-DB-001` |
-| `WMREQ047` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-DB-002` |
-| `WMREQ048` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-DUP-001` |
-| `WMREQ049` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-DUP-001` |
-| `WMREQ050` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-DB-003`, `ORDER-CONC-001` |
-| `WMREQ051` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-LOCK-001` |
-| `WMREQ052` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-CONFLICT-001` |
-| `WMREQ053` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-REBAL-001` |
-| `WMREQ054` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-REBAL-001` |
-| `WMREQ055` | `ORDER-PLACE-001`, `ORDER-DOM-001`, `ORDER-PREFLIGHT-001`, `ORDER-NORM-001` |
-| `WMREQ056` | `CHK-DOM-001`, `CHK-API-001` |
-| `WMREQ057` | `CHK-DOM-001`, `CHK-API-001` |
-| `WMREQ058` | `CHK-DOM-001`, `CHK-API-001`, `CHK-ORDER-001` |
-| `WMREQ059` | `CHK-DOM-001`, `CHK-API-001`, `CHK-ORDER-001` |
-| `WMREQ060` | `CHK-DOM-001`, `CHK-API-001` |
-| `WMREQ061` | `CHK-DOM-001`, `CHK-API-001`, `CHK-STATE-001` |
-| `WMREQ062` | `CHK-DOM-001`, `CHK-API-001`, `CHK-STATE-001` |
-| `WMREQ063` | `CHK-DOM-001`, `CHK-API-001` |
-| `WMREQ064` | `CHK-DOM-001`, `CHK-API-001` |
-| `WMREQ065` | `CHK-DOM-001`, `CHK-API-001` |
-| `WMREQ066` | `CHK-DOM-001`, `CHK-API-001`, `CHK-CONC-001` |
-| `WMREQ067` | `CHK-DOM-001`, `CHK-API-001`, `CHK-RLS-001` |
-| `WMREQ068` | `CHK-DOM-001`, `CHK-API-001` |
+| `WMREQ042` | `ORDER-PLACE-001`, `ORDER-LOCK-001` |
+| `WMREQ043` | `ORDER-PLACE-001`, `ORDER-STALE-001` |
+| `WMREQ044` | `ORDER-PLACE-001`, `PERF-BOARD-001` |
+| `WMREQ045` | `ORDER-DOM-001`, `ORDER-PLACE-001` |
+| `WMREQ046` | `ORDER-DB-001` |
+| `WMREQ047` | `ORDER-DB-002` |
+| `WMREQ048` | `ORDER-DUP-001` |
+| `WMREQ049` | `ORDER-DUP-001` |
+| `WMREQ050` | `ORDER-DB-003`, `ORDER-CONC-001` |
+| `WMREQ051` | `ORDER-LOCK-001` |
+| `WMREQ052` | `ORDER-CONFLICT-001` |
+| `WMREQ053` | `ORDER-REBAL-001` |
+| `WMREQ054` | `ORDER-REBAL-001` |
+| `WMREQ055` | `ORDER-PREFLIGHT-001` |
+| `WMREQ056` | `CHK-DOM-001` |
+| `WMREQ057` | `CHK-DOM-001` |
+| `WMREQ058` | `CHK-ORDER-001` |
+| `WMREQ059` | `CHK-ORDER-001` |
+| `WMREQ060` | `CHK-API-001`, `CHK-DOM-001` |
+| `WMREQ061` | `CHK-STATE-001` |
+| `WMREQ062` | `CHK-STATE-001` |
+| `WMREQ063` | `CHK-DOM-001` |
+| `WMREQ064` | `CHK-API-001` |
+| `WMREQ065` | `CHK-DOM-001`, `LIFE-RESTORE-001` |
+| `WMREQ066` | `CHK-CONC-001` |
+| `WMREQ067` | `CHK-RLS-001` |
+| `WMREQ068` | `CHK-API-001` |
 | `WMREQ069` | `APP-ARCH-001` |
 | `WMREQ070` | `APP-ARCH-001` |
 | `WMREQ071` | `APP-ARCH-001` |
@@ -1318,31 +1430,31 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 | `WMREQ077` | `APP-ARCH-001`, `STUB-ARCH-001` |
 | `WMREQ078` | `APP-ARCH-001` |
 | `WMREQ079` | `APP-ARCH-001`, `CROSS-ARCH-001` |
-| `WMREQ080` | `RLS-DIRECT-001`, `RLS-OPTION-001`, `RLS-VALUE-001`, `RLS-CHK-001` |
+| `WMREQ080` | `RLS-DIRECT-001`, `RLS-OPTION-001`, `RLS-VALUE-001`, `RLS-CHK-001`, `RLS-WORK-ALL-001` |
 | `WMREQ081` | `RLS-DIRECT-001` |
 | `WMREQ082` | `RLS-DIRECT-001`, `RLS-OPTION-001` |
 | `WMREQ083` | `RLS-DIRECT-001`, `RLS-VALUE-001` |
 | `WMREQ084` | `RLS-DIRECT-001`, `RLS-CHK-001` |
-| `WMREQ085` | `RLS-DIRECT-001`, `RLS-OPTION-001`, `RLS-VALUE-001`, `RLS-CHK-001` |
-| `WMREQ086` | `RLS-DIRECT-001`, `RLS-DEPLOY-001` |
-| `WMREQ087` | `RLS-DIRECT-001`, `MIG-HISTORY-001` |
+| `WMREQ085` | `RLS-OPTION-001`, `RLS-VALUE-001`, `RLS-CHK-001`, `RLS-WORK-ALL-001` |
+| `WMREQ086` | `RLS-DEPLOY-001` |
+| `WMREQ087` | `MIG-HISTORY-001` |
 | `WMREQ088` | `RLS-DIRECT-001` |
-| `WMREQ089` | `RLS-DIRECT-001`, `RLS-WORKER-001` |
-| `WMREQ090` | `RLS-DIRECT-001`, `RLS-WORKER-001` |
-| `WMREQ091` | `RLS-DIRECT-001`, `RLS-SESSION-001` |
+| `WMREQ089` | `RLS-WORKER-001` |
+| `WMREQ090` | `RLS-WORKER-001` |
+| `WMREQ091` | `RLS-SESSION-001` |
 | `WMREQ092` | `RLS-DIRECT-001` |
-| `WMREQ093` | `RLS-DIRECT-001`, `RLS-DEPLOY-001` |
-| `WMREQ094` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `MAP-VALID-001` |
-| `WMREQ095` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `MAP-VALID-001` |
-| `WMREQ096` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `MAP-VALID-001` |
-| `WMREQ097` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `MAP-VALID-001` |
-| `WMREQ098` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `ORDER-DB-003` |
-| `WMREQ099` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `ORDER-DB-001`, `ORDER-DB-002` |
-| `WMREQ100` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `ORDER-PREFLIGHT-001`, `ORDER-NORM-001` |
-| `WMREQ101` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `RLS-DEPLOY-001` |
-| `WMREQ102` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `ORDER-NORM-001` |
-| `WMREQ103` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `MIG-HISTORY-001` |
-| `WMREQ104` | `MIG-CLEAN-001`, `MIG-UPGRADE-001`, `MIG-PENDING-001`, `RLS-DEPLOY-001` |
+| `WMREQ093` | `RLS-DEPLOY-001`, `RLS-VERIFY-001` |
+| `WMREQ094` | `MAP-VALID-001`, `MIG-CLEAN-001` |
+| `WMREQ095` | `MAP-VALID-001` |
+| `WMREQ096` | `MAP-VALID-001` |
+| `WMREQ097` | `MAP-VALID-001` |
+| `WMREQ098` | `ORDER-DB-003`, `MIG-CLEAN-001` |
+| `WMREQ099` | `ORDER-DB-001`, `ORDER-DB-002` |
+| `WMREQ100` | `ORDER-PREFLIGHT-001` |
+| `WMREQ101` | `MIG-CLEAN-001`, `RLS-DEPLOY-001` |
+| `WMREQ102` | `MIG-UPGRADE-001`, `ORDER-PREFLIGHT-001` |
+| `WMREQ103` | `MIG-HISTORY-001` |
+| `WMREQ104` | `MIG-PENDING-001`, `RLS-DEPLOY-001` |
 | `WMREQ105` | `AUTH-ARCH-001`, `AUTH-INT-001` |
 | `WMREQ106` | `AUTH-ARCH-001`, `AUTH-INT-001` |
 | `WMREQ107` | `AUTH-ARCH-001`, `AUTH-INT-001` |
@@ -1353,7 +1465,7 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 | `WMREQ112` | `VER-ARCH-001`, `VER-STALE-001` |
 | `WMREQ113` | `VER-ARCH-001`, `VER-STALE-001` |
 | `WMREQ114` | `VER-ARCH-001`, `VER-STALE-001`, `ORDER-CONC-001` |
-| `WMREQ115` | `IDEMP-FE-001`, `IDEMP-INT-001` |
+| `WMREQ115` | `IDEMP-FE-001`, `IDEMP-HEADER-001`, `IDEMP-INT-001` |
 | `WMREQ116` | `IDEMP-FE-001`, `IDEMP-INT-001`, `IDEMP-RETRY-001` |
 | `WMREQ117` | `IDEMP-FE-001`, `IDEMP-INT-001`, `IDEMP-MISMATCH-001` |
 | `WMREQ118` | `EVT-CONTRACT-001`, `EVT-DOM-001` |
@@ -1381,18 +1493,20 @@ V3 restores the foundational semantic coverage that V2 accidentally deemphasized
 | `WMREQ140` | `FE-GEN-001`, `FE-GROUP-001` |
 | `WMREQ141` | `FE-GEN-001`, `FE-FIELD-001` |
 | `WMREQ142` | `FE-GEN-001`, `FE-CHK-001` |
-| `WMREQ143` | `FE-GEN-001`, `IDEMP-FE-001`, `IDEMP-RETRY-001` |
-| `WMREQ144` | `SEC-JSON-001`, `FE-GEN-001` |
-| `WMREQ145` | `SEC-JSON-001`, `AUTH-INT-001` |
+| `WMREQ143` | `IDEMP-FE-001`, `IDEMP-HEADER-001`, `IDEMP-RETRY-001` |
+| `WMREQ144` | `API-PLACEMENT-001`, `API-UPDATES-001`, `API-VERSION-001`, `FE-GEN-001` |
+| `WMREQ145` | `AUTH-INT-001`, `HANDOFF-P4A-001` |
 | `WMREQ146` | `SEC-JSON-001` |
-| `WMREQ147` | `SEC-JSON-001`, `PERF-BOARD-001` |
-| `WMREQ148` | `SEC-JSON-001`, `PERF-AUTH-001` |
-| `WMREQ149` | `SEC-JSON-001`, `OBS-001` |
-| `WMREQ150` | `SEC-JSON-001`, `OBS-001` |
+| `WMREQ147` | `PERF-BOARD-001` |
+| `WMREQ148` | `PERF-AUTH-001` |
+| `WMREQ149` | `OBS-001` |
+| `WMREQ150` | `OBS-001`, `SEC-JSON-001` |
 | `WMREQ151` | `CERT-SHA-001` |
 | `WMREQ152` | `DISCOVERY-001` |
 | `WMREQ153` | `HANDOFF-P4A-001` |
 | `WMREQ154` | `CERT-BLOCKER-001` |
+| `WMREQ155` | `GOV-DEBT-001` |
+| `WMREQ156` | `ORDER-AUT-001` |
 
 ## 5. Semantic coverage rule
 
@@ -1400,8 +1514,8 @@ The certification parser MUST compute:
 
 ```text
 semantic_coverage = requirements whose mapping contains >=1 substantive family
-meta families do not satisfy WMREQ001–150
-required result = 154 / 154
+meta families do not satisfy WMREQ001–150 or WMREQ155–156
+required result = 156 / 156
 ```
 
 For WMREQ151–154 the substantive behavior is itself certification/discovery/handoff governance, represented by `CERT-SHA-001`, `DISCOVERY-001`, `HANDOFF-P4A-001`, `CERT-BLOCKER-001`.
@@ -1432,15 +1546,13 @@ For WMREQ151–154 the substantive behavior is itself certification/discovery/ha
 
 DB/domain parity tests MUST include canonical keys spanning digits, uppercase and lowercase prefixes/segments so PostgreSQL `ORDER BY position COLLATE "C"` is proven identical to `StringComparer.Ordinal` for the actual FractionalIndex grammar.
 
-## 9. Brownfield migration scenarios
-- clean scope with valid unique keys remains unchanged;
-- duplicate keys are normalized preserving stable preflight order;
-- invalid legacy keys normalize deterministically when recoverable;
-- ambiguous unrecoverable scope blocks migration;
-- after normalization, position type/collation conversion succeeds;
+## 9. Ordering migration scenarios (V3.1 reset path)
+- clean scope with valid unique keys passes the preflight and remains unchanged;
+- duplicate, null or grammar-invalid keys abort the migration with a named error and no schema/data change;
+- after the preflight, position type/collation conversion succeeds;
 - only then are unique indexes created;
-- supported upgrade preserves stable entity IDs and logical order;
-- clean install reaches same final schema.
+- a database passing the preflight upgrades preserving stable entity IDs and logical order;
+- clean install reaches the same final schema.
 
 ## 10. Version propagation matrix
 
@@ -1472,16 +1584,18 @@ A low-level Work API adapter generating a new UUID during unchanged-payload tran
 | `WM-V3-INV-001` | `OPTION-ARCH-001`, `VER-ARCH-001`, `CROSS-ARCH-001` |
 | `WM-V3-INV-002` | `FE-GEN-001`, `IDEMP-FE-001`, `VER-READ-001` |
 | `WM-V3-GATE-001` | `RLS-SESSION-001`, `RLS-DIRECT-001` |
-| `WM-V3-GATE-002` | `AUTH-ARCH-001`, `AUTH-INT-001` |
+| `WM-V3-GATE-002` | `AUTH-ARCH-001`, `AUTH-INT-001`, `GOV-DEBT-001` |
 | `WM-V3-ORDER-001` | `ORDER-LOCK-001` |
 | `WM-V3-ORDER-002` | `ORDER-PLACE-001`, `ORDER-STALE-001` |
 | `WM-V3-ORDER-003` | `ORDER-CONFLICT-001` |
 | `WM-V3-ORDER-004` | `ORDER-REBAL-001` |
-| `WM-V3-MIG-ORDER-001` | `ORDER-PREFLIGHT-001` |
-| `WM-V3-MIG-ORDER-002` | `ORDER-NORM-001`, `MIG-UPGRADE-001` |
+| `WM-V3-LIFE-001` | `LIFE-RESTORE-001`, `LIFE-GUARD-001` |
+| `WM-V3-FIX-001` | `FIX-MUT-001` |
+| `WM-V3-ORDER-005` | `ORDER-AUT-001` |
+| `WM-V3-MIG-ORDER-001` | `ORDER-PREFLIGHT-001`, `MIG-UPGRADE-001` |
 | `WM-V3-DATA-001` | `ORDER-DB-001`, `ORDER-DB-002` |
 | `WM-V3-DATA-002` | `ORDER-DB-003`, `ORDER-CONC-001` |
-| `WM-V3-DATA-003` | `RLS-OPTION-001`, `RLS-VALUE-001`, `RLS-CHK-001`, `RLS-DEPLOY-001` |
+| `WM-V3-DATA-003` | `RLS-OPTION-001`, `RLS-VALUE-001`, `RLS-CHK-001`, `RLS-WORK-ALL-001`, `RLS-VERIFY-001`, `RLS-DEPLOY-001` |
 | `WM-V3-DATA-004` | `MAP-VALID-001` |
 | `WM-V3-DOM-BOARD-001` | `BOARD-DOM-001`, `BOARD-DOM-002` |
 | `WM-V3-DOM-ITEM-001` | `ITEM-DOM-001`, `ITEM-DOM-002` |
@@ -1496,7 +1610,7 @@ A low-level Work API adapter generating a new UUID during unchanged-payload tran
 | `WM-V3-APP-CHK-001` | `CHK-DOM-001`, `CHK-ORDER-001`, `CHK-API-001`, `CHK-CONC-001` |
 | `WM-V3-CONC-001` | `VER-ARCH-001`, `VER-STALE-001`, `API-VERSION-001` |
 | `WM-V3-CONC-002` | `VER-READ-001`, `API-VERSION-001` |
-| `WM-V3-IDEMP-001` | `IDEMP-FE-001`, `IDEMP-RETRY-001`, `IDEMP-INT-001`, `IDEMP-MISMATCH-001` |
+| `WM-V3-IDEMP-001` | `IDEMP-FE-001`, `IDEMP-HEADER-001`, `IDEMP-RETRY-001`, `IDEMP-INT-001`, `IDEMP-MISMATCH-001` |
 | `WM-V3-EVT-001` | `EVT-DOM-001`, `EVT-CONTRACT-001`, `OUTBOX-001`, `OUTBOX-RECOVERY-001`, `RT-001` |
 | `WM-V3-X-001` | `X-AUT-001`, `X-AR-001`, `X-COLLAB-001`, `X-BILL-001`, `X-INT-001` |
 | `WM-V3-API-001` | `API-TRANSPORT-001`, `API-PLACEMENT-001`, `API-UPDATES-001`, `API-VERSION-001`, `API-ERROR-001` |
@@ -1543,15 +1657,16 @@ A low-level Work API adapter generating a new UUID during unchanged-payload tran
 - focused RLS direct/child/session/deployment;
 - focused authorization/version/idempotency;
 - focused events/outbox/cross-context/realtime;
-- focused migration clean/upgrade/normalization;
+- focused migration clean/upgrade/preflight;
+- focused soft-delete lifecycle/restore;
 - frontend Work consumer/idempotency/typecheck;
 - OpenAPI/generated consumer drift;
-- semantic traceability 154/154.
+- semantic traceability 156/156.
 
 ## 16. Final TESTS Definition of Done
-- [ ] all 154 WMREQ rows are present;
-- [ ] WMREQ001–150 each map to substantive behavior tests, never only meta tests;
-- [ ] ordering serialization/adjacency/collation/normalization are executable;
+- [ ] all 156 WMREQ rows are present;
+- [ ] WMREQ001–150 and WMREQ155–156 each map to substantive behavior tests, never only meta tests;
+- [ ] ordering serialization/adjacency/collation/preflight are executable;
 - [ ] foundational V1 Board/Item/Field/Checklist evidence is retained where still valid;
 - [ ] retired V1 behaviors are explicitly replaced;
 - [ ] read Version/write ExpectedVersion and logical idempotency ownership are tested end-to-end;

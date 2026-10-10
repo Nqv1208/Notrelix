@@ -23,7 +23,7 @@ public class ListFormsQueryHandler : IRequestHandler<ListFormsQuery, Result<List
     {
         var forms = await _context.Forms
             .AsNoTracking()
-            .Where(f => f.BoardId == request.BoardId && !f.IsDeleted)
+            .Where(f => f.BoardId == request.BoardId && f.DeletedAt == null)
             .OrderByDescending(f => f.CreatedAt)
             .Select(f => new FormDto(
                 f.Id,
