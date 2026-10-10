@@ -386,12 +386,17 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    /// <param name="replacementPosition">
+    /// Supplied by the caller (under the GroupItems ordering lock) when the item's
+    /// previous key is now held by an active sibling; applied in the same version.
+    /// </param>
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt, FractionalIndex? replacementPosition = null)
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         ApplyRestore(pendingRestore);
+        if (replacementPosition is not null) Position = replacementPosition;
         IncrementVersion();
         RaiseDomainEvent(new BoardItemRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }

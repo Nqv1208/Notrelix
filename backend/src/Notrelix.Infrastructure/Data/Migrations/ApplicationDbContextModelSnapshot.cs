@@ -5507,9 +5507,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("position");
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -5540,7 +5540,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasName("pk_board_groups");
 
                     b.HasIndex("BoardId", "Position")
-                        .HasDatabaseName("idx_board_groups_board_position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_groups_board_position_active")
                         .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("board_groups", "work");
@@ -5794,9 +5795,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("position");
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -5829,6 +5830,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("ItemId")
                         .HasDatabaseName("idx_checklists_item_id");
 
+                    b.HasIndex("ItemId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_checklists_item_position_active")
+                        .HasFilter("deleted_at IS NULL");
+
                     b.ToTable("checklists", "work");
                 });
 
@@ -5856,9 +5862,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("position");
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -5876,7 +5882,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasName("pk_checklist_items");
 
                     b.HasIndex("ChecklistId", "Position")
-                        .HasDatabaseName("idx_checklist_items_checklist_position");
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_checklist_items_checklist_position");
 
                     b.ToTable("checklist_items", "work");
                 });
@@ -5942,7 +5949,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<string>("Position")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("position");
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -5973,7 +5981,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasName("pk_board_fields");
 
                     b.HasIndex("BoardId", "Position")
-                        .HasDatabaseName("idx_board_fields_board_position");
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_fields_board_position_active")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("board_fields", "work");
                 });
@@ -5996,15 +6006,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("position");
+                        .HasColumnType("text")
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.HasKey("Id")
                         .HasName("pk_field_options");
 
                     b.HasIndex("FieldId")
                         .HasDatabaseName("idx_field_options_field_id");
+
+                    b.HasIndex("FieldId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_field_options_field_position");
 
                     b.ToTable("field_options", "work");
                 });
@@ -6330,7 +6344,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<string>("Position")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("position");
+                        .HasColumnName("position")
+                        .UseCollation("C");
 
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6363,8 +6378,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasFilter("deleted_at IS NULL");
 
                     b.HasIndex("GroupId", "Position")
-                        .HasDatabaseName("idx_board_items_group_position")
-                        .HasFilter("deleted_at IS NULL");
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_items_group_position_active")
+                        .HasFilter("deleted_at IS NULL AND parent_item_id IS NULL");
 
                     b.ToTable("board_items", "work");
                 });

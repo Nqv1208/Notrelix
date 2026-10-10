@@ -415,10 +415,10 @@ None
 None
 
 ### Exit
-- [ ] Automation and HTTP writers share one lock, resolver and conflict contract.
+- [x] Automation and HTTP writers share one lock, resolver and conflict contract.
 
 ### Status
-Partially delivered with WM-V3-APP-ITEM-001: the automation move now runs through the shared `MoveBoardItemUseCase`, so it takes the GroupItems lock inside the consumer transaction opened by `DeduplicationConsumeFilter` and uses the resolver with an append intent (the automation chain integration tests run with the real PostgreSQL lock). Still open, delivered with WM-V3-DATA-002 when the named constraints exist: Source finding for that change: a unique violation at the `Succeed()` SaveChanges falls into the technical-failure catch and attempts a second SaveChanges inside the aborted PostgreSQL transaction with the conflicting change still tracked; the conflict must instead propagate so the consumer transaction rolls back and redelivery re-resolves placement.
+`READY_FOR_CERTIFICATION`. The automation move runs through the shared `MoveBoardItemUseCase` (GroupItems lock inside the consumer transaction, resolver with an append intent; delivered with WM-V3-APP-ITEM-001). With the named constraints installed (WM-V3-DATA-002), `AutomationMoveItemUseCase` classifies a commit-time collision through the new `IOrderingConflictClassifier` port (Infrastructure: constraint-name based, shared with the HTTP mapping) and rethrows `ConflictException` with `work.ordering.conflict` before the technical-failure catch, so no second `SaveChanges` runs inside the aborted PostgreSQL transaction; the consumer transaction rolls back and redelivery re-resolves placement. Evidence: `AutomationMoveItemExecutorCompositionIntegrationTests.MoveItemComposition_OrderingCollisionAtCommit_PropagatesTheStableConflict_AndRedeliveryReResolves` (a lock-bypassing writer commits the resolved key before the automation commit; the execution stays Queued with no Work change, then redelivery succeeds).
 
 ## WM-V3-MIG-ORDER-001 — Reset path and fail-closed ordering preflight
 
@@ -445,7 +445,10 @@ Partially delivered with WM-V3-APP-ITEM-001: the automation move now runs throug
 Pre-migration guard inside the forward migration; environments reset beforehand.
 
 ### Exit
-- [ ] Clean database passes the preflight; a duplicate-position database is rejected without mutation.
+- [x] Clean database passes the preflight; a duplicate-position database is rejected without mutation.
+
+### Status
+`READY_FOR_CERTIFICATION`. `WorkOrderingPreflight.Sql` is the first operation of migration `20261010065641_CanonicalizeWorkOrdering`: it checks every row of the six scopes against the Domain key grammar (`ValidKeyPredicate`, proven equal to `FractionalIndex.Create` on a valid/invalid corpus) and every active scope for duplicates, and raises `WM_ORDERING_PREFLIGHT_FAILED` naming each failing table, aborting the migration transaction. The reset path is recorded in `backend/docs/operations/migrations-and-data-change.md` §34. Evidence: `WorkOrderingPreflightIntegrationTests` (dedicated PostgreSQL migrated to the pre-cut-over schema: duplicate active group keys abort with the named error and leave column type, indexes, history and data unchanged; after the scope is made clean the same migration applies with stable keys and order), `WorkOrderingSchemaIntegrationTests.PreflightGrammarPredicate_AcceptsExactlyTheDomainGrammar`. Certification must still record that no production database existed at cut-over (WM-V3-CERT-001).
 
 ## WM-V3-DATA-001 — Canonicalize ordering persistence representation
 
@@ -477,7 +480,10 @@ Pre-migration guard inside the forward migration; environments reset beforehand.
 Forward EF migration after the WM-V3-MIG-ORDER-001 preflight.
 
 ### Exit
-- [ ] Database ORDER BY and Domain CompareTo produce identical order for canonical test corpus.
+- [x] Database ORDER BY and Domain CompareTo produce identical order for canonical test corpus.
+
+### Status
+`READY_FOR_CERTIFICATION`. The six P3 position columns are `text COLLATE "C"` (`WorkOrderingConstraints.OrdinalCollation`; the `varchar(50)` limits are removed) and their ordering indexes are rebuilt by the same migration. Evidence: `WorkOrderingSchemaIntegrationTests.EveryP3PositionColumn_IsOrdinalText` (catalog), `DatabaseOrderBy_EqualsDomainCompareTo_ForTheBoundaryCorpus` (digits, upper/lower case, head-length and maximal integer keys). Zero pending model changes after the migration.
 
 ## WM-V3-DATA-002 — Install unique active ordering indexes
 
@@ -502,7 +508,10 @@ Forward EF migration after the WM-V3-MIG-ORDER-001 preflight.
 Forward EF migration; migration ordering is preflight → alter collation/type → unique indexes.
 
 ### Exit
-- [ ] All six target scopes reject duplicate active position.
+- [x] All six target scopes reject duplicate active position.
+
+### Status
+`READY_FOR_CERTIFICATION`. The six named unique indexes exist (`ux_work_board_items_group_position_active` filtered to active root items, the groups/fields/checklists indexes filtered to `deleted_at IS NULL`, and unfiltered checklist-item and option indexes); they replace the redundant non-unique position indexes. Installed only after every writer recorded by WM-V3-INV-001 is compliant and the retired writers are deleted (WM-V3-APP-OPTION-001), per SPEC WM-V3-DEC-014. Restore of a soft-deleted root item whose key was reissued meanwhile lands directly after the active holder of that key under the GroupItems lock instead of failing (SPEC WM-V3-DEC-019). Test fixtures that seeded sibling groups with the same key were corrected. Evidence: `WorkOrderingSchemaIntegrationTests.EachUniqueIndex_RejectsADuplicateActiveKey_WithItsConstraintName` (all six names, each recognized by `WorkOrderingConstraints.IsOrderingViolation`), `SoftDeletedAndChildItems_DoNotHoldTheActiveRootKey`, `WorkItemPlacementIntegrationTests.RestoreItem_WhoseKeyWasReissued_LandsRightAfterItsHolder_WithoutAConflict`.
 
 ## WM-V3-DATA-003 — Implement explicit parent-derived app RLS
 

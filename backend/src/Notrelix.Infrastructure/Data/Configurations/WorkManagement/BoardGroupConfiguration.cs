@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 
@@ -23,7 +24,7 @@ public class BoardGroupConfiguration : IEntityTypeConfiguration<BoardGroup>
             color.Property(c => c.Value).HasColumnName("color").IsRequired().HasMaxLength(50);
         });
 
-        builder.Property(x => x.Position).HasColumnName("position").HasMaxLength(50).IsRequired();
+        builder.Property(x => x.Position).HasColumnName("position").HasColumnType("text").UseCollation(WorkOrderingConstraints.OrdinalCollation).IsRequired();
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
@@ -39,6 +40,6 @@ public class BoardGroupConfiguration : IEntityTypeConfiguration<BoardGroup>
             .HasForeignKey(x => x.BoardId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.BoardId, x.Position }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_groups_board_position");
+        builder.HasIndex(x => new { x.BoardId, x.Position }).IsUnique().HasFilter("deleted_at IS NULL").HasDatabaseName(WorkOrderingConstraints.BoardGroups);
     }
 }

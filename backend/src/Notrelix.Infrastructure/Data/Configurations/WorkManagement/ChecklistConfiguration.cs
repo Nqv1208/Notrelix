@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Items;
 
@@ -17,7 +18,7 @@ public class ChecklistConfiguration : IEntityTypeConfiguration<Checklist>
         builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(256);
 
-        builder.Property(x => x.Position).HasColumnName("position").HasMaxLength(50).IsRequired();
+        builder.Property(x => x.Position).HasColumnName("position").HasColumnType("text").UseCollation(WorkOrderingConstraints.OrdinalCollation).IsRequired();
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
@@ -38,5 +39,6 @@ public class ChecklistConfiguration : IEntityTypeConfiguration<Checklist>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.ItemId).HasDatabaseName("idx_checklists_item_id");
+        builder.HasIndex(x => new { x.ItemId, x.Position }).IsUnique().HasFilter("deleted_at IS NULL").HasDatabaseName(WorkOrderingConstraints.ItemChecklists);
     }
 }

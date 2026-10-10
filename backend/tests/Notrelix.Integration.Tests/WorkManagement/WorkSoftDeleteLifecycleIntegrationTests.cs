@@ -1,11 +1,13 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RestoreBoardItem;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RestoreBoard;
+using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -111,9 +113,13 @@ public sealed class WorkSoftDeleteLifecycleIntegrationTests : IAsyncLifetime
     private async Task RestoreItemAsync(BoardStack caller, Guid itemId)
     {
         await using var context = _db.CreateContext(caller.Request.Tenant);
-        var handler = new RestoreBoardItemCommandHandler(context, caller.Request, FakeDateTimeProvider.WithFixedTime(Now.AddMinutes(1)));
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        var handler = new RestoreBoardItemCommandHandler(
+            context, caller.Request, FakeDateTimeProvider.WithFixedTime(Now.AddMinutes(1)),
+            new WorkPlacementResolver(new PostgresWorkOrderingScopeLock(context)));
         await handler.Handle(new RestoreBoardItemCommand(itemId), CancellationToken.None);
         await context.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 
     private async Task<long> ReadItemVersionAsync(BoardStack stack)

@@ -20,15 +20,18 @@ public sealed class AutomationMoveItemUseCase
     private readonly IAutomationDbContext _context;
     private readonly IWorkActionPort _workActions;
     private readonly IDateTimeProvider _clock;
+    private readonly IOrderingConflictClassifier _orderingConflicts;
 
     public AutomationMoveItemUseCase(
         IAutomationDbContext context,
         IWorkActionPort workActions,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IOrderingConflictClassifier orderingConflicts)
     {
         _context = context;
         _workActions = workActions;
         _clock = clock;
+        _orderingConflicts = orderingConflicts;
     }
 
     /// <summary>True = the execution reached a terminal state; false = retryable.</summary>
@@ -121,6 +124,17 @@ public sealed class AutomationMoveItemUseCase
             execution.Fail("Target action business rejection.", _clock.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
             return true;
+        }
+        catch (Exception ex) when (_orderingConflicts.IsOrderingConflict(ex))
+        {
+            // WM-V3-ORDER-005: a named ordering guard rejected the move at commit.
+            // The PostgreSQL transaction is aborted and still tracks the colliding
+            // change, so nothing more may be written here. Propagate the stable
+            // conflict: the consumer transaction rolls back and redelivery
+            // re-resolves placement under the scope lock in a new transaction.
+            throw new ConflictException(
+                "The position was taken by a concurrent change. Redelivery re-resolves placement.",
+                IOrderingConflictClassifier.ConflictCode);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

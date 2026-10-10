@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -17,7 +18,7 @@ public class FieldOptionConfiguration : IEntityTypeConfiguration<FieldOption>
         {
             color.Property(c => c.Value).HasColumnName("color").HasMaxLength(50);
         });
-        builder.Property(x => x.Position).HasColumnName("position").HasMaxLength(50).IsRequired();
+        builder.Property(x => x.Position).HasColumnName("position").HasColumnType("text").UseCollation(WorkOrderingConstraints.OrdinalCollation).IsRequired();
 
         builder.HasOne<BoardField>()
             .WithMany(x => x.Options)
@@ -25,5 +26,6 @@ public class FieldOptionConfiguration : IEntityTypeConfiguration<FieldOption>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.FieldId).HasDatabaseName("idx_field_options_field_id");
+        builder.HasIndex(x => new { x.FieldId, x.Position }).IsUnique().HasDatabaseName(WorkOrderingConstraints.FieldOptions);
     }
 }

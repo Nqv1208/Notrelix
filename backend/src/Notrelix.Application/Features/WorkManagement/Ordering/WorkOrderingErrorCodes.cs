@@ -7,5 +7,5 @@ public static class WorkOrderingErrorCodes
     public const string StalePlacement = "work.ordering.stale-placement";
 
     /// <summary>A named ordering uniqueness constraint rejected the write; reload and rebase.</summary>
-    public const string Conflict = "work.ordering.conflict";
+    public const string Conflict = Notrelix.Application.Common.Data.IOrderingConflictClassifier.ConflictCode;
 }

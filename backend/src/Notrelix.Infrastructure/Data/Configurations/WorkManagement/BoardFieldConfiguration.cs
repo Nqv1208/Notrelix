@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 
@@ -29,7 +30,7 @@ public class BoardFieldConfiguration : IEntityTypeConfiguration<BoardField>
             settings.Property(s => s.Data).HasColumnName("settings").HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
         });
 
-        builder.Property(x => x.Position).HasColumnName("position").IsRequired();
+        builder.Property(x => x.Position).HasColumnName("position").HasColumnType("text").UseCollation(WorkOrderingConstraints.OrdinalCollation).IsRequired();
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
@@ -49,6 +50,6 @@ public class BoardFieldConfiguration : IEntityTypeConfiguration<BoardField>
             .HasForeignKey(x => x.BoardId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.BoardId, x.Position }).HasDatabaseName("idx_board_fields_board_position");
+        builder.HasIndex(x => new { x.BoardId, x.Position }).IsUnique().HasFilter("deleted_at IS NULL").HasDatabaseName(WorkOrderingConstraints.BoardFields);
     }
 }

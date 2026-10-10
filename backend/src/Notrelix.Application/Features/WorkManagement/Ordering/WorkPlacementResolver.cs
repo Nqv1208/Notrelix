@@ -85,6 +85,32 @@ public sealed class WorkPlacementResolver
         return Place(ordered, new WorkPlacementIntent(anchorId, successor));
     }
 
+    /// <summary>
+    /// Restore placement (WM-V3-DATA-002): returns <c>null</c> when the restored
+    /// entity's previous key is still free in the scope, otherwise a key directly
+    /// after the active sibling that now holds it, so restore never collides with
+    /// the unique ordering index. Runs under the scope lock.
+    /// </summary>
+    public async Task<FractionalIndex?> ResolveRestoreAsync(
+        WorkOrderingScope scope,
+        FractionalIndex previousPosition,
+        Func<CancellationToken, Task<IReadOnlyList<OrderedSibling>>> loadActiveSiblings,
+        CancellationToken cancellationToken)
+    {
+        await _scopeLock.AcquireAsync(scope, cancellationToken);
+
+        var ordered = (await loadActiveSiblings(cancellationToken))
+            .OrderBy(sibling => sibling.Position)
+            .ThenBy(sibling => sibling.Id)
+            .ToList();
+
+        var holder = ordered.FindIndex(sibling => sibling.Position.Value == previousPosition.Value);
+        if (holder < 0) return null;
+
+        var successor = holder + 1 < ordered.Count ? ordered[holder + 1].Id : (Guid?)null;
+        return Place(ordered, new WorkPlacementIntent(ordered[holder].Id, successor));
+    }
+
     private static bool TryKeepCurrent(
         IReadOnlyList<OrderedSibling> ordered, Guid movedId, WorkPlacementIntent intent, out FractionalIndex current)
     {

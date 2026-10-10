@@ -79,7 +79,7 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         var restrictedMember = WorkspaceMember.Create(accountId, workspace.Id, memberUser.Id, WorkspaceRole.Member, ownerId, Now);
         var board = Board.Create(accountId, workspace.Id, ownerId, "Board", null, Now);
         var sourceGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Todo", Domain.SharedKernel.Color.Create("#808080"), FractionalIndex.Initial(), ownerId, Now);
-        var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Domain.SharedKernel.Color.Create("#00FF00"), FractionalIndex.Initial(), ownerId, Now);
+        var targetGroup = BoardGroup.Create(accountId, workspace.Id, board.Id, "Done", Domain.SharedKernel.Color.Create("#00FF00"), FractionalIndex.Create("a1"), ownerId, Now);
         var item = BoardItem.CreateRoot(accountId, workspace.Id, board.Id, sourceGroup.Id, "Task", FractionalIndex.Initial(), ownerId, Now);
 
         await using var seed = _db.CreateContext(SystemTenant());

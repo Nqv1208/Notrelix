@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RestoreBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RemoveFieldOption;
@@ -265,6 +266,31 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
         await using var verify = _db.CreateContext(SystemTenant());
         var options = await verify.FieldOptions.Where(o => o.FieldId == field).ToListAsync();
         options.Should().ContainSingle().Which.Name.Should().Be("Alpha");
+    }
+
+    [Fact]
+    public async Task RestoreItem_WhoseKeyWasReissued_LandsRightAfterItsHolder_WithoutAConflict()
+    {
+        var a = await CreateAsync("A");
+        var b = await CreateAsync("B");
+        await InTransactionAsync(async context =>
+        {
+            var item = await context.BoardItems.SingleAsync(i => i.Id == b);
+            item.Delete(_userId, Now);
+            return true;
+        });
+        var c = await CreateAsync("C");
+        await using (var probe = _db.CreateContext(SystemTenant()))
+        {
+            var keys = await probe.BoardItems.IgnoreQueryFilters().Where(i => i.Id == b || i.Id == c).ToDictionaryAsync(i => i.Id, i => i.Position.Value);
+            keys[c].Should().Be(keys[b], "the scenario requires the deleted item's key to be reissued");
+        }
+
+        await InTransactionAsync(async context =>
+            await new RestoreBoardItemCommandHandler(context, Request(), Clock(), Resolver(context))
+                .Handle(new RestoreBoardItemCommand(b), CancellationToken.None));
+
+        (await OrderInGroupAsync(_todoId)).Should().Equal(a, c, b);
     }
 
     private async Task<Guid> AddOptionAsync(Guid fieldId, string name, Guid? previous = null, Guid? next = null) =>

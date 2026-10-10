@@ -1,5 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Ordering;
+using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RestoreBoardItem;
 
@@ -16,15 +18,18 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly WorkPlacementResolver _placement;
 
     public RestoreBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        WorkPlacementResolver placement)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _placement = placement;
     }
 
     public async Task<Result> Handle(RestoreBoardItemCommand request, CancellationToken ct)
@@ -38,7 +43,19 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId && i.AccountId == accountId && i.WorkspaceId == workspaceId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        item.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        // A deleted root item's key may have been reissued to an active sibling;
+        // restore keeps the key when free, otherwise lands right after its holder.
+        FractionalIndex? replacement = null;
+        if (item.IsDeleted && item.ParentItemId is null)
+        {
+            replacement = await _placement.ResolveRestoreAsync(
+                new WorkOrderingScope(WorkOrderingScopeKind.GroupItems, item.GroupId),
+                item.Position,
+                token => GroupItemSiblings.LoadAsync(_context, item.GroupId, token),
+                ct);
+        }
+
+        item.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow, replacement);
         return Result.Success();
     }
 }

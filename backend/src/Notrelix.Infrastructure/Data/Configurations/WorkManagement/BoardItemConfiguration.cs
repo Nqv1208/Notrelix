@@ -1,3 +1,4 @@
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
@@ -19,7 +20,7 @@ public class BoardItemConfiguration : IEntityTypeConfiguration<BoardItem>
         builder.Property(x => x.GroupId).HasColumnName("group_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(1024);
 
-        builder.Property(x => x.Position).HasColumnName("position").IsRequired();
+        builder.Property(x => x.Position).HasColumnName("position").HasColumnType("text").UseCollation(WorkOrderingConstraints.OrdinalCollation).IsRequired();
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
@@ -44,7 +45,7 @@ public class BoardItemConfiguration : IEntityTypeConfiguration<BoardItem>
             .HasForeignKey(x => x.BoardId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.GroupId, x.Position }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_items_group_position");
+        builder.HasIndex(x => new { x.GroupId, x.Position }).IsUnique().HasFilter("deleted_at IS NULL AND parent_item_id IS NULL").HasDatabaseName(WorkOrderingConstraints.GroupItems);
         builder.HasIndex(x => x.BoardId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_items_board_id");
     }
 }
