@@ -206,12 +206,14 @@ describe("closed-world architecture manifest", () => {
       "@notrelix/query",
       "@notrelix/ui-web",
     ]);
+    // WX-SHELL: the workspace shell owns its vi/en catalog (FE-ADR-006).
     expectExact("@notrelix/features-workspace", [
       "@notrelix/contracts",
       "@notrelix/kernel",
       "@notrelix/platform",
       "@notrelix/query",
       "@notrelix/ui-web",
+      "@notrelix/i18n",
     ]);
     expectExact("@notrelix/features-account", [
       "@notrelix/contracts",

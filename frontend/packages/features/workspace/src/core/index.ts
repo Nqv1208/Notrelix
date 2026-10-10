@@ -36,7 +36,16 @@ export {
 } from "./api/invitations.service";
 export { createViewsService } from "./api/views.service";
 export { createActivityService } from "./api/activity.service";
+export {
+  createNavigationService,
+  type NavigationApiClient,
+  type NavigationEndpoints,
+  type NavigationService,
+} from "./api/navigation.service";
 
 export * from "./model/selectors";
 export * from "./model/workspace-views";
 export * from "./rules/workspace-rules";
+export * from "./model/navigation";
+export * from "./model/breadcrumb";
+export * from "./model/shortcuts";

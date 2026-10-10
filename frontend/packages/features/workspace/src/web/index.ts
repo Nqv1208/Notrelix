@@ -29,3 +29,51 @@ export { ActiveBoards } from "./components/dashboard/active-boards";
 export { PinnedDocs } from "./components/dashboard/pinned-docs";
 export { ActivityFeed } from "./components/dashboard/activity-feed";
 export { UpcomingDeadlines } from "./components/dashboard/upcoming-deadlines";
+
+// ── Workspace shell (WX-SHELL-001…005) ────────────────────────────
+export {
+  createUseWorkspaceRecents,
+  createUseWorkspacePins,
+} from "./query/hooks/use-workspace-navigation";
+export {
+  createUseRecordRecent,
+  createUseTogglePin,
+  type RecordRecentInput,
+  type TogglePinInput,
+} from "./hooks/mutations/use-workspace-navigation-mutations";
+export { workspaceShellCatalog } from "./shell/workspace-shell.catalog";
+export {
+  workspaceShellCopy,
+  type WorkspaceShellCopy,
+} from "./shell/workspace-shell.copy";
+export { useWorkspaceShellCopy } from "./shell/use-workspace-shell-copy";
+export {
+  useShellShortcuts,
+  isTypingTarget,
+  commandShortcutLabel,
+  SHELL_SHORTCUTS,
+  type ShellShortcutId,
+} from "./shell/use-shell-shortcuts";
+export * from "./shell/shell-models";
+export { ShellLink, IdentityMark } from "./shell/shell-link";
+export {
+  WorkspaceSidebarSurface,
+  type WorkspaceSidebarSurfaceProps,
+} from "./shell/workspace-sidebar-surface";
+export {
+  WorkspaceTopbarSurface,
+  type WorkspaceTopbarSurfaceProps,
+} from "./shell/workspace-topbar-surface";
+export {
+  WorkspaceCommandPaletteSurface,
+  type WorkspaceCommandPaletteSurfaceProps,
+} from "./shell/workspace-command-palette-surface";
+export {
+  WorkspaceShortcutSheetSurface,
+  type WorkspaceShortcutSheetSurfaceProps,
+} from "./shell/workspace-shortcut-sheet-surface";
+export {
+  WorkspaceScopeStateSurface,
+  type WorkspaceScopeState,
+  type WorkspaceScopeStateSurfaceProps,
+} from "./shell/workspace-scope-state-surface";

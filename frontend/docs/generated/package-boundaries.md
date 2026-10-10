@@ -46,7 +46,7 @@ Package count: 43
 | `packages/features/integrations` | `@notrelix/features-integrations` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/ui-web` | _(none)_ |
 | `packages/features/notifications` | `@notrelix/features-notifications` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/ui-web`, `@notrelix/realtime` | `@notrelix/testing` |
 | `packages/features/search` | `@notrelix/features-search` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/ui-web` | `@notrelix/testing` |
-| `packages/features/workspace` | `@notrelix/features-workspace` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/ui-web` | `@notrelix/testing` |
+| `packages/features/workspace` | `@notrelix/features-workspace` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/ui-web`, `@notrelix/i18n` | `@notrelix/testing` |
 | `packages/foundation/contracts` | `@notrelix/contracts` | `foundation` | `core-production` | `@notrelix/kernel` | _(none)_ |
 | `packages/foundation/i18n` | `@notrelix/i18n` | `foundation` | `core-production` | _(none)_ | _(none)_ |
 | `packages/foundation/kernel` | `@notrelix/kernel` | `foundation` | `core-production` | _(none)_ | _(none)_ |

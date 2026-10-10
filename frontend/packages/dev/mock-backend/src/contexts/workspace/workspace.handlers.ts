@@ -20,7 +20,32 @@ import type {
   WorkspaceView,
 } from "@notrelix/features-workspace";
 import { defineMockOperation } from "../../operations/types";
-import { ok, created, notFound } from "../../transport/create-response";
+import {
+  ok,
+  created,
+  noContent,
+  notFound,
+  validationError,
+} from "../../transport/create-response";
+import type { MockStore } from "../../state/mock-store";
+
+const NAVIGATION_KINDS = new Set(["work-management.board", "documents.page"]);
+
+/** Mirrors the producer: the resource must live in the caller's workspace. */
+function navigationResourceExists(
+  store: MockStore,
+  workspaceId: string,
+  kind: string,
+  resourceId: string,
+): boolean {
+  if (kind === "work-management.board") {
+    return store.getBoard(resourceId)?.workspaceId === workspaceId;
+  }
+  if (kind === "documents.page") {
+    return store.getPage(resourceId)?.workspaceId === workspaceId;
+  }
+  return false;
+}
 
 export const workspaceOperations = [
   // ─── GET /workspaces ──────────────────────────────────────────────────────
@@ -199,6 +224,140 @@ export const workspaceOperations = [
     route: "/workspaces/:workspaceId/members/:userId",
     async handle({ store: _store }) {
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── Navigation state (WX-BE-001/002) ─────────────────────────────────────
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.navigation.recents.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Navigation.ListRecents",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/recents",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok(
+        store.getRecentResources(params.workspaceId).map((entry) => ({
+          kind: entry.kind,
+          resourceId: entry.resourceId,
+          lastOpenedAt: entry.at,
+        })),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    { kind?: string; resourceId?: string },
+    void
+  >({
+    id: "workspace.navigation.recents.record",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Navigation.RecordRecent",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/recents",
+    async handle({ params, body, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const kind = body?.kind ?? "";
+      const resourceId = body?.resourceId ?? "";
+      if (!NAVIGATION_KINDS.has(kind)) {
+        return validationError({ kind: ["Unsupported resource kind."] });
+      }
+      if (
+        !store.isCurrentMemberOf(params.workspaceId) ||
+        !navigationResourceExists(store, params.workspaceId, kind, resourceId)
+      ) {
+        return notFound();
+      }
+      store.recordRecentResource(params.workspaceId, kind, resourceId);
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.navigation.pins.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Navigation.ListPins",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/pins",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok(
+        store.getPinnedResources(params.workspaceId).map((entry) => ({
+          kind: entry.kind,
+          resourceId: entry.resourceId,
+          pinnedAt: entry.at,
+        })),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; kind: string; resourceId: string },
+    never,
+    void
+  >({
+    id: "workspace.navigation.pins.pin",
+    contract: { kind: "openapi", operationId: "Workspaces.Navigation.Pin" },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/pins/:kind/:resourceId",
+    async handle({ params, store }) {
+      const kind = decodeURIComponent(params.kind);
+      if (!NAVIGATION_KINDS.has(kind)) {
+        return validationError({ kind: ["Unsupported resource kind."] });
+      }
+      if (
+        !store.isCurrentMemberOf(params.workspaceId) ||
+        !navigationResourceExists(
+          store,
+          params.workspaceId,
+          kind,
+          params.resourceId,
+        )
+      ) {
+        return notFound();
+      }
+      if (!store.pinResource(params.workspaceId, kind, params.resourceId)) {
+        return {
+          status: 422,
+          body: {
+            message: "Pin limit reached",
+            code: "Workspaces_Navigation_PinLimitReached",
+          },
+        };
+      }
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; kind: string; resourceId: string },
+    never,
+    void
+  >({
+    id: "workspace.navigation.pins.unpin",
+    contract: { kind: "openapi", operationId: "Workspaces.Navigation.Unpin" },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/pins/:kind/:resourceId",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      store.unpinResource(
+        params.workspaceId,
+        decodeURIComponent(params.kind),
+        params.resourceId,
+      );
+      return noContent();
     },
   }),
 ];

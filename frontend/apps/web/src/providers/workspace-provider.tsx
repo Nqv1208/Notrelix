@@ -1,17 +1,17 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
-  createUseWorkspaceShellData,
+  createUseWorkspace,
   type WorkspaceSummary,
-  type WorkspaceView,
 } from "@notrelix/features-workspace";
 
 type WorkspaceContextValue = {
   workspaceId: string;
   workspace: WorkspaceSummary | null;
-  views: WorkspaceView[];
   isLoading: boolean;
   isError: boolean;
+  /** The failed load, when `isError` (an AppError from the API client). */
+  error: unknown;
   refetch: () => Promise<unknown>;
 };
 
@@ -32,40 +32,39 @@ type WorkspaceProviderProps = {
   children: ReactNode;
 };
 
+/**
+ * Workspace scope for the shell. Holds the workspace record only: the
+ * mock-only workspace views left the shell (WX-DEC-010).
+ */
 export function WorkspaceProvider({
   workspaceId,
   children,
 }: WorkspaceProviderProps) {
   const { api: runtimeClient } = useAppRuntime();
 
-  /**
-   * Create the workspace shell hook using the injected API client from AppRuntime.
-   * `runtimeClient` is a stable reference (created once at app startup), so this
-   * useMemo effectively runs only once — equivalent to module-level factory calls
-   * but without relying on a global mutable singleton.
-   */
-  const useWorkspaceShellData = useMemo(
+  // `runtimeClient` is created once at startup, so this runs once.
+  const useWorkspace = useMemo(
     () =>
-      createUseWorkspaceShellData({
+      createUseWorkspace({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
       }),
     [runtimeClient],
   );
 
-  const { workspace, views, isLoading, isError, refetch } =
-    useWorkspaceShellData(workspaceId);
+  const { data, isLoading, isError, error, refetch } =
+    useWorkspace(workspaceId);
 
   const value = useMemo<WorkspaceContextValue>(
     () => ({
       workspaceId,
-      workspace: workspace ?? null,
-      views,
+      workspace: data ?? null,
       isLoading,
       isError,
+      error,
       refetch,
     }),
-    [workspaceId, workspace, views, isLoading, isError, refetch],
+    [workspaceId, data, isLoading, isError, error, refetch],
   );
 
   return (

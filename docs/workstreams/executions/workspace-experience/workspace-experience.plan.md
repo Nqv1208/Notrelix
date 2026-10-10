@@ -120,6 +120,28 @@ Open items:
 | WX-SHELL-004 | Scope transitions: a workspace switch shows the new scope without stale data; lost access shows an explicit forbidden state instead of a silent redirect; one scroll container. | scope-switch race test, forbidden story |
 | WX-SHELL-005 | Keyboard shortcuts (G H, G I, …) with a discoverable shortcut sheet. | interaction tests |
 
+### Status
+
+Delivered on 2026-10-10 (uncommitted working tree on `develop`, baseline `e8a5876c`).
+
+| Unit | Status | Delivered | Evidence |
+|---|---|---|---|
+| WX-SHELL-001 | Done | `WorkspaceSidebarSurface` on the `Sidebar` primitive: switcher (identity mark, name, role, create), Home, My work, Inbox, Search, Pinned and Recent (Boards and Docs mixed, collapsible, row menu Open/Pin/Unpin), Members, Settings, user card. Every entry has a real `href`; new routes `/workspaces/$id/my-work` and `/workspaces/$id/inbox` show honest empty states. Recents and pins come from the Workspaces producer (`createUseWorkspaceRecents/Pins`, `createUseTogglePin` optimistic with rollback); names are joined from the authorized Board and Doc lists, and unmatched references are dropped (`resolveNavigationEntries`). A recent is recorded when a Board or Doc route opens (`createUseRecordRecent`: one idempotency key per open, fire-and-forget). Mobile renders the primitive's drawer. `/home` no longer renders a second shell: it lands on the first workspace, or shows an onboarding state with one create-workspace dialog. "Team online" and "Quick access" are gone. | `workspace-shell.interaction.component.test.tsx` (`workspace.sidebar:*`, 8 cases incl. keyboard order), `workspace-navigation-state.component.test.tsx` (rollback, record, in-flight-read race), `workspace-shell-model.unit.test.ts`, stories `Workspace/Shell › Sidebar*` (mobile drawer in Default), mock e2e `auth-workspace` |
+| WX-SHELL-002 | Done | `WorkspaceTopbarSurface`: breadcrumb from `buildWorkspaceBreadcrumb` (Workspace › Board/Doc › View) fed by matched route ids/params (`resolveShellLocation`) and loaded names, command trigger with platform chord, `@notrelix/features-notifications` bell, theme toggle with `aria-label`. | `workspace.topbar:breadcrumb`, `breadcrumb-unknown` (a resource missing from the authorized list never shows its id), `actions`; `workspace-shell-routing.unit.test.ts` |
+| WX-SHELL-003 | Done | `WorkspaceCommandPaletteSurface` on `Dialog` + cmdk: navigation, Boards, Docs, people and actions (theme, shortcuts, create workspace) from the already-loaded lists, label-only diacritic-insensitive matching, "search the workspace" hand-off to the Search route. One global ⌘K/Ctrl+K registration (`useShellShortcuts`); `GlobalSearch` is no longer mounted. | `workspace.command-palette:a11y/navigate/search/actions/empty`; axe on all palette stories |
+| WX-SHELL-004 | Done | `WorkspaceScopeBoundary` + `WorkspaceScopeStateSurface` replace the silent redirect: loading skeleton, forbidden (not listed, 403, 404) and error states with retry and a way out. Navigation keys are workspace-scoped (`workspaceQueryKeys.navigation/recents/pins`); the layout keys the provider by workspace. One scroll container (`main#workspace-main`); the nested `h-screen` frame and the account layout's inner scroll are gone. The mock-only view tabs left the shell (WX-DEC-010); `WorkspaceProvider` no longer loads views. | `workspace.scope-state:*`, scope-switch race test, `resolveWorkspaceScope` unit tests |
+| WX-SHELL-005 | Done | G H / G M / G I, ⌘K, `?`; sequences pause while typing; `WorkspaceShortcutSheetSurface` is reachable from `?`, the palette and the user card. | `use-shell-shortcuts.component.test.tsx`, `createShortcutMatcher` unit tests, `workspace.shortcut-sheet:render` |
+
+Shared changes: `@notrelix/features-workspace` may import `@notrelix/i18n` (catalog ownership, FE-ADR-006; manifest, ARCH-016 test and generated package-boundary doc updated). The `Sidebar` primitive omits `data-active` when inactive (Tailwind v4 matched `data-active="false"`), accepts `defaultOpenMobile` and translated drawer labels. The mock backend serves the five navigation operations (consumer surface rows added).
+
+Open items:
+
+- Dead on disk, unmounted, to delete with `shell/sidebar/` once its pending work lands: `apps/web/src/shell/sidebar/sidebar.tsx`, `sidebar/workspace-switcher.tsx`, `topbar/topbar.tsx`, `global-search.tsx`, `guards/workspace-guard.tsx`, `navigation-contributions.ts`, `home-shell.tsx`, `home/app-header.tsx`, `home/app-sidebar.tsx`, `home/types.ts`, `home/user-menu.tsx`, and the stub `workspace-tabbed-frame.tsx`. Unused exports of `@notrelix/features-workspace`: `WorkspaceViewTabs`, `WorkspaceAddViewMenu`, `createUseWorkspaceViews`, `createUseWorkspaceShellData`, `WorkspaceCompactHeader`, `WorkspaceContextualToolbar`, `WorkspaceDirectory` (the old sidebar still imports the shell-data hook).
+- My work and Inbox are empty-state destinations; My work content is WX-HOME-001; Inbox has no producer yet.
+- `/home` lands on the first listed workspace; remembering the last-active workspace needs a stored preference.
+- Overlay primitives still use `z-50`; moving them to the z-index roles needs a nested-overlay rule (a popover inside a dialog must stack above it) and is left for WX-QUAL-001.
+- Visual baselines for the 15 new stories must be generated on Linux CI with the Phase 1 regeneration.
+
 ### Phase 3 — Home ("resume work")
 
 | Unit | Change | Evidence |

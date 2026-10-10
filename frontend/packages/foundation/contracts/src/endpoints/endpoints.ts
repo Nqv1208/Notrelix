@@ -22,6 +22,11 @@ export const endpoints = {
     acceptInvitation: (token: string) =>
       `/workspaces/invitations/accept/${token}`,
     pendingInvitations: "/workspaces/invitations/pending",
+    // Per-member navigation state (WX-BE-001/002): references only.
+    recents: (workspaceId: string) => `/workspaces/${workspaceId}/recents`,
+    pins: (workspaceId: string) => `/workspaces/${workspaceId}/pins`,
+    pin: (workspaceId: string, kind: string, resourceId: string) =>
+      `/workspaces/${workspaceId}/pins/${encodeURIComponent(kind)}/${resourceId}`,
   },
   pages: {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,

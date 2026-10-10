@@ -811,6 +811,9 @@ importers:
       '@notrelix/contracts':
         specifier: workspace:*
         version: link:../../foundation/contracts
+      '@notrelix/i18n':
+        specifier: workspace:*
+        version: link:../../foundation/i18n
       '@notrelix/kernel':
         specifier: workspace:*
         version: link:../../foundation/kernel

@@ -415,6 +415,56 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createNavigationService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/navigation.service.ts",
+    capability: "Workspaces.Navigation.ListRecents",
+    operationId: "Workspaces.Navigation.ListRecents",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createNavigationService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/navigation.service.ts",
+    capability: "Workspaces.Navigation.RecordRecent",
+    operationId: "Workspaces.Navigation.RecordRecent",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createNavigationService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/navigation.service.ts",
+    capability: "Workspaces.Navigation.ListPins",
+    operationId: "Workspaces.Navigation.ListPins",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createNavigationService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/navigation.service.ts",
+    capability: "Workspaces.Navigation.Pin",
+    operationId: "Workspaces.Navigation.Pin",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createNavigationService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/navigation.service.ts",
+    capability: "Workspaces.Navigation.Unpin",
+    operationId: "Workspaces.Navigation.Unpin",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
     capability: "/workspaces/${workspaceId}/views",
     consumerSymbol: "TODO",
     consumerFile:

@@ -390,7 +390,9 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/features/workspace",
     layer: "feature",
     freezeScope: "core-production",
-    allowedInternalImports: [...FEATURE_WEB_BASE],
+    // FE-ADR-006: catalogs are owned by the package that renders the copy;
+    // the workspace shell (WX-SHELL-001…005) ships its own vi/en catalog.
+    allowedInternalImports: [...FEATURE_WEB_BASE, "@notrelix/i18n"],
     allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {

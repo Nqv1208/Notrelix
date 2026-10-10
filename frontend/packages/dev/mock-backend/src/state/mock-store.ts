@@ -81,6 +81,15 @@ export class MockStore {
     MockUserPreferencesRecord
   >();
   private loggedOutUserIds = new Set<string>();
+  /** Per-member navigation state (WX-BE-001/002), keyed by workspace:user. */
+  private navigationByMember = new Map<
+    string,
+    {
+      recents: { kind: string; resourceId: string; at: string }[];
+      pins: { kind: string; resourceId: string; at: string }[];
+    }
+  >();
+  private navigationTick = 0;
 
   // Secondary indexes (Plan: 03-MOCK-DATA-MODEL.md §Store structure)
   private membershipIdsByWorkspaceId = new Map<string, Set<string>>();
@@ -606,6 +615,8 @@ export class MockStore {
     this.fieldValuesByCardId.clear();
     this.userPreferencesByUserId.clear();
     this.loggedOutUserIds.clear();
+    this.navigationByMember.clear();
+    this.navigationTick = 0;
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -962,7 +973,6 @@ export class MockStore {
     return true;
   }
 
-
   /**
    * Neighbor-relative placement over numeric mock positions, mirroring the
    * backend move contract: no neighbors appends, otherwise place between them.
@@ -993,7 +1003,11 @@ export class MockStore {
     const siblings = Array.from(this.columnsById.values()).filter(
       (c) => c.boardId === boardId && c.id !== columnId,
     );
-    const position = this.placeBetween(siblings, previousSiblingId, nextSiblingId);
+    const position = this.placeBetween(
+      siblings,
+      previousSiblingId,
+      nextSiblingId,
+    );
     this.columnsById.set(columnId, { ...col, position });
     return true;
   }
@@ -1164,7 +1178,11 @@ export class MockStore {
     const siblings = Array.from(this.listsById.values()).filter(
       (l) => l.boardId === list.boardId && l.id !== listId,
     );
-    const position = this.placeBetween(siblings, previousSiblingId, nextSiblingId);
+    const position = this.placeBetween(
+      siblings,
+      previousSiblingId,
+      nextSiblingId,
+    );
     this.listsById.set(listId, { ...list, position });
     return true;
   }
@@ -1578,6 +1596,77 @@ export class MockStore {
     return Array.from(ids)
       .map((id) => this.membershipsById.get(id))
       .filter((m): m is MockMembershipRecord => m !== undefined);
+  }
+
+  // ─── Navigation state (recents and pins, WX-BE-001/002) ─────────────────
+
+  private memberNavigation(workspaceId: string) {
+    const key = `${workspaceId}:${this.getCurrentUser().id}`;
+    let state = this.navigationByMember.get(key);
+    if (!state) {
+      state = { recents: [], pins: [] };
+      this.navigationByMember.set(key, state);
+    }
+    return state;
+  }
+
+  private nextNavigationTimestamp(): string {
+    this.navigationTick += 1;
+    return this.clock.offsetSeconds(this.navigationTick);
+  }
+
+  /** True when the current member belongs to the workspace. */
+  isCurrentMemberOf(workspaceId: string): boolean {
+    const userId = this.getCurrentUser().id;
+    return this.getWorkspaceMembers(workspaceId).some(
+      (m) => m.userId === userId,
+    );
+  }
+
+  getRecentResources(workspaceId: string) {
+    return [...this.memberNavigation(workspaceId).recents];
+  }
+
+  recordRecentResource(
+    workspaceId: string,
+    kind: string,
+    resourceId: string,
+  ): void {
+    const state = this.memberNavigation(workspaceId);
+    const rest = state.recents.filter(
+      (entry) => !(entry.kind === kind && entry.resourceId === resourceId),
+    );
+    state.recents = [
+      { kind, resourceId, at: this.nextNavigationTimestamp() },
+      ...rest,
+    ].slice(0, 30);
+  }
+
+  getPinnedResources(workspaceId: string) {
+    return [...this.memberNavigation(workspaceId).pins];
+  }
+
+  /** Returns false when the 50-pin cap is reached. Re-pin is a no-op. */
+  pinResource(workspaceId: string, kind: string, resourceId: string): boolean {
+    const state = this.memberNavigation(workspaceId);
+    if (
+      state.pins.some((p) => p.kind === kind && p.resourceId === resourceId)
+    ) {
+      return true;
+    }
+    if (state.pins.length >= 50) return false;
+    state.pins = [
+      { kind, resourceId, at: this.nextNavigationTimestamp() },
+      ...state.pins,
+    ];
+    return true;
+  }
+
+  unpinResource(workspaceId: string, kind: string, resourceId: string): void {
+    const state = this.memberNavigation(workspaceId);
+    state.pins = state.pins.filter(
+      (p) => !(p.kind === kind && p.resourceId === resourceId),
+    );
   }
 
   getWorkspaceViews(workspaceId: string): MockWorkspaceViewRecord[] {

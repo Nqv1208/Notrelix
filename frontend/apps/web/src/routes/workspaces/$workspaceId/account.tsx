@@ -7,9 +7,10 @@ export function AccountLayout() {
   });
 
   return (
-    <div className="flex h-full">
+    // No inner scroll container: the workspace shell's <main> scrolls.
+    <div className="flex min-h-full">
       <AccountSidebar workspaceId={workspaceId} />
-      <div className="flex-1 min-w-0 overflow-y-auto">
+      <div className="flex-1 min-w-0">
         <Outlet />
       </div>
     </div>
