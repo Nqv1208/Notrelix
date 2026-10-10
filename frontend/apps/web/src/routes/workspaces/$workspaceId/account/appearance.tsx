@@ -3,28 +3,18 @@ import {
   createUsePreferences,
   createUseUpdatePreferences,
 } from "@notrelix/features-account";
+import { SUPPORTED_LOCALES, useLocale, useT } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { Button } from "@notrelix/ui-web";
-import { useColorTheme } from "@notrelix/ui-web";
-import { Monitor, Sun, Moon } from "lucide-react";
+import { Button, ThemePicker, type ThemeMode } from "@notrelix/ui-web";
 import { toast } from "sonner";
-
-const THEME_OPTIONS = [
-  { value: "light" as const, label: "Light", icon: Sun },
-  { value: "dark" as const, label: "Dark", icon: Moon },
-  { value: "system" as const, label: "System", icon: Monitor },
-];
-
-const COLOR_THEMES = [
-  { id: "zinc", label: "Zinc" },
-  { id: "slate", label: "Slate" },
-  { id: "stone", label: "Stone" },
-  { id: "gray", label: "Gray" },
-  { id: "neutral", label: "Neutral" },
-];
+import { appearanceCatalog } from "../../../../i18n/appearance.catalog";
+import { themePickerLabels } from "../../../../i18n/theme-picker-labels";
 
 export function AccountAppearancePage() {
   const { api: runtimeClient } = useAppRuntime();
+  const { t } = useT(appearanceCatalog);
+  const { locale, setLocale } = useLocale();
+  const labels = useMemo(() => themePickerLabels(t), [t]);
 
   const usePreferences = useMemo(
     () =>
@@ -46,11 +36,13 @@ export function AccountAppearancePage() {
 
   const { preferences, isLoading } = usePreferences();
   const updateMutation = useUpdatePreferences();
-  const { colorTheme, setColorTheme } = useColorTheme();
 
-  const handleThemeChange = async (theme: "light" | "dark" | "system") => {
+  // Mirror the device mode to account preferences; the preference contract
+  // only knows light/dark/system, so high contrast stays device-local.
+  const handleModeChange = async (mode: ThemeMode) => {
+    if (mode === "high-contrast") return;
     try {
-      await updateMutation.mutateAsync({ theme });
+      await updateMutation.mutateAsync({ theme: mode });
     } catch {
       // Preferences endpoint may not exist yet
     }
@@ -69,63 +61,40 @@ export function AccountAppearancePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-semibold text-sm mb-1">Appearance</h2>
-        <p className="text-xs text-muted-foreground">
-          Customize how Notrelix looks on your device.
-        </p>
+        <h2 className="text-section-heading text-foreground mb-1">
+          {t("title")}
+        </h2>
+        <p className="text-body text-muted-foreground">{t("description")}</p>
       </div>
 
-      {/* Theme */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">Theme</label>
-        <div className="grid grid-cols-3 gap-3">
-          {THEME_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const isActive = preferences?.theme === option.value;
-            return (
-              <button
-                key={option.value}
-                onClick={() => handleThemeChange(option.value)}
-                className={`flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
-                  isActive
-                    ? "border-primary bg-primary/5 text-foreground"
-                    : "border-border text-muted-foreground hover:bg-muted/50"
-                }`}
-              >
-                <Icon className="size-5" />
-                <span className="text-sm font-medium">{option.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <ThemePicker labels={labels} onModeChange={handleModeChange} />
 
-      {/* Color Theme */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">
-          Accent Color
-        </label>
-        <div className="flex gap-2">
-          {COLOR_THEMES.map((color) => (
-            <button
-              key={color.id}
-              onClick={() => {
-                setColorTheme(color.id as typeof colorTheme);
-                toast.success(`Color theme: ${color.label}`);
-              }}
-              className={`size-8 rounded-full border-2 transition-colors ${
-                colorTheme === color.id
-                  ? "border-primary ring-2 ring-primary/20"
-                  : "border-border hover:border-primary/50"
-              }`}
-              style={{
-                backgroundColor: `var(--color-${color.id}-500, #71717a)`,
-              }}
-              title={color.label}
-            />
+      <fieldset className="flex flex-col gap-3">
+        <legend className="text-label text-foreground mb-3">
+          {t("language.legend")}
+        </legend>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {SUPPORTED_LOCALES.map((option) => (
+            <label
+              key={option}
+              lang={option}
+              className="flex cursor-pointer items-center gap-3 rounded-control border border-border bg-card p-3 transition-colors hover:bg-state-hover has-[:checked]:border-primary has-[:checked]:bg-state-selected has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring"
+            >
+              <input
+                type="radio"
+                name="appearance-locale"
+                value={option}
+                checked={locale === option}
+                onChange={() => setLocale(option)}
+                className="sr-only"
+              />
+              <span className="text-label text-foreground">
+                {t(`language.${option}`)}
+              </span>
+            </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       {/* Sidebar */}
       <div className="space-y-3">

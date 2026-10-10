@@ -130,6 +130,15 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     freezeScope: "core-production",
     allowedInternalImports: ["@notrelix/kernel"],
   },
+  {
+    // FE-ADR-006: product-agnostic i18n mechanism (i18next + react-i18next).
+    // Host-neutral (web + native); catalogs are owned by consuming packages.
+    packageName: "@notrelix/i18n",
+    relativePath: "packages/foundation/i18n",
+    layer: "foundation",
+    freezeScope: "core-production",
+    allowedInternalImports: [],
+  },
 
   // ── Runtimes ────────────────────────────────────────────────────────
   {
@@ -475,6 +484,7 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
       "@notrelix/query",
       "@notrelix/realtime",
       "@notrelix/observability",
+      "@notrelix/i18n",
       "@notrelix/runtime-web",
       "@notrelix/ui-tokens",
       "@notrelix/ui-web",

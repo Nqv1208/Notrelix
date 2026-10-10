@@ -1,0 +1,123 @@
+{
+  "description": "WX-FND-003 ratchet: existing hex / primitive-palette / arbitrary-text-size offenders per file. Counts may only go down; regenerate with `pnpm check:design-tokens --update-baseline` after removing offenders.",
+  "files": {
+    "apps/web/src/providers/runtime-error-boundary.tsx": {
+      "hex-color": 1
+    },
+    "apps/web/src/routes/auth-layout.tsx": {
+      "hex-color": 4,
+      "palette-color": 4,
+      "arbitrary-text-size": 2
+    },
+    "apps/web/src/routes/invite/$token.tsx": {
+      "palette-color": 4
+    },
+    "apps/web/src/routes/workspaces/$workspaceId/members.tsx": {
+      "arbitrary-text-size": 4
+    },
+    "apps/web/src/shell/global-search.tsx": {
+      "arbitrary-text-size": 2
+    },
+    "apps/web/src/shell/home/app-sidebar.tsx": {
+      "palette-color": 2,
+      "arbitrary-text-size": 6
+    },
+    "apps/web/src/shell/home/user-menu.tsx": {
+      "arbitrary-text-size": 8
+    },
+    "apps/web/src/shell/sidebar/sidebar.tsx": {
+      "palette-color": 28,
+      "arbitrary-text-size": 2
+    },
+    "apps/web/src/shell/topbar/topbar.tsx": {
+      "arbitrary-text-size": 1
+    },
+    "packages/features/auth/src/web/components/auth-forgot-password-form-surface.tsx": {
+      "palette-color": 2,
+      "arbitrary-text-size": 3
+    },
+    "packages/features/auth/src/web/components/auth-login-form-surface.tsx": {
+      "hex-color": 4,
+      "palette-color": 1,
+      "arbitrary-text-size": 1
+    },
+    "packages/features/auth/src/web/components/auth-register-form-surface.tsx": {
+      "hex-color": 4,
+      "palette-color": 1,
+      "arbitrary-text-size": 1
+    },
+    "packages/features/auth/src/web/components/forgot-password-form.tsx": {
+      "palette-color": 2,
+      "arbitrary-text-size": 3
+    },
+    "packages/features/auth/src/web/components/login-form.tsx": {
+      "hex-color": 4,
+      "palette-color": 1,
+      "arbitrary-text-size": 1
+    },
+    "packages/features/auth/src/web/components/register-form.tsx": {
+      "hex-color": 4,
+      "palette-color": 6,
+      "arbitrary-text-size": 2
+    },
+    "packages/features/notifications/src/web/components/notification-bell-surface.tsx": {
+      "palette-color": 6,
+      "arbitrary-text-size": 2
+    },
+    "packages/features/notifications/src/web/components/notification-bell.tsx": {
+      "palette-color": 4,
+      "arbitrary-text-size": 2
+    },
+    "packages/features/search/src/web/search-results-surface.tsx": {
+      "arbitrary-text-size": 1
+    },
+    "packages/features/search/src/web/search-results-view.tsx": {
+      "arbitrary-text-size": 1
+    },
+    "packages/features/workspace/src/verification/workspace-ui-fixtures.ts": {
+      "hex-color": 1
+    },
+    "packages/features/workspace/src/web/components/dashboard/active-boards.tsx": {
+      "palette-color": 6
+    },
+    "packages/features/workspace/src/web/components/dashboard/activity-feed.tsx": {
+      "palette-color": 20,
+      "arbitrary-text-size": 2
+    },
+    "packages/features/workspace/src/web/components/dashboard/pinned-docs.tsx": {
+      "arbitrary-text-size": 1
+    },
+    "packages/features/workspace/src/web/components/dashboard/upcoming-deadlines.tsx": {
+      "palette-color": 4,
+      "arbitrary-text-size": 2
+    },
+    "packages/features/workspace/src/web/components/dashboard/workspace-overview.tsx": {
+      "palette-color": 9
+    },
+    "packages/features/workspace/src/web/components/pending-invitations-menu.tsx": {
+      "palette-color": 3,
+      "arbitrary-text-size": 2
+    },
+    "packages/features/workspace/src/web/components/workspace-compact-header-surface.tsx": {
+      "arbitrary-text-size": 1
+    },
+    "packages/features/workspace/src/web/components/workspace-compact-header.tsx": {
+      "palette-color": 28,
+      "arbitrary-text-size": 1
+    },
+    "packages/features/workspace/src/web/components/workspace-dashboard-surface.tsx": {
+      "arbitrary-text-size": 2
+    },
+    "packages/features/workspace/src/web/components/workspace-directory.tsx": {
+      "hex-color": 6
+    },
+    "packages/features/workspace/src/web/components/workspace-pending-invitations-surface.tsx": {
+      "palette-color": 3,
+      "arbitrary-text-size": 1
+    },
+    "packages/features/workspace/src/web/components/workspace-ui-models.ts": {
+      "hex-color": 6,
+      "palette-color": 28
+    }
+  }
+}

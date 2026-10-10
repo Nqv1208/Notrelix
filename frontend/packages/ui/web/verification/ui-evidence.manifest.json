@@ -6,7 +6,7 @@
       {
         "path": "src/theme/theme-provider.tsx",
         "category": "provider",
-        "reason": "Provides the Web light/dark theme context; renders no standalone visual surface."
+        "reason": "Provides the Web theme context (mode × accent) and applies it to the document root; renders no standalone visual surface."
       }
     ]
   },
@@ -193,7 +193,8 @@
         "src/components/ui/select.tsx",
         "src/components/ui/slider.tsx",
         "src/components/ui/switch.tsx",
-        "src/components/ui/textarea.tsx"
+        "src/components/ui/textarea.tsx",
+        "src/theme/theme-picker.tsx"
       ],
       "stories": [
         {

@@ -1433,7 +1433,7 @@ Rule count: 2668
 | `FE-DEC-020` | `FE-DEC` | Accepted decision and current architecture move together | [`frontend/docs/decisions/README.md`](../../frontend/docs/decisions/README.md) |
 | `FE-DEC-021` | `FE-DEC` | Registry is complete for active frontend ADR files | [`frontend/docs/decisions/README.md`](../../frontend/docs/decisions/README.md) |
 | `FE-DEC-022` | `FE-DEC` | ADR ID uniqueness is directory-wide | [`frontend/docs/decisions/README.md`](../../frontend/docs/decisions/README.md) |
-| `FE-DEC-023` | `FE-DEC` | Do not reserve FE-ADR-006 speculatively | [`frontend/docs/decisions/README.md`](../../frontend/docs/decisions/README.md) |
+| `FE-DEC-023` | `FE-DEC` | Do not reserve the next ADR ID speculatively | [`frontend/docs/decisions/README.md`](../../frontend/docs/decisions/README.md) |
 | `FE-DEC-024` | `FE-DEC` | FE-ADR-001 identity is the host/framework separation decision | [`frontend/docs/decisions/README.md`](../../frontend/docs/decisions/README.md) |
 | `FE-DEC-025` | `FE-DEC` | Tool version update does not automatically supersede package-manager ADR | [`frontend/docs/decisions/README.md`](../../frontend/docs/decisions/README.md) |
 | `FE-DEC-026` | `FE-DEC` | New supported subpath can be current contract evolution without new ADR | [`frontend/docs/decisions/README.md`](../../frontend/docs/decisions/README.md) |

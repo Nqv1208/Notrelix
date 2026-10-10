@@ -1015,7 +1015,7 @@ export const Overlays: Story = {
 export const FeedbackStates: Story = {
   render: () => {
     function ThemedContent() {
-      const { theme } = useTheme();
+      const { mode } = useTheme();
       return (
         <div style={{ padding: "24px" }}>
           <Section title="Access Denied">
@@ -1046,13 +1046,13 @@ export const FeedbackStates: Story = {
             <MockDisabledState featureName="Boards" />
           </Section>
           <p style={{ fontSize: "12px", color: "var(--muted-foreground)" }}>
-            Current theme: {theme}
+            Current theme: {mode}
           </p>
         </div>
       );
     }
     return (
-      <ThemeProvider defaultTheme="light" storageKey="notrelix-gallery-theme">
+      <ThemeProvider defaultMode="light" target={null}>
         <ThemedContent />
       </ThemeProvider>
     );

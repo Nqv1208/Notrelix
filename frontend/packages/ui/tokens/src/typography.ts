@@ -1,19 +1,17 @@
 /**
  * @notrelix/ui-tokens — Typography tokens.
  *
+ * One family (Inter) with tabular numerals for data (WX-DEC-007). Fixed rem
+ * scale; adjacent steps keep a 1.125–1.2 ratio. Semantic text roles follow
+ * DESIGN.md §8.1 — components choose a role, not a pixel size.
+ *
  * Framework-neutral: no React, no DOM.
  */
 
-// ─── Font Families ───
-
 export const fonts = {
-  display: "'Poppins', ui-sans-serif, system-ui, sans-serif",
-  body: "'Inter', ui-sans-serif, system-ui, sans-serif",
-  editorial: "'Lyon Text', Georgia, 'Times New Roman', serif",
-  mono: "'JetBrains Mono', 'Courier New', monospace",
+  sans: '"Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
 } as const;
-
-// ─── Font Weights ───
 
 export const weights = {
   regular: 400,
@@ -22,55 +20,117 @@ export const weights = {
   bold: 700,
 } as const;
 
-// ─── Type Scale ───
+/** Fixed rem scale (1rem = 16px). Ratio between adjacent steps: 1.125–1.2. */
+export const fontSizeScale = {
+  xs: 0.75,
+  sm: 0.875,
+  md: 1,
+  lg: 1.125,
+  xl: 1.3125,
+  "2xl": 1.5,
+  "3xl": 1.75,
+  "4xl": 2,
+} as const;
 
-export interface TypeToken {
-  size: string;
-  lineHeight: number;
-  letterSpacing: string;
-  fontFamily: string;
-  fontWeight: number;
+export type FontSizeStep = keyof typeof fontSizeScale;
+
+export interface TextRole {
+  /** Step on {@link fontSizeScale}. */
+  readonly size: FontSizeStep;
+  /** Line height in rem. */
+  readonly lineHeight: number;
+  readonly weight: number;
+  readonly letterSpacing: string;
+  readonly family: "sans" | "mono";
+  /** Use tabular numerals (aligned digits for data). */
+  readonly tabular?: boolean;
 }
 
-function typeToken(
-  size: string,
-  lineHeight: number,
-  letterSpacing: string,
-  fontFamily: string,
-  fontWeight: number,
-): TypeToken {
-  return { size, lineHeight, letterSpacing, fontFamily, fontWeight };
-}
+/** Semantic text roles (DESIGN.md §8.1). */
+export const textRoles = {
+  display: {
+    size: "4xl",
+    lineHeight: 2.5,
+    weight: weights.semibold,
+    letterSpacing: "-0.022em",
+    family: "sans",
+  },
+  "page-title": {
+    size: "2xl",
+    lineHeight: 2,
+    weight: weights.semibold,
+    letterSpacing: "-0.017em",
+    family: "sans",
+  },
+  "section-heading": {
+    size: "lg",
+    lineHeight: 1.75,
+    weight: weights.semibold,
+    letterSpacing: "-0.011em",
+    family: "sans",
+  },
+  subheading: {
+    size: "md",
+    lineHeight: 1.5,
+    weight: weights.medium,
+    letterSpacing: "-0.006em",
+    family: "sans",
+  },
+  body: {
+    size: "sm",
+    lineHeight: 1.375,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  "dense-body": {
+    size: "sm",
+    lineHeight: 1.25,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  label: {
+    size: "sm",
+    lineHeight: 1.25,
+    weight: weights.medium,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  metadata: {
+    size: "xs",
+    lineHeight: 1,
+    weight: weights.regular,
+    letterSpacing: "0.005em",
+    family: "sans",
+    tabular: true,
+  },
+  caption: {
+    size: "xs",
+    lineHeight: 1,
+    weight: weights.regular,
+    letterSpacing: "0.005em",
+    family: "sans",
+  },
+  code: {
+    size: "sm",
+    lineHeight: 1.25,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "mono",
+  },
+  prose: {
+    size: "md",
+    lineHeight: 1.75,
+    weight: weights.regular,
+    letterSpacing: "-0.003em",
+    family: "sans",
+  },
+} as const satisfies Record<string, TextRole>;
 
-export const typeScale = {
-  caption: typeToken("12px", 1.5, "0.01em", fonts.body, weights.regular),
-  label: typeToken("13px", 1.4, "0.01em", fonts.display, weights.medium),
-  bodySm: typeToken("14px", 1.5, "-0.006em", fonts.body, weights.regular),
-  body: typeToken("16px", 1.6, "-0.006em", fonts.body, weights.regular),
-  bodyLg: typeToken("18px", 1.5, "-0.011em", fonts.body, weights.regular),
-  subheading: typeToken(
-    "20px",
-    1.35,
-    "-0.011em",
-    fonts.display,
-    weights.medium,
-  ),
-  headingSm: typeToken(
-    "24px",
-    1.3,
-    "-0.015em",
-    fonts.display,
-    weights.semibold,
-  ),
-  heading: typeToken("32px", 1.3, "-0.02em", fonts.display, weights.bold),
-  headingLg: typeToken("40px", 1.2, "-0.02em", fonts.display, weights.bold),
-  displaySm: typeToken("52px", 1.15, "-0.03em", fonts.display, weights.bold),
-  display: typeToken("64px", 1.1, "-0.04em", fonts.display, weights.bold),
-  editorial: typeToken(
-    "32px",
-    1.25,
-    "normal",
-    fonts.editorial,
-    weights.regular,
-  ),
+export type TextRoleName = keyof typeof textRoles;
+
+/** Inter OpenType features applied to data: tabular, slashed-zero off. */
+export const numericFeatures = {
+  tabular: "tabular-nums",
 } as const;

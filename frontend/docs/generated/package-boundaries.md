@@ -29,13 +29,13 @@ review_on:
 > This file is generated evidence. It is not the semantic architecture owner.
 > Read `../architecture/dependency-boundaries.md` for package-boundary meaning and policy.
 
-Package count: 42
+Package count: 43
 
 | Relative path | Package | Layer | Freeze scope | Allowed internal imports | Verification-only internal imports |
 |:---|:---|:---|:---|:---|:---|
 | `apps/marketing` | `@notrelix/app-marketing` | `app` | `marketing-isolated` | `@notrelix/ui-tokens`, `@notrelix/ui-web`, `@notrelix/ui-icons` | _(none)_ |
 | `apps/mobile` | `@notrelix/app-mobile` | `app` | `core-production` | `@notrelix/runtime-mobile`, `@notrelix/query`, `@notrelix/ui-mobile`, `@notrelix/ui-tokens`, `@notrelix/work-management-mobile`, `@notrelix/docs-mobile`, `@notrelix/automation-mobile` | _(none)_ |
-| `apps/web` | `@notrelix/app-web` | `app` | `core-production` | `@notrelix/kernel`, `@notrelix/contracts`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/realtime`, `@notrelix/observability`, `@notrelix/runtime-web`, `@notrelix/ui-tokens`, `@notrelix/ui-web`, `@notrelix/ui-icons`, `@notrelix/work-management-core`, `@notrelix/work-management-state`, `@notrelix/work-management-plugins`, `@notrelix/work-management-web`, `@notrelix/docs-core`, `@notrelix/docs-state`, `@notrelix/docs-collaboration`, `@notrelix/docs-web`, `@notrelix/automation-core`, `@notrelix/automation-web`, `@notrelix/features-auth`, `@notrelix/features-workspace`, `@notrelix/features-account`, `@notrelix/features-billing`, `@notrelix/features-integrations`, `@notrelix/features-notifications`, `@notrelix/features-activity`, `@notrelix/features-governance`, `@notrelix/features-search`, `@notrelix/features-collaboration`, `@notrelix/dev-mock-backend` | _(none)_ |
+| `apps/web` | `@notrelix/app-web` | `app` | `core-production` | `@notrelix/kernel`, `@notrelix/contracts`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/realtime`, `@notrelix/observability`, `@notrelix/i18n`, `@notrelix/runtime-web`, `@notrelix/ui-tokens`, `@notrelix/ui-web`, `@notrelix/ui-icons`, `@notrelix/work-management-core`, `@notrelix/work-management-state`, `@notrelix/work-management-plugins`, `@notrelix/work-management-web`, `@notrelix/docs-core`, `@notrelix/docs-state`, `@notrelix/docs-collaboration`, `@notrelix/docs-web`, `@notrelix/automation-core`, `@notrelix/automation-web`, `@notrelix/features-auth`, `@notrelix/features-workspace`, `@notrelix/features-account`, `@notrelix/features-billing`, `@notrelix/features-integrations`, `@notrelix/features-notifications`, `@notrelix/features-activity`, `@notrelix/features-governance`, `@notrelix/features-search`, `@notrelix/features-collaboration`, `@notrelix/dev-mock-backend` | _(none)_ |
 | `packages/dev/mock-backend` | `@notrelix/dev-mock-backend` | `dev-support` | `verification` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/realtime`, `@notrelix/features-auth`, `@notrelix/features-workspace`, `@notrelix/work-management-core` | _(none)_ |
 | `packages/features/account` | `@notrelix/features-account` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/ui-web` | _(none)_ |
 | `packages/features/activity` | `@notrelix/features-activity` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query` | _(none)_ |
@@ -48,6 +48,7 @@ Package count: 42
 | `packages/features/search` | `@notrelix/features-search` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/ui-web` | `@notrelix/testing` |
 | `packages/features/workspace` | `@notrelix/features-workspace` | `feature` | `core-production` | `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`, `@notrelix/query`, `@notrelix/ui-web` | `@notrelix/testing` |
 | `packages/foundation/contracts` | `@notrelix/contracts` | `foundation` | `core-production` | `@notrelix/kernel` | _(none)_ |
+| `packages/foundation/i18n` | `@notrelix/i18n` | `foundation` | `core-production` | _(none)_ | _(none)_ |
 | `packages/foundation/kernel` | `@notrelix/kernel` | `foundation` | `core-production` | _(none)_ | _(none)_ |
 | `packages/foundation/observability` | `@notrelix/observability` | `foundation` | `core-production` | `@notrelix/kernel` | _(none)_ |
 | `packages/foundation/platform` | `@notrelix/platform` | `foundation` | `core-production` | `@notrelix/kernel`, `@notrelix/contracts` | _(none)_ |

@@ -7,6 +7,7 @@
     "dev": "vite --port 5173",
     "dev:mock": "VITE_MOCK_API=true vite --port 5173",
     "build": "node ./scripts/build.mjs",
+    "check:css-sources": "node ./scripts/check-css-sources.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -14,6 +15,7 @@
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "5.2.5",
     "@notrelix/automation-web": "workspace:*",
     "@notrelix/contracts": "workspace:*",
     "@notrelix/docs-core": "workspace:*",
@@ -25,6 +27,7 @@
     "@notrelix/features-notifications": "workspace:*",
     "@notrelix/features-search": "workspace:*",
     "@notrelix/features-workspace": "workspace:*",
+    "@notrelix/i18n": "workspace:*",
     "@notrelix/kernel": "workspace:*",
     "@notrelix/observability": "workspace:*",
     "@notrelix/platform": "workspace:*",

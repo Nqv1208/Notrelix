@@ -40,6 +40,17 @@ describe("ui-web critical surfaces", () => {
   it("FUI[ui-web.primitives.form-controls:form-controls] supports basic form control interactions", () => {
     render(<UiWebFormControlsSurface />);
 
+    const highContrast = screen.getByRole("radio", {
+      name: /High contrast/,
+    }) as HTMLInputElement;
+    fireEvent.click(highContrast);
+    expect(highContrast.checked).toBe(true);
+    const amber = screen.getByRole("radio", {
+      name: /Amber/,
+    }) as HTMLInputElement;
+    fireEvent.click(amber);
+    expect(amber.checked).toBe(true);
+
     const email = screen.getByLabelText("Email") as HTMLInputElement;
     fireEvent.change(email, { target: { value: "user@example.com" } });
     expect(email.value).toBe("user@example.com");

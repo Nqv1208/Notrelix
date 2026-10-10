@@ -1,69 +1,83 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import type { CSSProperties, ReactNode } from "react";
 import {
-  primitive,
-  brand,
-  semantic,
-  surface,
-  gradients,
-  badge,
-  badgeDark,
-  fonts,
-  weights,
-  typeScale,
-  baseUnit,
-  spacing,
-  layout,
-  grid,
-  radius,
-  shadows,
-  duration,
+  ACCENT_IDS,
+  CHART_SERIES,
+  ELEVATION_ROLES,
+  IDENTITY_IDS,
+  STATUS_IDS,
+  Z_INDEX_ORDER,
+  durationMs,
   easing,
-  surfaces,
-  tableSurface,
-  focusRing,
-  lightTheme,
-  darkTheme,
+  fontSizeScale,
+  fonts,
+  layout,
+  radius,
+  radiusRoles,
+  sizes,
+  space,
+  textRoles,
+  zIndex,
 } from "@notrelix/ui-tokens";
 
-function Swatch({ name, value }: { name: string; value: string }) {
+/**
+ * Token reference rendered through the generated CSS variables
+ * (@notrelix/ui-tokens/css) so every swatch reflects the active appearance
+ * and accent. The full appearance × accent matrix lives beside the theme
+ * owner: packages/ui/web/src/theme/theme-matrix.stories.tsx.
+ */
+
+const mono: CSSProperties = { fontFamily: "var(--font-family-mono)" };
+
+/** Literal class names so Tailwind generates every role utility. */
+const ROLE_CLASS: Record<keyof typeof textRoles, string> = {
+  display: "text-display",
+  "page-title": "text-page-title",
+  "section-heading": "text-section-heading",
+  subheading: "text-subheading",
+  body: "text-body",
+  "dense-body": "text-dense-body",
+  label: "text-label",
+  metadata: "text-metadata tabular-nums",
+  caption: "text-caption",
+  code: "text-code",
+  prose: "text-prose",
+};
+
+function Swatch({ role }: { role: string }) {
   return (
     <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "4px",
-        width: "112px",
-      }}
+      style={{ display: "flex", flexDirection: "column", gap: 4, width: 128 }}
     >
       <div
         style={{
-          height: "48px",
-          borderRadius: "8px",
-          border: "1px solid rgba(0,0,0,0.12)",
-          background: value,
+          height: 40,
+          borderRadius: "var(--corner-control)",
+          border: "1px solid var(--border)",
+          background: `var(--${role})`,
         }}
       />
-      <span style={{ fontSize: "12px", fontWeight: 600 }}>{name}</span>
-      <code style={{ fontSize: "11px", color: "#71717a" }}>{value}</code>
+      <code className="text-caption text-muted-foreground" style={mono}>
+        --{role}
+      </code>
     </div>
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section style={{ marginBottom: "40px" }}>
-      <h2 style={{ margin: "0 0 16px", fontSize: "18px" }}>{title}</h2>
+    <section style={{ marginBottom: 32 }}>
+      <h2
+        className="text-section-heading text-foreground"
+        style={{ margin: "0 0 12px" }}
+      >
+        {title}
+      </h2>
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: "16px",
+          gap: 16,
           alignItems: "flex-start",
         }}
       >
@@ -73,30 +87,21 @@ function Section({
   );
 }
 
-function TokenTable({ rows }: { rows: { name: string; value: string }[] }) {
+function Rows({ rows }: { rows: ReadonlyArray<readonly [string, string]> }) {
   return (
     <table
-      style={{
-        width: "100%",
-        maxWidth: "640px",
-        borderCollapse: "collapse",
-        fontSize: "13px",
-      }}
+      className="text-dense-body text-foreground"
+      style={{ borderCollapse: "collapse", width: "100%", maxWidth: 720 }}
     >
-      <thead>
-        <tr>
-          <th style={thStyle}>Token</th>
-          <th style={thStyle}>Value</th>
-        </tr>
-      </thead>
       <tbody>
-        {rows.map((row) => (
-          <tr key={row.name}>
-            <td style={tdStyle}>
-              <code>{row.name}</code>
-            </td>
-            <td style={tdStyle}>
-              <code>{row.value}</code>
+        {rows.map(([name, value]) => (
+          <tr key={name} style={{ borderBottom: "1px solid var(--border)" }}>
+            <td style={{ padding: "6px 12px", ...mono }}>{name}</td>
+            <td
+              style={{ padding: "6px 12px", ...mono }}
+              className="text-muted-foreground"
+            >
+              {value}
             </td>
           </tr>
         ))}
@@ -105,23 +110,9 @@ function TokenTable({ rows }: { rows: { name: string; value: string }[] }) {
   );
 }
 
-const thStyle: React.CSSProperties = {
-  textAlign: "left",
-  padding: "6px 12px",
-  borderBottom: "1px solid rgba(0,0,0,0.12)",
-  fontWeight: 600,
-};
-const tdStyle: React.CSSProperties = {
-  padding: "6px 12px",
-  borderBottom: "1px solid rgba(0,0,0,0.08)",
-  verticalAlign: "top",
-};
-
 const meta: Meta = {
   title: "Foundation/Tokens",
-  parameters: {
-    layout: "fullscreen",
-  },
+  parameters: { layout: "fullscreen" },
 };
 
 export default meta;
@@ -129,40 +120,65 @@ type Story = StoryObj;
 
 export const Colors: Story = {
   render: () => (
-    <div style={{ padding: "24px" }}>
-      <Section title="Primitive">
-        {Object.entries(primitive).map(([name, value]) => (
-          <Swatch key={name} name={name} value={value} />
+    <div style={{ padding: 24 }}>
+      <Section title="Surface tiers">
+        {[
+          "surface-canvas",
+          "surface-sidebar",
+          "surface-panel",
+          "surface-raised",
+        ].map((role) => (
+          <Swatch key={role} role={role} />
         ))}
       </Section>
-      <Section title="Brand">
-        {Object.entries(brand).map(([name, value]) => (
-          <Swatch key={name} name={name} value={value} />
+      <Section title="Text and lines">
+        {["foreground", "muted-foreground", "icon", "border", "input"].map(
+          (role) => (
+            <Swatch key={role} role={role} />
+          ),
+        )}
+      </Section>
+      <Section title="Brand (active accent)">
+        {[
+          "brand-mark",
+          "brand-solid",
+          "brand-ink",
+          "brand-subtle",
+          "focus-ring",
+        ].map((role) => (
+          <Swatch key={role} role={role} />
         ))}
       </Section>
-      <Section title="Semantic">
-        {Object.entries(semantic).map(([name, value]) => (
-          <Swatch key={name} name={name} value={value} />
+      <Section title="State">
+        {[
+          "state-hover",
+          "state-selected",
+          "state-disabled",
+          "state-disabled-foreground",
+        ].map((role) => (
+          <Swatch key={role} role={role} />
         ))}
       </Section>
-      <Section title="Surface">
-        {Object.entries(surface).map(([name, value]) => (
-          <Swatch key={name} name={name} value={value} />
+      <Section title="Status (stable meaning)">
+        {STATUS_IDS.flatMap((id) => [id, `${id}-text`, `${id}-subtle`]).map(
+          (role) => (
+            <Swatch key={role} role={role} />
+          ),
+        )}
+      </Section>
+      <Section title="Identity (marks and charts, never status)">
+        {IDENTITY_IDS.map((id) => (
+          <Swatch key={id} role={`identity-${id}`} />
         ))}
       </Section>
-      <Section title="Gradients">
-        {Object.entries(gradients).map(([name, value]) => (
-          <Swatch key={name} name={name} value={value} />
+      <Section title="Chart series">
+        {CHART_SERIES.map((_, index) => (
+          <Swatch key={index} role={`chart-${index + 1}`} />
         ))}
       </Section>
-      <Section title="Badge (light)">
-        {Object.entries(badge).map(([name, value]) => (
-          <Swatch key={name} name={name} value={value.bg} />
-        ))}
-      </Section>
-      <Section title="Badge (dark)">
-        {Object.entries(badgeDark).map(([name, value]) => (
-          <Swatch key={name} name={name} value={value.bg} />
+      <Section title="Accent swatches (picker previews)">
+        {ACCENT_IDS.map((id) => (
+          <Swatch key={id} role={`accent-swatch-${id}`} />
         ))}
       </Section>
     </div>
@@ -171,106 +187,93 @@ export const Colors: Story = {
 
 export const Typography: Story = {
   render: () => (
-    <div style={{ padding: "24px" }}>
-      <Section title="Fonts & Weights">
-        {Object.entries(fonts).map(([name, family]) => (
-          <div key={name} style={{ marginBottom: "8px" }}>
-            <code>{name}</code> —{" "}
-            <span style={{ fontFamily: family }}>{family}</span>
-          </div>
-        ))}
-        {Object.entries(weights).map(([name, weight]) => (
-          <div key={name} style={{ marginBottom: "8px" }}>
-            <code>{name}</code> ({weight}) —{" "}
-            <span style={{ fontWeight: weight }}>Aa 0123456789</span>
-          </div>
-        ))}
-      </Section>
-      <Section title="Type Scale">
-        {Object.entries(typeScale).map(([name, token]) => (
-          <div
-            key={name}
-            style={{
-              marginBottom: "12px",
-              fontFamily: token.fontFamily,
-              fontSize: token.size,
-              lineHeight: token.lineHeight,
-              letterSpacing: token.letterSpacing,
-              fontWeight: token.fontWeight,
-            }}
+    <div
+      style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}
+    >
+      <p className="text-caption text-muted-foreground" style={mono}>
+        {fonts.sans}
+      </p>
+      {Object.entries(textRoles).map(([role, spec]) => (
+        <div
+          key={role}
+          style={{ display: "flex", gap: 24, alignItems: "baseline" }}
+        >
+          <code
+            className="text-caption text-muted-foreground"
+            style={{ width: 160, ...mono }}
           >
-            <span style={{ color: "#71717a" }}>{name} / </span>
-            The quick brown fox jumps over the lazy dog
-          </div>
-        ))}
-      </Section>
+            text-{role}
+          </code>
+          <span
+            className={`${ROLE_CLASS[role as keyof typeof textRoles]} text-foreground`}
+            style={spec.family === "mono" ? mono : undefined}
+          >
+            Bảng công việc · Board 1,234.50{" "}
+            {"tabular" in spec && spec.tabular ? "(tabular)" : ""}
+          </span>
+        </div>
+      ))}
+      <Rows
+        rows={Object.entries(fontSizeScale).map(([step, rem]) => [
+          step,
+          `${rem}rem`,
+        ])}
+      />
+      <p className="text-body text-foreground tabular-nums">
+        Tabular numerals: 1,111.11 · 8,888.88 · 10/10/2026
+      </p>
     </div>
   ),
 };
 
 export const SpacingRadiusShadows: Story = {
   render: () => (
-    <div style={{ padding: "24px" }}>
-      <Section title={`Spacing (base unit ${baseUnit}px)`}>
-        {Object.entries(spacing).map(([name, value]) => (
-          <div
-            key={name}
-            style={{ display: "flex", alignItems: "center", gap: "8px" }}
-          >
-            <code style={{ width: "48px" }}>{name}</code>
-            <div
-              style={{
-                width: "96px",
-                height: "16px",
-                background: brand.violet,
-                opacity: 0.8,
-              }}
-            />
-            <span style={{ fontSize: "12px", color: "#71717a" }}>{value}</span>
-          </div>
-        ))}
+    <div style={{ padding: 24 }}>
+      <Section title="Spacing roles">
+        <Rows rows={Object.entries(space)} />
+      </Section>
+      <Section title="Sizes and layout">
+        <Rows rows={[...Object.entries(sizes), ...Object.entries(layout)]} />
       </Section>
       <Section title="Radius">
-        {Object.entries(radius).map(([name, value]) => (
-          <div
-            key={name}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "13px",
-            }}
-          >
-            <code style={{ width: "96px" }}>{name}</code>
+        {[...Object.entries(radius), ...Object.entries(radiusRoles)].map(
+          ([name, value]) => (
             <div
-              style={{
-                width: "48px",
-                height: "48px",
-                border: "1px solid rgba(0,0,0,0.2)",
-                borderRadius: value,
-              }}
-            />
-            <span>{value}</span>
-          </div>
-        ))}
+              key={name}
+              style={{ display: "flex", flexDirection: "column", gap: 4 }}
+            >
+              <div
+                style={{
+                  width: 72,
+                  height: 48,
+                  borderRadius: value,
+                  background: "var(--muted)",
+                  border: "1px solid var(--border)",
+                }}
+              />
+              <code className="text-caption text-muted-foreground" style={mono}>
+                {name}
+              </code>
+            </div>
+          ),
+        )}
       </Section>
-      <Section title="Shadows">
-        {Object.entries(shadows).map(([name, value]) => (
+      <Section title="Elevation">
+        {ELEVATION_ROLES.map((role) => (
           <div
-            key={name}
+            key={role}
+            className="text-label text-foreground"
             style={{
-              width: "120px",
-              height: "64px",
-              borderRadius: "8px",
-              background: "#ffffff",
-              boxShadow: value,
-              display: "flex",
-              alignItems: "flex-end",
-              padding: "6px",
-              fontSize: "11px",
+              width: 160,
+              height: 88,
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "var(--corner-surface)",
+              background: "var(--surface-raised)",
+              boxShadow: `var(--elevation-${role})`,
             }}
           >
-            <code>{name}</code>
+            {role}
           </div>
         ))}
       </Section>
@@ -280,65 +283,24 @@ export const SpacingRadiusShadows: Story = {
 
 export const MotionAndSemantics: Story = {
   render: () => (
-    <div style={{ padding: "24px" }}>
-      <Section title="Duration">
-        {Object.entries(duration).map(([name, value]) => (
-          <div key={name} style={{ fontSize: "13px" }}>
-            <code>{name}</code> — {value}
-          </div>
-        ))}
-      </Section>
-      <Section title="Easing">
-        {Object.entries(easing).map(([name, value]) => (
-          <div key={name} style={{ fontSize: "13px" }}>
-            <code>{name}</code> — {value}
-          </div>
-        ))}
-      </Section>
-      <Section title="Surfaces">
-        <TokenTable
-          rows={Object.entries(surfaces).map(([name, value]) => ({
-            name,
-            value: `light: ${value.light} / dark: ${value.dark}`,
-          }))}
-        />
-      </Section>
-      <Section title="Table Surface">
-        <TokenTable
-          rows={Object.entries(tableSurface).map(([name, value]) => ({
-            name,
-            value,
-          }))}
-        />
-      </Section>
-      <Section title="Focus Ring">
-        <TokenTable
-          rows={Object.entries(focusRing).map(([name, value]) => ({
-            name,
-            value: String(value),
-          }))}
-        />
-      </Section>
-      <Section title="Layout & Grid">
-        <TokenTable
+    <div style={{ padding: 24 }}>
+      <Section title="Motion (collapses under prefers-reduced-motion)">
+        <Rows
           rows={[
-            ...Object.entries(layout).map(([name, value]) => ({
-              name,
-              value: String(value),
-            })),
-            ...Object.entries(grid).map(([name, value]) => ({
-              name: `grid.${name}`,
-              value: JSON.stringify(value),
-            })),
+            ...Object.entries(durationMs).map(
+              ([name, ms]) => [`duration-${name}`, `${ms}ms`] as const,
+            ),
+            ...Object.entries(easing).map(
+              ([name, curve]) => [`ease-${name}`, curve] as const,
+            ),
           ]}
         />
       </Section>
-      <Section title="Themes">
-        <TokenTable
-          rows={[
-            { name: "lightTheme", value: JSON.stringify(lightTheme) },
-            { name: "darkTheme", value: JSON.stringify(darkTheme) },
-          ]}
+      <Section title="Stacking order">
+        <Rows
+          rows={Z_INDEX_ORDER.map(
+            (role) => [`z-${role}`, String(zIndex[role])] as const,
+          )}
         />
       </Section>
     </div>

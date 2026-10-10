@@ -10,6 +10,7 @@
     "./ui/*": "./src/components/ui/*",
     "./components/*": "./src/components/*",
     "./theme": "./src/theme/index.ts",
+    "./theme-init-script": "./src/theme/color-theme-script.ts",
     "./assets/logo.svg": "./src/assets/logo.svg"
   },
   "scripts": {

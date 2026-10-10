@@ -1,32 +1,18 @@
 /**
- * @notrelix/ui-tokens — Semantic design tokens.
+ * @notrelix/ui-tokens — Semantic non-color roles.
  *
- * Maps primitive colors to their semantic roles.
+ * Surface tiers and the focus-ring geometry. Colors for these roles are
+ * resolved per appearance × accent in `./color/theme`.
+ *
  * Framework-neutral: no React, no DOM.
  */
 
-import { primitive, brand } from "./colors";
+/** Surface tiers, lowest to highest (DESIGN.md §10.1). */
+export const SURFACE_TIERS = ["canvas", "sidebar", "panel", "raised"] as const;
+export type SurfaceTier = (typeof SURFACE_TIERS)[number];
 
-export const surfaces = {
-  underlay: { light: "#f0f1f4", dark: "#000000" },
-  canvas: { light: "#ffffff", dark: "#02093a" },
-  raised: { light: "#f5f6f8", dark: "rgba(255,255,255,0.04)" },
-  card: { light: "#ffffff", dark: "rgba(255,255,255,0.08)" },
-  overlay: { light: "#ffffff", dark: "#02093a" },
-  toast: { light: "#1a1a2e", dark: "#ffffff" },
-} as const;
-
-export const tableSurface = {
-  bg: primitive.paper,
-  row: primitive.paper,
-  rowHover: primitive.fog,
-  header: primitive.fog,
-  group: primitive.fog,
-} as const;
-
+/** Focus ring geometry; color is the `focus-ring` role (≥3:1 on every surface). */
 export const focusRing = {
-  color: brand.blue,
-  width: "3px",
-  offset: "0px",
-  opacity: 0.15,
+  width: "2px",
+  offset: "2px",
 } as const;

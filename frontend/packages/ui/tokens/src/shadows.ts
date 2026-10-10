@@ -1,17 +1,36 @@
 /**
- * @notrelix/ui-tokens — Shadow tokens.
+ * @notrelix/ui-tokens — Elevation (shadow) tokens.
+ *
+ * Elevation is semantic (FE-UI-023): raised content, floating overlays and
+ * modals. Dark mode uses deeper shadows plus the lighter surface tier for
+ * perceived height; high contrast relies on borders and keeps light shadows.
  *
  * Framework-neutral: no React, no DOM.
  */
 
-export const shadows = {
-  xs: "rgba(0,0,0,0.04) 0px 1px 3px",
-  sm: "rgba(205,208,223,0.4) 0px 2px 16px",
-  md: "rgba(205,208,223,0.4) 0px 2px 48px",
-  lg: "rgba(0,0,0,0.15) 0px 5px 45px",
-  xl: "rgba(0,0,0,0.4) 0px 5px 55px",
-  glowViolet: "0px 0px 24px rgba(97,97,255,0.35)",
-  glowFrost: "0px 0px 20px rgba(98,174,240,0.3)",
-  notion:
-    "rgba(0,0,0,0.01) 0px 1px 3px, rgba(0,0,0,0.02) 0px 3px 7px, rgba(0,0,0,0.04) 0px 14px 28px",
-} as const;
+import type { ThemeAppearance } from "./color/palette";
+
+export const ELEVATION_ROLES = ["raised", "overlay", "modal"] as const;
+export type ElevationRole = (typeof ELEVATION_ROLES)[number];
+
+const lightShadow = (alpha: number) => `oklch(0.22 0.01 255 / ${alpha})`;
+const darkShadow = (alpha: number) => `oklch(0 0 0 / ${alpha})`;
+
+const lightElevation: Record<ElevationRole, string> = {
+  raised: `0 1px 2px 0 ${lightShadow(0.06)}, 0 1px 1px 0 ${lightShadow(0.04)}`,
+  overlay: `0 4px 12px -2px ${lightShadow(0.1)}, 0 2px 4px -2px ${lightShadow(0.06)}`,
+  modal: `0 16px 40px -8px ${lightShadow(0.18)}, 0 4px 12px -4px ${lightShadow(0.08)}`,
+};
+
+export const elevation: Record<
+  ThemeAppearance,
+  Record<ElevationRole, string>
+> = {
+  light: lightElevation,
+  dark: {
+    raised: `0 1px 2px 0 ${darkShadow(0.4)}`,
+    overlay: `0 6px 16px -4px ${darkShadow(0.5)}, 0 2px 4px -2px ${darkShadow(0.4)}`,
+    modal: `0 20px 48px -8px ${darkShadow(0.6)}, 0 4px 12px -4px ${darkShadow(0.4)}`,
+  },
+  "high-contrast": lightElevation,
+};

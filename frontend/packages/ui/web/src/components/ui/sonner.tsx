@@ -1,4 +1,4 @@
-import { useTheme } from "../../theme/theme-provider";
+import { useOptionalTheme } from "../../theme/theme-provider";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 import {
   CircleCheckIcon,
@@ -9,11 +9,16 @@ import {
 } from "lucide-react";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme } = useTheme();
+  const appearance = useOptionalTheme()?.appearance;
+  const theme: ToasterProps["theme"] = appearance
+    ? appearance === "dark"
+      ? "dark"
+      : "light"
+    : "system";
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={theme}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,

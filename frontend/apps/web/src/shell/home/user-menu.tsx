@@ -26,6 +26,7 @@ import {
   Users,
 } from "lucide-react";
 import { createUseLogout, useCurrentUser } from "@notrelix/features-auth";
+import { useT } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import {
   Avatar,
@@ -40,6 +41,7 @@ import {
   DropdownMenuTrigger,
   useTheme,
 } from "@notrelix/ui-web";
+import { appearanceCatalog } from "../../i18n/appearance.catalog";
 
 interface UserMenuItemProps {
   icon: ComponentType<{ className?: string }>;
@@ -94,7 +96,8 @@ export function UserMenu({ workspaceId }: { workspaceId?: string }) {
   const user = useCurrentUser();
   const navigate = useNavigate();
   const { api: runtimeClient } = useAppRuntime();
-  const { theme, setTheme } = useTheme();
+  const { mode, setMode } = useTheme();
+  const { t } = useT(appearanceCatalog);
 
   const useLogout = useMemo(
     () =>
@@ -229,27 +232,28 @@ export function UserMenu({ workspaceId }: { workspaceId?: string }) {
                 className="flex items-center gap-3 text-[13px] text-foreground disabled:opacity-50"
               >
                 <Palette className="size-4 text-muted-foreground" />
-                Theme
+                {t("quick.label")}
               </button>
               <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted p-0.5">
                 {(
                   [
-                    ["light", Sun, "Light theme"],
-                    ["dark", Moon, "Dark theme"],
-                    ["system", Laptop, "System theme"],
+                    ["light", Sun, t("quick.light")],
+                    ["dark", Moon, t("quick.dark")],
+                    ["system", Laptop, t("quick.system")],
                   ] as const
                 ).map(([value, Icon, label]) => (
                   <button
                     key={value}
                     type="button"
                     aria-label={label}
+                    aria-pressed={mode === value}
                     onClick={(event) => {
                       event.stopPropagation();
-                      setTheme(value);
+                      setMode(value);
                     }}
                     className={cn(
                       "rounded-md p-1 text-muted-foreground transition",
-                      theme === value && "bg-background text-primary shadow-sm",
+                      mode === value && "bg-background text-link shadow-sm",
                     )}
                   >
                     <Icon className="size-3" />

@@ -24,7 +24,8 @@ function PurePreviewShell({ Story }: { Story: () => ReactNode }) {
         background: "var(--background, #ffffff)",
         color: "var(--foreground, #09090b)",
         padding: "24px",
-        fontFamily: "var(--font-sans, ui-sans-serif, system-ui, sans-serif)",
+        fontFamily:
+          "var(--font-family-sans, ui-sans-serif, system-ui, sans-serif)",
       }}
     >
       <Story />

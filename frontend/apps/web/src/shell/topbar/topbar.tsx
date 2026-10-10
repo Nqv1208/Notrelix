@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useWorkspaceContext } from "../../providers/workspace-provider";
 import { useTheme } from "../../providers/app-providers";
+import { useT } from "@notrelix/i18n";
+import { appearanceCatalog } from "../../i18n/appearance.catalog";
 import { createNotificationBell } from "@notrelix/features-notifications";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { Button } from "@notrelix/ui-web";
@@ -10,7 +12,8 @@ import { GlobalSearch } from "../global-search";
 
 export function WorkspaceTopbar() {
   const { workspace } = useWorkspaceContext();
-  const { theme, setTheme } = useTheme();
+  const { appearance, setMode } = useTheme();
+  const { t } = useT(appearanceCatalog);
   const { api: runtimeClient } = useAppRuntime();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -80,10 +83,11 @@ export function WorkspaceTopbar() {
             variant="ghost"
             size="icon"
             className="h-9 w-9 text-muted-foreground"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            title="Toggle theme"
+            onClick={() => setMode(appearance === "dark" ? "light" : "dark")}
+            title={t("quick.toggle")}
+            aria-label={t("quick.toggle")}
           >
-            {theme === "dark" ? (
+            {appearance === "dark" ? (
               <Sun className="h-4 w-4" />
             ) : (
               <Moon className="h-4 w-4" />

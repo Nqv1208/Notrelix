@@ -52,12 +52,30 @@ Rebuild of the authenticated workspace surface — shell, Home, Boards/Docs dire
 | Unit | Change | Evidence |
 |---|---|---|
 | WX-BE-001 | Recent resources: a per-user, workspace-scoped "recently opened" read (Boards and Docs) recorded on open, with a bounded list query. | Domain/Application tests, PostgreSQL integration incl. cross-workspace denial, OpenAPI |
-| WX-BE-002 | Pins: per-user pin/unpin of Boards and Docs within a workspace, ordered with the existing neighbor-relative placement. | same, plus idempotency and version tests |
+| WX-BE-002 | Pins: per-user pin/unpin of Boards and Docs within a workspace, ordered by pin time; reorder deferred. | same, plus idempotency tests |
 | WX-BE-003 | Workspace views: owned by Work Management (WX-DEC-010); no Workspaces endpoint is added and the workspace shell drops the mock-only view tabs. | decision record (WX-DEC-010) |
 | WX-BE-004 | Path reconciliation: create workspace under the account route; update-profile path; frontend adapters follow the producer. | API tests, regenerated client |
 | WX-BE-005 | My Work read: Items assigned to the current user across the workspace's Boards, grouped by due window, bounded and paginated. | integration and query-isolation tests |
 
 Retention and visibility are fixed by WX-DEC-011.
+
+### Status
+
+Delivered on 2026-10-10 (uncommitted working tree on `develop`, baseline `6224020c`).
+
+| Unit | Status | Delivered | Evidence |
+|---|---|---|---|
+| WX-BE-001 | Done | `POST /api/v1/workspaces/{workspaceId}/recents` with `{ kind, resourceId }` (`Idempotency-Key` required, 204) and `GET …/recents` returning `[{ kind, resourceId, lastOpenedAt }]`, newest first. Kinds: `work-management.board`, `documents.page`. The resource is located through `IResourceLocator` and must be in the caller's Account and Workspace, otherwise 404. Upsert of `lastOpenedAt`, trim to the 30 newest per member per Workspace. Table `workspace.recent_resources`, unique (workspace, user, kind, resource). | `WorkspaceNavigationTests` (Domain, 18), `WorkspaceNavigationHandlerTests` (Application, 21, shared with WX-BE-002), `WorkspaceNavigationIntegrationTests` (PostgreSQL, 9, shared), `RlsRuntimeEnforcementTests.AppRole_NavigationState_IsVisibleOnlyToItsOwnerInsideGrantedWorkspaces` (1), OpenAPI regenerated. |
+| WX-BE-002 | Done | `PUT` and `DELETE /api/v1/workspaces/{workspaceId}/pins/{kind}/{resourceId}` (204, naturally idempotent: re-pin and unpin-when-absent are no-op successes) and `GET …/pins` returning `[{ kind, resourceId, pinnedAt }]` ordered by pin time, newest first. Cap of 50 pins per member per Workspace; over the cap fails with rule code `Workspaces_Navigation_PinLimitReached`. Table `workspace.pinned_resources`. Unpin does not require the resource to still exist, so a pin to a deleted Board or Doc can be removed and stops counting against the cap. | Same classes as WX-BE-001, including two concurrent pins at the cap boundary (exactly one admitted) and concurrent first opens of one resource (one row). |
+| WX-BE-005 | Done | `GET /api/v1/workspaces/{workspaceId}/my-work/items?cursor=&limit=` returns `CursorPage<MyWorkItemDto>` (`items`, `nextCursor`, `hasNextPage`); each item carries `id`, `boardId`, `groupId`, `name`, `dueAt`, `startedAt`, `updatedAt`, `version`. Default page size 50, maximum 100. Keyset order: due date ascending, undated last, ties by id. Open items only (completed, archived, deleted items and items on archived or deleted Boards are excluded). `GetMyBoardItemsQuery` had no HTTP route before, so the shape change has no deployed consumer. | `GetMyBoardItemsTests` (Application, 14), `WorkspaceNavigationIntegrationTests.MyWork_PagesByDueDate_AndReturnsOnlyTheCallersOpenItemsInTheWorkspace` (PostgreSQL keyset paging and per-user, per-Workspace isolation). |
+
+Shared mechanics: one migration `AddWorkspaceNavigationState` (additive, two new tables); RLS on both tables combines Workspace access with row ownership (`ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()`), and the handlers also filter by the current user. Concurrent writes of one member are serialized with a transaction-scoped advisory lock keyed by (workspace, user).
+
+Open items:
+
+- My Work applies Workspace-level authorization only, like `GetBoardsQuery`; it does not filter by per-Board visibility. If private Boards must hide assigned Items from a member who lost Board access, that needs a Work Management decision.
+- `IResourceLocator` also locates soft-deleted Boards and Docs, so a reference to a deleted resource can be recorded. The client drops references it cannot resolve (WX-DEC-011); a server-side lifecycle filter is not part of this unit.
+- WX-BE-004 (path reconciliation) is not part of this delivery.
 
 ### Phase 1 — Foundation: tokens, themes, typography, i18n
 
@@ -69,6 +87,28 @@ Retention and visibility are fixed by WX-DEC-011.
 | WX-FND-004 | Tailwind `@source` covers every package that ships classes. | build check that a class used only in a product package is generated |
 | WX-FND-005 | Elevation, radius, spacing and a semantic z-index scale (dropdown → sticky → backdrop → modal → toast → tooltip); motion tokens of 150–200 ms ease-out with reduced-motion fallbacks. | token tests |
 | WX-FND-006 | i18n foundation: library chosen through an ADR (candidates: i18next/react-i18next, Lingui); locale detection and switching; message catalogs per package; Vietnamese and English; pluralization and date/number formatting; missing-key check in CI. | ADR, catalog completeness check, locale-switch test |
+
+### Status
+
+Delivered on 2026-10-10 (uncommitted working tree on `develop`).
+
+| Unit | Status | Delivered | Evidence |
+|---|---|---|---|
+| WX-FND-001 | Done | `@notrelix/ui-tokens` color layer in OKLCH (`src/color/`): neutrals at hue 255 (chroma ≤ 0.01), four surface tiers, accent tones (mark / solid / ink / subtle / ring) per appearance, status pairs, state set, identity palette from the logo. `src/css/index.css` (the `./css` export) is generated by `pnpm --filter @notrelix/ui-tokens generate:css`; `globals.css` imports it and only maps variables into Tailwind (all literal values and the seven `.theme-*` blocks removed). shadcn variable names are kept. | `contrast-matrix.unit.test.ts`: 15 appearance × accent combinations, OKLCH → sRGB, text ≥ 4.5:1 (high contrast ≥ 7:1), ring/icons/marks ≥ 3:1, in-gamut check, Ember–danger ΔE_OK ≥ 0.08; `tokens.unit.test.ts` (generated-CSS drift, role coverage). |
+| WX-FND-002 | Done | `ThemeProvider` with `mode` (light default / dark / system / high-contrast) and `accent` (blue / coral / ember / sage / amber), system sync, legacy keys and the seven old accent ids migrated; generated pre-paint `themeInitScript` (subpath `@notrelix/ui-web/theme-init-script`) inlined in `apps/web/index.html`; `ThemePicker` (copy via props) on the appearance page, user menu and topbar on the new API, translated vi/en. | `theme-model.unit.test.ts`, `theme-provider.component.test.tsx`, `theme-init-script.component.test.ts` (ui-web and an `index.html` parity test in apps/web); Storybook `UI Web/Theme › Mode Accent Matrix`. |
+| WX-FND-003 | Done | Font chain fixed: Inter self-hosted (`@fontsource-variable/inter`), Poppins and Google Fonts removed; `text-<role>` utilities for the DESIGN.md §8.1 roles; `tabular-nums` guidance (`text-metadata` is tabular). `pnpm check:design-tokens` (run by `check:ui-purity`) flags hex literals, primitive palette colors and arbitrary text sizes in `apps/web/src` and `packages/features/*/src` against a ratchet baseline. | `check-design-tokens.unit.test.ts`; baseline `tooling/dependency-rules/design-token-baseline.json`: 32 files, 250 violations (hex 34, palette 162, text size 54). |
+| WX-FND-004 | Done | `@source` covers `packages/ui/web`, `packages/features` and `packages/product`. | `apps/web/scripts/check-css-sources.mjs` after `pnpm --filter @notrelix/app-web build`: package-only sentinel classes present (`bg-table-bg` from Work Management, `divide-border/40` from features-workspace). |
+| WX-FND-005 | Done | Radius roles, spacing/size/layout roles, per-appearance elevation (`shadow-raised/overlay/modal`), z-index roles (`z-dropdown` … `z-tooltip`), motion 150/180/200 ms with ease-out curves, collapsed under `prefers-reduced-motion`. | `tokens.unit.test.ts` (duration range, ease-out, z-order, reduced-motion block). |
+| WX-FND-006 | Done | FE-ADR-006; `@notrelix/i18n` (foundation, no internal imports) with `I18nProvider`, `useT`, `useLocale`, `useFormatters`, `defineCatalog`, `Intl` helpers; detection stored → browser → `vi`; wired into `apps/web` providers; `appearance` catalog (vi/en). `pnpm check:i18n` in CI (repository-integrity) and `validate:fast`. | `packages/foundation/i18n/src/__tests__` (detection, catalog completeness, plurals, formatting, locale switch, instance isolation), `check-i18n-catalogs.unit.test.ts`. |
+
+Open items:
+
+- Visual baselines are linux-pinned and every color changed: regenerate the `ui-foundation` baselines in CI (`visual-baseline.lock.json`) before `test:ui:freeze` can pass.
+- `test:ui:a11y` fails on `work-management-table-main-table--default` (`text-muted-foreground/70` at 3.2:1, already failing before this change at 3.2:1); the fix is in `packages/product/work-management/web` (`table-add-task-row.tsx`), outside this phase's write scope.
+- Amber's light fill carries dark text, so `text-primary` used as text is illegible under Amber; ui-web link variants now use `text-link`, but other `text-primary` text usages in apps, features and product packages need migrating to `text-link` / `text-brand-ink`.
+- Overlay primitives still use Tailwind `z-50`; moving them to the z-index roles belongs to the shell phase.
+- `apps/marketing` keeps its own `globals.css` and does not consume the generated tokens yet.
+- Legacy aliases kept for current consumers: `--app-*`, `--table-*`, `--badge-*` (Work Management), and the `font-display` utility (now Inter). Remove them when those consumers move to surface/status roles.
 
 ### Phase 2 — Shell
 
