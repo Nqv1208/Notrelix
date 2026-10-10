@@ -42,7 +42,8 @@ export function createColumnApi(client: NotrelixClient) {
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,
-        position: input.position,
+        // Backend-first cut-over (SPEC WM-V3-DEC-017): the server owns placement;
+        // until WM-V3-FE-001 sends neighbor ids, omitting both appends.
       };
       await api.post<void>(endpoints.boardFields.create(input.boardId), body, {
         headers: { "Idempotency-Key": crypto.randomUUID() },
@@ -50,9 +51,9 @@ export function createColumnApi(client: NotrelixClient) {
     },
 
     async updateColumn(input: UpdateColumnInput): Promise<void> {
+      // The field type is not patchable (SPEC WMREQ031); name and settings only.
       const body: UpdateFieldBody = {
         name: input.name,
-        type: input.fieldType,
         settingsJson: input.settings
           ? JSON.stringify(input.settings)
           : undefined,

@@ -98,9 +98,10 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.RestoreBoardItemCommand"] = new(Disposition.Keep, "LIFE-001 (done)"),
 
         // BoardField / FieldOption (BoardField-owned family is canonical, SPEC WM-V3-DEC-009)
-        ["BoardFields.CreateBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001"),
+        ["BoardFields.CreateBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001 (done)"),
         ["BoardFields.UpdateBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001, CONC-001", VersionedTarget: true),
-        ["BoardFields.ReorderBoardFieldsCommand"] = new(Disposition.Harden, "APP-FIELD-001 (replaced by relative move)"),
+        ["BoardFields.ReorderBoardFieldsCommand"] = new(Disposition.Retire, "APP-FIELD-001 (full-list drag replaced by MoveBoardField; deletion pending)"),
+        ["BoardFields.MoveBoardFieldCommand"] = new(Disposition.Harden, "APP-FIELD-001 (done), CONC-001", VersionedTarget: true),
         ["BoardFields.DeleteBoardFieldCommand"] = new(Disposition.Keep, "-"),
         ["BoardFields.AddFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001, CONC-001", VersionedTarget: true),
         ["BoardFields.UpdateFieldOptionCommand"] = new(Disposition.Harden, "APP-OPTION-001, CONC-001", VersionedTarget: true),
@@ -174,6 +175,7 @@ public sealed class WorkP3ManifestArchitectureTests
         [
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/CreateBoardField/CreateBoardField.cs",
             "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/ReorderBoardFields/ReorderBoardFields.cs",
+            "Notrelix.Application/Features/WorkManagement/BoardFields/Commands/MoveBoardField/MoveBoardField.cs",
             "Notrelix.Infrastructure/Data/Seed/InitDb.cs",
         ],
         ["FieldOptions (field_options: field_id)"] =

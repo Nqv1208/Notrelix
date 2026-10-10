@@ -47,7 +47,7 @@ public sealed class WorkValidatorDomainParityTests
 
         new CreateBoardFieldCommandValidator().Validate(new CreateBoardFieldCommand(Guid.NewGuid(), name, "Text", null, null))
             .IsValid.Should().Be(valid);
-        new UpdateBoardFieldCommandValidator().Validate(new UpdateBoardFieldCommand(Guid.NewGuid(), Guid.NewGuid(), name, null, null, 1))
+        new UpdateBoardFieldCommandValidator().Validate(new UpdateBoardFieldCommand(Guid.NewGuid(), Guid.NewGuid(), name, null, 1))
             .IsValid.Should().Be(valid);
     }
 }

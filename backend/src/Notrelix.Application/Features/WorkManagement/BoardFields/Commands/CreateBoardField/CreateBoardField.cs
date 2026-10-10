@@ -1,11 +1,12 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
-using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Features.WorkManagement.Ordering;
+
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 
 [IdempotencyOperation("work-management.board-fields.create-board-field.v1")]
-public record CreateBoardFieldCommand(Guid BoardId, string Name, string FieldType, string? Settings, string? Position) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record CreateBoardFieldCommand(Guid BoardId, string Name, string FieldType, string? Settings, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -16,15 +17,18 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly WorkPlacementResolver _placement;
 
     public CreateBoardFieldCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        WorkPlacementResolver placement)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _placement = placement;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardFieldCommand request, CancellationToken ct)
@@ -33,14 +37,17 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             .FirstOrDefaultAsync(b => b.Id == request.BoardId && !b.IsArchived, ct);
         if (board is null) throw new NotFoundException(nameof(Board), request.BoardId);
 
-        var now = _dateTimeProvider.UtcNow;
-        var position = request.Position is not null
-            ? FractionalIndex.Create(request.Position)
-            : FractionalIndex.Initial();
+        // An unknown type fails closed instead of silently becoming Text (WMREQ027).
+        if (!FieldTypeNames.TryParse(request.FieldType, out var type))
+            return Result<Guid>.Failure(new ApplicationError(
+                "work.board-field.unknown-type", $"Unknown field type '{request.FieldType}'.", ApplicationErrorType.Validation));
 
-        var type = Enum.TryParse<FieldType>(request.FieldType, true, out var parsedType)
-            ? parsedType
-            : FieldType.Text;
+        var now = _dateTimeProvider.UtcNow;
+        var position = await _placement.ResolveAsync(
+            new WorkOrderingScope(WorkOrderingScopeKind.BoardFields, board.Id),
+            new WorkPlacementIntent(request.PreviousSiblingId, request.NextSiblingId),
+            token => BoardFieldSiblings.LoadAsync(_context, board.Id, token),
+            ct);
 
         var settings = request.Settings is not null
             ? FieldSettings.Create(JsonValue.Create(request.Settings)!)

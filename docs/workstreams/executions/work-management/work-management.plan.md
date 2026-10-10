@@ -824,7 +824,10 @@ None
 None
 
 ### Exit
-- [ ] Field source READY_FOR_CERTIFICATION.
+- [x] Field source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION` except the version contract. Done: `BoardField.Rename` (trim, max 100, no-op, one version, `BoardFieldRenamedDomainEvent`, rejected on a deleted field); unknown or numeric field types fail closed in the validator and the handler (`FieldTypeNames`); create takes neighbor ids under the BoardFields lock and no longer forces `"{}"` settings (so the Status default applies); ordinary PATCH is `Name?`/`Settings?` with `FieldType` removed; the new `MoveBoardFieldCommand` (`POST /api/v1/boards/{boardId}/fields/{fieldId}/move`, `PermissionAction.UpdateField`) moves one field with the no-op rule; `ReorderBoardFieldsCommand` is classified RETIRE (deletion pending, keeps DATA-002 blocked for the BoardFields scope). Evidence: `BoardFieldRenameTests` (6), `FieldTypeNamesTests` (8), `WorkItemPlacementIntegrationTests` field cases (2). Open: required `ExpectedVersion` and BoardField `Version` on reads (WM-V3-CONC-001/002). Decision to review: field move uses `UpdateField` instead of the reorder's `ManageBoard`, narrowing per WG-DEBT-007.
 
 ## WM-V3-APP-OPTION-001 — Retire legacy FieldOption authority and close option move
 

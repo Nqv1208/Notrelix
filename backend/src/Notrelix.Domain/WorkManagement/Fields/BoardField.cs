@@ -82,6 +82,28 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         return field;
     }
 
+    /// <summary>
+    /// Renames the field (WMREQ026/030). The name is presentation metadata; field
+    /// identity is unchanged. Renaming to the current (trimmed) name is a no-op.
+    /// </summary>
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(name);
+        var normalized = name.Trim();
+        Guard.MaxLength(normalized, 100);
+
+        if (Name == normalized) return;
+
+        var oldName = Name;
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+        Name = normalized;
+        ApplyAuditUpdate(audit);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardFieldRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldName, normalized, updatedBy, updatedAt));
+    }
+
     public void UpdateSettings(FieldSettings settings, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

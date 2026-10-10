@@ -1,3 +1,6 @@
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.MoveBoardGroup;
@@ -184,6 +187,60 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
         result.Succeeded.Should().BeFalse();
         (await TitlesInGroupAsync(_todoId)).Should().Equal(["original"], "a rejected bulk update must not apply any value (WMREQ025)");
+    }
+
+    [Fact]
+    public async Task Fields_AreCreatedAndMovedRelativeToTheirNeighbors()
+    {
+        var a = await CreateFieldAsync("A");
+        var b = await CreateFieldAsync("B");
+        var c = await CreateFieldAsync("C", previous: a, next: b);
+        (await FieldOrderAsync()).Should().Equal(a, c, b);
+
+        await InTransactionAsync(async context =>
+            await new MoveBoardFieldCommandHandler(context, Request(), Clock(), Resolver(context))
+                .Handle(new MoveBoardFieldCommand(_boardId, a, b, null), CancellationToken.None));
+
+        (await FieldOrderAsync()).Should().Equal(c, b, a);
+    }
+
+    [Fact]
+    public async Task FieldPatch_RenameOnly_RenamesAndKeepsSettings()
+    {
+        var field = await CreateFieldAsync("Status", type: "Status");
+        var settingsBefore = await FieldSettingsAsync(field);
+
+        await InTransactionAsync(async context =>
+        {
+            var currentUser = new Mock<ICurrentUser>();
+            currentUser.Setup(u => u.UserId).Returns(_userId);
+            return await new UpdateBoardFieldCommandHandler(context, currentUser.Object, Clock())
+                .Handle(new UpdateBoardFieldCommand(_boardId, field, "Stage", null), CancellationToken.None);
+        });
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var loaded = await verify.BoardFields.SingleAsync(f => f.Id == field);
+        loaded.Name.Should().Be("Stage");
+        (await FieldSettingsAsync(field)).Should().Be(settingsBefore);
+    }
+
+    private async Task<Guid> CreateFieldAsync(string name, string type = "Text", Guid? previous = null, Guid? next = null) =>
+        await InTransactionAsync(async context =>
+            (await new CreateBoardFieldCommandHandler(context, Request(), Clock(), Resolver(context))
+                .Handle(new CreateBoardFieldCommand(_boardId, name, type, null, previous, next), CancellationToken.None)).Data);
+
+    private async Task<List<Guid>> FieldOrderAsync()
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        var rows = await context.BoardFields.Where(f => f.BoardId == _boardId).Select(f => new { f.Id, f.Position }).ToListAsync();
+        return rows.OrderBy(r => r.Position).ThenBy(r => r.Id).Select(r => r.Id).ToList();
+    }
+
+    private async Task<string> FieldSettingsAsync(Guid fieldId)
+    {
+        await using var context = _db.CreateContext(SystemTenant());
+        var field = await context.BoardFields.SingleAsync(f => f.Id == fieldId);
+        return field.Settings.Data.Value;
     }
 
     private async Task<Guid> CreateGroupAsync(string title, Guid? previous = null, Guid? next = null) =>

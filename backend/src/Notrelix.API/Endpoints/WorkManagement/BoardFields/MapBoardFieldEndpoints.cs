@@ -2,6 +2,7 @@ using Notrelix.API.Contracts.WorkManagement.BoardFields.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
@@ -34,6 +35,11 @@ public static class MapBoardFieldEndpoints
             .WithName("WorkManagement.BoardFields.Reorder")
             .WithSummary("Reorder board fields");
 
+        group.MapResourcePost("/{fieldId:guid}/move", HandleMoveBoardField)
+            .WithIdempotencyKey()
+            .WithName("WorkManagement.BoardFields.Move")
+            .WithSummary("Move a field relative to its neighbors");
+
         group.MapFieldOptionEndpoints();
 
         var schemaGroup = app
@@ -58,9 +64,21 @@ public static class MapBoardFieldEndpoints
             boardId,
             body.Name,
             body.Type,
-            body.SettingsJson ?? "{}",
-            body.Position.ToString()), cancellationToken);
+            body.SettingsJson,
+            body.PreviousSiblingId,
+            body.NextSiblingId), cancellationToken);
         return result.ToCreatedResult();
+    }
+
+    private static async Task<IResult> HandleMoveBoardField(
+        Guid boardId,
+        Guid fieldId,
+        MoveBoardFieldRequest body,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new MoveBoardFieldCommand(boardId, fieldId, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+        return result.ToNoContentResult();
     }
 
     private static async Task<IResult> HandleUpdateBoardField(
@@ -74,7 +92,6 @@ public static class MapBoardFieldEndpoints
             boardId,
             fieldId,
             body.Name,
-            body.Type,
             body.SettingsJson,
             body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();

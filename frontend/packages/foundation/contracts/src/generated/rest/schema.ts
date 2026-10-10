@@ -1446,6 +1446,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/fields/{fieldId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a field relative to its neighbors */
+        post: operations["WorkManagement.BoardFields.Move"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/fields/{fieldId}/options": {
         parameters: {
             query?: never;
@@ -3764,12 +3781,19 @@ export interface components {
             name?: string | null;
             type?: string | null;
             settingsJson?: string | null;
-            /** Format: double */
-            position?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.MoveBoardFieldRequest": {
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.UpdateBoardFieldRequest": {
             name?: string | null;
-            type?: string | null;
             settingsJson?: string | null;
             /** Format: int64 */
             expectedVersion?: number | null;
@@ -6689,6 +6713,52 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields.ReorderBoardFieldsCommand"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardFields.Move": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.BoardFields.Requests.MoveBoardFieldRequest"];
             };
         };
         responses: {

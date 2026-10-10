@@ -6,7 +6,6 @@ public class UpdateBoardFieldCommandValidator : AbstractValidator<UpdateBoardFie
     {
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.ColumnId).NotEmpty();
-        RuleFor(x => x.Name).MaximumLength(100);
-        RuleFor(x => x.FieldType).MaximumLength(50);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100).When(x => x.Name is not null);
     }
 }
