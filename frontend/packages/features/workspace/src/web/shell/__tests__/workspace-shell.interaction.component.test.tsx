@@ -65,6 +65,7 @@ describe("WorkspaceSidebarSurface", () => {
     expect(href(copy.nav.home)).toBe("/workspaces/ws-product");
     expect(href(copy.nav.myWork)).toBe("/workspaces/ws-product/my-work");
     expect(href(copy.nav.inbox)).toBe("/workspaces/ws-product/inbox");
+    expect(href(copy.nav.library)).toBe("/workspaces/ws-product/library");
     expect(href(copy.nav.search)).toBe("/workspaces/ws-product/search");
     expect(href(copy.nav.members)).toBe("/workspaces/ws-product/members");
     expect(href(copy.nav.settings)).toBe("/workspaces/ws-product/settings");
@@ -238,6 +239,7 @@ describe("WorkspaceSidebarSurface", () => {
       copy.nav.home,
       copy.nav.myWork,
       copy.nav.inbox,
+      copy.nav.library,
       copy.nav.search,
       "Board: Product Roadmap",
       "Doc: Q4 product specification",

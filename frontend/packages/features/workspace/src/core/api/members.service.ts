@@ -1,25 +1,119 @@
-import type { WorkspaceMember } from "../types/workspace";
+import type { OperationRequestBody } from "@notrelix/contracts";
+import { initialsFor } from "../model/navigation";
+import { parseWorkspaceRole, roleWireValue } from "../model/members";
+import type {
+  WorkspaceMember,
+  WorkspaceMembershipStatus,
+  WorkspaceRole,
+} from "../types/workspace";
 import type { WorkspaceApiClient } from "./workspace.service";
 
+/**
+ * `Workspaces.Members.ListMembers` returns `WorkspaceMemberDto[]`
+ * (`userId`, `name`, `avatar`, `role` as the enum name, `joinedAt`); the
+ * generated contract types the response as `System.Void`, so the adapter
+ * parses it defensively and drops rows without an id or a known role.
+ */
+interface MemberWire {
+  readonly userId?: unknown;
+  readonly id?: unknown;
+  readonly name?: unknown;
+  readonly avatar?: unknown;
+  readonly avatarUrl?: unknown;
+  readonly role?: unknown;
+  readonly joinedAt?: unknown;
+  readonly status?: unknown;
+}
+
+function parseMembership(
+  value: unknown,
+): WorkspaceMembershipStatus | undefined {
+  if (typeof value !== "string") return undefined;
+  const lower = value.toLowerCase();
+  return lower === "active" || lower === "suspended" ? lower : undefined;
+}
+
+export function parseMembers(payload: unknown): WorkspaceMember[] {
+  if (!Array.isArray(payload)) return [];
+  const members: WorkspaceMember[] = [];
+  const seen = new Set<string>();
+  for (const raw of payload as MemberWire[]) {
+    const userId =
+      typeof raw?.userId === "string"
+        ? raw.userId
+        : typeof raw?.id === "string"
+          ? raw.id
+          : null;
+    const role = parseWorkspaceRole(raw?.role);
+    // Removed members are not listed as members (WSP lifecycle).
+    if (
+      !userId ||
+      !role ||
+      seen.has(userId) ||
+      (typeof raw.status === "string" && raw.status.toLowerCase() === "removed")
+    )
+      continue;
+    seen.add(userId);
+    const name =
+      typeof raw.name === "string" && raw.name.trim() ? raw.name : userId;
+    const avatar =
+      typeof raw.avatar === "string"
+        ? raw.avatar
+        : typeof raw.avatarUrl === "string"
+          ? raw.avatarUrl
+          : undefined;
+    members.push({
+      id: userId,
+      userId,
+      name,
+      role,
+      avatarUrl: avatar || undefined,
+      joinedAt: typeof raw.joinedAt === "string" ? raw.joinedAt : undefined,
+      membership: parseMembership(raw.status),
+      initials: initialsFor(name),
+    });
+  }
+  return members;
+}
+
+type UpdateRoleBody =
+  OperationRequestBody<"Workspaces.Members.UpdateMemberRole">;
+
+/** Adapter for `Workspaces.Members.*` (paths follow the producer). */
 export function createMembersService(api: WorkspaceApiClient) {
+  const base = (workspaceId: string) => `/workspaces/${workspaceId}/members`;
   return {
     async getList(workspaceId: string): Promise<WorkspaceMember[]> {
-      return api.get<WorkspaceMember[]>(`/workspaces/${workspaceId}/members`);
+      return parseMembers(await api.get<unknown>(base(workspaceId)));
     },
 
+    /** PATCH …/members/{userId} with the producer's role enum value. */
     async updateRole(
       workspaceId: string,
       userId: string,
-      role: WorkspaceMember["role"],
-    ): Promise<WorkspaceMember> {
-      return api.put<WorkspaceMember>(
-        `/workspaces/${workspaceId}/members/${userId}/role`,
-        { role },
-      );
+      role: WorkspaceRole,
+    ): Promise<void> {
+      const body: UpdateRoleBody = { role: roleWireValue(role) };
+      await api.patch<void>(`${base(workspaceId)}/${userId}`, body);
     },
 
     async removeMember(workspaceId: string, userId: string): Promise<void> {
-      return api.delete<void>(`/workspaces/${workspaceId}/members/${userId}`);
+      await api.delete<void>(`${base(workspaceId)}/${userId}`);
+    },
+
+    /** Idempotent on the producer: suspending a suspended member is a no-op. */
+    async suspend(workspaceId: string, userId: string): Promise<void> {
+      await api.post<void>(`${base(workspaceId)}/${userId}/suspend`, undefined);
+    },
+
+    /** Idempotent on the producer: activating an active member is a no-op. */
+    async activate(workspaceId: string, userId: string): Promise<void> {
+      await api.post<void>(
+        `${base(workspaceId)}/${userId}/activate`,
+        undefined,
+      );
     },
   };
 }
+
+export type MembersService = ReturnType<typeof createMembersService>;

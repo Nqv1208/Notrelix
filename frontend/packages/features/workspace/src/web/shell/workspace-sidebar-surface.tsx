@@ -7,6 +7,7 @@ import {
   Home,
   Inbox,
   Keyboard,
+  Library,
   LogOut,
   MoreHorizontal,
   Palette,
@@ -491,6 +492,12 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
       label: copy.nav.inbox,
       icon: Inbox,
       destination: { section: "inbox" },
+    },
+    {
+      id: "library",
+      label: copy.nav.library,
+      icon: Library,
+      destination: { section: "library" },
     },
     {
       id: "search",

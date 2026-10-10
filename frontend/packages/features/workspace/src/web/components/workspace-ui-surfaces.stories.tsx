@@ -1,9 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
-  dashboardDefaultScenario,
-  dashboardEmptyScenario,
-  dashboardLoadingScenario,
   invitationsDefaultScenario,
   invitationsEmptyScenario,
   workspaceDirectoryDefaultScenario,
@@ -17,7 +14,6 @@ import {
 import {
   PendingInvitationsMenuSurface,
   WorkspaceCompactHeaderSurface,
-  WorkspaceDashboardSurface,
   WorkspaceDirectorySurface,
   WorkspaceViewTabsSurface,
 } from "./workspace-ui-surfaces";
@@ -114,19 +110,4 @@ export const InvitationsEmpty: Story = {
     <PendingInvitationsMenuSurface invitations={invitationsEmptyScenario()} />
   ),
   tags: ["fui-surface--workspace.pending-invitations", "fui-state--Empty"],
-};
-
-export const DashboardDefault: Story = {
-  render: () => <WorkspaceDashboardSurface {...dashboardDefaultScenario()} />,
-  tags: ["fui-surface--workspace.dashboard", "fui-state--Default"],
-};
-
-export const DashboardEmpty: Story = {
-  render: () => <WorkspaceDashboardSurface {...dashboardEmptyScenario()} />,
-  tags: ["fui-surface--workspace.dashboard", "fui-state--Empty"],
-};
-
-export const DashboardLoading: Story = {
-  render: () => <WorkspaceDashboardSurface {...dashboardLoadingScenario()} />,
-  tags: ["fui-surface--workspace.dashboard", "fui-state--Loading"],
 };

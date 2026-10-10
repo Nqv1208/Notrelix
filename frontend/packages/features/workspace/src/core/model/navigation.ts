@@ -115,7 +115,8 @@ export type WorkspaceDestination =
   | { readonly section: "my-work" }
   | { readonly section: "inbox" }
   | { readonly section: "search" }
-  | { readonly section: "members" }
+  | { readonly section: "library" }
+  | { readonly section: "members"; readonly tab?: "members" | "invitations" }
   | { readonly section: "settings" }
   | { readonly section: "billing" }
   | { readonly section: "account"; readonly page?: "profile" | "appearance" }
@@ -123,6 +124,8 @@ export type WorkspaceDestination =
       readonly section: "board";
       readonly boardId: string;
       readonly view?: string;
+      /** An Item to open on the Board (route search `item`). */
+      readonly item?: string;
     }
   | { readonly section: "doc"; readonly docId: string };
 

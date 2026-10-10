@@ -4,31 +4,6 @@
   "inventory": {
     "excludedSources": [
       {
-        "path": "src/web/components/dashboard/active-boards.tsx",
-        "category": "container",
-        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
-      },
-      {
-        "path": "src/web/components/dashboard/activity-feed.tsx",
-        "category": "container",
-        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
-      },
-      {
-        "path": "src/web/components/dashboard/pinned-docs.tsx",
-        "category": "container",
-        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
-      },
-      {
-        "path": "src/web/components/dashboard/upcoming-deadlines.tsx",
-        "category": "container",
-        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
-      },
-      {
-        "path": "src/web/components/dashboard/workspace-overview.tsx",
-        "category": "container",
-        "reason": "Dashboard widget composed into the workspace-dashboard evidence flow; not registered as its own surface at baseline."
-      },
-      {
         "path": "src/web/components/pending-invitations-menu.tsx",
         "category": "container",
         "reason": "Container composing PendingInvitationsMenuSurface with workspace-scoped invitation actions."
@@ -464,82 +439,6 @@
       ]
     },
     {
-      "surfaceId": "workspace.dashboard",
-      "owner": "@notrelix/features-workspace",
-      "surfaceKind": "composition",
-      "pureEntry": "src/web/components/workspace-dashboard-surface.tsx",
-      "coveredSources": [],
-      "stories": [
-        {
-          "id": "workspace-workspace-ui-surfaces--dashboard-default",
-          "state": "Default",
-          "visualTargets": [
-            {
-              "viewport": "mobile",
-              "theme": "light"
-            },
-            {
-              "viewport": "tablet",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            },
-            {
-              "viewport": "desktop",
-              "theme": "dark"
-            }
-          ]
-        },
-        {
-          "id": "workspace-workspace-ui-surfaces--dashboard-empty",
-          "state": "Empty",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        },
-        {
-          "id": "workspace-workspace-ui-surfaces--dashboard-loading",
-          "state": "Loading",
-          "visualTargets": [
-            {
-              "viewport": "desktop",
-              "theme": "light"
-            }
-          ]
-        }
-      ],
-      "stateCoverage": {
-        "required": ["Default", "Empty", "Loading"],
-        "delegated": [],
-        "notApplicable": [
-          {
-            "state": "Error",
-            "reason": "Dashboard widgets render resolved summary data passed by their parent; query error presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "EdgeData",
-            "reason": "Dashboard widgets render bounded counts and short activity strings; long-text and Unicode edges are exercised by the directory EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          }
-        ]
-      },
-      "responsive": true,
-      "themeAware": true,
-      "checks": ["interaction", "a11y", "visual", "purity"],
-      "interactionCases": [
-        {
-          "id": "render",
-          "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
-        }
-      ]
-    },
-    {
       "surfaceId": "workspace.sidebar",
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "navigation",
@@ -935,6 +834,887 @@
         {
           "id": "loading",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.home",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "composition",
+      "pureEntry": "src/web/home/workspace-home-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-home--home-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--home-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--home-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--home-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--home-onboarding",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "EdgeData", "Empty"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "complete",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigate",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "loading",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "partial",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "permission",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "onboarding",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.onboarding",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "feedback",
+      "pureEntry": "src/web/home/workspace-onboarding-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-home--onboarding-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--onboarding-guest",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "PermissionLimited"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "actions",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "permission",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.create-resource",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/home/create-resource-dialog.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-home--create-resource-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--create-resource-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--create-resource-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "A successful create closes the dialog and navigates to the new Board or Doc; the confirmation toast is owned by the host.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "EdgeData",
+            "reason": "One short name field bounded by maxLength; long and Unicode names are exercised by the Home and Library EdgeData stories.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Members who cannot create never see the dialog: the create actions are not offered (WX-HOME-002).",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "validation",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.my-work",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/home/workspace-my-work-surface.tsx",
+      "coveredSources": ["src/web/home/my-work-list.tsx"],
+      "stories": [
+        {
+          "id": "workspace-home--my-work-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-home--my-work-high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Empty",
+          "Error",
+          "EdgeData",
+          "HighDensity"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "Without inline completion the list stays a list of links; covered by the read-only interaction case rather than a separate visual state.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "My work lists only the member's own assigned Items, authorized by the producer (WX-BE-005); there is no partial-permission rendering.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "load-more",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/web/home/__tests__/workspace-home.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.library",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/library/workspace-library-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-library--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-library--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-library--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-library--error-state",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-library--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-library--high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-library--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-library--permission-limited",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Empty",
+          "Error",
+          "EdgeData",
+          "HighDensity",
+          "ReadOnly",
+          "PermissionLimited"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        },
+        {
+          "id": "sort",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        },
+        {
+          "id": "pin",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        },
+        {
+          "id": "virtualize",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.members",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/members/workspace-members-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-members--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-members--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-members--error-state",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-members--invitations",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-members--invitations-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-members--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-members--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-members--permission-limited",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "Success",
+          "Empty",
+          "EdgeData",
+          "ReadOnly",
+          "PermissionLimited"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "HighDensity",
+            "reason": "Member lists are bounded by workspace seats; the EdgeData story renders 30 members with long Unicode names.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "role",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "last-owner",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "suspend",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "permission",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "invite",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "pending",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "invite-error",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        },
+        {
+          "id": "tabs",
+          "testFile": "src/web/members/__tests__/workspace-members.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.settings",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/settings/workspace-settings-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-settings--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-settings--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-settings--error-state",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-settings--saved",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-settings--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-settings--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-settings--version-unavailable",
+          "state": "Unavailable",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "Success",
+          "EdgeData",
+          "ReadOnly",
+          "Unavailable"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "profile",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "validation",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "defaults",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "conflict",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "saved",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "archive",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "permission",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        },
+        {
+          "id": "unavailable",
+          "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
         }
       ]
     }

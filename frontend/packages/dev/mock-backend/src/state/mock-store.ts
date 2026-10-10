@@ -53,6 +53,30 @@ export class MockRelationalInvariantError extends Error {
   }
 }
 
+// ─── Workspace experience records (WX-MEM-001, WX-SET-001) ──────────────────
+
+export interface MockInvitationRecord {
+  id: string;
+  workspaceId: string;
+  email: string;
+  role: "admin" | "member" | "guest";
+  createdAt: string;
+  expiresAt: string;
+  status: "pending" | "accepted" | "revoked";
+}
+
+export interface MockWorkspaceSettingsRecord {
+  allowPublicSharing: boolean;
+  enforceMfa: boolean;
+  allowGuestInvites: boolean;
+  defaultMemberRole: "Admin" | "Member" | "Guest";
+  invitationExpiryDays: number;
+}
+
+/** Mirrors the producer's member-rule outcomes (WSP-008). */
+export type MockMemberChange =
+  "ok" | "not-found" | "last-owner" | "owner-direct" | "inactive";
+
 // ─── MockStore ────────────────────────────────────────────────────────────────
 
 export class MockStore {
@@ -90,6 +114,17 @@ export class MockStore {
     }
   >();
   private navigationTick = 0;
+  /** Membership access status (WX-MEM-001); absent = active. */
+  private suspendedMembershipIds = new Set<string>();
+  /** Workspace invitations (WX-MEM-001). */
+  private invitationsById = new Map<string, MockInvitationRecord>();
+  /** Workspace defaults (`Workspaces.Settings.*`). */
+  private settingsByWorkspaceId = new Map<
+    string,
+    MockWorkspaceSettingsRecord
+  >();
+  /** Items completed through `WorkManagement.BoardItems.Complete`. */
+  private completedCardIds = new Set<string>();
 
   // Secondary indexes (Plan: 03-MOCK-DATA-MODEL.md §Store structure)
   private membershipIdsByWorkspaceId = new Map<string, Set<string>>();
@@ -1667,6 +1702,197 @@ export class MockStore {
     state.pins = state.pins.filter(
       (p) => !(p.kind === kind && p.resourceId === resourceId),
     );
+  }
+
+  // ─── Members, invitations, settings (WX-MEM-001, WX-SET-001) ────────────
+
+  private findMembership(
+    workspaceId: string,
+    userId: string,
+  ): MockMembershipRecord | undefined {
+    return this.getWorkspaceMembers(workspaceId).find(
+      (m) => m.userId === userId,
+    );
+  }
+
+  /** The current member's role in a workspace, when a member. */
+  getCurrentMemberRole(
+    workspaceId: string,
+  ): MockMembershipRecord["role"] | null {
+    return (
+      this.findMembership(workspaceId, this.getCurrentUser().id)?.role ?? null
+    );
+  }
+
+  isMembershipSuspended(membershipId: string): boolean {
+    return this.suspendedMembershipIds.has(membershipId);
+  }
+
+  private activeOwnerCount(workspaceId: string): number {
+    return this.getWorkspaceMembers(workspaceId).filter(
+      (m) => m.role === "owner" && !this.suspendedMembershipIds.has(m.id),
+    ).length;
+  }
+
+  changeMemberRole(
+    workspaceId: string,
+    userId: string,
+    role: MockMembershipRecord["role"],
+  ): MockMemberChange {
+    const member = this.findMembership(workspaceId, userId);
+    if (!member) return "not-found";
+    if (role === "owner") return "owner-direct";
+    if (this.suspendedMembershipIds.has(member.id)) return "inactive";
+    if (member.role === "owner" && this.activeOwnerCount(workspaceId) <= 1) {
+      return "last-owner";
+    }
+    member.role = role;
+    return "ok";
+  }
+
+  removeMember(workspaceId: string, userId: string): MockMemberChange {
+    const member = this.findMembership(workspaceId, userId);
+    if (!member) return "not-found";
+    if (member.role === "owner" && this.activeOwnerCount(workspaceId) <= 1) {
+      return "last-owner";
+    }
+    this.membershipsById.delete(member.id);
+    this.membershipIdsByWorkspaceId.get(workspaceId)?.delete(member.id);
+    this.suspendedMembershipIds.delete(member.id);
+    return "ok";
+  }
+
+  setMemberSuspended(
+    workspaceId: string,
+    userId: string,
+    suspended: boolean,
+  ): MockMemberChange {
+    const member = this.findMembership(workspaceId, userId);
+    if (!member) return "not-found";
+    if (
+      suspended &&
+      member.role === "owner" &&
+      !this.suspendedMembershipIds.has(member.id) &&
+      this.activeOwnerCount(workspaceId) <= 1
+    ) {
+      return "last-owner";
+    }
+    if (suspended) this.suspendedMembershipIds.add(member.id);
+    else this.suspendedMembershipIds.delete(member.id);
+    return "ok";
+  }
+
+  getInvitations(workspaceId: string): MockInvitationRecord[] {
+    return Array.from(this.invitationsById.values())
+      .filter((invitation) => invitation.workspaceId === workspaceId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  /** Returns the new id, or `null` when a pending invitation already exists. */
+  createInvitation(
+    workspaceId: string,
+    email: string,
+    role: MockInvitationRecord["role"],
+  ): string | null {
+    const clean = email.trim().toLowerCase();
+    if (
+      this.getInvitations(workspaceId).some(
+        (invitation) =>
+          invitation.email === clean && invitation.status === "pending",
+      )
+    ) {
+      return null;
+    }
+    const id = this.nextId("invitation");
+    const days = this.getWorkspaceSettings(workspaceId).invitationExpiryDays;
+    this.navigationTick += 1;
+    this.invitationsById.set(id, {
+      id,
+      workspaceId,
+      email: clean,
+      role,
+      createdAt: this.clock.offsetSeconds(this.navigationTick),
+      expiresAt: this.clock.offsetDays(days),
+      status: "pending",
+    });
+    return id;
+  }
+
+  revokeInvitation(workspaceId: string, invitationId: string): boolean {
+    const invitation = this.invitationsById.get(invitationId);
+    if (!invitation || invitation.workspaceId !== workspaceId) return false;
+    if (invitation.status === "pending") invitation.status = "revoked";
+    return true;
+  }
+
+  getWorkspaceSettings(workspaceId: string): MockWorkspaceSettingsRecord {
+    let settings = this.settingsByWorkspaceId.get(workspaceId);
+    if (!settings) {
+      settings = {
+        allowPublicSharing: false,
+        enforceMfa: false,
+        allowGuestInvites: true,
+        defaultMemberRole: "Member",
+        invitationExpiryDays: 7,
+      };
+      this.settingsByWorkspaceId.set(workspaceId, settings);
+    }
+    return settings;
+  }
+
+  // ─── My work (WX-BE-005) ─────────────────────────────────────────────────
+
+  /**
+   * Open Items "assigned" to the current member. The mock dataset has no
+   * assignees, so every second Item (by position) on the workspace's Boards
+   * stands in for an assignment; due dates are derived from the mock clock.
+   * Ordered like the producer: due date ascending, undated last, then id.
+   */
+  getMyWorkItems(workspaceId: string) {
+    const items: {
+      id: string;
+      boardId: string;
+      groupId: string;
+      name: string;
+      dueAt: string | null;
+      startedAt: string | null;
+      updatedAt: string;
+      version: number;
+    }[] = [];
+    for (const board of this.getBoards(workspaceId)) {
+      if (board.isArchived) continue;
+      for (const list of this.getLists(board.id)) {
+        for (const card of this.getCards(list.id)) {
+          if (card.position % 2 !== 0 || this.completedCardIds.has(card.id)) {
+            continue;
+          }
+          const offset = (items.length % 9) - 3;
+          items.push({
+            id: card.id,
+            boardId: board.id,
+            groupId: list.id,
+            name: card.title,
+            dueAt:
+              items.length % 5 === 4 ? null : this.clock.offsetDays(offset),
+            startedAt: null,
+            updatedAt: card.updatedAt,
+            version: 1,
+          });
+        }
+      }
+    }
+    return items.sort((a, b) => {
+      if (a.dueAt === b.dueAt) return a.id.localeCompare(b.id);
+      if (a.dueAt === null) return 1;
+      if (b.dueAt === null) return -1;
+      return a.dueAt.localeCompare(b.dueAt) || a.id.localeCompare(b.id);
+    });
+  }
+
+  completeCard(cardId: string): boolean {
+    if (!this.cardsById.has(cardId)) return false;
+    this.completedCardIds.add(cardId);
+    return true;
   }
 
   getWorkspaceViews(workspaceId: string): MockWorkspaceViewRecord[] {

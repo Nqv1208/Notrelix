@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 
 import {
-  dashboardDefaultScenario,
   invitationsDefaultScenario,
   invitationsEmptyScenario,
   workspaceDirectoryDefaultScenario,
@@ -12,7 +11,6 @@ import {
 import {
   PendingInvitationsMenuSurface,
   WorkspaceCompactHeaderSurface,
-  WorkspaceDashboardSurface,
   WorkspaceDirectorySurface,
   WorkspaceViewTabsSurface,
 } from "../workspace-ui-surfaces";
@@ -118,13 +116,5 @@ describe("workspace web pure surfaces", () => {
     );
 
     expect(screen.getByText("No pending invitations")).toBeTruthy();
-  });
-
-  it("FUI[workspace.dashboard:render] renders the workspace dashboard from deterministic fixtures", () => {
-    renderPureUi(<WorkspaceDashboardSurface {...dashboardDefaultScenario()} />);
-
-    expect(screen.getByText("Product")).toBeTruthy();
-    expect(screen.getByText("Ada Lovelace")).toBeTruthy();
-    expect(screen.getByText("Operating plan")).toBeTruthy();
   });
 });

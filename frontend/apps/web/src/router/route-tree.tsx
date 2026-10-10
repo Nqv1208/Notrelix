@@ -15,6 +15,7 @@ import {
   membersRoute,
   myWorkRoute,
   inboxRoute,
+  libraryRoute,
 } from "./routes/workspace.routes";
 import { boardRoute } from "./routes/work-management.routes";
 import { docRoute } from "./routes/documents.routes";
@@ -45,6 +46,7 @@ export const routeTree = rootRoute.addChildren([
     membersRoute,
     myWorkRoute,
     inboxRoute,
+    libraryRoute,
     billingRoute,
     searchRoute,
     chatRoute,

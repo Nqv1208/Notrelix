@@ -4,6 +4,7 @@ import {
   Home,
   Inbox,
   Keyboard,
+  Library,
   Moon,
   Plus,
   Search,
@@ -139,6 +140,12 @@ export function WorkspaceCommandPaletteSurface({
       label: copy.nav.search,
       icon: Search,
       destination: { section: "search" },
+    },
+    {
+      id: "library",
+      label: copy.nav.library,
+      icon: Library,
+      destination: { section: "library" },
     },
     {
       id: "members",

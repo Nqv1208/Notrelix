@@ -142,7 +142,7 @@ export const boardsOperations = [
   defineMockOperation<
     { workspaceId: string },
     { title?: string; description?: string },
-    BoardDtoApi
+    string
   >({
     id: "boards.create",
     contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
@@ -154,18 +154,8 @@ export const boardsOperations = [
         title: data.title,
         description: data.description,
       });
-      return created<BoardDtoApi>({
-        id: newBoard.id,
-        workspaceId: newBoard.workspaceId,
-        title: newBoard.title,
-        description: newBoard.description ?? null,
-        background: JSON.stringify(newBoard.background),
-        visibility: newBoard.visibility,
-        isArchived: newBoard.isArchived,
-        memberCount: 1,
-        listCount: 0,
-        createdAt: newBoard.createdAt,
-      });
+      // Like the producer (`ToCreatedResult`): 201 with the new Board id.
+      return created<string>(newBoard.id);
     },
   }),
 
@@ -335,7 +325,10 @@ export const boardsOperations = [
     method: "POST",
     route: "/boards/:boardId/fields/:fieldId/move",
     async handle({ params, body, store }) {
-      const data = (body ?? {}) as { previousSiblingId?: string | null; nextSiblingId?: string | null };
+      const data = (body ?? {}) as {
+        previousSiblingId?: string | null;
+        nextSiblingId?: string | null;
+      };
       const moved = store.moveColumn(
         params.boardId,
         params.fieldId,

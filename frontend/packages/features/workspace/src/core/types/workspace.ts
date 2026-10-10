@@ -12,23 +12,49 @@ export type WorkspaceViewType =
 
 export type WorkspaceViewVisibility = "private" | "workspace" | "public";
 
+export type WorkspaceRole = "owner" | "admin" | "member" | "guest";
+
+/**
+ * Membership status as the producer reports it. `ListMembers` does not report
+ * it yet (open item, WX-MEM-001), so the adapter leaves it `undefined`.
+ */
+export type WorkspaceMembershipStatus = "active" | "suspended";
+
 export interface WorkspaceMember {
+  /** The producer keys members by user id; `id` mirrors `userId`. */
   id: string;
   userId: string;
   name: string;
-  initials: string;
-  role: "owner" | "admin" | "member" | "guest";
-  status: "active" | "idle" | "offline" | "in-call";
-  workload: number;
-  color: string;
+  role: WorkspaceRole;
   avatarUrl?: string;
+  /** ISO date-time the member joined. */
+  joinedAt?: string;
+  membership?: WorkspaceMembershipStatus;
+  /**
+   * @deprecated Presence fields of the retired mock shape; read only by the
+   * unmounted Phase 2 shell files (`apps/web/src/shell/sidebar/*`).
+   */
+  initials?: string;
+  /** @deprecated See `initials`. */
+  status?: "active" | "idle" | "offline" | "in-call";
+  /** @deprecated See `initials`. */
+  workload?: number;
+  /** @deprecated See `initials`. */
+  color?: string;
 }
+
+/**
+ * Invitation lifecycle as far as the producer reports it. The list DTO only
+ * carries `isAccepted` and `expiresAt`; revoked invitations are not
+ * distinguishable yet (open item, WX-MEM-001).
+ */
+export type WorkspaceInvitationState = "pending" | "accepted" | "expired";
 
 export interface WorkspaceInvitation {
   id: string;
   token?: string;
   email: string;
-  role: WorkspaceMember["role"];
+  role: WorkspaceRole;
   expiresAt: string;
   isAccepted: boolean;
   isExpired?: boolean;
@@ -41,6 +67,12 @@ export interface WorkspaceInvitation {
 
 export interface WorkspaceSummary {
   id: string;
+  /**
+   * Optimistic-concurrency version of the workspace, when the producer reports
+   * it. `GetWorkspace` does not yet (open item, WX-SET-001); profile, settings
+   * and archive writes require it.
+   */
+  version?: number;
   slug: string;
   name: string;
   description?: string;
@@ -139,11 +171,25 @@ export interface CreateWorkspaceInput {
 
 export interface UpdateWorkspaceInput {
   name?: string;
-  slug?: string;
-  settings?: string;
+  description?: string;
+}
+
+export interface UpdateWorkspaceProfileInput {
+  readonly name: string;
+  readonly description: string;
+  readonly expectedVersion: number;
+}
+
+/** Workspace defaults (`Workspaces.Settings.*`). */
+export interface WorkspaceSettings {
+  readonly defaultMemberRole: Exclude<WorkspaceRole, "owner">;
+  readonly invitationExpiryDays: number;
+  readonly allowGuestInvites: boolean;
+  readonly allowPublicSharing: boolean;
+  readonly enforceMfa: boolean;
 }
 
 export interface CreateWorkspaceInvitationInput {
   email: string;
-  role: WorkspaceMember["role"] | string;
+  role: Exclude<WorkspaceRole, "owner">;
 }

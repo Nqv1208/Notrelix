@@ -386,7 +386,7 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
-    consumerSymbol: "TODO",
+    consumerSymbol: "createMembersService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/members.service.ts",
     capability: "Workspaces.Members.ListMembers",
@@ -396,7 +396,7 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
-    consumerSymbol: "TODO",
+    consumerSymbol: "createMembersService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/members.service.ts",
     capability: "Workspaces.Members.UpdateMemberRole",
@@ -406,11 +406,101 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
-    consumerSymbol: "TODO",
+    consumerSymbol: "createMembersService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/members.service.ts",
     capability: "Workspaces.Members.RemoveMember",
     operationId: "Workspaces.Members.RemoveMember",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createMembersService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/members.service.ts",
+    capability: "Workspaces.Members.SuspendMember",
+    operationId: "Workspaces.Members.SuspendMember",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createMembersService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/members.service.ts",
+    capability: "Workspaces.Members.ActivateMember",
+    operationId: "Workspaces.Members.ActivateMember",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Members.InviteMember",
+    operationId: "Workspaces.Members.InviteMember",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Invitations.ListWorkspaceInvitations",
+    operationId: "Workspaces.Invitations.ListWorkspaceInvitations",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Invitations.CancelInvitation",
+    operationId: "Workspaces.Invitations.CancelInvitation",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createActivityService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/activity.service.ts",
+    capability: "Workspaces.Activity.GetWorkspaceActivity",
+    operationId: "Workspaces.Activity.GetWorkspaceActivity",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Settings.GetWorkspaceSettings",
+    operationId: "Workspaces.Settings.GetWorkspaceSettings",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useMyWorkItems",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/work-management-bridge.ts",
+    capability: "WorkManagement.BoardItems.ListMyWork",
+    operationId: "WorkManagement.BoardItems.ListMyWork",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useCompleteItem",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/work-management-bridge.ts",
+    capability: "WorkManagement.BoardItems.Complete",
+    operationId: "WorkManagement.BoardItems.Complete",
     mutation: true,
   },
   {

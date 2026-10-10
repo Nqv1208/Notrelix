@@ -25,8 +25,17 @@ export function routerTarget(
       return { to: "/workspaces/$workspaceId/inbox", params };
     case "search":
       return { to: "/workspaces/$workspaceId/search", params };
+    case "library":
+      return { to: "/workspaces/$workspaceId/library", params };
     case "members":
-      return { to: "/workspaces/$workspaceId/members", params };
+      return {
+        to: "/workspaces/$workspaceId/members",
+        params,
+        search:
+          destination.tab === "invitations"
+            ? { tab: "invitations" }
+            : undefined,
+      };
     case "settings":
       return { to: "/workspaces/$workspaceId/settings", params };
     case "billing":
@@ -39,7 +48,13 @@ export function routerTarget(
       return {
         to: "/workspaces/$workspaceId/boards/$boardId",
         params: { ...params, boardId: destination.boardId },
-        search: destination.view ? { view: destination.view } : undefined,
+        search:
+          destination.view || destination.item
+            ? {
+                ...(destination.view ? { view: destination.view } : {}),
+                ...(destination.item ? { item: destination.item } : {}),
+              }
+            : undefined,
       };
     case "doc":
       return {
@@ -75,6 +90,7 @@ const SECTION_BY_ROUTE_ID: Readonly<Record<string, WorkspaceDestination>> = {
   "/workspaces/$workspaceId/my-work": { section: "my-work" },
   "/workspaces/$workspaceId/inbox": { section: "inbox" },
   "/workspaces/$workspaceId/search": { section: "search" },
+  "/workspaces/$workspaceId/library": { section: "library" },
   "/workspaces/$workspaceId/members": { section: "members" },
   "/workspaces/$workspaceId/settings": { section: "settings" },
   "/workspaces/$workspaceId/billing": { section: "billing" },

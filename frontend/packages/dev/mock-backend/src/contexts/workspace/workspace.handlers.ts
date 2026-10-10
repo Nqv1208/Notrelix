@@ -8,7 +8,9 @@
  *
  * Operations with COMPATIBILITY-GAP (temporary legacy behavior):
  *   workspace.views.list   — GET /workspaces/:id/views   [CTR-GAP-WS-VIEWS]
- *   workspace.members.list — GET /workspaces/:id/members [CTR-GAP-WS-MEMBERS]
+ *
+ * Members, invitations, activity and settings mirror the producer shapes
+ * (Workspaces.Members.*, Workspaces.Invitations.*, WX-MEM-001/WX-SET-001).
  *
  * Plan: 01-FREEZE-SPEC.md §FZ-S06, §FZ-S07, §FZ-S10, §FZ-S11
  *       02-IMPLEMENTATION-PLAN.md §MFB-FZ-03, §MFB-FZ-05
@@ -16,7 +18,6 @@
 
 import type {
   WorkspaceSummary,
-  WorkspaceMember,
   WorkspaceView,
 } from "@notrelix/features-workspace";
 import { defineMockOperation } from "../../operations/types";
@@ -25,11 +26,79 @@ import {
   created,
   noContent,
   notFound,
+  forbidden,
   validationError,
+  type MockHttpResult,
 } from "../../transport/create-response";
-import type { MockStore } from "../../state/mock-store";
+import type { MockMemberChange, MockStore } from "../../state/mock-store";
 
 const NAVIGATION_KINDS = new Set(["work-management.board", "documents.page"]);
+
+type MemberRole = "owner" | "admin" | "member" | "guest";
+
+/** The producer serializes roles as enum names (JsonStringEnumConverter). */
+const ROLE_NAME: Readonly<Record<MemberRole, string>> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+  guest: "Guest",
+};
+
+/** Accepts the enum name or value, like the producer's role binding. */
+function parseRole(value: unknown): MemberRole | null {
+  if (typeof value === "number") {
+    return (["guest", "member", "admin", "owner"] as const)[value] ?? null;
+  }
+  if (typeof value !== "string") return null;
+  const lower = value.toLowerCase();
+  return lower === "owner" ||
+    lower === "admin" ||
+    lower === "member" ||
+    lower === "guest"
+    ? lower
+    : null;
+}
+
+/** `ManageMembers` is held by owners and admins. */
+function canManageMembers(store: MockStore, workspaceId: string): boolean {
+  const role = store.getCurrentMemberRole(workspaceId);
+  return role === "owner" || role === "admin";
+}
+
+/** A business-rule failure as the producer's ProblemDetails. */
+function ruleViolation(detail: string): MockHttpResult<unknown> {
+  return {
+    status: 400,
+    body: {
+      type: "https://docs.notrelix.com/problems/business_rule-violation",
+      title: "Business rule violation",
+      status: 400,
+      detail,
+      errorCode: "business_rule.violation",
+    },
+  };
+}
+
+function memberChangeResult(change: MockMemberChange): MockHttpResult<never> {
+  switch (change) {
+    case "ok":
+      return noContent();
+    case "not-found":
+      return notFound() as MockHttpResult<never>;
+    case "last-owner":
+      return ruleViolation(
+        "Cannot downgrade the last owner of the workspace.",
+      ) as MockHttpResult<never>;
+    case "owner-direct":
+      return ruleViolation(
+        "Ownership must be transferred through the ownership transfer workflow.",
+      ) as MockHttpResult<never>;
+    case "inactive":
+      return ruleViolation(
+        "Cannot change role of an inactive or suspended member.",
+      ) as MockHttpResult<never>;
+  }
+}
 
 /** Mirrors the producer: the resource must live in the caller's workspace. */
 function navigationResourceExists(
@@ -156,41 +225,29 @@ export const workspaceOperations = [
     },
   }),
 
-  // ─── GET /workspaces/:id/members ──────────────────────────────────────────
-  // COMPATIBILITY-GAP: CTR-GAP-WS-MEMBERS
-  // Temporary legacy handler — resolves actual user records for memberships.
+  // ─── Members (Workspaces.Members.*, WX-MEM-001) ────────────────────────────
+  // Shapes mirror the producer: `WorkspaceMemberDto` (userId, name, avatar,
+  // role as the enum name, joinedAt) and ProblemDetails failures.
 
-  defineMockOperation<{ id: string }, never, WorkspaceMember[]>({
+  defineMockOperation<{ id: string }, never, unknown>({
     id: "workspace.members.list",
     contract: {
       kind: "openapi",
       operationId: "Workspaces.Members.ListMembers",
-    } as any,
+    },
     method: "GET",
     route: "/workspaces/:id/members",
     async handle({ params, store }) {
-      const memberRecords = store.getWorkspaceMembers(params.id);
-      return ok<WorkspaceMember[]>(
-        memberRecords.map((m) => {
+      if (!store.isCurrentMemberOf(params.id)) return notFound();
+      return ok(
+        store.getWorkspaceMembers(params.id).map((m) => {
           const user = store.getUser(m.userId);
-          const name = user ? user.name : `User ${m.userId}`;
-          const initials = name
-            .split(" ")
-            .map((part) => part[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
-
           return {
-            id: m.id,
             userId: m.userId,
-            name,
-            initials: initials || "U",
-            role: m.role,
-            status: m.status,
-            workload: m.workload,
-            color: m.color,
-            avatarUrl: user?.avatarUrl ?? undefined,
+            name: user ? user.name : "Unknown",
+            avatar: user?.avatarUrl ?? null,
+            role: ROLE_NAME[m.role],
+            joinedAt: m.joinedAt,
           };
         }),
       );
@@ -202,28 +259,183 @@ export const workspaceOperations = [
     contract: {
       kind: "openapi",
       operationId: "Workspaces.Members.RemoveMember",
-    } as any,
+    },
     method: "DELETE",
     route: "/workspaces/:workspaceId/members/:userId",
-    async handle({ store: _store }) {
-      return ok<void>(undefined);
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return memberChangeResult(
+        store.removeMember(params.workspaceId, params.userId),
+      );
     },
   }),
 
   defineMockOperation<
     { workspaceId: string; userId: string },
-    { role: string },
+    { role?: unknown },
     void
   >({
     id: "workspace.members.update",
     contract: {
       kind: "openapi",
       operationId: "Workspaces.Members.UpdateMemberRole",
-    } as any,
-    method: "PATCH", // the OpenAPI is PATCH for UpdateMemberRole, but the client does PUT? Wait, I will use PATCH as per OpenAPI
+    },
+    method: "PATCH",
     route: "/workspaces/:workspaceId/members/:userId",
-    async handle({ store: _store }) {
-      return ok<void>(undefined);
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const role = parseRole(body?.role);
+      if (!role) return validationError({ role: ["Unknown role."] });
+      return memberChangeResult(
+        store.changeMemberRole(params.workspaceId, params.userId, role),
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+    id: "workspace.members.suspend",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.SuspendMember",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members/:userId/suspend",
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return memberChangeResult(
+        store.setMemberSuspended(params.workspaceId, params.userId, true),
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; userId: string }, never, void>({
+    id: "workspace.members.activate",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.ActivateMember",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members/:userId/activate",
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return memberChangeResult(
+        store.setMemberSuspended(params.workspaceId, params.userId, false),
+      );
+    },
+  }),
+
+  // ─── Invitations (Workspaces.Invitations.*, WX-MEM-001) ──────────────────
+
+  defineMockOperation<
+    { workspaceId: string },
+    { email?: string; role?: string },
+    unknown
+  >({
+    id: "workspace.members.invite",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.InviteMember",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members",
+    async handle({ params, body, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      const email = (body?.email ?? "").trim();
+      const role = parseRole(body?.role);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return validationError({ Email: ["Email is not a valid address."] });
+      }
+      if (!role || role === "owner") {
+        return validationError({ Role: ["Unknown role."] });
+      }
+      const id = store.createInvitation(params.workspaceId, email, role);
+      if (!id) {
+        return validationError({
+          "": ["Đã có một lời mời đang chờ xử lý dành cho email này."],
+        });
+      }
+      return created(id);
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.invitations.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.ListWorkspaceInvitations",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/invitations",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      // Like the producer's DTO, revoked invitations are not distinguished.
+      return ok(
+        store.getInvitations(params.workspaceId).map((invitation) => ({
+          id: invitation.id,
+          email: invitation.email,
+          role: ROLE_NAME[invitation.role],
+          expiresAt: invitation.expiresAt,
+          isAccepted: invitation.status === "accepted",
+          createdAt: invitation.createdAt,
+        })),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; invitationId: string },
+    never,
+    void
+  >({
+    id: "workspace.invitations.cancel",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.CancelInvitation",
+    },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/invitations/:invitationId",
+    async handle({ params, store }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      return store.revokeInvitation(params.workspaceId, params.invitationId)
+        ? noContent()
+        : notFound();
+    },
+  }),
+
+  // ─── Activity and settings ────────────────────────────────────────────────
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.activity.list",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Activity.GetWorkspaceActivity",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/activity",
+    async handle({ params, store, request }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      const query = request.searchParams;
+      // The producer records no activity entries yet; mirror its envelope.
+      return ok({
+        data: [],
+        total: 0,
+        page: Number(query.get("page") ?? 1),
+        pageSize: Number(query.get("pageSize") ?? 20),
+      });
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.settings.get",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Settings.GetWorkspaceSettings",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/settings",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      return ok({ ...store.getWorkspaceSettings(params.workspaceId) });
     },
   }),
 

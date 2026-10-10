@@ -76,6 +76,15 @@ export const IDENTITY_MARK_CLASS: Readonly<Record<IdentityTone, string>> = {
   ember: "bg-identity-ember text-identity-ember-foreground",
 };
 
+/** Identity tone as an icon color on a neutral tile (Boards and Docs). */
+export const IDENTITY_ICON_CLASS: Readonly<Record<IdentityTone, string>> = {
+  blue: "text-identity-blue",
+  coral: "text-identity-coral",
+  gold: "text-identity-gold",
+  sage: "text-identity-sage",
+  ember: "text-identity-ember",
+};
+
 /** True for a plain primary click that the host router should handle. */
 export function isPlainClick(event: {
   button: number;
@@ -115,6 +124,7 @@ export function workspaceBreadcrumbLabels(
       "my-work": copy.sections.myWork,
       inbox: copy.sections.inbox,
       search: copy.sections.search,
+      library: copy.sections.library,
       members: copy.sections.members,
       settings: copy.sections.settings,
       billing: copy.sections.billing,

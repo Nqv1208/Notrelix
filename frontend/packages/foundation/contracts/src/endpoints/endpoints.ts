@@ -27,6 +27,27 @@ export const endpoints = {
     pins: (workspaceId: string) => `/workspaces/${workspaceId}/pins`,
     pin: (workspaceId: string, kind: string, resourceId: string) =>
       `/workspaces/${workspaceId}/pins/${encodeURIComponent(kind)}/${resourceId}`,
+    // Workspace profile, settings and lifecycle (producer: Workspaces.Workspaces.*).
+    profile: (workspaceId: string) => `/workspaces/${workspaceId}/profile`,
+    settings: (workspaceId: string) => `/workspaces/${workspaceId}/settings`,
+    archive: (workspaceId: string) => `/workspaces/${workspaceId}/archive`,
+    activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
+    // Members (Workspaces.Members.*). Inviting is POST on the members route.
+    members: (workspaceId: string) => `/workspaces/${workspaceId}/members`,
+    member: (workspaceId: string, userId: string) =>
+      `/workspaces/${workspaceId}/members/${userId}`,
+    suspendMember: (workspaceId: string, userId: string) =>
+      `/workspaces/${workspaceId}/members/${userId}/suspend`,
+    activateMember: (workspaceId: string, userId: string) =>
+      `/workspaces/${workspaceId}/members/${userId}/activate`,
+    // Invitations (Workspaces.Invitations.*).
+    invitations: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/invitations`,
+    invitation: (workspaceId: string, invitationId: string) =>
+      `/workspaces/${workspaceId}/invitations/${invitationId}`,
+    // My Work read (WorkManagement.BoardItems.ListMyWork, WX-BE-005).
+    myWorkItems: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/my-work/items`,
   },
   pages: {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,
@@ -84,6 +105,7 @@ export const endpoints = {
     move: (itemId: string) => `/board-items/${itemId}/move`,
     duplicate: (itemId: string) => `/board-items/${itemId}/duplicate`,
     archive: (itemId: string) => `/board-items/${itemId}/archive`,
+    complete: (itemId: string) => `/board-items/${itemId}/complete`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
     fieldValue: (itemId: string, fieldId: string) =>
       `/board-items/${itemId}/field-values/${fieldId}`,

@@ -1,11 +1,16 @@
 import * as React from "react";
+import { FileText, SquareKanban } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import {
+  identityToneFor,
   initialsFor,
+  NAVIGATION_RESOURCE_KIND,
   type IdentityTone,
+  type NavigationResourceKind,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
 import {
+  IDENTITY_ICON_CLASS,
   IDENTITY_MARK_CLASS,
   isPlainClick,
   type ShellNavigation,
@@ -77,6 +82,42 @@ export function IdentityMark({
   return (
     <span aria-hidden="true" className={cn(box, IDENTITY_MARK_CLASS[tone])}>
       {initialsFor(name)}
+    </span>
+  );
+}
+
+export interface ResourceMarkProps {
+  readonly kind: NavigationResourceKind;
+  /** Resource id; picks a stable identity tone. */
+  readonly id: string;
+  readonly size?: "sm" | "md";
+  readonly className?: string;
+}
+
+/**
+ * A Board or Doc identity mark: the kind's icon in the resource's identity
+ * tone on a neutral tile (identity only, never status — WX-DEC-006; a quiet
+ * tile keeps dense lists restrained). Decorative.
+ */
+export function ResourceMark({
+  kind,
+  id,
+  size = "md",
+  className,
+}: ResourceMarkProps) {
+  const Icon =
+    kind === NAVIGATION_RESOURCE_KIND.board ? SquareKanban : FileText;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-md border border-border bg-surface-raised",
+        size === "sm" ? "size-5 [&_svg]:size-3" : "size-7 [&_svg]:size-4",
+        IDENTITY_ICON_CLASS[identityToneFor(id)],
+        className,
+      )}
+    >
+      <Icon />
     </span>
   );
 }

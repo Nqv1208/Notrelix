@@ -23,6 +23,8 @@ export const workspaceQueryKeys = {
   pendingInvitations: accountQueryKey("workspace-invitations", "pending"),
   activity: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "activity"),
+  settings: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "settings"),
   /** Per-member navigation state (WX-DEC-011); scoped by workspace. */
   navigation: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "navigation"),

@@ -1,5 +1,11 @@
 import type { MessageCatalog } from "@notrelix/i18n";
-import { workspaceShellCatalog } from "@notrelix/features-workspace/web";
+import {
+  workspaceHomeCatalog,
+  workspaceLibraryCatalog,
+  workspaceMembersCatalog,
+  workspaceSettingsCatalog,
+  workspaceShellCatalog,
+} from "@notrelix/features-workspace/web";
 import { appearanceCatalog } from "./appearance.catalog";
 
 /**
@@ -9,4 +15,8 @@ import { appearanceCatalog } from "./appearance.catalog";
 export const webCatalogs: readonly MessageCatalog[] = [
   appearanceCatalog,
   workspaceShellCatalog,
+  workspaceHomeCatalog,
+  workspaceLibraryCatalog,
+  workspaceMembersCatalog,
+  workspaceSettingsCatalog,
 ];

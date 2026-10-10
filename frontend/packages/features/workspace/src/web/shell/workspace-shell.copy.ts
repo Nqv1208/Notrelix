@@ -16,6 +16,7 @@ export const en = {
     myWork: "My work",
     inbox: "Inbox",
     search: "Search",
+    library: "Boards & Docs",
     members: "Members",
     settings: "Settings",
   },
@@ -24,6 +25,7 @@ export const en = {
     myWork: "My work",
     inbox: "Inbox",
     search: "Search",
+    library: "Boards & Docs",
     members: "Members",
     settings: "Settings",
     billing: "Billing",
@@ -130,11 +132,6 @@ export const en = {
     exit: "Go to my workspaces",
   },
   pages: {
-    myWorkTitle: "My work",
-    myWorkDescription: "Items assigned to you across this workspace's Boards.",
-    myWorkEmptyTitle: "Assigned items aren't listed here yet",
-    myWorkEmptyDescription:
-      "This list is being built. Until it arrives, open a Board to see the items assigned to you there.",
     inboxTitle: "Inbox",
     inboxDescription: "Mentions, requests and replies that need you.",
     inboxEmptyTitle: "Inbox isn't available yet",
@@ -174,6 +171,7 @@ export const vi: WorkspaceShellCopy = {
     myWork: "Việc của tôi",
     inbox: "Hộp thư",
     search: "Tìm kiếm",
+    library: "Bảng & Tài liệu",
     members: "Thành viên",
     settings: "Cài đặt",
   },
@@ -182,6 +180,7 @@ export const vi: WorkspaceShellCopy = {
     myWork: "Việc của tôi",
     inbox: "Hộp thư",
     search: "Tìm kiếm",
+    library: "Bảng & Tài liệu",
     members: "Thành viên",
     settings: "Cài đặt",
     billing: "Thanh toán",
@@ -289,12 +288,6 @@ export const vi: WorkspaceShellCopy = {
     exit: "Tới các không gian làm việc của tôi",
   },
   pages: {
-    myWorkTitle: "Việc của tôi",
-    myWorkDescription:
-      "Các mục được giao cho bạn trong các Bảng của không gian làm việc này.",
-    myWorkEmptyTitle: "Chưa có danh sách mục được giao ở đây",
-    myWorkEmptyDescription:
-      "Danh sách này đang được xây dựng. Trong lúc chờ, hãy mở một Bảng để xem các mục được giao cho bạn.",
     inboxTitle: "Hộp thư",
     inboxDescription: "Lượt nhắc, yêu cầu và phản hồi cần bạn xử lý.",
     inboxEmptyTitle: "Hộp thư chưa khả dụng",

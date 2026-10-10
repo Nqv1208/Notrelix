@@ -149,11 +149,40 @@ Open items:
 | WX-HOME-001 | Main column: "Continue" (5–8 recent Boards/Docs as a dense list with identity icon, name, location and updated time) and "My work" (Items grouped overdue / today / this week, completable inline). Side column: workspace activity and pending invitations (admins only). | stories for default, empty, loading, error and partial data |
 | WX-HOME-002 | Teaching empty states for a new workspace (create a Board, create a Doc, invite people). | onboarding story |
 
+### Status
+
+Delivered on 2026-10-10 (uncommitted working tree on `develop`, baseline `16544e64`).
+
+| Unit | Status | Delivered | Evidence |
+|---|---|---|---|
+| WX-HOME-001 | Done | `WorkspaceHomeSurface` replaces the dashboard (metric tiles and the five `[]`-wired widgets are deleted). Main column: Continue (up to 8 recents joined with the authorized Board/Doc lists, resource mark, location, "Opened …" via `useFormatters`) and a My work preview grouped overdue / today / this week / later / no due date (`groupMyWorkItems`, local calendar days) with inline completion and item links (`?item=`). Side column: workspace activity and, for admins, pending invitations. Each section loads, fails and retries on its own. `/workspaces/$id/my-work` now renders the full list (`WorkspaceMyWorkSurface`, cursor paging). Producers: `WorkManagement.BoardItems.ListMyWork`, `WorkManagement.BoardItems.Complete` (one `Idempotency-Key` per attempt, not optimistic), `Workspaces.Activity.GetWorkspaceActivity` (adapter wired from the contract), `Workspaces.Invitations.ListWorkspaceInvitations`. | `workspace.home` (8 cases) and `workspace.my-work` (6 cases) interaction tests; stories Default (light/dark/mobile/tablet), Loading, Error, EdgeData (partial data, Vietnamese long names), Empty; model tests in `workspace-pages-model.unit.test.ts`; mock e2e `workspace-pages` (Home). |
+| WX-HOME-002 | Done | `WorkspaceOnboardingSurface` replaces Continue in a workspace with no Boards and no Docs: create a Board (`WorkManagement.Boards.Create`, idempotency key per submit), write a Doc (Documents page create), invite people (Members › Invitations). Steps the member cannot take are explained, not shown (guests cannot create; only admins invite). `CreateResourceDialog` names the resource with a bound label and inline errors, then navigates to it. | `workspace.onboarding` (2 cases), `workspace.create-resource` (2 cases); onboarding stories Default and PermissionLimited. |
+
+Open items:
+
+- The activity producer returns `{ data: [], total }` with an untyped entry (`object`), so Home always shows the empty activity state; the adapter keeps only entries carrying every displayed field until an entry contract exists.
+- The My Work and complete adapters live in `apps/web/src/shell/workspace/work-management-bridge.ts` as a recorded transition: they belong to `@notrelix/work-management-state`, which this phase could not edit. Move them with WX-BOARD-003.
+- The Board page does not read the `item` search parameter yet, so an item link opens its Board; the Item side sheet is WX-BOARD-002.
+- `@notrelix/docs-state` `createUseCreatePage` passes `pageApi.create` unbound (`this.getDetail` throws after a successful POST); the app calls `create` as a method. Fix in the Documents package.
+- The mock clock is fixed at 2025-01-15, so mock My work items render as overdue.
+
 ### Phase 4 — Boards and Docs directory
 
 | Unit | Change | Evidence |
 |---|---|---|
 | WX-DIR-001 | One dense table of Boards and Docs with filter, sort, pin, bulk actions and keyboard selection; sticky name column on narrow screens; virtualization above the threshold. | interaction, a11y and performance tests (300+ rows) |
+
+### Status
+
+Delivered on 2026-10-10 (uncommitted working tree on `develop`).
+
+| Unit | Status | Delivered | Evidence |
+|---|---|---|---|
+| WX-DIR-001 | Done | Route `/workspaces/$id/library` ("Boards & Docs") in the sidebar and the command palette. `WorkspaceLibrarySurface`: one table (name with resource mark, type, location, updated, pinned), filter by type and by diacritic-insensitive text, sortable columns with `aria-sort`, pin per row and bulk pin/unpin of the selection, roving-focus keyboard rows (↑ ↓ Home End, Space selects, Enter opens), sticky select + name columns with horizontal scroll on narrow screens. Above 100 rows the table windows its rows in its own scroll region (`libraryWindow`, fixed 40 px rows, `aria-rowcount`/`aria-rowindex`); no virtualization library was added (none existed). Pins write one resource at a time through the idempotent pin producer, so a partial bulk failure leaves the saved pins accurate. | `workspace.library` (7 cases incl. 320-row windowing with keyboard End to row 320 and a render-time budget); stories Default, Loading, Empty, Error, EdgeData, HighDensity (320 rows), ReadOnly, PermissionLimited; model tests for filter, sort and window. |
+
+Open items:
+
+- The Board list DTO has no last-change time, so Boards show "—" in Updated (Docs use `updatedAt`).
 
 ### Phase 5 — Members and Settings
 
@@ -161,6 +190,26 @@ Open items:
 |---|---|---|
 | WX-MEM-001 | Members table with inline role edit, an invitations tab (create and revoke wired to the backend), suspend/activate, `AlertDialog` confirmations and precise error toasts; respects the last-owner invariant (WSP-008). | interaction and permission-state tests |
 | WX-SET-001 | Settings in grouped sections (Profile, Defaults, Danger zone) with bound labels, per-section save, a saved description and an explicit destructive flow. | form tests |
+
+### Status
+
+Delivered on 2026-10-10 (uncommitted working tree on `develop`).
+
+| Unit | Status | Delivered | Evidence |
+|---|---|---|---|
+| WX-MEM-001 | Done | `WorkspaceMembersSurface` replaces the 383-line members route. Members tab: name filter, inline role select (Owner is never offered — ownership moves by transfer; the last owner is never offered demotion, suspension or removal, with the reason shown; admins cannot change owners; nobody changes themselves), suspend and reactivate, removal; suspend and remove confirm in an `AlertDialog`. Invitations tab (admins): invite by e-mail with role, inline address validation and the producer's message next to the field, pending and expired list, revoke with confirmation. Non-admins get a read-only explanation. Toasts name the member and carry the producer's rule message when it sends one. Adapters follow the producer: role change is `PATCH …/members/{userId}` with the role enum value (the old adapter used `PUT …/role`), invite is `POST …/members`, revoke is `DELETE …/invitations/{id}`, suspend/activate are `POST …/suspend|activate`; the invitations query now lists the workspace's invitations instead of the caller's own. | `workspace.members` (12 cases incl. last-owner, AlertDialog confirm/cancel, invite validation and producer error); stories Default, Loading, Error, Success (invitations), Empty, EdgeData, ReadOnly, PermissionLimited; mock e2e role change and confirmed removal. |
+| WX-SET-001 | Done (saving blocked by the producer) | `WorkspaceSettingsSurface` with Profile (name, description with counter), Defaults (default role, invitation expiry 1–30 days, guest invites, public links, two-step verification) and Danger zone (archive, confirmed by typing the workspace name; permanent delete is not offered). Labels are bound (`Field`, `Textarea`, `Switch`), each section saves on its own with inline validation, a saved state and conflict recovery ("Load the latest"). The adapter writes `PATCH /workspaces/{id}/profile` with `name`, `description` and `expectedVersion` (the producer accepts the description), `PUT …/settings` and `POST …/archive`. | `workspace.settings` (9 cases); stories Default, Loading, Error (conflict), Success, EdgeData, ReadOnly, Unavailable. |
+
+Open items (producer gaps, recorded instead of guessed):
+
+- `GetWorkspace` returns no `version`, while profile, settings, archive and delete all require `expectedVersion > 0`. Saving and archiving are turned off with an explanation until the read reports the version; the adapter reads `version` as soon as it appears.
+- `ListMembers` returns no membership status and does not exclude removed members, so a removed member reappears after refresh and suspended members are not marked; when the status is unknown the row offers both Suspend and Reactivate (each is a no-op on the producer in that state).
+- `ListWorkspaceInvitations` returns no status, so revoked invitations still list as pending.
+- ProblemDetails carries only `errorCode` (`business_rule.violation`) and `detail`, not the domain rule code, so last-owner and duplicate-invite failures are shown with the producer's message (the duplicate-invite message is hard-coded Vietnamese in the producer).
+- Most Workspaces responses are typed `System.Void` in the generated contract; adapters parse the DTO shapes read from the producer source defensively.
+- Not touched: invitation-link adapters (`/workspaces/invitations/by-token|accept|pending` versus the producer's `/invitations/preview|accept|pending`) and create-workspace (`POST /workspaces` versus `/accounts/{accountId}/workspaces`); neither surface is part of these phases.
+
+Shared changes (Phases 3–5): `@notrelix/ui-web` `cn()` now knows the semantic text roles, so `text-metadata` is no longer dropped when a text color follows it in one `cn()` call (this also fixes the size of the Phase 2 small identity marks). Removed: the dashboard widgets (`active-boards`, `activity-feed`, `pinned-docs`, `upcoming-deadlines`, `workspace-overview`, `dashboard/index`), `workspace-dashboard-surface` and its manifest row, stories and test, the dashboard route component, and the superseded hooks `use-update-workspace`, `use-update-member-role`, `use-remove-member`, `use-delete-invitation`. The mock backend serves the new operations with producer shapes (members, invitations, activity, settings, My work, complete; Board create returns the id). Design-token baseline: 250 → 200 violations.
 
 ### Phase 6 — Board view
 
