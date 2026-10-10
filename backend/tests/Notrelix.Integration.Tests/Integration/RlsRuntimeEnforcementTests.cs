@@ -12,6 +12,7 @@ using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Navigation;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Notifications;
@@ -566,6 +567,61 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         var contents = await QueryScalarsAsAppRoleAsync("SELECT content #>> '{}' FROM collab.comments ORDER BY content #>> '{}'", userId: UserId);
         contents.Should().BeEquivalentTo(["Comment A1"],
             "collab.comments must be workspace-scoped by account/workspace");
+    }
+
+    /// <summary>
+    /// WX-BE-001 / WX-BE-002 (WX-DEC-011): personal navigation rows are scoped by
+    /// workspace access AND row ownership. Inside a workspace both users can
+    /// access, each sees only their own recents and pins; a row in a workspace
+    /// the user has no grant for stays hidden; and the app role cannot insert a
+    /// row on behalf of another user (WITH CHECK).
+    /// </summary>
+    [Fact]
+    public async Task AppRole_NavigationState_IsVisibleOnlyToItsOwnerInsideGrantedWorkspaces()
+    {
+        var otherUser = Guid.Parse("00000000-0000-0000-0000-0000000000BB");
+        var mineRecent = Guid.Parse("A0000000-0000-0000-0000-0000000E0001");
+        var theirsRecent = Guid.Parse("A0000000-0000-0000-0000-0000000E0002");
+        var mineUngranted = Guid.Parse("A0000000-0000-0000-0000-0000000E0003");
+        var minePin = Guid.Parse("A0000000-0000-0000-0000-0000000E0004");
+        var theirsPin = Guid.Parse("A0000000-0000-0000-0000-0000000E0005");
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            context.RecentResources.AddRange(
+                RecentResource.Create(AccountA, WsA1, UserId, NavigationResourceKinds.Board, mineRecent, FixedTime),
+                RecentResource.Create(AccountA, WsA1, otherUser, NavigationResourceKinds.Board, theirsRecent, FixedTime),
+                RecentResource.Create(AccountA, WsA2, UserId, NavigationResourceKinds.Page, mineUngranted, FixedTime));
+            context.PinnedResources.AddRange(
+                PinnedResource.Create(AccountA, WsA1, UserId, NavigationResourceKinds.Board, minePin, 0, FixedTime),
+                PinnedResource.Create(AccountA, WsA1, otherUser, NavigationResourceKinds.Page, theirsPin, 0, FixedTime));
+            await context.SaveChangesAsync();
+        }
+
+        await SeedGrantAsync(AccountA, WsA1, UserId);
+        await SeedGrantAsync(AccountA, WsA1, otherUser);
+
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.recent_resources ORDER BY 1", userId: UserId))
+            .Should().Equal([mineRecent.ToString()],
+                "a member sees only their own recents, and none in a workspace without a grant");
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.recent_resources ORDER BY 1", userId: otherUser))
+            .Should().Equal([theirsRecent.ToString()]);
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.pinned_resources ORDER BY 1", userId: UserId))
+            .Should().Equal([minePin.ToString()]);
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.pinned_resources ORDER BY 1", userId: otherUser))
+            .Should().Equal([theirsPin.ToString()]);
+        (await QueryScalarsAsAppRoleAsync("SELECT resource_id::text FROM workspace.pinned_resources ORDER BY 1"))
+            .Should().BeEmpty("a request without user context must see no navigation state");
+
+        var forgedInsert = () => QueryScalarsAsAppRoleAsync($"""
+            INSERT INTO workspace.pinned_resources (id, account_id, workspace_id, user_id, resource_kind, resource_id, pinned_at)
+            VALUES ('{Guid.NewGuid()}', '{AccountA}', '{WsA1}', '{otherUser}', 'work-management.board', '{Guid.NewGuid()}', now())
+            RETURNING id::text
+            """, userId: UserId);
+        (await forgedInsert.Should().ThrowAsync<PostgresException>())
+            .Which.SqlState.Should().Be("42501", "the app role cannot write a pin owned by another user");
     }
 
     [Fact]

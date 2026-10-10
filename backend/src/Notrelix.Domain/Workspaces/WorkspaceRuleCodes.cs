@@ -63,4 +63,8 @@ public static class WorkspaceRuleCodes
     // ── WorkspaceSettings ─────────────────────────────────────────────────
     public const string Workspaces_Settings_DefaultMemberRoleMustBeGuestOrMember = "Workspaces_Settings_DefaultMemberRoleMustBeGuestOrMember";
     public const string Workspaces_Settings_InvitationExpiryDaysOutOfRange = "Workspaces_Settings_InvitationExpiryDaysOutOfRange";
+
+    // ── Navigation (recents and pins, WX-DEC-011) ─────────────────────────
+    public const string Workspaces_Navigation_UnsupportedResourceKind = "Workspaces_Navigation_UnsupportedResourceKind";
+    public const string Workspaces_Navigation_PinLimitReached = "Workspaces_Navigation_PinLimitReached";
 }

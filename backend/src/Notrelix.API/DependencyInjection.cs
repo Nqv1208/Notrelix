@@ -112,6 +112,24 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// OpenAPI schema id: the CLR full name (nested '+' as '.'). A closed generic
+    /// such as <c>CursorPage&lt;MyWorkItemDto&gt;</c> becomes
+    /// <c>Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto</c> instead of
+    /// an assembly-qualified CLR name, so generated clients get a readable key.
+    /// </summary>
+    private static string SchemaIdFor(Type type)
+    {
+        if (!type.IsGenericType)
+            return type.FullName!.Replace("+", ".", StringComparison.Ordinal);
+
+        var definition = type.GetGenericTypeDefinition().FullName!;
+        definition = definition[..definition.IndexOf('`', StringComparison.Ordinal)]
+            .Replace("+", ".", StringComparison.Ordinal);
+        var arguments = type.GetGenericArguments().Select(argument => SchemaIdFor(argument).Split('.')[^1]);
+        return $"{definition}Of{string.Join("And", arguments)}";
+    }
+
     public static IServiceCollection AddApiSwagger(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
@@ -124,8 +142,7 @@ public static class DependencyInjection
                 Description = "Notrelix Enterprise Work Management API",
             });
 
-            options.CustomSchemaIds(type =>
-                type.FullName!.Replace("+", ".", StringComparison.Ordinal));
+            options.CustomSchemaIds(SchemaIdFor);
 
             // Include all endpoints in v1 document (endpoints without explicit GroupName)
             options.DocInclusionPredicate((docName, apiDesc) => docName == "v1");

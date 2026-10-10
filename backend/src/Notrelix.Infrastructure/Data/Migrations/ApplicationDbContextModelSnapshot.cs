@@ -7727,6 +7727,100 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspace_members", "workspace");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Navigation.PinnedResource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("PinnedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pinned_at");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceKind")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("resource_kind");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pinned_resources");
+
+                    b.HasIndex("WorkspaceId", "UserId", "PinnedAt")
+                        .HasDatabaseName("ix_workspace_pinned_resources_member_pinned");
+
+                    b.HasIndex("WorkspaceId", "UserId", "ResourceKind", "ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_pinned_resources_member_resource");
+
+                    b.ToTable("pinned_resources", "workspace");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Workspaces.Navigation.RecentResource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("LastOpenedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_opened_at");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceKind")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("resource_kind");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recent_resources");
+
+                    b.HasIndex("WorkspaceId", "UserId", "LastOpenedAt")
+                        .HasDatabaseName("ix_workspace_recent_resources_member_last_opened");
+
+                    b.HasIndex("WorkspaceId", "UserId", "ResourceKind", "ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_workspace_recent_resources_member_resource");
+
+                    b.ToTable("recent_resources", "workspace");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Workspaces.Spaces.Space", b =>
                 {
                     b.Property<Guid>("Id")

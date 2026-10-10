@@ -15,7 +15,7 @@ public class MigrationSmokeTests
 
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task Migrations_WhenApplied_CreatesAll148Tables()
+    public async Task Migrations_WhenApplied_CreatesAll150Tables()
     {
         await using var conn = _db.CreateConnection();
         await conn.OpenAsync();
@@ -28,7 +28,7 @@ public class MigrationSmokeTests
               AND table_name <> '__EFMigrationsHistory'";
 
         var count = (long)(await cmd.ExecuteScalarAsync())!;
-        count.Should().Be(148);
+        count.Should().Be(150); // +2: workspace.recent_resources, workspace.pinned_resources (WX-BE-001/002)
     }
 
     [Fact]

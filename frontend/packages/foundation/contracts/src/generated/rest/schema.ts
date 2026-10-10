@@ -1929,6 +1929,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/my-work/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List open Items assigned to the current user in a workspace
+         * @description Cursor-paginated (default 50, max 100). Ordered by due date, earliest first and undated last, so the client can group items into due windows. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["WorkManagement.BoardItems.ListMyWork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/preferences/{viewId}": {
         parameters: {
             query?: never;
@@ -3183,6 +3203,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/recents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the current member's recently opened Boards and Docs
+         * @description Newest first, at most 30 entries. References only; display names come from the Board and Doc lists.
+         */
+        get: operations["Workspaces.Navigation.ListRecents"];
+        put?: never;
+        /**
+         * Record that the current member opened a Board or Doc
+         * @description Upserts the member's recent entry and keeps the 30 most recent per workspace.
+         */
+        post: operations["Workspaces.Navigation.RecordRecent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/pins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the current member's pinned Boards and Docs
+         * @description Ordered by pin time, newest first. References only; display names come from the Board and Doc lists.
+         */
+        get: operations["Workspaces.Navigation.ListPins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/pins/{kind}/{resourceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Pin a Board or Doc for the current member
+         * @description Idempotent: pinning an already pinned resource is a no-op. At most 50 pins per member per workspace.
+         */
+        put: operations["Workspaces.Navigation.Pin"];
+        post?: never;
+        /**
+         * Remove the current member's pin
+         * @description Idempotent: unpinning a resource that is not pinned succeeds without change.
+         */
+        delete: operations["Workspaces.Navigation.Unpin"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/settings": {
         parameters: {
             query?: never;
@@ -4079,6 +4167,11 @@ export interface components {
         "Notrelix.API.Contracts.Workspaces.Members.Requests.UpdateMemberRoleRequest": {
             role?: components["schemas"]["Notrelix.Domain.Workspaces.Members.WorkspaceRole"];
         };
+        "Notrelix.API.Contracts.Workspaces.Navigation.Requests.RecordRecentResourceRequest": {
+            kind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+        };
         "Notrelix.API.Contracts.Workspaces.Settings.Requests.UpdateWorkspaceSettingsRequest": {
             allowPublicSharing?: boolean;
             enforceMfa?: boolean;
@@ -4226,6 +4319,11 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
             id?: string;
@@ -4265,6 +4363,23 @@ export interface components {
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile.UpdateProfileCommand": {
             name: string | null;
             avatar?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            groupId?: string;
+            name?: string | null;
+            /** Format: date-time */
+            dueAt?: string | null;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardDto": {
             /** Format: uuid */
@@ -4461,6 +4576,20 @@ export interface components {
             members?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"][] | null;
             /** Format: int64 */
             version?: number;
+        };
+        "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+            /** Format: date-time */
+            pinnedAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetRecentResources.RecentResourceDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+            /** Format: date-time */
+            lastOpenedAt?: string;
         };
         /**
          * Format: int32
@@ -8370,6 +8499,31 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.BoardItems.ListMyWork": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto"];
+                };
+            };
+        };
+    };
     "WorkManagement.BoardPreferences.Get": {
         parameters: {
             query?: never;
@@ -11741,6 +11895,137 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+        };
+    };
+    "Workspaces.Navigation.ListRecents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Navigation.Queries.GetRecentResources.RecentResourceDto"][];
+                };
+            };
+        };
+    };
+    "Workspaces.Navigation.RecordRecent": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Navigation.Requests.RecordRecentResourceRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Workspaces.Navigation.ListPins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto"][];
+                };
+            };
+        };
+    };
+    "Workspaces.Navigation.Pin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                kind: string;
+                resourceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Workspaces.Navigation.Unpin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                kind: string;
+                resourceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
