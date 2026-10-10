@@ -30,8 +30,13 @@ public class RestoreFormCommandHandler : IRequestHandler<RestoreFormCommand, Res
 
     public async Task<Result> Handle(RestoreFormCommand request, CancellationToken ct)
     {
+        // The global filter hides soft-deleted rows, and on EF Core 9 bypassing it also
+        // drops its tenant predicate, so the resolved tenant scope is re-applied here.
+        var accountId = _requestContext.RequireAccountId();
+        var workspaceId = _requestContext.RequireWorkspaceId();
         var form = await _context.Forms
-            .FirstOrDefaultAsync(f => f.Id == request.FormId, ct);
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(f => f.Id == request.FormId && f.AccountId == accountId && f.WorkspaceId == workspaceId, ct);
         if (form is null) throw new NotFoundException("Form", request.FormId);
 
         form.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);

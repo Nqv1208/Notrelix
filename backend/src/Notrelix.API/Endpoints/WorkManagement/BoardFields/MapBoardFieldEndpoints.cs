@@ -75,7 +75,7 @@ public static class MapBoardFieldEndpoints
             fieldId,
             body.Name,
             body.Type,
-            body.SettingsJson ?? "{}",
+            body.SettingsJson,
             body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();
     }

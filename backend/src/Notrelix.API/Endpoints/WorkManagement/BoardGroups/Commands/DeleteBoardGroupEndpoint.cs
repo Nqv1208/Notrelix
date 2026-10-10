@@ -17,10 +17,11 @@ public static class DeleteBoardGroupEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid groupId,
+        [FromQuery] long expectedVersion,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new DeleteBoardGroupCommand(groupId), cancellationToken);
+        var result = await sender.Send(new DeleteBoardGroupCommand(groupId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

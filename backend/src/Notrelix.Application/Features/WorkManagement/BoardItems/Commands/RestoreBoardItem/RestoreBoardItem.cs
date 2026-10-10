@@ -29,8 +29,13 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
 
     public async Task<Result> Handle(RestoreBoardItemCommand request, CancellationToken ct)
     {
+        // The global filter hides soft-deleted rows, and on EF Core 9 bypassing it also
+        // drops its tenant predicate, so the resolved tenant scope is re-applied here.
+        var accountId = _requestContext.RequireAccountId();
+        var workspaceId = _requestContext.RequireWorkspaceId();
         var item = await _context.BoardItems
-            .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(i => i.Id == request.BoardItemId && i.AccountId == accountId && i.WorkspaceId == workspaceId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         item.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);

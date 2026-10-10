@@ -214,7 +214,10 @@ None
 None (no persisted shape change).
 
 ### Exit
-- [ ] Every P3 soft-deletable aggregate restores from a fresh request against PostgreSQL.
+- [x] Every P3 soft-deletable aggregate restores from a fresh request against PostgreSQL.
+
+### Status
+`READY_FOR_CERTIFICATION`. `IsDeleted` is derived from `DeletedAt`; the two entities that still store `is_deleted` (`WorkspaceRoute`, `UserProfile`) map it through the `_isDeleted` backing field, so the EF model is unchanged (no migration). All six Work Restore handlers bypass the soft-delete filter with an explicit Account/Workspace predicate and are classified `Intentional` in both IgnoreQueryFilters architecture gates. Evidence: `WorkSoftDeleteLifecycleIntegrationTests` (5, PostgreSQL); 3 of them fail on the previous source.
 
 ## WM-V3-FIX-001 — Repair unreachable and lossy Work mutations
 
@@ -240,7 +243,10 @@ None (no persisted shape change).
 None
 
 ### Exit
-- [ ] DeleteBoardGroup can succeed; rename-only Field PATCH preserves settings.
+- [x] DeleteBoardGroup can succeed; rename-only Field PATCH preserves settings.
+
+### Status
+`READY_FOR_CERTIFICATION` for the producer. `DELETE /api/v1/board-groups/{groupId}` now requires `expectedVersion` as a query parameter (the `DeleteSavedFilter` precedent) and passes it to the command; OpenAPI and the generated client were regenerated. The web adapter still cannot send it because `BoardGroupDto` exposes no `Version` until WM-V3-CONC-002, so first-party group delete remains blocked on that unit. `DeleteForm` has the same unreachable nullable→0 pattern; it is outside P3 and is recorded for the Views/Forms package. Evidence: `WorkMutationTransportRegressionTests` (2, API host).
 
 ## WM-V3-ORDER-001 — Introduce ordering-scope lock port
 

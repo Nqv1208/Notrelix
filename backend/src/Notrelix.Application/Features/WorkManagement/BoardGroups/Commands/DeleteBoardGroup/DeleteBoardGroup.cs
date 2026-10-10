@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DeleteBoardGroup;
 
 [IdempotencyOperation("work-management.board-groups.delete-board-group.v1")]
-public record DeleteBoardGroupCommand(Guid GroupId)
+public record DeleteBoardGroupCommand(Guid GroupId, long ExpectedVersion)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
-    long IExpectedVersionRequest.ExpectedVersion => 0;
 }
 
 public class DeleteBoardGroupCommandHandler : IRequestHandler<DeleteBoardGroupCommand, Result>
