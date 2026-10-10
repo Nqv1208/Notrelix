@@ -681,7 +681,7 @@ Required:
 ## 34. P2 execution package
 
 ```text
-docs/workstreams/execution/workspace-governance/
+docs/workstreams/executions/workspace-governance/
 ├── workspace-governance.spec.md
 ├── workspace-governance.plan.md
 ├── workspace-governance.tests.md
@@ -844,7 +844,7 @@ Required:
 ## 47. P3 execution package
 
 ```text
-docs/workstreams/execution/work-management/
+docs/workstreams/executions/work-management/
 ├── work-management.spec.md
 ├── work-management.plan.md
 ├── work-management.tests.md
@@ -1141,7 +1141,7 @@ Required:
 ## 67. P5 execution package
 
 ```text
-docs/workstreams/execution/automation-integrations/
+docs/workstreams/executions/automation-integrations/
 ├── automation-integrations.spec.md
 ├── automation-integrations.plan.md
 ├── automation-integrations.tests.md
@@ -1236,7 +1236,7 @@ Required:
 ## 74. P6 execution package
 
 ```text
-docs/workstreams/execution/analytics-reporting/
+docs/workstreams/executions/analytics-reporting/
 ├── analytics-reporting.spec.md
 ├── analytics-reporting.plan.md
 ├── analytics-reporting.tests.md
