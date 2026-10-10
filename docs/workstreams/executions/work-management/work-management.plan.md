@@ -131,7 +131,22 @@ None
 None
 
 ### Exit
-- [ ] Every changed producer operation has a named consumer and mutation-intent owner.
+- [x] Every changed producer operation has a named consumer and mutation-intent owner.
+
+### Status
+Inventory recorded (the migration itself is WM-V3-FE-001). Enabled first-party consumers are the web adapters in `frontend/packages/product/work-management/state/src/api/` (`item.api.ts`, `group.api.ts`, `list.api.ts`, `field.api.ts`, `checklist.api.ts`) behind the hooks/mutations of the same package, plus the dev mock backend and its contract-conformance test; mobile is a non-consumer (no Work API calls under `apps/mobile/src`), so SPEC WM-V3-DEC-017 holds.
+
+| Producer operation | Web consumer | Idempotency-Key | ExpectedVersion | Placement |
+|---|---|---|---|---|
+| Item create | `item.api.ts` create | per adapter call (`crypto.randomUUID()`) | n/a | append (no neighbors) |
+| Item PATCH / move / field value / field values / clear | `item.api.ts` | missing (live 400, SPEC WM-V3-GAP-018) | missing (live 400, WM-V3-CONC-001) | move: append |
+| Group create | `group.api.ts`, `list.api.ts` | per adapter call | n/a | append |
+| Group PATCH / delete / move | `group.api.ts`, `list.api.ts` | missing | missing | move: sequential append of a full desired order |
+| Field create / PATCH / delete / move | `field.api.ts` | create only | missing | move: sequential append |
+| Option add / update / move / remove | none (no web caller) | — | — | — |
+| Checklist create / PATCH / delete, item create / PATCH / delete | `checklist.api.ts` | create calls only | missing | append; no move caller |
+
+Version origin: the producer now publishes `version` on every board/group/field/item/checklist read and on item create/move/value responses (WM-V3-CONC-002), but the web types in `work-management/core/src/types/board-types.ts` do not map it yet. Key creation: one key per adapter invocation for creates only; `foundation/query/src/optimistic-command.ts` defaults the key to its module-counter `commandId`, and `foundation/contracts/src/client/api-client.ts` sets `Idempotency-Key` from the request options and repeats the same request on CSRF/auth refresh without minting a new key. Evidence: `tooling/contracts/enabled-consumer-surface.ts` with `consumer-surface-closure.unit.test.ts` and `contract-conformance.unit.test.ts` (frontend `test:node` 401/401).
 
 ## WM-V3-GATE-001 — P3-A prerequisite verification
 
@@ -158,7 +173,10 @@ None
 None
 
 ### Exit
-- [ ] P3-A prerequisites VERIFIED or explicit dependency blocker recorded.
+- [x] P3-A prerequisites VERIFIED or explicit dependency blocker recorded.
+
+### Status
+`VERIFIED`. Tenant/account/workspace containment and the active request transaction before handler execution, the RLS session lifecycle and the PostgreSQL test environment are covered by: `RlsRuntimeEnforcementTests`, `AuthorizationFailClosedFaultInjectionTests`, `ProductionGraphTests`, `WorkChildTableRlsIntegrationTests`, `WorkSoftDeleteLifecycleIntegrationTests` (39 Integration tests), `RlsSessionContextTests` and `EfRequestDataSessionExpectedVersionTests` (13 Infrastructure), `ExecutionContextBehaviorTests` and `PipelineOrderTests` (9 Application). The ordering lock refuses to run without the request transaction (`WorkOrderingScopeLockIntegrationTests`). No system-context bypass was introduced; restore re-applies the tenant predicate explicitly.
 
 ## WM-V3-GATE-002 — P3-B authorization prerequisite verification
 
@@ -1230,7 +1248,10 @@ None
 Forward EF relational migration/data migration.
 
 ### Exit
-- [ ] Clean and supported upgrade paths pass deterministically.
+- [x] Clean and supported upgrade paths pass deterministically.
+
+### Status
+`READY_FOR_CERTIFICATION`. Relational order: `20261010022529_WidenBoardDescription` (independent column, shipped first) → `20261010065641_CanonicalizeWorkOrdering` (preflight → position `text COLLATE "C"` → the six `ux_work_*` unique indexes; snapshot updated). Pre-production databases are reset first (SPEC WM-V3-DEC-006); constraint names are the six recorded in `WorkOrderingConstraints`; no row counts apply after a reset. The development seed (`InitDb`) writes distinct keys in every scope, so it satisfies the indexes. Evidence: clean path — every Integration test container migrates an empty database through the full chain; supported upgrade — `WorkOrderingPreflightIntegrationTests` (pre-cut-over schema, duplicate abort, clean upgrade with stable keys); `dotnet ef migrations has-pending-model-changes`: none.
 
 ## WM-V3-DEPLOY-002 — Apply and verify RLS pack separately
 
@@ -1257,7 +1278,10 @@ Forward EF relational migration/data migration.
 Versioned SQL policy deployment.
 
 ### Exit
-- [ ] Relational and RLS states are both explicitly verified.
+- [x] Relational and RLS states are both explicitly verified.
+
+### Status
+`READY_FOR_CERTIFICATION`. The RLS pack is a separate channel from the EF migration (`DatabaseStartupExtensions`: migrate and apply-RLS are separate switches; `RlsPolicyApplier.ApplyAsync` runs the embedded scripts in `000_apply_order.sql` order and then fails closed through `VerifyEnforcedSchemasAsync` if any `work` table has RLS disabled or no policy). Script identity at this revision (SHA-256, first 16 hex): `000_apply_order` 01a2ee604349289b, `001_roles` b999fac5d02b6bf3, `002_context_helpers` d0ae44b70d72bd6d, `003_authz_access_helpers` 9f78e72759509a60, `004_policy_runtime` 6da0df38a5a0416a, `005_grants` f75896e762d43c01, `006_policies_identity` ada77768c95bc66c, `007_policies_platform` 059f8e7aa208be61, `008_policies_workspace_scoped_domain` cf7562b4e626b245, `009_policies_notifications_activity_search` 8997e57ac2d081aa, `010_policies_events_messaging_audit_ops` 1f522d25746ca568, `011_verification` f9181970934ca7b7. Evidence: `WorkChildTableRlsIntegrationTests` (migrations then the pack on a dedicated PostgreSQL; allowed and denied tenant reads/writes as `notrelix_app`; catalog verification; fail-closed on an unprotected table), `RlsRuntimeEnforcementTests`.
 
 ## WM-V3-QUAL-001 — Security closure
 
