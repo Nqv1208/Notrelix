@@ -1050,7 +1050,10 @@ Server side `READY_FOR_CERTIFICATION`; frontend key ownership remains with WM-V3
 None
 
 ### Exit
-- [ ] Event source READY_FOR_CERTIFICATION.
+- [x] Event source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION`. Inventory: P3 integration contracts are the 18 mappings of `BoardEventMapper` (board created/renamed/archived/unarchived, item created v2/renamed/moved v2/archived v2/field-value-changed/member-assigned, field created/updated/deleted, label created/updated, checklist created, checklist-item toggled; views are P4); names, versions and schemas are pinned by `backend/contracts/events/notrelix.events.json` and its drift gate. Move facts: `board_item.moved` v2 now also carries `newPosition` (additive, nullable; schema regenerated) next to `oldGroupId`/`newGroupId`/`revision`, so the fact names the authoritative final scope, key and version. Group, field, option and checklist moves stay Domain-only facts (`*ReorderedDomainEvent`/`*MovedDomainEvent`) with no outward contract or realtime mapping; first-party clients refetch. Rebalance has no production entry point (WM-V3-ORDER-004) and no consumer caches opaque positions (the Analytics projection reads no position), so no maintenance invalidation fact is required yet. Outbox fate is unchanged: the item-move outbox and recovery runtime tests pass. Evidence: `WorkItemIntegrationEventMapperTests` (asserts `NewPosition`), `PublicEventContractArchitectureTests.CanonicalManifest_MatchesGeneratedSourceShape`, `WorkIntegrationEventPinningArchitectureTests`, `BoardItemMovedOutboxRuntimeTests`, `BoardItemMovedPlacementFailureRecoveryRuntimeTests`, Messaging/Automation integration groups (82).
 
 ## WM-V3-X-001 — Reverify Automation/Analytics/Collaboration boundaries
 
@@ -1077,7 +1080,10 @@ None
 None
 
 ### Exit
-- [ ] Named consumer contracts READY_FOR_CERTIFICATION.
+- [x] Named consumer contracts READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION`. Automation: `IWorkActionPort.MoveItemAsync(itemId, targetGroupId, executionId, principal)` accepts semantic intent only (no key); the Work side places with an append intent under the GroupItems lock and surfaces ordering conflicts as `work.ordering.conflict` (WM-V3-ORDER-005). Analytics: the projection source adapter is producer-owned and reads no ordering key, so rebalance needs no invalidation. Collaboration: reads Work through its read boundary only. Evidence: `CrossContextPersistenceBoundaryTests`, `CrossContextCascadeArchitectureTests`, `CollaborationReadBoundaryArchitectureTests`, `AnalyticsProjectionSourceOwnershipArchitectureTests`, `PublicSemanticContractArchitectureTests`, `DbContextBoundaryTests` (101 tests), automation composition/chain integration tests.
 
 ## WM-V3-API-001 — Cut producer contract to V3 shapes
 
