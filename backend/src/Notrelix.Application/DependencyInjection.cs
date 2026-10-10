@@ -81,6 +81,8 @@ public static class DependencyInjection
 
         // Integration event collector (scoped per request)
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkPlacementResolver>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingRebalancer>();
         foreach (var mapper in assembly.GetTypes().Where(type => type is { IsAbstract: false, IsClass: true }))
         {
             foreach (var contract in mapper.GetInterfaces().Where(type =>

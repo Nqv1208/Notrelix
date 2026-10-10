@@ -38,5 +38,20 @@ public class ConflictProblemDetailsTests
         json.TryGetProperty("detail", out _).Should().BeTrue();
         json.TryGetProperty("instance", out _).Should().BeTrue();
         json.TryGetProperty("traceId", out _).Should().BeTrue();
+        json.GetProperty("errorCode").GetString().Should().Be("concurrency.conflict");
+    }
+
+    [Fact]
+    public async Task CodedConflictException_ReportsItsStableErrorCode()
+    {
+        var exception = new DomainConflictException("The declared neighbors are no longer adjacent.", "work.ordering.stale-placement");
+
+        await _handler.TryHandleAsync(_context, exception, default);
+
+        _context.Response.Body.Position = 0;
+        var json = await JsonSerializer.DeserializeAsync<JsonElement>(_context.Response.Body);
+
+        json.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status409Conflict);
+        json.GetProperty("errorCode").GetString().Should().Be("work.ordering.stale-placement");
     }
 }

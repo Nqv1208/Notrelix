@@ -284,8 +284,11 @@ None
 None
 
 ### Exit
-- [ ] Two concurrent requests for same ordering scope serialize before sibling read.
-- [ ] Different scopes are not globally serialized.
+- [x] Two concurrent requests for same ordering scope serialize before sibling read.
+- [x] Different scopes are not globally serialized.
+
+### Status
+`READY_FOR_CERTIFICATION`. Port `Features/WorkManagement/Ordering/IWorkOrderingScopeLock`; implementation `Infrastructure/Data/WorkManagement/PostgresWorkOrderingScopeLock` runs `pg_advisory_xact_lock` on the request transaction and fails when no transaction is active. Scope kinds use spelled-out names so renaming an enum member cannot change keys. Evidence: `WorkOrderingScopeLockIntegrationTests` (4, PostgreSQL), including a fixed key test vector. No writer uses the port yet; adoption is APP-ITEM/GROUP/FIELD/OPTION/CHK.
 
 ## WM-V3-ORDER-002 — Introduce canonical placement resolver
 
@@ -317,7 +320,10 @@ None
 None
 
 ### Exit
-- [ ] One shared placement rule is used by all normal P3 ordering mutations.
+- [x] One shared placement rule is used by all normal P3 ordering mutations.
+
+### Status
+`READY_FOR_CERTIFICATION` for the rule; the exit box is satisfied once the Phase 6–7 writers adopt it. `WorkPlacementResolver.ResolveAsync` acquires the lock before invoking the caller-supplied sibling loader, so the lock-before-read order is structural; siblings are sorted ordinally with a stable-id tie-break. Stale intents throw `ConflictException` with `work.ordering.stale-placement`. Evidence: `WorkPlacementResolverTests` (15).
 
 ## WM-V3-ORDER-003 — Map named ordering uniqueness conflicts
 
@@ -346,7 +352,10 @@ None
 None
 
 ### Exit
-- [ ] SaveChanges-time collision cannot surface as opaque 500.
+- [x] SaveChanges-time collision cannot surface as opaque 500.
+
+### Status
+`READY_FOR_CERTIFICATION` for the mapping. `EfRequestDataSession` maps a unique violation of the six named constraints (`WorkOrderingConstraints`, matched by `PostgresException.ConstraintName`) to `ConflictException` with `work.ordering.conflict`; `ConflictException` now carries an optional stable code that `ProblemDetailsMapper` emits (uncoded conflicts keep `concurrency.conflict`). Evidence: `WorkOrderingConstraintsTests` (5), `ConflictProblemDetailsTests` (2). The end-to-end SaveChanges proof needs the named constraints and is delivered with DATA-002.
 
 ## WM-V3-ORDER-004 — Define explicit rebalance maintenance contract
 
@@ -375,7 +384,10 @@ None
 None
 
 ### Exit
-- [ ] Operational rebalance path exists and preserves exact order.
+- [x] Operational rebalance path exists and preserves exact order.
+
+### Status
+`READY_FOR_CERTIFICATION` for the maintenance service. `WorkOrderingRebalancer` holds the scope lock, preserves logical order (ordinal, then stable id for equal legacy keys) and returns key-length statistics. Evidence: `WorkOrderingRebalancerTests` (2). Not yet delivered: the tenant-scoped maintenance entry point/runbook and the scope-level invalidation fact, which belongs to WM-V3-EVT-001.
 
 ## WM-V3-ORDER-005 — Bring the automation writer under the ordering contract
 
@@ -404,6 +416,9 @@ None
 
 ### Exit
 - [ ] Automation and HTTP writers share one lock, resolver and conflict contract.
+
+### Status
+`DEPENDENCY_BLOCKED` on WM-V3-APP-ITEM-001. The automation path reaches the shared `MoveBoardItemUseCase`, which only takes the lock once APP-ITEM-001 moves it onto the resolver, so both are delivered together. Source finding for that change: a unique violation at the `Succeed()` SaveChanges falls into the technical-failure catch and attempts a second SaveChanges inside the aborted PostgreSQL transaction with the conflicting change still tracked; the conflict must instead propagate so the consumer transaction rolls back and redelivery re-resolves placement.
 
 ## WM-V3-MIG-ORDER-001 — Reset path and fail-closed ordering preflight
 

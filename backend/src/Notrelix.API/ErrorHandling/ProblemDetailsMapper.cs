@@ -78,9 +78,9 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
-            AppConflictException => (
+            AppConflictException conflict => (
                 StatusCodes.Status409Conflict,
-                ErrorCodes.Conflict,
+                conflict.ErrorCode ?? ErrorCodes.Conflict,
                 "Conflict",
                 exception.Message,
                 null

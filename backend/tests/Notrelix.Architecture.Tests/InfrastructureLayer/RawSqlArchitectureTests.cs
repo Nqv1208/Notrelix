@@ -30,6 +30,9 @@ public class RawSqlArchitectureTests
         // Reason: serialize owner-affecting workspace membership ops with
         // SELECT ... FOR UPDATE on the workspace row (PostgreSQL row lock)
         "src/Notrelix.Infrastructure/Workspaces/Members/WorkspaceOwnerUpdateLocker.cs",
+        // WM-V3-ORDER-001: transaction-scoped advisory lock (pg_advisory_xact_lock)
+        // serializing one Work ordering scope inside the request transaction.
+        "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresWorkOrderingScopeLock.cs",
     };
 
     [Fact]

@@ -1,3 +1,5 @@
+using Notrelix.Application.Features.WorkManagement.Ordering;
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Application.Common.Diagnostics;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Infrastructure.Data.Concurrency;
@@ -79,6 +81,14 @@ public sealed class EfRequestDataSession : IRequestDataSession
                     _metrics.ExpectedVersionConflicts.Add(1);
                     throw new PreconditionFailedException(
                         "The resource was modified by another request. Reload and retry.", "common.precondition-failed");
+                }
+                catch (DbUpdateException exception) when (WorkOrderingConstraints.IsOrderingViolation(exception))
+                {
+                    // A named ordering uniqueness guard caught a placement collision.
+                    // SaveChanges runs after the handler returns, so this is never
+                    // retried here; the caller reloads and rebases (WM-V3-ORDER-003).
+                    throw new ConflictException(
+                        "The position was taken by a concurrent change. Reload and retry.", WorkOrderingErrorCodes.Conflict);
                 }
             }
 
