@@ -1402,6 +1402,9 @@ None
 - [ ] No blocking V3 gap remains.
 - [ ] CERT final status STABLE/D5.
 
+### Status
+Executed on candidate `63a81692ec67182674e97ba34fc53536f38c5a3b`: backend 5287 tests passed (0 failed, 0 skipped) across all seven projects, format/build clean, OpenAPI and generated-client drift none, pending model changes none; frontend typecheck 43/43 and test:node 401/401. CERTIFICATION records the per-area results and the blocker disposition. Final status: `BLOCKED` — the backend producer is VERIFIED, but WM3-BLK-013/015/018 stay open until WM-V3-FE-001, and the large-Board pagination decision (WM-V3-QUAL-002) is unresolved. The exit boxes stay open.
+
 # 4. PR decomposition
 | PR | Scope |
 |---|---|

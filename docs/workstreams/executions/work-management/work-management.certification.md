@@ -1367,47 +1367,75 @@ Notes:
 
 # Final evidence record
 ```text
-Candidate SHA:
-P3-A:
-P3-B:
-Board:
-BoardItem:
-BoardField/Value:
-FieldOption:
-BoardGroup:
-Checklist:
-Ordering lock/adjacency:
-Ordering collation/uniqueness:
-Soft-delete lifecycle:
-Idempotency headers:
-Ordering reset/preflight:
-Automation ordering writer:
-Governance debts (WG-DEBT-006/007):
-ExpectedVersion/Version:
-Idempotency:
-App RLS direct:
-App RLS child:
-Worker dependency:
-Relational migration:
-RLS policy deployment:
-Events/Outbox:
-Cross-context:
-Realtime:
-API/OpenAPI:
-First-party consumer:
-Architecture:
-Security:
-Performance:
-Observability:
-Semantic coverage:
-Full CI:
-Focused CI:
-Blocking debt:
-P4A handoff:
-FINAL CERTIFICATION: NOT_EVALUATED | BLOCKED | VERIFIED | STABLE
-Reviewer:
-Date:
+Candidate SHA: 63a81692ec67182674e97ba34fc53536f38c5a3b (branch develop; every command below ran on this SHA; this record is a docs-only follow-up commit)
+P3-A: VERIFIED — GATE-001 prerequisite groups, ordering lock/collation/uniqueness/RLS groups below
+P3-B: VERIFIED — WorkPermissionActionMatrixArchitectureTests (pinned action per P3 request), CreateBoardInWorkspacePipelineTests (owner allowed / outsider forbidden), WorkQueryTenantIsolationIntegrationTests (cross-workspace reads denied); STABLE needs full CI on this SHA
+Board: VERIFIED — WorkExpectedVersionIntegrationTests (UpdateBoard maps every field, stale writer 412), BoardTests/BoardEventTests, lifecycle tests
+BoardItem: VERIFIED — WorkItemPlacementIntegrationTests, WorkItemFieldValueIntegrationTests (GAP-032 fixed), WorkSoftDeleteLifecycleIntegrationTests
+BoardField/Value: VERIFIED — BoardFieldRenameTests, FieldTypeNamesTests, FieldJsonBoundsTests, field placement/rename integration cases
+FieldOption: VERIFIED — FieldOptionMoveTests, option integration cases (GAP-030 fixed), RetiredWorkAuthorities_AreAbsent
+BoardGroup: VERIFIED — group create/move/duplicate integration case, DeleteBoardGroup transport test
+Checklist: VERIFIED — ChecklistChildMutationTests (14), WorkChecklistIntegrationTests (GAP-031 fixed), direct-ChecklistItems-write gate
+Ordering lock/adjacency: VERIFIED — WorkOrderingScopeLockIntegrationTests, WorkPlacementResolverTests, NormalDrag_RewritesOnlyTheMovedItemsKey
+Ordering collation/uniqueness: VERIFIED — WorkOrderingSchemaIntegrationTests (ordinal text, DB order = Domain order, six named indexes reject duplicates)
+Soft-delete lifecycle: VERIFIED — WorkSoftDeleteLifecycleIntegrationTests, RestoreItem_WhoseKeyWasReissued (DEC-019)
+Idempotency headers: BLOCKED — producer enforces the key; web adapters still omit it on non-create mutations (WM-V3-FE-001)
+Ordering reset/preflight: VERIFIED — WorkOrderingPreflightIntegrationTests; no production database existed at cut-over (SPEC WM-V3-DEC-006)
+Automation ordering writer: VERIFIED — MoveItemComposition_OrderingCollisionAtCommit (stable conflict, no second write, redelivery succeeds)
+Governance debts (WG-DEBT-006/007): DISPOSITIONED — accepted owned debts with gates (WM-V3-GATE-002)
+ExpectedVersion/Version: VERIFIED (producer) — 22-request manifest gate, WorkExpectedVersionIntegrationTests, WorkP3OpenApiShapeTests; consumers do not send it yet
+Idempotency: VERIFIED (producer) — WorkIdempotencyIntegrationTests (replay, mismatch, rollback); first-party key ownership BLOCKED (FE-001)
+App RLS direct: VERIFIED — RlsRuntimeEnforcementTests
+App RLS child: VERIFIED — WorkChildTableRlsIntegrationTests (allowed/denied tenant read/write as notrelix_app, fail-closed verification)
+Worker dependency: DEPENDENCY_BLOCKED — Platform-owned worker scope; automation.automation_execution_steps has no RLS (reported to Automation, not in the enforced schema list)
+Relational migration: VERIFIED — clean chain in every Integration container; supported upgrade through the preflight; pending model changes: none
+RLS policy deployment: VERIFIED — separate apply channel, fail-closed verification, script SHA-256 identities recorded in PLAN WM-V3-DEPLOY-002
+Events/Outbox: VERIFIED — board_item.moved v2 carries newPosition; event manifest drift gate; outbox runtime/recovery tests; Messaging+Automation integration groups (82)
+Cross-context: VERIFIED — cross-context architecture gates (101)
+Realtime: VERIFIED for item create/move/field value (version and key on the payload); group/field/option/checklist changes have no realtime fact and are refetched (accepted, PLAN WM-V3-EVT-001)
+API/OpenAPI: VERIFIED — WorkP3OpenApiShapeTests (9), ConflictProblemDetailsTests (exact codes), OpenAPI export drift: none; requiredness is not expressed in the schema
+First-party consumer: BLOCKED — WM-V3-FE-001 not executed (backend-first, SPEC WM-V3-DEC-017); adapters are compile-compatible stopgaps (sequential append for reorder, no expectedVersion, create-only keys)
+Architecture: VERIFIED — Architecture 635 incl. manifest, persistence no-growth, request baseline, metric label gates
+Security: VERIFIED — FieldJsonBoundsTests, WorkQueryTenantIsolationIntegrationTests, RLS groups
+Performance: BLOCKED — large Board reads unbounded (GetBoardItems, GetFullBoard); pagination contract UNRESOLVED (PLAN WM-V3-QUAL-002)
+Observability: VERIFIED — WorkOrderingMetricsTests (key length, stale placement, rebalance runs), conflict counter on the HTTP path
+Semantic coverage: VERIFIED — WorkTraceabilityArchitectureTests: 156/156 substantive, mandatory P3 groups discovered non-zero
+Full CI: local full run on the candidate (CI job not run from this session) — backend restore/format/build OK; Domain 2628, Application 755, Infrastructure 186, Platform 153, API 289, Architecture 635, Integration 641 (5287 passed, 0 failed, 0 skipped); frontend typecheck 43/43, test:node 401/401, codegen drift none; frontend lint fails only in apps/marketing (missing eslint-plugin-react-hooks, pre-existing environment issue)
+Focused CI: all focused P3 families above executed non-zero inside the full run
+Blocking debt: open — WM3-BLK-013, WM3-BLK-015, WM3-BLK-018 (first-party consumer); performance pagination decision
+P4A handoff: BLOCKED until the first-party consumer cutover and the pagination decision
+FINAL CERTIFICATION: BLOCKED (backend producer VERIFIED; P3 release blocked by WM-V3-FE-001 and the pagination decision)
+Reviewer: pending human review
+Date: 2026-10-10
 ```
+
+# Blocking debt disposition (candidate 63a81692)
+| ID | Disposition | Evidence |
+|---|---|---|
+| `WM3-BLK-001` | closed | ordering scope lock (ORDER-001) |
+| `WM3-BLK-002` | closed | placement resolver + stale-placement contract (ORDER-002/003) |
+| `WM3-BLK-003` | closed | `text COLLATE "C"` (DATA-001) |
+| `WM3-BLK-004` | closed | varchar(50) removed (DATA-001) |
+| `WM3-BLK-005` | closed | reset path + fail-closed preflight (MIG-ORDER-001) |
+| `WM3-BLK-006` | closed | six named unique indexes (DATA-002) |
+| `WM3-BLK-007` | closed | retired writers deleted; every recorded writer compliant |
+| `WM3-BLK-008` | closed | legacy FieldOptions family deleted (APP-OPTION-001) |
+| `WM3-BLK-009` | closed | aggregate-owned child mutation, desired-state PATCH (APP-CHK-001) |
+| `WM3-BLK-010` | closed | parent-derived RLS (DATA-003) |
+| `WM3-BLK-011` | closed | required ExpectedVersion (CONC-001) |
+| `WM3-BLK-012` | closed | Version on reads (CONC-002, API-001) |
+| `WM3-BLK-013` | **open** | first-party key ownership — WM-V3-FE-001 |
+| `WM3-BLK-014` | closed | mapping/validator parity (DATA-004, APP-BOARD-001) |
+| `WM3-BLK-015` | **open (consumer half)** | producer cut over (API-001); consumer cutover — WM-V3-FE-001 |
+| `WM3-BLK-016` | closed | candidate run above |
+| `WM3-BLK-017` | closed | LIFE-001 |
+| `WM3-BLK-018` | **open** | web adapters omit Idempotency-Key on non-create mutations — WM-V3-FE-001 |
+| `WM3-BLK-019` | closed | CONC-001/002 |
+| `WM3-BLK-020` | closed | FIX-001 |
+| `WM3-BLK-021` | closed | DATA-003 |
+| `WM3-BLK-022` | closed | stable codes at the API boundary (ORDER-003, API-001) |
+| `WM3-BLK-023` | closed | ORDER-005 |
+| `WM3-BLK-024` | closed | GATE-002 |
 
 # Baseline final decision
 ```text
@@ -1416,6 +1444,18 @@ Source posture: GAP_CONFIRMED
 P3-A: BLOCKED
 P3-B: NOT_EVALUATED (release gate closed)
 P3 Core: BLOCKED
+P4A gate: BLOCKED
+D5: NO
+```
+
+# Candidate decision (63a81692)
+```text
+Candidate SHA: 63a81692ec67182674e97ba34fc53536f38c5a3b
+Source posture: backend producer IMPLEMENTED and VERIFIED; first-party consumer GAP_CONFIRMED
+P3-A: VERIFIED
+P3-B: VERIFIED
+P3 Core (producer): VERIFIED
+P3 release: BLOCKED (WM-V3-FE-001; large-Board pagination decision)
 P4A gate: BLOCKED
 D5: NO
 ```

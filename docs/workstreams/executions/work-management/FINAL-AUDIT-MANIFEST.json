@@ -14,7 +14,7 @@
   ],
   "semantic_requirement_mapping": "156/156",
   "plan_to_test_mapping": "42/42",
-  "final_baseline_decision": "BLOCKED until implementation evidence exists",
+  "final_baseline_decision": "Candidate 63a81692: backend producer VERIFIED; P3 release BLOCKED (WM-V3-FE-001, large-Board pagination decision)",
   "files": {
     "work-management.spec.md": {
       "bytes": 50908,
@@ -22,9 +22,9 @@
       "sha256": "8ad95df38013a2c884e4d836dadb0225a6189c369c67a5d4e067b2ad3b677995"
     },
     "work-management.plan.md": {
-      "bytes": 80543,
-      "lines": 1457,
-      "sha256": "fa1477be74226d1748a39b2df099f581d770f6f681c3bbee063863b82bf9a5b2"
+      "bytes": 81119,
+      "lines": 1460,
+      "sha256": "f0f0cc26f5e4318bd7be589da488a5a50e2b59934aeb2a5f1b15d03f7cf129b1"
     },
     "work-management.tests.md": {
       "bytes": 50917,
@@ -32,9 +32,10 @@
       "sha256": "d6010f1aa2aea352f651b4dec61e0617971cbe322997cea9a849995f74fe22ac"
     },
     "work-management.certification.md": {
-      "bytes": 38826,
-      "lines": 1436,
-      "sha256": "1f12afa2c0b09fabd842d777d10c6a622aa39ff70785bfd0bca6b944afdbba1c"
+      "bytes": 45731,
+      "lines": 1476,
+      "sha256": "27f7779e21df605bb1b7536a937b9e55f36a9f45ffd32fb6354c712d82d0a0cb"
     }
-  }
+  },
+  "candidate_sha": "63a81692ec67182674e97ba34fc53536f38c5a3b"
 }
