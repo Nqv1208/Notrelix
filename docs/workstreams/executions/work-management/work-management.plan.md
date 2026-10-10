@@ -890,7 +890,10 @@ None
 None
 
 ### Exit
-- [ ] Checklist source READY_FOR_CERTIFICATION.
+- [x] Checklist source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION` except the required version contract. Done: every ChecklistItem mutation loads the Checklist aggregate with its items (`ChecklistAggregateLoader`) and mutates through it — `AddItem` (returns the item), `RemoveItem`, `ToggleItem` (the `/toggle` inversion), `SetItemCompletion` (desired state, repeat is a no-op, never implemented with toggle), `RenameItem` (trim, max 200, no-op, `ChecklistItemRenamedDomainEvent`) and `MoveItem` (one key, no-op, `ChecklistItemMovedDomainEvent`); each versions the parent once. PATCH `/checklist-items/{id}` is `Title?`/`IsChecked?` (`DueDate`/`AssigneeId` removed); PATCH `/checklists/{id}` is `Title?` only. Create checklist / create item take neighbor ids and resolve placement under the ItemChecklists / ChecklistItems locks; the new `MoveChecklistCommand` (`POST /api/v1/checklists/{id}/move`) and `MoveChecklistItemCommand` (`POST /api/v1/checklist-items/{id}/move`) move one entry relative to its neighbors. `DeleteChecklist` is the aggregate's soft delete (`ChecklistDeletedDomainEvent`) instead of removing the checklist and its item rows. Checklist rename/move now raise `ChecklistRenamedDomainEvent` / `ChecklistMovedDomainEvent`. `ChecklistDto` carries the Checklist `Version` (read from `GetChecklists` and `GetBoardItem`), and `GetChecklists` loads items in one query and orders ordinally with an id tie-break. Live defects fixed (SPEC WM-V3-GAP-031). An architecture gate forbids `ChecklistItems.Add/Remove/...` anywhere in Application. Evidence: `ChecklistChildMutationTests` (14), checklist Application tests (rewritten to assert state/version/events), `WorkChecklistIntegrationTests` (4, PostgreSQL with the real lock, every request in a fresh context), `ChecklistItems_AreNeverAddedOrRemovedOutsideTheChecklistAggregate`. Open: required parent `ExpectedVersion` on child mutations (WM-V3-CONC-001); the web adapter no longer sends checklist `position` (it was already ignored) and adopts the move endpoints in WM-V3-FE-001.
 
 ## WM-V3-CONC-001 — Normalize P3 ExpectedVersion write contract
 

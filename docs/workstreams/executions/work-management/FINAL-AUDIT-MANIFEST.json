@@ -17,14 +17,14 @@
   "final_baseline_decision": "BLOCKED until implementation evidence exists",
   "files": {
     "work-management.spec.md": {
-      "bytes": 48690,
-      "lines": 851,
-      "sha256": "f53ca9f07653c3d7aeb0a20ec2ffd6ae25dc8df92a1d1ff736b0a01beb96c94f"
+      "bytes": 49275,
+      "lines": 852,
+      "sha256": "38904554a637e3857b493f0e5ba2fee6a3918735f88417cd58604c75550409bd"
     },
     "work-management.plan.md": {
-      "bytes": 57287,
-      "lines": 1371,
-      "sha256": "9d99f3021a200e4edb28a7dc869a5848dfd390296bc7be8b5d10f6336e0c6d14"
+      "bytes": 59303,
+      "lines": 1374,
+      "sha256": "fdabc0ea256a64eb81c969ba0fac0a77bfe65fa4c6d5bee898421305278722d0"
     },
     "work-management.tests.md": {
       "bytes": 50495,

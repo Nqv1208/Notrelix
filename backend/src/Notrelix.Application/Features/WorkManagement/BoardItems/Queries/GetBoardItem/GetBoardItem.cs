@@ -57,7 +57,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .Where(c => c.ItemId == card.Id)
             .OrderBy(c => c.Position)
             .Select(c => new ChecklistDto(
-                c.Id, c.Title, c.Position.Value,
+                c.Id, c.Title, c.Position.Value, c.Version,
                 _context.ChecklistItems.AsNoTracking()
                     .Where(i => i.ChecklistId == c.Id)
                     .OrderBy(i => i.Position)

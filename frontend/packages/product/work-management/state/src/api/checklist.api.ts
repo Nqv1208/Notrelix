@@ -68,9 +68,10 @@ export function createChecklistApi(client: NotrelixClient) {
     },
 
     async updateChecklist(input: UpdateChecklistInput): Promise<void> {
+      // Placement is not part of PATCH; checklist moves use POST .../move
+      // (adopted by WM-V3-FE-001).
       const body: UpdateChecklistBody = {
         title: input.title,
-        position: input.position,
       };
       await api.patch<void>(
         endpoints.checklists.detail(input.checklistId),
@@ -99,8 +100,6 @@ export function createChecklistApi(client: NotrelixClient) {
       const body: UpdateChecklistItemBody = {
         title: input.title,
         isChecked: input.isChecked,
-        dueDate: input.dueDate,
-        assigneeId: input.assigneeId,
       };
       await api.patch<void>(
         endpoints.checklistItems.detail(input.itemId),

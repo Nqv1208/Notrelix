@@ -3,8 +3,14 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
 
+/// <summary>
+/// Desired-state PATCH of a checklist item (WM-V3-APP-CHK-001): an omitted field is
+/// unchanged, <c>IsChecked</c> sets completion (never toggles) and repeating the
+/// current state is a no-op. Runs through the owning Checklist aggregate.
+/// </summary>
 [IdempotencyOperation("work-management.checklists.update-checklist-item.v1")]
-public record UpdateChecklistItemCommand(Guid ItemId, bool? IsChecked) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UpdateChecklistItemCommand(Guid ItemId, string? Title = null, bool? IsChecked = null)
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist-item"), ItemId);
@@ -25,15 +31,13 @@ public class UpdateChecklistItemCommandHandler : IRequestHandler<UpdateChecklist
 
     public async Task<Result> Handle(UpdateChecklistItemCommand request, CancellationToken ct)
     {
-        var item = await _context.ChecklistItems.FirstOrDefaultAsync(i => i.Id == request.ItemId, ct);
-        if (item is null) throw new NotFoundException(nameof(ChecklistItem), request.ItemId);
+        var checklist = await ChecklistAggregateLoader.LoadOwningAsync(_context, request.ItemId, ct);
+        var now = _dateTimeProvider.UtcNow;
 
-        if (request.IsChecked.HasValue)
-        {
-            var checklist = await _context.Checklists.FirstOrDefaultAsync(c => c.Id == item.ChecklistId, ct);
-            if (checklist is null) throw new NotFoundException(nameof(Checklist), item.ChecklistId);
-            checklist.ToggleItem(request.ItemId, _currentUser.UserId, _dateTimeProvider.UtcNow);
-        }
+        if (request.Title is not null)
+            checklist.RenameItem(request.ItemId, request.Title, _currentUser.UserId, now);
+        if (request.IsChecked is { } isChecked)
+            checklist.SetItemCompletion(request.ItemId, isChecked, _currentUser.UserId, now);
 
         return Result.Success();
     }

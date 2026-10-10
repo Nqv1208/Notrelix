@@ -22,43 +22,31 @@ public class UpdateChecklistTests : WorkManagementHandlerTestBase
         var checklist = CreateChecklist();
         SetupChecklists(checklist);
 
-        var command = new UpdateChecklistCommand(checklist.Id, "New Title", null);
+        var command = new UpdateChecklistCommand(checklist.Id, "New Title");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+        checklist.Title.Should().Be("New Title");
     }
 
     [Fact]
-    public async Task Handle_UpdatePosition_UpdatesChecklistPosition()
+    public async Task Handle_OmittedTitle_ChangesNothing()
     {
         var checklist = CreateChecklist();
+        var version = checklist.Version;
         SetupChecklists(checklist);
 
-        var command = new UpdateChecklistCommand(checklist.Id, null, 5.0);
+        await _handler.Handle(new UpdateChecklistCommand(checklist.Id, null), CancellationToken.None);
 
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        result.Succeeded.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Handle_BothTitleAndPosition_UpdatesBoth()
-    {
-        var checklist = CreateChecklist();
-        SetupChecklists(checklist);
-
-        var command = new UpdateChecklistCommand(checklist.Id, "Updated", 10.0);
-
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        result.Succeeded.Should().BeTrue();
+        checklist.Title.Should().Be("Test Checklist");
+        checklist.Version.Should().Be(version, "placement is not part of PATCH; an empty PATCH is a no-op");
     }
 
     [Fact]
     public async Task Handle_ChecklistNotFound_ThrowsNotFoundException()
     {
-        var command = new UpdateChecklistCommand(Guid.CreateVersion7(), "Title", null);
+        var command = new UpdateChecklistCommand(Guid.CreateVersion7(), "Title");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

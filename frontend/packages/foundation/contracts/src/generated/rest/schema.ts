@@ -2340,6 +2340,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/checklists/{checklistId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a checklist relative to its neighbors */
+        post: operations["WorkManagement.Checklists.Move"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/checklist-items/{itemId}": {
         parameters: {
             query?: never;
@@ -2369,6 +2386,23 @@ export interface paths {
         put?: never;
         /** Toggle the completion status of a checklist item */
         post: operations["WorkManagement.Checklists.ToggleItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/checklist-items/{itemId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a checklist item relative to its neighbors */
+        post: operations["WorkManagement.Checklists.MoveItem"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3885,22 +3919,36 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CreateChecklistItemRequest": {
             title?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.CreateChecklistRequest": {
             title?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistItemRequest": {
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistRequest": {
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistItemRequest": {
             title?: string | null;
             isChecked?: boolean | null;
-            /** Format: date-time */
-            dueDate?: string | null;
-            /** Format: uuid */
-            assigneeId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Checklists.Requests.UpdateChecklistRequest": {
             title?: string | null;
-            /** Format: double */
-            position?: number | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.AddFormQuestionRequest": {
             questionKey?: string | null;
@@ -9380,6 +9428,51 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Checklists.Move": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                checklistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.Checklists.DeleteItem": {
         parameters: {
             query?: never;
@@ -9479,6 +9572,51 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "WorkManagement.Checklists.MoveItem": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Checklists.Requests.MoveChecklistItemRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

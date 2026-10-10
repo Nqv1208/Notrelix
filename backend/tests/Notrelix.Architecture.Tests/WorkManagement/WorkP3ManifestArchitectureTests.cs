@@ -116,14 +116,16 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardGroups.DeleteBoardGroupCommand"] = new(Disposition.Keep, "FIX-001 (done)", VersionedTarget: true),
 
         // Checklist (Checklist Version protects ChecklistItem mutation, SPEC WM-V3-DEC-007)
-        ["Checklists.GetChecklistsQuery"] = new(Disposition.Harden, "CONC-002"),
-        ["Checklists.CreateChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001"),
-        ["Checklists.UpdateChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001, CONC-001", VersionedTarget: true),
-        ["Checklists.DeleteChecklistCommand"] = new(Disposition.Keep, "-"),
-        ["Checklists.CreateChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001, CONC-001", VersionedTarget: true),
-        ["Checklists.UpdateChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001, CONC-001", VersionedTarget: true),
-        ["Checklists.ToggleChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001, CONC-001", VersionedTarget: true),
-        ["Checklists.DeleteChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001, CONC-001", VersionedTarget: true),
+        ["Checklists.GetChecklistsQuery"] = new(Disposition.Harden, "APP-CHK-001 (Version, done), CONC-002"),
+        ["Checklists.CreateChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (done)"),
+        ["Checklists.UpdateChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+        ["Checklists.MoveChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+        ["Checklists.DeleteChecklistCommand"] = new(Disposition.Harden, "APP-CHK-001 (aggregate soft delete, done)"),
+        ["Checklists.CreateChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+        ["Checklists.MoveChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+        ["Checklists.UpdateChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+        ["Checklists.ToggleChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
+        ["Checklists.DeleteChecklistItemCommand"] = new(Disposition.Harden, "APP-CHK-001 (done), CONC-001", VersionedTarget: true),
 
         // Schema read boundary
         ["BoardSchema.GetBoardSchemaQuery"] = new(Disposition.Harden, "APP-BOUNDARY-002, CONC-002"),
@@ -176,11 +178,12 @@ public sealed class WorkP3ManifestArchitectureTests
         ["ItemChecklists (checklists: item_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/Checklists/Commands/CreateChecklist/CreateChecklist.cs",
-            "Notrelix.Application/Features/WorkManagement/Checklists/Commands/UpdateChecklist/UpdateChecklist.cs",
+            "Notrelix.Application/Features/WorkManagement/Checklists/Commands/MoveChecklist/MoveChecklist.cs",
         ],
         ["ChecklistItems (checklist_items: checklist_id)"] =
         [
             "Notrelix.Application/Features/WorkManagement/Checklists/Commands/CreateChecklistItem/CreateChecklistItem.cs",
+            "Notrelix.Application/Features/WorkManagement/Checklists/Commands/MoveChecklistItem/MoveChecklistItem.cs",
         ],
     };
 
@@ -295,6 +298,19 @@ public sealed class WorkP3ManifestArchitectureTests
             "the BoardField-owned option family is the only FieldOption authority (WM-V3-APP-OPTION-001)");
         discovered.Select(r => r.Type.Name).Intersect(RetiredRequestNames).Should().BeEmpty(
             "full-list reorder and legacy create/delete authorities were retired (WM-V3-APP-OPTION-001, APP-GROUP-001, APP-FIELD-001, GATE-002)");
+    }
+
+    [Fact]
+    public void ChecklistItems_AreNeverAddedOrRemovedOutsideTheChecklistAggregate()
+    {
+        var featureRoot = Path.Combine(FindSrcRoot(), "Notrelix.Application", "Features");
+        var files = Directory.GetFiles(featureRoot, "*.cs", SearchOption.AllDirectories);
+        var directWrite = new Regex(@"\.ChecklistItems\s*\.\s*(Add|AddRange|Remove|RemoveRange|Attach|Update)\s*\(", RegexOptions.Compiled);
+
+        files.Should().NotBeEmpty("the scan must inspect real Application source (NRX-016)");
+        files.Where(f => directWrite.IsMatch(File.ReadAllText(f)))
+            .Select(f => Path.GetRelativePath(featureRoot, f))
+            .Should().BeEmpty("a ChecklistItem is a child of the Checklist aggregate; mutate it through Checklist (WM-V3-APP-CHK-001)");
     }
 
     private static List<WorkRequest> DiscoverWorkRequests() =>

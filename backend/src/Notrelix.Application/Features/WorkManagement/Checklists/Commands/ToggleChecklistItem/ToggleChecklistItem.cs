@@ -28,12 +28,7 @@ public class ToggleChecklistItemCommandHandler : IRequestHandler<ToggleChecklist
 
     public async Task<Result> Handle(ToggleChecklistItemCommand request, CancellationToken ct)
     {
-        var checklist = await _context.Checklists
-            .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.Items.Any(i => i.Id == request.ChecklistItemId), ct);
-
-        if (checklist is null)
-            throw new NotFoundException(nameof(ChecklistItem), request.ChecklistItemId);
+        var checklist = await ChecklistAggregateLoader.LoadOwningAsync(_context, request.ChecklistItemId, ct);
 
         var now = _dateTimeProvider.UtcNow;
         checklist.ToggleItem(request.ChecklistItemId, _currentUser.UserId, now);

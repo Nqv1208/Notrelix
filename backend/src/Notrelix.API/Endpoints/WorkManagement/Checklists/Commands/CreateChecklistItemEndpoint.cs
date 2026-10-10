@@ -22,7 +22,7 @@ public static class CreateChecklistItemEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateChecklistItemCommand(checklistId, body.Title), cancellationToken);
+        var result = await sender.Send(new CreateChecklistItemCommand(checklistId, body.Title, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return result.ToCreatedResult();
     }
 }
