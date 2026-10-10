@@ -364,6 +364,18 @@ V3.1 replaces mechanical mappings (one family attached to a whole requirement ra
 **Target surfaces:**
 - `P3V3TestDiscoveryTests.cs`
 
+### DISCOVERY-ARCH-001 — Mandatory P3 groups exist and declare tests
+
+**Disposition:** `NEW`  
+**Layer:** Architecture  
+
+**Proof:**
+- every mandatory P3 evidence group cited by the PLAN exists and declares at least one test
+- every WMREQ maps to a declared, non-retired, non-meta family; every plan unit names only declared families
+
+**Target surfaces:**
+- `WorkTraceabilityArchitectureTests.cs`
+
 ### EVT-CONTRACT-001 — Published event contract versioning
 
 **Disposition:** `EXPAND` (target file exists at `8400a4c0`)  
@@ -1502,7 +1514,7 @@ V3.1 replaces mechanical mappings (one family attached to a whole requirement ra
 | `WMREQ149` | `OBS-001` |
 | `WMREQ150` | `OBS-001`, `SEC-JSON-001` |
 | `WMREQ151` | `CERT-SHA-001` |
-| `WMREQ152` | `DISCOVERY-001` |
+| `WMREQ152` | `DISCOVERY-001`, `DISCOVERY-ARCH-001` |
 | `WMREQ153` | `HANDOFF-P4A-001` |
 | `WMREQ154` | `CERT-BLOCKER-001` |
 | `WMREQ155` | `GOV-DEBT-001` |

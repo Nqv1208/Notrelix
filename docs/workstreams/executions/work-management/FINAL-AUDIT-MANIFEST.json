@@ -8,7 +8,7 @@
   "retired_plan_units": [
     "WM-V3-MIG-ORDER-002"
   ],
-  "substantive_test_family_count": 100,
+  "substantive_test_family_count": 101,
   "retired_test_families": [
     "ORDER-NORM-001"
   ],
@@ -22,14 +22,14 @@
       "sha256": "8ad95df38013a2c884e4d836dadb0225a6189c369c67a5d4e067b2ad3b677995"
     },
     "work-management.plan.md": {
-      "bytes": 79902,
-      "lines": 1454,
-      "sha256": "5bc9f7991d5828ac0ad495999b9d4afa918f5a7e4d6c43e300a98ac6f2bfe4aa"
+      "bytes": 80543,
+      "lines": 1457,
+      "sha256": "fa1477be74226d1748a39b2df099f581d770f6f681c3bbee063863b82bf9a5b2"
     },
     "work-management.tests.md": {
-      "bytes": 50495,
-      "lines": 1674,
-      "sha256": "fc71318a2551175e503013a37c57b8c256364ddef51783c585292357d6ae0a27"
+      "bytes": 50917,
+      "lines": 1686,
+      "sha256": "d6010f1aa2aea352f651b4dec61e0617971cbe322997cea9a849995f74fe22ac"
     },
     "work-management.certification.md": {
       "bytes": 38826,

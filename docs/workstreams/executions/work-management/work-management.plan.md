@@ -1367,7 +1367,10 @@ UNRESOLVED (stop condition, not guessed): large Board reads are not bounded. `Ge
 None
 
 ### Exit
-- [ ] Semantic coverage = 156/156.
+- [x] Semantic coverage = 156/156.
+
+### Status
+`READY_FOR_CERTIFICATION`. `WorkTraceabilityArchitectureTests` parses `work-management.tests.md` and the SPEC: all 156 WMREQ have exactly one row, every row names only declared families and at least one substantive one (retired families and the meta families `BASE`/`TRACE`/`CI`/`INVENTORY` or any CI-layer family do not count), and every plan-unit row names only declared families. On first run it found WMREQ152 mapped only to the CI-layer `DISCOVERY-001`; the new `DISCOVERY-ARCH-001` family (mandatory P3 evidence groups exist and declare tests, enforced by the same test class) now covers it. Coverage: 156/156 substantive.
 
 ## WM-V3-CERT-001 — Run exact-SHA certification
 
