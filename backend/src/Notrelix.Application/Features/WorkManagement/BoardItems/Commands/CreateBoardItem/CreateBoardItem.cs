@@ -1,7 +1,8 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
-using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Features.WorkManagement.Ordering;
+
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 
 [IdempotencyOperation("work-management.board-items.create-board-item.v1")]
@@ -9,7 +10,8 @@ public record CreateBoardItemCommand(
     Guid BoardId,
     Guid GroupId,
     string Title,
-    double Position) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    Guid? PreviousSiblingId = null,
+    Guid? NextSiblingId = null) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -20,14 +22,16 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly WorkPlacementResolver _placement;
     private readonly IRealtimeChangeMapper<CreateBoardItemCommand, BoardItemSlimDto>? _realtime;
     private readonly IIntegrationEventCollector? _events;
 
-    public CreateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, IRealtimeChangeMapper<CreateBoardItemCommand, BoardItemSlimDto>? realtime = null, IIntegrationEventCollector? events = null)
+    public CreateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IRealtimeChangeMapper<CreateBoardItemCommand, BoardItemSlimDto>? realtime = null, IIntegrationEventCollector? events = null)
     {
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
+        _placement = placement;
         _realtime = realtime;
         _events = events;
     }
@@ -41,7 +45,11 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
             throw new NotFoundException("BoardGroup", request.GroupId);
 
         var now = _timeProvider.UtcNow;
-        var position = FractionalIndexGenerator.GenerateKeyBetween(null, null);
+        var position = await _placement.ResolveAsync(
+            new WorkOrderingScope(WorkOrderingScopeKind.GroupItems, group.Id),
+            new WorkPlacementIntent(request.PreviousSiblingId, request.NextSiblingId),
+            ct => GroupItemSiblings.LoadAsync(_context, group.Id, ct),
+            cancellationToken);
 
         var item = BoardItem.CreateRoot(
             _requestContext.RequireAccountId(),

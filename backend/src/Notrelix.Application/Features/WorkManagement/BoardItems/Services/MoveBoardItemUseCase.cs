@@ -1,6 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Features.WorkManagement.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
@@ -14,16 +14,19 @@ public sealed class MoveBoardItemUseCase
 {
     private readonly IWorkManagementDbContext _context;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly WorkPlacementResolver _placement;
 
-    public MoveBoardItemUseCase(IWorkManagementDbContext context, IDateTimeProvider timeProvider)
+    public MoveBoardItemUseCase(IWorkManagementDbContext context, IDateTimeProvider timeProvider, WorkPlacementResolver placement)
     {
         _context = context;
         _timeProvider = timeProvider;
+        _placement = placement;
     }
 
     public async Task<MoveBoardItemOutcome> MoveAsync(
         Guid itemId,
         Guid newGroupId,
+        WorkPlacementIntent placement,
         Guid executorUserId,
         CancellationToken cancellationToken)
     {
@@ -40,7 +43,12 @@ public sealed class MoveBoardItemUseCase
             throw new NotFoundException("BoardGroup", newGroupId);
 
         var now = _timeProvider.UtcNow;
-        var position = FractionalIndexGenerator.GenerateKeyBetween(null, null);
+        var position = await _placement.ResolveAsync(
+            new WorkOrderingScope(WorkOrderingScopeKind.GroupItems, group.Id),
+            placement,
+            ct => GroupItemSiblings.LoadAsync(_context, group.Id, ct),
+            cancellationToken,
+            movedEntityId: item.Id);
 
         item.MoveToGroup(BoardGroupRef.From(group), position, executorUserId, now);
 

@@ -115,7 +115,9 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
         var clockMock = new Moq.Mock<Notrelix.Application.Common.Time.IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(Now);
         var workItemActions = new Application.Features.WorkManagement.BoardItems.Services.MoveBoardItemUseCase(
-            workContext, clockMock.Object);
+            workContext, clockMock.Object,
+            new Application.Features.WorkManagement.Ordering.WorkPlacementResolver(
+                new Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock(workContext)));
         var idempotencyStore = new Notrelix.Infrastructure.Operations.Idempotency.EfIdempotencyStore(
             workContext,
             System.TimeProvider.System,

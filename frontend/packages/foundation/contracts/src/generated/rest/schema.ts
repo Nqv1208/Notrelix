@@ -3783,8 +3783,10 @@ export interface components {
             /** Format: uuid */
             groupId?: string;
             title?: string | null;
-            /** Format: double */
-            position?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.LinkPageToBoardItemRequest": {
             /** Format: uuid */
@@ -3793,8 +3795,10 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.MoveBoardItemRequest": {
             /** Format: uuid */
             groupId?: string;
-            /** Format: double */
-            position?: number;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.SetBoardItemDueDateRequest": {
             /** Format: date-time */

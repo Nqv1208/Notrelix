@@ -1,12 +1,14 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 
 [IdempotencyOperation("work-management.board-items.move-board-item.v1")]
 public record MoveBoardItemCommand(
     Guid ItemId,
     Guid NewGroupId,
-    double Position) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    Guid? PreviousSiblingId = null,
+    Guid? NextSiblingId = null) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.MoveItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);
@@ -36,6 +38,7 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
         var outcome = await _useCase.MoveAsync(
             request.ItemId,
             request.NewGroupId,
+            new WorkPlacementIntent(request.PreviousSiblingId, request.NextSiblingId),
             _currentUser.UserId,
             cancellationToken);
 

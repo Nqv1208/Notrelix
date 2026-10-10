@@ -481,7 +481,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 .Set($"gov-move-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
 
             await scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new MoveBoardItemCommand(itemId, groupId, 1.0d));
+                .Send(new MoveBoardItemCommand(itemId, groupId));
         }
     }
 
@@ -504,7 +504,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 .Set($"gov-move-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
 
             var act = () => scope.ServiceProvider.GetRequiredService<ISender>()
-                .Send(new MoveBoardItemCommand(itemId, groupId, 1.0d));
+                .Send(new MoveBoardItemCommand(itemId, groupId));
 
             await act.Should().ThrowAsync<AppForbidden>(
                 "the canonical pipeline currently denies member item moves; no second evaluator may bypass it");
@@ -1295,6 +1295,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             IRequestHandler<CreateCommentCommand, Result<Guid>>,
             CreateCommentCommandHandler>();
         services.AddScoped<MoveBoardItemUseCase>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkPlacementResolver>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
         services.AddScoped<
             IRequestHandler<MoveBoardItemCommand, BoardItemSlimDto>,
             MoveBoardItemCommandHandler>();

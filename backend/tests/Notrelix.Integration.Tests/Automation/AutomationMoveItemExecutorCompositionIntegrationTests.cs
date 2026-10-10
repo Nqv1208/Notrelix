@@ -150,7 +150,9 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         clockMock.Setup(c => c.UtcNow).Returns(Now);
 
         var moveUseCase = new Application.Features.WorkManagement.BoardItems.Services.MoveBoardItemUseCase(
-            context, clockMock.Object);
+            context, clockMock.Object,
+            new Application.Features.WorkManagement.Ordering.WorkPlacementResolver(
+                new Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock(context)));
         var idempotencyStore = new EfIdempotencyStore(
             context,
             System.TimeProvider.System,

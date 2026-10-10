@@ -418,7 +418,7 @@ None
 - [ ] Automation and HTTP writers share one lock, resolver and conflict contract.
 
 ### Status
-`DEPENDENCY_BLOCKED` on WM-V3-APP-ITEM-001. The automation path reaches the shared `MoveBoardItemUseCase`, which only takes the lock once APP-ITEM-001 moves it onto the resolver, so both are delivered together. Source finding for that change: a unique violation at the `Succeed()` SaveChanges falls into the technical-failure catch and attempts a second SaveChanges inside the aborted PostgreSQL transaction with the conflicting change still tracked; the conflict must instead propagate so the consumer transaction rolls back and redelivery re-resolves placement.
+Partially delivered with WM-V3-APP-ITEM-001: the automation move now runs through the shared `MoveBoardItemUseCase`, so it takes the GroupItems lock inside the consumer transaction opened by `DeduplicationConsumeFilter` and uses the resolver with an append intent (the automation chain integration tests run with the real PostgreSQL lock). Still open, delivered with WM-V3-DATA-002 when the named constraints exist: Source finding for that change: a unique violation at the `Succeed()` SaveChanges falls into the technical-failure catch and attempts a second SaveChanges inside the aborted PostgreSQL transaction with the conflicting change still tracked; the conflict must instead propagate so the consumer transaction rolls back and redelivery re-resolves placement.
 
 ## WM-V3-MIG-ORDER-001 — Reset path and fail-closed ordering preflight
 
@@ -725,7 +725,10 @@ None
 None
 
 ### Exit
-- [ ] Item ordering source READY_FOR_CERTIFICATION.
+- [x] Item ordering source READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION` for placement. `CreateBoardItemCommand` and `MoveBoardItemCommand` take `PreviousSiblingId?`/`NextSiblingId?` instead of the ignored `double Position`; both resolve placement through `WorkPlacementResolver` over the GroupItems scope (root, non-deleted items, `GroupItemSiblings`), and a move to the item's current place is a semantic no-op. The automation path uses the same `MoveBoardItemUseCase` with an append intent. Evidence: `WorkItemPlacementIntegrationTests` (5, PostgreSQL with the real lock). OpenAPI and the generated client are regenerated; the web adapter now omits the position (append) until WM-V3-FE-001 sends neighbor ids, and the mock backend still reads the old field. Still open in this area: `MoveBoardItemCommand` ExpectedVersion (WM-V3-CONC-001) and Duplicate (WM-V3-APP-ITEM-002).
 
 ## WM-V3-APP-ITEM-002 — Fix Item duplicate/update/value flows
 

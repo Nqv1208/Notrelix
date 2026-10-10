@@ -12,7 +12,8 @@ public class CreateBoardItemTests : WorkManagementHandlerTestBase
         _handler = new CreateBoardItemCommandHandler(
             DbContextMock.Object,
             RequestContextMock.Object,
-            DateTimeProviderMock.Object);
+            DateTimeProviderMock.Object,
+            Placement);
     }
 
     [Fact]
@@ -25,7 +26,7 @@ public class CreateBoardItemTests : WorkManagementHandlerTestBase
         SetupBoards(board);
         SetupBoardGroups(group);
 
-        var command = new CreateBoardItemCommand(board.Id, group.Id, "New Item", 0.5);
+        var command = new CreateBoardItemCommand(board.Id, group.Id, "New Item");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -37,7 +38,7 @@ public class CreateBoardItemTests : WorkManagementHandlerTestBase
     [Fact]
     public async Task Handle_GroupNotFound_ThrowsNotFoundException()
     {
-        var command = new CreateBoardItemCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), "New Item", 0.5);
+        var command = new CreateBoardItemCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), "New Item");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
@@ -54,7 +55,7 @@ public class CreateBoardItemTests : WorkManagementHandlerTestBase
         SetupBoards(board, otherBoard);
         SetupBoardGroups(group);
 
-        var command = new CreateBoardItemCommand(board.Id, group.Id, "New Item", 0.5);
+        var command = new CreateBoardItemCommand(board.Id, group.Id, "New Item");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();

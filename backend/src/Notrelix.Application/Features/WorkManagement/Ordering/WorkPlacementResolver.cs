@@ -34,7 +34,11 @@ public sealed class WorkPlacementResolver
     /// Loads the scope's active siblings. It is invoked only after the scope lock is
     /// held, so callers must not read siblings before calling this method.
     /// </param>
-    /// <param name="movedEntityId">For a move, the entity being moved; it is excluded before adjacency is evaluated.</param>
+    /// <param name="movedEntityId">
+    /// For a move, the entity being moved; it is excluded before adjacency is evaluated.
+    /// When it is already in this scope exactly where the intent places it, its current
+    /// position is returned so the move is a semantic no-op.
+    /// </param>
     public async Task<FractionalIndex> ResolveAsync(
         WorkOrderingScope scope,
         WorkPlacementIntent intent,
@@ -44,13 +48,38 @@ public sealed class WorkPlacementResolver
     {
         await _scopeLock.AcquireAsync(scope, cancellationToken);
 
-        var siblings = (await loadActiveSiblings(cancellationToken))
-            .Where(sibling => sibling.Id != movedEntityId)
+        var ordered = (await loadActiveSiblings(cancellationToken))
             .OrderBy(sibling => sibling.Position)
             .ThenBy(sibling => sibling.Id)
             .ToList();
 
-        return Place(siblings, intent);
+        if (movedEntityId is { } movedId && TryKeepCurrent(ordered, movedId, intent, out var current))
+        {
+            return current;
+        }
+
+        return Place(ordered.Where(sibling => sibling.Id != movedEntityId).ToList(), intent);
+    }
+
+    private static bool TryKeepCurrent(
+        IReadOnlyList<OrderedSibling> ordered, Guid movedId, WorkPlacementIntent intent, out FractionalIndex current)
+    {
+        current = null!;
+        var index = IndexOf(ordered, movedId);
+        if (index < 0) return false;
+
+        var before = index > 0 ? ordered[index - 1].Id : (Guid?)null;
+        var after = index + 1 < ordered.Count ? ordered[index + 1].Id : (Guid?)null;
+        var matches = (intent.PreviousSiblingId, intent.NextSiblingId) switch
+        {
+            (null, null) => after is null,
+            ({ } previous, null) => before == previous && after is null,
+            (null, { } next) => after == next && before is null,
+            ({ } previous, { } next) => before == previous && after == next,
+        };
+
+        if (matches) current = ordered[index].Position;
+        return matches;
     }
 
     /// <summary>Pure placement rule over siblings already sorted in canonical order.</summary>

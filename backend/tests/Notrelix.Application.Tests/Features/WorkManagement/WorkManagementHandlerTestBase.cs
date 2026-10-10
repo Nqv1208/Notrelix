@@ -12,6 +12,10 @@ namespace Notrelix.Application.Tests.Features.WorkManagement;
 
 public abstract class WorkManagementHandlerTestBase
 {
+    /// <summary>Placement resolver over a no-op scope lock; ordering serialization is proven on PostgreSQL.</summary>
+    protected Notrelix.Application.Features.WorkManagement.Ordering.WorkPlacementResolver Placement { get; } =
+        new(new Mock<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock>().Object);
+
     protected readonly Mock<IWorkManagementDbContext> DbContextMock = new();
     protected readonly Mock<ICurrentRequestContext> RequestContextMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();

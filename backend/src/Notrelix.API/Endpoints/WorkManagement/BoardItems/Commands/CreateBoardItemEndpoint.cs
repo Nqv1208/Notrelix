@@ -25,7 +25,8 @@ public static class CreateBoardItemEndpoint
             boardId,
             body.GroupId,
             body.Title,
-            body.Position), cancellationToken);
+            body.PreviousSiblingId,
+            body.NextSiblingId), cancellationToken);
         return Results.Ok(result);
     }
 }

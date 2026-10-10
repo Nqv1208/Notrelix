@@ -21,7 +21,7 @@ public static class MoveBoardItemEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MoveBoardItemCommand(itemId, body.GroupId, body.Position), cancellationToken);
+        var result = await sender.Send(new MoveBoardItemCommand(itemId, body.GroupId, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
         return Results.Ok(result);
     }
 }

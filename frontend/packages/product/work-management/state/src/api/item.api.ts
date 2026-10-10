@@ -54,7 +54,8 @@ export function createCardApi(client: NotrelixClient) {
       const body: CreateItemBody = {
         groupId: payload.listId, // canonical uses groupId!
         title: payload.title,
-        position: payload.position,
+        // Backend-first cut-over (SPEC WM-V3-DEC-017): the server now owns placement
+        // and expects neighbor ids; until WM-V3-FE-001 maps them, omitting both appends.
       };
       await api.post<CreateItemResponse>(
         endpoints.boardItems.create(boardId),
@@ -87,7 +88,7 @@ export function createCardApi(client: NotrelixClient) {
     ): Promise<void> {
       const body: MoveItemBody = {
         groupId: payload.listId, // mapping listId to groupId
-        position: payload.position,
+        // Neighbor ids arrive with WM-V3-FE-001; omitting both appends to the group.
       };
       if (options) {
         await api.post<void>(

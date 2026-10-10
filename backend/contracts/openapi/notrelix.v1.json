@@ -14004,9 +14004,15 @@
             "type": "string",
             "nullable": true
           },
-          "position": {
-            "type": "number",
-            "format": "double"
+          "previousSiblingId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "nextSiblingId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -14028,9 +14034,15 @@
             "type": "string",
             "format": "uuid"
           },
-          "position": {
-            "type": "number",
-            "format": "double"
+          "previousSiblingId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "nextSiblingId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
