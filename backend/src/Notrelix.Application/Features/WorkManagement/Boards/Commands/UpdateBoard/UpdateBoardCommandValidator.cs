@@ -10,11 +10,11 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
             .NotEmpty();
 
         RuleFor(x => x.Title)
-            .MaximumLength(200)
+            .MaximumLength(255)
             .When(x => x.Title is not null);
 
         RuleFor(x => x.Description)
-            .MaximumLength(2000)
+            .MaximumLength(5000)
             .When(x => x.Description is not null);
 
         RuleFor(x => x.Background)

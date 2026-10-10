@@ -5600,8 +5600,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnName("deleted_by");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)")
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)")
                         .HasColumnName("description");
 
                     b.Property<bool>("IsArchived")

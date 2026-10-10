@@ -112,9 +112,9 @@ Every writer of a P3 ordering scope (create, move, duplicate, normal reorder, th
 
 The P3 item ordering scope is the active root items (`parent_item_id IS NULL`) of one Group. Child-item ordering is NOT_APPLICABLE in P3 because no Application path creates child items; the unique item ordering index is filtered to root items so a future hierarchy feature can define its own scope without a data migration.
 
-### WM-V3-DEC-017 — One-shot first-party API cut-over (V3.1)
+### WM-V3-DEC-017 — Backend-first producer cut-over (V3.1)
 
-The only enabled consumers of the P3 producer API are the first-party web app and the dev mock backend; the mobile app is a stub that calls no Work endpoint. P3 contract changes are delivered as a coordinated one-shot cut-over: producer, regenerated client, web adapters and mock backend change in the same PR, without a compatibility window. If an external or mobile consumer is enabled before cut-over, this decision is void and expand/contract applies (NRX-008).
+The only enabled consumers of the P3 producer API are the first-party web app and the dev mock backend; the mobile app is a stub that calls no Work endpoint. Delivery is **backend-first** (approved 2026-10-10): each backend unit changes the producer, re-exports OpenAPI and regenerates the frontend client in the same change, without a compatibility window, while web adapters and the mock backend migrate later in the consolidated frontend unit WM-V3-FE-001 (Phase 11). Until then, first-party web calls to changed operations may fail; that window is accepted and is recorded per unit. The P3 certification cannot reach STABLE before FE-001 closes. If an external or mobile consumer is enabled before cut-over, this decision is void and expand/contract applies (NRX-008).
 
 ### WM-V3-DEC-018 — Idempotency keys are globally unique per attempt (V3.1)
 
@@ -148,6 +148,8 @@ Added in V3.1 from source inspection at `8400a4c0`:
 - **WM-V3-GAP-022** — Besides FieldOption/ChecklistItem/BoardItemValue, the scope-less tables `board_members`, `approval_steps` and `relation_field_configs` have RLS disabled under the app role (`board_members` is not listed in any RLS script), and `011_verification.sql` results are discarded by `RlsPolicyApplier`, so verification cannot fail.
 - **WM-V3-GAP-023** — `ConflictException` and Domain `BusinessRuleException` lose their stable codes at the API boundary (`concurrency.conflict` / `business_rule.violation`).
 - **WM-V3-GAP-024** — The automation move path (`AutomationMoveItemUseCase`) commits through the consumer transaction with its own `SaveChangesAsync`, outside `EfRequestDataSession`; it would neither hold the ordering lock nor map ordering conflicts.
+- **WM-V3-GAP-026** — Four owned-collection `work` tables (`board_view_filter_rules`, `board_view_sort_rules`, `saved_filter_rules`, `saved_filter_sort_rules`) are listed in no RLS script and run with RLS disabled; found by the fail-closed verification. Outside the `work` schema, `automation.automation_execution_steps` has the same defect and is owned by the Automation package.
+- **WM-V3-GAP-027** — `CreateBoardBySlugCommand` is a global request with no `IRequirePermission`, resolves a workspace by slug without checking its account, duplicates the authorized `CreateBoardInWorkspaceCommand`, and is mapped by no endpoint.
 - **WM-V3-GAP-025** — Governance handoff debts `WG-DEBT-006` (AccessFactsQuery composite read of Work Board persistence) and `WG-DEBT-007` (`PermissionAction.ManageBoard` broader than the classified Work command matrix) must be named and dispositioned by P3.
 
 # Normative requirements

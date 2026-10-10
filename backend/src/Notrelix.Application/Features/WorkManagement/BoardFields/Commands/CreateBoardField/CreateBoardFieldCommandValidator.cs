@@ -5,7 +5,7 @@ public class CreateBoardFieldCommandValidator : AbstractValidator<CreateBoardFie
     public CreateBoardFieldCommandValidator()
     {
         RuleFor(x => x.BoardId).NotEmpty();
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.FieldType).NotEmpty().MaximumLength(50);
     }
 }

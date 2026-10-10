@@ -29,7 +29,7 @@ V3.1 re-sequences V3 after source inspection at `8400a4c0` (see SPEC §1 and WM-
 - Do not read ordering siblings before acquiring the target-scope transaction lock.
 - Do not add unique ordering indexes before the ordering preflight passes and every ordering writer (HTTP and automation) is compliant (SPEC WM-V3-DEC-014).
 - Do not bypass the soft-delete filter without re-applying the tenant predicate explicitly (SPEC WM-V3-DEC-013).
-- Every unit that changes a producer operation migrates the web adapters, the dev mock backend and its contract-conformance test in the same PR (SPEC WM-V3-DEC-017).
+- Delivery is backend-first (SPEC WM-V3-DEC-017): a unit that changes a producer operation re-exports OpenAPI and regenerates the frontend client in the same PR, keeps frontend typecheck green, and records the first-party calls it breaks; web adapters, the dev mock backend and its contract-conformance test migrate in WM-V3-FE-001.
 - Do not treat `notrelix_worker` unrestricted policy as tenant-safe worker execution.
 - Do not hand-edit generated OpenAPI/client output.
 - Do not mark a work unit D5; work units become READY_FOR_CERTIFICATION and CERT alone grants VERIFIED/STABLE.
@@ -90,9 +90,12 @@ Retired in V3.1: `WM-V3-MIG-ORDER-002` (brownfield normalization), replaced by t
 None
 
 ### Exit
-- [ ] P3 request manifest exists.
-- [ ] P3 versioned-request manifest exists.
-- [ ] No active unclassified duplicate command family.
+- [x] P3 request manifest exists.
+- [x] P3 versioned-request manifest exists.
+- [x] No active unclassified duplicate command family.
+
+### Status
+`READY_FOR_CERTIFICATION`. The manifest is executable: `backend/tests/Notrelix.Architecture.Tests/WorkManagement/WorkP3ManifestArchitectureTests.cs` classifies every Work request (P3 modules: KEEP/HARDEN/RETIRE with owning unit; other modules OUT_OF_SCOPE), holds the P3 versioned-request target set (SPEC WM-V3-DEC-007), and records every ordering writer per scope, including `InitDb` seed and the automation path through `MoveBoardItemUseCase`. The three gates fail on an unclassified request, an unlisted versioned request or an unrecorded position writer (verified by deleting entries).
 
 ## WM-V3-INV-002 — Refresh first-party consumer manifest
 
@@ -184,7 +187,10 @@ None
 
 ### Exit
 - [ ] P3-B prerequisite VERIFIED before protected release cutover.
-- [ ] WG-DEBT-006 and WG-DEBT-007 dispositions recorded in CERTIFICATION.
+- [x] WG-DEBT-006 and WG-DEBT-007 dispositions recorded in CERTIFICATION.
+
+### Status
+Dispositions are executable in `WorkPermissionActionMatrixArchitectureTests` (GOV-DEBT-001): the AccessFactsQuery read of Work persistence is frozen to `work.boards` and `work.board_members`, and every active P3 request has a pinned `PermissionAction`. `CreateBoardBySlugCommand` (SPEC WM-V3-GAP-027) is classified RETIRE instead of hardened; it has no endpoint, and deleting its two files is the remaining step (the manifest, the three security allowlists and the API test factory keep it listed until then). The P3-B allow/deny/cross-tenant/revoked matrix remains open and is still gated by Workspace & Governance Milestone B.
 
 ## WM-V3-LIFE-001 — Hydrate soft-delete lifecycle and make Restore reachable
 
@@ -513,8 +519,11 @@ Forward EF migration; migration ordering is preflight → alter collation/type �
 RLS embedded SQL deployment, separate from EF migration.
 
 ### Exit
-- [ ] App-role same-tenant allowed and cross-tenant denied for all six scope-less tables.
-- [ ] RLS verification fails closed on a deliberately policyless fixture table.
+- [x] App-role same-tenant allowed and cross-tenant denied for all six scope-less tables.
+- [x] RLS verification fails closed on a deliberately policyless fixture table.
+
+### Status
+`READY_FOR_CERTIFICATION`. `ops.apply_scope_expression_policies` (004) applies the standard app/worker/support policy set with a parent-derived scope; 008 uses it for the six scope-less tables plus the four owned view-rule tables found by verification (SPEC WM-V3-GAP-026). `RlsPolicyApplier` now fails the apply when any table in an enforced schema (`work`) has RLS disabled or no policy. Evidence: `WorkChildTableRlsIntegrationTests` (5, dedicated PostgreSQL with the policy pack); cross-tenant read and write were reproduced before the change. Limits: the four view-rule tables are proven by the catalog gate only, not by a row-level probe; `automation.automation_execution_steps` is reported to the Automation package and is not in the enforced schema list.
 
 ## WM-V3-DATA-004 — Fix Domain/storage/validator compatibility
 
@@ -543,7 +552,10 @@ RLS embedded SQL deployment, separate from EF migration.
 Forward EF migration only for true persistence-width changes.
 
 ### Exit
-- [ ] Every Domain-valid boundary value persists.
+- [x] Every Domain-valid boundary value persists.
+
+### Status
+`READY_FOR_CERTIFICATION`. Forward migration `WidenBoardDescription` widens `work.boards.description` from 1024 to 5000; Board title/description validators move to the Domain limits (255/5000) and BoardField name validators to 100. Evidence: `BoardMappingContractTests` (PostgreSQL, failed with 22001 before the change) and `WorkValidatorDomainParityTests` (8).
 
 ## WM-V3-DOM-BOARD-001 — Preserve and close Board Domain core
 
@@ -923,7 +935,7 @@ None
 - `foundation api-client`
 
 ### Required implementation
-- This unit is delivered in Phase 2 because missing keys are a live 400 defect (SPEC WM-V3-GAP-018), not only an ownership refactor.
+- Backend-first (SPEC WM-V3-DEC-017): the server-side replay/mismatch proofs (IDEMP-INT-001, IDEMP-MISMATCH-001) are delivered with the backend units; the frontend key ownership below is delivered together with WM-V3-FE-001. Missing keys remain a live 400 defect (SPEC WM-V3-GAP-018) until then.
 - Every enabled Work call to an endpoint marked `.WithIdempotencyKey()` sends a key.
 - Mutation/command layer creates one random UUID key for one canonical request payload attempt (SPEC WM-V3-DEC-018); replace the module-counter `commandId` used as key by `optimistic-command.ts`.
 - Pass key into adapter request options.
