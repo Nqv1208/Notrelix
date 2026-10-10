@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.API.Contracts.WorkManagement.BoardFields.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
@@ -43,6 +44,7 @@ public static class MapBoardFieldEndpoints
 
         schemaGroup.MapResourceGet("/schema", HandleGetBoardSchema)
             .WithName("WorkManagement.BoardFields.GetSchema")
+            .Produces<BoardSchemaDto>(StatusCodes.Status200OK, "application/json")
             .WithSummary("Get schema (fields, groups) of a board");
 
         return app;

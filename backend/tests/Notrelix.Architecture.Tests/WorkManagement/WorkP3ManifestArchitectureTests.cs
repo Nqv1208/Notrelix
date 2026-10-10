@@ -345,6 +345,31 @@ public sealed class WorkP3ManifestArchitectureTests
         violations.Should().BeEmpty("WM-V3-CONC-001: every manifest request has a required version and one target mapping");
     }
 
+    /// <summary>
+    /// WM-V3-APP-BOUNDARY-001: the Application EF exception (EX-BE-APP-EF-001) must not
+    /// grow. The Work persistence port exposes exactly this DbSet set and no database,
+    /// raw-SQL or SaveChanges surface; new needs go through a use-case port.
+    /// </summary>
+    private static readonly string[] WorkDbSetBaseline =
+    [
+        "Boards", "BoardGroups", "BoardFields", "FieldOptions", "BoardViews", "BoardViewPins", "BoardViewUserPreferences",
+        "SavedFilters", "BoardItems", "BoardItemValues", "BoardItemMembers", "BoardItemLabels", "BoardItemLinks", "Labels",
+        "BoardMembers", "BoardSubscribers", "BoardRelations", "BoardItemConnections", "MirrorValueSnapshots", "ItemDependencies",
+        "TimeTrackingEntries", "RelationFieldConfigs", "Checklists", "ChecklistItems", "Forms", "FormQuestions",
+        "FormSubmissions", "ApprovalRequests", "ApprovalSteps", "WorkloadAllocations", "BoardTemplates", "ItemTemplates",
+    ];
+
+    [Fact]
+    public void WorkManagementPersistencePort_DoesNotGrow()
+    {
+        var port = typeof(Notrelix.Application.Features.WorkManagement.Abstractions.IWorkManagementDbContext);
+
+        port.GetProperties().Select(p => p.Name).Should().BeEquivalentTo(WorkDbSetBaseline,
+            "a new DbSet on the Work port widens the governed Application EF exception (WM-V3-APP-BOUNDARY-001)");
+        port.GetMethods().Where(m => !m.IsSpecialName).Should().BeEmpty(
+            "the port exposes no SaveChanges, raw SQL or database facade; the data session owns them");
+    }
+
     [Fact]
     public void ChecklistItems_AreNeverAddedOrRemovedOutsideTheChecklistAggregate()
     {

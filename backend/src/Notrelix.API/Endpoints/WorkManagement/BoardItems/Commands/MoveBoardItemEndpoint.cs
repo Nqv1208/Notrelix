@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 
@@ -10,6 +11,7 @@ public static class MoveBoardItemEndpoint
         group.MapResourcePost("/move", HandleAsync)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.Move")
+            .Produces<BoardItemSlimDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Move board item to another group or change position");
         return group;

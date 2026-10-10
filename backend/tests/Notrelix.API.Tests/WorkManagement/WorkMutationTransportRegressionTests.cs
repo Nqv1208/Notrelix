@@ -79,6 +79,19 @@ public class WorkMutationTransportRegressionTests : IClassFixture<NotrelixApiFac
         recorder.Received.Should().BeEmpty("validation rejects the request before the handler");
     }
 
+    [Theory]
+    [InlineData("Bogus")]
+    [InlineData("5")]
+    public async Task CreateBoard_WithAnUnknownVisibility_IsRejectedAsAClientError(string visibility)
+    {
+        // The endpoint rejects before dispatch; the recorder only builds the authenticated client.
+        var client = CreateClient(new Recorder<UpdateBoardFieldCommand>());
+
+        var response = await client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/boards", Json(new { Title = "Board", Visibility = visibility }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, await response.Content.ReadAsStringAsync());
+    }
+
     private HttpClient CreateClient<TCommand>(Recorder<TCommand> recorder)
         where TCommand : IRequest<Result>
     {

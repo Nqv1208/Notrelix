@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Checklists.Queries.GetChecklists;
 
@@ -9,6 +10,7 @@ public static class GetChecklistsEndpoint
     {
         group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.Checklists.List")
+            .Produces<List<ChecklistDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Get checklists for a board item");
         return group;

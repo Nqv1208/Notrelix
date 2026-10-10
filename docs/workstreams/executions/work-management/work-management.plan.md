@@ -1111,7 +1111,10 @@ None
 None
 
 ### Exit
-- [ ] Producer OpenAPI READY_FOR_CERTIFICATION.
+- [x] Producer OpenAPI READY_FOR_CERTIFICATION.
+
+### Status
+`READY_FOR_CERTIFICATION`. The P3 producer contract is cut to V3: neighbor-relative placement with no raw key (create/move of items, groups, fields, options, checklists, checklist items); `expectedVersion` on all 22 versioned mutations (17 in the body, 5 as `?expectedVersion=`); PATCH bodies hold exactly their accepted fields, and Board/Item PATCH now bind dedicated `UpdateBoardRequest`/`UpdateBoardItemRequest` instead of Application commands whose route ids the endpoint silently overwrote; read and DTO-returning endpoints now declare their response types (`.Produces<T>()`), so `version` is part of the published contract (it was invisible before: those responses had no schema); create-board rejects an unknown or numeric visibility with 400 instead of a 500 from `Enum.Parse`; the public errors are exactly `work.ordering.stale-placement` / `work.ordering.conflict` (409), `common.precondition-failed` (412) and `idempotency_payload_mismatch`. Evidence: `WorkP3OpenApiShapeTests` (9, over the checked-in contract that CI regenerates and diffs), `ConflictProblemDetailsTests` (exact status and code per error), `WorkMutationTransportRegressionTests` (missing version 400, unknown visibility 400), `IdempotencyEndpointContractTests`; OpenAPI and the generated client regenerated, frontend typecheck green. Not expressed: OpenAPI requiredness (no request contract in the repository declares it).
 
 ## WM-V3-FE-001 — Migrate first-party Work consumers
 
@@ -1170,7 +1173,10 @@ None
 None
 
 ### Exit
-- [ ] Application framework coupling does not grow.
+- [x] Application framework coupling does not grow.
+
+### Status
+`READY_FOR_CERTIFICATION`. P3 added no DbSet, raw SQL or database facade to the Work port; ordering serialization is the `IWorkOrderingScopeLock` Application port implemented in Infrastructure, and commit-time conflict classification is the `IOrderingConflictClassifier` port. Evidence: `WorkP3ManifestArchitectureTests.WorkManagementPersistencePort_DoesNotGrow` (exact 32-DbSet baseline, no methods), `RawSqlArchitectureTests`, `DbContextBoundaryArchitectureTests`, `HandlerDataPortGateTests`.
 
 ## WM-V3-APP-BOUNDARY-002 — Close BoardSchema read skeleton
 
@@ -1194,7 +1200,10 @@ None
 None
 
 ### Exit
-- [ ] One BoardSchema read authority remains.
+- [x] One BoardSchema read authority remains.
+
+### Status
+`READY_FOR_CERTIFICATION` (verified, no source change). The only BoardSchema read authority is `GetBoardSchemaQuery` and its handler; no Infrastructure `BoardSchemaReadService` or unused read port exists in source.
 
 ## WM-V3-DEPLOY-001 — Execute relational upgrade in fixed order
 

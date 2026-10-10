@@ -22,7 +22,23 @@ public static class CreateBoardEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateBoardInWorkspaceCommand(workspaceId, body.Title, body.Description, body.Background, body.Visibility is not null ? Enum.Parse<BoardVisibility>(body.Visibility, ignoreCase: true) : null), cancellationToken);
+        // An unknown or numeric visibility name is a client error (WM-V3-API-001), never a 500
+        // from Enum.Parse or an undefined enum value.
+        BoardVisibility? visibility = null;
+        if (body.Visibility is not null)
+        {
+            if (int.TryParse(body.Visibility, out _) || !Enum.TryParse<BoardVisibility>(body.Visibility, ignoreCase: true, out var parsed))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["visibility"] = [$"Visibility must be one of: {string.Join(", ", Enum.GetNames<BoardVisibility>())}."],
+                });
+            }
+
+            visibility = parsed;
+        }
+
+        var result = await sender.Send(new CreateBoardInWorkspaceCommand(workspaceId, body.Title, body.Description, body.Background, visibility), cancellationToken);
         return result.ToCreatedResult();
     }
 }

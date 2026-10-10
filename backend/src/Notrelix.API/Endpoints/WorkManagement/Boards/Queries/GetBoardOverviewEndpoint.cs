@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 
@@ -9,6 +10,7 @@ public static class GetBoardOverviewEndpoint
     {
         group.MapResourceGet("/full", HandleAsync)
             .WithName("WorkManagement.Boards.GetOverview")
+            .Produces<FullBoardDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Get full board with lists and cards");
         return group;
