@@ -105,7 +105,10 @@ export const listsOperations = [
     method: "POST",
     route: "/board-groups/:groupId/move",
     async handle({ params, body, store }) {
-      const data = (body ?? {}) as { previousSiblingId?: string | null; nextSiblingId?: string | null };
+      const data = (body ?? {}) as {
+        previousSiblingId?: string | null;
+        nextSiblingId?: string | null;
+      };
       const moved = store.moveList(
         params.groupId,
         data.previousSiblingId,

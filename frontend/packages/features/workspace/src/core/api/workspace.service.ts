@@ -42,7 +42,10 @@ type ArchiveBody =
   OperationRequestBody<"Workspaces.Workspaces.ArchiveWorkspace">;
 
 /** `Workspaces.Workspaces.GetWorkspace` (and each row of the workspace lists). */
-type WorkspaceDto = OperationResponse<"Workspaces.Workspaces.GetWorkspace", 200>;
+type WorkspaceDto = OperationResponse<
+  "Workspaces.Workspaces.GetWorkspace",
+  200
+>;
 type WorkspaceSettingsDto = OperationResponse<
   "Workspaces.Settings.GetWorkspaceSettings",
   200
