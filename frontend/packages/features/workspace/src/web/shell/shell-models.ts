@@ -126,6 +126,7 @@ export function workspaceBreadcrumbLabels(
       search: copy.sections.search,
       library: copy.sections.library,
       members: copy.sections.members,
+      teams: copy.sections.teams,
       settings: copy.sections.settings,
       billing: copy.sections.billing,
       account: copy.sections.account,

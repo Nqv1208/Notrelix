@@ -26,6 +26,7 @@ import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { toastFailure } from "@/shell/workspace/failure-toast";
 import { sectionState } from "@/shell/workspace/section-state";
+import { useIdSet } from "@/shell/workspace/use-id-set";
 import { useNow } from "@/shell/workspace/use-now";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
@@ -44,24 +45,6 @@ function recoveryHint(copy: WorkspaceMembersCopy) {
         return copy.toasts.unknown;
     }
   };
-}
-
-function useIdSet() {
-  const [ids, setIds] = useState<ReadonlySet<string>>(() => new Set());
-  const add = useCallback(
-    (id: string) => setIds((current) => new Set(current).add(id)),
-    [],
-  );
-  const remove = useCallback(
-    (id: string) =>
-      setIds((current) => {
-        const next = new Set(current);
-        next.delete(id);
-        return next;
-      }),
-    [],
-  );
-  return { ids, add, remove };
 }
 
 /**

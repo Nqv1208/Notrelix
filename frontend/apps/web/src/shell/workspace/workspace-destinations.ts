@@ -36,6 +36,20 @@ export function routerTarget(
             ? { tab: "invitations" }
             : undefined,
       };
+    case "teams":
+      return destination.teamId
+        ? {
+            to: "/workspaces/$workspaceId/teams/$teamId",
+            params: { ...params, teamId: destination.teamId },
+          }
+        : {
+            to: "/workspaces/$workspaceId/teams",
+            params,
+            search:
+              destination.filter === "archived"
+                ? { filter: "archived" }
+                : undefined,
+          };
     case "settings":
       return { to: "/workspaces/$workspaceId/settings", params };
     case "billing":
@@ -101,6 +115,7 @@ const SECTION_BY_ROUTE_ID: Readonly<Record<string, WorkspaceDestination>> = {
   "/workspaces/$workspaceId/search": { section: "search" },
   "/workspaces/$workspaceId/library": { section: "library" },
   "/workspaces/$workspaceId/members": { section: "members" },
+  "/workspaces/$workspaceId/teams": { section: "teams" },
   "/workspaces/$workspaceId/settings": { section: "settings" },
   "/workspaces/$workspaceId/billing": { section: "billing" },
 };
@@ -136,6 +151,12 @@ export function resolveShellLocation(
       match.params.spaceId
     ) {
       return { section: "space", spaceId: match.params.spaceId };
+    }
+    if (
+      match.routeId === "/workspaces/$workspaceId/teams/$teamId" &&
+      match.params.teamId
+    ) {
+      return { section: "teams", teamId: match.params.teamId };
     }
     if (match.routeId.startsWith("/workspaces/$workspaceId/account")) {
       return { section: "account" };

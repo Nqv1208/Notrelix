@@ -13,6 +13,7 @@ import {
   Sun,
   UserRoundCheck,
   Users,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -152,6 +153,12 @@ export function WorkspaceCommandPaletteSurface({
       label: copy.nav.members,
       icon: Users,
       destination: { section: "members" },
+    },
+    {
+      id: "teams",
+      label: copy.nav.teams,
+      icon: UsersRound,
+      destination: { section: "teams" },
     },
     {
       id: "settings",

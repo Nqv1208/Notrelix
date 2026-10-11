@@ -117,6 +117,11 @@ export type WorkspaceDestination =
   | { readonly section: "search" }
   | { readonly section: "library" }
   | { readonly section: "members"; readonly tab?: "members" | "invitations" }
+  | {
+      readonly section: "teams";
+      readonly teamId?: string;
+      readonly filter?: "active" | "archived";
+    }
   | { readonly section: "settings" }
   | { readonly section: "billing" }
   | { readonly section: "account"; readonly page?: "profile" | "appearance" }

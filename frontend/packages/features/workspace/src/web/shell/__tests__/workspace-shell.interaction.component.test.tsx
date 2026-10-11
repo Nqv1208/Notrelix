@@ -68,6 +68,7 @@ describe("WorkspaceSidebarSurface", () => {
     expect(href(copy.nav.library)).toBe("/workspaces/ws-product/library");
     expect(href(copy.nav.search)).toBe("/workspaces/ws-product/search");
     expect(href(copy.nav.members)).toBe("/workspaces/ws-product/members");
+    expect(href(copy.nav.teams)).toBe("/workspaces/ws-product/teams");
     expect(href(copy.nav.settings)).toBe("/workspaces/ws-product/settings");
 
     const roadmap = within(nav).getByRole("link", { name: /Product Roadmap/ });
@@ -247,6 +248,7 @@ describe("WorkspaceSidebarSurface", () => {
       "Doc: Sprint 42 retro",
       "Board: Bug triage",
       copy.nav.members,
+      copy.nav.teams,
       copy.nav.settings,
     ]);
     for (const link of links) {

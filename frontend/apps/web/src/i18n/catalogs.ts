@@ -6,6 +6,7 @@ import {
   workspaceSettingsCatalog,
   workspaceShellCatalog,
   workspaceSpacesCatalog,
+  workspaceTeamsCatalog,
 } from "@notrelix/features-workspace/web";
 import { appearanceCatalog } from "./appearance.catalog";
 
@@ -21,4 +22,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   workspaceMembersCatalog,
   workspaceSettingsCatalog,
   workspaceSpacesCatalog,
+  workspaceTeamsCatalog,
 ];

@@ -18,6 +18,7 @@ export const en = {
     search: "Search",
     library: "Boards & Docs",
     members: "Members",
+    teams: "Teams",
     settings: "Settings",
   },
   sections: {
@@ -27,6 +28,7 @@ export const en = {
     search: "Search",
     library: "Boards & Docs",
     members: "Members",
+    teams: "Teams",
     settings: "Settings",
     billing: "Billing",
     account: "Account",
@@ -173,6 +175,7 @@ export const vi: WorkspaceShellCopy = {
     search: "Tìm kiếm",
     library: "Bảng & Tài liệu",
     members: "Thành viên",
+    teams: "Nhóm",
     settings: "Cài đặt",
   },
   sections: {
@@ -182,6 +185,7 @@ export const vi: WorkspaceShellCopy = {
     search: "Tìm kiếm",
     library: "Bảng & Tài liệu",
     members: "Thành viên",
+    teams: "Nhóm",
     settings: "Cài đặt",
     billing: "Thanh toán",
     account: "Tài khoản",

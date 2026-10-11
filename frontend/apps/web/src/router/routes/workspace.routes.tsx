@@ -5,6 +5,8 @@ import { HomePage } from "../../routes/workspaces/$workspaceId/home";
 import { LibraryPage } from "../../routes/workspaces/$workspaceId/library";
 import { SettingsPage } from "../../routes/workspaces/$workspaceId/settings";
 import { MembersPage } from "../../routes/workspaces/$workspaceId/members";
+import { TeamsPage } from "../../routes/workspaces/$workspaceId/teams";
+import { TeamPage } from "../../routes/workspaces/$workspaceId/teams.$teamId";
 import { MyWorkPage } from "../../routes/workspaces/$workspaceId/my-work";
 import { InboxPage } from "../../routes/workspaces/$workspaceId/inbox";
 import { SpacePage } from "../../routes/workspaces/$workspaceId/spaces/$spaceId";
@@ -44,6 +46,25 @@ export const membersRoute = createRoute({
   path: "/members",
   validateSearch: (search) => membersSearchSchema.parse(search),
   component: MembersPage,
+});
+
+const teamsSearchSchema = z.object({
+  filter: z.enum(["active", "archived"]).optional(),
+});
+
+/** The workspace's Teams (WX-TEAM-001). */
+export const teamsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/teams",
+  validateSearch: (search) => teamsSearchSchema.parse(search),
+  component: TeamsPage,
+});
+
+/** One Team (WX-TEAM-001). */
+export const teamRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/teams/$teamId",
+  component: TeamPage,
 });
 
 export const myWorkRoute = createRoute({
