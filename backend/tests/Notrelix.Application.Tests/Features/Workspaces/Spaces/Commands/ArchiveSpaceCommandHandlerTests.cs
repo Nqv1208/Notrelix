@@ -1,11 +1,20 @@
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Services;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Spaces.Commands;
 
 public class ArchiveSpaceCommandHandlerTests : WorkspaceHandlerTestBase
 {
+    private readonly Mock<ISpaceContentReader> _content = new();
+
+    public ArchiveSpaceCommandHandlerTests()
+    {
+        _content.Setup(c => c.ReadAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(SpaceContentFact.Empty);
+    }
+
     private ArchiveSpaceCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        DbContextMock.Object, _content.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
 
     [Fact]
     public async Task Handle_WhenSpaceExists_ArchivesSuccessfully()

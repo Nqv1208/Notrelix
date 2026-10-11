@@ -34,6 +34,18 @@ public class PageConfiguration : IEntityTypeConfiguration<Page>
             .HasForeignKey(x => x.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Placement in a Workspaces Space (docs/product/workspaces.md §79): a
+        // shadow foreign key with restricted delete, no navigation (ARCH-BC-004).
+        builder.Property(x => x.SpaceId).HasColumnName("space_id");
+        builder.HasOne<Notrelix.Domain.Workspaces.Spaces.Space>()
+            .WithMany()
+            .HasForeignKey(x => x.SpaceId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_pages_space");
+        builder.HasIndex(x => new { x.WorkspaceId, x.SpaceId })
+            .HasFilter("deleted_at IS NULL")
+            .HasDatabaseName("ix_docs_pages_workspace_space");
+
         builder.HasIndex(x => x.WorkspaceId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_pages_workspace_id");
         builder.HasIndex(x => x.ParentId).HasFilter("parent_id IS NOT NULL AND deleted_at IS NULL").HasDatabaseName("idx_pages_parent_id");
     }

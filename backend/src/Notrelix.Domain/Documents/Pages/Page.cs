@@ -6,6 +6,12 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid? ParentId { get; private set; }
+
+    /// <summary>
+    /// Workspaces Space this page is placed in (null = Workspace root). A nested
+    /// page follows the Space of its root page (docs/product/workspaces.md §79).
+    /// </summary>
+    public Guid? SpaceId { get; private set; }
     public string Title { get; private set; } = null!;
     public string Icon { get; private set; } = "📄";
     public string? CoverImage { get; private set; }

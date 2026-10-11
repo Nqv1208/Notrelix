@@ -27,6 +27,11 @@ SELECT ops.apply_scoped_business_policies('workspace', 'workspaces', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'workspace_members', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'workspace_invitations', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'spaces', true);
+-- Space membership and the Space closure index (ADR-009): tenant-scoped like
+-- spaces; Governance access evaluation and Application authorization remain
+-- the primary controls, these policies are defence in depth.
+SELECT ops.apply_scoped_business_policies('workspace', 'space_members', true);
+SELECT ops.apply_scoped_business_policies('workspace', 'space_paths', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'teams', true);
 SELECT ops.apply_scoped_business_policies('workspace', 'team_members', true);
 

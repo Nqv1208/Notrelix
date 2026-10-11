@@ -60,6 +60,10 @@ public static class ExpectedVersionInventory
             ["UnarchiveWorkspaceCommand"] = "workspaces.workspace",
             ["UpdateWorkspaceProfileCommand"] = "workspaces.workspace",
             ["UpdateWorkspaceSettingsCommand"] = "workspaces.workspace",
+            ["MoveSpaceCommand"] = "workspaces.space",
+            ["AddSpaceMemberCommand"] = "workspaces.space",
+            ["RemoveSpaceMemberCommand"] = "workspaces.space",
+            ["ChangeSpaceMemberRoleCommand"] = "workspaces.space",
         };
 
     public static IReadOnlyCollection<Type> DiscoverConcreteVersionedRequests() =>

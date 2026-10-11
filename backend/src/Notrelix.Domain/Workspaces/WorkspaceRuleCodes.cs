@@ -56,6 +56,19 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Space_CannotChangeVisibilityArchived = "Workspaces_Space_CannotChangeVisibilityArchived";
     public const string Workspaces_Space_CannotChangeTypeArchived = "Workspaces_Space_CannotChangeTypeArchived";
     public const string Workspaces_Space_CannotUnarchiveNonArchived = "Workspaces_Space_CannotUnarchiveNonArchived";
+    public const string Workspaces_Space_ParentInOtherWorkspace = "Workspaces_Space_ParentInOtherWorkspace";
+    public const string Workspaces_Space_ParentNotActive = "Workspaces_Space_ParentNotActive";
+    public const string Workspaces_Space_MoveCreatesCycle = "Workspaces_Space_MoveCreatesCycle";
+    public const string Workspaces_Space_DuplicateSiblingName = "Workspaces_Space_DuplicateSiblingName";
+    public const string Workspaces_Space_CannotMoveArchived = "Workspaces_Space_CannotMoveArchived";
+    public const string Workspaces_Space_CannotArchiveWithActiveContent = "Workspaces_Space_CannotArchiveWithActiveContent";
+    public const string Workspaces_Space_CannotDeleteWithContent = "Workspaces_Space_CannotDeleteWithContent";
+    public const string Workspaces_Space_ParentMustBeActiveToReactivate = "Workspaces_Space_ParentMustBeActiveToReactivate";
+    public const string Workspaces_Space_CannotChangeMembersArchived = "Workspaces_Space_CannotChangeMembersArchived";
+    public const string Workspaces_Space_MemberAlreadyExists = "Workspaces_Space_MemberAlreadyExists";
+    public const string Workspaces_Space_MemberNotFound = "Workspaces_Space_MemberNotFound";
+    public const string Workspaces_Space_CannotRemoveLastAdmin = "Workspaces_Space_CannotRemoveLastAdmin";
+    public const string Workspaces_Space_CannotDowngradeLastAdmin = "Workspaces_Space_CannotDowngradeLastAdmin";
 
     // ── InvitationTokenHash ───────────────────────────────────────────────
     public const string Workspaces_InvitationTokenHash_InvalidFormat = "Workspaces_InvitationTokenHash_InvalidFormat";

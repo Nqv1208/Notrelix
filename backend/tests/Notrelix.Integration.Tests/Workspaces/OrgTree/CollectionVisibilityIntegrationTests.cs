@@ -261,14 +261,6 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
         }
     }
 
-    private async Task<Guid> SeedSpaceAsync(OrgStack stack, string name, SpaceVisibility visibility, Guid createdBy)
-    {
-        var space = Space.Create(stack.AccountId, stack.WorkspaceId, name, visibility, createdBy, OrgTreeTestHost.BaseTime);
-        await _host.WithSystemContextAsync(seed =>
-        {
-            seed.Spaces.Add(space);
-            return Task.CompletedTask;
-        });
-        return space.Id;
-    }
+    private Task<Guid> SeedSpaceAsync(OrgStack stack, string name, SpaceVisibility visibility, Guid createdBy) =>
+        _host.SeedSpaceAsync(stack, name, visibility, createdBy);
 }

@@ -113,6 +113,12 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Navigation.Services.IWorkspaceNavigationStore,
             Notrelix.Infrastructure.Workspaces.Navigation.WorkspaceNavigationStore>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore,
+            Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.SpacePlacement.IBoardSpacePlacementFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardSpacePlacementFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpacePlacement.IPageSpacePlacementFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
         services.AddSingleton<Notrelix.Application.Common.Data.IOrderingConflictClassifier,

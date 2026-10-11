@@ -38,6 +38,12 @@ using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Services;
+using Notrelix.Infrastructure.Workspaces.Spaces;
+using Notrelix.Infrastructure.CrossContext.Workspaces.Documents;
+using Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement;
+using Notrelix.Application.Features.Workspaces.Spaces.Services;
+using Notrelix.Application.Features.WorkManagement.Public.SpacePlacement;
+using Notrelix.Application.Features.Documents.Public.SpacePlacement;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -145,6 +151,12 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<IResourceVisibility>(sp =>
             new PostgresResourceVisibility(sp.GetRequiredService<ApplicationDbContext>(), sp.GetRequiredService<TimeProvider>()));
         services.AddGovernanceInfrastructure(new ConfigurationBuilder().Build());
+
+        services.AddScoped<ISpaceStore>(sp => new SpaceStore(sp.GetRequiredService<ApplicationDbContext>()));
+        services.AddScoped<ISpaceTargetAuthorizer, SpaceTargetAuthorizer>();
+        services.AddScoped<ISpaceContentReader, SpaceContentReader>();
+        services.AddScoped<IBoardSpacePlacementFacts, BoardSpacePlacementFactsAdapter>();
+        services.AddScoped<IPageSpacePlacementFacts, PageSpacePlacementFactsAdapter>();
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
@@ -333,6 +345,50 @@ internal sealed class OrgTreeTestHost
                 priority: priority));
             return Task.CompletedTask;
         });
+
+    /// <summary>
+    /// Seeds a Space directly (bypassing authorization) appended under its
+    /// parent, with the closure rows the production store would stage. The
+    /// creator becomes its first Space Admin (Domain rule).
+    /// </summary>
+    public async Task<Guid> SeedSpaceAsync(
+        OrgStack stack,
+        string name,
+        Notrelix.Domain.Workspaces.Spaces.SpaceVisibility visibility,
+        Guid createdBy,
+        Guid? parentId = null,
+        Notrelix.Domain.Workspaces.Spaces.SpaceType type = Notrelix.Domain.Workspaces.Spaces.SpaceType.Folder,
+        Action<Notrelix.Domain.Workspaces.Spaces.Space>? transition = null)
+    {
+        Guid spaceId = Guid.Empty;
+        await WithSystemContextAsync(async seed =>
+        {
+            var siblings = await seed.Spaces
+                .Where(x => x.WorkspaceId == stack.WorkspaceId && x.ParentSpaceId == parentId)
+                .Select(x => x.Position)
+                .ToListAsync();
+            var last = siblings.OrderBy(p => p).LastOrDefault();
+            var position = FractionalIndexGenerator.GenerateKeyBetween(last, null);
+
+            var ancestors = parentId is { } p
+                ? await seed.SpacePaths.Where(x => x.DescendantId == p).Select(x => new { x.AncestorId, x.Depth }).ToListAsync()
+                : [];
+            var parentFact = parentId is { } pid
+                ? new Notrelix.Domain.Workspaces.Spaces.SpaceParentFact(pid, stack.WorkspaceId, true, ancestors.OrderByDescending(a => a.Depth).Select(a => a.AncestorId).ToList())
+                : null;
+
+            var space = Notrelix.Domain.Workspaces.Spaces.Space.Create(
+                stack.AccountId, stack.WorkspaceId, name, visibility, createdBy, BaseTime, type,
+                placement: new Notrelix.Domain.Workspaces.Spaces.SpacePlacement(parentFact, position, []));
+            transition?.Invoke(space);
+            seed.Spaces.Add(space);
+            seed.SpacePaths.Add(new Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord(stack.AccountId, stack.WorkspaceId, space.Id, space.Id, 0));
+            foreach (var ancestor in ancestors)
+                seed.SpacePaths.Add(new Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord(stack.AccountId, stack.WorkspaceId, ancestor.AncestorId, space.Id, ancestor.Depth + 1));
+            spaceId = space.Id;
+        });
+        return spaceId;
+    }
 
     /// <summary>Seeds an open, assigned Item on the board (group + item + assignment).</summary>
     public async Task<Guid> SeedAssignedItemAsync(OrgStack stack, Guid boardId, Guid assigneeId, string name)

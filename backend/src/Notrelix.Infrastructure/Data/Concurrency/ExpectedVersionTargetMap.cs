@@ -50,6 +50,11 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorksp
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UnarchiveWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.AddSpaceMember;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceMemberRole;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.MoveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.RemoveSpaceMember;
+using Notrelix.Domain.Workspaces.Spaces;
 
 namespace Notrelix.Infrastructure.Data.Concurrency;
 
@@ -121,6 +126,7 @@ public sealed class ExpectedVersionTargetMap
     private const string FormKind = "work-management.form";
     private const string SavedFilterKind = "work-management.saved-filter";
     private const string WorkspaceKind = "workspaces.workspace";
+    private const string SpaceKind = "workspaces.space";
 
     private static Dictionary<Type, TargetDefinition> BuildDefault() => new(new Dictionary<Type, TargetDefinition>
     {
@@ -178,6 +184,12 @@ public sealed class ExpectedVersionTargetMap
         [typeof(DeleteWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceProfileCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceSettingsCommand)] = new(WorkspaceKind, typeof(Workspace)),
+
+        // Workspaces — Space hierarchy and membership (WSP-021, WSP-024)
+        [typeof(MoveSpaceCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(AddSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(RemoveSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
+        [typeof(ChangeSpaceMemberRoleCommand)] = new(SpaceKind, typeof(Space)),
     });
 
     /// <summary>Validates the declared resource kind against the mapped expectation.</summary>

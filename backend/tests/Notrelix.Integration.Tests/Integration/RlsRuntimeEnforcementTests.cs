@@ -624,6 +624,47 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             .Which.SqlState.Should().Be("42501", "the app role cannot write a pin owned by another user");
     }
 
+    /// <summary>
+    /// ADR-009: Space membership entries and the Space closure index are
+    /// tenant-scoped. A user with a grant only in workspace A1 sees A1's entries
+    /// and closure rows, never those of a workspace without a grant, and the app
+    /// role cannot write a closure row into a workspace it has no access to.
+    /// </summary>
+    [Fact]
+    public async Task AppRole_SpaceMembersAndClosure_AreWorkspaceScoped()
+    {
+        var spaceA1 = Notrelix.Domain.Workspaces.Spaces.Space.Create(AccountA, WsA1, "Space A1", Notrelix.Domain.Workspaces.Spaces.SpaceVisibility.Private, UserId, FixedTime);
+        var spaceB1 = Notrelix.Domain.Workspaces.Spaces.Space.Create(AccountB, WsB1, "Space B1", Notrelix.Domain.Workspaces.Spaces.SpaceVisibility.Private, UserId, FixedTime);
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using (var context = CreateContext(tenant))
+        {
+            context.Spaces.AddRange(spaceA1, spaceB1);
+            context.SpacePaths.AddRange(
+                new Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord(AccountA, WsA1, spaceA1.Id, spaceA1.Id, 0),
+                new Notrelix.Infrastructure.Data.Workspaces.SpacePathRecord(AccountB, WsB1, spaceB1.Id, spaceB1.Id, 0));
+            await context.SaveChangesAsync();
+        }
+
+        await SeedGrantAsync(AccountA, WsA1, UserId);
+
+        (await QueryScalarsAsAppRoleAsync("SELECT space_id::text FROM workspace.space_members ORDER BY 1", userId: UserId))
+            .Should().Equal([spaceA1.Id.ToString()], "space members of a workspace without a grant stay hidden");
+        (await QueryScalarsAsAppRoleAsync("SELECT descendant_id::text FROM workspace.space_paths ORDER BY 1", userId: UserId))
+            .Should().Equal([spaceA1.Id.ToString()], "closure rows of a workspace without a grant stay hidden");
+        (await QueryScalarsAsAppRoleAsync("SELECT descendant_id::text FROM workspace.space_paths ORDER BY 1"))
+            .Should().BeEmpty("a request without user context sees no closure rows");
+
+        var forgedInsert = () => QueryScalarsAsAppRoleAsync($"""
+            INSERT INTO workspace.space_paths (ancestor_id, descendant_id, account_id, workspace_id, depth)
+            VALUES ('{spaceB1.Id}', '{spaceA1.Id}', '{AccountB}', '{WsB1}', 1)
+            RETURNING descendant_id::text
+            """, userId: UserId);
+        (await forgedInsert.Should().ThrowAsync<PostgresException>())
+            .Which.SqlState.Should().Be("42501", "the app role cannot write closure rows into a workspace it cannot access");
+    }
+
     [Fact]
     public async Task SupportReadonlyRole_SelectsAllRows_ButCannotMutate()
     {

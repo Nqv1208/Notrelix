@@ -115,6 +115,10 @@ public static class DependencyInjection
         services.AddScoped<MoveBoardItemUseCase>();
         services.AddScoped<IWorkItemActions, WorkItemActions>();
         services.AddScoped<IWorkItemActionAuthorizer, WorkItemActionAuthorizer>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
+            Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,
+            Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceContentReader>();
 
         // Producer-owned public projection source (WorkManagement placement facts)
         services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();
