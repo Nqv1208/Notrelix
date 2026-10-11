@@ -9,6 +9,9 @@ public record PageDto(
     string? CoverImage,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
+    // The Page aggregate version; a versioned write (Documents.Pages.MoveToSpace)
+    // sends it back as ExpectedVersion and a stale value is rejected (412).
+    long Version,
     // The Workspaces Space the page is placed in; null at the Workspace root
     // and also when the caller cannot see that Space (never disclosed, GOV-029).
     Guid? SpaceId = null
@@ -34,6 +37,8 @@ public record PageTreeItemDto(
     string Icon,
     Guid? ParentId,
     bool HasChildren,
+    // As PageDto.Version.
+    long Version,
     // As PageDto.SpaceId: null at the root or when the Space is not visible.
     Guid? SpaceId = null
 );

@@ -15,6 +15,7 @@ internal static class DocumentDtoMapper
         page.CoverImage,
         page.CreatedAt.DateTime,
         page.UpdatedAt?.DateTime,
+        page.Version,
         page.SpaceId is { } spaceId && visibleSpaceIds.Contains(spaceId) ? spaceId : null
     );
 

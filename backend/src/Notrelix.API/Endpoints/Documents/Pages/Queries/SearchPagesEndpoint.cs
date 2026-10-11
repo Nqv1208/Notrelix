@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Pages.Queries.SearchPages;
 
 namespace Notrelix.API.Endpoints.Documents.Pages.Queries;
@@ -9,6 +10,7 @@ public static class SearchPagesEndpoint
     {
         group.MapWorkspaceGet("/search", HandleAsync)
             .WithName("Documents.Pages.SearchPages")
+            .Produces<List<PageDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("Documents.Pages")
             .WithSummary("Search pages in a workspace");
         return group;

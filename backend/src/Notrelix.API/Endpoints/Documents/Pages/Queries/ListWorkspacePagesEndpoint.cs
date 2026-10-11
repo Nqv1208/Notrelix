@@ -1,4 +1,5 @@
 using Notrelix.API.Extensions;
+using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetWorkspacePages;
 
 namespace Notrelix.API.Endpoints.Documents.Pages.Queries;
@@ -9,6 +10,7 @@ public static class ListWorkspacePagesEndpoint
     {
         group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Documents.Pages.ListWorkspacePages")
+            .Produces<List<PageDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("Documents.Pages")
             .WithSummary("List all pages in a workspace");
         return group;

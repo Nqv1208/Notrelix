@@ -4476,6 +4476,38 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Features.Documents.DTOs.PageDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            /** Format: uuid */
+            parentId?: string | null;
+            title?: string | null;
+            icon?: string | null;
+            coverImage?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.PageTreeItemDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            icon?: string | null;
+            /** Format: uuid */
+            parentId?: string | null;
+            hasChildren?: boolean;
+            /** Format: int64 */
+            version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto": {
             /** Format: uuid */
             id?: string;
@@ -5576,7 +5608,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
                 };
             };
         };
@@ -5624,7 +5656,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTreeItemDto"][];
                 };
             };
         };
@@ -5648,7 +5680,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
                 };
             };
         };
@@ -5670,7 +5702,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"];
                 };
             };
         };

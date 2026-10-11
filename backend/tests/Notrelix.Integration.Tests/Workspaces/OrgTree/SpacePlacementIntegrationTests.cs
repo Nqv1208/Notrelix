@@ -2,6 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
 using Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetPageTree;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetWorkspacePages;
+using Notrelix.Application.Features.Documents.Pages.Queries.SearchPages;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSpace;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
@@ -232,6 +235,36 @@ public sealed class SpacePlacementIntegrationTests : IAsyncLifetime
         var nested = () => OrgTreeTestHost.SendAsync(owner, new MovePageToSpaceCommand(child, s.Accounting, childVersion));
         (await nested.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode.Should().Be(DocumentRuleCodes.Documents_Page_NestedPageFollowsRootSpace);
         (await SpaceOfPageAsync(child)).Should().Be(s.Marketing);
+    }
+
+    [Fact]
+    public async Task PageReads_ExposeTheVersion_MoveToSpaceAccepts_AndAStaleVersionIsRejectedWithoutMoving()
+    {
+        var s = await SeedAsync();
+        using var owner = _host.CreateProvider(s.Stack.AccountId, s.Stack.OwnerId);
+        var root = await OrgTreeTestHost.QueryAsync(owner, new CreatePageCommand(s.Stack.WorkspaceId, "Playbook", null, s.Accounting));
+        var child = await OrgTreeTestHost.QueryAsync(owner, new CreatePageCommand(s.Stack.WorkspaceId, "Chapter", root));
+
+        var read = await OrgTreeTestHost.QueryAsync(owner, new GetPageQuery(root));
+        read.Version.Should().Be(await VersionOfPageAsync(root), "the single read exposes the stored aggregate version");
+        (await OrgTreeTestHost.QueryAsync(owner, new GetWorkspacePagesQuery(s.Stack.WorkspaceId))).Single(p => p.Id == root).Version.Should().Be(read.Version);
+        (await OrgTreeTestHost.QueryAsync(owner, new GetPageTreeQuery(s.Stack.WorkspaceId))).Single(p => p.Id == root).Version.Should().Be(read.Version);
+        (await OrgTreeTestHost.QueryAsync(owner, new SearchPagesQuery(s.Stack.WorkspaceId, "playbook"))).Single(p => p.Id == root).Version.Should().Be(read.Version);
+
+        await OrgTreeTestHost.SendAsync(owner, new MovePageToSpaceCommand(root, s.Marketing, read.Version));
+        var moved = await OrgTreeTestHost.QueryAsync(owner, new GetPageQuery(root));
+        moved.SpaceId.Should().Be(s.Marketing, "the version the read exposed is accepted as ExpectedVersion");
+        moved.Version.Should().BeGreaterThan(read.Version, "the move advanced the version the next write must carry");
+
+        var stale = () => OrgTreeTestHost.SendAsync(owner, new MovePageToSpaceCommand(root, s.Accounting, read.Version));
+        (await stale.Should().ThrowAsync<PreconditionFailed>("the version read before the move is stale"))
+            .Which.ErrorCode.Should().Be("common.precondition-failed", "the API maps this error to 412 Precondition Failed");
+        (await SpaceOfPageAsync(root)).Should().Be(s.Marketing, "a rejected move leaves the placement unchanged");
+        (await SpaceOfPageAsync(child)).Should().Be(s.Marketing);
+        (await VersionOfPageAsync(root)).Should().Be(moved.Version);
+
+        await OrgTreeTestHost.SendAsync(owner, new MovePageToSpaceCommand(root, s.Accounting, moved.Version));
+        (await SpaceOfPageAsync(root)).Should().Be(s.Accounting, "the re-read version is accepted");
     }
 
     // ── Space lifecycle with placed resources (WSP-022) ───────────────────

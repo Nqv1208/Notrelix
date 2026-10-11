@@ -50,6 +50,7 @@ public class GetPageTreeQueryHandler : IRequestHandler<GetPageTreeQuery, Result<
             page.Icon,
             page.ParentId is { } parentId && visibleIds.Contains(parentId) ? parentId : null,
             parentIds.Contains(page.Id),
+            page.Version,
             page.SpaceId is { } spaceId && spaces.Contains(spaceId) ? spaceId : null
         )).ToList());
     }
