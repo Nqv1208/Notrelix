@@ -24,6 +24,8 @@ describe("workspaceQueryKeys Q7 purity tests", () => {
       workspaceQueryKeys.spaceTree(wsId),
       workspaceQueryKeys.spaceMembers(wsId, "space-1"),
       workspaceQueryKeys.teams(wsId),
+      workspaceQueryKeys.team(wsId, "team-1"),
+      workspaceQueryKeys.teamMembers(wsId, "team-1"),
     ];
 
     for (const key of keys) {

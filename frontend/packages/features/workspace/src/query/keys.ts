@@ -41,4 +41,8 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "spaces", spaceId, "members"),
   teams: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "teams"),
+  team: (workspaceId: string, teamId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "teams", teamId),
+  teamMembers: (workspaceId: string, teamId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "teams", teamId, "members"),
 } as const;

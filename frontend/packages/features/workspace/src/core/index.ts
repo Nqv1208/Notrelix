@@ -72,6 +72,13 @@ export {
   type SpacesService,
 } from "./api/spaces.service";
 export {
+  createTeamsService,
+  parseTeamList,
+  parseTeamMembers,
+  type TeamsEndpoints,
+  type TeamsService,
+} from "./api/teams.service";
+export {
   createNavigationService,
   type NavigationApiClient,
   type NavigationEndpoints,
@@ -89,3 +96,4 @@ export * from "./model/members";
 export * from "./model/my-work";
 export * from "./model/library";
 export * from "./model/spaces";
+export * from "./model/teams";
