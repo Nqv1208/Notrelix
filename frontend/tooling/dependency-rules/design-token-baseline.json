@@ -15,19 +15,9 @@
     "apps/web/src/shell/global-search.tsx": {
       "arbitrary-text-size": 2
     },
-    "apps/web/src/shell/home/app-sidebar.tsx": {
-      "palette-color": 2,
-      "arbitrary-text-size": 6
-    },
-    "apps/web/src/shell/home/user-menu.tsx": {
-      "arbitrary-text-size": 8
-    },
     "apps/web/src/shell/sidebar/sidebar.tsx": {
       "palette-color": 28,
       "arbitrary-text-size": 2
-    },
-    "apps/web/src/shell/topbar/topbar.tsx": {
-      "arbitrary-text-size": 1
     },
     "packages/features/auth/src/web/components/auth-forgot-password-form-surface.tsx": {
       "palette-color": 2,

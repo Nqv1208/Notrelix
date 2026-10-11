@@ -16,7 +16,7 @@ function errorKind(error: unknown): string | undefined {
 }
 
 /**
- * Replaces the silent redirect of `shell/guards/workspace-guard.tsx`: a
+ * Replaces the former silent redirect of the legacy workspace guard: a
  * failed load or lost access renders an explicit state with a retry and a
  * way out (WX-SHELL-004).
  */
