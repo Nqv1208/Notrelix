@@ -19,6 +19,7 @@ export type {
   PageDetail,
   PageActivity,
   CreatePagePayload,
+  MovePageToSpacePayload,
   UpdatePagePayload,
   PageComment,
   CreateCommentPayload,
@@ -39,7 +40,11 @@ export { mapBlock, parseProperties } from "./model/block.mapper";
 export { mapComment } from "./model/comment.mapper";
 
 export { createPageApi } from "./api/page.api";
-export type { DocsApiClient, PageApiEndpoints } from "./api/page.api";
+export type {
+  DocsApiClient,
+  DocsRequestOptions,
+  PageApiEndpoints,
+} from "./api/page.api";
 export { createBreadcrumbApi } from "./api/breadcrumb.api";
 export { createSearchApi } from "./api/search.api";
 export { createFavoriteApi } from "./api/favorite.api";

@@ -13,6 +13,7 @@ import {
   createSpaceErrorScenario,
   createSpacePendingScenario,
   moveBoardScenario,
+  movePageScenario,
   moveErrorScenario,
   movePendingScenario,
   moveSpaceScenario,
@@ -145,6 +146,7 @@ const pageCallbacks = {
   onCreateDoc: noop,
   onMoveSpace: noop,
   onMoveBoard: noop,
+  onMoveDoc: noop,
   onUnarchive: noop,
   onSave: noop,
   onArchive: noop,
@@ -326,6 +328,13 @@ export const MoveDefault: Story = {
 export const MoveBoard: Story = {
   render: () => (
     <MoveToSpaceDialog {...moveBoardScenario()} {...dialogCallbacks} />
+  ),
+  tags: ["fui-surface--workspace.move-to-space", "fui-state--EdgeData"],
+};
+
+export const MovePage: Story = {
+  render: () => (
+    <MoveToSpaceDialog {...movePageScenario()} {...dialogCallbacks} />
   ),
   tags: ["fui-surface--workspace.move-to-space", "fui-state--EdgeData"],
 };

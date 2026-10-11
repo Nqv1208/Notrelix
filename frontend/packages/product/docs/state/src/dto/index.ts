@@ -16,6 +16,8 @@ export type PageDtoApi = {
   deadline?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+  /** The Page aggregate version (`PageDto.version`). */
+  version?: number;
   spaceId?: string | null;
 };
 

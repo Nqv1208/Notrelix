@@ -107,6 +107,7 @@ export function LibraryPage() {
           name: doc.name,
           updatedAt: doc.updatedAt,
           spaceId: doc.spaceId,
+          parentId: doc.parentId,
           location:
             doc.parentName ??
             ((doc.spaceId && spacePathLabel(spaceIndex, doc.spaceId)) ||
@@ -180,6 +181,11 @@ export function LibraryPage() {
         onMoveBoard={
           viewer.role !== null && viewer.role !== "guest" && spaces.length > 0
             ? (entry) => mover.openForBoard({ id: entry.id, name: entry.name })
+            : undefined
+        }
+        onMoveDoc={
+          viewer.role !== null && viewer.role !== "guest" && spaces.length > 0
+            ? (entry) => mover.openForPage({ id: entry.id, name: entry.name })
             : undefined
         }
         onCreateBoard={() => create.open("board")}

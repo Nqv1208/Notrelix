@@ -37,8 +37,11 @@ import {
   notFound,
   validationError,
 } from "../../transport/create-response";
-import { accessAtLeast } from "../../state/mock-spaces";
 import type { MockStore } from "../../state/mock-store";
+import {
+  preconditionFailed,
+  targetSpaceDenied,
+} from "../workspace/space-target";
 
 /** The Board's Space id, masked when the caller cannot see it (GOV-029). */
 function visibleSpaceId(
@@ -51,35 +54,6 @@ function visibleSpaceId(
     null
     ? null
     : spaceId;
-}
-
-/** GOV-028: creating or moving a Board into a Space needs Editor there. */
-function targetSpaceDenied(
-  store: MockStore,
-  workspaceId: string,
-  spaceId: string | null,
-) {
-  if (!spaceId) return null;
-  const space = store.spaces.getSpace(spaceId);
-  const access = space
-    ? store.spaces.accessFor(spaceId, store.spaceViewer(workspaceId))
-    : null;
-  if (!space || space.workspaceId !== workspaceId || access === null)
-    return notFound();
-  if (!accessAtLeast(access, "Editor")) return forbidden();
-  if (space.archived) {
-    return {
-      status: 409,
-      body: {
-        type: "https://docs.notrelix.com/problems/workspaces-space-inactive",
-        title: "Conflict",
-        status: 409,
-        detail: "The target space is archived.",
-        errorCode: "workspaces.space.inactive",
-      },
-    };
-  }
-  return null;
 }
 
 function projectCardSummary(
@@ -258,17 +232,7 @@ export const boardsOperations = [
         case "not-found":
           return notFound();
         case "stale":
-          return {
-            status: 412,
-            body: {
-              type: "https://docs.notrelix.com/problems/common-precondition-failed",
-              title: "Precondition failed",
-              status: 412,
-              detail:
-                "The resource was modified by another request. Reload and retry.",
-              errorCode: "common.precondition-failed",
-            },
-          };
+          return preconditionFailed();
       }
     },
   }),

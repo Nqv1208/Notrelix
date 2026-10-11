@@ -39,6 +39,7 @@ function renderPage(
     onCreateDoc: vi.fn(),
     onMoveSpace: vi.fn(),
     onMoveBoard: vi.fn(),
+    onMoveDoc: vi.fn(),
     onUnarchive: vi.fn(),
     onSave: vi.fn(),
     onArchive: vi.fn(),
@@ -95,6 +96,12 @@ describe("WorkspaceSpaceSurface", () => {
     fireEvent.click(screen.getByRole("button", { name: "Move IT roadmap" }));
     expect(props.onMoveBoard).toHaveBeenCalledWith(
       expect.objectContaining({ id: "board-it-roadmap" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Move Onboarding checklist" }),
+    );
+    expect(props.onMoveDoc).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "doc-it-onboarding" }),
     );
   });
 

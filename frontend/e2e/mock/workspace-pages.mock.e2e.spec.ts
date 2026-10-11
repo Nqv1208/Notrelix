@@ -72,10 +72,28 @@ test("Members changes a role and confirms removal (WX-MEM-001)", async ({
   await expect(page.locator("tbody tr")).toHaveCount(3);
 });
 
-test("Settings explains why saving is off without a workspace version (WX-SET-001)", async ({
+test("Settings saves the profile with the workspace version, and the next save carries the advanced one (WX-SET-001)", async ({
   page,
 }) => {
   await page.goto(`${workspace}/settings`);
-  await expect(page.getByLabel("Workspace name")).toBeDisabled();
-  await expect(page.getByText(/Saving is turned off for now/)).toBeVisible();
+  const name = page.getByLabel("Workspace name");
+  await expect(name).toBeEnabled();
+  await expect(page.getByText(/Saving is turned off for now/)).toHaveCount(0);
+
+  // The first save sends the read version (1); the producer advances it.
+  await name.fill("Product Platform");
+  const profile = page.getByRole("region", { name: "Profile" });
+  await profile.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Profile saved.").first()).toBeVisible();
+  // The re-read workspace (version 2) names the page.
+  await expect(page.getByText(/Product Platform/).first()).toBeVisible();
+
+  // A second save must carry the advanced version: with the stale one the
+  // producer answers 412 and the surface shows the conflict notice instead.
+  await name.fill("Product Platform Team");
+  await profile.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Profile saved.").first()).toBeVisible();
+  await expect(
+    page.getByText(/Someone changed these settings while you were editing/),
+  ).toHaveCount(0);
 });

@@ -6,6 +6,7 @@ import {
   createSpaceDefaultScenario,
   createSpaceErrorScenario,
   moveBoardScenario,
+  movePageScenario,
   moveSpaceScenario,
   spacesCopyFixture,
 } from "../../../verification/workspace-spaces-fixtures";
@@ -184,6 +185,25 @@ describe("MoveToSpaceDialog", () => {
       within(dialog).getByRole("button", { name: copy.move.submit }),
     );
     expect(props.onSubmit).toHaveBeenCalledWith(null);
+  });
+
+  it("FUI[workspace.move-to-space:page] moves a root Doc into any Space the member can add Docs to, or out", () => {
+    const props = renderMove(movePageScenario());
+    const dialog = screen.getByRole("dialog", {
+      name: "Move Onboarding checklist to a Space",
+    });
+    expect(within(dialog).getByText(copy.move.pageDescription)).toBeTruthy();
+    const radio = (name: RegExp | string) =>
+      within(dialog).getByRole("radio", { name }) as HTMLButtonElement;
+    expect(radio(/^IT/).disabled).toBe(true);
+    expect(radio(/^Accounting/).disabled).toBe(false);
+    expect(radio(/^Marketing/).disabled).toBe(true);
+    expect(radio(copy.move.rootBoard).disabled).toBe(false);
+    fireEvent.click(radio(/^Accounting/));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: copy.move.submit }),
+    );
+    expect(props.onSubmit).toHaveBeenCalledWith("sp-accounting");
   });
 
   it("FUI[workspace.move-to-space:search] filters the tree by name, keeping ancestors", () => {

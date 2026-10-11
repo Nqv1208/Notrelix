@@ -1759,10 +1759,58 @@ export class MockStore {
       title: patch.title ?? page.title,
       icon: patch.icon !== undefined ? patch.icon : page.icon,
       parentId: patch.parentId !== undefined ? patch.parentId : page.parentId,
+      version: (page.version ?? 1) + 1,
       updatedAt: this.clock.isoNow(),
     };
     this.pagesById.set(pageId, updated);
     return true;
+  }
+
+  getPageVersion(pageId: string): number {
+    return this.pagesById.get(pageId)?.version ?? 1;
+  }
+
+  /**
+   * Places a root page in a Space (or at the workspace level) with its whole
+   * subtree, versioned like the producer (`Documents.Pages.MoveToSpace`): a
+   * nested page follows its root and is refused (docs/product/workspaces.md
+   * §79), a stale version changes nothing, the same place is a no-op.
+   */
+  placePage(
+    pageId: string,
+    spaceId: string | null,
+    expectedVersion: unknown,
+  ): MockVersionedWrite | "nested" {
+    const page = this.pagesById.get(pageId);
+    if (!page) return "not-found";
+    if (page.parentId) return "nested";
+    const version = page.version ?? 1;
+    if (expectedVersion !== version) return "stale";
+    if ((page.spaceId ?? null) === spaceId) return "ok";
+    const moving = new Set([pageId]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const other of this.pagesById.values()) {
+        if (
+          other.parentId &&
+          moving.has(other.parentId) &&
+          !moving.has(other.id)
+        ) {
+          moving.add(other.id);
+          grew = true;
+        }
+      }
+    }
+    for (const id of moving) {
+      const record = this.pagesById.get(id)!;
+      this.pagesById.set(id, { ...record, spaceId });
+    }
+    this.pagesById.set(pageId, {
+      ...this.pagesById.get(pageId)!,
+      version: version + 1,
+    });
+    return "ok";
   }
 
   deletePage(pageId: string): boolean {

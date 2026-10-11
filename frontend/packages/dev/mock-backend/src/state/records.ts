@@ -82,6 +82,8 @@ export interface MockPageRecord {
   parentId?: string;
   /** The Space the page is placed in (OT-4); absent = workspace root. */
   spaceId?: string | null;
+  /** Page aggregate version (move-to-space `expectedVersion`); absent = 1. */
+  version?: number;
   createdAt: string;
   updatedAt: string;
 }

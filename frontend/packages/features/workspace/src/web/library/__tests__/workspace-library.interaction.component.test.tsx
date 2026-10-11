@@ -240,15 +240,24 @@ describe("WorkspaceLibrarySurface", () => {
     expect(bodyRowNames()).toHaveLength(4);
   });
 
-  it("FUI[workspace.library:move] offers moving a Board (not a Doc) to a Space", () => {
+  it("FUI[workspace.library:move] offers moving a Board or a root Doc (never a nested Doc) to a Space", () => {
     const onMoveBoard = vi.fn();
-    renderLibrary(undefined, { onMoveBoard });
+    const onMoveDoc = vi.fn();
+    renderLibrary(undefined, { onMoveBoard, onMoveDoc });
     fireEvent.click(
       screen.getByRole("button", { name: "Move Bug Triage to a Space" }),
     );
     expect(onMoveBoard).toHaveBeenCalledWith(
       expect.objectContaining({ id: "board-triage" }),
     );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Move Team rituals to a Space" }),
+    );
+    expect(onMoveDoc).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "doc-rituals" }),
+    );
+    expect(onMoveBoard).toHaveBeenCalledTimes(1);
+    // A nested Doc follows its root page (docs/product/workspaces.md §79).
     expect(
       screen.queryByRole("button", { name: "Move Sprint 42 retro to a Space" }),
     ).toBeNull();

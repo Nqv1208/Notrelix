@@ -8,6 +8,7 @@
  *   pages.create     — POST /workspaces/:workspaceId/pages
  *   pages.update     — PATCH /pages/:id
  *   pages.delete     — DELETE /pages/:id
+ *   pages.moveToSpace — POST /pages/:pageId/move-to-space (Documents.Pages.MoveToSpace)
  *   pages.breadcrumb — GET /pages/:id/breadcrumb
  *   pages.blocks     — GET /pages/:id/blocks
  *
@@ -16,10 +17,20 @@
  */
 
 import { defineMockOperation } from "../../operations/types";
-import { ok, created, notFound } from "../../transport/create-response";
+import {
+  ok,
+  created,
+  forbidden,
+  noContent,
+  notFound,
+} from "../../transport/create-response";
 import type { MockPageRecord } from "../../state/records";
 import type { MockStore } from "../../state/mock-store";
 import { accessAtLeast } from "../../state/mock-spaces";
+import {
+  preconditionFailed,
+  targetSpaceDenied,
+} from "../workspace/space-target";
 
 // Inline DTO — aligns with endpoints.pages contract and @notrelix/docs-state
 interface PageDtoApi {
@@ -38,6 +49,8 @@ interface PageDtoApi {
   deadline?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+  /** The Page aggregate version (`PageDto.version`). */
+  version: number;
   /** Masked when the caller cannot see the Space (GOV-029). */
   spaceId?: string | null;
 }
@@ -73,6 +86,7 @@ function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
     deadline: null,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
+    version: p.version ?? 1,
   };
 }
 
@@ -127,7 +141,7 @@ export const pagesOperations = [
       parentId?: string;
       spaceId?: string | null;
     },
-    PageDtoApi
+    string
   >({
     id: "pages.create",
     contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
@@ -165,7 +179,9 @@ export const pagesOperations = [
           };
       }
       const page = store.createPage(params.workspaceId, { ...data, spaceId });
-      return created<PageDtoApi>(mapPageDto(page, store));
+      // Like the producer (`ToCreatedResult`): 201 with the new page id; the
+      // client then reads the page (`@notrelix/docs-state` `create`).
+      return created<string>(page.id);
     },
   }),
 
@@ -199,6 +215,50 @@ export const pagesOperations = [
       const deleted = store.deletePage(params.id);
       if (!deleted) return notFound("Page not found");
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /pages/:pageId/move-to-space (GOV-028) ─────────────────────────
+
+  defineMockOperation<
+    { pageId: string },
+    { spaceId?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "pages.moveToSpace",
+    contract: { kind: "openapi", operationId: "Documents.Pages.MoveToSpace" },
+    method: "POST",
+    route: "/pages/:pageId/move-to-space",
+    async handle({ params, body, store }) {
+      const page = store.getPage(params.pageId);
+      if (!page || !store.isCurrentMemberOf(page.workspaceId))
+        return notFound("Page not found");
+      // UpdatePage on the source (guests never update pages here).
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest")
+        return forbidden();
+      const target = body?.spaceId ?? null;
+      const denied = targetSpaceDenied(store, page.workspaceId, target);
+      if (denied) return denied;
+      switch (store.placePage(page.id, target, body?.expectedVersion)) {
+        case "ok":
+          return noContent();
+        case "not-found":
+          return notFound("Page not found");
+        case "nested":
+          // The producer's Documents_Page_NestedPageFollowsRootSpace rule.
+          return {
+            status: 400,
+            body: {
+              type: "https://docs.notrelix.com/problems/business_rule-violation",
+              title: "Business rule violation",
+              status: 400,
+              detail: "A nested page follows the Space of its root page.",
+              errorCode: "business_rule.violation",
+            },
+          };
+        case "stale":
+          return preconditionFailed();
+      }
     },
   }),
 

@@ -88,6 +88,7 @@ export const endpoints = {
     history: (pageId: string) => `/pages/${pageId}/history`,
     search: (workspaceId: string) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId: string) => `/pages/${pageId}/move`,
+    moveToSpace: (pageId: string) => `/pages/${pageId}/move-to-space`,
   },
   blocks: {
     detail: (blockId: string) => `/blocks/${blockId}`,

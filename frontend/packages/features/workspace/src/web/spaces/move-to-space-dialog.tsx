@@ -29,16 +29,19 @@ import { formatCopy } from "../shell/shell-models";
 import { SPACE_TYPE_ICON } from "./space-tree-nav";
 import type { WorkspaceSpacesCopy } from "./workspace-spaces.copy";
 
+/** A Board or a root Doc being moved between Spaces. */
+export interface MoveToSpaceResource {
+  readonly id: string;
+  readonly name: string;
+  /** Its current Space, `null` at the workspace level. */
+  readonly spaceId: string | null;
+}
+
 /** What is being moved; `null` closes the dialog. */
 export type MoveToSpaceSubject =
   | { readonly kind: "space"; readonly space: SpaceNode }
-  | {
-      readonly kind: "board";
-      readonly id: string;
-      readonly name: string;
-      /** Its current Space, `null` at the workspace level. */
-      readonly spaceId: string | null;
-    };
+  | ({ readonly kind: "board" } & MoveToSpaceResource)
+  | ({ readonly kind: "page" } & MoveToSpaceResource);
 
 export interface MoveToSpaceDialogProps {
   readonly copy: WorkspaceSpacesCopy;
@@ -59,9 +62,10 @@ const ROOT_VALUE = "__root__";
 const INDENT = 16;
 
 /**
- * Picks a destination in the Space tree (OT-5). Places the member may not
- * add the subject to stay listed but disabled, with the reason, so the tree
- * keeps its shape; a Space never moves inside itself (WSP-021).
+ * Picks a destination in the Space tree (OT-5) for a Space, a Board or a
+ * root Doc. Places the member may not add the subject to stay listed but
+ * disabled, with the reason, so the tree keeps its shape; a Space never
+ * moves inside itself (WSP-021).
  */
 export function MoveToSpaceDialog({
   copy,
@@ -149,14 +153,18 @@ export function MoveToSpaceDialog({
               {formatCopy(
                 subject.kind === "space"
                   ? copy.move.spaceTitle
-                  : copy.move.boardTitle,
+                  : subject.kind === "board"
+                    ? copy.move.boardTitle
+                    : copy.move.pageTitle,
                 { name },
               )}
             </DialogTitle>
             <DialogDescription>
               {subject.kind === "space"
                 ? copy.move.spaceDescription
-                : copy.move.description}
+                : subject.kind === "board"
+                  ? copy.move.description
+                  : copy.move.pageDescription}
             </DialogDescription>
           </DialogHeader>
           <div className="relative">

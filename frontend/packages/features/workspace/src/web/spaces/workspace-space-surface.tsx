@@ -85,6 +85,8 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly onTabChange: (tab: SpaceTab) => void;
   /** Boards in this Space the member may move (ManageBoard; GOV-028). */
   readonly canMoveBoards: boolean;
+  /** Docs in this Space the member may move (UpdatePage; GOV-028). */
+  readonly canMoveDocs: boolean;
   readonly pendingMemberKeys: ReadonlySet<string>;
   readonly addingMember: boolean;
   readonly addMemberError: string | null;
@@ -98,6 +100,7 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly onCreateDoc: () => void;
   readonly onMoveSpace: () => void;
   readonly onMoveBoard: (board: SpaceResource) => void;
+  readonly onMoveDoc: (doc: SpaceResource) => void;
   readonly onUnarchive: () => void;
   readonly onSave: (changes: Partial<SpaceDetailsValues>) => void;
   readonly onArchive: () => void;
@@ -157,6 +160,7 @@ function Overview({
   const { copy, navigation, formatters, content, childSpaces } = props;
   const caps = spaceCapabilities(space);
   const moveBoards = props.canMoveBoards && caps.canCreateResources;
+  const moveDocs = props.canMoveDocs && caps.canCreateResources;
 
   const resourceRow = (resource: SpaceResource, kind: "board" | "doc") => {
     const destination: WorkspaceDestination =
@@ -188,13 +192,17 @@ function Overview({
             {formatters.date(resource.updatedAt, DATE_FORMAT)}
           </span>
         ) : null}
-        {kind === "board" && moveBoards ? (
+        {(kind === "board" && moveBoards) || (kind === "doc" && moveDocs) ? (
           <Button
             variant="ghost"
             size="icon-sm"
             aria-label={formatCopy(copy.overview.move, { name: resource.name })}
             title={formatCopy(copy.overview.move, { name: resource.name })}
-            onClick={() => props.onMoveBoard(resource)}
+            onClick={() =>
+              kind === "board"
+                ? props.onMoveBoard(resource)
+                : props.onMoveDoc(resource)
+            }
           >
             <ArrowRightLeft aria-hidden="true" />
           </Button>

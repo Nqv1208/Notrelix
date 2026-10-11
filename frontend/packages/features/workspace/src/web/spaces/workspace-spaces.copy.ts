@@ -74,8 +74,11 @@ export const en = {
   move: {
     spaceTitle: "Move {{name}}",
     boardTitle: "Move {{name}} to a Space",
+    pageTitle: "Move {{name}} to a Space",
     description:
       "Pick where it goes. You can only pick places where you're allowed to add it.",
+    pageDescription:
+      "The Doc moves with the pages inside it. You can only pick places where you're allowed to add it.",
     spaceDescription:
       "The Space moves with everything inside it. You can only pick Spaces you manage.",
     searchLabel: "Find a Space",
@@ -321,8 +324,11 @@ export const vi: WorkspaceSpacesCopy = {
   move: {
     spaceTitle: "Di chuyển {{name}}",
     boardTitle: "Chuyển {{name}} vào một Không gian",
+    pageTitle: "Chuyển {{name}} vào một Không gian",
     description:
       "Chọn nơi đến. Bạn chỉ chọn được những nơi bạn có quyền thêm vào.",
+    pageDescription:
+      "Tài liệu được chuyển cùng các trang bên trong. Bạn chỉ chọn được những nơi bạn có quyền thêm vào.",
     spaceDescription:
       "Không gian được chuyển cùng mọi thứ bên trong. Bạn chỉ chọn được Không gian bạn quản lý.",
     searchLabel: "Tìm Không gian",

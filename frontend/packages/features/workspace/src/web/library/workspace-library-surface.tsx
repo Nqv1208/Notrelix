@@ -93,6 +93,8 @@ export interface WorkspaceLibrarySurfaceProps {
   readonly spaces?: readonly SpaceNode[];
   /** Offered on Board rows when the host can move Boards between Spaces. */
   readonly onMoveBoard?: (entry: LibraryEntry) => void;
+  /** Offered on root Doc rows (a nested Doc follows its root, WSP §79). */
+  readonly onMoveDoc?: (entry: LibraryEntry) => void;
   /** Rows above this count are windowed (stories and tests lower it). */
   readonly virtualizationThreshold?: number;
 }
@@ -221,6 +223,7 @@ export function WorkspaceLibrarySurface({
   initialQuery = DEFAULT_LIBRARY_QUERY,
   spaces,
   onMoveBoard,
+  onMoveDoc,
   virtualizationThreshold = LIBRARY_VIRTUALIZATION_THRESHOLD,
 }: WorkspaceLibrarySurfaceProps) {
   const [query, setQuery] = React.useState<LibraryQuery>(initialQuery);
@@ -675,7 +678,7 @@ export function WorkspaceLibrarySurface({
                   <col className="w-24" />
                   <col className="w-40" />
                   <col className="w-32" />
-                  <col className={onMoveBoard ? "w-24" : "w-20"} />
+                  <col className={onMoveBoard || onMoveDoc ? "w-24" : "w-20"} />
                 </colgroup>
                 <thead className="sticky top-0 z-sticky bg-surface-panel">
                   <tr aria-rowindex={1}>
@@ -754,6 +757,11 @@ export function WorkspaceLibrarySurface({
                     const pending = pendingPinKeys.has(key);
                     const isBoard =
                       entry.kind === NAVIGATION_RESOURCE_KIND.board;
+                    const onMoveEntry = isBoard
+                      ? onMoveBoard
+                      : entry.parentId
+                        ? undefined
+                        : onMoveDoc;
                     const destination = destinationFor(entry);
                     return (
                       <tr
@@ -838,7 +846,7 @@ export function WorkspaceLibrarySurface({
                           )}
                         </td>
                         <td className="px-2 text-right align-middle whitespace-nowrap">
-                          {isBoard && onMoveBoard ? (
+                          {onMoveEntry ? (
                             <Button
                               type="button"
                               variant="ghost"
@@ -850,7 +858,7 @@ export function WorkspaceLibrarySurface({
                               title={formatCopy(copy.row.move, {
                                 name: entry.name,
                               })}
-                              onClick={() => onMoveBoard(entry)}
+                              onClick={() => onMoveEntry(entry)}
                               className="text-muted-foreground opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 focus-visible:ring-focus-ring"
                             >
                               <ArrowRightLeft aria-hidden="true" />

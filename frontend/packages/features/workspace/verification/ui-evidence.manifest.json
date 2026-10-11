@@ -2234,6 +2234,16 @@
           ]
         },
         {
+          "id": "workspace-spaces--move-page",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
           "id": "workspace-spaces--move-loading",
           "state": "Loading",
           "visualTargets": [
@@ -2265,7 +2275,7 @@
           },
           {
             "state": "ReadOnly",
-            "reason": "Members who cannot move the Space or Board are never offered the dialog; unavailable destinations are shown disabled with the reason (Default).",
+            "reason": "Members who cannot move the Space, Board or Doc are never offered the dialog; unavailable destinations are shown disabled with the reason (Default).",
             "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
           }
         ]
@@ -2284,6 +2294,10 @@
         },
         {
           "id": "board",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "page",
           "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
         },
         {

@@ -44,6 +44,7 @@ function pageNode(
     },
     linkedTaskIds: overrides.linkedTaskIds ?? [],
     linkedBoardIds: overrides.linkedBoardIds ?? [],
+    version: overrides.version ?? 1,
     children: overrides.children ?? [],
     depth: overrides.depth ?? 0,
   };

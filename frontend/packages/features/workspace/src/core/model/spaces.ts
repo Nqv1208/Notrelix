@@ -322,7 +322,9 @@ export function canCreateRootSpace(role: WorkspaceRole | null): boolean {
 
 export type MoveSubject =
   | { readonly kind: "space"; readonly spaceId: string }
-  | { readonly kind: "board" };
+  | { readonly kind: "board" }
+  /** A root Doc (Documents page); a nested page follows its root. */
+  | { readonly kind: "page" };
 
 export interface MoveTargets {
   /** Spaces the subject may move into. */
@@ -336,9 +338,10 @@ export interface MoveTargets {
  * - a Space moves under a Space the caller manages, never under itself or a
  *   descendant, never under an archived parent; the root needs workspace
  *   Owner/Admin;
- * - a Board moves into a Space where the caller may create Boards (Editor),
- *   or out to the root when the caller may create Boards in the Workspace
- *   (any member but a guest).
+ * - a Board or a root Doc moves into a Space where the caller may create
+ *   resources (Editor), or out to the root when the caller may create them
+ *   in the Workspace (any member but a guest); the producer also checks the
+ *   right on the resource itself (GOV-028).
  */
 export function moveTargets(
   index: SpaceIndex,

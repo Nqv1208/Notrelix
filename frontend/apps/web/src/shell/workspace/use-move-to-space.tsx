@@ -1,6 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  createUseMovePageToSpace,
+  createUsePageList,
+} from "@notrelix/docs-state";
+import {
   appendPlacement,
   buildSpaceIndex,
   describeWorkspaceFailure,
@@ -13,6 +17,7 @@ import {
   useWorkspaceSpacesCopy,
   type MoveToSpaceSubject,
 } from "@notrelix/features-workspace/web";
+import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import {
   useBoardPlacements,
@@ -23,10 +28,11 @@ import { spaceRecoveryHint, useSpaceHooks } from "./use-workspace-spaces";
 import { useAttemptKey } from "./work-management-bridge";
 
 /**
- * Move a Space (with its subtree, WSP-021) or a Board (GOV-028) to another
- * place in the org tree. Both moves are optimistic with rollback; the
- * producer authorizes the source and the target, and a stale version shows
- * as a conflict in the dialog after the latest tree is reloaded.
+ * Move a Space (with its subtree, WSP-021), a Board or a root Doc (with its
+ * pages, GOV-028, docs/product/workspaces.md §79) to another place in the
+ * org tree. Every move is optimistic with rollback; the producer authorizes
+ * the source and the target, and a stale version shows as a conflict in the
+ * dialog after the latest data is reloaded.
  */
 export function useMoveToSpace() {
   const { workspaceId, workspace } = useWorkspaceContext();
@@ -38,6 +44,17 @@ export function useMoveToSpace() {
   const moveBoard = useMoveBoardToSpace(workspaceId);
   const viewer = useWorkspaceViewer(workspaceId);
   const nextAttemptKey = useAttemptKey();
+  const { api, endpoints } = useFeatureRuntimeDependencies();
+  const docs = useMemo(
+    () => ({
+      usePageList: createUsePageList(api, endpoints),
+      useMovePageToSpace: createUseMovePageToSpace(api, endpoints),
+    }),
+    [api, endpoints],
+  );
+  // The same cache entry the Space page and the directory read.
+  const pages = docs.usePageList(workspaceId);
+  const movePage = docs.useMovePageToSpace(workspaceId);
   const [subject, setSubject] = useState<MoveToSpaceSubject | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +65,7 @@ export function useMoveToSpace() {
         index,
         subject?.kind === "space"
           ? { kind: "space", spaceId: subject.space.id }
-          : { kind: "board" },
+          : { kind: subject?.kind === "page" ? "page" : "board" },
         viewer.role,
       ),
     [index, subject, viewer.role],
@@ -71,6 +88,21 @@ export function useMoveToSpace() {
       });
     },
     [placements.data],
+  );
+
+  /** A root Doc; the Space page and the directory never offer a nested one. */
+  const openForPage = useCallback(
+    (doc: { id: string; name: string }) => {
+      setError(null);
+      const page = pages.data?.find((item) => item.id === doc.id);
+      setSubject({
+        kind: "page",
+        id: doc.id,
+        name: doc.name,
+        spaceId: page?.spaceId ?? null,
+      });
+    },
+    [pages.data],
   );
 
   const onFailure = useCallback(
@@ -111,6 +143,19 @@ export function useMoveToSpace() {
         );
         return;
       }
+      if (subject.kind === "page") {
+        const page = pages.data?.find((item) => item.id === subject.id);
+        movePage.mutate(
+          {
+            pageId: subject.id,
+            spaceId: target,
+            // The producer rejects 0 (no version read) instead of guessing.
+            expectedVersion: page?.version ?? 0,
+          },
+          { onSuccess: () => done(subject.name), onError: onFailure },
+        );
+        return;
+      }
       const placement = placements.data?.find((item) => item.id === subject.id);
       moveBoard.mutate(
         {
@@ -127,8 +172,10 @@ export function useMoveToSpace() {
       index,
       move,
       moveBoard,
+      movePage,
       nextAttemptKey,
       onFailure,
+      pages.data,
       placements.data,
       subject,
       workspace?.name,
@@ -142,7 +189,7 @@ export function useMoveToSpace() {
       workspaceName={workspace?.name ?? null}
       nodes={tree.data ?? []}
       targets={targets}
-      pending={move.isPending || moveBoard.isPending}
+      pending={move.isPending || moveBoard.isPending || movePage.isPending}
       error={error}
       onOpenChange={(open) => {
         if (!open) setSubject(null);
@@ -151,5 +198,5 @@ export function useMoveToSpace() {
     />
   );
 
-  return { openForSpace, openForBoard, dialog };
+  return { openForSpace, openForBoard, openForPage, dialog };
 }

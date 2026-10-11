@@ -308,6 +308,7 @@ type PageScenario = Omit<
   | "onCreateDoc"
   | "onMoveSpace"
   | "onMoveBoard"
+  | "onMoveDoc"
   | "onUnarchive"
   | "onSave"
   | "onArchive"
@@ -357,6 +358,7 @@ function pageFor(
     candidateTeams: { status: "ready", data: spaceTeamsFixture() },
     tab,
     canMoveBoards: true,
+    canMoveDocs: true,
     pendingMemberKeys: new Set(),
     addingMember: false,
     addMemberError: null,
@@ -410,6 +412,7 @@ export function spacePageReadOnlyScenario(): PageScenario {
   return {
     ...pageFor(spaceTreeFixture(), "sp-marketing"),
     canMoveBoards: false,
+    canMoveDocs: false,
   };
 }
 
@@ -514,6 +517,21 @@ export function moveBoardScenario(): MoveScenario {
       spaceId: "sp-it",
     },
     targets: targetsFor(nodes, { kind: "board" }),
+  };
+}
+
+/** A root Doc placed in IT; a nested page is never offered the dialog. */
+export function movePageScenario(): MoveScenario {
+  const nodes = spaceTreeFixture();
+  return {
+    ...moveSpaceScenario(),
+    subject: {
+      kind: "page",
+      id: "doc-it-onboarding",
+      name: "Onboarding checklist",
+      spaceId: "sp-it",
+    },
+    targets: targetsFor(nodes, { kind: "page" }),
   };
 }
 

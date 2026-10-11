@@ -39,10 +39,25 @@ export interface Page {
   linkedTaskIds: ID[];
   linkedBoardIds: ID[];
   /**
+   * The Page aggregate version (`PageDto.version`), sent back as the
+   * `expectedVersion` of a versioned write such as a move to a Space; `null`
+   * when the producer did not report it, in which case no versioned write is
+   * offered.
+   */
+  version: number | null;
+  /**
    * The Workspaces Space the page is placed in; `null` at the workspace root
    * and when the caller cannot see that Space (GOV-029).
    */
   spaceId?: ID | null;
+}
+
+/** `Documents.Pages.MoveToSpace`: a root page moves with its subtree. */
+export interface MovePageToSpacePayload {
+  pageId: ID;
+  /** `null` moves the page back to the workspace level. */
+  spaceId: ID | null;
+  expectedVersion: number;
 }
 
 export interface BreadcrumbItem {

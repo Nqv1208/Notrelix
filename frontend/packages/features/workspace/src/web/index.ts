@@ -178,6 +178,7 @@ export {
 export {
   MoveToSpaceDialog,
   type MoveToSpaceDialogProps,
+  type MoveToSpaceResource,
   type MoveToSpaceSubject,
 } from "./spaces/move-to-space-dialog";
 export {

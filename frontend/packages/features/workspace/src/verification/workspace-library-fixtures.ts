@@ -57,6 +57,7 @@ export function libraryEntriesFixture(): LibraryEntry[] {
       id: "doc-retro",
       name: "Sprint 42 retro",
       location: "Team rituals",
+      parentId: "doc-rituals",
       updatedAt: at(3),
       pinned: true,
       spaceId: "sp-accounting",
@@ -78,6 +79,7 @@ export function libraryEntriesFixture(): LibraryEntry[] {
       id: "doc-pricing",
       name: "Pricing research notes",
       location: "Onboarding guide",
+      parentId: "doc-onboarding",
       updatedAt: at(24 * 9),
     }),
   ];
@@ -122,6 +124,7 @@ export function libraryDefaultScenario(
     canCreate: true,
     spaces: spaceTreeFixture(),
     onMoveBoard: () => undefined,
+    onMoveDoc: () => undefined,
   };
 }
 

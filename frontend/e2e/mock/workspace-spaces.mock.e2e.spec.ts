@@ -18,7 +18,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("Space org tree: create a Space, add a member, create a Board in it and move it (OT-5)", async ({
+test("Space org tree: create a Space, add a member, create a Board and a Doc in it and move them (OT-5)", async ({
   page,
 }) => {
   await page.goto(workspace);
@@ -84,4 +84,41 @@ test("Space org tree: create a Space, add a member, create a Board in it and mov
       name: "Service desk",
     }),
   ).toBeVisible();
+
+  // Create a Doc in IT, then move it to Engineering with its version
+  // (Documents.Pages.MoveToSpace reads PageDto.version as expectedVersion).
+  await tree.getByRole("treeitem", { name: /^IT/ }).click();
+  await page.getByRole("button", { name: "New Doc" }).click();
+  const doc = page.getByRole("dialog", { name: "New Doc" });
+  await expect(doc.getByText("It will be placed in IT.")).toBeVisible();
+  await doc.getByLabel("Doc title").fill("Runbook");
+  await doc.getByRole("button", { name: "Create Doc" }).click();
+  await expect(page).toHaveURL(/\/docs\//);
+
+  await tree.getByRole("treeitem", { name: /^IT/ }).click();
+  const docs = page.getByRole("region", { name: /^Docs/ });
+  await expect(docs.getByRole("link", { name: "Runbook" })).toBeVisible();
+  await page.getByRole("button", { name: "Move Runbook" }).click();
+  const moveDoc = page.getByRole("dialog", { name: "Move Runbook to a Space" });
+  await moveDoc.getByRole("radio", { name: /^Engineering/ }).click();
+  await moveDoc.getByRole("button", { name: "Move here" }).click();
+  await expect(page.getByText("Runbook was moved.")).toBeVisible();
+  await expect(docs.getByText("No Docs in this Space yet.")).toBeVisible();
+
+  await tree.getByRole("treeitem", { name: /Engineering/ }).click();
+  await expect(
+    page.getByRole("region", { name: /^Docs/ }).getByRole("link", {
+      name: "Runbook",
+    }),
+  ).toBeVisible();
+
+  // The directory offers the same move for the root Doc (in-app navigation:
+  // a reload would reset the in-page mock world).
+  await nav.getByRole("link", { name: "Boards & Docs" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Boards & Docs" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Move Runbook to a Space" }),
+  ).toBeAttached();
 });

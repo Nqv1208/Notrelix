@@ -734,6 +734,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createUseMovePageToSpace",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/query/hooks/use-move-page-to-space.ts",
+    capability: "Documents.Pages.MoveToSpace",
+    operationId: "Documents.Pages.MoveToSpace",
+    mutation: true,
+  },
+  {
     context: "Workspace",
     capability: "/workspaces/${workspaceId}/views",
     consumerSymbol: "TODO",

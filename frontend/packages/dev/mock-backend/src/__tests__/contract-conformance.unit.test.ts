@@ -604,4 +604,75 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     ]);
     store.assertInvariants();
   });
+
+  it("T-MFB-037: Documents.Pages.MoveToSpace reads the page version, rejects a stale one (412) without moving, moves the subtree and refuses a nested page", async () => {
+    const store = new MockStore();
+    const client = createNotrelixClient({
+      baseUrl: "http://localhost:8000/api/v1",
+      fetchImpl: createMockFetch(store),
+    });
+    const workspaceId = mockIds.workspaces.primary;
+    type PageRow = { id: string; spaceId: string | null; version: number };
+    const pageById = async (id: string) =>
+      (await client.api.get<PageRow[]>(endpoints.pages.list(workspaceId))).find(
+        (page) => page.id === id,
+      )!;
+
+    // Like the producer, a create answers 201 with the new page id.
+    const rootId = await client.api.post<string>(
+      endpoints.pages.list(workspaceId),
+      { title: "Playbook", spaceId: mockIds.spaces.engineering },
+    );
+    const childId = await client.api.post<string>(
+      endpoints.pages.list(workspaceId),
+      { title: "Chapter", parentId: rootId },
+    );
+    expect(typeof rootId).toBe("string");
+    const root = await pageById(rootId);
+    const child = await pageById(childId);
+    expect(root.version).toBe(1);
+    expect(child.spaceId).toBe(mockIds.spaces.engineering);
+
+    // A stale version is a 412 and changes nothing.
+    await expect(
+      client.api.post(endpoints.pages.moveToSpace(root.id), {
+        spaceId: mockIds.spaces.accounting,
+        expectedVersion: root.version + 5,
+      }),
+    ).rejects.toMatchObject({ status: 412 });
+    expect(await pageById(root.id)).toMatchObject({
+      spaceId: mockIds.spaces.engineering,
+      version: 1,
+    });
+
+    // The read version is accepted; the subtree follows and the version advances.
+    await client.api.post(endpoints.pages.moveToSpace(root.id), {
+      spaceId: mockIds.spaces.accounting,
+      expectedVersion: root.version,
+    });
+    expect(await pageById(root.id)).toMatchObject({
+      spaceId: mockIds.spaces.accounting,
+      version: 2,
+    });
+    expect((await pageById(child.id)).spaceId).toBe(mockIds.spaces.accounting);
+
+    // A nested page follows its root (docs/product/workspaces.md §79).
+    await expect(
+      client.api.post(endpoints.pages.moveToSpace(child.id), {
+        spaceId: null,
+        expectedVersion: 1,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+
+    // Back to the workspace level with the advanced version.
+    await client.api.post(endpoints.pages.moveToSpace(root.id), {
+      spaceId: null,
+      expectedVersion: 2,
+    });
+    expect(await pageById(root.id)).toMatchObject({
+      spaceId: null,
+      version: 3,
+    });
+    store.assertInvariants();
+  });
 });

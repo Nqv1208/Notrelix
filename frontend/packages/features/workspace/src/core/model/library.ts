@@ -25,6 +25,8 @@ export interface LibraryEntry {
   readonly pinned: boolean;
   /** The Space it is placed in (OT-5); `null` at the workspace level or unknown. */
   readonly spaceId?: string | null;
+  /** The parent of a nested Doc (only a root Doc moves to a Space); `null` for Boards and root Docs. */
+  readonly parentId?: string | null;
 }
 
 export type LibraryTypeFilter = "all" | "board" | "doc";
@@ -77,6 +79,7 @@ export interface LibrarySource {
     readonly updatedAt?: string | null;
     readonly location?: string | null;
     readonly spaceId?: string | null;
+    readonly parentId?: string | null;
   }[];
   readonly pins: readonly NavigationReference[];
 }
@@ -108,6 +111,7 @@ export function buildLibraryEntries(source: LibrarySource): LibraryEntry[] {
       location: doc.location ?? null,
       updatedAt: doc.updatedAt ?? null,
       spaceId: doc.spaceId ?? null,
+      parentId: doc.parentId ?? null,
       pinned: pinned.has(
         navigationEntryKey(NAVIGATION_RESOURCE_KIND.doc, doc.id),
       ),

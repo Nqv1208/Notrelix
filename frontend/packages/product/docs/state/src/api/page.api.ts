@@ -1,15 +1,22 @@
 import type {
   Page,
   CreatePagePayload,
+  MovePageToSpacePayload,
   UpdatePagePayload,
   PageDetail,
 } from "@notrelix/docs-core";
 import type { PageDtoApi, BreadcrumbDtoApi } from "../dto";
 import { mapPage, mapBreadcrumb } from "../model/page.mapper";
 
+/** Per-request options the Docs adapters use (a subset of the client's). */
+export interface DocsRequestOptions {
+  /** The caller shows the failure itself (a dialog), not the global toast. */
+  readonly skipGlobalErrorToast?: boolean;
+}
+
 export interface DocsApiClient {
   get<T>(url: string): Promise<T>;
-  post<T>(url: string, body: unknown): Promise<T>;
+  post<T>(url: string, body: unknown, options?: DocsRequestOptions): Promise<T>;
   patch<T>(url: string, body: unknown): Promise<T>;
   delete<T>(url: string): Promise<T>;
 }
@@ -23,6 +30,7 @@ export interface PageApiEndpoints {
     comments: (pageId: string) => string;
     history: (pageId: string) => string;
     search: (workspaceId: string) => string;
+    moveToSpace: (pageId: string) => string;
   };
   blocks: {
     detail: (blockId: string) => string;
@@ -84,6 +92,18 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
 
     async delete(pageId: string): Promise<void> {
       await api.delete<void>(endpoints.pages.detail(pageId));
+    },
+
+    /**
+     * `Documents.Pages.MoveToSpace` (GOV-028): authorized on the page and on
+     * the target Space; a stale `expectedVersion` is a 412 and moves nothing.
+     */
+    async moveToSpace(payload: MovePageToSpacePayload): Promise<void> {
+      await api.post<void>(
+        endpoints.pages.moveToSpace(payload.pageId),
+        { spaceId: payload.spaceId, expectedVersion: payload.expectedVersion },
+        { skipGlobalErrorToast: true },
+      );
     },
   };
 }

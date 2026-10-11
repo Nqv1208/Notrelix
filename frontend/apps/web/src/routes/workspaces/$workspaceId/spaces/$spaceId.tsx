@@ -369,6 +369,7 @@ export function SpacePage() {
         tab={tab}
         onTabChange={onTabChange}
         canMoveBoards={viewer.role !== null && viewer.role !== "guest"}
+        canMoveDocs={viewer.role !== null && viewer.role !== "guest"}
         pendingMemberKeys={pendingMemberKeys}
         addingMember={mutations.addMember.isPending}
         addMemberError={addError}
@@ -384,6 +385,7 @@ export function SpacePage() {
         onCreateDoc={() => createResource.open("doc")}
         onMoveSpace={() => node && mover.openForSpace(node)}
         onMoveBoard={(board) => mover.openForBoard(board)}
+        onMoveDoc={(doc) => mover.openForPage(doc)}
         onUnarchive={onUnarchive}
         onSave={onSave}
         onArchive={onArchive}
