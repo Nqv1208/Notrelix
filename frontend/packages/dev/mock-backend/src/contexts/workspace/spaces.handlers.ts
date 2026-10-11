@@ -552,8 +552,9 @@ export const spacesOperations = [
             id: team.id,
             name: team.name,
             description: team.description,
-            isArchived: team.archived,
+            status: team.archived ? "Archived" : "Active",
             memberCount: team.memberIds.length,
+            version: team.version,
             createdAt: team.createdAt,
           })),
         )

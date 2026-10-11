@@ -77,6 +77,20 @@ export const endpoints = {
       `/workspaces/${workspaceId}/spaces/${spaceId}/members/${subjectType}/${subjectId}`,
     // Teams (Workspaces.Teams.*), read as Space member subjects.
     teams: (workspaceId: string) => `/workspaces/${workspaceId}/teams`,
+    team: (workspaceId: string, teamId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}`,
+    teamDescription: (workspaceId: string, teamId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}/description`,
+    teamArchive: (workspaceId: string, teamId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}/archive`,
+    teamUnarchive: (workspaceId: string, teamId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}/unarchive`,
+    teamMembers: (workspaceId: string, teamId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}/members`,
+    teamMember: (workspaceId: string, teamId: string, userId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}/members/${userId}`,
+    teamMemberRole: (workspaceId: string, teamId: string, userId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}/members/${userId}/role`,
   },
   pages: {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,

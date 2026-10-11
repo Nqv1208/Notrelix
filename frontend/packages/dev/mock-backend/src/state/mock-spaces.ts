@@ -44,6 +44,8 @@ export interface MockTeamRecord {
   name: string;
   description: string | null;
   archived: boolean;
+  /** Aggregate version, the Team writes' `expectedVersion`. */
+  version: number;
   memberIds: string[];
   createdAt: string;
 }

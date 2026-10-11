@@ -129,7 +129,7 @@ export function parseTeams(items: unknown): SpaceTeam[] {
   if (!Array.isArray(items)) return [];
   const teams: SpaceTeam[] = [];
   for (const raw of items as TeamDto[]) {
-    if (!raw?.id || raw.isArchived) continue;
+    if (!raw?.id || raw.status !== "Active") continue;
     teams.push({
       id: raw.id,
       name: raw.name ?? "",

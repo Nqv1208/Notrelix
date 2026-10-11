@@ -3644,7 +3644,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List the active members of a team */
+        get: operations["Workspaces.Teams.GetTeamMembers"];
         put?: never;
         /** Add a member to a team */
         post: operations["Workspaces.Teams.AddTeamMember"];
@@ -4355,9 +4356,17 @@ export interface components {
             /** Format: uuid */
             userId?: string;
             role?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Workspaces.Teams.Requests.ArchiveTeamRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.ChangeTeamMemberRoleRequest": {
             newRole?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.CreateTeamRequest": {
             name?: string | null;
@@ -4365,9 +4374,13 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.RenameTeamRequest": {
             name?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Teams.Requests.UpdateTeamDescriptionRequest": {
             description?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ArchiveWorkspaceRequest": {
             /** Format: int64 */
@@ -4897,11 +4910,21 @@ export interface components {
             id?: string;
             name?: string | null;
             description?: string | null;
-            isArchived?: boolean;
+            status?: string | null;
             /** Format: int32 */
             memberCount?: number;
+            /** Format: int64 */
+            version?: number;
             /** Format: date-time */
             createdAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeamMembers.TeamMemberDto": {
+            /** Format: uuid */
+            userId?: string;
+            displayName?: string | null;
+            email?: string | null;
+            role?: string | null;
+            status?: string | null;
         };
         /**
          * Format: int32
@@ -12973,20 +12996,20 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
     "Workspaces.Teams.DeleteTeam": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -12996,14 +13019,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -13023,14 +13044,12 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -13044,16 +13063,18 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Teams.Requests.ArchiveTeamRequest"];
+            };
+        };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -13067,16 +13088,18 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Teams.Requests.ArchiveTeamRequest"];
+            };
+        };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -13103,6 +13126,29 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Teams.GetTeamMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeamMembers.TeamMemberDto"][];
+                };
+            };
+        };
+    };
     "Workspaces.Teams.AddTeamMember": {
         parameters: {
             query?: never;
@@ -13119,20 +13165,20 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
     "Workspaces.Teams.RemoveTeamMember": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -13143,14 +13189,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };
@@ -13171,14 +13215,12 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["System.Void"];
-                };
+                content?: never;
             };
         };
     };

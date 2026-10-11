@@ -644,6 +644,7 @@ export class MockStore {
       name: "Helpdesk",
       description: null,
       archived: false,
+      version: 1,
       memberIds: [mockIds.users.member, mockIds.users.viewer],
       createdAt: at,
     });
