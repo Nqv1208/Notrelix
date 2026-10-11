@@ -195,3 +195,16 @@ export type {
   SpaceDetailsValues,
   SpaceSaveStatus,
 } from "./spaces/space-settings-panel";
+
+// ── Teams (WX-TEAM-001) ───────────────────────────────────────────
+export {
+  createUseTeam,
+  createUseTeamMembers,
+  createUseTeams,
+} from "./query/hooks/use-teams";
+export {
+  createUseTeamMutations,
+  type CreateTeamInput,
+  type TeamMemberWrite,
+  type TeamWrite,
+} from "./hooks/mutations/use-team-mutations";
