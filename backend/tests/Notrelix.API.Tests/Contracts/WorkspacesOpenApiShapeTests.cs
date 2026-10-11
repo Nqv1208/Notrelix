@@ -57,6 +57,21 @@ public class WorkspacesOpenApiShapeTests
         schema.GetProperty("properties").TryGetProperty(field, out _).Should().BeTrue($"{dto} must expose {field}");
     }
 
+    [Theory]
+    [InlineData("Workspaces.Workspaces.DeleteWorkspace")]
+    [InlineData("Workspaces.Spaces.RemoveSpaceMember")]
+    public void VersionedDelete_ReadsExpectedVersionFromTheQuery(string operationId)
+    {
+        // A body-less DELETE can only carry its precondition in the query string;
+        // without a bound parameter the validator rejects every call.
+        var parameters = Operation(operationId).GetProperty("parameters").EnumerateArray()
+            .Where(p => p.GetProperty("name").GetString() == "expectedVersion")
+            .ToArray();
+        parameters.Should().ContainSingle(operationId);
+        parameters[0].GetProperty("in").GetString().Should().Be("query");
+        parameters[0].GetProperty("required").GetBoolean().Should().BeTrue();
+    }
+
     private static string Describe(JsonElement schema)
     {
         if (schema.TryGetProperty("$ref", out var reference))

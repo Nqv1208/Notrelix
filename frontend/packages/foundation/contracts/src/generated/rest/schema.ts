@@ -12800,7 +12800,9 @@ export interface operations {
     };
     "Workspaces.Spaces.RemoveSpaceMember": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -13192,7 +13194,9 @@ export interface operations {
     };
     "Workspaces.Workspaces.DeleteWorkspace": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;

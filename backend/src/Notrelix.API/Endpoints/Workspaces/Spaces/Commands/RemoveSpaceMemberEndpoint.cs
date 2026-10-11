@@ -20,7 +20,7 @@ public static class RemoveSpaceMemberEndpoint
         string subjectType,
         Guid subjectId,
         ISender sender,
-        [AsParameters] long expectedVersion = 0)
+        [FromQuery] long expectedVersion)
     {
         var result = await sender.Send(new RemoveSpaceMemberCommand(workspaceId, spaceId, subjectType, subjectId, expectedVersion));
         return result.ToNoContentResult();
