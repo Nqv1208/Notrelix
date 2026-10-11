@@ -107,6 +107,7 @@ describe("Team capabilities", () => {
   it("lets workspace admins manage an active Team", () => {
     expect(teamCapabilities(team(), "admin")).toEqual({
       canManage: true,
+      canEditDetails: true,
       canEditMembers: true,
       blockedBy: null,
     });
@@ -117,6 +118,7 @@ describe("Team capabilities", () => {
     for (const role of ["member", "guest", null] as const) {
       expect(teamCapabilities(team(), role)).toEqual({
         canManage: false,
+        canEditDetails: false,
         canEditMembers: false,
         blockedBy: "not-admin",
       });
@@ -126,9 +128,28 @@ describe("Team capabilities", () => {
   it("keeps an archived Team manageable (unarchive) but not editable", () => {
     expect(teamCapabilities(team({ status: "Archived" }), "admin")).toEqual({
       canManage: true,
+      canEditDetails: false,
       canEditMembers: false,
       blockedBy: "archived",
     });
+  });
+});
+
+describe("Team detail editing (canEditDetails)", () => {
+  it("is offered to admins and owners of an active Team only", () => {
+    expect(teamCapabilities(team(), "admin").canEditDetails).toBe(true);
+    expect(teamCapabilities(team(), "owner").canEditDetails).toBe(true);
+    for (const role of ["member", "guest", null] as const) {
+      expect(teamCapabilities(team(), role).canEditDetails).toBe(false);
+    }
+  });
+
+  it("is never offered on an archived Team, even to an owner (rename and describe are rejected)", () => {
+    for (const role of ["admin", "owner"] as const) {
+      const caps = teamCapabilities(team({ status: "Archived" }), role);
+      expect(caps.canEditDetails).toBe(false);
+      expect(caps.canManage).toBe(true);
+    }
   });
 });
 

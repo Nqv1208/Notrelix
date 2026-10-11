@@ -88,8 +88,10 @@ export function countLeads(members: readonly TeamMember[]): number {
 export type TeamBlock = "archived" | "not-admin";
 
 export interface TeamCapabilities {
-  /** Rename, describe, archive and unarchive. */
+  /** Archive and unarchive (the only writes an archived Team accepts). */
   readonly canManage: boolean;
+  /** Rename and describe; the Domain rejects both on an archived Team. */
+  readonly canEditDetails: boolean;
   /** Add, remove and change roles of Team members. */
   readonly canEditMembers: boolean;
   readonly blockedBy: TeamBlock | null;
@@ -97,19 +99,34 @@ export interface TeamCapabilities {
 
 /**
  * Workspace admins manage Teams. An archived Team stays manageable (it can
- * be unarchived) but its membership is frozen.
+ * be unarchived) but its name, description and membership are frozen.
  */
 export function teamCapabilities(
   team: Team,
   viewerRole: WorkspaceRole | null,
 ): TeamCapabilities {
   if (!isWorkspaceAdmin(viewerRole)) {
-    return { canManage: false, canEditMembers: false, blockedBy: "not-admin" };
+    return {
+      canManage: false,
+      canEditDetails: false,
+      canEditMembers: false,
+      blockedBy: "not-admin",
+    };
   }
   if (team.status === "Archived") {
-    return { canManage: true, canEditMembers: false, blockedBy: "archived" };
+    return {
+      canManage: true,
+      canEditDetails: false,
+      canEditMembers: false,
+      blockedBy: "archived",
+    };
   }
-  return { canManage: true, canEditMembers: true, blockedBy: null };
+  return {
+    canManage: true,
+    canEditDetails: true,
+    canEditMembers: true,
+    blockedBy: null,
+  };
 }
 
 export type TeamMemberBlock = "last-lead" | TeamBlock;

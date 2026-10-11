@@ -654,7 +654,7 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
             memberCount,
           )}
         </p>
-        {!caps.canManage ? (
+        {!caps.canEditDetails ? (
           <p className="max-w-prose break-words text-body text-muted-foreground">
             {current.description ?? copy.team.noDescription}
           </p>
@@ -663,7 +663,7 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
 
       {notice ? <ReadOnlyNotice id={noticeId}>{notice}</ReadOnlyNotice> : null}
 
-      {caps.canManage ? (
+      {caps.canEditDetails ? (
         <DetailsSection
           copy={copy}
           team={current}

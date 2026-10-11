@@ -292,6 +292,16 @@ describe("WorkspaceTeamSurface", () => {
       0,
     );
     expect(screen.getByText(copy.archivedReason)).toBeTruthy();
+    // The Domain rejects rename and describe on an archived Team.
+    expect(screen.queryByLabelText(copy.team.nameLabel)).toBeNull();
+    expect(screen.queryByLabelText(copy.team.descriptionLabel)).toBeNull();
+    expect(screen.queryByRole("button", { name: copy.team.rename })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: copy.team.saveDescription }),
+    ).toBeNull();
+    expect(
+      screen.getByText("Owns the shared runtime, CI and developer tooling."),
+    ).toBeTruthy();
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByRole("button", { name: /from the Team$/ })).toBeNull();
     expect(
