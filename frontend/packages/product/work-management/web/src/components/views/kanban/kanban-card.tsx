@@ -19,6 +19,7 @@ import { KanbanCardMenu } from "./kanban-card-menu";
 import {
   fillCopy,
   kanbanCardCopy,
+  pluralCopy,
   type KanbanCardCopy,
 } from "./kanban-card.copy";
 
@@ -332,7 +333,10 @@ export function KanbanCard({
                 <MessageSquareText className="size-3" aria-hidden="true" />
                 <span aria-hidden="true">{card._count.comments}</span>
                 <span className="sr-only">
-                  {fillCopy(copy.comments, { count: card._count.comments })}
+                  {pluralCopy(
+                    { one: copy.comments_one, other: copy.comments_other },
+                    card._count.comments,
+                  )}
                 </span>
               </span>
             ) : null}
@@ -341,9 +345,13 @@ export function KanbanCard({
                 <Paperclip className="size-3" aria-hidden="true" />
                 <span aria-hidden="true">{card._count.attachments}</span>
                 <span className="sr-only">
-                  {fillCopy(copy.attachments, {
-                    count: card._count.attachments,
-                  })}
+                  {pluralCopy(
+                    {
+                      one: copy.attachments_one,
+                      other: copy.attachments_other,
+                    },
+                    card._count.attachments,
+                  )}
                 </span>
               </span>
             ) : null}

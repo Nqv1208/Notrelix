@@ -26,8 +26,10 @@ export const en = {
     completed: "Completed",
   },
   checklist: "{{done}} of {{total}} checklist items done",
-  comments: "{{count}} comments",
-  attachments: "{{count}} attachments",
+  comments_one: "{{count}} comment",
+  comments_other: "{{count}} comments",
+  attachments_one: "{{count}} attachment",
+  attachments_other: "{{count}} attachments",
 };
 
 export type KanbanCardCopy = typeof en;
@@ -53,8 +55,11 @@ export const vi: KanbanCardCopy = {
     completed: "Đã hoàn thành",
   },
   checklist: "Đã xong {{done}} trên {{total}} mục kiểm tra",
-  comments: "{{count}} bình luận",
-  attachments: "{{count}} tệp đính kèm",
+  // Vietnamese has no singular/plural distinction; both forms stay complete.
+  comments_one: "{{count}} bình luận",
+  comments_other: "{{count}} bình luận",
+  attachments_one: "{{count}} tệp đính kèm",
+  attachments_other: "{{count}} tệp đính kèm",
 };
 
 export function kanbanCardCopy(locale: "vi" | "en"): KanbanCardCopy {
@@ -69,4 +74,12 @@ export function fillCopy(
   return message.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
     key in values ? String(values[key]) : match,
   );
+}
+
+/** Picks the `_one` form for exactly 1 and `_other` otherwise, then fills it. */
+export function pluralCopy(
+  forms: { readonly one: string; readonly other: string },
+  count: number,
+): string {
+  return fillCopy(count === 1 ? forms.one : forms.other, { count });
 }

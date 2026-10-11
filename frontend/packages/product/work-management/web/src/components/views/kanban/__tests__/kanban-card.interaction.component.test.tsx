@@ -347,6 +347,37 @@ describe("KanbanCard quiet metadata", () => {
     expect(screen.getByText("2 attachments")).toBeTruthy();
   });
 
+  it.each([
+    [1, "1 comment", "1 attachment"],
+    [2, "2 comments", "2 attachments"],
+  ])(
+    "uses the singular or plural count copy for %i (en)",
+    (count, comments, attachments) => {
+      renderCard({
+        _count: { comments: count, attachments: count, checklistItems: 0 },
+      });
+      expect(screen.getByText(comments)).toBeTruthy();
+      expect(screen.getByText(attachments)).toBeTruthy();
+    },
+  );
+
+  it("renders no comment or attachment count for 0", () => {
+    const { card } = renderCard({
+      _count: { comments: 0, attachments: 0, checklistItems: 0 },
+    });
+    const article = screen.getByRole("article", { name: card.title });
+    expect(article.textContent).not.toMatch(/comment|attachment/i);
+  });
+
+  it.each([1, 2])("localises the count copy for %i (vi)", (count) => {
+    renderCard(
+      { _count: { comments: count, attachments: count, checklistItems: 0 } },
+      { copy: kanbanCardCopy("vi") },
+    );
+    expect(screen.getByText(`${count} bình luận`)).toBeTruthy();
+    expect(screen.getByText(`${count} tệp đính kèm`)).toBeTruthy();
+  });
+
   it("shows the linked Doc marker", () => {
     renderCard({ linkedPageId: "page-1" });
     expect(screen.getByText("Doc linked")).toBeTruthy();
