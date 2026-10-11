@@ -40,6 +40,7 @@ vi.mock("@notrelix/runtime-web", () => ({
 }));
 
 import { AccountAppearancePage } from "../routes/workspaces/$workspaceId/account/appearance";
+import { AccountSecurityPage } from "../routes/workspaces/$workspaceId/account/security";
 import { AccountProfilePage } from "../routes/workspaces/$workspaceId/account/profile";
 
 (
@@ -206,6 +207,11 @@ describe("AccountProfilePage container", () => {
     await mount(<AccountProfilePage />, "vi");
     await until(() => expect(text()).toContain("Không thể tải hồ sơ của bạn."));
     expect(text()).toContain("Thử lại");
+
+    // Retry re-reads the profile through the hook.
+    runtime.get = () => profile;
+    await clickButton("Thử lại");
+    await until(() => expect(text()).toContain("Múi giờ"));
   });
 });
 
@@ -298,5 +304,53 @@ describe("AccountAppearancePage container", () => {
     expect(text()).toContain("Thử lại");
     // The device appearance stays usable without the account.
     expect(text()).toContain("Chế độ hiển thị");
+
+    // Retry re-reads the preferences through the hook.
+    runtime.get = () => preferences;
+    await clickButton("Thử lại");
+    await until(() => expect(text()).toContain("Thu gọn theo mặc định"));
+  });
+});
+
+describe("AccountSecurityPage container", () => {
+  const security = {
+    userId: "u-1",
+    twoFactorEnabled: true,
+    lastPasswordChange: "2026-01-15T09:00:00.000Z",
+    activeSessions: 3,
+  };
+
+  it("passes the Vietnamese copy and locale formatters to the surface", async () => {
+    runtime.get = () => security;
+    await mount(<AccountSecurityPage />, "vi");
+    await until(() => expect(text()).toContain("Xác thực hai yếu tố"));
+    expect(text()).toContain("Bảo mật");
+    expect(text()).toMatch(/Đổi lần cuối vào .*thg 1/);
+    expect(text()).toContain("3 phiên đang hoạt động");
+    expect(text()).toContain("Đã bật");
+  });
+
+  it("passes the English copy and locale formatters to the surface", async () => {
+    runtime.get = () => security;
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Active sessions"));
+    expect(text()).toContain("Last changed Jan 15, 2026");
+    expect(text()).toContain("3 sessions are currently active");
+  });
+
+  it("shows the localized error with a retry when the settings cannot load", async () => {
+    runtime.get = () => {
+      throw new Error("boom");
+    };
+    await mount(<AccountSecurityPage />, "vi");
+    await until(() =>
+      expect(text()).toContain("Không thể tải cài đặt bảo mật của bạn."),
+    );
+    expect(text()).toContain("Thử lại");
+
+    // Retry re-reads the settings through the hook.
+    runtime.get = () => security;
+    await clickButton("Thử lại");
+    await until(() => expect(text()).toContain("Xác thực hai yếu tố"));
   });
 });

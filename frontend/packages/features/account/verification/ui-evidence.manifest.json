@@ -266,6 +266,126 @@
           "testFile": "src/web/appearance/__tests__/account-appearance.interaction.component.test.tsx"
         }
       ]
+    },
+    {
+      "surfaceId": "account.security",
+      "owner": "@notrelix/features-account",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/security/account-security-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "account-security--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "account-security--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-security--error-state",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-security--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Empty",
+            "reason": "Security facts always exist for a signed-in member (a missing password date and zero sessions are covered by the EdgeData story).",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "HighDensity",
+            "reason": "The page renders three fixed cards; there is no list that grows with data.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "The page shows a member's own security facts; there is no product-authoritative contract at this baseline for a read-only variant of this page.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "The page shows a member's own security facts; there is no product-authoritative contract at this baseline for a permission-limited variant of this page.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "actions",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "two-factor",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "loading",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "error",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        },
+        {
+          "id": "copy",
+          "testFile": "src/web/security/__tests__/account-security.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

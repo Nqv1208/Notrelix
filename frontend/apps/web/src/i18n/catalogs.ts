@@ -12,6 +12,7 @@ import {
   accountNavCatalog,
   accountAppearanceCatalog,
   accountProfileCatalog,
+  accountSecurityCatalog,
 } from "@notrelix/features-account";
 import { notificationBellCatalog } from "@notrelix/features-notifications";
 import {
@@ -37,4 +38,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountNavCatalog,
   accountProfileCatalog,
   accountAppearanceCatalog,
+  accountSecurityCatalog,
 ];

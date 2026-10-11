@@ -41,3 +41,15 @@ export {
   type AccountSidebarPreference,
 } from "./appearance/account-appearance-surface";
 export type { AccountLocale } from "./shared/account-surface-model";
+
+export { accountSecurityCatalog } from "./security/account-security.catalog";
+export {
+  accountSecurityCopy,
+  type AccountSecurityCopy,
+} from "./security/account-security.copy";
+export { useAccountSecurityCopy } from "./security/use-account-security-copy";
+export {
+  AccountSecuritySurface,
+  type AccountSecurityData,
+  type AccountSecuritySurfaceProps,
+} from "./security/account-security-surface";
