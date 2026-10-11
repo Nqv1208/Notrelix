@@ -18,16 +18,10 @@ export { createUseWorkspaceMembers } from "./query/hooks/use-workspace-members";
 export { createUseWorkspaceInvitations } from "./query/hooks/use-workspace-invitations";
 export { createUseWorkspaceActivity } from "./query/hooks/use-workspace-activity";
 export { createUseWorkspaceSettings } from "./query/hooks/use-workspace-settings";
-export { createUseWorkspaceViews } from "./query/hooks/use-workspace-views";
 export { createUseInvitationByToken } from "./query/hooks/use-invitation-by-token";
 export { createUsePendingInvitations } from "./query/hooks/use-pending-invitations";
 export { createUseWorkspaceShellData } from "./query/hooks/use-workspace-shell-data";
 
-export { WorkspaceCompactHeader } from "./components/workspace-compact-header";
-export { WorkspaceDirectory } from "./components/workspace-directory";
-export { WorkspaceViewTabs } from "./components/workspace-view-tabs";
-export { WorkspaceContextualToolbar } from "./components/workspace-contextual-toolbar";
-export { WorkspaceAddViewMenu } from "./components/workspace-add-view-menu";
 export { PendingInvitationsMenu } from "./components/pending-invitations-menu";
 
 // ── Workspace shell (WX-SHELL-001…005) ────────────────────────────

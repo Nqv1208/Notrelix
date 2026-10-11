@@ -3,20 +3,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
   invitationsDefaultScenario,
   invitationsEmptyScenario,
-  workspaceDirectoryDefaultScenario,
-  workspaceDirectoryEdgeDataScenario,
-  workspaceDirectoryEmptyScenario,
-  workspaceHeaderDefaultScenario,
-  workspaceTabsDefaultScenario,
-  workspaceTabsEdgeDataScenario,
-  workspaceTabsEmptyScenario,
 } from "../../verification/workspace-ui-fixtures";
-import {
-  PendingInvitationsMenuSurface,
-  WorkspaceCompactHeaderSurface,
-  WorkspaceDirectorySurface,
-  WorkspaceViewTabsSurface,
-} from "./workspace-ui-surfaces";
+import { PendingInvitationsMenuSurface } from "./workspace-ui-surfaces";
 
 const meta: Meta = {
   title: "Workspace/Workspace UI Surfaces",
@@ -34,69 +22,6 @@ const meta: Meta = {
 
 export default meta;
 type Story = StoryObj;
-
-export const DirectoryDefault: Story = {
-  render: () => (
-    <WorkspaceDirectorySurface
-      workspaces={workspaceDirectoryDefaultScenario()}
-    />
-  ),
-  tags: ["fui-surface--workspace.directory", "fui-state--Default"],
-};
-
-export const DirectoryEmpty: Story = {
-  render: () => (
-    <WorkspaceDirectorySurface workspaces={workspaceDirectoryEmptyScenario()} />
-  ),
-  tags: ["fui-surface--workspace.directory", "fui-state--Empty"],
-};
-
-export const DirectoryEdgeData: Story = {
-  render: () => (
-    <WorkspaceDirectorySurface
-      workspaces={workspaceDirectoryEdgeDataScenario()}
-    />
-  ),
-  tags: ["fui-surface--workspace.directory", "fui-state--EdgeData"],
-};
-
-export const CompactHeaderDefault: Story = {
-  render: () => (
-    <WorkspaceCompactHeaderSurface {...workspaceHeaderDefaultScenario()} />
-  ),
-  tags: ["fui-surface--workspace.compact-header", "fui-state--Default"],
-};
-
-export const ViewTabsDefault: Story = {
-  render: () => (
-    <WorkspaceViewTabsSurface
-      workspaceId="ws-main"
-      views={workspaceTabsDefaultScenario()}
-      activeViewId="view-board"
-    />
-  ),
-  tags: ["fui-surface--workspace.view-tabs", "fui-state--Default"],
-};
-
-export const ViewTabsEmpty: Story = {
-  render: () => (
-    <WorkspaceViewTabsSurface
-      workspaceId="ws-main"
-      views={workspaceTabsEmptyScenario()}
-    />
-  ),
-  tags: ["fui-surface--workspace.view-tabs", "fui-state--Empty"],
-};
-
-export const ViewTabsEdgeData: Story = {
-  render: () => (
-    <WorkspaceViewTabsSurface
-      workspaceId="ws-enterprise"
-      views={workspaceTabsEdgeDataScenario()}
-    />
-  ),
-  tags: ["fui-surface--workspace.view-tabs", "fui-state--EdgeData"],
-};
 
 export const InvitationsDefault: Story = {
   render: () => (
