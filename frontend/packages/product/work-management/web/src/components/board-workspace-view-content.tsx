@@ -14,6 +14,9 @@ export interface BoardScreenProps {
   workspaceId: string;
   boardId: string;
   view: WorkspaceView;
+  /** Card id from the `item` search parameter (Kanban opens its detail). */
+  selectedItemId?: string;
+  onSelectedItemChange?: (id: string | undefined) => void;
 }
 
 export function BoardScreen(props: BoardScreenProps) {
@@ -24,6 +27,8 @@ export function BoardWorkspaceViewContent({
   workspaceId,
   boardId,
   view,
+  selectedItemId,
+  onSelectedItemChange,
 }: BoardScreenProps) {
   if (view.type === "table")
     return <MainTableView boardId={boardId} workspaceId={workspaceId} />;
@@ -33,6 +38,8 @@ export function BoardWorkspaceViewContent({
         workspaceId={workspaceId}
         boardId={boardId}
         mode="kanban"
+        selectedItemId={selectedItemId}
+        onSelectedItemChange={onSelectedItemChange}
       />
     );
   if (view.type === "calendar")
@@ -63,10 +70,14 @@ function BoardFullDataView({
   workspaceId,
   boardId,
   mode,
+  selectedItemId,
+  onSelectedItemChange,
 }: {
   workspaceId: string;
   boardId: string;
   mode: "kanban" | "calendar" | "timeline";
+  selectedItemId?: string;
+  onSelectedItemChange?: (id: string | undefined) => void;
 }) {
   const { board, groups, isLoading, error } = useFullBoard(
     boardId,
@@ -88,7 +99,12 @@ function BoardFullDataView({
       status="ready"
       viewContent={
         mode === "kanban" ? (
-          <KanbanView boardId={board.id} workspaceId={workspaceId} />
+          <KanbanView
+            boardId={board.id}
+            workspaceId={workspaceId}
+            selectedItemId={selectedItemId}
+            onSelectedItemChange={onSelectedItemChange}
+          />
         ) : mode === "calendar" ? (
           <BoardCalendarView groups={groups} />
         ) : (

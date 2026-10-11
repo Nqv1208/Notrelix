@@ -29,3 +29,72 @@ test("renders a production Work Management route through mock transport", async 
     errors.filter((message) => message.includes("MockUnhandledOperationError")),
   ).toEqual([]);
 });
+
+test.describe("Kanban item detail through the item search parameter", () => {
+  test.skip(scenario !== "default", "Assertions need the default world data");
+
+  const board = "/workspaces/mock-workspace-primary/boards/mock-board-roadmap";
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "en");
+      } catch {
+        // Private mode: the default locale applies.
+      }
+    });
+  });
+
+  test("opening a card writes item, a reload reopens it and Escape removes it", async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+
+    await page.goto(`${board}?view=kanban&filter=mine&sort=due&groupBy=status`);
+    await page
+      .getByRole("button", { name: "Ship mock runtime", exact: true })
+      .click();
+
+    const dialog = page.getByRole("dialog", { name: "Ship mock runtime" });
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(/[?&]item=/);
+    const opened = new URL(page.url());
+    const item = opened.searchParams.get("item");
+    expect(item).toBeTruthy();
+    expect(opened.searchParams.get("view")).toBe("kanban");
+    expect(opened.searchParams.get("filter")).toBe("mine");
+    expect(opened.searchParams.get("sort")).toBe("due");
+    expect(opened.searchParams.get("groupBy")).toBe("status");
+
+    await page.reload();
+    await expect(
+      page.getByRole("dialog", { name: "Ship mock runtime" }),
+    ).toBeVisible();
+    expect(new URL(page.url()).searchParams.get("item")).toBe(item);
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const closed = new URL(page.url());
+    expect(closed.searchParams.has("item")).toBe(false);
+    expect(closed.searchParams.get("view")).toBe("kanban");
+    expect(closed.searchParams.get("filter")).toBe("mine");
+    expect(closed.searchParams.get("sort")).toBe("due");
+    expect(closed.searchParams.get("groupBy")).toBe("status");
+    expect(errors).toEqual([]);
+  });
+
+  test("an unknown item id shows no detail and does not throw", async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+
+    await page.goto(`${board}?view=kanban&item=no-such-card`);
+    await expect(
+      page.getByRole("button", { name: "Ship mock runtime", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+});

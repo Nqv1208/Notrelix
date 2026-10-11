@@ -2,14 +2,24 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import {
   useBoardKanban,
-  useSelectedCardPanel,
+  useCard,
+  useCardActivity,
+  useCardComments,
+  useCardFiles,
+  useCreateCard,
+  useCreateCardUpdate,
+  useDeleteCard,
+  useDeleteCardUpdate,
+  useDuplicateCard,
+  useUpdateCard,
+  useUpdateCardUpdate,
+  useUpdateFieldValue,
 } from "@notrelix/work-management-state";
 import {
-  useDuplicateCard,
-  useDeleteCard,
-  useCreateCard,
-} from "@notrelix/work-management-state";
-import { generatePosition } from "@notrelix/work-management-core";
+  generatePosition,
+  type Board,
+  type CardDetail,
+} from "@notrelix/work-management-core";
 import { KanbanToolbar } from "./kanban-toolbar";
 import { KanbanBoard } from "./kanban-board";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
@@ -20,9 +30,14 @@ import { useKanbanCardCopy } from "./use-kanban-card-copy";
 export function KanbanView({
   boardId,
   workspaceId,
+  selectedItemId,
+  onSelectedItemChange,
 }: {
   boardId: string;
   workspaceId: string;
+  /** Card id from the `item` search parameter; unknown ids show nothing. */
+  selectedItemId?: string;
+  onSelectedItemChange?: (id: string | undefined) => void;
 }) {
   const {
     board,
@@ -38,11 +53,6 @@ export function KanbanView({
     deleteColumn,
   } = useBoardKanban(boardId, workspaceId);
 
-  const {
-    selectedCardId: _selectedCardId,
-    openCard,
-    closePanel,
-  } = useSelectedCardPanel();
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
   const cardCopy = useKanbanCardCopy();
@@ -52,14 +62,14 @@ export function KanbanView({
 
   const handleOpenDetail = useCallback(
     (cardId: string) => {
-      openCard(cardId);
+      onSelectedItemChange?.(cardId);
     },
-    [openCard],
+    [onSelectedItemChange],
   );
 
   const handleClosePanel = useCallback(() => {
-    closePanel();
-  }, [closePanel]);
+    onSelectedItemChange?.(undefined);
+  }, [onSelectedItemChange]);
 
   if (isLoading) return <KanbanSkeleton />;
   if (error || !board) {
@@ -111,8 +121,9 @@ export function KanbanView({
               reorderColumns.mutate(updated);
             }}
             onCopyCardLink={(cardId) => {
-              const link = `${window.location.origin}${window.location.pathname}?taskId=${cardId}`;
-              void navigator.clipboard.writeText(link);
+              void navigator.clipboard.writeText(
+                buildCardLink(window.location, cardId),
+              );
               toast.success("Card link copied to clipboard.");
             }}
             onAdd={(title) => {
@@ -144,12 +155,109 @@ export function KanbanView({
         </div>
       </div>
 
-      <KanbanCardDetailPanel
-        board={board}
-        card={null}
-        workspaceId={workspaceId}
-        onClose={handleClosePanel}
-      />
+      {selectedItemId ? (
+        <KanbanSelectedItem
+          board={board}
+          cardId={selectedItemId}
+          onClose={handleClosePanel}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * Card link for the clipboard: the current board path with the `item`
+ * parameter set. Other parameters, `view` included, are kept.
+ */
+function buildCardLink(
+  location: Pick<Location, "origin" | "pathname" | "search">,
+  cardId: string,
+): string {
+  const params = new URLSearchParams(location.search);
+  if (!params.has("view")) params.set("view", "kanban");
+  params.set("item", cardId);
+  return `${location.origin}${location.pathname}?${params.toString()}`;
+}
+
+/**
+ * Resolves the selected card and its detail state, then hands them to the
+ * pure sheet. An id that does not resolve to a card on this board renders
+ * nothing; the URL is not rewritten here.
+ */
+function KanbanSelectedItem({
+  board,
+  cardId,
+  onClose,
+}: {
+  board: Board;
+  cardId: string;
+  onClose: () => void;
+}) {
+  const { card } = useCard(cardId, board.workspaceId);
+  if (!card || card.boardId !== board.id) return null;
+  return (
+    <KanbanSelectedItemReady
+      board={board}
+      card={card as CardDetail}
+      onClose={onClose}
+    />
+  );
+}
+
+function KanbanSelectedItemReady({
+  board,
+  card,
+  onClose,
+}: {
+  board: Board;
+  card: CardDetail;
+  onClose: () => void;
+}) {
+  const files = useCardFiles(card.id, card.workspaceId);
+  const activity = useCardActivity(card.id, card.workspaceId);
+  const updates = useCardComments(card.id, card.workspaceId);
+  const updateCard = useUpdateCard(card.boardId, card.workspaceId);
+  const deleteCard = useDeleteCard(card.boardId, card.workspaceId);
+  const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
+  const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
+  const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
+  const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
+  const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
+
+  return (
+    <KanbanCardDetailPanel
+      board={board}
+      card={card}
+      detailData={{
+        files: files.data ?? card.files,
+        filesLoading: files.isLoading,
+        activity: activity.data ?? card.activity,
+        activityLoading: activity.isLoading,
+        activityFetching: activity.isFetching,
+        updates: updates.data ?? card.updates,
+        updatesLoading: updates.isLoading,
+      }}
+      callbacks={{
+        onClose,
+        onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
+        onToggleWatch: () => undefined,
+        onDuplicate: (cardId) => duplicateCard.mutate(cardId),
+        onArchive: (cardId) => {
+          deleteCard.mutate(cardId);
+          onClose();
+        },
+        onUpdateFieldValue: (payload) => updateFieldValue.mutate(payload),
+        onRefreshActivity: () => {
+          void activity.refetch();
+        },
+        onCreateUpdate: (input, options) =>
+          createUpdate.mutate(input, { onSuccess: options?.onSuccess }),
+        onUpdateUpdate: (updateId, body) =>
+          updateUpdate.mutate({ updateId, body }),
+        onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
+        onSelectTab: () => undefined,
+      }}
+    />
   );
 }
