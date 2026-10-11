@@ -22,6 +22,7 @@ evidence:
   - docs/architecture/contract-boundaries.md
   - docs/architecture/data-ownership-and-consistency.md
   - backend/src/Notrelix.Domain/Governance/
+  - backend/docs/decisions/ADR-009-space-scoped-authorization.md
   - backend/src/Notrelix.Application/
   - backend/tests/
   - frontend/packages/features/governance/
@@ -338,6 +339,8 @@ service/system principal
 
 Subject identity and subject type must be explicit.
 
+Evaluated subjects today (2026-10-11): `User`, and `Team` (GOV-026). Other stored subject types (`WorkspaceRole`, `PublicLink`, `ExternalEmail`) are not evaluated by the access engine and grant nothing until a product decision defines them.
+
 ---
 
 # 17. Current Permission source
@@ -420,6 +423,7 @@ Permission scope can identify where a rule applies:
 ```text
 Account
 Workspace
+Space (Workspace organizational container, GOV-025)
 specific resource
 field or subresource where explicitly supported
 ```
@@ -441,6 +445,93 @@ Account access
 unless an approved policy says so.
 
 Similarly, resource sharing does not make linked resources transitively public.
+
+The only approved inheritance chains are:
+
+```text
+Space membership → descendant Spaces (WSP-024; Private descendants stop Member/Viewer inheritance)
+Space access     → Workspace-visible Boards/Pages placed in that Space (GOV-025)
+Team membership  → the Team's grants (GOV-026)
+```
+
+Account membership still never implies Workspace access, and Workspace membership alone never reaches a Private Space.
+
+---
+
+# 23.1. GOV-025 — Space-scoped access composes in a fixed order
+
+For a Board or Page in Workspace `W` (placed in Space `S` or unplaced), the decision is evaluated in this order; the first matching step decides:
+
+```text
+1. resource missing / archived / deleted / other Workspace → NotFound
+2. Workspace Owner                                        → Allow
+3. explicit permission rules for the action (User/Team subject),
+   lowest priority value first, Deny wins at equal priority → Deny / Allow
+4. resource restriction: a Private Board/Page requires board membership
+   or an explicit resource permission (User/Team); Space roles never reach
+   a Private resource                                      → NotFound if absent
+5. Space-derived level (resource placed in S, Workspace-visible)
+6. Workspace default (resource unplaced, Workspace-visible): Members allowed,
+   Guests need explicit access
+```
+
+A Workspace-visible resource inherits the access of its Space and may be restricted further by making it Private and granting outsiders explicitly. A resource placed in a Space is hidden (NotFound) from a principal who has no Space access, no board membership and no explicit grant.
+
+Effective Space access of a principal on Space `S`:
+
+```text
+workspace Owner/Admin         → Space Admin on every Space
+explicit entries              → the highest role of a User entry or an active Team entry
+                                on S or an ancestor, where a Private Space between the
+                                ancestor (exclusive) and S (inclusive) stops Member/Viewer
+                                (Admin always passes)
+open Space (no Private Space  → workspace Members (not Guests) hold Member level
+from the root down to S)
+```
+
+# 23.2. GOV-026 — Team is an evaluated subject
+
+A principal holds the grants addressed to a Team (Space membership, resource permission, permission rule) only while it is an active member of that Team and the Team is active and belongs to the same Workspace. Removing the member, archiving or deleting the Team revokes the derived access on the next evaluation; no copy of the grant is made per user.
+
+# 23.3. GOV-027 — Space roles map to permission levels deterministically
+
+```text
+Space Admin  → Manager
+Space Member → Editor
+Space Viewer → Viewer
+```
+
+Action thresholds when access comes only from a Space role:
+
+```text
+Viewer    : ViewBoard, ViewPage, ViewWorkspace, ViewMembers
+Commenter : + CreateComment
+Editor    : every other Board/Page/Item action (create, update, move, assign, ManageBoard, ...)
+Manager   : + ManageBoardPermission, ManagePagePermission, ArchivePage
+```
+
+When the principal also holds board membership or an explicit resource permission, the effective resource-permission rank is the higher of the explicit rank and the Space level; board-member semantics (for example Observer cannot update items) still apply.
+
+# 23.4. GOV-028 — Space and Team management authority
+
+```text
+ManageSpaces on the Workspace (create a root Space)  → workspace Owner, Admin
+ManageSpaces on a Space (rename, describe, change type/visibility,
+  archive/unarchive/delete/restore, manage members,
+  create a child Space)                               → workspace Owner, Admin, or effective Space Admin
+move a Space                                          → ManageSpaces on the Space and on the target parent
+                                                        (or on the Workspace for the root)
+ManageTeams (create/rename/archive/delete Teams, manage Team members) → workspace Owner, Admin
+create a Board/Page in a Space (CreateBoard/CreatePage on the Space)  → Editor level on the Space
+move a Board/Page to another Space or out of a Space                  → ManageBoard on the resource
+                                                                        and the create right on the target
+```
+
+A principal who cannot see a Space receives NotFound for it, not Forbidden. Workspace Admin capability over Spaces and Teams does not extend to Owner-only actions (GOV-013) nor to Private Boards/Pages (GOV-025 step 4).
+
+# 23.5. GOV-029 — Collections apply the single-read decision in the datastore
+
+Board lists (by Workspace and by slug), Space lists/tree, Page lists/tree/search and My Work return exactly the resources a single read of each would allow (`ViewBoard`/`ViewPage`/Space visibility), computed in the server query (GOV-019), never by loading everything and hiding it in memory. A parity test pins the list decision to the single-read engine.
 
 ---
 
@@ -730,6 +821,8 @@ must use explicit policy.
 
 Broad Admin capability must not silently include every Owner-only action.
 
+Approved Admin defaults (2026-10-11): manage every Space and Team in the Workspace (GOV-028). They do not include Private Boards/Pages, Workspace deletion or ownership transfer.
+
 ---
 
 # 46. Role assignment
@@ -961,6 +1054,8 @@ A bulk endpoint is not exempt.
 Query design should filter protected resource access in the server query/projection path.
 
 Do not materialize unauthorized records before filtering when this can leak or scale badly.
+
+For Spaces, Boards, Pages and My Work the collection decision is GOV-029.
 
 ---
 
@@ -1378,6 +1473,7 @@ WorkspaceRole
 
 SpaceVisibility
 → complete resource security
+  (visibility is one input of GOV-025, never the whole decision)
 
 Billing plan
 → resource permission

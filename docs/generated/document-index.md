@@ -30,14 +30,14 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 93
+Document count: 94
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
 | `architecture` | 22 |
-| `architecture-decision` | 14 |
+| `architecture-decision` | 15 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
@@ -58,7 +58,7 @@ Document count: 93
 
 | Value | Count |
 |:---|---:|
-| `Accepted` | 12 |
+| `Accepted` | 13 |
 | `active` | 76 |
 | `generated` | 3 |
 | `Superseded` | 2 |
@@ -75,6 +75,7 @@ Document count: 93
 | `ADR-006` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline` | [`backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md`](../../backend/docs/decisions/ADR-006-frozen-seven-behavior-pipeline.md) |
 | `ADR-007` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-application`, `application-pipeline`, `governance-context` | [`backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md`](../../backend/docs/decisions/ADR-007-governance-owned-authorization-evaluator.md) |
 | `ADR-008` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `backend-platform-messaging`, `provider-integration` | [`backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md`](../../backend/docs/decisions/ADR-008-provider-outcome-classification-and-settlement.md) |
+| `ADR-009` | `architecture-decision` | `Accepted` | `backend-architecture` | `backend`, `governance-context`, `workspaces-context`, `authorization`, `persistence` | [`backend/docs/decisions/ADR-009-space-scoped-authorization.md`](../../backend/docs/decisions/ADR-009-space-scoped-authorization.md) |
 | `BE-ACCESS-FACTS-EVIDENCE` | `operations` | `active` | `backend-runtime-operations` | `backend`, `backend-access-control`, `backend-performance` | [`backend/docs/operations/access-facts-query-evidence.md`](../../backend/docs/operations/access-facts-query-evidence.md) |
 | `BE-API-CONTRACTS` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.API`, `backend/tests/Notrelix.API.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/api-and-contracts.md`](../../backend/docs/architecture/api-and-contracts.md) |
 | `BE-APPLICATION-MODEL` | `architecture` | `active` | `backend-architecture` | `backend/src/Notrelix.Application`, `backend/tests/Notrelix.Application.Tests`, `backend/tests/Notrelix.Integration.Tests` | [`backend/docs/architecture/application-model.md`](../../backend/docs/architecture/application-model.md) |
