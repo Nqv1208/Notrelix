@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MessageSquare, Send, Trash2 } from "lucide-react";
 import { Avatar, Button, Input } from "@notrelix/ui-web";
 import type { Comment } from "../../core/types/collaboration";
+import { commentActionLabel } from "./comment-action-label";
 
 export interface ResourceCommentsSurfaceProps {
   comments: readonly Comment[];
@@ -73,7 +74,7 @@ export function ResourceCommentsSurface({
               {comment.authorId === currentUserId ? (
                 <button
                   type="button"
-                  aria-label={`Delete comment ${comment.id}`}
+                  aria-label={commentActionLabel("Delete comment", comment)}
                   onClick={() => onDeleteComment?.(comment.id)}
                   className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity"
                 >
