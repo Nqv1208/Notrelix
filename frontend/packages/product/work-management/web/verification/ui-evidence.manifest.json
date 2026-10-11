@@ -488,7 +488,10 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-card-menu.tsx"],
+      "coveredSources": [
+        "src/components/views/kanban/kanban-card-menu.tsx",
+        "src/components/views/kanban/kanban-card.copy.ts"
+      ],
       "stories": [
         {
           "id": "work-management-kanban-card--default",
@@ -514,6 +517,30 @@
         },
         {
           "id": "work-management-kanban-card--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--overdue",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--no-due-no-status",
           "state": "EdgeData",
           "visualTargets": [
             {

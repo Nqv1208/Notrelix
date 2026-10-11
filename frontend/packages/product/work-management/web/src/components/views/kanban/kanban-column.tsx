@@ -18,6 +18,7 @@ import { KanbanColumnMenu } from "./kanban-column-menu";
 export function KanbanColumn({
   board,
   group,
+  now,
   onOpenDetails,
   onRename,
   onColorChange,
@@ -29,6 +30,8 @@ export function KanbanColumn({
 }: {
   board: Board;
   group: BoardGroup;
+  /** Reference time for card overdue state; read once by the container. */
+  now?: Date;
   onOpenDetails: (cardId: string) => void;
   onRename: (title: string) => void;
   onColorChange: (color: string) => void;
@@ -141,6 +144,7 @@ export function KanbanColumn({
                 key={card.id}
                 board={board}
                 card={card}
+                now={now}
                 onOpenDetails={onOpenDetails}
                 onCopyLink={onCopyCardLink}
                 onDuplicate={() => onDuplicateCard(card.id)}

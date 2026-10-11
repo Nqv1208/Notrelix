@@ -16,6 +16,7 @@ import { getKanbanCardMove } from "./kanban-dnd";
 export function KanbanBoard({
   board,
   columns,
+  now,
   onOpenDetails,
   onMoveCard,
   onReorderColumns: _onReorderColumns,
@@ -30,6 +31,8 @@ export function KanbanBoard({
 }: {
   board: Board;
   columns: BoardGroup[];
+  /** Reference time for card overdue state; read once by the container. */
+  now?: Date;
   onOpenDetails: (cardId: string) => void;
   onMoveCard: (cardId: string, listId: string, position: number) => void;
   onReorderColumns: (updated: BoardGroup[]) => void;
@@ -71,6 +74,7 @@ export function KanbanBoard({
             key={group.id}
             board={board}
             group={group}
+            now={now}
             onOpenDetails={onOpenDetails}
             onRename={(title) => onRenameColumn(group.id, title)}
             onColorChange={(color) => onColorChangeColumn(group.id, color)}

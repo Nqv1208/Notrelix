@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import {
   useBoardKanban,
@@ -42,6 +42,8 @@ export function KanbanView({
     openCard,
     closePanel,
   } = useSelectedCardPanel();
+  // Read once so every card judges "overdue" against the same instant.
+  const [now] = useState(() => new Date());
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const deleteCard = useDeleteCard(boardId, workspaceId);
   const createCard = useCreateCard(boardId, workspaceId);
@@ -95,6 +97,7 @@ export function KanbanView({
           <KanbanBoard
             board={board}
             columns={columns}
+            now={now}
             onOpenDetails={handleOpenDetail}
             onMoveCard={(cardId, listId, position) => {
               moveCard.mutate({ cardId, listId, position });
