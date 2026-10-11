@@ -50,6 +50,40 @@ describe("workspace shell routing (WX-SHELL-001/002)", () => {
     });
   });
 
+  it("maps Teams destinations to the list and the Team page and resolves them back (WX-TEAM-001)", () => {
+    expect(destinationHref("ws-1", { section: "teams" })).toBe(
+      "/workspaces/ws-1/teams",
+    );
+    expect(
+      destinationHref("ws-1", { section: "teams", filter: "archived" }),
+    ).toBe("/workspaces/ws-1/teams?filter=archived");
+    expect(destinationHref("ws-1", { section: "teams", teamId: "t 1" })).toBe(
+      "/workspaces/ws-1/teams/t%201",
+    );
+    expect(
+      resolveShellLocation([
+        root,
+        workspace,
+        {
+          routeId: "/workspaces/$workspaceId/teams",
+          params: { workspaceId: "ws-1" },
+          search: {},
+        },
+      ]),
+    ).toEqual({ section: "teams" });
+    expect(
+      resolveShellLocation([
+        root,
+        workspace,
+        {
+          routeId: "/workspaces/$workspaceId/teams/$teamId",
+          params: { workspaceId: "ws-1", teamId: "t1" },
+          search: {},
+        },
+      ]),
+    ).toEqual({ section: "teams", teamId: "t1" });
+  });
+
   it("resolves the location from matched route ids and params, not from the URL", () => {
     expect(
       resolveShellLocation([

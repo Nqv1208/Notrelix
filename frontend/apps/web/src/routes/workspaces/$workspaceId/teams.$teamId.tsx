@@ -42,7 +42,9 @@ export function TeamPage() {
     mutations.describe.isPending ||
     mutations.archive.isPending ||
     mutations.unarchive.isPending ||
-    mutations.addMember.isPending;
+    mutations.addMember.isPending ||
+    mutations.changeRole.isPending ||
+    mutations.removeMember.isPending;
 
   const refetch = useCallback(() => {
     void team.refetch();
