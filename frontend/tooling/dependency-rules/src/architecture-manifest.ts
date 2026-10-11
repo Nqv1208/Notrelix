@@ -403,7 +403,11 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/features/account",
     layer: "feature",
     freezeScope: "core-production",
-    allowedInternalImports: [...FEATURE_WEB_BASE],
+    // FE-ADR-006: catalogs are owned by the package that renders the copy;
+    // the account pages (profile, appearance, security, notifications) ship
+    // their own vi/en catalogs.
+    allowedInternalImports: [...FEATURE_WEB_BASE, "@notrelix/i18n"],
+    allowedVerificationInternalImports: ["@notrelix/testing"],
   },
   {
     packageName: "@notrelix/features-billing",

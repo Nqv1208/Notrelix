@@ -224,12 +224,14 @@ describe("closed-world architecture manifest", () => {
       "@notrelix/platform",
       "@notrelix/i18n",
     ]);
+    // The account pages own their vi/en catalogs (FE-ADR-006).
     expectExact("@notrelix/features-account", [
       "@notrelix/contracts",
       "@notrelix/kernel",
       "@notrelix/platform",
       "@notrelix/query",
       "@notrelix/ui-web",
+      "@notrelix/i18n",
     ]);
     expectExact("@notrelix/features-billing", [
       "@notrelix/contracts",

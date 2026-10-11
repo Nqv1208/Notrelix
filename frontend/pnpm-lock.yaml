@@ -448,6 +448,9 @@ importers:
       '@notrelix/contracts':
         specifier: workspace:*
         version: link:../../foundation/contracts
+      '@notrelix/i18n':
+        specifier: workspace:*
+        version: link:../../foundation/i18n
       '@notrelix/kernel':
         specifier: workspace:*
         version: link:../../foundation/kernel
@@ -457,13 +460,25 @@ importers:
       '@notrelix/query':
         specifier: workspace:*
         version: link:../../foundation/query
+      '@notrelix/ui-web':
+        specifier: workspace:*
+        version: link:../../ui/web
       '@tanstack/react-query':
         specifier: ^5.95.2
         version: 5.101.2(react@19.2.7)
+      lucide-react:
+        specifier: ^0.562.0
+        version: 0.562.0(react@19.2.7)
     devDependencies:
       '@notrelix/eslint-config':
         specifier: workspace:*
         version: link:../../../tooling/eslint-config
+      '@notrelix/testing':
+        specifier: workspace:*
+        version: link:../../../tooling/testing
+      '@storybook/react':
+        specifier: 8.6.17
+        version: 8.6.17(@storybook/test@8.6.17(storybook@8.6.17(prettier@3.9.5)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(storybook@8.6.17(prettier@3.9.5))(typescript@5.9.3)
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17

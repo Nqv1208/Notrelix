@@ -35,6 +35,7 @@ export function createUseProfile({ api, endpoints }: UseProfileDeps) {
       profile: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
+      refetch: query.refetch,
       updateProfile: mutation.mutate,
       isUpdating: mutation.isPending,
     };

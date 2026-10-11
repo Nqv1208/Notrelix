@@ -1,0 +1,178 @@
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { I18nProvider, type Locale } from "@notrelix/i18n";
+import { webCatalogs } from "../i18n/catalogs";
+
+type Handler = (url: string, body?: unknown) => unknown;
+
+const runtime = vi.hoisted(() => ({
+  get: undefined as Handler | undefined,
+  patch: undefined as Handler | undefined,
+}));
+
+vi.mock("@notrelix/runtime-web", () => ({
+  useAppRuntime: () => ({
+    api: {
+      api: {
+        get: async (url: string) => runtime.get?.(url),
+        patch: async (url: string, body: unknown) => runtime.patch?.(url, body),
+        post: async () => undefined,
+      },
+      endpoints: {
+        auth: { profile: "/auth/me" },
+        users: {
+          updateProfile: "/profile",
+          preferences: "/account/preferences",
+          security: "/users/security",
+        },
+        notifications: {
+          list: "/notifications",
+          read: (id: string) => `/notifications/${id}/read`,
+          readAll: "/notifications/read-all",
+          preferences: "/notifications/preferences",
+        },
+      },
+    },
+  }),
+}));
+
+import { AccountProfilePage } from "../routes/workspaces/$workspaceId/account/profile";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+let root: Root | undefined;
+let host: HTMLElement | undefined;
+
+afterEach(() => {
+  act(() => root?.unmount());
+  host?.remove();
+  root = undefined;
+  host = undefined;
+  runtime.get = undefined;
+  runtime.patch = undefined;
+});
+
+async function mount(page: React.ReactElement, locale: Locale) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  host = document.createElement("div");
+  document.body.appendChild(host);
+  root = createRoot(host);
+  await act(async () => {
+    root?.render(
+      <QueryClientProvider client={queryClient}>
+        <I18nProvider catalogs={webCatalogs} initialLocale={locale}>
+          {page}
+        </I18nProvider>
+      </QueryClientProvider>,
+    );
+  });
+}
+
+const text = () => host?.textContent ?? "";
+
+/** Polls inside `act` so React state updates from queries stay wrapped. */
+async function until(assertion: () => void, attempts = 60) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      assertion();
+      return;
+    } catch (error) {
+      if (attempt >= attempts) throw error;
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+    }
+  }
+}
+
+/** Types into the first enabled text field (the name field of the profile). */
+async function typeInFirstField(value: string) {
+  const input = host?.querySelector(
+    "input[id]:not([disabled])",
+  ) as HTMLInputElement | null;
+  if (!input) throw new Error("No input");
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set;
+  await act(async () => {
+    setter?.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
+async function clickButton(label: string) {
+  const button = Array.from(host?.querySelectorAll("button") ?? []).find(
+    (element) => element.textContent === label,
+  );
+  if (!button) throw new Error(`No button "${label}"`);
+  await act(async () => {
+    button.click();
+  });
+}
+
+describe("AccountProfilePage container", () => {
+  const profile = {
+    id: "u-1",
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    avatarUrl: null,
+    timezone: "Asia/Ho_Chi_Minh",
+    locale: "vi",
+    createdAt: "2025-03-12T09:00:00.000Z",
+  };
+
+  it("passes the Vietnamese copy and locale formatters to the surface", async () => {
+    runtime.get = () => profile;
+    await mount(<AccountProfilePage />, "vi");
+    await until(() => expect(text()).toContain("Múi giờ"));
+    expect(text()).toContain("Thành phố Hồ Chí Minh");
+    // The join date is formatted for vi ("12 thg 3, 2025"), not for en.
+    expect(text()).toMatch(/Tham gia từ .*thg 3/);
+    expect(text()).not.toContain("Member since");
+  });
+
+  it("passes the English copy and locale formatters to the surface", async () => {
+    runtime.get = () => profile;
+    await mount(<AccountProfilePage />, "en");
+    await until(() => expect(text()).toContain("Time zone"));
+    expect(text()).toMatch(/Member since Mar 12, 2025/);
+  });
+
+  it("saves the trimmed name through the update hook and reports success", async () => {
+    let stored = profile;
+    const patch = vi.fn((_url: string, body: unknown) => {
+      stored = { ...stored, ...(body as object) };
+      return stored;
+    });
+    runtime.get = () => stored;
+    runtime.patch = patch;
+    await mount(<AccountProfilePage />, "en");
+    await until(() => expect(text()).toContain("Time zone"));
+
+    await typeInFirstField("  Ada King  ");
+    await clickButton("Save changes");
+
+    await until(() => expect(text()).toContain("Profile updated."));
+    expect(patch).toHaveBeenCalledWith("/profile", {
+      name: "Ada King",
+      timezone: "Asia/Ho_Chi_Minh",
+      locale: "vi",
+    });
+  });
+
+  it("shows the localized error with a retry when the profile cannot load", async () => {
+    runtime.get = () => {
+      throw new Error("boom");
+    };
+    await mount(<AccountProfilePage />, "vi");
+    await until(() => expect(text()).toContain("Không thể tải hồ sơ của bạn."));
+    expect(text()).toContain("Thử lại");
+  });
+});

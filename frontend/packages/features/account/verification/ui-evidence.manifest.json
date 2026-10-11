@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 2,
+  "owner": "@notrelix/features-account",
+  "inventory": {
+    "excludedSources": []
+  },
+  "surfaces": [
+    {
+      "surfaceId": "account.profile",
+      "owner": "@notrelix/features-account",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/profile/account-profile-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "account-profile--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "account-profile--loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-profile--error-state",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-profile--saved",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "account-profile--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "Success", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "A member edits only their own profile; there is no product-authoritative read-only profile contract at this baseline.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "dirty",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "save",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "discard",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "validation",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "saving",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "saved",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "loading",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "error",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        },
+        {
+          "id": "copy",
+          "testFile": "src/web/profile/__tests__/account-profile.interaction.component.test.tsx"
+        }
+      ]
+    }
+  ]
+}
