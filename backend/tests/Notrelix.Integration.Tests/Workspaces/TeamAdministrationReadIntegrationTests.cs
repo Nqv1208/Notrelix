@@ -83,10 +83,10 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
 
         var teamId = await CreateTeamAsync(owner, stack.WorkspaceId, "Platform");
         _now = BaseTime.AddMinutes(1);
-        await SendAsync(owner, new AddTeamMemberCommand(stack.WorkspaceId, teamId, stack.MemberId, "Member"));
-        await SendAsync(owner, new AddTeamMemberCommand(stack.WorkspaceId, teamId, leaver, "Member"));
+        await SendAsync(owner, new AddTeamMemberCommand(stack.WorkspaceId, teamId, stack.MemberId, "Member", (await PersistedTeamAsync(teamId)).Version));
+        await SendAsync(owner, new AddTeamMemberCommand(stack.WorkspaceId, teamId, leaver, "Member", (await PersistedTeamAsync(teamId)).Version));
         _now = BaseTime.AddMinutes(2);
-        await SendAsync(owner, new RemoveTeamMemberCommand(stack.WorkspaceId, teamId, leaver));
+        await SendAsync(owner, new RemoveTeamMemberCommand(stack.WorkspaceId, teamId, leaver, (await PersistedTeamAsync(teamId)).Version));
 
         var members = await GetTeamMembersAsync(owner, stack.WorkspaceId, teamId);
         var team = await GetTeamAsync(owner, stack.WorkspaceId, teamId);
@@ -110,7 +110,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
         using var owner = CreateProvider(stack.AccountId, stack.OwnerId);
         var teamId = await CreateTeamAsync(owner, stack.WorkspaceId, "Platform");
         _now = BaseTime.AddMinutes(1);
-        await SendAsync(owner, new AddTeamMemberCommand(stack.WorkspaceId, teamId, stack.MemberId, "Member"));
+        await SendAsync(owner, new AddTeamMemberCommand(stack.WorkspaceId, teamId, stack.MemberId, "Member", (await PersistedTeamAsync(teamId)).Version));
 
         var team = await GetTeamAsync(owner, stack.WorkspaceId, teamId);
         var listed = (await ListTeamsAsync(owner, stack.WorkspaceId)).Single(t => t.Id == teamId);

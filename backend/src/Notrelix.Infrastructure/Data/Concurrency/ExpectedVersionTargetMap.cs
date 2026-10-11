@@ -58,6 +58,15 @@ using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceMember
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.MoveSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RemoveSpaceMember;
 using Notrelix.Domain.Workspaces.Spaces;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.RenameTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.UpdateTeamDescription;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.ArchiveTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.UnarchiveTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.DeleteTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.RemoveTeamMember;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.ChangeTeamMemberRole;
+using Notrelix.Domain.Workspaces.Teams;
 
 namespace Notrelix.Infrastructure.Data.Concurrency;
 
@@ -130,6 +139,7 @@ public sealed class ExpectedVersionTargetMap
     private const string SavedFilterKind = "work-management.saved-filter";
     private const string WorkspaceKind = "workspaces.workspace";
     private const string SpaceKind = "workspaces.space";
+    private const string TeamKind = "workspaces.team";
 
     private static Dictionary<Type, TargetDefinition> BuildDefault() => new(new Dictionary<Type, TargetDefinition>
     {
@@ -197,6 +207,16 @@ public sealed class ExpectedVersionTargetMap
         [typeof(AddSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(RemoveSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(ChangeSpaceMemberRoleCommand)] = new(SpaceKind, typeof(Space)),
+
+        // Workspaces — Team writes (RestoreTeam addresses a deleted Team and stays version-less)
+        [typeof(RenameTeamCommand)] = new(TeamKind, typeof(Team)),
+        [typeof(UpdateTeamDescriptionCommand)] = new(TeamKind, typeof(Team)),
+        [typeof(ArchiveTeamCommand)] = new(TeamKind, typeof(Team)),
+        [typeof(UnarchiveTeamCommand)] = new(TeamKind, typeof(Team)),
+        [typeof(DeleteTeamCommand)] = new(TeamKind, typeof(Team)),
+        [typeof(AddTeamMemberCommand)] = new(TeamKind, typeof(Team)),
+        [typeof(RemoveTeamMemberCommand)] = new(TeamKind, typeof(Team)),
+        [typeof(ChangeTeamMemberRoleCommand)] = new(TeamKind, typeof(Team)),
     });
 
     /// <summary>Validates the declared resource kind against the mapped expectation.</summary>

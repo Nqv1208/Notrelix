@@ -6,12 +6,15 @@ namespace Notrelix.Application.Features.Workspaces.Teams.Commands.RenameTeam;
 public record RenameTeamCommand(
     Guid WorkspaceId,
     Guid TeamId,
-    string Name
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    string Name,
+    long ExpectedVersion
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     // GOV-028: Team composition is managed by workspace Owners/Admins.
     public PermissionAction Action => PermissionAction.ManageTeams;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
+    // The concurrency authority is the Team aggregate; authorization stays on the Workspace (GOV-028).
+    ResourceRef IExpectedVersionRequest.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.team"), TeamId, WorkspaceId);
 }
 
 public class RenameTeamCommandHandler : IRequestHandler<RenameTeamCommand, Result>

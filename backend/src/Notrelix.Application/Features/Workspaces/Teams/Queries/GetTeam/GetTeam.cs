@@ -38,7 +38,7 @@ public class GetTeamQueryHandler : IRequestHandler<GetTeamQuery, Result<TeamDto>
     {
         var team = await _context.Teams
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == request.TeamId && t.WorkspaceId == request.WorkspaceId, ct);
+            .FirstOrDefaultAsync(t => t.Id == request.TeamId && t.WorkspaceId == request.WorkspaceId && t.DeletedAt == null, ct);
 
         if (team is null)
             throw new NotFoundException(nameof(Team), request.TeamId);

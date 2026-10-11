@@ -7,5 +7,6 @@ public class RenameTeamCommandValidator : AbstractValidator<RenameTeamCommand>
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.TeamId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(160);
+        RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

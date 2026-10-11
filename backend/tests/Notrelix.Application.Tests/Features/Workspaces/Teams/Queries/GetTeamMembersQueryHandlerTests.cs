@@ -114,5 +114,18 @@ public sealed class GetTeamMembersQueryHandlerTests : WorkspaceHandlerTestBase
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
+    [Fact]
+    public async Task GetTeam_DeletedTeam_IsNotFound()
+    {
+        var team = CreateTeam();
+        team.Delete(TestUserId, TestNow.AddMinutes(1));
+        SetupTeams(team);
+
+        var act = () => new GetTeamQueryHandler(DbContextMock.Object)
+            .Handle(new GetTeamQuery(TestWorkspaceId, team.Id), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
     private GetTeamMembersQueryHandler CreateMembersSut() => new(DbContextMock.Object, _actors.Object);
 }

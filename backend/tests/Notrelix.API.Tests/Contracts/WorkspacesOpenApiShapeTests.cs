@@ -35,6 +35,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("Workspaces.Teams.CreateTeam", "201", "uuid")]
     [InlineData("Workspaces.Teams.GetTeam", "200", "TeamDto")]
     [InlineData("Workspaces.Teams.GetWorkspaceTeams", "200", "TeamDto[]")]
+    [InlineData("Workspaces.Teams.GetTeamMembers", "200", "TeamMemberDto[]")]
     public void BodyReturningOperation_DeclaresItsResponseType(string operationId, string status, string expected)
     {
         var responses = Operation(operationId).GetProperty("responses");
@@ -60,6 +61,8 @@ public class WorkspacesOpenApiShapeTests
     [Theory]
     [InlineData("Workspaces.Workspaces.DeleteWorkspace")]
     [InlineData("Workspaces.Spaces.RemoveSpaceMember")]
+    [InlineData("Workspaces.Teams.DeleteTeam")]
+    [InlineData("Workspaces.Teams.RemoveTeamMember")]
     public void VersionedDelete_ReadsExpectedVersionFromTheQuery(string operationId)
     {
         // A body-less DELETE can only carry its precondition in the query string;
@@ -70,6 +73,49 @@ public class WorkspacesOpenApiShapeTests
         parameters.Should().ContainSingle(operationId);
         parameters[0].GetProperty("in").GetString().Should().Be("query");
         parameters[0].GetProperty("required").GetBoolean().Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("Workspaces.Teams.RenameTeam")]
+    [InlineData("Workspaces.Teams.UpdateTeamDescription")]
+    [InlineData("Workspaces.Teams.ArchiveTeam")]
+    [InlineData("Workspaces.Teams.UnarchiveTeam")]
+    [InlineData("Workspaces.Teams.DeleteTeam")]
+    [InlineData("Workspaces.Teams.AddTeamMember")]
+    [InlineData("Workspaces.Teams.RemoveTeamMember")]
+    [InlineData("Workspaces.Teams.ChangeTeamMemberRole")]
+    public void TeamWrite_Declares204(string operationId)
+    {
+        var responses = Operation(operationId).GetProperty("responses");
+        responses.EnumerateObject().Select(r => r.Name).Should().Contain("204", operationId);
+        responses.TryGetProperty("200", out _).Should().BeFalse($"{operationId} succeeds with 204, not a phantom 200");
+    }
+
+    [Theory]
+    [InlineData("Workspaces.Teams.RenameTeam")]
+    [InlineData("Workspaces.Teams.UpdateTeamDescription")]
+    [InlineData("Workspaces.Teams.ArchiveTeam")]
+    [InlineData("Workspaces.Teams.UnarchiveTeam")]
+    [InlineData("Workspaces.Teams.AddTeamMember")]
+    [InlineData("Workspaces.Teams.ChangeTeamMemberRole")]
+    public void VersionedTeamWriteWithBody_CarriesExpectedVersionInTheBody(string operationId)
+    {
+        var schemaRef = Operation(operationId).GetProperty("requestBody").GetProperty("content")
+            .GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString()!;
+        var schema = Document.GetProperty("components").GetProperty("schemas").GetProperty(schemaRef.Split('/').Last());
+
+        var property = schema.GetProperty("properties").GetProperty("expectedVersion");
+        property.GetProperty("type").GetString().Should().Be("integer", operationId);
+        property.GetProperty("format").GetString().Should().Be("int64", operationId);
+    }
+
+    [Fact]
+    public void RestoreTeam_StaysVersionless()
+    {
+        var operation = Operation("Workspaces.Teams.RestoreTeam");
+        operation.TryGetProperty("requestBody", out _).Should().BeFalse();
+        operation.GetProperty("parameters").EnumerateArray()
+            .Should().NotContain(p => p.GetProperty("name").GetString() == "expectedVersion");
     }
 
     private static string Describe(JsonElement schema)

@@ -50,7 +50,7 @@ public class TeamEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task RenameTeam_WithValidName_ReturnsSuccess()
     {
-        var body = new { Name = "Renamed Team" };
+        var body = new { Name = "Renamed Team", ExpectedVersion = 1 };
         var response = await _client.PutAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -58,7 +58,7 @@ public class TeamEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateTeamDescription_WithValidData_ReturnsSuccess()
     {
-        var body = new { Description = "Updated description" };
+        var body = new { Description = "Updated description", ExpectedVersion = 1 };
         var response = await _client.PutAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/description", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -66,21 +66,21 @@ public class TeamEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveTeam_ReturnsSuccess()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/archive", null);
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/archive", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task UnarchiveTeam_ReturnsSuccess()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/unarchive", null);
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/unarchive", JsonContent(new { ExpectedVersion = 1 }));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task DeleteTeam_ReturnsSuccess()
     {
-        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}");
+        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
@@ -94,7 +94,7 @@ public class TeamEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task AddTeamMember_WithValidData_ReturnsSuccess()
     {
-        var body = new { UserId = UserId, Role = "Member" };
+        var body = new { UserId = UserId, Role = "Member", ExpectedVersion = 1 };
         var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/members", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -102,14 +102,37 @@ public class TeamEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task RemoveTeamMember_ReturnsSuccess()
     {
-        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/members/{UserId}");
+        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/members/{UserId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task AddTeamMember_UnknownRole_ReturnsBadRequest()
+    {
+        var body = new { UserId = UserId, Role = "Owner", ExpectedVersion = 1 };
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/members", JsonContent(body));
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, "a role outside Lead/Member fails validation before any handler runs");
+    }
+
+    [Fact]
+    public async Task RenameTeam_WithoutExpectedVersion_ReturnsBadRequest()
+    {
+        var body = new { Name = "Renamed Team" };
+        var response = await _client.PutAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}", JsonContent(body));
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, "a Team write must carry the version it read");
+    }
+
+    [Fact]
+    public async Task DeleteTeam_WithoutExpectedVersion_ReturnsBadRequest()
+    {
+        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
     public async Task ChangeTeamMemberRole_WithValidData_ReturnsSuccess()
     {
-        var body = new { NewRole = "Lead" };
+        var body = new { NewRole = "Lead", ExpectedVersion = 1 };
         var response = await _client.PutAsync($"/api/v1/workspaces/{WorkspaceId}/teams/{TeamId}/members/{UserId}/role", JsonContent(body));
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }

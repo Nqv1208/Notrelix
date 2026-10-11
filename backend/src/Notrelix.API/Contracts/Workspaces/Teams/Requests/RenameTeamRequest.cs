@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.Workspaces.Teams.Requests;
 
-public sealed record RenameTeamRequest(string Name);
+public sealed record RenameTeamRequest(string Name, long ExpectedVersion);

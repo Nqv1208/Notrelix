@@ -241,14 +241,14 @@ public sealed class SpaceAccessMatrixIntegrationTests : IAsyncLifetime
 
         (await SucceedsAsync(teamMember, new GetBoardQuery(org.AccountingBoard))).Should().BeTrue();
 
-        await OrgTreeTestHost.SendAsync(admin, new RemoveTeamMemberCommand(ws, org.AccountingTeam, org.TeamMember));
+        await OrgTreeTestHost.SendAsync(admin, new RemoveTeamMemberCommand(ws, org.AccountingTeam, org.TeamMember, await TeamVersionAsync(org.AccountingTeam)));
         (await SucceedsAsync(teamMember, new GetBoardQuery(org.AccountingBoard))).Should().BeFalse("leaving the Team revokes its Space role on the next evaluation");
         (await OrgTreeTestHost.QueryAsync(teamMember, new GetBoardsQuery(ws))).Should().NotContain(b => b.Id == org.AccountingBoard);
 
-        await OrgTreeTestHost.SendAsync(admin, new AddTeamMemberCommand(ws, org.AccountingTeam, org.Unassigned, "Member"));
+        await OrgTreeTestHost.SendAsync(admin, new AddTeamMemberCommand(ws, org.AccountingTeam, org.Unassigned, "Member", await TeamVersionAsync(org.AccountingTeam)));
         (await SucceedsAsync(unassigned, new GetBoardQuery(org.AccountingBoard))).Should().BeTrue("joining the Team grants its Space role");
 
-        await OrgTreeTestHost.SendAsync(admin, new ArchiveTeamCommand(ws, org.AccountingTeam));
+        await OrgTreeTestHost.SendAsync(admin, new ArchiveTeamCommand(ws, org.AccountingTeam, await TeamVersionAsync(org.AccountingTeam)));
         (await SucceedsAsync(unassigned, new GetBoardQuery(org.AccountingBoard))).Should().BeFalse("an archived Team grants nothing");
     }
 
@@ -258,11 +258,15 @@ public sealed class SpaceAccessMatrixIntegrationTests : IAsyncLifetime
         var org = await SeedOrgAsync();
         var outsider = await _host.AddOutsiderAsync(org.Stack);
         using var admin = _host.CreateProvider(org.Stack.AccountId, org.Admin);
+        var version = await TeamVersionAsync(org.AccountingTeam);
 
-        var act = () => OrgTreeTestHost.SendAsync(admin, new AddTeamMemberCommand(org.Stack.WorkspaceId, org.AccountingTeam, outsider, "Member"));
+        var act = () => OrgTreeTestHost.SendAsync(admin, new AddTeamMemberCommand(org.Stack.WorkspaceId, org.AccountingTeam, outsider, "Member", version));
 
         await act.Should().ThrowAsync<AppNotFound>("a Team member is an active member of the same Workspace (WSP-014)");
     }
+
+    private Task<long> TeamVersionAsync(Guid teamId) =>
+        _host.ReadAsync(c => c.Teams.Where(t => t.Id == teamId).Select(t => t.Version).SingleAsync());
 
     private async Task UpdateBoardAsync(ServiceProvider provider, Guid boardId, string title)
     {

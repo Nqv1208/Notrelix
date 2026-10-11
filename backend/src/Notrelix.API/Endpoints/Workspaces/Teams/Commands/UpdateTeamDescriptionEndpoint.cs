@@ -11,7 +11,8 @@ public static class UpdateTeamDescriptionEndpoint
         group.MapWorkspacePut("/description", HandleAsync)
             .WithName("Workspaces.Teams.UpdateTeamDescription")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Update a team's description");
+            .WithSummary("Update a team's description")
+            .Produces(StatusCodes.Status204NoContent);
         return group;
     }
 
@@ -21,7 +22,7 @@ public static class UpdateTeamDescriptionEndpoint
         UpdateTeamDescriptionRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new UpdateTeamDescriptionCommand(workspaceId, teamId, request.Description));
+        var result = await sender.Send(new UpdateTeamDescriptionCommand(workspaceId, teamId, request.Description, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

@@ -11,7 +11,8 @@ public static class ChangeTeamMemberRoleEndpoint
         group.MapWorkspacePut("/{userId:guid}/role", HandleAsync)
             .WithName("Workspaces.Teams.ChangeTeamMemberRole")
             .WithTags("Workspaces.Teams")
-            .WithSummary("Change a team member's role");
+            .WithSummary("Change a team member's role")
+            .Produces(StatusCodes.Status204NoContent);
         return group;
     }
 
@@ -22,7 +23,7 @@ public static class ChangeTeamMemberRoleEndpoint
         ChangeTeamMemberRoleRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new ChangeTeamMemberRoleCommand(workspaceId, teamId, userId, request.NewRole));
+        var result = await sender.Send(new ChangeTeamMemberRoleCommand(workspaceId, teamId, userId, request.NewRole, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

@@ -66,6 +66,14 @@ public static class ExpectedVersionInventory
             ["AddSpaceMemberCommand"] = "workspaces.space",
             ["RemoveSpaceMemberCommand"] = "workspaces.space",
             ["ChangeSpaceMemberRoleCommand"] = "workspaces.space",
+            ["RenameTeamCommand"] = "workspaces.team",
+            ["UpdateTeamDescriptionCommand"] = "workspaces.team",
+            ["ArchiveTeamCommand"] = "workspaces.team",
+            ["UnarchiveTeamCommand"] = "workspaces.team",
+            ["DeleteTeamCommand"] = "workspaces.team",
+            ["AddTeamMemberCommand"] = "workspaces.team",
+            ["RemoveTeamMemberCommand"] = "workspaces.team",
+            ["ChangeTeamMemberRoleCommand"] = "workspaces.team",
         };
 
     public static IReadOnlyCollection<Type> DiscoverConcreteVersionedRequests() =>
