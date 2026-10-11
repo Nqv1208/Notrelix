@@ -3,12 +3,16 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam;
 
+/// <param name="Status">The <see cref="TeamStatus"/> name: <c>Active</c> or <c>Archived</c>.</param>
+/// <param name="MemberCount">Members whose participation has not ended (<see cref="TeamMemberStatus.Active"/> only).</param>
+/// <param name="Version">The Team aggregate version, the expected version a Team write accepts.</param>
 public record TeamDto(
     Guid Id,
     string Name,
     string? Description,
-    bool IsArchived,
+    string Status,
     int MemberCount,
+    long Version,
     DateTime CreatedAt
 );
 
@@ -41,14 +45,15 @@ public class GetTeamQueryHandler : IRequestHandler<GetTeamQuery, Result<TeamDto>
 
         var memberCount = await _context.TeamMembers
             .AsNoTracking()
-            .CountAsync(m => m.TeamId == team.Id, ct);
+            .CountAsync(m => m.TeamId == team.Id && m.Status == TeamMemberStatus.Active, ct);
 
         return Result<TeamDto>.Success(new TeamDto(
             team.Id,
             team.Name,
             team.Description,
-            team.Status == TeamStatus.Archived,
+            team.Status.ToString(),
             memberCount,
+            team.Version,
             team.CreatedAt.DateTime));
     }
 }

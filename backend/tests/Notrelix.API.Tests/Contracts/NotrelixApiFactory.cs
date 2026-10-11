@@ -56,6 +56,7 @@ using Notrelix.Application.Features.Workspaces.Spaces.Commands.RestoreSpace;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
 using Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeams;
 using Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeamMembers;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.RenameTeam;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.UpdateTeamDescription;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember;
@@ -438,7 +439,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<GetWorkspaceTeamsQuery, Result<List<TeamDto>>>(services,
                 Result<List<TeamDto>>.Success(new List<TeamDto>()));
             MockWorkspaceHandler<GetTeamQuery, Result<TeamDto>>(services,
-                Result<TeamDto>.Success(new TeamDto(Guid.NewGuid(), "Mocked", null, false, 0, DateTime.UtcNow)));
+                Result<TeamDto>.Success(new TeamDto(Guid.NewGuid(), "Mocked", null, "Active", 0, 1, DateTime.UtcNow)));
+            MockWorkspaceHandler<GetTeamMembersQuery, IReadOnlyList<TeamMemberDto>>(services, new List<TeamMemberDto>());
             MockWorkspaceHandler<RenameTeamCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<UpdateTeamDescriptionCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<AddTeamMemberCommand, Result>(services, Result.Success());

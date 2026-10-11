@@ -34,7 +34,7 @@ public class GetWorkspaceTeamsQueryHandler : IRequestHandler<GetWorkspaceTeamsQu
             ? new Dictionary<Guid, int>()
             : await _context.TeamMembers
                 .AsNoTracking()
-                .Where(m => teamIds.Contains(m.TeamId))
+                .Where(m => teamIds.Contains(m.TeamId) && m.Status == TeamMemberStatus.Active)
                 .GroupBy(m => m.TeamId)
                 .Select(g => new { TeamId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.TeamId, x => x.Count, ct);
@@ -43,8 +43,9 @@ public class GetWorkspaceTeamsQueryHandler : IRequestHandler<GetWorkspaceTeamsQu
             t.Id,
             t.Name,
             t.Description,
-            t.Status == TeamStatus.Archived,
+            t.Status.ToString(),
             memberCounts.GetValueOrDefault(t.Id),
+            t.Version,
             t.CreatedAt.DateTime)).ToList();
 
         return Result<List<TeamDto>>.Success(result);
