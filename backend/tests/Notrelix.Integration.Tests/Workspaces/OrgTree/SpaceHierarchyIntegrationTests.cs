@@ -321,6 +321,46 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
         await tx.RollbackAsync();
     }
 
+    [Fact]
+    public async Task PlacementColumns_HaveNoCrossContextForeignKey_ButKeepTheirIndex()
+    {
+        // Space containment is not a cross-context object graph (docs/product/workspaces.md §79):
+        // Boards and Pages reference a Space by scalar id only; existence is validated in Application.
+        await using var connection = new NpgsqlConnection(_db.ConnectionString);
+        await connection.OpenAsync();
+        await using var tx = await connection.BeginTransactionAsync();
+
+        (await QueryAsync(connection, tx, """
+            SELECT n.nspname || '.' || c.relname
+            FROM pg_constraint k
+            JOIN pg_class c ON c.oid = k.conrelid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            JOIN pg_class t ON t.oid = k.confrelid
+            JOIN pg_namespace tn ON tn.oid = t.relnamespace
+            WHERE k.contype = 'f' AND tn.nspname = 'workspace' AND t.relname = 'spaces'
+              AND n.nspname IN ('work', 'docs')
+            """))
+            .Should().BeEmpty("work.boards and docs.pages hold no foreign key to workspace.spaces");
+
+        (await QueryAsync(connection, tx, """
+            SELECT schemaname || '.' || tablename || ':' || indexname
+            FROM pg_indexes
+            WHERE indexname IN ('ix_boards_space_id', 'ix_pages_space_id')
+            ORDER BY 1
+            """))
+            .Should().Equal("docs.pages:ix_pages_space_id", "work.boards:ix_boards_space_id");
+
+        (await QueryAsync(connection, tx, """
+            SELECT table_schema || '.' || table_name FROM information_schema.columns
+            WHERE column_name = 'space_id' AND ((table_schema = 'work' AND table_name = 'boards')
+                                             OR (table_schema = 'docs' AND table_name = 'pages'))
+            ORDER BY 1
+            """))
+            .Should().Equal("docs.pages", "work.boards");
+
+        await tx.RollbackAsync();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private static async Task<Guid> CreateAsync(

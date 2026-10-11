@@ -11715,12 +11715,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_pages_pages_parent_id");
-
-                    b.HasOne("Notrelix.Domain.Workspaces.Spaces.Space", null)
-                        .WithMany()
-                        .HasForeignKey("SpaceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_pages_space");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Documents.ResourceLinks.ResourceLink", b =>
@@ -12225,15 +12219,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Navigation("Color")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Boards.Board", b =>
-                {
-                    b.HasOne("Notrelix.Domain.Workspaces.Spaces.Space", null)
-                        .WithMany()
-                        .HasForeignKey("SpaceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_boards_space");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Boards.BoardMember", b =>

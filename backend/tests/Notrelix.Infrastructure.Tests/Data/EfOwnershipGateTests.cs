@@ -12,6 +12,7 @@ using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Infrastructure.Data.Ops.Entities;
 using Notrelix.Infrastructure.Data.Projections.Activity;
 using Notrelix.Infrastructure.Data.Projections.Search;
+using Notrelix.Infrastructure.Data.Workspaces;
 using Notrelix.Infrastructure.Operations.Idempotency;
 
 namespace Notrelix.Infrastructure.Tests.Data;
@@ -76,6 +77,11 @@ public sealed class EfOwnershipGateTests
         // Authz technical projection
         [typeof(ResourcePermissionInheritanceCacheEntry)] = "AuthzProjection",
         [typeof(AccessGrant)] = "AuthzProjection",
+
+        // Workspaces-owned technical projection: the Space closure index (ADR-009). It is
+        // registered under the Workspaces business owner (not a separate technical owner)
+        // because its foreign keys to Space are same-context and must stay legal.
+        [typeof(SpacePathRecord)] = "Business:Workspaces",
 
         // Integrations physical secret persistence (M8)
         [typeof(IntegrationSecretBlob)] = "IntegrationsSecretPersistence",
