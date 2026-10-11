@@ -145,6 +145,7 @@ function MemberRow({
   canEdit,
   isSelf,
   pending,
+  saving,
   noticeId,
   onChangeRole,
   onConfirmRemove,
@@ -155,7 +156,10 @@ function MemberRow({
   copy: WorkspaceTeamsCopy;
   canEdit: boolean;
   isSelf: boolean;
+  /** This member's own write is in flight (row-level feedback). */
   pending: boolean;
+  /** Any Team write is in flight; each write needs the version the last one bumps. */
+  saving: boolean;
   noticeId: string | undefined;
   onChangeRole: WorkspaceTeamSurfaceProps["onChangeRole"];
   onConfirmRemove: (member: TeamMember) => void;
@@ -203,7 +207,7 @@ function MemberRow({
         {editable ? (
           <Select
             value={member.role}
-            disabled={pending}
+            disabled={pending || saving}
             onValueChange={(value) => {
               const role = value as TeamRole;
               if (role !== member.role) onChangeRole(member.userId, role);
@@ -248,6 +252,7 @@ function MemberRow({
               variant="ghost"
               size="icon-sm"
               aria-label={formatCopy(copy.members.remove, { name })}
+              disabled={saving}
               onClick={() => onConfirmRemove(member)}
               className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-text focus-visible:ring-focus-ring"
             >
@@ -722,6 +727,7 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
                   viewer.userId !== null && viewer.userId === member.userId
                 }
                 pending={props.pendingUserIds.has(member.userId)}
+                saving={props.saving}
                 noticeId={notice ? noticeId : undefined}
                 onChangeRole={props.onChangeRole}
                 onConfirmRemove={(target) =>

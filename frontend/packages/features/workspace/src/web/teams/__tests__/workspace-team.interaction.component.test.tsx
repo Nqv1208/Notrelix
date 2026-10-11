@@ -120,7 +120,7 @@ describe("WorkspaceTeamSurface", () => {
   });
 
   it("FUI[workspace.team:role] changes a Team role inline through the injected callback", () => {
-    const { props } = renderTeam();
+    const { props, view } = renderTeam();
     choose(within(rowOf("Alan Turing")).getByRole("combobox"), copy.roles.Lead);
     expect(props.onChangeRole).toHaveBeenCalledWith("u-alan", "Lead");
 
@@ -131,6 +131,27 @@ describe("WorkspaceTeamSurface", () => {
       copy.roles.Member,
     );
     expect(props.onChangeRole).not.toHaveBeenCalled();
+
+    // While any Team write is in flight no row may start another one: it
+    // would carry the version the pending write is about to bump.
+    const rowControls = () => {
+      const list = screen.getByRole("list", { name: copy.members.title });
+      return [
+        ...within(list).getAllByRole("combobox"),
+        ...within(list).getAllByRole("button", {
+          name: /^Remove .* from the Team$/,
+        }),
+      ] as HTMLButtonElement[];
+    };
+    const open = rowControls();
+    expect(open.length).toBeGreaterThan(2);
+    expect(open.every((control) => !control.disabled)).toBe(true);
+    view.unmount();
+
+    renderTeam({ ...teamDefaultScenario(), saving: true });
+    const locked = rowControls();
+    expect(locked.length).toBe(open.length);
+    expect(locked.every((control) => control.disabled)).toBe(true);
   });
 
   it("FUI[workspace.team:last-lead] never offers demoting or removing the last Lead and shows why", () => {
