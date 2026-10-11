@@ -12,6 +12,8 @@ export const en = {
     calendar: "Calendar",
     timeline: "Timeline",
   },
+  /** Heading shown while the board title is not loaded. */
+  untitledBoard: "Board",
   addView: "Add view",
   filter: "Filter board",
   search: "Search...",
@@ -28,6 +30,7 @@ export const vi: BoardHeaderCopy = {
     calendar: "Lịch",
     timeline: "Dòng thời gian",
   },
+  untitledBoard: "Bảng",
   addView: "Thêm chế độ xem",
   filter: "Lọc bảng",
   search: "Tìm kiếm...",

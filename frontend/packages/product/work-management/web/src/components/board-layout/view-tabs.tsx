@@ -55,7 +55,13 @@ export function ViewTabs({ activeView, onViewChange, copy }: ViewTabsProps) {
                   inline: "nearest",
                 })
               }
-              className="h-auto flex-none gap-1.5 px-2.5 py-1.5 text-label font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground data-[state=active]:bg-muted data-[state=active]:text-foreground"
+              // No panels exist (the board renders outside the tabs), so drop
+              // the aria-controls Radix would point at a missing element.
+              aria-controls={undefined}
+              // The shared line-variant rules paint every trigger transparent
+              // (also under `dark:`) with high specificity, so the state
+              // tokens go through the same group variants to win.
+              className="h-auto flex-none gap-1.5 px-2.5 py-1.5 text-label font-medium text-muted-foreground group-data-[variant=line]/tabs-list:hover:bg-state-hover hover:bg-state-hover hover:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:bg-state-selected data-[state=active]:bg-state-selected dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-state-selected group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary data-[state=active]:text-state-selected-foreground"
             >
               <Icon className="size-3.5" aria-hidden="true" />
               {copy.views[view.type]}

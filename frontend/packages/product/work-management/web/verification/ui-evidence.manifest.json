@@ -160,6 +160,10 @@
         {
           "id": "locale",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "dom-order",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
         }
       ]
     },
@@ -243,6 +247,14 @@
         },
         {
           "id": "stacking",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "aria-controls",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "selected-style",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
         }
       ]

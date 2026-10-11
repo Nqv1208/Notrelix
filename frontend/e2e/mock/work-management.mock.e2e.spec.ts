@@ -218,3 +218,120 @@ test.describe("Board header and view bar at 320 px", () => {
     expect(errors).toEqual([]);
   });
 });
+
+test.describe("Board header in a real browser", () => {
+  test.skip(scenario !== "default", "Assertions need the default world data");
+
+  const board = "/workspaces/mock-workspace-primary/boards/mock-board-roadmap";
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "en");
+      } catch {
+        // Private mode: the default locale applies.
+      }
+    });
+  });
+
+  for (const mode of ["light", "dark"] as const) {
+    test(`the selected view tab looks different from the others in ${mode} and no tab references a missing panel`, async ({
+      page,
+    }) => {
+      await page.addInitScript((value) => {
+        try {
+          window.localStorage.setItem("notrelix-theme-mode", value);
+        } catch {
+          // Private mode: the default theme applies.
+        }
+      }, mode);
+      await page.goto(`${board}?view=table`);
+      const selected = page.getByRole("tab", { name: "Table" });
+      const other = page.getByRole("tab", { name: "Board" });
+      await expect(selected).toHaveAttribute("aria-selected", "true");
+      const paint = (locator: typeof selected) =>
+        locator.evaluate((element) => {
+          const style = getComputedStyle(element);
+          return {
+            background: style.backgroundColor,
+            underline: style.borderBottomColor,
+          };
+        });
+      const selectedPaint = await paint(selected);
+      const otherPaint = await paint(other);
+      // The selected tab carries a visible tint that unselected tabs do not.
+      expect(selectedPaint.background).not.toBe(otherPaint.background);
+      expect(selectedPaint.background).not.toMatch(/rgba\(0, 0, 0, 0\)|\/ 0\)/);
+      expect(selectedPaint.underline).not.toBe(otherPaint.underline);
+
+      // Hover gives an unselected tab a background too.
+      await other.hover();
+      await expect
+        .poll(async () => (await paint(other)).background)
+        .not.toBe(otherPaint.background);
+
+      const dangling = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('[role="tab"][aria-controls]'))
+          .map((tab) => tab.getAttribute("aria-controls") ?? "")
+          .filter((id) => !document.getElementById(id)),
+      );
+      expect(dangling).toEqual([]);
+    });
+  }
+
+  for (const width of [320, 1280]) {
+    test(`keyboard order follows the visual order at ${width} px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 700 });
+      await page.goto(`${board}?view=kanban`);
+      const tab = page.getByRole("tab", { name: "Board" });
+      const addView = page.getByRole("button", { name: "Add view" });
+      await expect(addView).toBeVisible();
+      await tab.focus();
+      await page.keyboard.press("Tab");
+      await expect(addView).toBeFocused();
+      const tabBox = await tab.boundingBox();
+      const addBox = await addView.boundingBox();
+      if (!tabBox || !addBox) throw new Error("header controls not laid out");
+      // The next control in focus order is later in reading order: on a lower
+      // row, or on the same row to the right.
+      const centre = (box: { y: number; height: number }) =>
+        box.y + box.height / 2;
+      const sameRow =
+        Math.abs(centre(addBox) - centre(tabBox)) <
+        Math.min(addBox.height, tabBox.height) / 2;
+      expect(sameRow ? addBox.x > tabBox.x : addBox.y > tabBox.y).toBe(true);
+    });
+  }
+
+  for (const [scheme, width] of [
+    ["light", 1280],
+    ["dark", 1280],
+    ["light", 320],
+    ["dark", 320],
+  ] as const) {
+    test(`header screenshot ${scheme} ${width}`, async ({ page }) => {
+      test.skip(!process.env.HEADER_SHOTS_DIR, "Manual capture only");
+      await page.addInitScript((mode) => {
+        try {
+          window.localStorage.setItem("notrelix-theme-mode", mode);
+        } catch {
+          // Private mode: the default theme applies.
+        }
+      }, scheme);
+      await page.setViewportSize({ width, height: 400 });
+      await page.goto(`${board}?view=table`);
+      await expect(page.getByRole("tablist")).toBeVisible();
+      await page.getByRole("tab", { name: "Table" }).hover();
+      await page.getByRole("tab", { name: "Calendar" }).focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.getByRole("tab", { name: "Board" }).hover();
+      await page.waitForTimeout(300);
+      await page.screenshot({
+        path: `${process.env.HEADER_SHOTS_DIR}/header-${scheme}-${width}.png`,
+        clip: { x: 0, y: 0, width, height: 240 },
+      });
+    });
+  }
+});

@@ -32,16 +32,17 @@ export function BoardToolbar({
   const contextCopy = useContext(BoardHeaderCopyContext);
   const copy = copyProp ?? contextCopy;
   return (
-    // Wraps on narrow screens: title and actions share the first row and the
-    // view tabs take the next one, so nothing is pushed past the viewport.
+    // One DOM order at every width (title, views, search, actions): on a
+    // narrow screen the title and the view strip take a row each and the
+    // search and actions wrap below, so focus order equals reading order.
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2 sm:px-4">
-      <h2 className="order-1 min-w-0 flex-1 truncate text-sm font-semibold text-foreground sm:flex-none">
+      <h2 className="min-w-0 basis-full truncate text-sm font-semibold text-foreground sm:basis-auto">
         {boardTitle}
       </h2>
 
-      <div className="order-2 hidden h-4 w-px bg-border sm:block" />
+      <div className="hidden h-4 w-px bg-border sm:block" />
 
-      <div className="order-4 w-full min-w-0 overflow-x-auto sm:order-3 sm:w-auto">
+      <div className="w-full min-w-0 overflow-x-auto sm:w-auto">
         <ViewTabs
           activeView={activeView}
           onViewChange={onViewChange}
@@ -50,7 +51,7 @@ export function BoardToolbar({
       </div>
 
       {onSearchChange && (
-        <div className="relative order-5 w-full sm:order-4 sm:ml-auto sm:w-48">
+        <div className="relative min-w-32 flex-1 sm:ml-auto sm:w-48 sm:flex-none">
           <Search
             className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
@@ -66,9 +67,7 @@ export function BoardToolbar({
       )}
 
       <div
-        className={`order-3 flex items-center gap-1 sm:order-5 ${
-          onSearchChange ? "" : "sm:ml-auto"
-        }`}
+        className={`flex items-center gap-1 ${onSearchChange ? "" : "ml-auto"}`}
       >
         {onFilter && (
           <Button

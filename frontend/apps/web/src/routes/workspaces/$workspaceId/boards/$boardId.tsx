@@ -59,7 +59,7 @@ export function BoardPage() {
       <BoardLayoutShell
         workspaceId={workspaceId}
         boardId={boardId}
-        boardTitle={board?.title ?? "Board"}
+        boardTitle={board?.title ?? headerCopy.untitledBoard}
         activeView={viewType}
         onViewChange={handleViewChange}
       >

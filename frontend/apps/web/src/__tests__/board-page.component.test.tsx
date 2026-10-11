@@ -10,23 +10,30 @@ import {
 } from "@tanstack/react-router";
 import { boardSearchSchema } from "../router/schemas/board-search-schema";
 
+const loadedBoard = vi.hoisted(() => ({
+  current: { title: "Roadmap" } as { title: string } | undefined,
+}));
+
 vi.mock("@notrelix/work-management-state", () => ({
-  useFullBoard: () => ({ board: { title: "Roadmap" } }),
+  useFullBoard: () => ({ board: loadedBoard.current }),
 }));
 
 vi.mock("@notrelix/work-management-web", () => ({
   BoardHeaderCopyContext: {
     Provider: ({ children }: { children: React.ReactNode }) => children,
   },
-  useBoardHeaderCopy: () => ({}),
+  useBoardHeaderCopy: () => ({ untitledBoard: "Bảng chưa tải" }),
   BoardLayoutShell: ({
+    boardTitle,
     onViewChange,
     children,
   }: {
+    boardTitle: string;
     onViewChange: (view: string) => void;
     children: React.ReactNode;
   }) => (
     <div>
+      <h2 data-testid="board-title">{boardTitle}</h2>
       <button type="button" onClick={() => onViewChange("table")}>
         switch to table
       </button>
@@ -74,6 +81,7 @@ let root: Root | undefined;
 let host: HTMLElement | undefined;
 
 afterEach(() => {
+  loadedBoard.current = { title: "Roadmap" };
   act(() => root?.unmount());
   host?.remove();
   root = undefined;
@@ -118,6 +126,19 @@ async function renderBoardPage(url: string) {
 }
 
 const BASE = "/workspaces/w1/boards/b1";
+
+describe("BoardPage header title", () => {
+  it("shows the board title once it is loaded", async () => {
+    await renderBoardPage("/workspaces/w1/boards/b1?view=kanban");
+    expect(text("board-title")).toBe("Roadmap");
+  });
+
+  it("falls back to the localized header copy, not an English literal, while the board is not loaded", async () => {
+    loadedBoard.current = undefined;
+    await renderBoardPage("/workspaces/w1/boards/b1?view=kanban");
+    expect(text("board-title")).toBe("Bảng chưa tải");
+  });
+});
 
 describe("BoardPage route search", () => {
   it("switching the view clears item and keeps filter, sort and groupBy", async () => {

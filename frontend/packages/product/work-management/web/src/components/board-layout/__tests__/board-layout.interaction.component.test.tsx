@@ -136,6 +136,59 @@ describe("ViewTabs interactions", () => {
   });
 });
 
+describe("Board layout accessibility structure", () => {
+  it("FUI[wm.board-layout.view-tabs:aria-controls] leaves no tab pointing at a missing element", () => {
+    renderPureUi(
+      <ViewTabs activeView="table" onViewChange={vi.fn()} copy={en} />,
+    );
+    for (const tab of screen.getAllByRole("tab")) {
+      const controls = tab.getAttribute("aria-controls");
+      if (controls) expect(document.getElementById(controls)).not.toBeNull();
+    }
+  });
+
+  it("FUI[wm.board-layout.toolbar:dom-order] keeps DOM order equal to the reading order with no order-* classes", () => {
+    const { container } = renderPureUi(
+      <BoardToolbar
+        {...baseToolbar}
+        onViewChange={vi.fn()}
+        searchQuery=""
+        onSearchChange={vi.fn()}
+        onFilter={vi.fn()}
+      />,
+    );
+    expect(container.innerHTML).not.toMatch(/(^|[\s"':])order-/);
+    const controls = [
+      screen.getByRole("tablist", { name: "Board views" }),
+      screen.getByRole("textbox", { name: "Search board" }),
+      screen.getByRole("button", { name: "Filter board" }),
+      screen.getByRole("button", { name: "Add view" }),
+    ];
+    for (let index = 1; index < controls.length; index += 1) {
+      const previous = controls[index - 1];
+      const current = controls[index];
+      if (!previous || !current) throw new Error("control missing");
+      expect(
+        previous.compareDocumentPosition(current) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
+  it("FUI[wm.board-layout.view-tabs:selected-style] marks the selected tab with a state token the unselected tabs lack", () => {
+    renderPureUi(
+      <ViewTabs activeView="table" onViewChange={vi.fn()} copy={en} />,
+    );
+    const selected = screen.getByRole("tab", { name: "Table" });
+    const other = screen.getByRole("tab", { name: "Board" });
+    expect(selected.className).toContain(
+      "data-[state=active]:bg-state-selected",
+    );
+    expect(selected.className).toContain("hover:bg-state-hover");
+    expect(other.getAttribute("data-state")).toBe("inactive");
+  });
+});
+
 describe("Board layout keyboard semantics", () => {
   it("FUI[wm.board-layout.view-tabs:keyboard] is one tab stop that moves focus with the arrow keys without switching view", async () => {
     const onViewChange = vi.fn();
