@@ -778,8 +778,7 @@ export class MockSpaceState {
     frozenWhenArchived = true,
   ): MockSpaceWrite {
     const team = this.teams.get(teamId);
-    if (!team || team.workspaceId !== workspaceId)
-      return { kind: "not-found" };
+    if (!team || team.workspaceId !== workspaceId) return { kind: "not-found" };
     const denied = this.teamManager(viewer);
     if (denied) return denied;
     if (expectedVersion !== team.version) return { kind: "stale" };

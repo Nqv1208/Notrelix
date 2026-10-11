@@ -813,8 +813,7 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
           role: "Member",
           expectedVersion: 8,
         }),
-      () =>
-        teams.removeMember(workspaceId, id, jordan, { expectedVersion: 8 }),
+      () => teams.removeMember(workspaceId, id, jordan, { expectedVersion: 8 }),
       () =>
         teams.changeMemberRole(workspaceId, id, jordan, {
           newRole: "Member",
@@ -828,9 +827,9 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(await teamOf(id)).toMatchObject({ status: "Active", version: 9 });
 
     // An unknown Team is a 404.
-    await expect(teams.get(workspaceId, "mock-team-none")).rejects.toMatchObject(
-      { status: 404 },
-    );
+    await expect(
+      teams.get(workspaceId, "mock-team-none"),
+    ).rejects.toMatchObject({ status: 404 });
     store.assertInvariants();
   });
 });
