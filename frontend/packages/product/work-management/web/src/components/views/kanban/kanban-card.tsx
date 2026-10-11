@@ -61,7 +61,11 @@ const IDENTITY_MARK_CLASSES = [
   "bg-identity-ember text-identity-ember-foreground",
 ] as const;
 
-/** A stable identity tone per person; the API's raw member colour is not used. */
+/**
+ * A stable identity tone per person; the API's raw member colour is not used.
+ * Local copy of `IdentityMark`/`identityToneFor` in features/workspace
+ * (`web/shell/shell-link.tsx`, `core/model/navigation.ts`), the shared origin.
+ */
 function identityMarkClass(seed: string): string {
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) {
@@ -155,10 +159,10 @@ export function KanbanCard({
       }).format(due)
     : null;
 
+  // Card.status is a free string: only known statuses get a badge, any other
+  // value is not shown (never printed raw). The authoritative labels are the
+  // board's status field options, which this surface does not receive yet.
   const known = STATUS_PRESENTATION[card.status];
-  const statusLabel = known ? copy.status[known.label] : card.status;
-  const statusClassName =
-    known?.className ?? "bg-secondary text-secondary-foreground";
 
   const PriorityIcon =
     card.priority === "urgent"
@@ -255,17 +259,17 @@ export function KanbanCard({
         </div>
       </div>
 
-      {card.status || isOverdue || PriorityIcon ? (
+      {known || isOverdue || PriorityIcon ? (
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          {card.status ? (
+          {known ? (
             <Badge
               variant="secondary"
               className={cn(
                 "inline-block max-w-full truncate leading-4",
-                statusClassName,
+                known.className,
               )}
             >
-              {statusLabel}
+              {copy.status[known.label]}
             </Badge>
           ) : null}
           {isOverdue ? (

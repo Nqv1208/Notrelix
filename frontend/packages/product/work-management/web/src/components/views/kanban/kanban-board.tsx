@@ -11,12 +11,14 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { Board, BoardGroup } from "@notrelix/work-management-core";
 import { generatePosition } from "@notrelix/work-management-core";
 import { KanbanAddColumn } from "./kanban-add-column";
+import type { KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanColumn } from "./kanban-column";
 import { getKanbanCardMove } from "./kanban-dnd";
 export function KanbanBoard({
   board,
   columns,
   now,
+  cardCopy,
   onOpenDetails,
   onMoveCard,
   onReorderColumns: _onReorderColumns,
@@ -33,6 +35,7 @@ export function KanbanBoard({
   columns: BoardGroup[];
   /** Reference time for card overdue state; read once by the container. */
   now?: Date;
+  cardCopy?: KanbanCardCopy;
   onOpenDetails: (cardId: string) => void;
   onMoveCard: (cardId: string, listId: string, position: number) => void;
   onReorderColumns: (updated: BoardGroup[]) => void;
@@ -75,6 +78,7 @@ export function KanbanBoard({
             board={board}
             group={group}
             now={now}
+            cardCopy={cardCopy}
             onOpenDetails={onOpenDetails}
             onRename={(title) => onRenameColumn(group.id, title)}
             onColorChange={(color) => onColorChangeColumn(group.id, color)}

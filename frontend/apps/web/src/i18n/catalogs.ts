@@ -8,6 +8,7 @@ import {
   workspaceSpacesCatalog,
   workspaceTeamsCatalog,
 } from "@notrelix/features-workspace/web";
+import { kanbanCardCatalog } from "@notrelix/work-management-web";
 import { appearanceCatalog } from "./appearance.catalog";
 
 /**
@@ -23,4 +24,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   workspaceSettingsCatalog,
   workspaceSpacesCatalog,
   workspaceTeamsCatalog,
+  kanbanCardCatalog,
 ];

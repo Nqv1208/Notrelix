@@ -13,12 +13,14 @@ import { cn } from "@notrelix/ui-web";
 import type { Board, BoardGroup } from "@notrelix/work-management-core";
 import { KanbanAddCard } from "./kanban-add-card";
 import { KanbanCard } from "./kanban-card";
+import type { KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanColumnMenu } from "./kanban-column-menu";
 
 export function KanbanColumn({
   board,
   group,
   now,
+  cardCopy,
   onOpenDetails,
   onRename,
   onColorChange,
@@ -32,6 +34,7 @@ export function KanbanColumn({
   group: BoardGroup;
   /** Reference time for card overdue state; read once by the container. */
   now?: Date;
+  cardCopy?: KanbanCardCopy;
   onOpenDetails: (cardId: string) => void;
   onRename: (title: string) => void;
   onColorChange: (color: string) => void;
@@ -145,6 +148,7 @@ export function KanbanColumn({
                 board={board}
                 card={card}
                 now={now}
+                copy={cardCopy}
                 onOpenDetails={onOpenDetails}
                 onCopyLink={onCopyCardLink}
                 onDuplicate={() => onDuplicateCard(card.id)}

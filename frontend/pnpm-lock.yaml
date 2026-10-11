@@ -1395,6 +1395,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.7)
+      '@notrelix/i18n':
+        specifier: workspace:*
+        version: link:../../../foundation/i18n
       '@notrelix/platform':
         specifier: workspace:*
         version: link:../../../foundation/platform

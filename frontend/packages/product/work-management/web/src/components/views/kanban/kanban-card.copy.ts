@@ -1,15 +1,11 @@
 /**
- * Kanban card copy, vi and en.
- *
- * Work Management web has no locale wiring yet and may not import
- * `@notrelix/i18n` (architecture manifest), so this is plain data keyed by
- * locale: the card takes a `copy` prop and defaults to English. Messages use
- * the same `{{name}}` placeholders as the feature catalogs
- * (`packages/features/workspace/src/web/members/workspace-members.copy.ts`)
- * so registering a catalog later is a move, not a rewrite.
+ * Kanban card copy, vi and en (WX-BOARD-001), registered as the `kanban-card`
+ * catalog (`kanban-card.catalog.ts`). The pure surface takes a `copy` prop;
+ * `useKanbanCardCopy` resolves it for the active locale in the container.
+ * Placeholders use the catalog `{{name}}` form and are filled by `fillCopy`.
  */
 export const en = {
-  /** BCP 47 tag used to format the due date. */
+  /** BCP 47 tag the surface formats the due date with. */
   locale: "en",
   moveCard: "Move {{title}}",
   cardMenu: "Open {{title}} menu",

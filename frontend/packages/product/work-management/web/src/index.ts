@@ -18,6 +18,12 @@ export * from "./components/views/kanban/kanban-view";
 export * from "./components/views/kanban/kanban-board";
 export * from "./components/views/kanban/kanban-column";
 export * from "./components/views/kanban/kanban-card";
+export { kanbanCardCatalog } from "./components/views/kanban/kanban-card.catalog";
+export {
+  kanbanCardCopy,
+  type KanbanCardCopy,
+} from "./components/views/kanban/kanban-card.copy";
+export { useKanbanCardCopy } from "./components/views/kanban/use-kanban-card-copy";
 export * from "./components/views/kanban/kanban-add-card";
 export * from "./components/views/kanban/kanban-add-column";
 export * from "./components/views/kanban/kanban-card-detail-panel";

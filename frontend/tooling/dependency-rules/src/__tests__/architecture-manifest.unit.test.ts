@@ -215,6 +215,15 @@ describe("closed-world architecture manifest", () => {
       "@notrelix/ui-web",
       "@notrelix/i18n",
     ]);
+    // WX-BOARD-001: the Kanban card owns its vi/en catalog (FE-ADR-006).
+    expectExact("@notrelix/work-management-web", [
+      "@notrelix/work-management-core",
+      "@notrelix/work-management-state",
+      "@notrelix/work-management-plugins",
+      "@notrelix/ui-web",
+      "@notrelix/platform",
+      "@notrelix/i18n",
+    ]);
     expectExact("@notrelix/features-account", [
       "@notrelix/contracts",
       "@notrelix/kernel",

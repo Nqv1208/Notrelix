@@ -222,12 +222,20 @@ describe("KanbanCard status", () => {
     expect(screen.getByText("Đang thực hiện")).toBeTruthy();
   });
 
-  it("still renders a card whose status the catalog does not know", () => {
+  it("renders no badge, and never the raw value, for a status the catalog does not know", () => {
     const { card } = renderCard({ status: "waiting-on-legal" });
-    expect(screen.getByRole("article", { name: card.title })).toBeTruthy();
-    const badge = screen.getByText("waiting-on-legal");
-    expect(badge.className).toContain("truncate");
-    expect(badge.className).not.toContain("identity");
+    const article = screen.getByRole("article", { name: card.title });
+    expect(article.querySelector("[data-slot='badge']")).toBeNull();
+    expect(screen.queryByText("waiting-on-legal")).toBeNull();
+    expect(article.textContent).not.toContain("waiting-on-legal");
+    expect(screen.getByRole("button", { name: card.title })).toBeTruthy();
+  });
+
+  it("renders no badge for the fixture default status", () => {
+    const { card } = renderCard({ status: "todo" });
+    const article = screen.getByRole("article", { name: card.title });
+    expect(article.querySelector("[data-slot='badge']")).toBeNull();
+    expect(screen.queryByText("todo")).toBeNull();
   });
 
   it("renders no status badge when the status is empty", () => {

@@ -17,6 +17,7 @@
     "@notrelix/work-management-core": "workspace:*",
     "@notrelix/work-management-state": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
+    "@notrelix/i18n": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "lucide-react": "^0.562.0",
     "@dnd-kit/core": "^6.3.1",

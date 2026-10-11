@@ -15,6 +15,7 @@ import { KanbanBoard } from "./kanban-board";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { KanbanSkeleton } from "./kanban-skeleton";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
+import { useKanbanCardCopy } from "./use-kanban-card-copy";
 
 export function KanbanView({
   boardId,
@@ -44,6 +45,7 @@ export function KanbanView({
   } = useSelectedCardPanel();
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
+  const cardCopy = useKanbanCardCopy();
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const deleteCard = useDeleteCard(boardId, workspaceId);
   const createCard = useCreateCard(boardId, workspaceId);
@@ -98,6 +100,7 @@ export function KanbanView({
             board={board}
             columns={columns}
             now={now}
+            cardCopy={cardCopy}
             onOpenDetails={handleOpenDetail}
             onMoveCard={(cardId, listId, position) => {
               moveCard.mutate({ cardId, listId, position });
