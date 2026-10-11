@@ -8,6 +8,7 @@ import {
   workspaceSpacesCatalog,
   workspaceTeamsCatalog,
 } from "@notrelix/features-workspace/web";
+import { notificationBellCatalog } from "@notrelix/features-notifications";
 import {
   boardHeaderCatalog,
   kanbanCardCatalog,
@@ -29,4 +30,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   workspaceTeamsCatalog,
   kanbanCardCatalog,
   boardHeaderCatalog,
+  notificationBellCatalog,
 ];

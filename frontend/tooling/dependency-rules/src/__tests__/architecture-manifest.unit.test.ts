@@ -273,6 +273,7 @@ describe("closed-world architecture manifest", () => {
       "@notrelix/ui-web",
       "@notrelix/realtime",
     ]);
+    // The notification bell owns its vi/en catalog (FE-ADR-006).
     expectExact("@notrelix/features-notifications", [
       "@notrelix/contracts",
       "@notrelix/kernel",
@@ -280,6 +281,7 @@ describe("closed-world architecture manifest", () => {
       "@notrelix/query",
       "@notrelix/ui-web",
       "@notrelix/realtime",
+      "@notrelix/i18n",
     ]);
   });
 

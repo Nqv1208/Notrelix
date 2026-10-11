@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@notrelix/contracts": "workspace:*",
+    "@notrelix/i18n": "workspace:*",
     "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/query": "workspace:*",
