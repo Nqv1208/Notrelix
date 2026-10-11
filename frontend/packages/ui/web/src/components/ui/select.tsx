@@ -105,11 +105,21 @@ function SelectLabel({
   );
 }
 
+/**
+ * `description` is visible secondary help under the label (a role's meaning,
+ * for example). It is announced as the option's description and is not copied
+ * into the closed trigger. Use it instead of a `title` attribute, which is
+ * mouse-only and not announced.
+ */
 function SelectItem({
   className,
   children,
+  description,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+}: React.ComponentProps<typeof SelectPrimitive.Item> & {
+  description?: React.ReactNode;
+}) {
+  const descriptionId = React.useId();
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -117,6 +127,7 @@ function SelectItem({
         "focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 relative flex w-full cursor-default items-center outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className,
       )}
+      aria-describedby={description ? descriptionId : undefined}
       {...props}
     >
       <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
@@ -124,7 +135,19 @@ function SelectItem({
           <CheckIcon className="pointer-events-none" />
         </SelectPrimitive.ItemIndicator>
       </span>
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      {description ? (
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+          <div
+            id={descriptionId}
+            className="text-metadata text-muted-foreground whitespace-normal"
+          >
+            {description}
+          </div>
+        </div>
+      ) : (
+        <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      )}
     </SelectPrimitive.Item>
   );
 }

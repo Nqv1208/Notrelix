@@ -93,6 +93,7 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
             size="icon"
             className="h-9 w-9 text-muted-foreground relative"
             title="Notifications"
+            aria-label="Notifications"
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
@@ -148,7 +149,7 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
                     </div>
 
                     {/* Actions Panel */}
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 top-2.5 flex items-center gap-1 bg-background/80 backdrop-blur-sm p-0.5 rounded-md shadow-sm border">
+                    <div className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100 transition-opacity absolute right-2 top-2.5 flex items-center gap-1 bg-background/80 backdrop-blur-sm p-0.5 rounded-md shadow-sm border">
                       {!notif.isRead && (
                         <Button
                           variant="ghost"
@@ -156,6 +157,7 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
                           className="h-5 w-5 hover:bg-primary/10 hover:text-link"
                           onClick={(e) => handleMarkRead(notif.id, e)}
                           title="Mark as read"
+                          aria-label={`Mark "${notif.title}" as read`}
                         >
                           <MailOpen className="h-3 w-3" />
                         </Button>
@@ -166,6 +168,7 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
                         className="h-5 w-5 hover:bg-destructive/10 hover:text-destructive"
                         onClick={(e) => handleArchive(notif.id, e)}
                         title="Archive"
+                        aria-label={`Archive "${notif.title}"`}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>

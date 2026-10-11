@@ -240,7 +240,7 @@ function AddMemberForm({
                 <SelectItem
                   key={option}
                   value={option}
-                  title={copy.roleHelp[option]}
+                  description={copy.roleHelp[option]}
                 >
                   {copy.roles[option]}
                 </SelectItem>
@@ -341,7 +341,11 @@ function MemberRow({
             </SelectTrigger>
             <SelectContent>
               {caps.roles.map((role) => (
-                <SelectItem key={role} value={role} title={copy.roleHelp[role]}>
+                <SelectItem
+                  key={role}
+                  value={role}
+                  description={copy.roleHelp[role]}
+                >
                   {copy.roles[role]}
                 </SelectItem>
               ))}

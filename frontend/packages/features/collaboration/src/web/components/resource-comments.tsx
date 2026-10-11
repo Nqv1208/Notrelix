@@ -102,8 +102,10 @@ export function ResourceComments({
               </div>
               {comment.authorId === currentUserId && (
                 <button
+                  type="button"
+                  aria-label="Delete comment"
                   onClick={() => deleteComment.mutate(comment.id)}
-                  className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity"
                 >
                   <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
                 </button>
@@ -130,6 +132,7 @@ export function ResourceComments({
         <Button
           type="submit"
           size="icon"
+          aria-label="Send comment"
           disabled={!newComment.trim() || createComment.isPending}
         >
           <Send className="size-4" />

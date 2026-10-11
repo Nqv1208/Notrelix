@@ -37,14 +37,23 @@ describe("notifications web pure surface", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
     fireEvent.click(
-      screen.getByRole("button", { name: "Mark notif-mention as read" }),
+      screen.getByRole("button", { name: 'Mark "Ada mentioned you" as read' }),
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Archive notif-mention" }),
+      screen.getByRole("button", { name: 'Archive "Ada mentioned you"' }),
     );
 
     expect(onMarkRead).toHaveBeenCalledWith("notif-mention");
     expect(onArchive).toHaveBeenCalledWith("notif-mention");
+
+    // Actions are named after the notification (never its id) and revealed by
+    // keyboard focus and touch, not by hover alone.
+    expect(screen.queryByRole("button", { name: /notif-mention/ })).toBeNull();
+    const panel =
+      screen.getByRole("button", { name: 'Archive "Ada mentioned you"' })
+        .parentElement?.className ?? "";
+    expect(panel).toContain("group-focus-within:opacity-100");
+    expect(panel).toContain("pointer-coarse:opacity-100");
   });
 
   it("FUI[notifications.bell:mark-all] routes mark-all-read through the injected callback", () => {

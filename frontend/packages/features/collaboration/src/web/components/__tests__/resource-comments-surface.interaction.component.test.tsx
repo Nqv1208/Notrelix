@@ -38,9 +38,13 @@ describe("collaboration web pure surface", () => {
       target: { value: "Ready for review" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send comment" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Delete comment comment-2" }),
-    );
+    const remove = screen.getByRole("button", {
+      name: "Delete comment comment-2",
+    });
+    // Hover-revealed actions must also appear on keyboard focus and touch.
+    expect(remove.className).toContain("focus-visible:opacity-100");
+    expect(remove.className).toContain("pointer-coarse:opacity-100");
+    fireEvent.click(remove);
 
     expect(onCreateComment).toHaveBeenCalledWith("Ready for review");
     expect(onDeleteComment).toHaveBeenCalledWith("comment-2");

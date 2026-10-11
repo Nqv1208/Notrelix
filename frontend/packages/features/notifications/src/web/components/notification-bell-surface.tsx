@@ -117,11 +117,11 @@ export function NotificationBellSurface({
                         {formatTime(notif.createdAt)}
                       </span>
                     </div>
-                    <div className="absolute right-2 top-2.5 flex items-center gap-1 rounded-md border bg-background/80 p-0.5 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                    <div className="absolute right-2 top-2.5 flex items-center gap-1 rounded-md border bg-background/80 p-0.5 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100">
                       {!notif.isRead ? (
                         <button
                           type="button"
-                          aria-label={`Mark ${notif.id} as read`}
+                          aria-label={`Mark "${notif.title}" as read`}
                           className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-primary/10 hover:text-link"
                           onClick={() => onMarkRead?.(notif.id)}
                         >
@@ -130,7 +130,7 @@ export function NotificationBellSurface({
                       ) : null}
                       <button
                         type="button"
-                        aria-label={`Archive ${notif.id}`}
+                        aria-label={`Archive "${notif.title}"`}
                         className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => onArchive?.(notif.id)}
                       >
