@@ -41,33 +41,25 @@ export function createUseTeamMutations({ api, endpoints }: TeamMutationDeps) {
 
   return function useTeamMutations(workspaceId: string) {
     const queryClient = useQueryClient();
-    const refresh = async (teamId?: string) => {
-      const keys = [
-        ...(teamId
-          ? [
-              workspaceQueryKeys.teamMembers(workspaceId, teamId),
-              workspaceQueryKeys.team(workspaceId, teamId),
-            ]
-          : []),
-        workspaceQueryKeys.teams(workspaceId),
-      ];
-      await Promise.all(
-        keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-      );
-    };
+    // `teams(ws)` is a prefix of `team(ws, id)` and `teamMembers(ws, id)`, so
+    // one invalidation covers the list, the Team and its members.
+    const refresh = () =>
+      queryClient.invalidateQueries({
+        queryKey: workspaceQueryKeys.teams(workspaceId),
+      });
 
     const create = useMutation({
       mutationFn: (input: CreateTeamInput) =>
         service.create(workspaceId, input),
       retry: false,
-      onSettled: () => refresh(),
+      onSettled: refresh,
     });
 
     const rename = useMutation({
       mutationFn: ({ teamId, ...input }: TeamWrite & { name: string }) =>
         service.rename(workspaceId, teamId, input),
       retry: false,
-      onSettled: (_result, _error, input) => refresh(input.teamId),
+      onSettled: refresh,
     });
 
     const describe = useMutation({
@@ -77,21 +69,21 @@ export function createUseTeamMutations({ api, endpoints }: TeamMutationDeps) {
       }: TeamWrite & { description: string | null }) =>
         service.describe(workspaceId, teamId, input),
       retry: false,
-      onSettled: (_result, _error, input) => refresh(input.teamId),
+      onSettled: refresh,
     });
 
     const archive = useMutation({
       mutationFn: ({ teamId, ...input }: TeamWrite) =>
         service.archive(workspaceId, teamId, input),
       retry: false,
-      onSettled: (_result, _error, input) => refresh(input.teamId),
+      onSettled: refresh,
     });
 
     const unarchive = useMutation({
       mutationFn: ({ teamId, ...input }: TeamWrite) =>
         service.unarchive(workspaceId, teamId, input),
       retry: false,
-      onSettled: (_result, _error, input) => refresh(input.teamId),
+      onSettled: refresh,
     });
 
     const addMember = useMutation({
@@ -101,14 +93,14 @@ export function createUseTeamMutations({ api, endpoints }: TeamMutationDeps) {
       }: TeamMemberWrite & { role: TeamRole }) =>
         service.addMember(workspaceId, teamId, input),
       retry: false,
-      onSettled: (_result, _error, input) => refresh(input.teamId),
+      onSettled: refresh,
     });
 
     const removeMember = useMutation({
       mutationFn: ({ teamId, userId, ...input }: TeamMemberWrite) =>
         service.removeMember(workspaceId, teamId, userId, input),
       retry: false,
-      onSettled: (_result, _error, input) => refresh(input.teamId),
+      onSettled: refresh,
     });
 
     const changeRole = useMutation({
@@ -142,7 +134,7 @@ export function createUseTeamMutations({ api, endpoints }: TeamMutationDeps) {
           queryClient.setQueryData(context.key, context.previous);
         }
       },
-      onSettled: (_result, _error, input) => refresh(input.teamId),
+      onSettled: refresh,
     });
 
     return {

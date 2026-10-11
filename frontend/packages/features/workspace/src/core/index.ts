@@ -63,7 +63,6 @@ export {
   createSpacesService,
   parseSpaceMembers,
   parseSpaceTree,
-  parseTeams,
   type CreateSpaceInput,
   type MoveSpaceInput,
   type SpaceDetailsInput,

@@ -11,6 +11,7 @@
 
 import { normalizeSearchText } from "./navigation";
 import type { WorkspaceRole } from "../types/workspace";
+import type { Team } from "./teams";
 
 export const SPACE_TYPES = [
   "Department",
@@ -60,6 +61,21 @@ export interface SpaceTeam {
   readonly id: string;
   readonly name: string;
   readonly memberCount: number;
+}
+
+/**
+ * The Space member picker's view of the shared Team list: Active Teams only,
+ * because an archived Team grants nothing (GOV-026) and the producer rejects
+ * it as a Space subject. Derived (query `select`), never cached on its own.
+ */
+export function toSpaceTeams(teams: readonly Team[]): SpaceTeam[] {
+  return teams
+    .filter((team) => team.status === "Active")
+    .map((team) => ({
+      id: team.id,
+      name: team.name,
+      memberCount: team.memberCount,
+    }));
 }
 
 function lastOf<T>(items: readonly T[]): T | undefined {

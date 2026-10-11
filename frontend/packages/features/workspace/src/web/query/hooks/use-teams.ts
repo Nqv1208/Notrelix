@@ -2,13 +2,28 @@ import { useQuery } from "@tanstack/react-query";
 import {
   createTeamsService,
   type TeamsEndpoints,
+  type TeamsService,
 } from "../../../core/api/teams.service";
 import type { SpacesApiClient } from "../../../core/api/spaces.service";
+import { toSpaceTeams } from "../../../core/model/spaces";
 import { workspaceQueryKeys } from "../../../query/keys";
 
 interface UseTeamsDeps {
   api: SpacesApiClient;
   endpoints: TeamsEndpoints;
+}
+
+/**
+ * The ONE query behind `workspaceQueryKeys.teams(ws)`: every Team (active and
+ * archived, with status and version). Each consumer derives its own view with
+ * `select`; no hook may cache a different shape under this key.
+ */
+function teamsQuery(service: TeamsService, workspaceId: string) {
+  return {
+    queryKey: workspaceQueryKeys.teams(workspaceId),
+    queryFn: () => service.list(workspaceId),
+    staleTime: 60_000,
+  };
 }
 
 /** Active and archived Teams of the workspace (WX-TEAM-001). */
@@ -17,10 +32,25 @@ export function createUseTeams({ api, endpoints }: UseTeamsDeps) {
 
   return function useTeams(workspaceId: string, enabled = true) {
     return useQuery({
-      queryKey: workspaceQueryKeys.teams(workspaceId),
-      queryFn: () => service.list(workspaceId),
+      ...teamsQuery(service, workspaceId),
       enabled: !!workspaceId && enabled,
-      staleTime: 60_000,
+    });
+  };
+}
+
+/**
+ * Active Teams of the workspace, offered as Space member subjects. Reads the
+ * shared Teams query and narrows it with `select` (an archived Team is not a
+ * valid Space subject).
+ */
+export function createUseWorkspaceTeams({ api, endpoints }: UseTeamsDeps) {
+  const service = createTeamsService(api, endpoints);
+
+  return function useWorkspaceTeams(workspaceId: string, enabled = true) {
+    return useQuery({
+      ...teamsQuery(service, workspaceId),
+      enabled: !!workspaceId && enabled,
+      select: toSpaceTeams,
     });
   };
 }

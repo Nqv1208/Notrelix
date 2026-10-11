@@ -38,17 +38,3 @@ export function createUseSpaceMembers({ api, endpoints }: UseSpacesDeps) {
     });
   };
 }
-
-/** Active Teams of the workspace, offered as Space member subjects. */
-export function createUseWorkspaceTeams({ api, endpoints }: UseSpacesDeps) {
-  const service = createSpacesService(api, endpoints);
-
-  return function useWorkspaceTeams(workspaceId: string, enabled = true) {
-    return useQuery({
-      queryKey: workspaceQueryKeys.teams(workspaceId),
-      queryFn: () => service.getTeams(workspaceId),
-      enabled: !!workspaceId && enabled,
-      staleTime: 60_000,
-    });
-  };
-}

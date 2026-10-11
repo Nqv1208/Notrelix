@@ -14,13 +14,11 @@ import {
   spaceDescendantIds,
   spaceMemberCapabilities,
   spacePathLabel,
+  toSpaceTeams,
   visibleSpaceRows,
 } from "../core/model/spaces";
-import {
-  parseSpaceMembers,
-  parseSpaceTree,
-  parseTeams,
-} from "../core/api/spaces.service";
+import { parseSpaceMembers, parseSpaceTree } from "../core/api/spaces.service";
+import { parseTeamList } from "../core/api/teams.service";
 import {
   buildLibraryEntries,
   DEFAULT_LIBRARY_QUERY,
@@ -264,10 +262,12 @@ describe("Space adapters", () => {
       ]).map((entry) => entry.subjectId),
     ).toEqual(["u1"]);
     expect(
-      parseTeams([
-        { id: "t1", name: "Ops", status: "Active", memberCount: 3 },
-        { id: "t2", name: "Old", status: "Archived" },
-      ]).map((team) => team.id),
+      toSpaceTeams(
+        parseTeamList([
+          { id: "t1", name: "Ops", status: "Active", memberCount: 3 },
+          { id: "t2", name: "Old", status: "Archived" },
+        ]),
+      ).map((team) => team.id),
     ).toEqual(["t1"]);
   });
 });

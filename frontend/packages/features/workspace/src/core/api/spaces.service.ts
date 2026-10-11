@@ -12,7 +12,6 @@ import {
   type SpaceNode,
   type SpaceRole,
   type SpaceSubjectType,
-  type SpaceTeam,
   type SpaceType,
   type SpaceVisibility,
 } from "../model/spaces";
@@ -27,13 +26,6 @@ type SpaceTreeNodeDto =
 type SpaceMemberDto =
   OperationResponse<
     "Workspaces.Spaces.GetSpaceMembers",
-    200
-  > extends readonly (infer Item)[]
-    ? Item
-    : never;
-type TeamDto =
-  OperationResponse<
-    "Workspaces.Teams.GetWorkspaceTeams",
     200
   > extends readonly (infer Item)[]
     ? Item
@@ -76,7 +68,6 @@ export interface SpacesEndpoints {
       subjectType: string,
       subjectId: string,
     ) => string;
-    teams: (workspaceId: string) => string;
   };
 }
 
@@ -122,21 +113,6 @@ export function parseSpaceMembers(items: unknown): SpaceMemberEntry[] {
     });
   }
   return entries;
-}
-
-/** Active Teams only: an archived Team grants nothing (GOV-026). */
-export function parseTeams(items: unknown): SpaceTeam[] {
-  if (!Array.isArray(items)) return [];
-  const teams: SpaceTeam[] = [];
-  for (const raw of items as TeamDto[]) {
-    if (!raw?.id || raw.status !== "Active") continue;
-    teams.push({
-      id: raw.id,
-      name: raw.name ?? "",
-      memberCount: raw.memberCount ?? 0,
-    });
-  }
-  return teams;
 }
 
 export interface CreateSpaceInput {
@@ -186,10 +162,6 @@ export function createSpacesService(
       return parseSpaceMembers(
         await api.get<unknown>(e.spaceMembers(workspaceId, spaceId)),
       );
-    },
-
-    async getTeams(workspaceId: string): Promise<SpaceTeam[]> {
-      return parseTeams(await api.get<unknown>(e.teams(workspaceId)));
     },
 
     /** Returns the new Space id (201 with the id). */

@@ -153,7 +153,6 @@ export { useWorkspaceSpacesCopy } from "./spaces/use-workspace-spaces-copy";
 export {
   createUseSpaceMembers,
   createUseSpaceTree,
-  createUseWorkspaceTeams,
 } from "./query/hooks/use-spaces";
 export {
   createUseSpaceMutations,
@@ -201,6 +200,7 @@ export {
   createUseTeam,
   createUseTeamMembers,
   createUseTeams,
+  createUseWorkspaceTeams,
 } from "./query/hooks/use-teams";
 export {
   createUseTeamMutations,

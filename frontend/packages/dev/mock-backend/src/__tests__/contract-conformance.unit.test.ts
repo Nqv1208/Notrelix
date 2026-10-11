@@ -23,6 +23,7 @@ import {
 import { createMembersService } from "../../../../features/workspace/src/core/api/members.service";
 import { createWorkspaceInvitationsService } from "../../../../features/workspace/src/core/api/invitations.service";
 import { createSpacesService } from "../../../../features/workspace/src/core/api/spaces.service";
+import { toSpaceTeams } from "../../../../features/workspace/src/core/model/spaces";
 import { createTeamsService } from "../../../../features/workspace/src/core/api/teams.service";
 
 describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
@@ -600,9 +601,12 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(guestTree.map((s) => [s.id, s.access])).toEqual([
       [mockIds.spaces.accounting, "Viewer"],
     ]);
-    expect((await spaces.getTeams(workspaceId)).map((t) => t.id)).toEqual([
-      mockIds.teams.helpdesk,
-    ]);
+    // The Space picker offers the Active Teams of the shared Team list.
+    expect(
+      toSpaceTeams(
+        await createTeamsService(client.api, endpoints).list(workspaceId),
+      ).map((t) => t.id),
+    ).toEqual([mockIds.teams.helpdesk]);
     store.assertInvariants();
   });
 
