@@ -724,6 +724,106 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: false,
   },
   {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.GetTeam",
+    operationId: "Workspaces.Teams.GetTeam",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.GetTeamMembers",
+    operationId: "Workspaces.Teams.GetTeamMembers",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.CreateTeam",
+    operationId: "Workspaces.Teams.CreateTeam",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.RenameTeam",
+    operationId: "Workspaces.Teams.RenameTeam",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.UpdateTeamDescription",
+    operationId: "Workspaces.Teams.UpdateTeamDescription",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.ArchiveTeam",
+    operationId: "Workspaces.Teams.ArchiveTeam",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.UnarchiveTeam",
+    operationId: "Workspaces.Teams.UnarchiveTeam",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.AddTeamMember",
+    operationId: "Workspaces.Teams.AddTeamMember",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.RemoveTeamMember",
+    operationId: "Workspaces.Teams.RemoveTeamMember",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.ChangeTeamMemberRole",
+    operationId: "Workspaces.Teams.ChangeTeamMemberRole",
+    mutation: true,
+  },
+  {
     context: "WorkManagement",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useMoveBoardToSpace",

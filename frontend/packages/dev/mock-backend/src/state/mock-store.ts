@@ -586,7 +586,8 @@ export class MockStore {
    * Department Spaces of the primary workspace (OT-5): Engineering (Private,
    * with an open Platform folder), Accounting (Private) and Marketing (open).
    * The owner created them (Space Admin); Jordan (member) is a Member of
-   * Engineering; the Helpdesk team (Jordan, Taylor) views Accounting.
+   * Engineering; the Helpdesk team (the owner as Lead, Jordan and Taylor) views
+   * Accounting.
    */
   private seedSpaces(workspaceId: string): void {
     const at = this.clock.offsetDays(-20);
@@ -645,7 +646,11 @@ export class MockStore {
       description: null,
       archived: false,
       version: 1,
-      memberIds: [mockIds.users.member, mockIds.users.viewer],
+      members: [
+        { userId: mockIds.users.owner, role: "Lead" },
+        { userId: mockIds.users.member, role: "Member" },
+        { userId: mockIds.users.viewer, role: "Member" },
+      ],
       createdAt: at,
     });
     this.spaces.insertMember({

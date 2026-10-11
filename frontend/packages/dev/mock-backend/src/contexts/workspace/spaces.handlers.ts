@@ -1,9 +1,10 @@
 /**
- * Workspaces — Space org tree and Teams handlers (OT-5), with producer
- * shapes (Workspaces.Spaces.*, Workspaces.Teams.GetWorkspaceTeams):
+ * Workspaces — Space org tree and Teams handlers (OT-5, WX-TEAM-001), with
+ * producer shapes (Workspaces.Spaces.*, Workspaces.Teams.*):
  * `SpaceTreeNodeDto` (version, position, accessLevel), `SpaceMemberDto`,
- * `TeamDto`; 201 + id for create, 204 for writes; a stale `expectedVersion`
- * is a 412 and a rule failure the producer's 400 ProblemDetails.
+ * `TeamDto`, `TeamMemberDto`; 201 + id for create, 204 for writes; a stale
+ * `expectedVersion` is a 412 and a rule failure the producer's 400
+ * ProblemDetails.
  */
 
 import { defineMockOperation } from "../../operations/types";
@@ -20,6 +21,8 @@ import type { MockStore } from "../../state/mock-store";
 import type {
   MockSpaceRole,
   MockSpaceSubjectType,
+  MockTeamRecord,
+  MockTeamRole,
   MockSpaceType,
   MockSpaceVisibility,
   MockSpaceWrite,
@@ -34,6 +37,20 @@ const TYPES: readonly MockSpaceType[] = [
 const VISIBILITIES: readonly MockSpaceVisibility[] = ["Private", "Workspace"];
 const ROLES: readonly MockSpaceRole[] = ["Admin", "Member", "Viewer"];
 const SUBJECTS: readonly MockSpaceSubjectType[] = ["User", "Team"];
+const TEAM_ROLES: readonly MockTeamRole[] = ["Lead", "Member"];
+
+function teamDto(team: MockTeamRecord) {
+  return {
+    id: team.id,
+    name: team.name,
+    description: team.description,
+    status: team.archived ? "Archived" : "Active",
+    // Active members only; every mock member is active.
+    memberCount: team.members.length,
+    version: team.version,
+    createdAt: team.createdAt,
+  };
+}
 
 function pick<T extends string>(
   options: readonly T[],
@@ -547,17 +564,275 @@ export const spacesOperations = [
     async handle({ params, store }) {
       return (
         guard(store, params.workspaceId) ??
-        ok(
-          store.spaces.teamsOf(params.workspaceId).map((team) => ({
-            id: team.id,
-            name: team.name,
-            description: team.description,
-            status: team.archived ? "Archived" : "Active",
-            memberCount: team.memberIds.length,
-            version: team.version,
-            createdAt: team.createdAt,
-          })),
-        )
+        ok(store.spaces.teamsOf(params.workspaceId).map(teamDto))
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; teamId: string }, never, unknown>({
+    id: "workspace.teams.get",
+    contract: { kind: "openapi", operationId: "Workspaces.Teams.GetTeam" },
+    method: "GET",
+    route: "/workspaces/:workspaceId/teams/:teamId",
+    async handle({ params, store }) {
+      const team = store.spaces.getTeam(params.teamId);
+      return (
+        guard(store, params.workspaceId) ??
+        (team && team.workspaceId === params.workspaceId
+          ? ok(teamDto(team))
+          : notFound())
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; teamId: string }, never, unknown>({
+    id: "workspace.teams.members",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Teams.GetTeamMembers",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/teams/:teamId/members",
+    async handle({ params, store }) {
+      const team = store.spaces.getTeam(params.teamId);
+      const denied = guard(store, params.workspaceId);
+      if (denied) return denied;
+      if (!team || team.workspaceId !== params.workspaceId) return notFound();
+      return ok(
+        team.members.map((member) => ({
+          userId: member.userId,
+          displayName: store.getUser(member.userId)?.name ?? "Unknown",
+          // The producer does not send an email yet.
+          email: null,
+          role: member.role,
+          status: "Active",
+        })),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    { name?: string | null; description?: string | null },
+    unknown
+  >({
+    id: "workspace.teams.create",
+    contract: { kind: "openapi", operationId: "Workspaces.Teams.CreateTeam" },
+    method: "POST",
+    route: "/workspaces/:workspaceId/teams",
+    async handle({ params, body, store }) {
+      const denied = guard(store, params.workspaceId);
+      if (denied) return denied;
+      const name = (body?.name ?? "").trim();
+      if (!name) return validationError({ Name: ["Name must not be empty."] });
+      if (name.length > 160)
+        return validationError({
+          Name: ["Name must be 160 characters or fewer."],
+        });
+      const description = body?.description?.trim() || null;
+      if (description && description.length > 1024)
+        return validationError({
+          Description: ["Use 1,024 characters or fewer."],
+        });
+      const id = store.nextId("team");
+      const write = store.spaces.createTeam(
+        params.workspaceId,
+        store.spaceViewer(params.workspaceId),
+        { id, name, description, now: store.getClock().isoNow() },
+      );
+      return write.kind === "ok" ? created(id) : writeResult(write);
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; teamId: string },
+    { name?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "workspace.teams.rename",
+    contract: { kind: "openapi", operationId: "Workspaces.Teams.RenameTeam" },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/teams/:teamId",
+    async handle({ params, body, store }) {
+      const name = (body?.name ?? "").trim();
+      if (!name) return validationError({ Name: ["Name must not be empty."] });
+      if (name.length > 160)
+        return validationError({
+          Name: ["Name must be 160 characters or fewer."],
+        });
+      return writeResult(
+        store.spaces.renameTeam(
+          params.workspaceId,
+          params.teamId,
+          store.spaceViewer(params.workspaceId),
+          { name, expectedVersion: body?.expectedVersion },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; teamId: string },
+    { description?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "workspace.teams.describe",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Teams.UpdateTeamDescription",
+    },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/teams/:teamId/description",
+    async handle({ params, body, store }) {
+      const description = body?.description?.trim() || null;
+      if (description && description.length > 1024)
+        return validationError({
+          Description: ["Use 1,024 characters or fewer."],
+        });
+      return writeResult(
+        store.spaces.describeTeam(
+          params.workspaceId,
+          params.teamId,
+          store.spaceViewer(params.workspaceId),
+          { description, expectedVersion: body?.expectedVersion },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; teamId: string },
+    { expectedVersion?: number },
+    void
+  >({
+    id: "workspace.teams.archive",
+    contract: { kind: "openapi", operationId: "Workspaces.Teams.ArchiveTeam" },
+    method: "POST",
+    route: "/workspaces/:workspaceId/teams/:teamId/archive",
+    async handle({ params, body, store }) {
+      return writeResult(
+        store.spaces.setTeamArchived(
+          params.workspaceId,
+          params.teamId,
+          store.spaceViewer(params.workspaceId),
+          { archived: true, expectedVersion: body?.expectedVersion },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; teamId: string },
+    { expectedVersion?: number },
+    void
+  >({
+    id: "workspace.teams.unarchive",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Teams.UnarchiveTeam",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/teams/:teamId/unarchive",
+    async handle({ params, body, store }) {
+      return writeResult(
+        store.spaces.setTeamArchived(
+          params.workspaceId,
+          params.teamId,
+          store.spaceViewer(params.workspaceId),
+          { archived: false, expectedVersion: body?.expectedVersion },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; teamId: string },
+    { userId?: string; role?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "workspace.teams.addMember",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Teams.AddTeamMember",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/teams/:teamId/members",
+    async handle({ params, body, store }) {
+      const role = pick(TEAM_ROLES, body?.role);
+      if (!role) return validationError({ Role: ["Unknown role."] });
+      const userId = body?.userId ?? "";
+      return writeResult(
+        store.spaces.addTeamMember(
+          params.workspaceId,
+          params.teamId,
+          store.spaceViewer(params.workspaceId),
+          {
+            userId,
+            role,
+            expectedVersion: body?.expectedVersion,
+            userExists: store
+              .getWorkspaceMembers(params.workspaceId)
+              .some((m) => m.userId === userId),
+          },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; teamId: string; userId: string },
+    never,
+    void
+  >({
+    id: "workspace.teams.removeMember",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Teams.RemoveTeamMember",
+    },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/teams/:teamId/members/:userId",
+    async handle({ params, request, store }) {
+      const raw = request.searchParams.get("expectedVersion");
+      return writeResult(
+        store.spaces.removeTeamMember(
+          params.workspaceId,
+          params.teamId,
+          store.spaceViewer(params.workspaceId),
+          {
+            userId: params.userId,
+            expectedVersion: raw === null ? undefined : Number(raw),
+          },
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; teamId: string; userId: string },
+    { newRole?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "workspace.teams.changeMemberRole",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Teams.ChangeTeamMemberRole",
+    },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/teams/:teamId/members/:userId/role",
+    async handle({ params, body, store }) {
+      const newRole = pick(TEAM_ROLES, body?.newRole);
+      if (!newRole) return validationError({ NewRole: ["Unknown role."] });
+      return writeResult(
+        store.spaces.changeTeamMemberRole(
+          params.workspaceId,
+          params.teamId,
+          store.spaceViewer(params.workspaceId),
+          {
+            userId: params.userId,
+            newRole,
+            expectedVersion: body?.expectedVersion,
+          },
+        ),
       );
     },
   }),

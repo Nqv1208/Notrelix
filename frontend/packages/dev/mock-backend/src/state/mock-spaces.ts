@@ -38,6 +38,13 @@ export interface MockSpaceMemberRecord {
   addedAt: string;
 }
 
+export type MockTeamRole = "Lead" | "Member";
+
+export interface MockTeamMemberRecord {
+  userId: string;
+  role: MockTeamRole;
+}
+
 export interface MockTeamRecord {
   id: string;
   workspaceId: string;
@@ -46,7 +53,8 @@ export interface MockTeamRecord {
   archived: boolean;
   /** Aggregate version, the Team writes' `expectedVersion`. */
   version: number;
-  memberIds: string[];
+  /** Active members in join order; a Team always keeps at least one Lead. */
+  members: MockTeamMemberRecord[];
   createdAt: string;
 }
 
@@ -113,7 +121,10 @@ export class MockSpaceState {
   }
 
   insertTeam(team: MockTeamRecord): void {
-    this.teams.set(team.id, { ...team, memberIds: [...team.memberIds] });
+    this.teams.set(team.id, {
+      ...team,
+      members: team.members.map((member) => ({ ...member })),
+    });
   }
 
   getSpace(id: string): MockSpaceRecord | undefined {
@@ -178,7 +189,7 @@ export class MockSpaceState {
               return (
                 !!team &&
                 !team.archived &&
-                team.memberIds.includes(viewer.userId)
+                team.members.some((member) => member.userId === viewer.userId)
               );
             })();
       if (
@@ -712,6 +723,220 @@ export class MockSpaceState {
             message: "Cannot remove the last admin of the space.",
           };
         entries.splice(index, 1);
+        return "changed";
+      },
+    );
+  }
+
+  // ── Team writes (GOV-026) ─────────────────────────────────────────
+
+  private teamManager(viewer: MockSpaceViewer): MockSpaceWrite | null {
+    if (viewer.workspaceRole === null) return { kind: "not-found" };
+    return viewer.workspaceRole === "owner" || viewer.workspaceRole === "admin"
+      ? null
+      : { kind: "forbidden" };
+  }
+
+  createTeam(
+    workspaceId: string,
+    viewer: MockSpaceViewer,
+    input: {
+      id: string;
+      name: string;
+      description: string | null;
+      now: string;
+    },
+  ): MockSpaceWrite {
+    const denied = this.teamManager(viewer);
+    if (denied) return denied;
+    this.teams.set(input.id, {
+      id: input.id,
+      workspaceId,
+      name: input.name,
+      description: input.description,
+      archived: false,
+      version: 1,
+      // The creator becomes the first Lead.
+      members: [{ userId: viewer.userId, role: "Lead" }],
+      createdAt: input.now,
+    });
+    return { kind: "ok" };
+  }
+
+  /**
+   * One versioned Team write: the Team must belong to the workspace, the
+   * viewer must manage Teams, a stale `expectedVersion` is rejected, and
+   * (unless the write is archive/unarchive) an archived Team is frozen. A
+   * "noop" outcome leaves the version untouched.
+   */
+  private teamWrite(
+    workspaceId: string,
+    teamId: string,
+    viewer: MockSpaceViewer,
+    expectedVersion: unknown,
+    apply: (team: MockTeamRecord) => MockSpaceWrite | "noop" | "changed",
+    frozenWhenArchived = true,
+  ): MockSpaceWrite {
+    const team = this.teams.get(teamId);
+    if (!team || team.workspaceId !== workspaceId)
+      return { kind: "not-found" };
+    const denied = this.teamManager(viewer);
+    if (denied) return denied;
+    if (expectedVersion !== team.version) return { kind: "stale" };
+    if (frozenWhenArchived && team.archived)
+      return {
+        kind: "rule",
+        message: "Cannot change an archived team. Unarchive it first.",
+      };
+    const outcome = apply(team);
+    if (outcome === "noop") return { kind: "ok" };
+    if (outcome === "changed") {
+      team.version += 1;
+      return { kind: "ok" };
+    }
+    return outcome;
+  }
+
+  renameTeam(
+    workspaceId: string,
+    teamId: string,
+    viewer: MockSpaceViewer,
+    input: { name: string; expectedVersion: unknown },
+  ): MockSpaceWrite {
+    return this.teamWrite(
+      workspaceId,
+      teamId,
+      viewer,
+      input.expectedVersion,
+      (team) => {
+        if (team.name === input.name) return "noop";
+        team.name = input.name;
+        return "changed";
+      },
+    );
+  }
+
+  describeTeam(
+    workspaceId: string,
+    teamId: string,
+    viewer: MockSpaceViewer,
+    input: { description: string | null; expectedVersion: unknown },
+  ): MockSpaceWrite {
+    return this.teamWrite(
+      workspaceId,
+      teamId,
+      viewer,
+      input.expectedVersion,
+      (team) => {
+        if (team.description === input.description) return "noop";
+        team.description = input.description;
+        return "changed";
+      },
+    );
+  }
+
+  setTeamArchived(
+    workspaceId: string,
+    teamId: string,
+    viewer: MockSpaceViewer,
+    input: { archived: boolean; expectedVersion: unknown },
+  ): MockSpaceWrite {
+    return this.teamWrite(
+      workspaceId,
+      teamId,
+      viewer,
+      input.expectedVersion,
+      (team) => {
+        if (team.archived === input.archived) return "noop";
+        team.archived = input.archived;
+        return "changed";
+      },
+      false,
+    );
+  }
+
+  addTeamMember(
+    workspaceId: string,
+    teamId: string,
+    viewer: MockSpaceViewer,
+    input: {
+      userId: string;
+      role: MockTeamRole;
+      expectedVersion: unknown;
+      /** True when the user is an active member of the workspace. */
+      userExists: boolean;
+    },
+  ): MockSpaceWrite {
+    return this.teamWrite(
+      workspaceId,
+      teamId,
+      viewer,
+      input.expectedVersion,
+      (team) => {
+        if (!input.userExists) return { kind: "not-found" };
+        const existing = team.members.find((m) => m.userId === input.userId);
+        if (existing) {
+          if (existing.role === input.role) return "noop";
+          return {
+            kind: "rule",
+            message:
+              "This person already belongs to the team with another role. Change the role instead.",
+          };
+        }
+        team.members.push({ userId: input.userId, role: input.role });
+        return "changed";
+      },
+    );
+  }
+
+  removeTeamMember(
+    workspaceId: string,
+    teamId: string,
+    viewer: MockSpaceViewer,
+    input: { userId: string; expectedVersion: unknown },
+  ): MockSpaceWrite {
+    return this.teamWrite(
+      workspaceId,
+      teamId,
+      viewer,
+      input.expectedVersion,
+      (team) => {
+        const index = team.members.findIndex((m) => m.userId === input.userId);
+        if (index < 0) return { kind: "not-found" };
+        const leads = team.members.filter((m) => m.role === "Lead").length;
+        if (team.members[index]!.role === "Lead" && leads <= 1)
+          return {
+            kind: "rule",
+            message: "Cannot remove the last lead of the team.",
+          };
+        team.members.splice(index, 1);
+        return "changed";
+      },
+    );
+  }
+
+  changeTeamMemberRole(
+    workspaceId: string,
+    teamId: string,
+    viewer: MockSpaceViewer,
+    input: { userId: string; newRole: MockTeamRole; expectedVersion: unknown },
+  ): MockSpaceWrite {
+    return this.teamWrite(
+      workspaceId,
+      teamId,
+      viewer,
+      input.expectedVersion,
+      (team) => {
+        const member = team.members.find((m) => m.userId === input.userId);
+        if (!member) return { kind: "not-found" };
+        if (member.role === input.newRole) return "noop";
+        const leads = team.members.filter((m) => m.role === "Lead").length;
+        if (member.role === "Lead" && leads <= 1)
+          return {
+            kind: "rule",
+            message: "Cannot demote the last lead of the team.",
+          };
+        member.role = input.newRole;
         return "changed";
       },
     );
