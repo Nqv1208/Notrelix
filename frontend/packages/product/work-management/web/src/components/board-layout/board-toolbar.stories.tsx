@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { BoardToolbar } from "./board-toolbar";
+import { en } from "./board-header.copy";
 
 const noOp = () => undefined;
 const meta = {
@@ -16,6 +17,7 @@ export const Default: Story = {
     searchQuery: "",
     onSearchChange: noOp,
     onFilter: noOp,
+    copy: en,
   },
   tags: ["fui-surface--wm.board-layout.toolbar", "fui-state--Default"],
 };

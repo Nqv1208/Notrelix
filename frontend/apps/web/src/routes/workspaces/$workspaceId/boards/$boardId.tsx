@@ -1,6 +1,10 @@
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
-import { BoardWorkspaceViewContent } from "@notrelix/work-management-web";
-import { BoardLayoutShell } from "@notrelix/work-management-web";
+import {
+  BoardHeaderCopyContext,
+  BoardLayoutShell,
+  BoardWorkspaceViewContent,
+  useBoardHeaderCopy,
+} from "@notrelix/work-management-web";
 import { useFullBoard } from "@notrelix/work-management-state";
 import {
   boardSearchSchema,
@@ -22,6 +26,7 @@ export function BoardPage() {
   const view = { type: viewType, name: viewType.toUpperCase() };
 
   const { board } = useFullBoard(boardId, workspaceId);
+  const headerCopy = useBoardHeaderCopy();
 
   const handleViewChange = (newView: string) => {
     const nextView = boardSearchSchema.shape.view.safeParse(newView);
@@ -50,20 +55,22 @@ export function BoardPage() {
   };
 
   return (
-    <BoardLayoutShell
-      workspaceId={workspaceId}
-      boardId={boardId}
-      boardTitle={board?.title ?? "Board"}
-      activeView={viewType}
-      onViewChange={handleViewChange}
-    >
-      <BoardWorkspaceViewContent
+    <BoardHeaderCopyContext.Provider value={headerCopy}>
+      <BoardLayoutShell
         workspaceId={workspaceId}
         boardId={boardId}
-        view={view}
-        selectedItemId={search.item}
-        onSelectedItemChange={handleSelectedItemChange}
-      />
-    </BoardLayoutShell>
+        boardTitle={board?.title ?? "Board"}
+        activeView={viewType}
+        onViewChange={handleViewChange}
+      >
+        <BoardWorkspaceViewContent
+          workspaceId={workspaceId}
+          boardId={boardId}
+          view={view}
+          selectedItemId={search.item}
+          onSelectedItemChange={handleSelectedItemChange}
+        />
+      </BoardLayoutShell>
+    </BoardHeaderCopyContext.Provider>
   );
 }

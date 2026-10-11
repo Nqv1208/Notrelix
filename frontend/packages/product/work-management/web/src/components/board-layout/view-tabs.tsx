@@ -1,100 +1,105 @@
 import { LayoutGrid, Table, Calendar, GanttChart, Plus } from "lucide-react";
-import { Button } from "@notrelix/ui-web";
-import { useEffect, useRef, useState } from "react";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from "@notrelix/ui-web";
+import type { BoardHeaderCopy } from "./board-header.copy";
 
 const VIEW_TYPES = [
-  { type: "kanban", label: "Board", icon: LayoutGrid },
-  { type: "table", label: "Table", icon: Table },
-  { type: "calendar", label: "Calendar", icon: Calendar },
-  { type: "timeline", label: "Timeline", icon: GanttChart },
+  { type: "kanban", icon: LayoutGrid },
+  { type: "table", icon: Table },
+  { type: "calendar", icon: Calendar },
+  { type: "timeline", icon: GanttChart },
 ] as const;
 
 interface ViewTabsProps {
   activeView: string;
   onViewChange: (viewType: string) => void;
+  copy: BoardHeaderCopy;
 }
 
-export function ViewTabs({ activeView, onViewChange }: ViewTabsProps) {
+/**
+ * The board's view switcher. Arrow keys move focus between tabs and Enter or
+ * Space picks one (manual activation), so browsing the tabs never navigates.
+ */
+export function ViewTabs({ activeView, onViewChange, copy }: ViewTabsProps) {
   return (
-    <div className="flex items-center gap-1">
-      {VIEW_TYPES.map((view) => {
-        const Icon = view.icon;
-        const isActive = activeView === view.type;
-        return (
-          <button
-            key={view.type}
-            onClick={() => onViewChange(view.type)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              isActive
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-            }`}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            {view.label}
-          </button>
-        );
-      })}
-    </div>
+    <Tabs
+      value={activeView}
+      onValueChange={onViewChange}
+      activationMode="manual"
+      className="min-w-0 gap-0"
+    >
+      <TabsList
+        variant="line"
+        aria-label={copy.boardViews}
+        className="h-auto w-max gap-1 p-0 group-data-horizontal/tabs:h-auto"
+      >
+        {VIEW_TYPES.map((view) => {
+          const Icon = view.icon;
+          return (
+            <TabsTrigger
+              key={view.type}
+              value={view.type}
+              // The strip scrolls sideways on narrow screens; bring the
+              // focused tab into view (browsers do not do it for us here).
+              onFocus={(event) =>
+                event.currentTarget.scrollIntoView?.({
+                  block: "nearest",
+                  inline: "nearest",
+                })
+              }
+              className="h-auto flex-none gap-1.5 px-2.5 py-1.5 text-label font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground data-[state=active]:bg-muted data-[state=active]:text-foreground"
+            >
+              <Icon className="size-3.5" aria-hidden="true" />
+              {copy.views[view.type]}
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
+    </Tabs>
   );
 }
 
 export function AddViewMenu({
   onAddView,
+  copy,
 }: {
   onAddView: (type: string) => void;
+  copy: BoardHeaderCopy;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false);
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
-
   return (
-    <div className="relative" ref={menuRef}>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <Plus className="h-3.5 w-3.5" />
-        Add view
-      </Button>
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute right-0 top-8 z-50 w-40 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
-            <div className="p-1">
-              {VIEW_TYPES.map((view) => {
-                const Icon = view.icon;
-                return (
-                  <button
-                    key={view.type}
-                    onClick={() => {
-                      onAddView(view.type);
-                      setIsOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                  >
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                    {view.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1 text-label text-muted-foreground hover:text-foreground"
+        >
+          <Plus className="size-3.5" aria-hidden="true" />
+          {copy.addView}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        {VIEW_TYPES.map((view) => {
+          const Icon = view.icon;
+          return (
+            <DropdownMenuItem
+              key={view.type}
+              onSelect={() => onAddView(view.type)}
+            >
+              <Icon className="text-muted-foreground" aria-hidden="true" />
+              {copy.views[view.type]}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

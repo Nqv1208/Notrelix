@@ -12,6 +12,13 @@ export * from "./components/board-workspace-view-content";
 export * from "./components/board-layout/board-layout-shell";
 export * from "./components/board-layout/board-toolbar";
 export * from "./components/board-layout/view-tabs";
+export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
+export {
+  boardHeaderCopy,
+  type BoardHeaderCopy,
+} from "./components/board-layout/board-header.copy";
+export { BoardHeaderCopyContext } from "./components/board-layout/board-header-copy-context";
+export { useBoardHeaderCopy } from "./components/board-layout/use-board-header-copy";
 
 // Kanban view
 export * from "./components/views/kanban/kanban-view";

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ViewTabs } from "./view-tabs";
+import { en } from "./board-header.copy";
 
 const noOp = () => undefined;
 const meta = {
@@ -12,6 +13,7 @@ export const Default: Story = {
   args: {
     activeView: "kanban",
     onViewChange: noOp,
+    copy: en,
   },
   tags: ["fui-surface--wm.board-layout.view-tabs", "fui-state--Default"],
 };

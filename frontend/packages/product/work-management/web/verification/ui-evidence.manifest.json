@@ -152,6 +152,14 @@
         {
           "id": "add-view",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter-absent",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "locale",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
         }
       ]
     },
@@ -223,6 +231,18 @@
         },
         {
           "id": "escape",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "menu-keyboard",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "outside-click",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "stacking",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
         }
       ]

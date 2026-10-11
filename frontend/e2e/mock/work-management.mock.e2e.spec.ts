@@ -113,3 +113,108 @@ test.describe("Kanban item detail through the item search parameter", () => {
     expect(errors).toEqual([]);
   });
 });
+
+test.describe("Board header and view bar at 320 px", () => {
+  test.skip(scenario !== "default", "Assertions need the default world data");
+
+  const board = "/workspaces/mock-workspace-primary/boards/mock-board-roadmap";
+
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "en");
+      } catch {
+        // Private mode: the default locale applies.
+      }
+    });
+  });
+
+  test("the header fits the viewport, the tabs are reachable by keyboard and the Add view menu stacks above the board", async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+
+    await page.goto(`${board}?view=kanban`);
+    await expect(
+      page.getByRole("button", { name: "Ship mock runtime", exact: true }),
+    ).toBeVisible();
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+
+    // The header controls are inside the viewport, not clipped off to the right.
+    const addView = page.getByRole("button", { name: "Add view" });
+    await expect(addView).toBeVisible();
+    const addBox = await addView.boundingBox();
+    expect(addBox).not.toBeNull();
+    expect((addBox?.x ?? -1) + (addBox?.width ?? 0)).toBeLessThanOrEqual(320);
+    expect(addBox?.x ?? -1).toBeGreaterThanOrEqual(0);
+
+    // Keyboard reaches every view tab; the focused tab is scrolled into view.
+    const tablist = page.getByRole("tablist", { name: "Board views" });
+    await expect(tablist.getByRole("tab", { name: "Board" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await tablist.getByRole("tab", { name: "Board" }).focus();
+    for (const name of ["Table", "Calendar", "Timeline"]) {
+      await page.keyboard.press("ArrowRight");
+      await expect(
+        tablist.getByRole("tab", { name, exact: true }),
+      ).toBeFocused();
+    }
+    // Focus scrolls the tab strip, so the focused tab ends up inside the
+    // viewport (polled: the browser may animate the scroll).
+    await expect
+      .poll(async () => {
+        const box = await tablist
+          .getByRole("tab", { name: "Timeline" })
+          .boundingBox();
+        return box ? box.x >= 0 && box.x + box.width <= 320 : false;
+      })
+      .toBe(true);
+    // Arrow keys move focus only; the view does not change until Enter.
+    expect(new URL(page.url()).searchParams.get("view")).toBe("kanban");
+
+    // The Add view menu opens above the board and closes on Escape.
+    await addView.click();
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+    const item = menu.getByRole("menuitem", { name: "Calendar" });
+    const itemBox = await item.boundingBox();
+    expect(itemBox).not.toBeNull();
+    const topmostIsMenu = await page.evaluate(
+      ({ x, y }) => {
+        const hit = document.elementFromPoint(x, y);
+        return Boolean(hit?.closest('[role="menu"]'));
+      },
+      {
+        x: (itemBox?.x ?? 0) + (itemBox?.width ?? 0) / 2,
+        y: (itemBox?.y ?? 0) + (itemBox?.height ?? 0) / 2,
+      },
+    );
+    expect(topmostIsMenu).toBe(true);
+    const menuBox = await menu.boundingBox();
+    expect((menuBox?.x ?? -1) + (menuBox?.width ?? 0)).toBeLessThanOrEqual(320);
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
+    await expect(addView).toBeFocused();
+
+    // An outside press closes it too, without choosing a view.
+    await addView.click();
+    await expect(menu).toBeVisible();
+    await page.mouse.click(5, 400);
+    await expect(menu).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.get("view")).toBe("kanban");
+
+    // Choosing a view from the menu switches to it.
+    await addView.click();
+    await page.getByRole("menuitem", { name: "Calendar" }).click();
+    await expect(page).toHaveURL(/[?&]view=calendar/);
+    expect(errors).toEqual([]);
+  });
+});

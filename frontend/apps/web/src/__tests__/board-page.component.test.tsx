@@ -15,6 +15,10 @@ vi.mock("@notrelix/work-management-state", () => ({
 }));
 
 vi.mock("@notrelix/work-management-web", () => ({
+  BoardHeaderCopyContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+  },
+  useBoardHeaderCopy: () => ({}),
   BoardLayoutShell: ({
     onViewChange,
     children,
