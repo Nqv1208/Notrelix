@@ -237,7 +237,7 @@ function SortableBlockEditor({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 50 : undefined,
+    zIndex: isDragging ? "var(--z-dropdown)" : undefined,
     opacity: isDragging ? 0.5 : undefined,
   };
 

@@ -14,6 +14,9 @@
  * `@notrelix/ui-tokens` roles (`z-dropdown`, `z-sticky`, `z-backdrop`,
  * `z-modal`, `z-toast`, `z-tooltip`). `z-0`, `z-10` and `z-20` stay allowed
  * as local, in-component layering (focus ring over a sibling, a resize handle).
+ * The rule also flags inline `zIndex: <number>` of 30 or more and Tailwind v4
+ * `z-(--x)` variable forms unless they name a role (`z-(--z-modal)`); inline
+ * styles use `"var(--z-<role>)"`.
  * Excluded: `packages/product/work-management/**` and the legacy
  * `shell/sidebar/sidebar.tsx`, both owned by other pending work.
  *
@@ -69,6 +72,15 @@ export const Z_INDEX_ROLE_UTILITIES = [
 
 const RAW_Z_INDEX = /(?<![\w-])-?z-(?:\[[^\]\s]+\]|\d+)(?![\w-])/g;
 const LOCAL_LAYERING_Z = /^-?z-(?:0|10|20)$/;
+/** Tailwind v4 variable form: `z-(--layer)`; only `z-(--z-<role>)` is allowed. */
+const RAW_Z_VARIABLE = /(?<![\w-])-?z-\(--[\w-]+\)/g;
+const ROLE_Z_VARIABLE =
+  /^-?z-\(--z-(?:dropdown|sticky|backdrop|modal|toast|tooltip)\)$/;
+/** Inline `zIndex: <expression>` in a style object; numbers are checked below. */
+const INLINE_Z_INDEX = /(?<![\w$])zIndex\s*:\s*[^,;}\n]+/g;
+const INLINE_Z_NUMBER = /(?<![\w.-])-?\d+(?![\w.])/g;
+/** Inline numeric z-index below this stays allowed as local layering. */
+const INLINE_Z_LOCAL_MAX = 29;
 
 /** Files excluded from the raw z-index rule (other sessions' pending work). */
 export const RAW_Z_INDEX_EXCLUDED = [
@@ -120,8 +132,19 @@ export function countViolations(source: string, isCss = false): FileCounts {
 }
 
 export function findRawZIndex(source: string): string[] {
-  return (source.match(RAW_Z_INDEX) ?? []).filter(
+  const utilities = (source.match(RAW_Z_INDEX) ?? []).filter(
     (utility) => !LOCAL_LAYERING_Z.test(utility),
+  );
+  const variables = (source.match(RAW_Z_VARIABLE) ?? []).filter(
+    (utility) => !ROLE_Z_VARIABLE.test(utility),
+  );
+  const inline = (source.match(INLINE_Z_INDEX) ?? []).filter((expression) =>
+    (expression.match(INLINE_Z_NUMBER) ?? []).some(
+      (n) => Math.abs(Number(n)) > INLINE_Z_LOCAL_MAX,
+    ),
+  );
+  return [...utilities, ...variables, ...inline].map((found) =>
+    found.replace(/\s+/g, " ").trim(),
   );
 }
 

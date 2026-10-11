@@ -112,6 +112,43 @@ describe("check-design-tokens raw z-index rule", () => {
     ]);
   });
 
+  it("flags inline numeric zIndex at or above 30", () => {
+    const source = `
+      const a = { zIndex: 50 };
+      const b = { transform, zIndex: isDragging ? 1000 : undefined };
+      const c = { zIndex: "999" };
+      const d = { zIndex: -40 };
+    `;
+    expect(findRawZIndex(source)).toEqual([
+      "zIndex: 50",
+      "zIndex: isDragging ? 1000 : undefined",
+      'zIndex: "999"',
+      "zIndex: -40",
+    ]);
+  });
+
+  it("allows inline zIndex that is a role variable or local layering", () => {
+    const source = `
+      const a = { zIndex: "var(--z-toast)" };
+      const b = { zIndex: isDragging ? "var(--z-dropdown)" : "auto" };
+      const c = { zIndex: 10 };
+      const d = { zIndex: undefined, zIndexed: 99 };
+    `;
+    expect(findRawZIndex(source)).toEqual([]);
+  });
+
+  it("flags Tailwind v4 arbitrary z variable forms unless they name a role", () => {
+    const source = `
+      <div className="z-(--layer) hover:z-(--panel-z) -z-(--x)" />
+      <div className="z-(--z-modal)" />
+    `;
+    expect(findRawZIndex(source)).toEqual([
+      "z-(--layer)",
+      "z-(--panel-z)",
+      "-z-(--x)",
+    ]);
+  });
+
   it("allows the semantic roles and local in-component layering", () => {
     const source = `
       <div className="z-dropdown z-sticky z-backdrop z-modal z-toast z-tooltip" />

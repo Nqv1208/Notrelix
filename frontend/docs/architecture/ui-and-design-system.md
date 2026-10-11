@@ -170,7 +170,7 @@ toaster                              z-toast
 tooltip                              z-tooltip
 ```
 
-`z-0`, `z-10` and `z-20` remain allowed for local layering inside one component. `pnpm check:design-tokens` fails on any other numeric or arbitrary z utility outside the explicit exclusions in `check-design-tokens.ts`.
+`z-0`, `z-10` and `z-20` remain allowed for local layering inside one component. `pnpm check:design-tokens` fails on any other numeric or arbitrary z utility, on inline `zIndex: <number>` of 30 or more and on Tailwind v4 `z-(--x)` variable forms (other than `z-(--z-<role>)`) outside the explicit exclusions in `check-design-tokens.ts`; inline styles use `"var(--z-<role>)"`.
 
 ---
 
