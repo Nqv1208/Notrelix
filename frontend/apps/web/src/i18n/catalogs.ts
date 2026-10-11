@@ -10,6 +10,7 @@ import {
 } from "@notrelix/features-workspace/web";
 import {
   accountNavCatalog,
+  accountAppearanceCatalog,
   accountProfileCatalog,
 } from "@notrelix/features-account";
 import { notificationBellCatalog } from "@notrelix/features-notifications";
@@ -17,14 +18,12 @@ import {
   boardHeaderCatalog,
   kanbanCardCatalog,
 } from "@notrelix/work-management-web";
-import { appearanceCatalog } from "./appearance.catalog";
 
 /**
  * Catalogs composed into the web host's I18nProvider. Packages export their
  * own catalogs; the host lists them here (explicit composition, no registry).
  */
 export const webCatalogs: readonly MessageCatalog[] = [
-  appearanceCatalog,
   workspaceShellCatalog,
   workspaceHomeCatalog,
   workspaceLibraryCatalog,
@@ -37,4 +36,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   notificationBellCatalog,
   accountNavCatalog,
   accountProfileCatalog,
+  accountAppearanceCatalog,
 ];

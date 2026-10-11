@@ -28,3 +28,16 @@ export type {
 export { accountNavCatalog } from "./nav/account-nav.catalog";
 export { accountNavCopy, type AccountNavCopy } from "./nav/account-nav.copy";
 export { useAccountNavCopy } from "./nav/use-account-nav-copy";
+
+export { accountAppearanceCatalog } from "./appearance/account-appearance.catalog";
+export {
+  accountAppearanceCopy,
+  type AccountAppearanceCopy,
+} from "./appearance/account-appearance.copy";
+export { useAccountAppearanceCopy } from "./appearance/use-account-appearance-copy";
+export {
+  AccountAppearanceSurface,
+  type AccountAppearanceSurfaceProps,
+  type AccountSidebarPreference,
+} from "./appearance/account-appearance-surface";
+export type { AccountLocale } from "./shared/account-surface-model";

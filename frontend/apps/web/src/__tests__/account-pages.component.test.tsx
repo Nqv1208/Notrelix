@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider, type Locale } from "@notrelix/i18n";
+import { ThemeProvider } from "@notrelix/ui-web";
 import { webCatalogs } from "../i18n/catalogs";
 
 type Handler = (url: string, body?: unknown) => unknown;
@@ -38,6 +39,7 @@ vi.mock("@notrelix/runtime-web", () => ({
   }),
 }));
 
+import { AccountAppearancePage } from "../routes/workspaces/$workspaceId/account/appearance";
 import { AccountProfilePage } from "../routes/workspaces/$workspaceId/account/profile";
 
 (
@@ -67,7 +69,7 @@ async function mount(page: React.ReactElement, locale: Locale) {
     root?.render(
       <QueryClientProvider client={queryClient}>
         <I18nProvider catalogs={webCatalogs} initialLocale={locale}>
-          {page}
+          <ThemeProvider target={null}>{page}</ThemeProvider>
         </I18nProvider>
       </QueryClientProvider>,
     );
@@ -116,6 +118,36 @@ async function clickButton(label: string) {
     button.click();
   });
 }
+
+/** Clicks the radio or switch with this accessible name. */
+async function clickControl(role: "radio" | "switch", name: string) {
+  const control = Array.from(
+    host?.querySelectorAll<HTMLElement>(`[role="${role}"]`) ?? [],
+  ).find((element) => {
+    const labelledBy = element.getAttribute("aria-labelledby");
+    const label = labelledBy
+      ? host?.querySelector(`[id="${labelledBy}"]`)?.textContent
+      : (host?.querySelector(`label[for="${element.id}"]`)?.textContent ??
+        element.textContent);
+    return label === name || label?.startsWith(name);
+  });
+  if (!control) throw new Error(`No ${role} "${name}"`);
+  await act(async () => {
+    control.click();
+  });
+  return control;
+}
+
+const checked = (role: "radio" | "switch", name: string) =>
+  Array.from(host?.querySelectorAll<HTMLElement>(`[role="${role}"]`) ?? [])
+    .find((element) => {
+      const labelledBy = element.getAttribute("aria-labelledby");
+      const label = labelledBy
+        ? host?.querySelector(`[id="${labelledBy}"]`)?.textContent
+        : host?.querySelector(`label[for="${element.id}"]`)?.textContent;
+      return label?.startsWith(name);
+    })
+    ?.getAttribute("aria-checked");
 
 describe("AccountProfilePage container", () => {
   const profile = {
@@ -174,5 +206,97 @@ describe("AccountProfilePage container", () => {
     await mount(<AccountProfilePage />, "vi");
     await until(() => expect(text()).toContain("Không thể tải hồ sơ của bạn."));
     expect(text()).toContain("Thử lại");
+  });
+});
+
+describe("AccountAppearancePage container", () => {
+  const preferences = {
+    userId: "u-1",
+    theme: "light",
+    colorTheme: "default",
+    sidebarCollapsed: false,
+    defaultView: "list",
+  };
+
+  it("passes the Vietnamese copy and the current device appearance to the surface", async () => {
+    runtime.get = () => preferences;
+    await mount(<AccountAppearancePage />, "vi");
+    await until(() => expect(text()).toContain("Thu gọn theo mặc định"));
+    expect(text()).toContain("Chế độ hiển thị");
+    expect(text()).toContain("Màu nhấn");
+    expect(text()).not.toContain("Accent color");
+    // The theme runtime's defaults are the selected radios.
+    expect(checked("radio", "Sáng")).toBe("true");
+    expect(checked("radio", "Xanh Notrelix")).toBe("true");
+    expect(checked("radio", "Tiếng Việt")).toBe("true");
+  });
+
+  it("applies a mode choice to the theme runtime and mirrors light/dark/system to the account", async () => {
+    const patch = vi.fn((_url: string, body: unknown) => body);
+    runtime.get = () => preferences;
+    runtime.patch = patch;
+    await mount(<AccountAppearancePage />, "en");
+    await until(() => expect(text()).toContain("Accent color"));
+
+    await clickControl("radio", "Dark");
+    expect(checked("radio", "Dark")).toBe("true");
+    expect(patch).toHaveBeenCalledWith("/account/preferences", {
+      theme: "dark",
+    });
+
+    patch.mockClear();
+    await clickControl("radio", "High contrast");
+    expect(checked("radio", "High contrast")).toBe("true");
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it("applies an accent choice to the theme runtime", async () => {
+    runtime.get = () => preferences;
+    await mount(<AccountAppearancePage />, "en");
+    await until(() => expect(text()).toContain("Accent color"));
+    await clickControl("radio", "Coral");
+    expect(checked("radio", "Coral")).toBe("true");
+    expect(checked("radio", "Notrelix Blue")).toBe("false");
+  });
+
+  it("switches the interface language through the locale runtime", async () => {
+    runtime.get = () => preferences;
+    await mount(<AccountAppearancePage />, "vi");
+    await until(() => expect(text()).toContain("Chế độ hiển thị"));
+    await clickControl("radio", "English");
+    await until(() => expect(text()).toContain("Accent color"));
+    expect(text()).not.toContain("Màu nhấn");
+  });
+
+  it("saves the sidebar default through the preferences hook and reports success", async () => {
+    let stored = preferences;
+    const patch = vi.fn((_url: string, body: unknown) => {
+      stored = { ...stored, ...(body as object) };
+      return stored;
+    });
+    runtime.get = () => stored;
+    runtime.patch = patch;
+    await mount(<AccountAppearancePage />, "en");
+    await until(() => expect(text()).toContain("Collapsed by default"));
+
+    await clickControl("switch", "Collapsed by default");
+    await until(() => expect(text()).toContain("Saved."));
+    expect(patch).toHaveBeenCalledWith("/account/preferences", {
+      sidebarCollapsed: true,
+    });
+    expect(checked("switch", "Collapsed by default")).toBe("true");
+  });
+
+  it("shows the localized error with a retry when the preferences cannot load", async () => {
+    runtime.get = () => {
+      throw new Error("boom");
+    };
+    await mount(<AccountAppearancePage />, "vi");
+    await until(() =>
+      expect(text()).toContain("Không thể tải tùy chọn thanh bên của bạn."),
+    );
+    expect(text()).toContain("Thử lại");
+    // The device appearance stays usable without the account.
+    expect(text()).toContain("Chế độ hiển thị");
   });
 });

@@ -1,20 +1,22 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AccountAppearanceSurface,
   createUsePreferences,
   createUseUpdatePreferences,
+  useAccountAppearanceCopy,
+  type AccountSaveStatus,
+  type AccountSection,
+  type AccountSidebarPreference,
 } from "@notrelix/features-account";
-import { SUPPORTED_LOCALES, useLocale, useT } from "@notrelix/i18n";
+import { useLocale } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { Button, ThemePicker, type ThemeMode } from "@notrelix/ui-web";
-import { toast } from "sonner";
-import { appearanceCatalog } from "../../../../i18n/appearance.catalog";
-import { themePickerLabels } from "../../../../i18n/theme-picker-labels";
+import { useTheme, type ThemeMode } from "@notrelix/ui-web";
 
 export function AccountAppearancePage() {
   const { api: runtimeClient } = useAppRuntime();
-  const { t } = useT(appearanceCatalog);
+  const copy = useAccountAppearanceCopy();
+  const theme = useTheme();
   const { locale, setLocale } = useLocale();
-  const labels = useMemo(() => themePickerLabels(t), [t]);
 
   const usePreferences = useMemo(
     () =>
@@ -34,89 +36,85 @@ export function AccountAppearancePage() {
     [runtimeClient],
   );
 
-  const { preferences, isLoading } = usePreferences();
+  const { preferences, isError, refetch } = usePreferences();
   const updateMutation = useUpdatePreferences();
+  const [sidebarSave, setSidebarSave] = useState<AccountSaveStatus>({
+    state: "idle",
+  });
+  // The value just sent, shown until the refetched preference confirms it.
+  const [pendingCollapsed, setPendingCollapsed] = useState<boolean | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (
+      pendingCollapsed !== null &&
+      preferences?.sidebarCollapsed === pendingCollapsed
+    ) {
+      setPendingCollapsed(null);
+    }
+  }, [preferences?.sidebarCollapsed, pendingCollapsed]);
+
+  const sidebar = useMemo<AccountSection<AccountSidebarPreference>>(
+    () =>
+      preferences
+        ? {
+            status: "ready",
+            data: {
+              collapsed: pendingCollapsed ?? preferences.sidebarCollapsed,
+            },
+          }
+        : isError
+          ? { status: "error" }
+          : { status: "loading" },
+    [preferences, isError, pendingCollapsed],
+  );
 
   // Mirror the device mode to account preferences; the preference contract
   // only knows light/dark/system, so high contrast stays device-local.
-  const handleModeChange = async (mode: ThemeMode) => {
-    if (mode === "high-contrast") return;
-    try {
-      await updateMutation.mutateAsync({ theme: mode });
-    } catch {
-      // Preferences endpoint may not exist yet
-    }
-  };
+  const handleModeChange = useCallback(
+    async (mode: ThemeMode) => {
+      theme.setMode(mode);
+      if (mode === "high-contrast") return;
+      try {
+        await updateMutation.mutateAsync({ theme: mode });
+      } catch {
+        // The device mode is already applied; the account mirror is best effort.
+      }
+    },
+    [theme, updateMutation],
+  );
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2].map((i) => (
-          <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+  const handleSidebarCollapsedChange = useCallback(
+    async (collapsed: boolean) => {
+      setPendingCollapsed(collapsed);
+      setSidebarSave({ state: "saving" });
+      try {
+        await updateMutation.mutateAsync({ sidebarCollapsed: collapsed });
+        setSidebarSave({ state: "saved" });
+      } catch {
+        setPendingCollapsed(null);
+        setSidebarSave({ state: "error" });
+      }
+    },
+    [updateMutation],
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-section-heading text-foreground mb-1">
-          {t("title")}
-        </h2>
-        <p className="text-body text-muted-foreground">{t("description")}</p>
-      </div>
-
-      <ThemePicker labels={labels} onModeChange={handleModeChange} />
-
-      <fieldset className="flex flex-col gap-3">
-        <legend className="text-label text-foreground mb-3">
-          {t("language.legend")}
-        </legend>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {SUPPORTED_LOCALES.map((option) => (
-            <label
-              key={option}
-              lang={option}
-              className="flex cursor-pointer items-center gap-3 rounded-control border border-border bg-card p-3 transition-colors hover:bg-state-hover has-[:checked]:border-primary has-[:checked]:bg-state-selected has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring"
-            >
-              <input
-                type="radio"
-                name="appearance-locale"
-                value={option}
-                checked={locale === option}
-                onChange={() => setLocale(option)}
-                className="sr-only"
-              />
-              <span className="text-label text-foreground">
-                {t(`language.${option}`)}
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      {/* Sidebar */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">Sidebar</label>
-        <div className="flex items-center justify-between rounded-lg border border-border p-4">
-          <div>
-            <p className="text-sm">Collapsed by default</p>
-            <p className="text-xs text-muted-foreground">
-              Start with sidebar collapsed
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              toast.success("Sidebar preference saved");
-            }}
-          >
-            {preferences?.sidebarCollapsed ? "Expanded" : "Collapsed"}
-          </Button>
-        </div>
-      </div>
-    </div>
+    <AccountAppearanceSurface
+      copy={copy}
+      mode={theme.mode}
+      accent={theme.accent}
+      locale={locale}
+      sidebar={sidebar}
+      sidebarSave={sidebarSave}
+      onModeChange={(mode) => void handleModeChange(mode)}
+      onAccentChange={theme.setAccent}
+      onLocaleChange={setLocale}
+      onSidebarCollapsedChange={(collapsed) =>
+        void handleSidebarCollapsedChange(collapsed)
+      }
+      onRetryPreferences={() => void refetch()}
+    />
   );
 }

@@ -143,7 +143,7 @@ No persisted data or public contract changes. Existing hard-coded copy keeps wor
 - `frontend/tooling/dependency-rules/src/architecture-manifest.ts` (`@notrelix/i18n`, `@notrelix/app-web` edge)
 - `frontend/tooling/dependency-rules/src/forbidden-imports.ts`
 - `frontend/apps/web/src/providers/app-providers.tsx`
-- `frontend/apps/web/src/i18n/appearance.catalog.ts`
+- `frontend/packages/features/account/src/web/appearance/account-appearance.copy.ts`
 
 ### Tests / gates
 
