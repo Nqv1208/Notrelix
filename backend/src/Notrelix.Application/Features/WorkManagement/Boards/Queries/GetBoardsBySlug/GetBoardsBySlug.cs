@@ -39,7 +39,8 @@ public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery,
         // Same per-Board ViewBoard decision as a single read (GOV-029); a
         // principal without membership in the resolved Workspace sees nothing.
         var visible = await _visibility.VisibleBoardIdsAsync(workspace.Id, _requestContext.UserId, ct);
-        var result = await BoardListProjection.LoadAsync(_context, workspace.Id, visible, ct);
+        var spaces = (await _visibility.VisibleSpaceIdsAsync(workspace.Id, _requestContext.UserId, ct)).ToHashSet();
+        var result = await BoardListProjection.LoadAsync(_context, workspace.Id, visible, spaces, ct);
 
         return Result<List<BoardDto>>.Success(result);
     }

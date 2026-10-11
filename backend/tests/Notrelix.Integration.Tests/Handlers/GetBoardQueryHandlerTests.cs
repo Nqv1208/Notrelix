@@ -41,7 +41,7 @@ public class GetBoardQueryHandlerTests : IAsyncLifetime
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
-        var handler = new GetBoardQueryHandler(context);
+        var handler = new GetBoardQueryHandler(context, new FakeResourceVisibility(), new FakeCurrentRequestContext());
 
         var result = await handler.Handle(
             new GetBoardQuery(board.Id), CancellationToken.None);
@@ -60,7 +60,7 @@ public class GetBoardQueryHandlerTests : IAsyncLifetime
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
 
-        var handler = new GetBoardQueryHandler(context);
+        var handler = new GetBoardQueryHandler(context, new FakeResourceVisibility(), new FakeCurrentRequestContext());
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             handler.Handle(new GetBoardQuery(Guid.NewGuid()), CancellationToken.None));

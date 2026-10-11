@@ -51,6 +51,9 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwner
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UnarchiveWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.AddSpaceMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSpace;
+using Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace;
+using Notrelix.Domain.Documents.Pages;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceMemberRole;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.MoveSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RemoveSpaceMember;
@@ -139,6 +142,7 @@ public sealed class ExpectedVersionTargetMap
         // Work Management — boards / fields / groups / items
         // (the P3 versioned-request manifest, SPEC WM-V3-DEC-007 / WM-V3-CONC-001)
         [typeof(UpdateBoardCommand)] = new(BoardKind, typeof(Board)),
+        [typeof(MoveBoardToSpaceCommand)] = new(BoardKind, typeof(Board)),
         [typeof(UpdateBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
         [typeof(MoveBoardFieldCommand)] = new(BoardFieldKind, typeof(BoardField)),
         [typeof(AddFieldOptionCommand)] = new(BoardFieldKind, typeof(BoardField)),
@@ -184,6 +188,9 @@ public sealed class ExpectedVersionTargetMap
         [typeof(DeleteWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceProfileCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceSettingsCommand)] = new(WorkspaceKind, typeof(Workspace)),
+
+        // Documents — Space placement of a root page (docs/product/workspaces.md §79)
+        [typeof(MovePageToSpaceCommand)] = new("documents.page", typeof(Page)),
 
         // Workspaces — Space hierarchy and membership (WSP-021, WSP-024)
         [typeof(MoveSpaceCommand)] = new(SpaceKind, typeof(Space)),

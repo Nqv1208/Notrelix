@@ -11,6 +11,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Board_CannotUpdateBackgroundArchived = "WorkManagement_Board_CannotUpdateBackgroundArchived";
     public const string WorkManagement_Board_CannotChangeVisibilityArchived = "WorkManagement_Board_CannotChangeVisibilityArchived";
     public const string WorkManagement_Board_CannotGenerateIdentityArchived = "WorkManagement_Board_CannotGenerateIdentityArchived";
+    public const string WorkManagement_Board_CannotChangeSpaceArchived = "WorkManagement_Board_CannotChangeSpaceArchived";
     public const string WorkManagement_Board_CannotDeleteDefaultGroup = "WorkManagement_Board_CannotDeleteDefaultGroup";
 
     // ── Field ─────────────────────────────────────────────────────────────

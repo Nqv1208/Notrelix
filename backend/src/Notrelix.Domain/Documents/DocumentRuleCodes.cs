@@ -8,6 +8,8 @@ public static class DocumentRuleCodes
     // ── Page ──────────────────────────────────────────────────────────────
     public const string Documents_Page_CannotRenameArchived = "Documents_Page_CannotRenameArchived";
     public const string Documents_Page_CannotMoveArchived = "Documents_Page_CannotMoveArchived";
+    public const string Documents_Page_CannotChangeSpaceArchived = "Documents_Page_CannotChangeSpaceArchived";
+    public const string Documents_Page_NestedPageFollowsRootSpace = "Documents_Page_NestedPageFollowsRootSpace";
     public const string Documents_Page_CannotEditArchived = "Documents_Page_CannotEditArchived";
 
     // ── PageTree ──────────────────────────────────────────────────────────

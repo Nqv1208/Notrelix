@@ -109,7 +109,7 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
         }
 
         await using var context = _db.CreateContext(SystemTenant());
-        var handler = new GetPageQueryHandler(context);
+        var handler = new GetPageQueryHandler(context, new FakeResourceVisibility(), new FakeCurrentRequestContext());
 
         var found = await handler.Handle(new GetPageQuery(activePage.Id), CancellationToken.None);
         found.Succeeded.Should().BeTrue();

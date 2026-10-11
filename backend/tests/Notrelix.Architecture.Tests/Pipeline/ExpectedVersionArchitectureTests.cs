@@ -22,6 +22,8 @@ public static class ExpectedVersionInventory
             ["DeleteApprovalRequestCommand"] = "work-management.approval-request",
             ["RejectApprovalRequestCommand"] = "work-management.approval-request",
             ["UpdateBoardCommand"] = "work-management.board",
+            ["MoveBoardToSpaceCommand"] = "work-management.board",
+            ["MovePageToSpaceCommand"] = "documents.page",
             ["UpdateBoardFieldCommand"] = "work-management.board-field",
             ["DeleteBoardGroupCommand"] = "work-management.board-group",
             ["UpdateBoardItemCommand"] = "work-management.board-item",

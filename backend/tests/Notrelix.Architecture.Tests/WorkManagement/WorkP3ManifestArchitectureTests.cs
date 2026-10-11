@@ -66,6 +66,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["Boards.GetBoardMembersQuery"] = new(Disposition.Keep, "-"),
         ["Boards.CreateBoardInWorkspaceCommand"] = new(Disposition.Harden, "APP-BOARD-001 (default-schema ordering writer)"),
         ["Boards.UpdateBoardCommand"] = new(Disposition.Harden, "APP-BOARD-001, CONC-001", VersionedTarget: true),
+        ["Boards.MoveBoardToSpaceCommand"] = new(Disposition.Keep, "ADR-009 Space placement (OT-4), CONC-001", VersionedTarget: true),
         ["Boards.UpdateBoardVisibilityCommand"] = new(Disposition.Keep, "-"),
         ["Boards.ArchiveBoardCommand"] = new(Disposition.Keep, "-"),
         ["Boards.UnarchiveBoardCommand"] = new(Disposition.Keep, "-"),
@@ -311,7 +312,8 @@ public sealed class WorkP3ManifestArchitectureTests
             .Where(v => v.Validated is not null)
             .ToLookup(v => v.Validated!, v => v.Validator);
 
-        targets.Should().HaveCount(22, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
+        // 22 from SPEC WM-V3-DEC-007 + MoveBoardToSpaceCommand (ADR-009 Space placement).
+        targets.Should().HaveCount(23, "the P3 versioned-request manifest (SPEC WM-V3-DEC-007) is closed-world");
         var violations = new List<string>();
         foreach (var key in targets)
         {

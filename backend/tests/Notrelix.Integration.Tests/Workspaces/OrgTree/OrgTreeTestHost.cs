@@ -157,6 +157,14 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<ISpaceContentReader, SpaceContentReader>();
         services.AddScoped<IBoardSpacePlacementFacts, BoardSpacePlacementFactsAdapter>();
         services.AddScoped<IPageSpacePlacementFacts, PageSpacePlacementFactsAdapter>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.SpacePlacement.ISpacePlacementTargets,
+            Notrelix.Infrastructure.Workspaces.Spaces.SpacePlacementTargets>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
+            Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
+            Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
+            Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
 
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IActorLookupService, ActorLookupService>();

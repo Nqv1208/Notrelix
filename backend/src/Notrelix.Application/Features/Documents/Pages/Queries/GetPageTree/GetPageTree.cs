@@ -36,6 +36,7 @@ public class GetPageTreeQueryHandler : IRequestHandler<GetPageTreeQuery, Result<
             .ToListAsync(ct);
 
         var visibleIds = pages.Select(page => page.Id).ToHashSet();
+        var spaces = (await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct)).ToHashSet();
         var parentIds = pages
             .Where(page => page.ParentId.HasValue)
             .Select(page => page.ParentId!.Value)
@@ -48,7 +49,8 @@ public class GetPageTreeQueryHandler : IRequestHandler<GetPageTreeQuery, Result<
             page.Title,
             page.Icon,
             page.ParentId is { } parentId && visibleIds.Contains(parentId) ? parentId : null,
-            parentIds.Contains(page.Id)
+            parentIds.Contains(page.Id),
+            page.SpaceId is { } spaceId && spaces.Contains(spaceId) ? spaceId : null
         )).ToList());
     }
 }

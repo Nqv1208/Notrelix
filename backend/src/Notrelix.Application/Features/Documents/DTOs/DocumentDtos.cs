@@ -8,7 +8,10 @@ public record PageDto(
     string Icon,
     string? CoverImage,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    // The Workspaces Space the page is placed in; null at the Workspace root
+    // and also when the caller cannot see that Space (never disclosed, GOV-029).
+    Guid? SpaceId = null
 );
 
 public record PageBreadcrumbDto(
@@ -30,7 +33,9 @@ public record PageTreeItemDto(
     string Title,
     string Icon,
     Guid? ParentId,
-    bool HasChildren
+    bool HasChildren,
+    // As PageDto.SpaceId: null at the root or when the Space is not visible.
+    Guid? SpaceId = null
 );
 
 public record BlockDto(

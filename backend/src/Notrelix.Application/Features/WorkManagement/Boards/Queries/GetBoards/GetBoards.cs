@@ -33,7 +33,8 @@ public class GetBoardsQueryHandler : IRequestHandler<GetBoardsQuery, Result<List
         // The pipeline authorized ViewWorkspace; each Board still needs the
         // single-read ViewBoard decision, applied in the datastore (GOV-029).
         var visible = await _visibility.VisibleBoardIdsAsync(request.WorkspaceId, _requestContext.UserId, ct);
-        var result = await BoardListProjection.LoadAsync(_context, request.WorkspaceId, visible, ct);
+        var spaces = (await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct)).ToHashSet();
+        var result = await BoardListProjection.LoadAsync(_context, request.WorkspaceId, visible, spaces, ct);
         return Result<List<BoardDto>>.Success(result);
     }
 }

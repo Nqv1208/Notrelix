@@ -46,7 +46,7 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
         requestContextMock.Setup(r => r.UserId).Returns(userId);
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
-            context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
+            context, Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(), requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "My Board", null, null, null),
@@ -81,7 +81,7 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
         requestContextMock.Setup(r => r.UserId).Returns(Guid.NewGuid());
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
-            context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
+            context, Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(), requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(Guid.NewGuid(), "Board", null, null, null), CancellationToken.None);
@@ -109,7 +109,7 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
         requestContextMock.Setup(r => r.UserId).Returns(userId);
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
-            context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
+            context, Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(), requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "Private Board", null, null, BoardVisibility.Private),

@@ -38,6 +38,7 @@ public class GetWorkspacePagesQueryHandler : IRequestHandler<GetWorkspacePagesQu
             .OrderBy(page => page.Title)
             .ToListAsync(ct);
 
-        return Result<List<PageDto>>.Success(pageEntities.Select(DocumentDtoMapper.ToPageDto).ToList());
+        var spaces = (await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct)).ToHashSet();
+        return Result<List<PageDto>>.Success(pageEntities.Select(page => DocumentDtoMapper.ToPageDto(page, spaces)).ToList());
     }
 }

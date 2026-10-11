@@ -10,6 +10,7 @@ public class CreateBoardInWorkspaceTests : WorkManagementHandlerTestBase
     {
         _handler = new CreateBoardInWorkspaceCommandHandler(
             DbContextMock.Object,
+            Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(),
             RequestContextMock.Object,
             DateTimeProviderMock.Object);
     }

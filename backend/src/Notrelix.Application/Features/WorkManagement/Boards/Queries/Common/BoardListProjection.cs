@@ -14,6 +14,7 @@ internal static class BoardListProjection
         IWorkManagementDbContext context,
         Guid workspaceId,
         IReadOnlyList<Guid> visibleBoardIds,
+        IReadOnlyCollection<Guid> visibleSpaceIds,
         CancellationToken ct)
     {
         if (visibleBoardIds.Count == 0)
@@ -45,7 +46,8 @@ internal static class BoardListProjection
             memberCounts.GetValueOrDefault(b.Id),
             groupCounts.GetValueOrDefault(b.Id),
             b.CreatedAt.DateTime,
-            b.Version
+            b.Version,
+            b.SpaceId is { } spaceId && visibleSpaceIds.Contains(spaceId) ? spaceId : null
         )).ToList();
     }
 }

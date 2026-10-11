@@ -11,7 +11,10 @@ public record BoardDto(
     int MemberCount,
     int ListCount,
     DateTime CreatedAt,
-    long Version
+    long Version,
+    // The Workspaces Space the board is placed in; null at the Workspace root
+    // and also when the caller cannot see that Space (never disclosed, GOV-029).
+    Guid? SpaceId = null
 );
 
 public record FullBoardDto(

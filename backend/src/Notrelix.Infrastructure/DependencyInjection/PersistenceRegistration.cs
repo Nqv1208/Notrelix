@@ -115,6 +115,10 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Workspaces.Navigation.WorkspaceNavigationStore>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore,
             Notrelix.Infrastructure.Workspaces.Spaces.SpaceStore>();
+        services.AddScoped<global::Notrelix.Application.Features.Workspaces.Public.SpacePlacement.ISpacePlacementTargets,
+            Notrelix.Infrastructure.Workspaces.Spaces.SpacePlacementTargets>();
+        services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
+            global::Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.SpacePlacement.IBoardSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardSpacePlacementFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpacePlacement.IPageSpacePlacementFacts,

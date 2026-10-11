@@ -119,6 +119,10 @@ public static class DependencyInjection
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceContentReader>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
+            Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
+            Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
 
         // Producer-owned public projection source (WorkManagement placement facts)
         services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();

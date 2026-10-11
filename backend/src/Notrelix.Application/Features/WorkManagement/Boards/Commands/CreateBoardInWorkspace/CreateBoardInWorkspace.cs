@@ -2,6 +2,7 @@ using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardField;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 
 using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
@@ -12,15 +13,22 @@ public record CreateBoardInWorkspaceCommand(
     string Title,
     string? Description,
     string? Background,
-    BoardVisibility? Visibility) : ICommand<Result<Guid>>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IWorkspaceRequest, IIdempotentRequest
+    BoardVisibility? Visibility,
+    Guid? SpaceId = null) : ICommand<Result<Guid>>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IWorkspaceRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
+
+    // GOV-028: creating in a Space is authorized on that Space (Editor level);
+    // at the Workspace root it keeps the Workspace-level CreateBoard decision.
+    public ResourceRef Resource => SpaceId is { } spaceId
+        ? ResourceRef.Create(ResourceKind.Create("workspaces.space"), spaceId, WorkspaceId)
+        : ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
 }
 
 public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardInWorkspaceCommand, Result<Guid>>
 {
     private readonly IWorkManagementDbContext _context;
+    private readonly IBoardSpacePlacement _placement;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IRealtimeChangeMapper<CreateBoardInWorkspaceCommand, Result<Guid>>? _realtime;
@@ -28,12 +36,14 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
 
     public CreateBoardInWorkspaceCommandHandler(
         IWorkManagementDbContext context,
+        IBoardSpacePlacement placement,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IRealtimeChangeMapper<CreateBoardInWorkspaceCommand, Result<Guid>>? realtime = null,
         IIntegrationEventCollector? events = null)
     {
         _context = context;
+        _placement = placement;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _realtime = realtime;
@@ -47,7 +57,10 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         var createdAt = _dateTimeProvider.UtcNow;
         var visibility = request.Visibility ?? BoardVisibility.Workspace;
 
-        var board = BoardEntity.Create(accountId, request.WorkspaceId, _requestContext.UserId, request.Title, request.Description, createdAt, visibility);
+        if (request.SpaceId is { } spaceId)
+            await _placement.EnsureActiveTargetAsync(request.WorkspaceId, spaceId, ct);
+
+        var board = BoardEntity.Create(accountId, request.WorkspaceId, _requestContext.UserId, request.Title, request.Description, createdAt, visibility, spaceId: request.SpaceId);
 
         if (request.Background is not null) board.UpdateBackground(request.Background, _requestContext.UserId, createdAt);
 

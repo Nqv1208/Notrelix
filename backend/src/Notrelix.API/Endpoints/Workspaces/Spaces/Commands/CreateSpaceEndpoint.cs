@@ -21,7 +21,15 @@ public static class CreateSpaceEndpoint
         CreateSpaceRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new CreateSpaceCommand(workspaceId, request.Name, request.Visibility, request.Description));
+        var result = await sender.Send(new CreateSpaceCommand(
+            workspaceId,
+            request.Name,
+            request.Visibility,
+            request.Description,
+            request.SpaceType,
+            request.ParentSpaceId,
+            request.PreviousSiblingId,
+            request.NextSiblingId));
         return result.ToCreatedResult();
     }
 }

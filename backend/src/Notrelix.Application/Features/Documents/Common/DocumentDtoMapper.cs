@@ -3,7 +3,10 @@ namespace Notrelix.Application.Features.Documents.Common;
 
 internal static class DocumentDtoMapper
 {
-    public static PageDto ToPageDto(Page page) => new(
+    public static PageDto ToPageDto(Page page) => ToPageDto(page, visibleSpaceIds: []);
+
+    /// <param name="visibleSpaceIds">Spaces the caller can see; a placement in any other Space is not disclosed.</param>
+    public static PageDto ToPageDto(Page page, IReadOnlyCollection<Guid> visibleSpaceIds) => new(
         page.Id,
         page.WorkspaceId,
         page.ParentId,
@@ -11,7 +14,8 @@ internal static class DocumentDtoMapper
         page.Icon,
         page.CoverImage,
         page.CreatedAt.DateTime,
-        page.UpdatedAt?.DateTime
+        page.UpdatedAt?.DateTime,
+        page.SpaceId is { } spaceId && visibleSpaceIds.Contains(spaceId) ? spaceId : null
     );
 
     public static BlockDto ToBlockDto(Block block) => new(

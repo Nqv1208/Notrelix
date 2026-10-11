@@ -456,6 +456,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pages/{pageId}/move-to-space": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a root page and its subtree into a space or back to the workspace root */
+        post: operations["Documents.Pages.MoveToSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resources/{resourceType}/{resourceId}/permissions": {
         parameters: {
             query?: never;
@@ -2137,6 +2154,23 @@ export interface paths {
         patch: operations["WorkManagement.Boards.UpdateVisibility"];
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/move-to-space": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a board into a space or back to the workspace root */
+        post: operations["WorkManagement.Boards.MoveToSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/members": {
         parameters: {
             query?: never;
@@ -3307,6 +3341,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/spaces/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the caller's visible space org tree as a parent-linked list */
+        get: operations["Workspaces.Spaces.GetSpaceTree"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}": {
         parameters: {
             query?: never;
@@ -3426,6 +3477,59 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a space (with its subtree) under another parent or to the root, at a sibling position */
+        post: operations["Workspaces.Spaces.MoveSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the user and team entries of a space */
+        get: operations["Workspaces.Spaces.GetSpaceMembers"];
+        put?: never;
+        /** Add a user or a team to a space with a space role */
+        post: operations["Workspaces.Spaces.AddSpaceMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/members/{subjectType}/{subjectId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a user or team entry from a space */
+        delete: operations["Workspaces.Spaces.RemoveSpaceMember"];
+        options?: never;
+        head?: never;
+        /** Change the space role of a user or team entry */
+        patch: operations["Workspaces.Spaces.ChangeSpaceMemberRole"];
         trace?: never;
     };
     "/api/v1/workspaces/{workspaceId}/teams": {
@@ -3814,6 +3918,14 @@ export interface components {
             title?: string | null;
             /** Format: uuid */
             parentId?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
+        "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageToSpaceRequest": {
+            /** Format: uuid */
+            spaceId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Documents.Pages.Requests.UpdatePageRequest": {
             title?: string | null;
@@ -4019,6 +4131,14 @@ export interface components {
             description?: string | null;
             background?: string | null;
             visibility?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Boards.Requests.MoveBoardToSpaceRequest": {
+            /** Format: uuid */
+            spaceId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.WorkManagement.Boards.Requests.UpdateBoardMemberRoleRequest": {
             role?: string | null;
@@ -4147,6 +4267,8 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.Templates.Requests.CreateBoardFromTemplateRequest": {
             workspaceId?: string | null;
             name?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Templates.Requests.CreateBoardTemplateRequest": {
             name?: string | null;
@@ -4182,6 +4304,19 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.Workspaces.Spaces.Requests.AddSpaceMemberRequest": {
+            subjectType?: string | null;
+            /** Format: uuid */
+            subjectId?: string;
+            role?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceMemberRoleRequest": {
+            role?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceTypeRequest": {
             spaceType?: string | null;
         };
@@ -4192,6 +4327,23 @@ export interface components {
             name?: string | null;
             visibility?: string | null;
             description?: string | null;
+            spaceType?: string | null;
+            /** Format: uuid */
+            parentSpaceId?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+        };
+        "Notrelix.API.Contracts.Workspaces.Spaces.Requests.MoveSpaceRequest": {
+            /** Format: uuid */
+            newParentSpaceId?: string | null;
+            /** Format: uuid */
+            previousSiblingId?: string | null;
+            /** Format: uuid */
+            nextSiblingId?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Spaces.Requests.RenameSpaceRequest": {
             name?: string | null;
@@ -4399,6 +4551,8 @@ export interface components {
             createdAt?: string;
             /** Format: int64 */
             version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldDto": {
             /** Format: uuid */
@@ -4678,6 +4832,33 @@ export interface components {
             isArchived?: boolean;
             /** Format: date-time */
             createdAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto": {
+            subjectType?: string | null;
+            /** Format: uuid */
+            subjectId?: string;
+            role?: string | null;
+            displayName?: string | null;
+            avatarUrl?: string | null;
+            /** Format: date-time */
+            addedAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            parentSpaceId?: string | null;
+            name?: string | null;
+            description?: string | null;
+            spaceType?: string | null;
+            visibility?: string | null;
+            isArchived?: boolean;
+            position?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            accessLevel?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto": {
             /** Format: uuid */
@@ -5596,6 +5777,32 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Documents.Pages.MoveToSpace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.MovePageToSpaceRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -9119,6 +9326,51 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Boards.MoveToSpace": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Boards.Requests.MoveBoardToSpaceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "WorkManagement.Boards.GetMembers": {
         parameters: {
             query?: never;
@@ -12224,6 +12476,28 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Spaces.GetSpaceTree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree.SpaceTreeNodeDto"][];
+                };
+            };
+        };
+    };
     "Workspaces.Spaces.GetSpace": {
         parameters: {
             query?: never;
@@ -12435,6 +12709,137 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.MoveSpace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.MoveSpaceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.GetSpaceMembers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto"][];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.AddSpaceMember": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.AddSpaceMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.RemoveSpaceMember": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+                subjectType: string;
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Spaces.ChangeSpaceMemberRole": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+                subjectType: string;
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Spaces.Requests.ChangeSpaceMemberRoleRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

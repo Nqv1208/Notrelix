@@ -23,7 +23,7 @@ public static class CreateBoardFromTemplateEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateBoardFromTemplateCommand(templateId, Guid.Parse(body.WorkspaceId), body.Name),
+            new CreateBoardFromTemplateCommand(templateId, Guid.Parse(body.WorkspaceId), body.Name, body.SpaceId),
             cancellationToken);
         return result.ToCreatedResult();
     }

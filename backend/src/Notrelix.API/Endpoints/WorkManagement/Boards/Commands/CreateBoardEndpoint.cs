@@ -38,7 +38,7 @@ public static class CreateBoardEndpoint
             visibility = parsed;
         }
 
-        var result = await sender.Send(new CreateBoardInWorkspaceCommand(workspaceId, body.Title, body.Description, body.Background, visibility), cancellationToken);
+        var result = await sender.Send(new CreateBoardInWorkspaceCommand(workspaceId, body.Title, body.Description, body.Background, visibility, body.SpaceId), cancellationToken);
         return result.ToCreatedResult();
     }
 }

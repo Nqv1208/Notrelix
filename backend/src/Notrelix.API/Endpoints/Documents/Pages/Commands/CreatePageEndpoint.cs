@@ -17,7 +17,7 @@ public static class CreatePageEndpoint
 
     private static async Task<IResult> HandleAsync(Guid workspaceId, CreatePageRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreatePageCommand(workspaceId, body.Title, body.ParentId));
+        var result = await sender.Send(new CreatePageCommand(workspaceId, body.Title, body.ParentId, body.SpaceId));
         return result.ToCreatedResult();
     }
 }

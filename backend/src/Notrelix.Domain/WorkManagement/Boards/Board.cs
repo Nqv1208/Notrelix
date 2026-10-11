@@ -131,6 +131,30 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Places the Board in a Workspaces Space, or back at the Workspace root
+    /// (null). The target Space's existence/activity in this Workspace is an
+    /// Application-supplied fact checked before the call; authorization on the
+    /// source Board and the target is Governance's (GOV-028). Same Space = no-op.
+    /// </summary>
+    public void PlaceInSpace(Guid? spaceId, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (spaceId is { } id) Guard.NotEmpty(id);
+
+        if (IsArchived)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotChangeSpaceArchived, "Cannot move an archived board to another space.");
+        if (SpaceId == spaceId) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldSpaceId = SpaceId;
+        SpaceId = spaceId;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardSpaceChangedDomainEvent(AccountId, WorkspaceId, Id, oldSpaceId, SpaceId, updatedBy, updatedAt));
+    }
+
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();

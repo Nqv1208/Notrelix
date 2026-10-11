@@ -19,6 +19,10 @@ public class CreateBoardInWorkspaceCommandValidator : AbstractValidator<CreateBo
         RuleFor(x => x.Background)
             .MaximumLength(2000);
 
+        RuleFor(x => x.SpaceId)
+            .NotEqual(Guid.Empty)
+            .When(x => x.SpaceId.HasValue);
+
         RuleFor(x => x.Visibility)
             .Must(v => v is null || Enum.IsDefined(typeof(BoardVisibility), v))
             .WithMessage("Visibility must be a valid board visibility value.");

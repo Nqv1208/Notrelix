@@ -675,6 +675,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace.MovePageToSpaceCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace.MovePageToSpaceCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.PublishPage.PublishPageCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -3647,6 +3672,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.WorkManagement.Boards.Commands.DeleteBoard.DeleteBoardCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSpace.MoveBoardToSpaceCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSpace.MoveBoardToSpaceCommandHandler"
     ]
   },
   {
