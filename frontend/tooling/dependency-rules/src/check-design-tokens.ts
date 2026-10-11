@@ -48,7 +48,7 @@ const COLOR_UTILITIES =
 
 const PATTERNS: Record<DesignTokenRule, RegExp> = {
   "hex-color":
-    /(?<![\w&/])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![\w-])/g,
+    /(?<![\w&/])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![A-Za-z0-9-])/g,
   "palette-color": new RegExp(
     `(?<![\\w-])(?:${COLOR_UTILITIES})-(?:${PALETTE_HUES})-(?:50|100|200|300|400|500|600|700|800|900|950)(?:\\/\\d+)?(?![\\w-])`,
     "g",

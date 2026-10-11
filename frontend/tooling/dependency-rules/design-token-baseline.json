@@ -5,17 +5,23 @@
       "palette-color": 28,
       "arbitrary-text-size": 2
     },
+    "packages/features/auth/src/web/components/auth-forgot-password-form-surface.tsx": {
+      "hex-color": 9
+    },
     "packages/features/auth/src/web/components/auth-login-form-surface.tsx": {
-      "hex-color": 4
+      "hex-color": 7
     },
     "packages/features/auth/src/web/components/auth-register-form-surface.tsx": {
-      "hex-color": 4
+      "hex-color": 7
+    },
+    "packages/features/auth/src/web/components/forgot-password-form.tsx": {
+      "hex-color": 9
     },
     "packages/features/auth/src/web/components/login-form.tsx": {
-      "hex-color": 4
+      "hex-color": 7
     },
     "packages/features/auth/src/web/components/register-form.tsx": {
-      "hex-color": 4
+      "hex-color": 7
     }
   }
 }

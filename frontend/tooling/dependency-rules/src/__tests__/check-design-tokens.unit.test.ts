@@ -35,6 +35,18 @@ describe("check-design-tokens rules", () => {
     expect(countViolations(source)).toEqual({});
   });
 
+  it("flags hex colours followed by an underscore inside Tailwind arbitrary classes", () => {
+    const source = `
+      <button className="bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] text-white" />
+    `;
+    expect(countViolations(source)).toEqual({ "hex-color": 3 });
+  });
+
+  it("does not mistake words that start with hex letters for colours", () => {
+    const source = `<a href="#add" /> <a href="#face-lift" /> <a href="#address" />`;
+    expect(countViolations(source)).toEqual({});
+  });
+
   it("checks only hex literals in CSS", () => {
     expect(
       countViolations(".x { color: #fff; } .bg-blue-500 {}", true),
