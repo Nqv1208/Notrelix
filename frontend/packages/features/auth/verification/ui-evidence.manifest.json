@@ -14,6 +14,11 @@
         "reason": "Session/session-storage provider that renders no standalone visual surface."
       },
       {
+        "path": "src/web/components/google-mark.tsx",
+        "category": "nonvisual-composition",
+        "reason": "Vendor brand mark (Google G, fixed brand colours) rendered inside the login and register surfaces; covered by their stories and exempt from the token gate through VENDOR_MARK_FILES."
+      },
+      {
         "path": "src/web/components/login-form.tsx",
         "category": "container",
         "reason": "Container composing AuthLoginFormSurface with account-scoped session actions."
