@@ -48,7 +48,7 @@ export function KanbanFilterMenu({
           <Filter className="size-4" />
           Filter
           {activeCount > 0 ? (
-            <span className="ml-1.5 flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+            <span className="ml-1.5 flex size-4.5 items-center justify-center rounded-full bg-primary text-metadata font-bold text-primary-foreground">
               {activeCount}
             </span>
           ) : null}

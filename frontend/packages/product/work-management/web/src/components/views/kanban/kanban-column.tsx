@@ -15,6 +15,7 @@ import { KanbanAddCard } from "./kanban-add-card";
 import { KanbanCard } from "./kanban-card";
 import type { KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanColumnMenu } from "./kanban-column-menu";
+import { kanbanColumnWidthClass } from "./kanban-layout";
 
 export function KanbanColumn({
   board,
@@ -72,7 +73,8 @@ export function KanbanColumn({
     <section
       ref={setNodeRef}
       className={cn(
-        "flex w-[290px] shrink-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-muted/20 transition-all duration-150",
+        "flex shrink-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-muted/20 transition-all duration-150",
+        kanbanColumnWidthClass,
         isOver && "border-primary bg-accent/10",
       )}
       aria-label={`${group.title} kanban column`}
@@ -111,7 +113,7 @@ export function KanbanColumn({
 
           <Badge
             variant="secondary"
-            className="rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 font-body"
+            className="rounded-full px-2 py-0.5 text-metadata font-bold shrink-0 font-body"
           >
             {group.cards.length}
           </Badge>

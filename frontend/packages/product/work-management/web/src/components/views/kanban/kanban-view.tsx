@@ -77,6 +77,8 @@ export function KanbanView({
     const lastPos = columns.at(-1)?.position;
     createColumn.mutate({
       title: "New Column",
+      // Default column colour is persisted backend data (BoardGroup colour),
+      // not a design token; changing it is a contract change.
       color: "#6161ff",
       position: generatePosition(lastPos, undefined),
     });

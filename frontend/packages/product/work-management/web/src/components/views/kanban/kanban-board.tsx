@@ -14,6 +14,7 @@ import { KanbanAddColumn } from "./kanban-add-column";
 import type { KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanColumn } from "./kanban-column";
 import { getKanbanCardMove } from "./kanban-dnd";
+import { kanbanColumnWidthClass } from "./kanban-layout";
 export function KanbanBoard({
   board,
   columns,
@@ -97,7 +98,7 @@ export function KanbanBoard({
           />
         ))}
 
-        <div className="w-[290px] shrink-0">
+        <div className={`${kanbanColumnWidthClass} shrink-0`}>
           <KanbanAddColumn onAdd={onAdd} />
         </div>
       </div>

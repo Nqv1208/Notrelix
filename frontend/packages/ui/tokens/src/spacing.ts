@@ -54,4 +54,6 @@ export const layout = {
   "topbar-height": "3.5rem",
   "content-max-width": "45rem",
   "page-max-width": "80rem",
+  /** Fixed width of a Kanban column (and its skeleton / add-column slot). */
+  "kanban-column": "18.125rem",
 } as const;

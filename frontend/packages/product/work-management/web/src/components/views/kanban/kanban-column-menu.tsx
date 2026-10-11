@@ -11,6 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@notrelix/ui-web";
 
+// These swatch values are persisted by the backend as BoardGroup colours.
+// Changing them or introducing a colour vocabulary is a contract change, so
+// they intentionally stay as stored data rather than design-token roles.
 const COLOR_OPTIONS = [
   { name: "Mint", value: "#bcfe90" },
   { name: "Lavender", value: "#eddff7" },
