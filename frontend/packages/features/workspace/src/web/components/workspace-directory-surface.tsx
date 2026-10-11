@@ -1,6 +1,10 @@
 import { Users } from "lucide-react";
+import { cn } from "@notrelix/ui-web";
 import type { WorkspaceSummary } from "../../core/types/workspace";
-import { colorForWorkspace, formatWorkspacePlan } from "./workspace-ui-models";
+import {
+  formatWorkspacePlan,
+  markClassForWorkspace,
+} from "./workspace-ui-models";
 
 export interface WorkspaceDirectorySurfaceProps {
   workspaces: readonly WorkspaceSummary[];
@@ -44,8 +48,10 @@ export function WorkspaceDirectorySurface({
               >
                 <div className="mb-5 flex items-center justify-between">
                   <span
-                    className="flex size-11 items-center justify-center rounded-xl text-sm font-semibold text-white"
-                    style={{ backgroundColor: colorForWorkspace(workspace.id) }}
+                    className={cn(
+                      "flex size-11 items-center justify-center rounded-xl text-sm font-semibold",
+                      markClassForWorkspace(workspace.id),
+                    )}
                   >
                     {(workspace.icon || workspace.name).charAt(0).toUpperCase()}
                   </span>

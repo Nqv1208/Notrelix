@@ -1,23 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Users } from "lucide-react";
+import { cn } from "@notrelix/ui-web";
 import type { WorkspaceSummary } from "../../core/types/workspace";
-
-const workspaceColors = [
-  "#6161ff",
-  "#2a9d99",
-  "#ff8940",
-  "#8b5cf6",
-  "#0f9f6e",
-  "#dc3f6d",
-] as const;
-
-function colorForWorkspace(id: string) {
-  const hash = Array.from(id).reduce(
-    (value, character) => value + character.charCodeAt(0),
-    0,
-  );
-  return workspaceColors[hash % workspaceColors.length];
-}
+import { markClassForWorkspace } from "./workspace-ui-models";
 
 function formatWorkspacePlan(workspace: WorkspaceSummary) {
   if (workspace.isPersonal) return "Personal";
@@ -62,8 +47,10 @@ export function WorkspaceDirectory({
               >
                 <div className="mb-5 flex items-center justify-between">
                   <span
-                    className="flex size-11 items-center justify-center rounded-xl text-sm font-semibold text-white"
-                    style={{ backgroundColor: colorForWorkspace(workspace.id) }}
+                    className={cn(
+                      "flex size-11 items-center justify-center rounded-xl text-sm font-semibold",
+                      markClassForWorkspace(workspace.id),
+                    )}
                   >
                     {(workspace.icon || workspace.name).charAt(0).toUpperCase()}
                   </span>

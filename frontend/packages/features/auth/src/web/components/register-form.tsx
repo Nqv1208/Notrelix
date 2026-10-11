@@ -38,11 +38,11 @@ function getPasswordStrength(password: string): {
   if (/[0-9]/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
 
-  if (score <= 1) return { score, label: "Weak", color: "bg-red-500" };
-  if (score <= 2) return { score, label: "Fair", color: "bg-orange-500" };
-  if (score <= 3) return { score, label: "Good", color: "bg-amber-500" };
-  if (score <= 4) return { score, label: "Strong", color: "bg-emerald-500" };
-  return { score, label: "Very strong", color: "bg-emerald-600" };
+  if (score <= 1) return { score, label: "Weak", color: "bg-danger" };
+  if (score <= 2) return { score, label: "Fair", color: "bg-warning" };
+  if (score <= 3) return { score, label: "Good", color: "bg-info" };
+  if (score <= 4) return { score, label: "Strong", color: "bg-success" };
+  return { score, label: "Very strong", color: "bg-success" };
 }
 
 interface RegisterFormDeps extends NavigationDeps {
@@ -115,7 +115,7 @@ export function createRegisterForm(deps: RegisterFormDeps) {
           <h1 className="text-2xl font-bold tracking-tight mb-1.5">
             Create your account
           </h1>
-          <p className="text-muted-foreground text-[15px]">
+          <p className="text-muted-foreground text-body">
             Get started with Notrelix for free
           </p>
         </div>
@@ -291,7 +291,7 @@ export function createRegisterForm(deps: RegisterFormDeps) {
                     />
                   ))}
                 </div>
-                <span className="text-[11px] text-muted-foreground shrink-0">
+                <span className="text-caption text-muted-foreground shrink-0">
                   {strength.label}
                 </span>
               </div>
@@ -362,7 +362,7 @@ export function createRegisterForm(deps: RegisterFormDeps) {
 
         <Button
           type="submit"
-          className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium shadow-md shadow-red-500/10 transition-all border-0"
+          className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium shadow-md shadow-danger/10 transition-all border-0"
           disabled={registerMutation.isPending}
         >
           {registerMutation.isPending ? (

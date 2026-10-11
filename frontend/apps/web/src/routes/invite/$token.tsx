@@ -248,7 +248,7 @@ export function InvitePage() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background/80 to-muted/20 px-4">
         <Card className="w-full max-w-md border-border/60 bg-card/60 shadow-2xl backdrop-blur-md">
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
+            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-warning-subtle text-warning-subtle-foreground">
               <ShieldAlert className="size-6" />
             </div>
             <CardTitle className="text-xl font-bold tracking-tight text-foreground">
@@ -312,7 +312,7 @@ export function InvitePage() {
             <CheckCircle2 className="size-7" />
           </div>
           <div className="space-y-1">
-            <span className="inline-block text-xs font-semibold uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+            <span className="inline-block text-xs font-semibold uppercase tracking-wider text-success-subtle-foreground bg-success-subtle px-2.5 py-0.5 rounded-full">
               Sẵn sàng kết nối
             </span>
             <CardTitle className="text-2xl font-extrabold tracking-tight text-foreground pt-1">

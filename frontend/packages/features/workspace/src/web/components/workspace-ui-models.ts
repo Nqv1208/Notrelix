@@ -1,30 +1,15 @@
+import { IDENTITY_TONES, identityToneFor } from "../../core/model/navigation";
 import type { WorkspaceSummary } from "../../core/types/workspace";
+import { IDENTITY_MARK_CLASS } from "../shell/shell-models";
 
-export const avatarColors = [
-  "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
-  "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-  "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
-  "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
-  "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
-];
+/** Identity mark classes for a stack of avatars, one tone per position. */
+export const avatarColors: readonly string[] = IDENTITY_TONES.map(
+  (tone) => IDENTITY_MARK_CLASS[tone],
+);
 
-export const workspaceColors = [
-  "#6161ff",
-  "#2a9d99",
-  "#ff8940",
-  "#8b5cf6",
-  "#0f9f6e",
-  "#dc3f6d",
-] as const;
-
-export function colorForWorkspace(id: string) {
-  const hash = Array.from(id).reduce(
-    (value, character) => value + character.charCodeAt(0),
-    0,
-  );
-  return workspaceColors[hash % workspaceColors.length];
+/** Identity mark classes for a workspace tile; stable for a workspace id. */
+export function markClassForWorkspace(id: string): string {
+  return IDENTITY_MARK_CLASS[identityToneFor(id)];
 }
 
 export function formatWorkspacePlan(workspace: WorkspaceSummary) {

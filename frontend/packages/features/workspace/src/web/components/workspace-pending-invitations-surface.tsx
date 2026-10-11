@@ -32,7 +32,7 @@ export function PendingInvitationsMenuSurface({
       >
         <UserPlus className="size-[18px]" />
         {hasInvitations ? (
-          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full border border-card bg-emerald-500 text-[9px] font-bold text-white shadow-sm animate-bounce">
+          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full border border-card bg-success text-caption font-bold text-success-foreground shadow-sm animate-bounce">
             {invitations.length}
           </span>
         ) : null}
@@ -94,7 +94,7 @@ export function PendingInvitationsMenuSurface({
                     <Button
                       size="sm"
                       onClick={() => onAccept?.(invite)}
-                      className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
+                      className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-success hover:bg-success/90 text-success-foreground shadow-sm"
                     >
                       Accept
                     </Button>

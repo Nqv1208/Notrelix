@@ -30,7 +30,7 @@ export function workspaceMember(
     role: overrides.role ?? "member",
     status: overrides.status ?? "active",
     workload: overrides.workload ?? 0,
-    color: overrides.color ?? "#6161ff",
+    color: overrides.color ?? "var(--identity-blue)",
     ...overrides,
   };
 }

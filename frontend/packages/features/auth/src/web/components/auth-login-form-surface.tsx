@@ -45,7 +45,7 @@ export function AuthLoginFormSurface({
         <h1 className="text-2xl font-bold tracking-tight mb-1.5">
           Welcome back
         </h1>
-        <p className="text-muted-foreground text-[15px]">
+        <p className="text-muted-foreground text-body">
           Sign in to your Notrelix workspace
         </p>
       </div>
@@ -176,7 +176,7 @@ export function AuthLoginFormSurface({
 
       <Button
         type="submit"
-        className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium shadow-md shadow-red-500/10 transition-all border-0"
+        className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium shadow-md shadow-danger/10 transition-all border-0"
         disabled={isPending}
       >
         {isPending ? (

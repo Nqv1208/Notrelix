@@ -74,14 +74,14 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
     const getIcon = (type: string) => {
       switch (type) {
         case "mention":
-          return <UserPlus className="h-4 w-4 text-blue-500" />;
+          return <UserPlus className="h-4 w-4 text-info-text" />;
         case "comment":
-          return <MessageSquare className="h-4 w-4 text-green-500" />;
+          return <MessageSquare className="h-4 w-4 text-success-text" />;
         case "assignment":
-          return <LayoutGrid className="h-4 w-4 text-amber-500" />;
+          return <LayoutGrid className="h-4 w-4 text-warning-text" />;
         case "system":
         default:
-          return <AlertCircle className="h-4 w-4 text-red-500" />;
+          return <AlertCircle className="h-4 w-4 text-danger-text" />;
       }
     };
 
@@ -139,10 +139,10 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
                       <p className="text-xs text-foreground leading-tight truncate">
                         {notif.title}
                       </p>
-                      <p className="text-[11px] text-muted-foreground leading-snug">
+                      <p className="text-caption text-muted-foreground leading-snug">
                         {notif.body}
                       </p>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-caption text-muted-foreground">
                         {formatTime(notif.createdAt)}
                       </span>
                     </div>

@@ -149,7 +149,7 @@ export function WorkspaceCompactHeaderSurface({
               <Avatar key={member.id} className="size-8 border-2 border-card">
                 <AvatarFallback
                   className={cn(
-                    "text-[10px]",
+                    "text-caption",
                     avatarColors[i % avatarColors.length],
                   )}
                 >

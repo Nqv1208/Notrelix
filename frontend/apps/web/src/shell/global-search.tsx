@@ -141,7 +141,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
                       </p>
                     )}
                   </div>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                  <span className="text-caption text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                     {result.group}
                   </span>
                 </button>
@@ -158,7 +158,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
           )}
         </div>
 
-        <div className="flex items-center justify-between px-3 py-2 border-t text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between px-3 py-2 border-t text-caption text-muted-foreground">
           <span>
             Press{" "}
             <kbd className="px-1 py-0.5 bg-muted rounded font-mono">Esc</kbd> to

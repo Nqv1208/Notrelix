@@ -80,7 +80,7 @@ export function PendingInvitationsMenu({
         >
           <UserPlus className="size-[18px]" />
           {hasInvitations && (
-            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full border border-card bg-emerald-500 text-[9px] font-bold text-white shadow-sm animate-bounce">
+            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full border border-card bg-success text-caption font-bold text-success-foreground shadow-sm animate-bounce">
               {invitations.length}
             </span>
           )}
@@ -115,7 +115,7 @@ export function PendingInvitationsMenu({
               <p className="font-medium text-foreground/80">
                 No pending invitations
               </p>
-              <p className="text-[11px] leading-normal text-muted-foreground/80 max-w-[200px]">
+              <p className="text-caption leading-normal text-muted-foreground/80 max-w-[200px]">
                 When someone invites you to their workspace, it will appear
                 here.
               </p>
@@ -168,7 +168,7 @@ export function PendingInvitationsMenu({
                       disabled={
                         isAccepting || acceptMutation.isPending || !invite.token
                       }
-                      className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
+                      className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-success hover:bg-success/90 text-success-foreground shadow-sm"
                     >
                       {isAccepting ? (
                         <Loader2 className="size-3 animate-spin" />

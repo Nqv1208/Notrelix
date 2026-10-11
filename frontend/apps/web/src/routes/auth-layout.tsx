@@ -12,24 +12,15 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen grid lg:grid-cols-[1fr_1.1fr]">
       {/* Left — Branding Panel */}
-      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-slate-950 p-10 text-white">
+      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden dark bg-background p-10 text-foreground">
         {/* Atmospheric Brand Glow Fields */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           {/* Primary Red Glow Top-Left */}
-          <div
-            className="absolute -top-32 -left-32 size-[30rem] rounded-full opacity-25 blur-3xl"
-            style={{ backgroundColor: "#FF1E56" }}
-          />
+          <div className="absolute -top-32 -left-32 size-[30rem] rounded-full bg-identity-ember opacity-25 blur-3xl" />
           {/* Primary Blue Glow Bottom-Right */}
-          <div
-            className="absolute -bottom-40 -right-20 size-[32rem] rounded-full opacity-30 blur-3xl"
-            style={{ backgroundColor: "#1E90FF" }}
-          />
+          <div className="absolute -bottom-40 -right-20 size-[32rem] rounded-full bg-identity-blue opacity-30 blur-3xl" />
           {/* Warm Bridge Center Glow */}
-          <div
-            className="absolute top-1/2 left-1/3 size-72 rounded-full opacity-15 blur-3xl"
-            style={{ backgroundColor: "#FC744C" }}
-          />
+          <div className="absolute top-1/2 left-1/3 size-72 rounded-full bg-identity-coral opacity-15 blur-3xl" />
         </div>
 
         {/* Subtle grid pattern */}
@@ -37,7 +28,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
 
         {/* Brand Logo */}
         <a href="/" className="relative z-10 inline-flex items-center">
-          <NotrelixLogo size="lg" className="[&_span]:text-white" />
+          <NotrelixLogo size="lg" className="[&_span]:text-foreground" />
         </a>
 
         {/* Center content */}
@@ -45,7 +36,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           <h2 className="text-3xl font-bold tracking-tight leading-tight mb-3">
             Docs, boards & wikis — unified.
           </h2>
-          <p className="text-slate-300/80 leading-relaxed mb-8 text-[15px]">
+          <p className="text-muted-foreground leading-relaxed mb-8 text-body">
             Write, plan, and ship together in one cohesive workspace designed
             for modern product and engineering teams.
           </p>
@@ -53,10 +44,10 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           <div className="space-y-4">
             {features.map((f) => (
               <div key={f.text} className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-9 rounded-lg bg-white/10 backdrop-blur-sm shrink-0 border border-white/10">
-                  <f.icon className="size-[18px] text-white/90" />
+                <div className="flex items-center justify-center size-9 rounded-lg bg-foreground/10 backdrop-blur-sm shrink-0 border border-foreground/10">
+                  <f.icon className="size-[18px] text-foreground/90" />
                 </div>
-                <span className="text-[15px] text-slate-200/90 font-medium">
+                <span className="text-body text-foreground/90 font-medium">
                   {f.text}
                 </span>
               </div>
@@ -65,17 +56,14 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Bottom Proof / Value Block */}
-        <div className="relative z-10 pt-6 border-t border-white/10">
-          <div className="flex items-start gap-3 rounded-xl bg-white/[0.05] p-4 border border-white/10 backdrop-blur-sm">
-            <CheckCircle2
-              className="size-5 shrink-0 mt-0.5"
-              style={{ color: "#1E90FF" }}
-            />
+        <div className="relative z-10 pt-6 border-t border-foreground/10">
+          <div className="flex items-start gap-3 rounded-xl bg-foreground/5 p-4 border border-foreground/10 backdrop-blur-sm">
+            <CheckCircle2 className="size-5 shrink-0 mt-0.5 text-identity-blue" />
             <div>
-              <div className="font-semibold text-sm text-white">
+              <div className="font-semibold text-sm text-foreground">
                 Connected Workspace Operating System
               </div>
-              <div className="text-slate-400 text-xs mt-0.5 leading-relaxed">
+              <div className="text-muted-foreground text-xs mt-0.5 leading-relaxed">
                 Replace fragmented single-purpose tools with one authoritative
                 workspace.
               </div>

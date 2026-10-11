@@ -44,14 +44,14 @@ export function AuthForgotPasswordFormSurface({
   if (step === "success") {
     return (
       <div className="flex flex-col items-center text-center gap-6">
-        <div className="flex items-center justify-center size-16 rounded-2xl bg-emerald-500/10">
-          <ShieldCheck className="size-8 text-emerald-600" />
+        <div className="flex items-center justify-center size-16 rounded-2xl bg-success-subtle">
+          <ShieldCheck className="size-8 text-success-subtle-foreground" />
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight mb-2">
             Password reset complete
           </h1>
-          <p className="text-muted-foreground text-[15px] leading-relaxed max-w-sm">
+          <p className="text-muted-foreground text-body leading-relaxed max-w-sm">
             Your password has been changed and all sessions have been revoked.
             Please sign in with your new password.
           </p>
@@ -81,7 +81,7 @@ export function AuthForgotPasswordFormSurface({
           <h1 className="text-2xl font-bold tracking-tight mb-1.5">
             Enter verification code
           </h1>
-          <p className="text-muted-foreground text-[15px] leading-relaxed">
+          <p className="text-muted-foreground text-body leading-relaxed">
             We sent a 6-digit code to{" "}
             <span className="font-medium text-foreground">{email}</span>. Enter
             it below along with your new password.
@@ -189,7 +189,7 @@ export function AuthForgotPasswordFormSurface({
         <h1 className="text-2xl font-bold tracking-tight mb-1.5">
           Reset your password
         </h1>
-        <p className="text-muted-foreground text-[15px] leading-relaxed">
+        <p className="text-muted-foreground text-body leading-relaxed">
           Enter the email address associated with your account and we&apos;ll
           send you a verification code.
         </p>
