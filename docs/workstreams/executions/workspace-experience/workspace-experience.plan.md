@@ -274,7 +274,7 @@ Delivered on 2026-10-11 (baseline `15fa4bc9`). Product owner: Workspaces (docs/p
 Open items:
 
 - Team member e-mail is `null` from the producer (`TeamMemberDto` carries no e-mail), so the member list shows the display name only. Needs a producer and privacy decision (which Team members' addresses a Team administrator may see) before any field is added.
-- The Team page breadcrumb has no Team name and no back link to the Teams list.
+- The Team page breadcrumb has no Team name (the trailing crumb is the generic 'Team details').
 - Visual baselines for the new Teams stories and `MoveToSpaceHighDensity`, and the roughly 2 px row shift in the move dialog stories caused by windowing, must be regenerated in Linux CI with the pending baseline regeneration (`visual-baseline.lock.json`).
 - `RestoreTeam` still documents a phantom `200` (it answers 204), like the other 204 commands listed under the Phase 5 remaining items.
 
