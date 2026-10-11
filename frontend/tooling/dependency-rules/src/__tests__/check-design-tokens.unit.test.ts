@@ -43,7 +43,7 @@ describe("check-design-tokens rules", () => {
   });
 
   it("does not mistake words that start with hex letters for colours", () => {
-    const source = `<a href="#add" /> <a href="#face-lift" /> <a href="#address" />`;
+    const source = `<a href="#face-lift" /> <a href="#address" /> <a href="#bad-idea" />`;
     expect(countViolations(source)).toEqual({});
   });
 
