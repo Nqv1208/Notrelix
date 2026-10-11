@@ -248,7 +248,7 @@ export function createLoginForm(deps: LoginFormDeps) {
           Don&apos;t have an account?{" "}
           <Link
             to="/sign-up"
-            className="font-medium text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
+            className="font-medium text-foreground hover:text-link transition-colors underline-offset-4 hover:underline"
           >
             Create one
           </Link>

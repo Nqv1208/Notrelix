@@ -108,7 +108,7 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
                 variant="ghost"
                 size="sm"
                 onClick={handleMarkAllRead}
-                className="h-7 text-xs gap-1 text-primary hover:text-primary-foreground"
+                className="h-7 text-xs gap-1 text-link hover:text-primary-foreground"
               >
                 <Check className="h-3 w-3" /> Mark all read
               </Button>
@@ -153,7 +153,7 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-5 w-5 hover:bg-primary/10 hover:text-primary"
+                          className="h-5 w-5 hover:bg-primary/10 hover:text-link"
                           onClick={(e) => handleMarkRead(notif.id, e)}
                           title="Mark as read"
                         >

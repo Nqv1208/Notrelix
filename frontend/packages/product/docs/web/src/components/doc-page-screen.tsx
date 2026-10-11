@@ -373,10 +373,10 @@ function BlockEditorContent({
           <div className="flex items-center gap-2">
             <button
               onClick={handleToggleTodo}
-              className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+              className="text-muted-foreground hover:text-link transition-colors shrink-0"
             >
               {block.properties.checked ? (
-                <CheckSquare className="h-4.5 w-4.5 text-primary" />
+                <CheckSquare className="h-4.5 w-4.5 text-link" />
               ) : (
                 <Square className="h-4.5 w-4.5" />
               )}

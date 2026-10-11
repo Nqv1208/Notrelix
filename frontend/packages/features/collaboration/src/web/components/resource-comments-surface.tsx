@@ -53,7 +53,7 @@ export function ResourceCommentsSurface({
               className="group flex gap-3 p-3 rounded-lg bg-muted/30"
             >
               <Avatar className="size-8 shrink-0">
-                <div className="flex items-center justify-center size-full text-xs font-medium bg-primary/10 text-primary rounded-full">
+                <div className="flex items-center justify-center size-full text-xs font-medium bg-primary/10 text-link rounded-full">
                   {comment.authorName.charAt(0).toUpperCase()}
                 </div>
               </Avatar>

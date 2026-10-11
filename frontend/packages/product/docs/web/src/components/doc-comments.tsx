@@ -38,7 +38,7 @@ function CommentItem({
             {new Date(comment.createdAt).toLocaleDateString()}
           </span>
           {comment.resolved && (
-            <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+            <span className="text-xs text-link bg-primary/10 px-1.5 py-0.5 rounded">
               Resolved
             </span>
           )}

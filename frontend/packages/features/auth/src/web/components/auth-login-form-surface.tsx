@@ -197,7 +197,7 @@ export function AuthLoginFormSurface({
         <button
           type="button"
           onClick={onRegister}
-          className="font-medium text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
+          className="font-medium text-foreground hover:text-link transition-colors underline-offset-4 hover:underline"
         >
           Create one
         </button>

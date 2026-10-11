@@ -79,7 +79,7 @@ export function NotificationBellSurface({
                 variant="ghost"
                 size="sm"
                 onClick={onMarkAllRead}
-                className="h-7 text-xs gap-1 text-primary"
+                className="h-7 text-xs gap-1 text-link"
               >
                 <Check className="h-3 w-3" /> Mark all read
               </Button>
@@ -122,7 +122,7 @@ export function NotificationBellSurface({
                         <button
                           type="button"
                           aria-label={`Mark ${notif.id} as read`}
-                          className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-primary/10 hover:text-primary"
+                          className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-primary/10 hover:text-link"
                           onClick={() => onMarkRead?.(notif.id)}
                         >
                           <MailOpen className="h-3 w-3" />

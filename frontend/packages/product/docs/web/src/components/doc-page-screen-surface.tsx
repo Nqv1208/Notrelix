@@ -51,11 +51,11 @@ function BlockSurface({
           aria-label={
             checked ? `Mark ${text} incomplete` : `Mark ${text} complete`
           }
-          className="text-muted-foreground hover:text-primary"
+          className="text-muted-foreground hover:text-link"
           onClick={() => callbacks?.onToggleTodo?.(block.id, !checked)}
         >
           {checked ? (
-            <CheckSquare className="h-4 w-4 text-primary" />
+            <CheckSquare className="h-4 w-4 text-link" />
           ) : (
             <Square className="h-4 w-4" />
           )}

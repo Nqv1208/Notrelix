@@ -119,7 +119,7 @@ export function InvitePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 px-4">
         <div className="flex flex-col items-center gap-3 text-center">
-          <Loader2 className="size-10 animate-spin text-primary" />
+          <Loader2 className="size-10 animate-spin text-link" />
           <p className="text-sm font-medium text-muted-foreground">
             Đang tải thông tin lời mời...
           </p>
@@ -181,11 +181,11 @@ export function InvitePage() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background/80 to-muted/20 px-4">
         <Card className="w-full max-w-md border-border/60 bg-card/60 shadow-2xl backdrop-blur-md">
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary animate-pulse">
-              <Mail className="size-6 text-primary" />
+            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-link animate-pulse">
+              <Mail className="size-6 text-link" />
             </div>
             <div className="space-y-1.5">
-              <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+              <span className="inline-block text-xs font-semibold uppercase tracking-wider text-link bg-primary/10 px-2.5 py-0.5 rounded-full">
                 Lời mời làm việc
               </span>
               <CardTitle className="text-2xl font-extrabold tracking-tight text-foreground">
@@ -304,11 +304,11 @@ export function InvitePage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background/80 to-muted/20 px-4">
       <Card className="w-full max-w-md border-border/60 bg-card/60 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-300">
-        <div className="absolute top-0 right-0 p-3 text-primary/10">
+        <div className="absolute top-0 right-0 p-3 text-link/10">
           <Sparkles className="size-20 animate-pulse" />
         </div>
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-link">
             <CheckCircle2 className="size-7" />
           </div>
           <div className="space-y-1">

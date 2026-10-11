@@ -246,7 +246,7 @@ export function AuthRegisterFormSurface({
         <button
           type="button"
           onClick={onSignIn}
-          className="font-medium text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
+          className="font-medium text-foreground hover:text-link transition-colors underline-offset-4 hover:underline"
         >
           Sign in
         </button>

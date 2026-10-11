@@ -27,7 +27,7 @@ export function PendingInvitationsMenuSurface({
         onClick={() => setOpen((value) => !value)}
         className={cn(
           "relative rounded-lg p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          hasInvitations && "text-primary animate-pulse",
+          hasInvitations && "text-link animate-pulse",
         )}
       >
         <UserPlus className="size-[18px]" />
@@ -41,7 +41,7 @@ export function PendingInvitationsMenuSurface({
         <div className="absolute right-0 top-10 z-dropdown w-80 overflow-hidden rounded-2xl border border-border/40 bg-card/95 p-0 shadow-xl backdrop-blur-md">
           <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/30">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <UserPlus className="size-4 text-primary" />
+              <UserPlus className="size-4 text-link" />
               Invitations ({invitations.length})
             </h4>
           </div>
@@ -71,7 +71,7 @@ export function PendingInvitationsMenuSurface({
                     </h5>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
-                        <UserPlus className="size-3.5 text-primary/75" />
+                        <UserPlus className="size-3.5 text-link/75" />
                         <span>
                           Invited by:{" "}
                           <strong className="text-foreground/90 font-medium">
@@ -80,7 +80,7 @@ export function PendingInvitationsMenuSurface({
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Users className="size-3.5 text-primary/75" />
+                        <Users className="size-3.5 text-link/75" />
                         <span>
                           Role:{" "}
                           <strong className="text-foreground/90 font-medium capitalize">

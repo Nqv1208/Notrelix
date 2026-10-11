@@ -382,7 +382,7 @@ export function createRegisterForm(deps: RegisterFormDeps) {
           Already have an account?{" "}
           <Link
             to="/sign-in"
-            className="font-medium text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
+            className="font-medium text-foreground hover:text-link transition-colors underline-offset-4 hover:underline"
           >
             Sign in
           </Link>
