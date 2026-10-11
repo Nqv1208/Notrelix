@@ -139,7 +139,7 @@ Open items:
 - Dead on disk, unmounted, kept only because `apps/web/src/shell/sidebar/sidebar.tsx` (another session's uncommitted edits) still imports them: `sidebar/sidebar.tsx`, `sidebar/workspace-switcher.tsx`, `global-search.tsx`, `navigation-contributions.ts`. Delete them together once `sidebar.tsx` is removed. The rest of the legacy shell (`topbar/topbar.tsx`, `guards/workspace-guard.tsx`, `home-shell.tsx`, `home/*`, `workspace-tabbed-frame.tsx`) was deleted in Phase 7 (WX-QUAL-001). Unused exports of `@notrelix/features-workspace`: `WorkspaceViewTabs`, `WorkspaceAddViewMenu`, `createUseWorkspaceViews`, `createUseWorkspaceShellData`, `WorkspaceCompactHeader`, `WorkspaceContextualToolbar`, `WorkspaceDirectory` (the old sidebar still imports the shell-data hook).
 - My work and Inbox are empty-state destinations; My work content is WX-HOME-001; Inbox has no producer yet.
 - `/home` lands on the first listed workspace; remembering the last-active workspace needs a stored preference.
-- Overlay primitives still use `z-50`; moving them to the z-index roles needs a nested-overlay rule (a popover inside a dialog must stack above it) and is left for WX-QUAL-001.
+- Closed in Phase 7 (WX-QUAL-001): overlay primitives use the z-index roles; the nested-overlay rule (portalled popover, select and menus share `z-modal` with dialog content, so the layer opened later stacks above by portal order) is recorded in `frontend/docs/architecture/ui-and-design-system.md`.
 - Visual baselines for the 15 new stories must be generated on Linux CI with the Phase 1 regeneration.
 
 ### Phase 3 — Home ("resume work")
@@ -236,6 +236,26 @@ Starts only after the other session's table work is committed or explicitly supe
 | Unit | Change | Evidence |
 |---|---|---|
 | WX-QUAL-001 | Audit (a11y, responsive, performance) and polish pass across every surface; all superseded components and their stories removed. | `pnpm validate`; visual snapshots in light, dark and High contrast × desktop, tablet and mobile |
+
+### Status (Phase 7)
+
+Delivered on 2026-10-11 (baseline `91a9b1fc`, commits `5607499`, `2c0ff26`, `0982618`, `a63fae1`, `ef492ea`). WX-QUAL-001 is **partial**.
+
+| Part | Status | Delivered | Evidence |
+|---|---|---|---|
+| Legacy shell files | Partial | Deleted the unmounted `topbar/topbar.tsx`, `guards/workspace-guard.tsx`, `home-shell.tsx`, `home/*` and the `workspace-tabbed-frame.tsx` stub (986 lines). `sidebar/sidebar.tsx`, `sidebar/workspace-switcher.tsx`, `global-search.tsx` and `navigation-contributions.ts` stay: `sidebar.tsx` carries another session's uncommitted edits and still imports the other three. | `pnpm check:architecture`, `check:design-tokens`, app-web `tsc`. |
+| z-index scale | Done outside Work Management | Dialog, alert dialog, sheet and drawer use `z-backdrop`/`z-modal`; portalled popover, select, menus and hover card use `z-modal`; tooltip `z-tooltip`; the app mounts the themed `Toaster` on `z-toast`; inline menus use `z-dropdown`. `cn()` merges the roles. `check:design-tokens` now fails on raw numeric or arbitrary z utilities (`z-0`, `z-10`, `z-20` stay allowed as local layering; `product/work-management/**` and `sidebar.tsx` are excluded). | `overlay-stacking.unit.test.ts`, `cn.unit.test.ts`, `check-design-tokens.unit.test.ts` (raw z-index rule); measured in the mock app: backdrop 1200, dialog 1300, a Select opened from a dialog above it, toast 1400. |
+| `text-primary` as text | Done outside Work Management and `sidebar.tsx` | 23 files use `text-link`; fills, rings and `text-primary-foreground` are unchanged. The radio indicator dot keeps its fill colour. | grep, `pnpm test:web:guarded`. |
+| Design-token baseline | Partial | 250 -> 200 (Phase 5) -> 183 (deleted shell files) -> 46 violations in 5 files: `sidebar.tsx` (30) and the four Google logo marks in the auth forms (16). Identity marks, status roles, `text-caption`/`text-body` and a dark-scoped brand panel replace the raw values. | `pnpm check:design-tokens`. |
+| Audit and polish | Done for the workspace surfaces | Real defects fixed: role help was a mouse-only `title` on select options (members, Space members, Team members) and is now visible option text announced as the option description (`SelectItem description`); notification and comment actions were hover-only, named by id or unnamed, and are now named after the item and shown on keyboard focus and touch; the focusable tab panel had no focus ring; the app used the raw `sonner` Toaster (z-index 999999999) and now uses the themed one. Measured in the mock app: no horizontal overflow at 360 px or 1280 px on Home, Boards & Docs, Members, Settings and Teams in light and dark; every keyboard stop on those pages shows a 2 px focus ring; reduced motion is honoured by the global rule. | `select-description.component.test.tsx`, `notification-bell-surface.interaction` (actions case), `resource-comments-surface.interaction`, `app-toaster.unit.test.ts`, `ui-web-components.component.test.tsx`. |
+
+Remaining (WX-QUAL-001):
+
+- Board view and table work (Phase 6): `product/work-management/**` still carries raw z-index values and its own token debt; it needs the other session's work to land first.
+- Delete `shell/sidebar/sidebar.tsx`, `sidebar/workspace-switcher.tsx`, `global-search.tsx` and `navigation-contributions.ts` together once `sidebar.tsx`'s pending work is committed (its 30 token violations leave the baseline with it).
+- Google logo marks (4 auth forms, 16 hex values): a vendor brand mark needs a decision (one shared mark owned by `@notrelix/ui-web` outside the token scan, or an explicit vendor-mark exemption); left as is.
+- Visual snapshots for light, dark and High contrast at desktop, tablet and mobile need Linux CI with the pending baseline regeneration (`visual-baseline.lock.json`); the colour changes above, the select option descriptions and the auth panel shift existing baselines.
+- Findings, not fixed: the Members table at 360 px truncates names to a few letters (the role select and action column take the width; the row should stack); the notification feature carries English-only copy and no i18n catalog; account pages (`profile`, `notifications`) use raw inputs and a hand-built switch; `packages/product/docs/web` and the legacy `resource-comments` container carry English-only literals; `@notrelix/features-workspace` still exports unused `WorkspaceViewTabs`, `WorkspaceAddViewMenu`, `WorkspaceCompactHeader`, `WorkspaceDirectory`, `createUseWorkspaceViews`, `createUseWorkspaceShellData`, `WorkspaceContextualToolbar` (the shell-data hook is still used by `sidebar.tsx`).
 
 ### Phase 8 — Space org tree (OT-5)
 
