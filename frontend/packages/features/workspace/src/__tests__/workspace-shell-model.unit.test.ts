@@ -149,6 +149,33 @@ describe("buildWorkspaceBreadcrumb (WX-SHELL-002)", () => {
     });
     expect(items.map((item) => item.label)).toEqual(["Product", "My work"]);
   });
+
+  it("links the Teams crumb back to the list when a Team is open", () => {
+    const open = buildWorkspaceBreadcrumb({
+      workspaceName: "Product",
+      location: { section: "teams", teamId: "t1" },
+      boards: [],
+      docs: [],
+      labels,
+    });
+    expect(open.map((item) => item.label)).toEqual([
+      "Product",
+      "Teams",
+      "Team details",
+    ]);
+    expect(open[1]?.destination).toEqual({ section: "teams" });
+    expect(open[2]?.destination).toBeUndefined();
+
+    const list = buildWorkspaceBreadcrumb({
+      workspaceName: "Product",
+      location: { section: "teams" },
+      boards: [],
+      docs: [],
+      labels,
+    });
+    expect(list.map((item) => item.label)).toEqual(["Product", "Teams"]);
+    expect(list[1]?.destination).toBeUndefined();
+  });
 });
 
 describe("createShortcutMatcher (WX-SHELL-005)", () => {

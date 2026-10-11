@@ -28,7 +28,7 @@ export interface Team {
 export interface TeamMember {
   readonly userId: string;
   readonly displayName: string;
-  /** The producer sends null today; the web fills it from workspace members. */
+  /** The producer sends null today (WorkspaceMember has no email); the UI shows it only when present. */
   readonly email: string | null;
   readonly role: TeamRole;
 }

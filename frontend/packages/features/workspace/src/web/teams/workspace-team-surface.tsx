@@ -1,5 +1,12 @@
 import * as React from "react";
-import { Archive, ArchiveRestore, Info, Trash2, UserPlus } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  Info,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +51,7 @@ import type {
 } from "../../core/types/workspace";
 import { pluralForm, type SectionState } from "../home/home-models";
 import { IdentityMark } from "../shell/shell-link";
-import { formatCopy } from "../shell/shell-models";
+import { formatCopy, isPlainClick } from "../shell/shell-models";
 import { TEAM_DESCRIPTION_MAX, TEAM_NAME_MAX } from "./create-team-dialog";
 import type { WorkspaceTeamsCopy } from "./workspace-teams.copy";
 
@@ -76,6 +83,11 @@ export interface WorkspaceTeamSurfaceProps {
   readonly onChangeRole: (userId: string, role: TeamRole) => void;
   readonly onRemove: (userId: string) => void;
   readonly onRetry: () => void;
+  /** The Teams list: where the error state leads when this Team is gone or unreadable. */
+  readonly backNavigation: {
+    readonly getHref: () => string;
+    readonly onNavigate: () => void;
+  };
 }
 
 type Confirmation =
@@ -583,6 +595,18 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
           retry={copy.team.retry}
           onRetry={props.onRetry}
         />
+        <a
+          href={props.backNavigation.getHref()}
+          onClick={(event) => {
+            if (!isPlainClick(event)) return;
+            event.preventDefault();
+            props.backNavigation.onNavigate();
+          }}
+          className="inline-flex w-fit items-center gap-1.5 rounded-sm text-label text-link outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          {copy.team.backToTeams}
+        </a>
       </div>
     );
   }
@@ -796,7 +820,12 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{confirmText?.cancel}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={confirm}>
+            <AlertDialogAction
+              variant={
+                confirmation?.type === "unarchive" ? "default" : "destructive"
+              }
+              onClick={confirm}
+            >
               {confirmText?.action}
             </AlertDialogAction>
           </AlertDialogFooter>

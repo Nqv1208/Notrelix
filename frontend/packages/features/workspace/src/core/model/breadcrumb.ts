@@ -22,6 +22,8 @@ export interface WorkspaceBreadcrumbLabels {
   readonly loading: string;
   /** Shown when the resource is not in the authorized list. */
   readonly unavailable: string;
+  /** Current-page crumb of an open Team, until its name is a crumb (WX-TEAM-001). */
+  readonly teamDetails: string;
 }
 
 export interface WorkspaceBreadcrumbItem {
@@ -127,6 +129,20 @@ export function buildWorkspaceBreadcrumb({
         });
       }
     }
+    return withoutLastLink(items);
+  }
+
+  if (location.section === "teams" && location.teamId) {
+    // An open Team: the Teams crumb links back to the list, so it must not be
+    // the last crumb (the last crumb is the current page and never links).
+    items.push(
+      {
+        id: "section:teams",
+        label: labels.sections.teams,
+        destination: { section: "teams" },
+      },
+      { id: `team:${location.teamId}`, label: labels.teamDetails },
+    );
     return withoutLastLink(items);
   }
 

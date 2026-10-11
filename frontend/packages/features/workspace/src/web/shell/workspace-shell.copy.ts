@@ -43,6 +43,7 @@ export const en = {
     label: "Breadcrumb",
     loading: "Loading…",
     unavailable: "Not available",
+    teamDetails: "Team details",
   },
   switcher: {
     trigger: "Switch workspace, current: {{name}}",
@@ -200,6 +201,7 @@ export const vi: WorkspaceShellCopy = {
     label: "Đường dẫn",
     loading: "Đang tải…",
     unavailable: "Không khả dụng",
+    teamDetails: "Chi tiết nhóm",
   },
   switcher: {
     trigger: "Chuyển không gian làm việc, hiện tại: {{name}}",

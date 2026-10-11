@@ -134,5 +134,6 @@ export function workspaceBreadcrumbLabels(
     views: copy.views,
     loading: copy.breadcrumb.loading,
     unavailable: copy.breadcrumb.unavailable,
+    teamDetails: copy.breadcrumb.teamDetails,
   };
 }

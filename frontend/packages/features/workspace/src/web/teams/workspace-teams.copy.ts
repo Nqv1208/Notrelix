@@ -59,6 +59,7 @@ export const en = {
     loading: "Loading Team",
     error: "This Team couldn't load. Nothing was changed.",
     retry: "Try again",
+    backToTeams: "Back to Teams",
   },
   members: {
     title: "Members",
@@ -213,6 +214,7 @@ export const vi: WorkspaceTeamsCopy = {
     loading: "Đang tải nhóm",
     error: "Không tải được nhóm này. Chưa có gì thay đổi.",
     retry: "Thử lại",
+    backToTeams: "Quay lại danh sách nhóm",
   },
   members: {
     title: "Thành viên",

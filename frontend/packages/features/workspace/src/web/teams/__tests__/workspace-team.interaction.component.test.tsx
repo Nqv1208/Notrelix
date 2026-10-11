@@ -6,6 +6,7 @@ import {
   teamCandidatesFixture,
   teamDefaultScenario,
   teamEmptyScenario,
+  teamBackNavigationFixture,
   teamErrorScenario,
   teamFixture,
   teamHighDensityScenario,
@@ -277,11 +278,13 @@ describe("WorkspaceTeamSurface", () => {
     );
     expect(active.props.onArchive).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: copy.danger.archive }));
-    fireEvent.click(
-      within(screen.getByRole("alertdialog")).getByRole("button", {
-        name: copy.confirmArchive.action,
-      }),
+    const archiveAction = within(screen.getByRole("alertdialog")).getByRole(
+      "button",
+      { name: copy.confirmArchive.action },
     );
+    // Archiving is the destructive direction.
+    expect(archiveAction.className).toContain("text-destructive");
+    fireEvent.click(archiveAction);
     expect(active.props.onArchive).toHaveBeenCalledTimes(1);
     expect(active.props.onUnarchive).not.toHaveBeenCalled();
     active.view.unmount();
@@ -293,13 +296,15 @@ describe("WorkspaceTeamSurface", () => {
     fireEvent.click(
       screen.getByRole("button", { name: copy.danger.unarchive }),
     );
-    fireEvent.click(
-      within(
-        screen.getByRole("alertdialog", {
-          name: "Unarchive Platform engineering?",
-        }),
-      ).getByRole("button", { name: copy.confirmArchive.unarchiveAction }),
-    );
+    const unarchiveAction = within(
+      screen.getByRole("alertdialog", {
+        name: "Unarchive Platform engineering?",
+      }),
+    ).getByRole("button", { name: copy.confirmArchive.unarchiveAction });
+    // Unarchiving is restorative: the default button, not the destructive one.
+    expect(unarchiveAction.className).toContain("bg-primary");
+    expect(unarchiveAction.className).not.toContain("text-destructive");
+    fireEvent.click(unarchiveAction);
     expect(archived.props.onUnarchive).toHaveBeenCalledTimes(1);
     expect(archived.props.onArchive).not.toHaveBeenCalled();
   });
@@ -380,10 +385,18 @@ describe("WorkspaceTeamSurface", () => {
     ).toBeTruthy();
     loading.view.unmount();
 
-    const failed = renderTeam(teamErrorScenario());
+    const onBack = vi.fn();
+    const failed = renderTeam(teamErrorScenario(), {
+      backNavigation: teamBackNavigationFixture(onBack),
+    });
     expect(screen.getByRole("alert").textContent).toContain(copy.team.error);
     fireEvent.click(screen.getByRole("button", { name: copy.team.retry }));
     expect(failed.props.onRetry).toHaveBeenCalledTimes(1);
+    // A Team that cannot load is never a dead end: a way back to the list.
+    const back = screen.getByRole("link", { name: copy.team.backToTeams });
+    expect(back.getAttribute("href")).toBe("/w/product/teams");
+    fireEvent.click(back);
+    expect(onBack).toHaveBeenCalledTimes(1);
     failed.view.unmount();
 
     const membersFailed = renderTeam(teamMembersErrorScenario());

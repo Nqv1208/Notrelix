@@ -11,6 +11,7 @@ import {
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { sectionState } from "@/shell/workspace/section-state";
 import { useIdSet } from "@/shell/workspace/use-id-set";
+import { useShellNavigation } from "@/shell/workspace/use-shell-navigation";
 import {
   toastTeamFailure,
   useTeamHooks,
@@ -28,6 +29,7 @@ export function TeamPage() {
   const { workspaceId } = useWorkspaceContext();
   const { teamId } = useParams({ strict: false }) as { teamId: string };
   const copy = useWorkspaceTeamsCopy();
+  const navigation = useShellNavigation();
   const hooks = useTeamHooks();
   const viewer = useWorkspaceViewer(workspaceId);
   const team = hooks.useTeam(workspaceId, teamId);
@@ -199,6 +201,10 @@ export function TeamPage() {
       onChangeRole={onChangeRole}
       onRemove={onRemove}
       onRetry={refetch}
+      backNavigation={{
+        getHref: () => navigation.getHref({ section: "teams" }),
+        onNavigate: () => navigation.onNavigate({ section: "teams" }),
+      }}
     />
   );
 }

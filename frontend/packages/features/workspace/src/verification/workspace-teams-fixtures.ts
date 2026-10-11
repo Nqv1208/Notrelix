@@ -89,6 +89,12 @@ export function teamsNavigationFixture(
   };
 }
 
+export function teamBackNavigationFixture(
+  onNavigate: () => void = () => undefined,
+): WorkspaceTeamSurfaceProps["backNavigation"] {
+  return { getHref: () => "/w/product/teams", onNavigate };
+}
+
 // ── Team list ─────────────────────────────────────────────────────
 
 type TeamsScenario = Omit<
@@ -271,6 +277,7 @@ export function teamDefaultScenario(locale: "en" | "vi" = "en"): TeamScenario {
     candidates: teamCandidatesFixture(),
     pendingUserIds: new Set(),
     saving: false,
+    backNavigation: teamBackNavigationFixture(),
   };
 }
 
