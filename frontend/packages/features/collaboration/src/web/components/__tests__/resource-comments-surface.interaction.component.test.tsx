@@ -51,7 +51,7 @@ describe("collaboration web pure surface", () => {
     expect(onDeleteComment).toHaveBeenCalledWith("comment-2");
   });
 
-  it("FUI[collaboration.comments:action-names] names each delete action after its comment, never its id", () => {
+  it("names each delete action after its comment, never its id", () => {
     renderPureUi(
       <ResourceCommentsSurface
         comments={[
