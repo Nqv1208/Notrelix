@@ -16,4 +16,13 @@ export const mockIds = {
   boards: {
     roadmap: "mock-board-roadmap",
   },
+  spaces: {
+    engineering: "mock-space-engineering",
+    platform: "mock-space-platform",
+    accounting: "mock-space-accounting",
+    marketing: "mock-space-marketing",
+  },
+  teams: {
+    helpdesk: "mock-team-helpdesk",
+  },
 } as const;

@@ -29,7 +29,58 @@ import type {
   BoardViewDtoApi,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
-import { ok, created, notFound } from "../../transport/create-response";
+import {
+  ok,
+  created,
+  forbidden,
+  noContent,
+  notFound,
+  validationError,
+} from "../../transport/create-response";
+import { accessAtLeast } from "../../state/mock-spaces";
+import type { MockStore } from "../../state/mock-store";
+
+/** The Board's Space id, masked when the caller cannot see it (GOV-029). */
+function visibleSpaceId(
+  store: MockStore,
+  workspaceId: string,
+  spaceId: string | null | undefined,
+): string | null {
+  if (!spaceId) return null;
+  return store.spaces.accessFor(spaceId, store.spaceViewer(workspaceId)) ===
+    null
+    ? null
+    : spaceId;
+}
+
+/** GOV-028: creating or moving a Board into a Space needs Editor there. */
+function targetSpaceDenied(
+  store: MockStore,
+  workspaceId: string,
+  spaceId: string | null,
+) {
+  if (!spaceId) return null;
+  const space = store.spaces.getSpace(spaceId);
+  const access = space
+    ? store.spaces.accessFor(spaceId, store.spaceViewer(workspaceId))
+    : null;
+  if (!space || space.workspaceId !== workspaceId || access === null)
+    return notFound();
+  if (!accessAtLeast(access, "Editor")) return forbidden();
+  if (space.archived) {
+    return {
+      status: 409,
+      body: {
+        type: "https://docs.notrelix.com/problems/workspaces-space-inactive",
+        title: "Conflict",
+        status: 409,
+        detail: "The target space is archived.",
+        errorCode: "workspaces.space.inactive",
+      },
+    };
+  }
+  return null;
+}
 
 function projectCardSummary(
   card: { id: string; title: string; position: number; createdAt: string },
@@ -75,6 +126,8 @@ export const boardsOperations = [
           memberCount: 1,
           listCount: store.getLists(b.id).length,
           createdAt: b.createdAt,
+          version: b.version ?? 1,
+          spaceId: visibleSpaceId(store, params.workspaceId, b.spaceId),
         })),
       );
     },
@@ -149,13 +202,74 @@ export const boardsOperations = [
     method: "POST",
     route: "/workspaces/:workspaceId/boards",
     async handle({ params, body, store }) {
-      const data = (body ?? {}) as { title?: string; description?: string };
+      const data = (body ?? {}) as {
+        title?: string;
+        description?: string;
+        spaceId?: string | null;
+      };
+      const denied = targetSpaceDenied(
+        store,
+        params.workspaceId,
+        data.spaceId ?? null,
+      );
+      if (denied) return denied;
       const newBoard = store.createBoard(params.workspaceId, {
         title: data.title,
         description: data.description,
+        spaceId: data.spaceId ?? null,
       });
       // Like the producer (`ToCreatedResult`): 201 with the new Board id.
       return created<string>(newBoard.id);
+    },
+  }),
+
+  // ─── POST /boards/:boardId/move-to-space (GOV-028) ─────────────────────────
+
+  defineMockOperation<
+    { boardId: string },
+    { spaceId?: string | null; expectedVersion?: number },
+    void
+  >({
+    id: "boards.moveToSpace",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Boards.MoveToSpace",
+    },
+    method: "POST",
+    route: "/boards/:boardId/move-to-space",
+    async handle({ params, body, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const board = store.getBoard(params.boardId);
+      if (!board || !store.isCurrentMemberOf(board.workspaceId))
+        return notFound();
+      const role = store.getCurrentMemberRole(board.workspaceId);
+      // ManageBoard on the source (guests never manage Boards here).
+      if (role === "guest") return forbidden();
+      const target = body?.spaceId ?? null;
+      const denied = targetSpaceDenied(store, board.workspaceId, target);
+      if (denied) return denied;
+      switch (store.placeBoard(board.id, target, body?.expectedVersion)) {
+        case "ok":
+          return noContent();
+        case "not-found":
+          return notFound();
+        case "stale":
+          return {
+            status: 412,
+            body: {
+              type: "https://docs.notrelix.com/problems/common-precondition-failed",
+              title: "Precondition failed",
+              status: 412,
+              detail:
+                "The resource was modified by another request. Reload and retry.",
+              errorCode: "common.precondition-failed",
+            },
+          };
+      }
     },
   }),
 

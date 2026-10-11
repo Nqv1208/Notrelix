@@ -22,6 +22,7 @@ import type {
   WorkspaceView,
 } from "@notrelix/features-workspace";
 import { defineMockOperation } from "../../operations/types";
+import { spacesOperations } from "./spaces.handlers";
 import {
   ok,
   created,
@@ -107,7 +108,9 @@ function preconditionFailed(): MockHttpResult<never> {
   return result as MockHttpResult<never>;
 }
 
-function versionedWriteResult(write: MockVersionedWrite): MockHttpResult<never> {
+function versionedWriteResult(
+  write: MockVersionedWrite,
+): MockHttpResult<never> {
   switch (write) {
     case "ok":
       return noContent();
@@ -177,6 +180,7 @@ function navigationResourceExists(
 }
 
 export const workspaceOperations = [
+  ...spacesOperations,
   // ─── GET /workspaces ──────────────────────────────────────────────────────
 
   defineMockOperation<Record<string, never>, never, WorkspaceSummary[]>({
@@ -279,7 +283,11 @@ export const workspaceOperations = [
 
   defineMockOperation<
     { workspaceId: string },
-    { name?: string | null; description?: string | null; expectedVersion?: number },
+    {
+      name?: string | null;
+      description?: string | null;
+      expectedVersion?: number;
+    },
     void
   >({
     id: "workspace.profile.update",
@@ -296,10 +304,14 @@ export const workspaceOperations = [
         return validationError({ Name: ["Name must not be empty."] });
       }
       return versionedWriteResult(
-        store.updateWorkspaceProfile(params.workspaceId, body?.expectedVersion, {
-          name: typeof name === "string" ? name.trim() : null,
-          description: body?.description ?? null,
-        }),
+        store.updateWorkspaceProfile(
+          params.workspaceId,
+          body?.expectedVersion,
+          {
+            name: typeof name === "string" ? name.trim() : null,
+            description: body?.description ?? null,
+          },
+        ),
       );
     },
   }),
@@ -337,13 +349,17 @@ export const workspaceOperations = [
         });
       }
       return versionedWriteResult(
-        store.updateWorkspaceSettings(params.workspaceId, body?.expectedVersion, {
-          allowPublicSharing: body?.allowPublicSharing === true,
-          enforceMfa: body?.enforceMfa === true,
-          allowGuestInvites: body?.allowGuestInvites === true,
-          defaultMemberRole: role,
-          invitationExpiryDays: days,
-        }),
+        store.updateWorkspaceSettings(
+          params.workspaceId,
+          body?.expectedVersion,
+          {
+            allowPublicSharing: body?.allowPublicSharing === true,
+            enforceMfa: body?.enforceMfa === true,
+            allowGuestInvites: body?.allowGuestInvites === true,
+            defaultMemberRole: role,
+            invitationExpiryDays: days,
+          },
+        ),
       );
     },
   }),

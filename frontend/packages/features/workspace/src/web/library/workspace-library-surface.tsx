@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   ArrowDown,
+  ArrowRightLeft,
   ArrowUp,
   ChevronsUpDown,
   Library,
@@ -20,6 +21,11 @@ import {
   EmptyMedia,
   EmptyTitle,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Skeleton,
   Spinner,
   ToggleGroup,
@@ -28,6 +34,8 @@ import {
 } from "@notrelix/ui-web";
 import {
   DEFAULT_LIBRARY_QUERY,
+  LIBRARY_SPACE_ALL,
+  LIBRARY_SPACE_NONE,
   LIBRARY_VIRTUALIZATION_THRESHOLD,
   libraryEntryKey,
   libraryWindow,
@@ -38,6 +46,12 @@ import {
   type LibrarySortField,
   type LibraryTypeFilter,
 } from "../../core/model/library";
+import {
+  buildSpaceIndex,
+  spaceDescendantIds,
+  visibleSpaceRows,
+  type SpaceNode,
+} from "../../core/model/spaces";
 import {
   NAVIGATION_RESOURCE_KIND,
   type WorkspaceDestination,
@@ -72,6 +86,13 @@ export interface WorkspaceLibrarySurfaceProps {
   ) => void;
   readonly onRetry: () => void;
   readonly initialQuery?: LibraryQuery;
+  /**
+   * The visible Space tree (OT-5). When present and not empty, the table can
+   * be filtered by Space (a Space includes the Spaces inside it).
+   */
+  readonly spaces?: readonly SpaceNode[];
+  /** Offered on Board rows when the host can move Boards between Spaces. */
+  readonly onMoveBoard?: (entry: LibraryEntry) => void;
   /** Rows above this count are windowed (stories and tests lower it). */
   readonly virtualizationThreshold?: number;
 }
@@ -198,6 +219,8 @@ export function WorkspaceLibrarySurface({
   onSetPinned,
   onRetry,
   initialQuery = DEFAULT_LIBRARY_QUERY,
+  spaces,
+  onMoveBoard,
   virtualizationThreshold = LIBRARY_VIRTUALIZATION_THRESHOLD,
 }: WorkspaceLibrarySurfaceProps) {
   const [query, setQuery] = React.useState<LibraryQuery>(initialQuery);
@@ -216,9 +239,31 @@ export function WorkspaceLibrarySurface({
     () => (state.status === "ready" ? state.data : []),
     [state],
   );
+  const spaceIndex = React.useMemo(
+    () => buildSpaceIndex(spaces ?? []),
+    [spaces],
+  );
+  const spaceOptions = React.useMemo(
+    () =>
+      visibleSpaceRows(spaceIndex, new Set(spaceIndex.byId.keys())).filter(
+        (row) => !row.node.isArchived,
+      ),
+    [spaceIndex],
+  );
+  const spaceFilter = query.space ?? LIBRARY_SPACE_ALL;
+  const spaceScope = React.useMemo(
+    () =>
+      spaceFilter === LIBRARY_SPACE_ALL || spaceFilter === LIBRARY_SPACE_NONE
+        ? null
+        : new Set([
+            spaceFilter,
+            ...spaceDescendantIds(spaceIndex, spaceFilter),
+          ]),
+    [spaceFilter, spaceIndex],
+  );
   const rows = React.useMemo(
-    () => queryLibrary(entries, query),
-    [entries, query],
+    () => queryLibrary(entries, query, spaceScope),
+    [entries, query, spaceScope],
   );
   const rowKeys = React.useMemo(() => rows.map(libraryEntryKey), [rows]);
 
@@ -333,7 +378,10 @@ export function WorkspaceLibrarySurface({
   const allShownSelected =
     rows.length > 0 && selectedEntries.length === rows.length;
   const someShownSelected = selectedEntries.length > 0 && !allShownSelected;
-  const filtered = query.text.trim() !== "" || query.type !== "all";
+  const filtered =
+    query.text.trim() !== "" ||
+    query.type !== "all" ||
+    spaceFilter !== LIBRARY_SPACE_ALL;
 
   const header = (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -473,6 +521,41 @@ export function WorkspaceLibrarySurface({
               {copy.types.doc}
             </ToggleGroupItem>
           </ToggleGroup>
+          {spaceOptions.length > 0 ? (
+            <Select
+              value={spaceFilter}
+              onValueChange={(value) =>
+                setQuery((current) => ({ ...current, space: value }))
+              }
+            >
+              <SelectTrigger
+                size="sm"
+                aria-label={copy.spaces.label}
+                className="w-full sm:w-56"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={LIBRARY_SPACE_ALL}>
+                  {copy.spaces.all}
+                </SelectItem>
+                <SelectItem value={LIBRARY_SPACE_NONE}>
+                  {copy.spaces.none}
+                </SelectItem>
+                {spaceOptions.map((row) => (
+                  <SelectItem key={row.node.id} value={row.node.id}>
+                    <span
+                      style={{
+                        paddingInlineStart: `${(row.level - 1) * 12}px`,
+                      }}
+                    >
+                      {row.node.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
           <p
             className="text-metadata tabular-nums text-muted-foreground sm:ml-auto"
             aria-live="polite"
@@ -552,6 +635,7 @@ export function WorkspaceLibrarySurface({
                       ...current,
                       text: "",
                       type: "all",
+                      space: LIBRARY_SPACE_ALL,
                     }))
                   }
                 >
@@ -574,7 +658,9 @@ export function WorkspaceLibrarySurface({
                   : undefined
               }
               className={cn(
-                "relative overflow-auto rounded-lg border border-border bg-surface-panel",
+                // `isolate`: the sticky header's z-index stays inside the
+                // table and never stacks above dialogs (z-index scale).
+                "relative isolate overflow-auto rounded-lg border border-border bg-surface-panel",
                 virtualized && "max-h-[calc(100svh-15rem)] min-h-80",
               )}
             >
@@ -589,7 +675,7 @@ export function WorkspaceLibrarySurface({
                   <col className="w-24" />
                   <col className="w-40" />
                   <col className="w-32" />
-                  <col className="w-20" />
+                  <col className={onMoveBoard ? "w-24" : "w-20"} />
                 </colgroup>
                 <thead className="sticky top-0 z-sticky bg-surface-panel">
                   <tr aria-rowindex={1}>
@@ -751,7 +837,25 @@ export function WorkspaceLibrarySurface({
                             </>
                           )}
                         </td>
-                        <td className="px-2 text-right align-middle">
+                        <td className="px-2 text-right align-middle whitespace-nowrap">
+                          {isBoard && onMoveBoard ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              tabIndex={index === activeIndex ? 0 : -1}
+                              aria-label={formatCopy(copy.row.move, {
+                                name: entry.name,
+                              })}
+                              title={formatCopy(copy.row.move, {
+                                name: entry.name,
+                              })}
+                              onClick={() => onMoveBoard(entry)}
+                              className="text-muted-foreground opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 focus-visible:opacity-100 focus-visible:ring-focus-ring"
+                            >
+                              <ArrowRightLeft aria-hidden="true" />
+                            </Button>
+                          ) : null}
                           <Button
                             type="button"
                             variant="ghost"

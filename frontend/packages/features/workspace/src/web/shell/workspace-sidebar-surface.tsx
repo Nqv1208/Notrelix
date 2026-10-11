@@ -54,6 +54,7 @@ import {
   type NavigationEntry,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
+import { SpaceTreeNav, type SpaceTreeNavProps } from "../spaces/space-tree-nav";
 import { IdentityMark, ShellLink } from "./shell-link";
 import {
   formatCopy,
@@ -75,6 +76,8 @@ export interface WorkspaceSidebarSurfaceProps {
   readonly location: WorkspaceDestination | null;
   readonly pinned: NavigationListState;
   readonly recent: NavigationListState;
+  /** The Space org tree (OT-5); omitted by hosts without Spaces. */
+  readonly spaces?: Omit<SpaceTreeNavProps, "navigation" | "onNavigated">;
   readonly user: ShellUser | null;
   readonly signingOut?: boolean;
   readonly onSwitchWorkspace: (workspaceId: string) => void;
@@ -376,6 +379,23 @@ function ResourceList({
   );
 }
 
+function SidebarSpaces({
+  spaces,
+  navigation,
+}: {
+  spaces: NonNullable<WorkspaceSidebarSurfaceProps["spaces"]>;
+  navigation: ShellNavigation;
+}) {
+  const closeDrawer = useCloseMobileDrawer();
+  return (
+    <SpaceTreeNav
+      {...spaces}
+      navigation={navigation}
+      onNavigated={closeDrawer}
+    />
+  );
+}
+
 function UserCard({
   copy,
   user,
@@ -558,6 +578,9 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
             onTogglePin={props.onTogglePin}
             onRetry={props.onRetryNavigation}
           />
+          {props.spaces ? (
+            <SidebarSpaces spaces={props.spaces} navigation={navigation} />
+          ) : null}
           <ResourceList
             title={copy.lists.recent}
             state={props.recent}

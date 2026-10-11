@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
@@ -14,6 +14,13 @@ import {
   WorkspaceLibrarySurface,
   type WorkspaceLibrarySurfaceProps,
 } from "../workspace-library-surface";
+
+beforeAll(() => {
+  // Radix Select measures and scrolls items; JSDOM has no layout.
+  Element.prototype.scrollIntoView = () => undefined;
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.releasePointerCapture = () => undefined;
+});
 
 const copy = libraryCopyFixture();
 
@@ -209,5 +216,41 @@ describe("WorkspaceLibrarySurface", () => {
     renderLibrary(libraryReadOnlyScenario());
     expect(screen.queryByRole("button", { name: copy.newBoard })).toBeNull();
     expect(screen.getByText(copy.empty.readOnly)).toBeTruthy();
+  });
+
+  it("FUI[workspace.library:space-filter] filters by a Space, including the Spaces inside it", () => {
+    renderLibrary();
+    expect(bodyRowNames()).toHaveLength(7);
+    fireEvent.keyDown(
+      screen.getByRole("combobox", { name: copy.spaces.label }),
+      {
+        key: "Enter",
+      },
+    );
+    fireEvent.click(screen.getByRole("option", { name: "IT" }));
+    expect(bodyRowNames().sort()).toEqual(["Product Roadmap", "Q4 Launch"]);
+    fireEvent.keyDown(
+      screen.getByRole("combobox", { name: copy.spaces.label }),
+      {
+        key: "Enter",
+      },
+    );
+    fireEvent.click(screen.getByRole("option", { name: copy.spaces.none }));
+    expect(bodyRowNames()).not.toContain("Product Roadmap");
+    expect(bodyRowNames()).toHaveLength(4);
+  });
+
+  it("FUI[workspace.library:move] offers moving a Board (not a Doc) to a Space", () => {
+    const onMoveBoard = vi.fn();
+    renderLibrary(undefined, { onMoveBoard });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Move Bug Triage to a Space" }),
+    );
+    expect(onMoveBoard).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "board-triage" }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Move Sprint 42 retro to a Space" }),
+    ).toBeNull();
   });
 });

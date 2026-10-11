@@ -32,4 +32,13 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "navigation", "recents"),
   pins: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "navigation", "pins"),
+  /** The caller's visible Space org tree (OT-5); scoped by workspace. */
+  spaces: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces"),
+  spaceTree: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces", "tree"),
+  spaceMembers: (workspaceId: string, spaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces", spaceId, "members"),
+  teams: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "teams"),
 } as const;

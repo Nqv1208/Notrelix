@@ -20,6 +20,10 @@ describe("workspaceQueryKeys Q7 purity tests", () => {
       workspaceQueryKeys.navigation(wsId),
       workspaceQueryKeys.recents(wsId),
       workspaceQueryKeys.pins(wsId),
+      workspaceQueryKeys.spaces(wsId),
+      workspaceQueryKeys.spaceTree(wsId),
+      workspaceQueryKeys.spaceMembers(wsId, "space-1"),
+      workspaceQueryKeys.teams(wsId),
     ];
 
     for (const key of keys) {
@@ -35,5 +39,15 @@ describe("workspaceQueryKeys Q7 purity tests", () => {
     const root = workspaceQueryKeys.navigation("ws-a");
     expect(a.slice(0, root.length)).toEqual(root);
     expect(workspaceQueryKeys.pins("ws-a").slice(0, root.length)).toEqual(root);
+  });
+
+  it("space keys are scoped by workspace and nest under the spaces root", () => {
+    const root = workspaceQueryKeys.spaces("ws-a");
+    const tree = workspaceQueryKeys.spaceTree("ws-a");
+    const members = workspaceQueryKeys.spaceMembers("ws-a", "space-1");
+    expect(tree).not.toEqual(workspaceQueryKeys.spaceTree("ws-b"));
+    expect(tree.slice(0, root.length)).toEqual(root);
+    expect(members.slice(0, root.length)).toEqual(root);
+    expect(JSON.stringify(members)).toContain("space-1");
   });
 });

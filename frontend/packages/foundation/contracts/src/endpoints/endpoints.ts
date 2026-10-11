@@ -48,6 +48,35 @@ export const endpoints = {
     // My Work read (WorkManagement.BoardItems.ListMyWork, WX-BE-005).
     myWorkItems: (workspaceId: string) =>
       `/workspaces/${workspaceId}/my-work/items`,
+    // Space org tree (Workspaces.Spaces.*, WSP-021..025, OT-4).
+    spaces: (workspaceId: string) => `/workspaces/${workspaceId}/spaces`,
+    spaceTree: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/tree`,
+    space: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}`,
+    spaceDescription: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/description`,
+    spaceVisibility: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/visibility`,
+    spaceType: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/type`,
+    spaceArchive: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/archive`,
+    spaceUnarchive: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/unarchive`,
+    spaceMove: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/move`,
+    spaceMembers: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/members`,
+    spaceMember: (
+      workspaceId: string,
+      spaceId: string,
+      subjectType: string,
+      subjectId: string,
+    ) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/members/${subjectType}/${subjectId}`,
+    // Teams (Workspaces.Teams.*), read as Space member subjects.
+    teams: (workspaceId: string) => `/workspaces/${workspaceId}/teams`,
   },
   pages: {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,
@@ -74,6 +103,7 @@ export const endpoints = {
     labels: (boardId: string) => `/boards/${boardId}/labels`,
     label: (boardId: string, labelId: string) =>
       `/boards/${boardId}/labels/${labelId}`,
+    moveToSpace: (boardId: string) => `/boards/${boardId}/move-to-space`,
   },
 
   checklists: {

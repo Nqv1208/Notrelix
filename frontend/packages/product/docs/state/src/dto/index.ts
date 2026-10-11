@@ -16,6 +16,7 @@ export type PageDtoApi = {
   deadline?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+  spaceId?: string | null;
 };
 
 export type BreadcrumbDtoApi = {

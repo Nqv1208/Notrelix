@@ -23,6 +23,8 @@ export interface LibraryEntry {
   /** ISO time of the last change, when the owning list reports one. */
   readonly updatedAt: string | null;
   readonly pinned: boolean;
+  /** The Space it is placed in (OT-5); `null` at the workspace level or unknown. */
+  readonly spaceId?: string | null;
 }
 
 export type LibraryTypeFilter = "all" | "board" | "doc";
@@ -34,10 +36,16 @@ export interface LibrarySort {
   readonly direction: LibrarySortDirection;
 }
 
+/** `"all"`, `"none"` (no Space), or a Space id (with the Spaces inside it). */
+export type LibrarySpaceFilter = string;
+export const LIBRARY_SPACE_ALL = "all";
+export const LIBRARY_SPACE_NONE = "none";
+
 export interface LibraryQuery {
   readonly type: LibraryTypeFilter;
   readonly text: string;
   readonly sort: LibrarySort;
+  readonly space?: LibrarySpaceFilter;
 }
 
 export const DEFAULT_LIBRARY_QUERY: LibraryQuery = {
@@ -61,12 +69,14 @@ export interface LibrarySource {
     readonly name: string;
     readonly updatedAt?: string | null;
     readonly location?: string | null;
+    readonly spaceId?: string | null;
   }[];
   readonly docs: readonly {
     readonly id: string;
     readonly name: string;
     readonly updatedAt?: string | null;
     readonly location?: string | null;
+    readonly spaceId?: string | null;
   }[];
   readonly pins: readonly NavigationReference[];
 }
@@ -84,6 +94,7 @@ export function buildLibraryEntries(source: LibrarySource): LibraryEntry[] {
       name: board.name,
       location: board.location ?? null,
       updatedAt: board.updatedAt ?? null,
+      spaceId: board.spaceId ?? null,
       pinned: pinned.has(
         navigationEntryKey(NAVIGATION_RESOURCE_KIND.board, board.id),
       ),
@@ -96,6 +107,7 @@ export function buildLibraryEntries(source: LibrarySource): LibraryEntry[] {
       name: doc.name,
       location: doc.location ?? null,
       updatedAt: doc.updatedAt ?? null,
+      spaceId: doc.spaceId ?? null,
       pinned: pinned.has(
         navigationEntryKey(NAVIGATION_RESOURCE_KIND.doc, doc.id),
       ),
@@ -141,15 +153,34 @@ function compare(
   }
 }
 
-/** Filters by type and text (case/diacritic-insensitive), then sorts. */
+function matchesSpace(
+  entry: LibraryEntry,
+  space: LibrarySpaceFilter,
+  scope: ReadonlySet<string> | null,
+): boolean {
+  if (space === LIBRARY_SPACE_ALL) return true;
+  if (space === LIBRARY_SPACE_NONE) return !entry.spaceId;
+  return (
+    !!entry.spaceId && (scope?.has(entry.spaceId) ?? entry.spaceId === space)
+  );
+}
+
+/**
+ * Filters by type, Space and text (case/diacritic-insensitive), then sorts.
+ * `spaceScope` is the selected Space with the Spaces inside it; without it a
+ * Space filter matches that Space only.
+ */
 export function queryLibrary(
   entries: readonly LibraryEntry[],
   query: LibraryQuery,
+  spaceScope: ReadonlySet<string> | null = null,
 ): LibraryEntry[] {
   const needle = normalizeSearchText(query.text.trim());
+  const space = query.space ?? LIBRARY_SPACE_ALL;
   const filtered = entries.filter(
     (entry) =>
       matchesType(entry, query.type) &&
+      matchesSpace(entry, space, spaceScope) &&
       (needle === "" ||
         normalizeSearchText(`${entry.name} ${entry.location ?? ""}`).includes(
           needle,

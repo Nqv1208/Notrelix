@@ -15,7 +15,7 @@ import type {
 
 export interface WorkspaceBreadcrumbLabels {
   readonly sections: Readonly<
-    Record<Exclude<WorkspaceSection, "board" | "doc">, string>
+    Record<Exclude<WorkspaceSection, "board" | "doc" | "space">, string>
   >;
   readonly views: Readonly<Record<string, string>>;
   /** Shown while a name is still loading. */
@@ -38,6 +38,11 @@ export interface BuildBreadcrumbInput {
   readonly location: WorkspaceDestination | null;
   readonly boards: readonly NavigationResourceSummary[] | null;
   readonly docs: readonly NavigationResourceSummary[] | null;
+  /**
+   * The visible path of the current Space, root first (OT-5); `null` while
+   * the tree loads, `[]` when the Space is not visible to the member.
+   */
+  readonly spacePath?: readonly NavigationResourceSummary[] | null;
   readonly labels: WorkspaceBreadcrumbLabels;
 }
 
@@ -58,6 +63,7 @@ export function buildWorkspaceBreadcrumb({
   location,
   boards,
   docs,
+  spacePath = null,
   labels,
 }: BuildBreadcrumbInput): WorkspaceBreadcrumbItem[] {
   const items: WorkspaceBreadcrumbItem[] = [
@@ -97,6 +103,30 @@ export function buildWorkspaceBreadcrumb({
       label: name.label,
       pending: name.pending,
     });
+    return withoutLastLink(items);
+  }
+
+  if (location.section === "space") {
+    if (spacePath === null) {
+      items.push({
+        id: `space:${location.spaceId}`,
+        label: labels.loading,
+        pending: true,
+      });
+    } else if (spacePath.length === 0) {
+      items.push({
+        id: `space:${location.spaceId}`,
+        label: labels.unavailable,
+      });
+    } else {
+      for (const space of spacePath) {
+        items.push({
+          id: `space:${space.id}`,
+          label: space.name,
+          destination: { section: "space", spaceId: space.id },
+        });
+      }
+    }
     return withoutLastLink(items);
   }
 

@@ -19,6 +19,11 @@ export const en = {
     board: "Boards",
     doc: "Docs",
   },
+  spaces: {
+    label: "Space",
+    all: "All Spaces",
+    none: "No Space",
+  },
   columns: {
     select: "Select",
     name: "Name",
@@ -40,6 +45,7 @@ export const en = {
     select: "Select {{name}}",
     pin: "Pin {{name}}",
     unpin: "Unpin {{name}}",
+    move: "Move {{name}} to a Space",
     pinning: "Updating pin for {{name}}…",
     rootLocation: "Workspace",
     unknownUpdated: "Not reported",
@@ -103,6 +109,11 @@ export const vi: WorkspaceLibraryCopy = {
     board: "Bảng",
     doc: "Tài liệu",
   },
+  spaces: {
+    label: "Không gian",
+    all: "Mọi Không gian",
+    none: "Không thuộc Không gian",
+  },
   columns: {
     select: "Chọn",
     name: "Tên",
@@ -124,6 +135,7 @@ export const vi: WorkspaceLibraryCopy = {
     select: "Chọn {{name}}",
     pin: "Ghim {{name}}",
     unpin: "Bỏ ghim {{name}}",
+    move: "Chuyển {{name}} vào một Không gian",
     pinning: "Đang cập nhật ghim cho {{name}}…",
     rootLocation: "Không gian làm việc",
     unknownUpdated: "Chưa có thông tin",

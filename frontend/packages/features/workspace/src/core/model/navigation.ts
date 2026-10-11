@@ -127,7 +127,15 @@ export type WorkspaceDestination =
       /** An Item to open on the Board (route search `item`). */
       readonly item?: string;
     }
-  | { readonly section: "doc"; readonly docId: string };
+  | { readonly section: "doc"; readonly docId: string }
+  | {
+      readonly section: "space";
+      readonly spaceId: string;
+      readonly tab?: SpaceTab;
+    };
+
+/** Sections of a Space page (OT-5). */
+export type SpaceTab = "overview" | "members" | "settings";
 
 export type WorkspaceSection = WorkspaceDestination["section"];
 
@@ -150,6 +158,9 @@ export function isDestinationActive(
   }
   if (destination.section === "doc" && location.section === "doc") {
     return destination.docId === location.docId;
+  }
+  if (destination.section === "space" && location.section === "space") {
+    return destination.spaceId === location.spaceId;
   }
   return true;
 }

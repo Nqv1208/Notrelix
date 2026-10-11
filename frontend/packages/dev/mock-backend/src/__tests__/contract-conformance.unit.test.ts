@@ -22,6 +22,7 @@ import {
 } from "../../../../features/workspace/src/core/api/workspace.service";
 import { createMembersService } from "../../../../features/workspace/src/core/api/members.service";
 import { createWorkspaceInvitationsService } from "../../../../features/workspace/src/core/api/invitations.service";
+import { createSpacesService } from "../../../../features/workspace/src/core/api/spaces.service";
 
 describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
   it("T-MFB-001: real createNotrelixClient loads endpoints via mockFetch", async () => {
@@ -157,7 +158,9 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     });
     const desiredOrder = [
       "list-done",
-      ...beforeReorder.groups.map((g) => g.id).filter((id) => id !== "list-done"),
+      ...beforeReorder.groups
+        .map((g) => g.id)
+        .filter((id) => id !== "list-done"),
     ];
     await groupApi.reorderGroups(
       boardId,
@@ -396,7 +399,10 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(relisted.some((m) => m.userId === others[1]!.userId)).toBe(false);
 
     // Invitation rows carry status; a revoked one is no longer listed as pending.
-    const invitations = createWorkspaceInvitationsService(client.api, endpoints);
+    const invitations = createWorkspaceInvitationsService(
+      client.api,
+      endpoints,
+    );
     const kept = await invitations.create(workspaceId, {
       email: "kept@example.com",
       role: "member",
@@ -445,5 +451,157 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
 
     // Refresh should also fail with 401
     await expect(client.api.post(endpoints.auth.refresh)).rejects.toThrow();
+  });
+
+  it("T-MFB-029: Space org tree — create, members (versioned, last admin), create and move a Board in a Space, masked placement", async () => {
+    const store = new MockStore();
+    const client = createNotrelixClient({
+      baseUrl: "http://localhost:8000/api/v1",
+      fetchImpl: createMockFetch(store),
+    });
+    const spaces = createSpacesService(client.api, endpoints);
+    const workspaceId = mockIds.workspaces.primary;
+
+    const tree = await spaces.getTree(workspaceId);
+    expect(tree.find((s) => s.id === mockIds.spaces.platform)?.parentId).toBe(
+      mockIds.spaces.engineering,
+    );
+    expect(tree.every((s) => s.access === "Manager")).toBe(true);
+
+    // Create a Department under the root: Private by default, creator = Admin.
+    const id = await spaces.create(workspaceId, {
+      name: "IT",
+      type: "Department",
+      visibility: "Private",
+      parentId: null,
+      previousSiblingId: mockIds.spaces.marketing,
+      nextSiblingId: null,
+    });
+    expect(id).toBeTruthy();
+    await expect(
+      spaces.create(workspaceId, {
+        name: "it",
+        type: "Folder",
+        visibility: "Workspace",
+        parentId: null,
+        previousSiblingId: null,
+        nextSiblingId: null,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    const created = (await spaces.getTree(workspaceId)).find(
+      (s) => s.id === id,
+    )!;
+    expect(created).toMatchObject({ visibility: "Private", parentId: null });
+    expect(
+      (await spaces.getMembers(workspaceId, id!)).map((m) => m.role),
+    ).toEqual(["Admin"]);
+
+    // Membership writes carry the version; a stale one is a 412.
+    await spaces.addMember(workspaceId, id!, {
+      subjectType: "Team",
+      subjectId: mockIds.teams.helpdesk,
+      role: "Member",
+      expectedVersion: created.version,
+    });
+    await expect(
+      spaces.addMember(workspaceId, id!, {
+        subjectType: "User",
+        subjectId: mockIds.users.admin,
+        role: "Viewer",
+        expectedVersion: created.version,
+      }),
+    ).rejects.toMatchObject({ status: 412 });
+    const afterAdd = (await spaces.getTree(workspaceId)).find(
+      (s) => s.id === id,
+    )!;
+    expect(afterAdd.version).toBe(created.version + 1);
+    // The last Admin can be neither removed nor downgraded.
+    await expect(
+      spaces.removeMember(workspaceId, id!, {
+        subjectType: "User",
+        subjectId: mockIds.users.owner,
+        expectedVersion: afterAdd.version,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    await spaces.changeMemberRole(workspaceId, id!, {
+      subjectType: "Team",
+      subjectId: mockIds.teams.helpdesk,
+      role: "Viewer",
+      expectedVersion: afterAdd.version,
+    });
+
+    // Create a Board in the Space, then move it out (versioned, idempotent key).
+    const boardId = await client.api.post<string>(
+      endpoints.boards.listByWorkspaceId(workspaceId),
+      { title: "Service desk", spaceId: id },
+      { idempotencyKey: "create-1" },
+    );
+    const listed = await client.api.get<
+      { id: string; spaceId: string | null; version: number }[]
+    >(endpoints.boards.listByWorkspaceId(workspaceId));
+    const board = listed.find((b) => b.id === boardId)!;
+    expect(board.spaceId).toBe(id);
+    // A Space with a placed Board cannot be archived (WSP-022).
+    await expect(spaces.archive(workspaceId, id!)).rejects.toMatchObject({
+      status: 400,
+    });
+    await expect(
+      client.api.post(
+        endpoints.boards.moveToSpace(boardId),
+        {
+          spaceId: null,
+          expectedVersion: board.version + 5,
+        },
+        { idempotencyKey: "move-0" },
+      ),
+    ).rejects.toMatchObject({ status: 412 });
+    await client.api.post(
+      endpoints.boards.moveToSpace(boardId),
+      { spaceId: mockIds.spaces.engineering, expectedVersion: board.version },
+      { idempotencyKey: "move-1" },
+    );
+
+    // Move the Space under Engineering; never under itself.
+    const latest = (await spaces.getTree(workspaceId)).find(
+      (s) => s.id === id,
+    )!;
+    await expect(
+      spaces.move(workspaceId, {
+        spaceId: mockIds.spaces.engineering,
+        parentId: mockIds.spaces.platform,
+        previousSiblingId: null,
+        nextSiblingId: null,
+        expectedVersion: 2,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    await spaces.move(workspaceId, {
+      spaceId: id!,
+      parentId: mockIds.spaces.engineering,
+      previousSiblingId: mockIds.spaces.platform,
+      nextSiblingId: null,
+      expectedVersion: latest.version,
+    });
+    const moved = (await spaces.getTree(workspaceId)).find((s) => s.id === id)!;
+    expect(moved.parentId).toBe(mockIds.spaces.engineering);
+    // The now-empty Space archives.
+    await spaces.archive(workspaceId, id!);
+
+    // A guest sees only what Space access gives them, with placement masked.
+    const guest = new MockStore({ ...store.getConfig(), persona: "viewer" });
+    const guestClient = createNotrelixClient({
+      baseUrl: "http://localhost:8000/api/v1",
+      fetchImpl: createMockFetch(guest),
+    });
+    const guestTree = await createSpacesService(
+      guestClient.api,
+      endpoints,
+    ).getTree(workspaceId);
+    expect(guestTree.map((s) => [s.id, s.access])).toEqual([
+      [mockIds.spaces.accounting, "Viewer"],
+    ]);
+    expect((await spaces.getTeams(workspaceId)).map((t) => t.id)).toEqual([
+      mockIds.teams.helpdesk,
+    ]);
+    store.assertInvariants();
   });
 });

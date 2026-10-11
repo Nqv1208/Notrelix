@@ -48,6 +48,10 @@ export interface MockBoardRecord {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  /** The Space the Board is placed in (OT-4); absent = workspace level. */
+  spaceId?: string | null;
+  /** Board aggregate version (move-to-space `expectedVersion`). */
+  version?: number;
 }
 
 export interface MockListRecord {
@@ -76,6 +80,8 @@ export interface MockPageRecord {
   title: string;
   icon?: string;
   parentId?: string;
+  /** The Space the page is placed in (OT-4); absent = workspace root. */
+  spaceId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

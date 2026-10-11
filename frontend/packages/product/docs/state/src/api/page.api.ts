@@ -64,6 +64,7 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
         {
           title: payload.title,
           parentId: payload.parentId,
+          ...(payload.spaceId ? { spaceId: payload.spaceId } : {}),
         },
       );
       return this.getDetail(id);

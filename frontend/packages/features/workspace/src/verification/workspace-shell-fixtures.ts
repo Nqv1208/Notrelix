@@ -51,6 +51,8 @@ export function shellHrefFixture(
       return `${base}/docs/${destination.docId}`;
     case "account":
       return `${base}/account/${destination.page ?? "profile"}`;
+    case "space":
+      return `${base}/spaces/${destination.spaceId}`;
     default:
       return `${base}/${destination.section}`;
   }

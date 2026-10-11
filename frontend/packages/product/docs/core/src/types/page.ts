@@ -38,6 +38,11 @@ export interface Page {
   metadata: CollaborativeMetadata;
   linkedTaskIds: ID[];
   linkedBoardIds: ID[];
+  /**
+   * The Workspaces Space the page is placed in; `null` at the workspace root
+   * and when the caller cannot see that Space (GOV-029).
+   */
+  spaceId?: ID | null;
 }
 
 export interface BreadcrumbItem {
@@ -69,6 +74,8 @@ export interface CreatePagePayload {
   workspaceSlug?: string;
   parentId?: ID | null;
   templateId?: ID;
+  /** Create a root page in this Space (a nested page follows its parent). */
+  spaceId?: ID | null;
 }
 
 export interface UpdatePagePayload {

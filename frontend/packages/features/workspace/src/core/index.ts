@@ -60,6 +60,18 @@ export {
   type WorkspaceActivityPage,
 } from "./api/activity.service";
 export {
+  createSpacesService,
+  parseSpaceMembers,
+  parseSpaceTree,
+  parseTeams,
+  type CreateSpaceInput,
+  type MoveSpaceInput,
+  type SpaceDetailsInput,
+  type SpacesApiClient,
+  type SpacesEndpoints,
+  type SpacesService,
+} from "./api/spaces.service";
+export {
   createNavigationService,
   type NavigationApiClient,
   type NavigationEndpoints,
@@ -76,3 +88,4 @@ export * from "./model/errors";
 export * from "./model/members";
 export * from "./model/my-work";
 export * from "./model/library";
+export * from "./model/spaces";

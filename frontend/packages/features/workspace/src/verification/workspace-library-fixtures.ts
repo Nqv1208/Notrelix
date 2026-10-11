@@ -14,6 +14,7 @@ import {
   homeFormattersFixture,
 } from "./workspace-home-fixtures";
 import { shellNavigationFixture } from "./workspace-shell-fixtures";
+import { spaceTreeFixture } from "./workspace-spaces-fixtures";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -43,8 +44,13 @@ export function libraryEntriesFixture(): LibraryEntry[] {
       id: "board-roadmap",
       name: "Product Roadmap",
       pinned: true,
+      spaceId: "sp-it",
     }),
-    libraryEntry({ id: "board-launch", name: "Q4 Launch" }),
+    libraryEntry({
+      id: "board-launch",
+      name: "Q4 Launch",
+      spaceId: "sp-it-platform",
+    }),
     libraryEntry({ id: "board-triage", name: "Bug Triage" }),
     libraryEntry({
       kind: NAVIGATION_RESOURCE_KIND.doc,
@@ -53,6 +59,7 @@ export function libraryEntriesFixture(): LibraryEntry[] {
       location: "Team rituals",
       updatedAt: at(3),
       pinned: true,
+      spaceId: "sp-accounting",
     }),
     libraryEntry({
       kind: NAVIGATION_RESOURCE_KIND.doc,
@@ -113,6 +120,8 @@ export function libraryDefaultScenario(
     state: { status: "ready", data: libraryEntriesFixture() },
     pendingPinKeys: new Set(),
     canCreate: true,
+    spaces: spaceTreeFixture(),
+    onMoveBoard: () => undefined,
   };
 }
 

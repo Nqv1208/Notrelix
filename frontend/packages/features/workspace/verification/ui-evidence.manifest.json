@@ -558,6 +558,10 @@
         {
           "id": "keyboard",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
+          "id": "spaces",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
         }
       ]
     },
@@ -1384,6 +1388,14 @@
         {
           "id": "states",
           "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        },
+        {
+          "id": "space-filter",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
+        },
+        {
+          "id": "move",
+          "testFile": "src/web/library/__tests__/workspace-library.interaction.component.test.tsx"
         }
       ]
     },
@@ -1715,6 +1727,568 @@
         {
           "id": "unavailable",
           "testFile": "src/web/settings/__tests__/workspace-settings.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.space-tree",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/web/spaces/space-tree-nav.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-spaces--tree-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--tree-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--tree-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--tree-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--tree-read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--tree-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--tree-high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "Empty",
+          "ReadOnly",
+          "EdgeData",
+          "HighDensity"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigate",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+        },
+        {
+          "id": "states",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+        },
+        {
+          "id": "create",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+        },
+        {
+          "id": "windowing",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.space-page",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/spaces/workspace-space-surface.tsx",
+      "coveredSources": [
+        "src/web/spaces/space-members-panel.tsx",
+        "src/web/spaces/space-settings-panel.tsx"
+      ],
+      "stories": [
+        {
+          "id": "workspace-spaces--page-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-members",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-settings",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-permission-limited",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--page-not-found",
+          "state": "Unavailable",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "Empty",
+          "ReadOnly",
+          "PermissionLimited",
+          "EdgeData",
+          "Unavailable"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "HighDensity",
+            "reason": "A Space page lists the visible child Spaces, Boards and Docs of one Space; dense lists are the Boards & Docs directory (workspace.library HighDensity) and the sidebar tree (workspace.space-tree HighDensity).",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "actions",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "permission",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "not-found",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "members-role",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "members-last-admin",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "members-remove",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "members-add",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "settings-save",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "archive-blocked",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "archive",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "archived",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        },
+        {
+          "id": "refused",
+          "testFile": "src/web/spaces/__tests__/space-page.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.create-space",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/spaces/create-space-dialog.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-spaces--create-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--create-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--create-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--create-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "A successful create closes the dialog and navigates to the new Space; the confirmation toast is owned by the host.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Members who cannot create a Space there are never offered the dialog (GOV-028).",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "submit",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "defaults",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "validation",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.move-to-space",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/spaces/move-to-space-dialog.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-spaces--move-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--move-board",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--move-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-spaces--move-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "A successful move closes the dialog; the tree and the toast are owned by the host.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Members who cannot move the Space or Board are never offered the dialog; unavailable destinations are shown disabled with the reason (Default).",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "targets",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "submit",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "board",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "search",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
         }
       ]
     }

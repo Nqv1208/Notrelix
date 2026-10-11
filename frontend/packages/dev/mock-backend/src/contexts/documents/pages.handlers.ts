@@ -18,6 +18,8 @@
 import { defineMockOperation } from "../../operations/types";
 import { ok, created, notFound } from "../../transport/create-response";
 import type { MockPageRecord } from "../../state/records";
+import type { MockStore } from "../../state/mock-store";
+import { accessAtLeast } from "../../state/mock-spaces";
 
 // Inline DTO — aligns with endpoints.pages contract and @notrelix/docs-state
 interface PageDtoApi {
@@ -36,6 +38,8 @@ interface PageDtoApi {
   deadline?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+  /** Masked when the caller cannot see the Space (GOV-029). */
+  spaceId?: string | null;
 }
 
 interface BreadcrumbDtoApi {
@@ -45,8 +49,15 @@ interface BreadcrumbDtoApi {
   iconValue?: string | null;
 }
 
-function mapPageDto(p: MockPageRecord): PageDtoApi {
+function mapPageDto(p: MockPageRecord, store?: MockStore): PageDtoApi {
+  const spaceId =
+    p.spaceId &&
+    store &&
+    store.spaces.accessFor(p.spaceId, store.spaceViewer(p.workspaceId)) !== null
+      ? p.spaceId
+      : null;
   return {
+    spaceId,
     id: p.id,
     workspaceId: p.workspaceId,
     parentId: p.parentId ?? null,
@@ -75,7 +86,7 @@ export const pagesOperations = [
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(pages.map(mapPageDto));
+      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
     },
   }),
 
@@ -88,7 +99,7 @@ export const pagesOperations = [
     route: "/workspaces/:workspaceId/pages/tree",
     async handle({ params, store }) {
       const pages = store.getPages(params.workspaceId);
-      return ok<PageDtoApi[]>(pages.map(mapPageDto));
+      return ok<PageDtoApi[]>(pages.map((page) => mapPageDto(page, store)));
     },
   }),
 
@@ -102,7 +113,7 @@ export const pagesOperations = [
     async handle({ params, store }) {
       const page = store.getPage(params.id);
       if (!page) return notFound("Page not found");
-      return ok<PageDtoApi>(mapPageDto(page));
+      return ok<PageDtoApi>(mapPageDto(page, store));
     },
   }),
 
@@ -110,7 +121,12 @@ export const pagesOperations = [
 
   defineMockOperation<
     { workspaceId: string },
-    { title?: string; icon?: string; parentId?: string },
+    {
+      title?: string;
+      icon?: string;
+      parentId?: string;
+      spaceId?: string | null;
+    },
     PageDtoApi
   >({
     id: "pages.create",
@@ -119,8 +135,37 @@ export const pagesOperations = [
     route: "/workspaces/:workspaceId/pages",
     async handle({ params, body, store }) {
       const data = body ?? {};
-      const page = store.createPage(params.workspaceId, data);
-      return created<PageDtoApi>(mapPageDto(page));
+      const spaceId = data.spaceId ?? null;
+      if (spaceId) {
+        // GOV-028: CreatePage on the Space (Editor); a nested page follows
+        // its parent's Space instead (SpaceId with ParentId is invalid).
+        if (data.parentId) {
+          return {
+            status: 422,
+            body: {
+              message: "Validation failed",
+              code: "VALIDATION_ERROR",
+              errors: {
+                SpaceId: ["A nested page follows its parent's space."],
+              },
+            },
+          };
+        }
+        const access = store.spaces.getSpace(spaceId)
+          ? store.spaces.accessFor(
+              spaceId,
+              store.spaceViewer(params.workspaceId),
+            )
+          : null;
+        if (access === null) return notFound();
+        if (!accessAtLeast(access, "Editor"))
+          return {
+            status: 403,
+            body: { message: "Forbidden", code: "FORBIDDEN" },
+          };
+      }
+      const page = store.createPage(params.workspaceId, { ...data, spaceId });
+      return created<PageDtoApi>(mapPageDto(page, store));
     },
   }),
 

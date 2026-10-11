@@ -142,3 +142,55 @@ export {
   type WorkspaceProfileValues,
   type WorkspaceSettingsSurfaceProps,
 } from "./settings/workspace-settings-surface";
+
+// ── Space org tree (OT-5) ─────────────────────────────────────────
+export { workspaceSpacesCatalog } from "./spaces/workspace-spaces.catalog";
+export {
+  workspaceSpacesCopy,
+  type WorkspaceSpacesCopy,
+} from "./spaces/workspace-spaces.copy";
+export { useWorkspaceSpacesCopy } from "./spaces/use-workspace-spaces-copy";
+export {
+  createUseSpaceMembers,
+  createUseSpaceTree,
+  createUseWorkspaceTeams,
+} from "./query/hooks/use-spaces";
+export {
+  createUseSpaceMutations,
+  type SpaceMemberWrite,
+} from "./hooks/mutations/use-space-mutations";
+export {
+  useSpaceTreeExpansion,
+  spaceExpansionStorageKey,
+  type ExpansionStorage,
+} from "./spaces/use-space-tree-expansion";
+export {
+  SpaceTreeNav,
+  SPACE_TREE_WINDOW_THRESHOLD,
+  type SpaceTreeNavProps,
+  type SpaceTreeState,
+} from "./spaces/space-tree-nav";
+export {
+  CreateSpaceDialog,
+  type CreateSpaceDialogProps,
+  type CreateSpaceValues,
+} from "./spaces/create-space-dialog";
+export {
+  MoveToSpaceDialog,
+  type MoveToSpaceDialogProps,
+  type MoveToSpaceSubject,
+} from "./spaces/move-to-space-dialog";
+export {
+  WorkspaceSpaceSurface,
+  type SpaceContent,
+  type SpaceResource,
+  type WorkspaceSpaceSurfaceProps,
+} from "./spaces/workspace-space-surface";
+export type {
+  AddSpaceMemberInput,
+  SpaceMemberCandidate,
+} from "./spaces/space-members-panel";
+export type {
+  SpaceDetailsValues,
+  SpaceSaveStatus,
+} from "./spaces/space-settings-panel";

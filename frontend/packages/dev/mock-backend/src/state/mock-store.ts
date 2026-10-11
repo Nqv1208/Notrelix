@@ -38,6 +38,7 @@ import { defaultConfig } from "../config/mock-config";
 import { createMockClock, type MockClock } from "./clock";
 import { createFactories, type MockFactories } from "./factories";
 import { MOCK_DATASET_CARDINALITIES } from "./mock-dataset.manifest";
+import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
 
 export class MockSeedInvariantError extends Error {
   constructor(message: string) {
@@ -153,6 +154,9 @@ export class MockStore {
   private checklistIdsByCardId = new Map<string, Set<string>>();
   private checklistItemIdsByChecklistId = new Map<string, Set<string>>();
   private commentIdsByCardId = new Map<string, Set<string>>();
+
+  /** Space org tree, Space members and Teams (OT-5). */
+  readonly spaces = new MockSpaceState();
 
   private config: MockBackendConfig;
   private clock: MockClock;
@@ -349,6 +353,8 @@ export class MockStore {
     });
 
     if (this.config.state === "empty-workspace") return;
+
+    this.seedSpaces(primaryWsId);
 
     // ── Boards ─────────────────────────────────────────────────────────────
     let primaryBoardTitle = "Product Roadmap";
@@ -576,6 +582,121 @@ export class MockStore {
 
   // ─── Private seed helpers ─────────────────────────────────────────────────
 
+  /**
+   * Department Spaces of the primary workspace (OT-5): Engineering (Private,
+   * with an open Platform folder), Accounting (Private) and Marketing (open).
+   * The owner created them (Space Admin); Jordan (member) is a Member of
+   * Engineering; the Helpdesk team (Jordan, Taylor) views Accounting.
+   */
+  private seedSpaces(workspaceId: string): void {
+    const at = this.clock.offsetDays(-20);
+    const space = (
+      id: string,
+      name: string,
+      position: string,
+      extra: Partial<Parameters<MockSpaceState["insertSpace"]>[0]> = {},
+    ) =>
+      this.spaces.insertSpace({
+        id,
+        workspaceId,
+        parentId: null,
+        name,
+        description: null,
+        type: "Department",
+        visibility: "Private",
+        archived: false,
+        position,
+        version: 2,
+        createdAt: at,
+        ...extra,
+      });
+    space(mockIds.spaces.engineering, "Engineering", "a0000", {
+      description: "Product engineering, platform and quality.",
+    });
+    space(mockIds.spaces.platform, "Platform", "a0000", {
+      parentId: mockIds.spaces.engineering,
+      type: "Folder",
+      visibility: "Workspace",
+    });
+    space(mockIds.spaces.accounting, "Accounting", "a0001");
+    space(mockIds.spaces.marketing, "Marketing", "a0002", {
+      visibility: "Workspace",
+    });
+    for (const id of Object.values(mockIds.spaces)) {
+      this.spaces.insertMember({
+        spaceId: id,
+        subjectType: "User",
+        subjectId: mockIds.users.owner,
+        role: "Admin",
+        addedAt: at,
+      });
+    }
+    this.spaces.insertMember({
+      spaceId: mockIds.spaces.engineering,
+      subjectType: "User",
+      subjectId: mockIds.users.member,
+      role: "Member",
+      addedAt: at,
+    });
+    this.spaces.insertTeam({
+      id: mockIds.teams.helpdesk,
+      workspaceId,
+      name: "Helpdesk",
+      description: null,
+      archived: false,
+      memberIds: [mockIds.users.member, mockIds.users.viewer],
+      createdAt: at,
+    });
+    this.spaces.insertMember({
+      spaceId: mockIds.spaces.accounting,
+      subjectType: "Team",
+      subjectId: mockIds.teams.helpdesk,
+      role: "Viewer",
+      addedAt: at,
+    });
+  }
+
+  /** The current member as a Space access subject. */
+  spaceViewer(workspaceId: string): MockSpaceViewer {
+    return {
+      userId: this.getCurrentUser().id,
+      workspaceRole: this.getCurrentMemberRole(workspaceId),
+    };
+  }
+
+  /** Non-deleted Boards and Pages placed in a Space (WSP-022 archive check). */
+  countPlacedInSpace(spaceId: string): { boards: number; pages: number } {
+    let boards = 0;
+    let pages = 0;
+    for (const board of this.boardsById.values()) {
+      if (board.spaceId === spaceId && !board.isArchived) boards += 1;
+    }
+    for (const page of this.pagesById.values()) {
+      if (page.spaceId === spaceId) pages += 1;
+    }
+    return { boards, pages };
+  }
+
+  getBoardVersion(boardId: string): number {
+    return this.boardsById.get(boardId)?.version ?? 1;
+  }
+
+  /** Places a Board in a Space (or at the workspace level), versioned. */
+  placeBoard(
+    boardId: string,
+    spaceId: string | null,
+    expectedVersion: unknown,
+  ): MockVersionedWrite {
+    const board = this.boardsById.get(boardId);
+    if (!board) return "not-found";
+    const version = board.version ?? 1;
+    if (expectedVersion !== version) return "stale";
+    if ((board.spaceId ?? null) === spaceId) return "ok";
+    board.spaceId = spaceId;
+    board.version = version + 1;
+    return "ok";
+  }
+
   private seedNotifications(userId: string, count: number): void {
     for (let i = 0; i < count; i++) {
       this.insertNotification(this.factories.notification(i, userId));
@@ -671,6 +792,7 @@ export class MockStore {
     this.workspaceVersionById.clear();
     this.workspaceDescriptionById.clear();
     this.archivedWorkspaceIds.clear();
+    this.spaces.clear();
 
     this.membershipIdsByWorkspaceId.clear();
     this.viewIdsByWorkspaceId.clear();
@@ -911,7 +1033,7 @@ export class MockStore {
 
   createBoard(
     workspaceId: string,
-    input: { title?: string; description?: string },
+    input: { title?: string; description?: string; spaceId?: string | null },
   ): MockBoardRecord {
     if (!this.workspacesById.has(workspaceId)) {
       throw new MockRelationalInvariantError(
@@ -928,8 +1050,8 @@ export class MockStore {
         description: input.description,
       },
     );
-    this.insertBoard(board);
-    return board;
+    this.insertBoard({ ...board, spaceId: input.spaceId ?? null, version: 1 });
+    return this.boardsById.get(board.id)!;
   }
 
   getBoardView(boardId: string): MockBoardViewRecord | undefined {
@@ -1595,7 +1717,12 @@ export class MockStore {
   // ── Pages ──
   createPage(
     workspaceId: string,
-    input: { title?: string; icon?: string; parentId?: string },
+    input: {
+      title?: string;
+      icon?: string;
+      parentId?: string;
+      spaceId?: string | null;
+    },
   ): MockPageRecord {
     if (!this.workspacesById.has(workspaceId)) {
       throw new MockRelationalInvariantError(
@@ -1613,8 +1740,12 @@ export class MockStore {
         parentId: input.parentId,
       },
     );
-    this.insertPage(page);
-    return page;
+    // A nested page follows its parent's Space (OT-4).
+    const spaceId = input.parentId
+      ? (this.pagesById.get(input.parentId)?.spaceId ?? null)
+      : (input.spaceId ?? null);
+    this.insertPage({ ...page, spaceId });
+    return this.pagesById.get(page.id)!;
   }
 
   updatePage(
@@ -1879,7 +2010,10 @@ export class MockStore {
     expectedVersion: unknown,
     apply: () => void,
   ): MockVersionedWrite {
-    if (!this.getWorkspace(workspaceId) || this.isWorkspaceArchived(workspaceId))
+    if (
+      !this.getWorkspace(workspaceId) ||
+      this.isWorkspaceArchived(workspaceId)
+    )
       return "not-found";
     if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
       return "stale";
@@ -2407,6 +2541,7 @@ export class MockStore {
       blocks: Array.from(this.blocksById.values()),
       pageComments: Array.from(this.pageCommentsById.values()),
       pageHistory: Array.from(this.pageHistoryById.values()),
+      ...this.spaces.snapshot(),
     };
   }
 }

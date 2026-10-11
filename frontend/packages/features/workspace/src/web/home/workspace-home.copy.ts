@@ -105,6 +105,7 @@ export const en = {
     submitting: "Creating…",
     required: "Enter a name to continue.",
     error: "It couldn't be created. Check your connection, then try again.",
+    inSpace: "It will be placed in {{space}}.",
   },
   toasts: {
     completed: "{{name}} is complete.",
@@ -216,6 +217,7 @@ export const vi: WorkspaceHomeCopy = {
     submitting: "Đang tạo…",
     required: "Nhập tên để tiếp tục.",
     error: "Không tạo được. Kiểm tra kết nối rồi thử lại.",
+    inSpace: "Mục này sẽ được đặt trong {{space}}.",
   },
   toasts: {
     completed: "Đã hoàn thành {{name}}.",

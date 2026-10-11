@@ -12,6 +12,7 @@ import {
   FieldLabel,
   Input,
 } from "@notrelix/ui-web";
+import { formatCopy } from "../shell/shell-models";
 import type { WorkspaceHomeCopy } from "./workspace-home.copy";
 
 export type CreatableResource = "board" | "doc";
@@ -23,6 +24,8 @@ export interface CreateResourceDialogProps {
   readonly pending: boolean;
   /** A failure message to show; the typed name is kept. */
   readonly error: string | null;
+  /** The Space the resource is created in (OT-5); `null` = workspace level. */
+  readonly spaceName?: string | null;
   readonly onOpenChange: (open: boolean) => void;
   readonly onSubmit: (kind: CreatableResource, name: string) => void;
 }
@@ -33,6 +36,7 @@ export function CreateResourceDialog({
   kind,
   pending,
   error,
+  spaceName = null,
   onOpenChange,
   onSubmit,
 }: CreateResourceDialogProps) {
@@ -72,6 +76,9 @@ export function CreateResourceDialog({
               {isBoard
                 ? copy.create.boardDescription
                 : copy.create.docDescription}
+              {spaceName
+                ? ` ${formatCopy(copy.create.inSpace, { space: spaceName })}`
+                : null}
             </DialogDescription>
           </DialogHeader>
           <Field data-invalid={message ? true : undefined}>

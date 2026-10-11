@@ -37,6 +37,7 @@ export function mapPage(dto: PageDtoApi): Page {
     },
     linkedTaskIds: [],
     linkedBoardIds: [],
+    spaceId: dto.spaceId ?? null,
   };
 }
 

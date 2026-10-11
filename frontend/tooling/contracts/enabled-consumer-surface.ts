@@ -585,6 +585,156 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   },
   {
     context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.GetSpaceTree",
+    operationId: "Workspaces.Spaces.GetSpaceTree",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.CreateSpace",
+    operationId: "Workspaces.Spaces.CreateSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.RenameSpace",
+    operationId: "Workspaces.Spaces.RenameSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.UpdateSpaceDescription",
+    operationId: "Workspaces.Spaces.UpdateSpaceDescription",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.ChangeSpaceVisibility",
+    operationId: "Workspaces.Spaces.ChangeSpaceVisibility",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.ChangeSpaceType",
+    operationId: "Workspaces.Spaces.ChangeSpaceType",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.ArchiveSpace",
+    operationId: "Workspaces.Spaces.ArchiveSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.UnarchiveSpace",
+    operationId: "Workspaces.Spaces.UnarchiveSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.MoveSpace",
+    operationId: "Workspaces.Spaces.MoveSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.GetSpaceMembers",
+    operationId: "Workspaces.Spaces.GetSpaceMembers",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.AddSpaceMember",
+    operationId: "Workspaces.Spaces.AddSpaceMember",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.ChangeSpaceMemberRole",
+    operationId: "Workspaces.Spaces.ChangeSpaceMemberRole",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.RemoveSpaceMember",
+    operationId: "Workspaces.Spaces.RemoveSpaceMember",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Teams.GetWorkspaceTeams",
+    operationId: "Workspaces.Teams.GetWorkspaceTeams",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useMoveBoardToSpace",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-placement-bridge.ts",
+    capability: "WorkManagement.Boards.MoveToSpace",
+    operationId: "WorkManagement.Boards.MoveToSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
     capability: "/workspaces/${workspaceId}/views",
     consumerSymbol: "TODO",
     consumerFile:
