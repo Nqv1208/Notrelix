@@ -5,9 +5,38 @@ namespace Notrelix.Infrastructure.Data.Authz;
 /// performance evidence explains EXACTLY this text. Single source of truth —
 /// never fork the query for tests.
 /// </summary>
+/// <remarks>
+/// ADR-009 / GOV-025..GOV-028: <c>user_teams</c> are the active Teams of the
+/// principal (Team is an evaluated subject); <c>target_space</c> is the Space the
+/// resource is (a Space resource) or is placed in (a Board's <c>space_id</c>, a
+/// Page's Space supplied as <c>@page_space_id</c> from the Documents-published
+/// page fact); <c>space_path</c> is its ancestor-or-self path from the closure
+/// index. Columns 14..17 expose the Space facts; every role→level meaning stays
+/// in AccessPolicyEngine. ResourceVisibilityQuery encodes the same decision for
+/// collections and is pinned to the engine by the PostgreSQL parity suite.
+/// </remarks>
 public static class AccessFactsQuery
 {
     public const string Sql = """
+        WITH user_teams AS MATERIALIZED (
+          SELECT tm.team_id FROM workspace.team_members tm
+            JOIN workspace.teams t ON t.id = tm.team_id
+           WHERE tm.workspace_id = @workspace_id AND tm.user_id = @user_id AND tm.status = 'Active'
+             AND t.workspace_id = @workspace_id AND t.deleted_at IS NULL AND t.status = 'Active'),
+        target_space AS MATERIALIZED (
+          SELECT CASE
+            WHEN @resource_type = 'workspaces.space' THEN @resource_id
+            WHEN @resource_type = 'work-management.board' THEN (
+              SELECT b.space_id FROM work.boards b WHERE b.id = @resource_id
+                AND b.workspace_id = @workspace_id AND b.deleted_at IS NULL LIMIT 1)
+            WHEN @resource_type = 'documents.page' THEN @page_space_id
+          END AS id),
+        space_path AS MATERIALIZED (
+          SELECT p.ancestor_id, p.depth, s.visibility
+            FROM workspace.space_paths p
+            JOIN target_space ts ON p.descendant_id = ts.id
+            JOIN workspace.spaces s ON s.id = p.ancestor_id
+           WHERE p.workspace_id = @workspace_id)
         SELECT
           EXISTS (SELECT 1 FROM identity.users u WHERE u.id = @user_id AND u.deleted_at IS NULL),
           COALESCE((SELECT u.email_confirmed FROM identity.users u WHERE u.id = @user_id AND u.deleted_at IS NULL), false),
@@ -39,7 +68,8 @@ public static class AccessFactsQuery
             SELECT 1 FROM governance.resource_permissions rp
              WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
                AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
-               AND rp.subject_type = 'User' AND rp.subject_id = @user_id
+               AND ((rp.subject_type = 'User' AND rp.subject_id = @user_id)
+                    OR (rp.subject_type = 'Team' AND rp.subject_id IN (SELECT team_id FROM user_teams)))
                AND rp.deleted_at IS NULL),
           COALESCE((
             SELECT jsonb_agg(jsonb_build_object('priority', pr.priority, 'effect', pr.effect) ORDER BY pr.priority)
@@ -50,7 +80,8 @@ public static class AccessFactsQuery
                AND (pr.starts_at IS NULL OR pr.starts_at <= @now)
                AND (pr.expires_at IS NULL OR pr.expires_at > @now)
                AND pr.action = @action
-               AND pr.subject_type = 'User' AND pr.subject_id = @user_id
+               AND ((pr.subject_type = 'User' AND pr.subject_id = @user_id)
+                    OR (pr.subject_type = 'Team' AND pr.subject_id IN (SELECT team_id FROM user_teams)))
                AND (pr.scope_type = 'Workspace'
                     OR ((pr.resource_type IS NULL OR pr.resource_type = @resource_type)
                         AND (pr.resource_id IS NULL OR pr.resource_id = @resource_id)))
@@ -75,7 +106,8 @@ public static class AccessFactsQuery
             FROM governance.resource_permissions rp
              WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
                AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
-               AND rp.subject_type = 'User' AND rp.subject_id = @user_id
+               AND ((rp.subject_type = 'User' AND rp.subject_id = @user_id)
+                    OR (rp.subject_type = 'Team' AND rp.subject_id IN (SELECT team_id FROM user_teams)))
                AND rp.deleted_at IS NULL
              ORDER BY CASE rp.permission_level
                WHEN 'Owner' THEN 5 WHEN 'Manager' THEN 4 WHEN 'Editor' THEN 3
@@ -103,6 +135,20 @@ public static class AccessFactsQuery
                  WHEN 'Commenter' THEN 2 WHEN 'Viewer' THEN 1 ELSE 0 END DESC
                LIMIT 1)
             ELSE NULL
-          END
+          END,
+          (SELECT id FROM target_space),
+          EXISTS (
+            SELECT 1 FROM workspace.spaces s JOIN target_space ts ON s.id = ts.id
+             WHERE s.workspace_id = @workspace_id AND s.deleted_at IS NULL),
+          (SELECT CASE max(CASE m.role WHEN 'Admin' THEN 3 WHEN 'Member' THEN 2 WHEN 'Viewer' THEN 1 ELSE 0 END)
+                    WHEN 3 THEN 'Admin' WHEN 2 THEN 'Member' WHEN 1 THEN 'Viewer' END
+             FROM space_path a
+             JOIN workspace.space_members m ON m.space_id = a.ancestor_id AND m.workspace_id = @workspace_id
+            WHERE ((m.subject_type = 'User' AND m.subject_id = @user_id)
+                   OR (m.subject_type = 'Team' AND m.subject_id IN (SELECT team_id FROM user_teams)))
+              AND (m.role = 'Admin'
+                   OR NOT EXISTS (SELECT 1 FROM space_path pp WHERE pp.depth < a.depth AND pp.visibility = 'Private'))),
+          EXISTS (SELECT 1 FROM space_path)
+            AND NOT EXISTS (SELECT 1 FROM space_path WHERE visibility = 'Private')
     """;
 }

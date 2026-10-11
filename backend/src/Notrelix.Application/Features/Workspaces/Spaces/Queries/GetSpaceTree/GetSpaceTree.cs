@@ -11,6 +11,7 @@ namespace Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree;
 /// (GOV-029). Siblings are ordered by <paramref name="Position"/> (ordinal).
 /// </summary>
 /// <param name="Version">The Space aggregate version, sent back as <c>expectedVersion</c> by move and membership writes.</param>
+/// <param name="AccessLevel">The caller's effective level on the Space (<c>Viewer</c>, <c>Editor</c> or <c>Manager</c>; GOV-027). <c>Manager</c> may manage the Space and its members; <c>Editor</c> may create Boards and Docs in it. Derived capability state — every operation is still authorized by the server.</param>
 public record SpaceTreeNodeDto(
     Guid Id,
     Guid? ParentSpaceId,
@@ -21,7 +22,8 @@ public record SpaceTreeNodeDto(
     bool IsArchived,
     string Position,
     long Version,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string AccessLevel);
 
 /// <summary>
 /// The Workspace's Space org tree as a flat, parent-linked list, restricted to
@@ -49,11 +51,12 @@ public class GetSpaceTreeQueryHandler : IRequestHandler<GetSpaceTreeQuery, Resul
 
     public async Task<Result<List<SpaceTreeNodeDto>>> Handle(GetSpaceTreeQuery request, CancellationToken ct)
     {
-        var visible = await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct);
+        var visible = await _visibility.VisibleSpacesAsync(request.WorkspaceId, _requestContext.UserId, ct);
         if (visible.Count == 0)
             return Result<List<SpaceTreeNodeDto>>.Success([]);
 
-        var rows = await _spaces.ListTreeAsync(request.WorkspaceId, visible, ct);
+        var levels = visible.ToDictionary(v => v.SpaceId, v => v.Level);
+        var rows = await _spaces.ListTreeAsync(request.WorkspaceId, levels.Keys.ToList(), ct);
         var visibleIds = rows.Select(r => r.Id).ToHashSet();
 
         var nodes = rows
@@ -70,7 +73,8 @@ public class GetSpaceTreeQueryHandler : IRequestHandler<GetSpaceTreeQuery, Resul
                 r.Status == SpaceStatus.Archived,
                 r.Position.Value,
                 r.Version,
-                r.CreatedAt))
+                r.CreatedAt,
+                levels[r.Id]))
             .ToList();
 
         return Result<List<SpaceTreeNodeDto>>.Success(nodes);

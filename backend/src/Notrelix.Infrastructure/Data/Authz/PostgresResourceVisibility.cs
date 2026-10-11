@@ -30,8 +30,25 @@ public sealed class PostgresResourceVisibility : IResourceVisibility
     public Task<IReadOnlyList<Guid>> VisiblePageIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
         QueryAsync(ResourceVisibilityQuery.VisiblePagesSql, workspaceId, userId, PageKind, ResourceVisibilityQuery.PageReadAction, cancellationToken);
 
-    public Task<IReadOnlyList<Guid>> VisibleSpaceIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
-        QueryAsync(ResourceVisibilityQuery.VisibleSpacesSql, workspaceId, userId, resourceType: null, action: null, cancellationToken);
+    public async Task<IReadOnlyList<Guid>> VisibleSpaceIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
+        (await VisibleSpacesAsync(workspaceId, userId, cancellationToken)).Select(s => s.SpaceId).ToList();
+
+    public async Task<IReadOnlyList<SpaceAccessEntry>> VisibleSpacesAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+    {
+        var rows = new List<SpaceAccessEntry>();
+        await ReadAsync(
+            ResourceVisibilityQuery.VisibleSpacesSql, workspaceId, userId, resourceType: null, action: null,
+            reader => rows.Add(new SpaceAccessEntry(reader.GetGuid(0), LevelName(reader.GetInt32(1)))),
+            cancellationToken);
+        return rows;
+    }
+
+    private static string LevelName(int level) => level switch
+    {
+        >= 4 => "Manager",
+        3 => "Editor",
+        _ => "Viewer",
+    };
 
     private async Task<IReadOnlyList<Guid>> QueryAsync(
         string sql,
@@ -41,9 +58,23 @@ public sealed class PostgresResourceVisibility : IResourceVisibility
         string? action,
         CancellationToken cancellationToken)
     {
+        var ids = new List<Guid>();
+        await ReadAsync(sql, workspaceId, userId, resourceType, action, reader => ids.Add(reader.GetGuid(0)), cancellationToken);
+        return ids;
+    }
+
+    private async Task ReadAsync(
+        string sql,
+        Guid workspaceId,
+        Guid userId,
+        string? resourceType,
+        string? action,
+        Action<System.Data.Common.DbDataReader> readRow,
+        CancellationToken cancellationToken)
+    {
         if (workspaceId == Guid.Empty || userId == Guid.Empty)
         {
-            return [];
+            return;
         }
 
         var connection = _dbContext.Database.GetDbConnection();
@@ -62,14 +93,11 @@ public sealed class PostgresResourceVisibility : IResourceVisibility
         Add(command, "action", action, NpgsqlDbType.Text);
         Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
 
-        var ids = new List<Guid>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            ids.Add(reader.GetGuid(0));
+            readRow(reader);
         }
-
-        return ids;
     }
 
     private static void Add(System.Data.Common.DbCommand command, string name, object? value, NpgsqlDbType type) =>

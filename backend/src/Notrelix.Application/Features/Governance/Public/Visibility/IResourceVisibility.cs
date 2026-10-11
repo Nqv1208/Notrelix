@@ -21,4 +21,14 @@ public interface IResourceVisibility
 
     /// <summary>Non-deleted Spaces (active and archived) the principal may see.</summary>
     Task<IReadOnlyList<Guid>> VisibleSpaceIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The visible Spaces with the principal's effective level on each
+    /// (GOV-027): <c>Viewer</c>, <c>Editor</c> or <c>Manager</c> (Manager = may
+    /// manage the Space). Derived capability state for clients; the server
+    /// still authorizes every operation.
+    /// </summary>
+    Task<IReadOnlyList<SpaceAccessEntry>> VisibleSpacesAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 }
+
+public sealed record SpaceAccessEntry(Guid SpaceId, string Level);

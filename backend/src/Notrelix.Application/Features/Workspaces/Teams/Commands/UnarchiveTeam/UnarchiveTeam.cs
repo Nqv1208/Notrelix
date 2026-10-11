@@ -8,7 +8,8 @@ public record UnarchiveTeamCommand(
     Guid TeamId
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspace;
+    // GOV-028: Team composition is managed by workspace Owners/Admins.
+    public PermissionAction Action => PermissionAction.ManageTeams;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 

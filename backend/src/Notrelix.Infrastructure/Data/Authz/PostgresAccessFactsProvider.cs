@@ -52,6 +52,16 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
         }
 
         var feature = request as IRequireFeature;
+
+        // Page lifecycle/visibility/placement are Documents-owned facts, read
+        // through the producer's published contract (never Documents persistence
+        // in the shared SQL). The page's Space feeds the Space facts below.
+        PageAuthorizationFact? page = null;
+        if (resource?.Kind.Value == "documents.page")
+        {
+            page = await _pageAuthorizationFacts.ResolveAsync(resource.ResourceId, cancellationToken);
+        }
+
         var connection = _dbContext.Database.GetDbConnection();
         if (connection.State != ConnectionState.Open)
         {
@@ -77,6 +87,9 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             Add(command, "feature_code", feature?.FeatureCode, NpgsqlDbType.Text);
             Add(command, "feature_amount", feature?.Amount ?? 0, NpgsqlDbType.Integer);
             Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
+            Add(command, "page_space_id",
+                page is not null && page.WorkspaceId == context.WorkspaceId ? page.SpaceId : null,
+                NpgsqlDbType.Uuid);
 
             await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
             if (!await reader.ReadAsync(cancellationToken))
@@ -100,7 +113,13 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 true,
                 reader.GetBoolean(11),
                 NullableInt(reader, 12),
-                NullableInt(reader, 13));
+                NullableInt(reader, 13))
+            {
+                ResourceSpaceId = reader.IsDBNull(14) ? null : reader.GetGuid(14),
+                SpaceExists = reader.GetBoolean(15),
+                SpaceRole = NullableString(reader, 16),
+                SpaceIsOpen = reader.GetBoolean(17),
+            };
         }
 
         // The subscription requirement is a Billing-owned commercial decision,
@@ -121,24 +140,19 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             facts = facts with { SubscriptionRequirementSatisfied = satisfied };
         }
 
-        // Page lifecycle/visibility are Documents-owned facts, composed here
-        // through the producer's published authorization contract instead of
-        // reading Documents persistence in the shared authz SQL.
         if (resource?.Kind.Value == "documents.page")
         {
-            facts = await ComposePageFactsAsync(facts, resource, context.WorkspaceId, cancellationToken);
+            facts = ComposePageFacts(facts, page, context.WorkspaceId);
         }
 
         return facts;
     }
 
-    private async Task<AccessFacts> ComposePageFactsAsync(
+    private static AccessFacts ComposePageFacts(
         AccessFacts facts,
-        ResourceRef resource,
-        Guid? workspaceId,
-        CancellationToken cancellationToken)
+        PageAuthorizationFact? page,
+        Guid? workspaceId)
     {
-        var page = await _pageAuthorizationFacts.ResolveAsync(resource.ResourceId, cancellationToken);
         var pageInScope = page is not null
             && workspaceId.HasValue
             && page.WorkspaceId == workspaceId.Value;

@@ -196,6 +196,21 @@ internal sealed class OrgTreeTestHost
         return result;
     }
 
+    /// <summary>
+    /// Sends an <c>IIdempotentRequest</c> with a fresh execution key bound in the
+    /// scope, as the HTTP transport does (a failed Result fails the test).
+    /// </summary>
+    public static async Task<object?> SendIdempotentAsync(ServiceProvider provider, object request, string? key = null)
+    {
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
+            .Set(key ?? $"org-tree-{Guid.NewGuid():N}", IdempotencyExecutionSource.Internal);
+        var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(request);
+        if (result is Result plain)
+            plain.Succeeded.Should().BeTrue(string.Join("; ", plain.Errors));
+        return result;
+    }
+
     public static async Task<T> QueryAsync<T>(ServiceProvider provider, IRequest<Result<T>> request)
     {
         var result = (Result<T>)(await SendAsync(provider, request))!;

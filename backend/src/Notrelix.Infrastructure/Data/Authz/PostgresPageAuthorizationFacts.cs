@@ -22,7 +22,7 @@ public sealed class PostgresPageAuthorizationFacts : IPageAuthorizationFacts
         var row = await _context.Pages
             .IgnoreQueryFilters()
             .Where(p => p.Id == pageId)
-            .Select(p => new { p.Id, p.WorkspaceId, p.DeletedAt, p.Status, p.Visibility })
+            .Select(p => new { p.Id, p.WorkspaceId, p.DeletedAt, p.Status, p.Visibility, p.SpaceId })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (row is null)
@@ -35,6 +35,7 @@ public sealed class PostgresPageAuthorizationFacts : IPageAuthorizationFacts
             row.WorkspaceId,
             Exists: true,
             IsActive: row.DeletedAt is null && row.Status != Domain.Documents.Pages.PageStatus.Archived,
-            Visibility: row.Visibility.ToString());
+            Visibility: row.Visibility.ToString(),
+            SpaceId: row.SpaceId);
     }
 }

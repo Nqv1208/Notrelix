@@ -7,6 +7,9 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     // Technical rank ordering for Governance permission levels: None=0,
     // Viewer=1, Commenter=2, Editor=3, Manager=4, Owner=5. The pipeline seam
     // compares ranks only; the vocabulary itself stays Governance-owned.
+    private const int ViewerRank = 1;
+    private const int CommenterRank = 2;
+    private const int EditorRank = 3;
     private const int ManagerRank = 4;
     private const int OwnerRank = 5;
 
@@ -151,6 +154,25 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
+        // GOV-028: Spaces are managed by workspace Owners/Admins anywhere, and by
+        // an effective Space Admin within the Space's subtree. Creating a Board or
+        // Page in a Space needs Editor level on that Space (GOV-027).
+        if (permission.Resource?.Kind.Value == "workspaces.space")
+        {
+            return EvaluateSpace(permission, facts, role);
+        }
+
+        // GOV-028: root Space creation and Team composition are workspace Owner/Admin
+        // capabilities by default (Owners passed the fast path above). Explicit
+        // permission rules were evaluated first.
+        if (permission.Resource?.Kind.Value == "workspaces.workspace"
+            && permission.Action is PermissionAction.ManageSpaces or PermissionAction.ManageTeams)
+        {
+            return string.Equals(role, "Admin", StringComparison.Ordinal)
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+        }
+
         if (permission.Action == PermissionAction.DeleteWorkspace)
         {
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
@@ -163,13 +185,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            var restricted = !string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal);
-            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
-            if ((restricted || guest)
-                && facts.ResourceMemberRole is null
-                && !facts.HasExplicitResourcePermission)
+            var access = EvaluatePlacedResourceAccess(permission, facts, role);
+            if (access.Denial is { } denied)
             {
-                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+                return denied;
             }
 
             if (permission.Action == PermissionAction.UpdateItem
@@ -178,7 +197,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
-            return ManageAwareAllow(permission, request, facts, role);
+            return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank);
         }
 
         if (permission.Resource?.Kind.Value == "documents.page")
@@ -188,13 +207,10 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
             }
 
-            var restricted = !string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal);
-            var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
-            if ((restricted || guest)
-                && facts.ResourceMemberRole is null
-                && !facts.HasExplicitResourcePermission)
+            var access = EvaluatePlacedResourceAccess(permission, facts, role);
+            if (access.Denial is { } denied)
             {
-                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+                return denied;
             }
 
             // M2G extension (reviewer-approved): page lifecycle mutation
@@ -206,12 +222,12 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             // Governance vocabulary: neither ManageBoard nor
             // ManagePagePermission (ACL management).
             if (permission.Action == PermissionAction.ArchivePage
-                && (facts.ActiveResourcePermissionRank ?? 0) < ManagerRank)
+                && access.EffectiveRank < ManagerRank)
             {
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
             }
 
-            return ManageAwareAllow(permission, request, facts, role);
+            return ManageAwareAllow(permission, request, facts, role, access.EffectiveRank);
         }
 
         // M8 intended policy: connecting/revoking external provider
@@ -284,25 +300,29 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         IRequirePermission permission,
         object request,
         AccessFacts facts,
-        string? role)
+        string? role,
+        int effectiveRank)
     {
         var isManagementAction = permission.Action
             is PermissionAction.ManageBoardPermission or PermissionAction.ManagePagePermission;
         if (isManagementAction
             && !string.Equals(role, "Owner", StringComparison.Ordinal)
-            && (facts.ActiveResourcePermissionRank ?? 0) < ManagerRank)
+            && effectiveRank < ManagerRank)
         {
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
-        return GrantAwareAllow(request, facts, role);
+        return GrantAwareAllow(request, facts, role, effectiveRank);
     }
 
-    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role)
+    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role) =>
+        GrantAwareAllow(request, facts, role, facts.ActiveResourcePermissionRank ?? 0);
+
+    private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role, int effectiveRank)
     {
         if (request is IRequireGrantPermission grant)
         {
-            var authority = EffectiveGrantAuthority(facts, role);
+            var authority = EffectiveGrantAuthority(effectiveRank, role);
             var ceiling = grant.RequestedPermissionRank;
             if (facts.TargetPermissionRank is { } existingRank && existingRank > ceiling)
             {
@@ -321,7 +341,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Allow();
             }
 
-            var authority = EffectiveGrantAuthority(facts, role);
+            var authority = EffectiveGrantAuthority(effectiveRank, role);
             return facts.TargetPermissionRank > 0 && authority >= facts.TargetPermissionRank
                 ? AccessDecision.Allow()
                 : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to revoke this permission level.");
@@ -330,8 +350,127 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         return AccessDecision.Allow();
     }
 
-    private static int EffectiveGrantAuthority(AccessFacts facts, string? role) =>
+    private static int EffectiveGrantAuthority(int effectiveRank, string? role) =>
         string.Equals(role, "Owner", StringComparison.Ordinal)
             ? OwnerRank
-            : facts.ActiveResourcePermissionRank ?? 0;
+            : effectiveRank;
+
+    private readonly record struct PlacedResourceAccess(AccessDecision? Denial, int EffectiveRank);
+
+    /// <summary>
+    /// GOV-025 steps 4–6 for a Board or Page (existence and Owner were decided
+    /// earlier): a Private resource needs board membership or an explicit grant
+    /// and Space roles never reach it; a Workspace-visible resource placed in a
+    /// Space inherits the Space level, which gates the action only when it is the
+    /// sole source of access (GOV-027); an unplaced Workspace-visible resource
+    /// keeps the Workspace default (Guests need explicit access). The effective
+    /// rank used for ACL management and grant ceilings is the higher of the
+    /// explicit resource-permission rank and the Space level.
+    /// </summary>
+    private static PlacedResourceAccess EvaluatePlacedResourceAccess(
+        IRequirePermission permission,
+        AccessFacts facts,
+        string? role)
+    {
+        var restricted = !string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal);
+        var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
+        var hasDirect = facts.ResourceMemberRole is not null || facts.HasExplicitResourcePermission;
+        var effectiveRank = facts.ActiveResourcePermissionRank ?? 0;
+
+        if (restricted)
+        {
+            return hasDirect
+                ? new PlacedResourceAccess(null, effectiveRank)
+                : new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0);
+        }
+
+        if (facts.ResourceSpaceId is not null)
+        {
+            var spaceRank = SpaceRank(facts, role);
+            if (!hasDirect)
+            {
+                if (spaceRank == 0)
+                {
+                    return new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0);
+                }
+
+                if (spaceRank < RequiredRank(permission.Action))
+                {
+                    return new PlacedResourceAccess(
+                        AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action."),
+                        spaceRank);
+                }
+            }
+
+            return new PlacedResourceAccess(null, Math.Max(effectiveRank, spaceRank));
+        }
+
+        return guest && !hasDirect
+            ? new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0)
+            : new PlacedResourceAccess(null, effectiveRank);
+    }
+
+    /// <summary>
+    /// GOV-028 for a Space resource: invisible (or missing) → NotFound; otherwise
+    /// the effective Space level must meet the action threshold (ManageSpaces →
+    /// Manager, i.e. Space Admin; creating a Board/Page there → Editor).
+    /// </summary>
+    private static AccessDecision EvaluateSpace(IRequirePermission permission, AccessFacts facts, string? role)
+    {
+        if (!facts.SpaceExists)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+        }
+
+        var rank = SpaceRank(facts, role);
+        if (rank == 0)
+        {
+            return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+        }
+
+        return rank >= RequiredRank(permission.Action)
+            ? AccessDecision.Allow()
+            : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+    }
+
+    /// <summary>
+    /// Effective level on the target Space (GOV-025/GOV-027): workspace Owner/Admin
+    /// → Manager on every Space; Space Admin → Manager, Member → Editor, Viewer →
+    /// Viewer (from User or active Team entries, inheritance as resolved by the
+    /// facts); an open Space (no Private Space from the root) gives workspace
+    /// Members Editor. Guests get nothing implicitly. 0 = no access.
+    /// </summary>
+    private static int SpaceRank(AccessFacts facts, string? role)
+    {
+        if (!facts.SpaceExists)
+        {
+            return 0;
+        }
+
+        if (string.Equals(role, "Owner", StringComparison.Ordinal) || string.Equals(role, "Admin", StringComparison.Ordinal))
+        {
+            return ManagerRank;
+        }
+
+        var fromSpaceRole = facts.SpaceRole switch
+        {
+            "Admin" => ManagerRank,
+            "Member" => EditorRank,
+            "Viewer" => ViewerRank,
+            _ => 0,
+        };
+        var fromOpenSpace = facts.SpaceIsOpen && string.Equals(role, "Member", StringComparison.Ordinal) ? EditorRank : 0;
+        return Math.Max(fromSpaceRole, fromOpenSpace);
+    }
+
+    /// <summary>GOV-027 action thresholds for access that comes from a Space level.</summary>
+    private static int RequiredRank(PermissionAction action) => action switch
+    {
+        PermissionAction.ViewBoard or PermissionAction.ViewPage
+            or PermissionAction.ViewWorkspace or PermissionAction.ViewMembers => ViewerRank,
+        PermissionAction.CreateComment => CommenterRank,
+        PermissionAction.ManageBoardPermission or PermissionAction.ManagePagePermission
+            or PermissionAction.ArchivePage or PermissionAction.ManageSpaces => ManagerRank,
+        _ => EditorRank,
+    };
 }

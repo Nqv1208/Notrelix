@@ -517,8 +517,10 @@ When the principal also holds board membership or an explicit resource permissio
 ```text
 ManageSpaces on the Workspace (create a root Space)  → workspace Owner, Admin
 ManageSpaces on a Space (rename, describe, change type/visibility,
-  archive/unarchive/delete/restore, manage members,
+  archive/unarchive/delete, manage members,
   create a child Space)                               → workspace Owner, Admin, or effective Space Admin
+restore a deleted Space                               → workspace Owner, Admin (a deleted Space has no
+                                                        evaluable Space access)
 move a Space                                          → ManageSpaces on the Space and on the target parent
                                                         (or on the Workspace for the root)
 ManageTeams (create/rename/archive/delete Teams, manage Team members) → workspace Owner, Admin
@@ -527,7 +529,9 @@ move a Board/Page to another Space or out of a Space                  → Manage
                                                                         and the create right on the target
 ```
 
-A principal who cannot see a Space receives NotFound for it, not Forbidden. Workspace Admin capability over Spaces and Teams does not extend to Owner-only actions (GOV-013) nor to Private Boards/Pages (GOV-025 step 4).
+A principal who cannot see a Space receives NotFound for it, not Forbidden.
+
+Scope of Space inheritance today: the Space level is evaluated where the decision is made on the Board or Page itself (and on the Space). Board-child resources (items, groups, fields, views, …) keep their current resource-kind policy, which does not inherit Board audience either; extending inheritance to them is a separate Governance decision. Workspace Admin capability over Spaces and Teams does not extend to Owner-only actions (GOV-013) nor to Private Boards/Pages (GOV-025 step 4).
 
 # 23.5. GOV-029 — Collections apply the single-read decision in the datastore
 

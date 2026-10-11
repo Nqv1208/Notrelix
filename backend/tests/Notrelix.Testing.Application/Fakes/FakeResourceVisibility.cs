@@ -28,4 +28,12 @@ public sealed class FakeResourceVisibility : IResourceVisibility
 
     public Task<IReadOnlyList<Guid>> VisibleSpaceIdsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Guid>>(Spaces.ToArray());
+
+    /// <summary>Level per visible Space; Spaces without an explicit level are reported as Viewer.</summary>
+    public Dictionary<Guid, string> SpaceLevels { get; } = [];
+
+    public Task<IReadOnlyList<SpaceAccessEntry>> VisibleSpacesAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SpaceAccessEntry>>(Spaces
+            .Select(id => new SpaceAccessEntry(id, SpaceLevels.GetValueOrDefault(id, "Viewer")))
+            .ToArray());
 }

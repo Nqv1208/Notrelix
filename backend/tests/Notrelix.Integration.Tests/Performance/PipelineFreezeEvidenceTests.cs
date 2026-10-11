@@ -84,6 +84,7 @@ public sealed class PipelineFreezeEvidenceTests : IAsyncLifetime
         cmd.Parameters.Add(new NpgsqlParameter("feature_code", NpgsqlTypes.NpgsqlDbType.Text) { Value = DBNull.Value });
         cmd.Parameters.AddWithValue("feature_amount", 0);
         cmd.Parameters.AddWithValue("now", DateTimeOffset.UtcNow);
+        cmd.Parameters.Add(new NpgsqlParameter("page_space_id", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = DBNull.Value });
 
         string jsonText;
         try

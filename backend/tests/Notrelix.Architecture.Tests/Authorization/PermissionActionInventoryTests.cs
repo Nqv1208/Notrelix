@@ -21,7 +21,6 @@ public class PermissionActionInventoryTests
     [
         "ArchiveWorkspace",
         "RestoreWorkspace",
-        "ManageTeams",
         "DeletePage",
     ];
 

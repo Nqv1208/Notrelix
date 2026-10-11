@@ -9,7 +9,9 @@ public record RestoreSpaceCommand(
     Guid SpaceId
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ManageWorkspace;
+    // GOV-028: a deleted Space has no evaluable Space access, so restoring is a
+    // workspace-level ManageSpaces decision (workspace Owner/Admin).
+    public PermissionAction Action => PermissionAction.ManageSpaces;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
