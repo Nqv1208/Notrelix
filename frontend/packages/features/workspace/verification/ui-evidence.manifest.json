@@ -2305,6 +2305,434 @@
           "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
         }
       ]
+    },
+    {
+      "surfaceId": "workspace.teams",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/teams/workspace-teams-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-teams--list-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--list-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--list-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--list-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--list-read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--list-archived",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--list-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--list-high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "Success",
+          "Empty",
+          "EdgeData",
+          "HighDensity",
+          "ReadOnly"
+        ],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "PermissionLimited",
+            "reason": "Teams are managed by workspace admins and owners only; every other viewer gets the whole list read-only (ReadOnly), never a partial set of actions.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
+        },
+        {
+          "id": "create",
+          "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.create-team",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "form",
+      "pureEntry": "src/web/teams/create-team-dialog.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-teams--create-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--create-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--create-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--create-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Success",
+            "reason": "A successful create closes the dialog and navigates to the new Team; the confirmation toast is owned by the host.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          },
+          {
+            "state": "ReadOnly",
+            "reason": "Viewers who cannot manage Teams are never offered the dialog (GOV-026).",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "validate",
+          "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
+        },
+        {
+          "id": "submit",
+          "testFile": "src/web/teams/__tests__/workspace-teams.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "workspace.team",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "data",
+      "pureEntry": "src/web/teams/workspace-team-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-teams--team-default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--team-loading",
+          "state": "Loading",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--team-error",
+          "state": "Error",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--team-empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--team-read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--team-archived",
+          "state": "PermissionLimited",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--team-edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "workspace-teams--team-high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": [
+          "Default",
+          "Loading",
+          "Error",
+          "Empty",
+          "EdgeData",
+          "HighDensity",
+          "ReadOnly",
+          "PermissionLimited"
+        ],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "render",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "rename",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "role",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "last-lead",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "remove",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "archive",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "archived-blocked",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        },
+        {
+          "id": "high-density",
+          "testFile": "src/web/teams/__tests__/workspace-team.interaction.component.test.tsx"
+        }
+      ]
     }
   ]
 }

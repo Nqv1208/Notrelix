@@ -208,3 +208,26 @@ export {
   type TeamMemberWrite,
   type TeamWrite,
 } from "./hooks/mutations/use-team-mutations";
+export { workspaceTeamsCatalog } from "./teams/workspace-teams.catalog";
+export {
+  workspaceTeamsCopy,
+  type WorkspaceTeamsCopy,
+} from "./teams/workspace-teams.copy";
+export { useWorkspaceTeamsCopy } from "./teams/use-workspace-teams-copy";
+export {
+  CreateTeamDialog,
+  TEAM_DESCRIPTION_MAX,
+  TEAM_NAME_MAX,
+  type CreateTeamDialogProps,
+  type CreateTeamValues,
+} from "./teams/create-team-dialog";
+export {
+  WorkspaceTeamsSurface,
+  type TeamsFilter,
+  type WorkspaceTeamsSurfaceProps,
+} from "./teams/workspace-teams-surface";
+export {
+  WorkspaceTeamSurface,
+  type AddTeamMemberInput,
+  type WorkspaceTeamSurfaceProps,
+} from "./teams/workspace-team-surface";
