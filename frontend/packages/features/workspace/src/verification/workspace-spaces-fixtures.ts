@@ -535,6 +535,23 @@ export function movePageScenario(): MoveScenario {
   };
 }
 
+/** A Board moved across the 525-Space tree; the picker is windowed. */
+export function moveHighDensityScenario(): MoveScenario {
+  const nodes = spaceTreeHighDensityFixture();
+  return {
+    ...moveSpaceScenario(),
+    subject: {
+      kind: "board",
+      id: "board-high-density",
+      name: "Quarterly plan",
+      spaceId: "sp-dept-00-team-00",
+    },
+    workspaceName: "Product",
+    nodes,
+    targets: targetsFor(nodes, { kind: "board" }),
+  };
+}
+
 export function moveErrorScenario(): MoveScenario {
   return {
     ...moveSpaceScenario(),

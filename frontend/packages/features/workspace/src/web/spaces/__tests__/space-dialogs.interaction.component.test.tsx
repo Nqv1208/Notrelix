@@ -1,11 +1,18 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
+import {
+  act,
+  fireEvent,
+  renderPureUi,
+  screen,
+  within,
+} from "@notrelix/testing";
 
 import {
   createSpaceChildScenario,
   createSpaceDefaultScenario,
   createSpaceErrorScenario,
   moveBoardScenario,
+  moveHighDensityScenario,
   movePageScenario,
   moveSpaceScenario,
   spacesCopyFixture,
@@ -220,6 +227,83 @@ describe("MoveToSpaceDialog", () => {
     ).toBeTruthy();
     expect(
       within(dialog).queryByRole("radio", { name: /^Security/ }),
+    ).toBeNull();
+  });
+
+  it("FUI[workspace.move-to-space:windowing] windows 525 Spaces, keeps the selection and reaches the last one", () => {
+    const props = renderMove(moveHighDensityScenario(), {
+      windowThreshold: 150,
+    });
+    const dialog = screen.getByRole("dialog");
+    const region = within(dialog).getByTestId("move-to-space-window");
+    expect(within(dialog).getAllByRole("radio").length).toBeLessThan(80);
+    expect(
+      Array.from(region.querySelectorAll("[aria-hidden='true']")).some(
+        (spacer) => spacer.getAttribute("role") === "none",
+      ),
+    ).toBe(true);
+
+    // End reaches the last Space even though it is not rendered yet.
+    const first = within(dialog).getByRole("radio", {
+      name: /^Department 01/,
+    });
+    act(() => first.focus());
+    fireEvent.keyDown(first, { key: "End" });
+    const last = within(dialog).getByRole("radio", { name: /^Team 25\.20/ });
+    expect(document.activeElement).toBe(last);
+    expect(last.getAttribute("aria-checked")).toBe("true");
+    expect(within(dialog).getAllByRole("radio").length).toBeLessThan(80);
+
+    // The selection survives scrolling away from it.
+    region.scrollTop = 0;
+    fireEvent.scroll(region);
+    expect(
+      within(dialog).getByRole("radio", { name: /^Team 25\.20/ }),
+    ).toBeTruthy();
+    expect(
+      (
+        within(dialog).getByRole("radio", {
+          name: /^Team 25\.20/,
+        }) as HTMLButtonElement
+      ).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(within(dialog).getAllByRole("radio").length).toBeLessThan(80);
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: copy.move.submit }),
+    );
+    expect(props.onSubmit).toHaveBeenCalledWith("sp-dept-24-team-19");
+  });
+
+  it("windowed picker: arrow keys at the window edge scroll the next row into view", () => {
+    renderMove(moveHighDensityScenario(), { windowThreshold: 150 });
+    const dialog = screen.getByRole("dialog");
+    const region = within(dialog).getByTestId("move-to-space-window");
+    const rendered = within(dialog).getAllByRole("radio");
+    const edge = rendered[rendered.length - 1]!;
+    act(() => edge.focus());
+    const before = within(dialog).queryAllByRole("radio").length;
+    fireEvent.keyDown(edge, { key: "ArrowDown" });
+    expect(region.scrollTop).toBeGreaterThan(0);
+    expect(document.activeElement).not.toBe(edge);
+    expect(document.activeElement?.getAttribute("role")).toBe("radio");
+    expect(within(dialog).getAllByRole("radio").length).toBeLessThan(
+      before + 10,
+    );
+  });
+
+  it("windowed picker: a search narrows to a plain, non-windowed list", () => {
+    renderMove(moveHighDensityScenario(), { windowThreshold: 150 });
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(copy.move.searchLabel), {
+      target: { value: "Team 07.0" },
+    });
+    expect(within(dialog).queryByTestId("move-to-space-window")).toBeNull();
+    expect(
+      within(dialog).getByRole("radio", { name: /^Team 07\.01/ }),
+    ).toBeTruthy();
+    expect(
+      within(dialog).queryByRole("radio", { name: /^Team 25\.20/ }),
     ).toBeNull();
   });
 });

@@ -13,6 +13,7 @@ import {
   createSpaceErrorScenario,
   createSpacePendingScenario,
   moveBoardScenario,
+  moveHighDensityScenario,
   movePageScenario,
   moveErrorScenario,
   movePendingScenario,
@@ -344,6 +345,13 @@ export const MoveLoading: Story = {
     <MoveToSpaceDialog {...movePendingScenario()} {...dialogCallbacks} />
   ),
   tags: ["fui-surface--workspace.move-to-space", "fui-state--Loading"],
+};
+
+export const MoveToSpaceHighDensity: Story = {
+  render: () => (
+    <MoveToSpaceDialog {...moveHighDensityScenario()} {...dialogCallbacks} />
+  ),
+  tags: ["fui-surface--workspace.move-to-space", "fui-state--HighDensity"],
 };
 
 export const MoveError: Story = {

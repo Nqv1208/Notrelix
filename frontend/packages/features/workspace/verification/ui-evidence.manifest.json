@@ -2262,10 +2262,20 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "workspace-spaces--move-to-space-high-density",
+          "state": "HighDensity",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error", "EdgeData"],
+        "required": ["Default", "Loading", "Error", "EdgeData", "HighDensity"],
         "delegated": [],
         "notApplicable": [
           {
@@ -2302,6 +2312,10 @@
         },
         {
           "id": "search",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "windowing",
           "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
         }
       ]
