@@ -9,7 +9,7 @@
  * Framework-neutral: no React, no DOM.
  */
 
-import { fromHex, tone, type Oklch } from "./oklch";
+import { fromHex, toCss, tone, type Oklch } from "./oklch";
 
 /** Appearances that have a complete, independently tuned palette. */
 export const THEME_APPEARANCES = ["light", "dark", "high-contrast"] as const;
@@ -29,6 +29,13 @@ export const logoHex = {
   ember: "#FE3154",
   red: "#FF1E56",
 } as const;
+
+/**
+ * Brand gradient: the logo's red → coral → blue. Fixed on purpose (it carries
+ * the Notrelix identity on sign-in, independent of the user's accent). Emitted
+ * as `--brand-gradient`; use `bg-[image:var(--brand-gradient)]`.
+ */
+export const brandGradient = `linear-gradient(135deg, ${toCss(fromHex(logoHex.red))} 0%, ${toCss(fromHex(logoHex.coral))} 35%, ${toCss(fromHex(logoHex.blue))} 100%)`;
 
 // ─── Neutrals ────────────────────────────────────────────────────────────
 

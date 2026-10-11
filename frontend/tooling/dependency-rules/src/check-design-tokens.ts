@@ -88,6 +88,14 @@ export const RAW_Z_INDEX_EXCLUDED = [
   "apps/web/src/shell/sidebar/sidebar.tsx",
 ] as const;
 
+/**
+ * Third-party brand marks whose colours are fixed by the vendor's branding
+ * rules; they are exempt from every rule here (the only raw hex allowed).
+ */
+export const VENDOR_MARK_FILES = [
+  "packages/features/auth/src/web/components/google-mark.tsx",
+] as const;
+
 export type FileCounts = Partial<Record<DesignTokenRule, number>>;
 export type CountsByFile = Record<string, FileCounts>;
 
@@ -194,6 +202,7 @@ export function scanDesignTokenUsage(
     for (const file of walk(root)) {
       const rel = relative(rootDir, file).replace(/\\/g, "/");
       if (EXCLUDED.test(`/${rel}`)) continue;
+      if ((VENDOR_MARK_FILES as readonly string[]).includes(rel)) continue;
       const counts = countViolations(
         readFileSync(file, "utf8"),
         file.endsWith(".css"),

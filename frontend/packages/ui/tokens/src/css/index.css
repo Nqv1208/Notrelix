@@ -105,6 +105,7 @@
   --corner-overlay: 0.875rem;
   --corner-badge: 9999px;
   --corner-pill: 9999px;
+  --brand-gradient: linear-gradient(135deg, oklch(0.643 0.246 16.4) 0%, oklch(0.715 0.176 37.1) 35%, oklch(0.652 0.19 253.2) 100%);
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   --z-dropdown: 1000;

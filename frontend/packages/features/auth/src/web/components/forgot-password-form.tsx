@@ -158,7 +158,7 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
             </p>
           </div>
           <Link to="/sign-in" className="w-full">
-            <Button className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white border-0 shadow-md">
+            <Button className="w-full h-10 bg-[image:var(--brand-gradient)] hover:opacity-90 text-white border-0 shadow-md">
               Sign in
               <ArrowRight className="size-4 ml-2" />
             </Button>
@@ -314,7 +314,7 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
 
           <Button
             type="submit"
-            className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium border-0 shadow-md"
+            className="w-full h-10 bg-[image:var(--brand-gradient)] hover:opacity-90 text-white font-medium border-0 shadow-md"
             disabled={isResetting}
           >
             {isResetting ? (
@@ -406,7 +406,7 @@ export function createForgotPasswordForm(deps: ForgotPasswordFormDeps) {
 
         <Button
           type="submit"
-          className="w-full h-10 bg-[linear-gradient(135deg,#FF1E56_0%,#FC744C_35%,#1E90FF_100%)] hover:opacity-90 text-white font-medium border-0 shadow-md"
+          className="w-full h-10 bg-[image:var(--brand-gradient)] hover:opacity-90 text-white font-medium border-0 shadow-md"
           disabled={isSending}
         >
           {isSending ? (

@@ -23,6 +23,7 @@ import { toCss } from "../color/oklch";
 import {
   ACCENT_IDS,
   DEFAULT_ACCENT,
+  brandGradient,
   THEME_APPEARANCES,
   accents,
   type AccentId,
@@ -92,6 +93,8 @@ function staticDeclarations(): string[] {
   for (const [role, value] of Object.entries(radiusRoles)) {
     out.push(`--corner-${role}: ${value}`);
   }
+
+  out.push(`--brand-gradient: ${brandGradient}`);
 
   out.push(`--focus-ring-width: ${focusRing.width}`);
   out.push(`--focus-ring-offset: ${focusRing.offset}`);
