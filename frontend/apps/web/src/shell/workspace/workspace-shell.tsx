@@ -11,8 +11,12 @@ import { createUsePageList } from "@notrelix/docs-state";
 import { createUseLogout, useCurrentUser } from "@notrelix/features-auth";
 import { createNotificationBell } from "@notrelix/features-notifications";
 import {
+  buildSpaceIndex,
   buildWorkspaceBreadcrumb,
+  canCreateRootSpace,
   identityToneFor,
+  spaceAncestors,
+  spacePath,
   NAVIGATION_RESOURCE_KIND,
   resolveNavigationEntries,
   type NavigationEntry,
@@ -28,7 +32,9 @@ import {
   createUseWorkspacePins,
   createUseWorkspaceRecents,
   useShellShortcuts,
+  useSpaceTreeExpansion,
   useWorkspaceShellCopy,
+  useWorkspaceSpacesCopy,
   WorkspaceCommandPaletteSurface,
   WorkspaceShortcutSheetSurface,
   WorkspaceSidebarSurface,
@@ -38,6 +44,7 @@ import {
   type ShellNavigation,
   type ShellPaletteSelection,
   type ShellShortcutId,
+  type SpaceTreeState,
 } from "@notrelix/features-workspace/web";
 import {
   useAppRuntime,
@@ -47,6 +54,8 @@ import { SidebarProvider, useTheme } from "@notrelix/ui-web";
 import { useWorkspaceBoards } from "@notrelix/work-management-state";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { CreateWorkspaceDialog } from "./create-workspace-dialog";
+import { useCreateSpace } from "./use-create-space";
+import { useSpaceHooks } from "./use-workspace-spaces";
 import {
   destinationHref,
   resolveShellLocation,
@@ -221,6 +230,33 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     if (pages.isError) void pages.refetch();
   }, [recents, pins, boards, pages]);
 
+  // ── Space org tree (OT-5) ───────────────────────────────────────
+  const spacesCopy = useWorkspaceSpacesCopy();
+  const spaceHooks = useSpaceHooks();
+  const spaceTree = spaceHooks.useSpaceTree(workspaceId);
+  const expansion = useSpaceTreeExpansion(user?.id ?? null, workspaceId);
+  const createSpace = useCreateSpace(workspaceId, workspace?.name ?? null);
+  const activeSpaceId = location?.section === "space" ? location.spaceId : null;
+  const spaceIndex = useMemo(
+    () => buildSpaceIndex(spaceTree.data ?? []),
+    [spaceTree.data],
+  );
+  const { reveal } = expansion;
+  useEffect(() => {
+    if (!activeSpaceId) return;
+    reveal(spaceAncestors(spaceIndex, activeSpaceId).map((node) => node.id));
+  }, [activeSpaceId, reveal, spaceIndex]);
+  // Archived Spaces leave the sidebar; their pages stay reachable by link.
+  // An archived Space never has active children (WSP-022).
+  const sidebarSpaces = useMemo<SpaceTreeState>(() => {
+    if (spaceTree.isError) return { status: "error" };
+    if (!spaceTree.data) return { status: "loading" };
+    return {
+      status: "ready",
+      nodes: spaceTree.data.filter((node) => !node.isArchived),
+    };
+  }, [spaceTree.data, spaceTree.isError]);
+
   // ── Identity ────────────────────────────────────────────────────
   const role =
     members.data?.find((member) => member.userId === user?.id)?.role ?? null;
@@ -308,9 +344,23 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         location,
         boards: catalog.ready || catalog.failed ? catalog.boards : null,
         docs: catalog.ready || catalog.failed ? catalog.docs : null,
+        spacePath:
+          location?.section === "space"
+            ? spaceTree.isSuccess || spaceTree.isError
+              ? spacePath(spaceIndex, location.spaceId)
+              : null
+            : null,
         labels: workspaceBreadcrumbLabels(copy),
       }),
-    [catalog, copy, location, workspace?.name],
+    [
+      catalog,
+      copy,
+      location,
+      spaceIndex,
+      spaceTree.isError,
+      spaceTree.isSuccess,
+      workspace?.name,
+    ],
   );
 
   const paletteMembers = useMemo(
@@ -336,6 +386,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         location={location}
         pinned={pinnedState}
         recent={recentState}
+        spaces={{
+          copy: spacesCopy,
+          state: sidebarSpaces,
+          expandedIds: expansion.expandedIds,
+          activeSpaceId,
+          canCreateRoot: canCreateRootSpace(role),
+          onExpandedChange: expansion.setExpanded,
+          onCreateSpace: () => createSpace.open(null),
+          onRetry: () => void spaceTree.refetch(),
+        }}
         user={shellUser}
         signingOut={logout.isPending}
         onSwitchWorkspace={(id) =>
@@ -390,6 +450,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         onOpenChange={setShortcutsOpen}
         commandShortcut={commandShortcut}
       />
+      {createSpace.dialog}
       <CreateWorkspaceDialog
         copy={copy}
         open={createOpen}

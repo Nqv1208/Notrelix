@@ -61,6 +61,15 @@ export function routerTarget(
         to: "/workspaces/$workspaceId/docs/$docId",
         params: { ...params, docId: destination.docId },
       };
+    case "space":
+      return {
+        to: "/workspaces/$workspaceId/spaces/$spaceId",
+        params: { ...params, spaceId: destination.spaceId },
+        search:
+          destination.tab && destination.tab !== "overview"
+            ? { tab: destination.tab }
+            : undefined,
+      };
   }
 }
 
@@ -121,6 +130,12 @@ export function resolveShellLocation(
       match.params.docId
     ) {
       return { section: "doc", docId: match.params.docId };
+    }
+    if (
+      match.routeId === "/workspaces/$workspaceId/spaces/$spaceId" &&
+      match.params.spaceId
+    ) {
+      return { section: "space", spaceId: match.params.spaceId };
     }
     if (match.routeId.startsWith("/workspaces/$workspaceId/account")) {
       return { section: "account" };

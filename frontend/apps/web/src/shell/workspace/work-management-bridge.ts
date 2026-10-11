@@ -24,6 +24,7 @@ import type { MyWorkItem } from "@notrelix/features-workspace/core";
 import { workspaceQueryKey } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { wmQueryKeys } from "@notrelix/work-management-state";
+import { boardPlacementsQueryKey } from "./board-placement-bridge";
 
 type MyWorkPageDto = OperationResponse<
   "WorkManagement.BoardItems.ListMyWork",
@@ -149,11 +150,14 @@ export function useCreateBoard(workspaceId: string) {
     mutationFn: async ({
       title,
       attemptKey,
+      spaceId = null,
     }: {
       title: string;
       attemptKey: string;
+      /** Create the Board in this Space (OT-5); `null` = workspace level. */
+      spaceId?: string | null;
     }): Promise<string | null> => {
-      const body: CreateBoardBody = { title };
+      const body: CreateBoardBody = spaceId ? { title, spaceId } : { title };
       const id = await client.api.post<unknown>(
         client.endpoints.boards.listByWorkspaceId(workspaceId),
         body,
@@ -161,10 +165,14 @@ export function useCreateBoard(workspaceId: string) {
       );
       return typeof id === "string" ? id : null;
     },
-    onSettled: () =>
-      queryClient.invalidateQueries({
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
         queryKey: wmQueryKeys.workspaceList(workspaceId),
-      }),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: boardPlacementsQueryKey(workspaceId),
+      });
+    },
   });
 }
 

@@ -7,6 +7,7 @@ import { SettingsPage } from "../../routes/workspaces/$workspaceId/settings";
 import { MembersPage } from "../../routes/workspaces/$workspaceId/members";
 import { MyWorkPage } from "../../routes/workspaces/$workspaceId/my-work";
 import { InboxPage } from "../../routes/workspaces/$workspaceId/inbox";
+import { SpacePage } from "../../routes/workspaces/$workspaceId/spaces/$spaceId";
 
 export const workspaceIndexRoute = createRoute({
   getParentRoute: () => workspaceRoute,
@@ -55,4 +56,16 @@ export const inboxRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/inbox",
   component: InboxPage,
+});
+
+const spaceSearchSchema = z.object({
+  tab: z.enum(["overview", "members", "settings"]).optional(),
+});
+
+/** A Space of the org tree (OT-5). */
+export const spaceRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/spaces/$spaceId",
+  validateSearch: (search) => spaceSearchSchema.parse(search),
+  component: SpacePage,
 });

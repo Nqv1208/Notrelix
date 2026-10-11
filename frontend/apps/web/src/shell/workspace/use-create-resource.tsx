@@ -20,6 +20,8 @@ import { useAttemptKey, useCreateBoard } from "./work-management-bridge";
 export function useCreateResource(
   workspaceId: string,
   copy: WorkspaceHomeCopy,
+  /** Create in this Space (OT-5); omitted = workspace level. */
+  space: { readonly id: string; readonly name: string } | null = null,
 ) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -32,7 +34,8 @@ export function useCreateResource(
   const nextAttemptKey = useAttemptKey();
   const createDoc = useMutation({
     // Called as a method: `create` reads its sibling `getDetail` via `this`.
-    mutationFn: (title: string) => pageApi.create({ title, workspaceId }),
+    mutationFn: (title: string) =>
+      pageApi.create({ title, workspaceId, spaceId: space?.id ?? null }),
     onSettled: () =>
       queryClient.invalidateQueries({
         queryKey: docsQueryKeys.list(workspaceId),
@@ -69,7 +72,11 @@ export function useCreateResource(
       const failed = () => setError(copy.create.error);
       if (resource === "board") {
         createBoard.mutate(
-          { title: name, attemptKey: nextAttemptKey() },
+          {
+            title: name,
+            attemptKey: nextAttemptKey(),
+            spaceId: space?.id ?? null,
+          },
           { onSuccess: done, onError: failed },
         );
       } else {
@@ -79,7 +86,15 @@ export function useCreateResource(
         });
       }
     },
-    [copy, createBoard, createDoc, navigate, nextAttemptKey, workspaceId],
+    [
+      copy,
+      createBoard,
+      createDoc,
+      navigate,
+      nextAttemptKey,
+      space,
+      workspaceId,
+    ],
   );
 
   const dialog = (
@@ -88,6 +103,7 @@ export function useCreateResource(
       kind={kind}
       pending={createBoard.isPending || createDoc.isPending}
       error={error}
+      spaceName={space?.name ?? null}
       onOpenChange={(next) => {
         if (!next) setKind(null);
       }}

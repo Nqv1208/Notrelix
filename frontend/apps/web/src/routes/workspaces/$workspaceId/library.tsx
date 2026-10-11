@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   buildLibraryEntries,
+  buildSpaceIndex,
   libraryEntryKey,
+  spacePathLabel,
   type LibraryEntry,
 } from "@notrelix/features-workspace/core";
 import {
@@ -17,6 +19,9 @@ import {
 import { useFormatters } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { useBoardPlacements } from "@/shell/workspace/board-placement-bridge";
+import { useMoveToSpace } from "@/shell/workspace/use-move-to-space";
+import { useSpaceHooks } from "@/shell/workspace/use-workspace-spaces";
 import { toastFailure } from "@/shell/workspace/failure-toast";
 import { useCreateResource } from "@/shell/workspace/use-create-resource";
 import { useNow } from "@/shell/workspace/use-now";
@@ -51,8 +56,32 @@ export function LibraryPage() {
   const pins = hooks.usePins(workspaceId);
   const togglePin = hooks.useTogglePin(workspaceId);
   const create = useCreateResource(workspaceId, homeCopy);
+  const spaceTree = useSpaceHooks().useSpaceTree(workspaceId);
+  const mover = useMoveToSpace();
+  const placements = useBoardPlacements(workspaceId);
+  const spaces = useMemo(
+    () => (spaceTree.data ?? []).filter((node) => !node.isArchived),
+    [spaceTree.data],
+  );
   const [pendingPinKeys, setPendingPinKeys] = useState<ReadonlySet<string>>(
     () => new Set(),
+  );
+
+  const spaceIndex = useMemo(
+    () => buildSpaceIndex(spaceTree.data ?? []),
+    [spaceTree.data],
+  );
+  // Placements are optional for the table: until they load, Boards show
+  // without a Space and the Space filter treats them as unplaced.
+  const boardSpace = useMemo(
+    () =>
+      new Map(
+        (placements.data ?? []).map((placement) => [
+          placement.id,
+          placement.spaceId,
+        ]),
+      ),
+    [placements.data],
   );
 
   const state = useMemo<SectionState<readonly LibraryEntry[]>>(() => {
@@ -61,22 +90,40 @@ export function LibraryPage() {
     return {
       status: "ready",
       data: buildLibraryEntries({
-        boards: resources.boards.map((board) => ({
-          id: board.id,
-          name: board.name,
-          updatedAt: board.updatedAt,
-          location: workspace?.name ?? null,
-        })),
+        boards: resources.boards.map((board) => {
+          const spaceId = boardSpace.get(board.id) ?? null;
+          return {
+            id: board.id,
+            name: board.name,
+            updatedAt: board.updatedAt,
+            spaceId,
+            location: spaceId
+              ? spacePathLabel(spaceIndex, spaceId) || workspace?.name || null
+              : (workspace?.name ?? null),
+          };
+        }),
         docs: resources.docs.map((doc) => ({
           id: doc.id,
           name: doc.name,
           updatedAt: doc.updatedAt,
-          location: doc.parentName ?? workspace?.name ?? null,
+          spaceId: doc.spaceId,
+          location:
+            doc.parentName ??
+            ((doc.spaceId && spacePathLabel(spaceIndex, doc.spaceId)) ||
+              workspace?.name ||
+              null),
         })),
         pins: pins.data,
       }),
     };
-  }, [pins.data, pins.isError, resources, workspace?.name]);
+  }, [
+    boardSpace,
+    pins.data,
+    pins.isError,
+    resources,
+    spaceIndex,
+    workspace?.name,
+  ]);
 
   const onSetPinned = useCallback(
     async (entries: readonly LibraryEntry[], pinned: boolean) => {
@@ -129,6 +176,12 @@ export function LibraryPage() {
         state={state}
         pendingPinKeys={pendingPinKeys}
         canCreate={viewer.role !== null && viewer.role !== "guest"}
+        spaces={spaces}
+        onMoveBoard={
+          viewer.role !== null && viewer.role !== "guest" && spaces.length > 0
+            ? (entry) => mover.openForBoard({ id: entry.id, name: entry.name })
+            : undefined
+        }
         onCreateBoard={() => create.open("board")}
         onCreateDoc={() => create.open("doc")}
         onSetPinned={(entries, pinned) => void onSetPinned(entries, pinned)}
@@ -138,6 +191,7 @@ export function LibraryPage() {
         }}
       />
       {create.dialog}
+      {mover.dialog}
     </>
   );
 }

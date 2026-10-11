@@ -236,6 +236,29 @@ Starts only after the other session's table work is committed or explicitly supe
 |---|---|---|
 | WX-QUAL-001 | Audit (a11y, responsive, performance) and polish pass across every surface; all superseded components and their stories removed. | `pnpm validate`; visual snapshots in light, dark and High contrast × desktop, tablet and mobile |
 
+### Phase 8 — Space org tree (OT-5)
+
+Frontend of the department org tree (docs/product/workspaces.md WSP-021..025, docs/product/governance.md GOV-025..029, ADR-009); the backend producer is OT-0..OT-4.
+
+### Status
+
+Delivered on 2026-10-11 (baseline `870e47c8`).
+
+| Unit | Status | Delivered | Evidence |
+|---|---|---|---|
+| WX-SPACE-001 | Done | Space adapters on the generated contract (`createSpacesService`: tree, create with parent/type/visibility/neighbors, rename, description, type, visibility, archive, unarchive, move with `expectedVersion`, members list/add/change role/remove for User and Team subjects, teams list). Workspace-scoped keys (`workspaceQueryKeys.spaces/spaceTree/spaceMembers/teams`). Only a move is optimistic (rolled back on rejection); every write refreshes the tree so the next write carries the current version; a 409/412 is shown as a conflict, never retried. | `workspace-spaces-model.unit.test.ts`, `space-state.component.test.tsx` (rollback, versioned member writes, per-workspace keys, expansion storage), mock `T-MFB-029`. |
+| WX-SPACE-002 | Done | `SpaceTreeNav` in the workspace sidebar: WAI-ARIA navigation tree (roving focus, ↑ ↓ → ← Home End, type-ahead), unlimited depth with only expanded subtrees rendered and windowing above 150 visible rows, Private marker, archived Spaces leave the sidebar, "New Space" only for workspace Owner/Admin. Expansion is a per-member, per-workspace preference in `localStorage` (guarded; blocked storage falls back to memory) and the ancestors of the current Space open automatically. | `workspace.space-tree` (7 cases incl. 525-row windowing), `workspace.sidebar:spaces`. |
+| WX-SPACE-003 | Done | Space page `/workspaces/$id/spaces/$spaceId` (`WorkspaceSpaceSurface`): path breadcrumb (also in the topbar), child Spaces, Boards and Docs placed in the Space; Members tab (Users and Teams, Admin/Member/Viewer, last-Admin protection with the reason, removal in an `AlertDialog`, add a person or a team); Settings tab (name, type, description, visibility saved field by field; archive unavailable with the reason while visible content remains, the producer's refusal shown when hidden content blocks it; unarchive). Actions follow the tree's `accessLevel` (Manager / Editor / Viewer). | `workspace.space-page` (13 cases), stories Default/Members/Settings/PermissionLimited/Loading/Error/Empty/ReadOnly/EdgeData/Unavailable. |
+| WX-SPACE-004 | Done | Create in a Space (Board and Doc dialogs say where the resource goes; `spaceId` sent to `WorkManagement.Boards.Create` and `Documents.Pages.CreatePage`), `CreateSpaceDialog` (Department → Private by default, other types open, WSP-023), `MoveToSpaceDialog` with a searchable tree picker for Spaces (never into their own subtree) and Boards (Space page and Boards & Docs rows), Boards & Docs filter by Space (a Space includes the Spaces inside it). | `workspace.create-space`, `workspace.move-to-space`, `workspace.library:space-filter`/`move`, mock e2e `workspace-spaces`. |
+
+Open items:
+
+- UNRESOLVED (contract gap): `Documents.Pages.MoveToSpace` requires `expectedVersion > 0`, but no page read exposes the page version (`PageDto` has no `Version`). Moving a Doc between Spaces is therefore not offered; Docs are created in a Space and follow their root page. Needs an additive `Version` on `PageDto` (Documents producer).
+- Suspected producer defect: `RemoveSpaceMemberEndpoint` binds `[AsParameters] long expectedVersion`, unlike every other versioned delete (`[FromQuery] long expectedVersion`), and the OpenAPI document lists no query parameter, so a remove over HTTP may always fail validation (`ExpectedVersion > 0`). The client sends `?expectedVersion=N`.
+- TRANSITION: Board placement (`spaceId`, `version`) is read and moved in `apps/web/src/shell/workspace/board-placement-bridge.ts` because the `@notrelix/work-management-state` Board model drops both fields and that package carries another session's uncommitted work; it moves with WX-BOARD-003. The placement read is a second call to the Board list until then.
+- Teams are only listed and assigned; creating Teams and managing Team members has no UI yet (Workspaces.Teams.* writes).
+- The Space tree picker in the move dialog is not windowed (a filter narrows it); the sidebar tree is.
+
 ## 5. Sequencing
 
 ```text

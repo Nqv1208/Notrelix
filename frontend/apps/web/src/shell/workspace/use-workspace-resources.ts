@@ -9,6 +9,8 @@ export interface WorkspaceResource {
   /** Parent Doc title for nested Docs; `null` at the workspace root. */
   readonly parentName: string | null;
   readonly updatedAt: string | null;
+  /** The Space a Doc is placed in (Documents); Boards carry it elsewhere. */
+  readonly spaceId: string | null;
 }
 
 export interface WorkspaceResources {
@@ -53,6 +55,9 @@ export function useWorkspaceResources(workspaceId: string): WorkspaceResources {
           parentName: null,
           // The Board list does not report a last change (open item WX-DIR-001).
           updatedAt: board.updatedAt ?? null,
+          // The Work Management Board model drops `spaceId`; placements are
+          // read through `board-placement-bridge.ts` (TRANSITION).
+          spaceId: null,
         })),
       docs: (pages.data ?? []).map((page) => ({
         id: page.id,
@@ -61,6 +66,7 @@ export function useWorkspaceResources(workspaceId: string): WorkspaceResources {
           ? (titleById.get(page.parentId) ?? null)
           : null,
         updatedAt: page.updatedAt ?? null,
+        spaceId: page.spaceId ?? null,
       })),
       retry,
     };
