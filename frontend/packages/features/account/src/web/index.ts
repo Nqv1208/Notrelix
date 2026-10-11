@@ -53,3 +53,16 @@ export {
   type AccountSecurityData,
   type AccountSecuritySurfaceProps,
 } from "./security/account-security-surface";
+
+export { accountNotificationsCatalog } from "./notifications/account-notifications.catalog";
+export {
+  accountNotificationsCopy,
+  type AccountNotificationsCopy,
+} from "./notifications/account-notifications.copy";
+export { useAccountNotificationsCopy } from "./notifications/use-account-notifications-copy";
+export {
+  AccountNotificationsSurface,
+  type AccountNotificationsState,
+  type AccountNotificationsSurfaceProps,
+  type AccountNotificationValues,
+} from "./notifications/account-notifications-surface";

@@ -20,7 +20,9 @@ describe("check-i18n-catalogs", () => {
     const files = discoverCatalogFiles(frontendRoot);
     expect(
       files.some((file) =>
-        file.includes("apps/web/src/i18n/appearance.catalog.ts"),
+        file.includes(
+          "packages/features/account/src/web/appearance/account-appearance.catalog.ts",
+        ),
       ),
     ).toBe(true);
     expect(files.every((file) => !file.includes("/fixtures/"))).toBe(true);

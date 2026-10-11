@@ -40,6 +40,7 @@ vi.mock("@notrelix/runtime-web", () => ({
 }));
 
 import { AccountAppearancePage } from "../routes/workspaces/$workspaceId/account/appearance";
+import { AccountNotificationsPage } from "../routes/workspaces/$workspaceId/account/notifications";
 import { AccountSecurityPage } from "../routes/workspaces/$workspaceId/account/security";
 import { AccountProfilePage } from "../routes/workspaces/$workspaceId/account/profile";
 
@@ -352,5 +353,82 @@ describe("AccountSecurityPage container", () => {
     runtime.get = () => security;
     await clickButton("Thử lại");
     await until(() => expect(text()).toContain("Xác thực hai yếu tố"));
+  });
+});
+
+describe("AccountNotificationsPage container", () => {
+  const preferences = {
+    userId: "u-1",
+    emailEnabled: false,
+    pushEnabled: true,
+    mutedTypes: [],
+  };
+
+  it("passes the Vietnamese copy and the saved channels to the surface", async () => {
+    runtime.get = () => preferences;
+    await mount(<AccountNotificationsPage />, "vi");
+    await until(() => expect(text()).toContain("Thông báo qua email"));
+    expect(text()).toContain("Lưu tùy chọn");
+    expect(text()).not.toContain("Email notifications");
+    expect(checked("switch", "Thông báo qua email")).toBe("false");
+    expect(checked("switch", "Thông báo đẩy trên máy tính")).toBe("true");
+  });
+
+  it("saves the changed channels through the preference hook and reports success", async () => {
+    let stored = preferences;
+    const patch = vi.fn((_url: string, body: unknown) => {
+      stored = { ...stored, ...(body as object) };
+      return stored;
+    });
+    runtime.get = () => stored;
+    runtime.patch = patch;
+    await mount(<AccountNotificationsPage />, "en");
+    await until(() => expect(text()).toContain("Email notifications"));
+
+    await clickControl("switch", "Email notifications");
+    await clickButton("Save preferences");
+
+    await until(() =>
+      expect(text()).toContain("Notification preferences saved."),
+    );
+    expect(patch).toHaveBeenCalledWith("/notifications/preferences", {
+      emailEnabled: true,
+      pushEnabled: true,
+    });
+  });
+
+  it("announces a failed save without losing the switches", async () => {
+    runtime.get = () => preferences;
+    runtime.patch = () => {
+      throw new Error("boom");
+    };
+    await mount(<AccountNotificationsPage />, "vi");
+    await until(() => expect(text()).toContain("Thông báo qua email"));
+    await clickControl("switch", "Thông báo qua email");
+    await clickButton("Lưu tùy chọn");
+    await until(() =>
+      expect(text()).toContain("Không thể lưu tùy chọn thông báo của bạn."),
+    );
+    expect(checked("switch", "Thông báo qua email")).toBe("true");
+  });
+
+  it("explains a failed load, keeps the defaults visible and retries through the hook", async () => {
+    runtime.get = () => {
+      throw new Error("boom");
+    };
+    await mount(<AccountNotificationsPage />, "vi");
+    await until(() =>
+      expect(text()).toContain(
+        "Không thể tải các tùy chọn thông báo đã lưu của bạn.",
+      ),
+    );
+    expect(checked("switch", "Thông báo qua email")).toBe("true");
+
+    runtime.get = () => preferences;
+    await clickButton("Thử lại");
+    await until(() =>
+      expect(checked("switch", "Thông báo qua email")).toBe("false"),
+    );
+    expect(text()).not.toContain("Không thể tải các tùy chọn");
   });
 });

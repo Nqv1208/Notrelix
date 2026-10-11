@@ -1,127 +1,71 @@
-import { useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
-  createUsePreferences,
-  createUseUpdatePreferences,
+  AccountNotificationsSurface,
+  useAccountNotificationsCopy,
+  type AccountNotificationsState,
+  type AccountNotificationValues,
+  type AccountSaveStatus,
 } from "@notrelix/features-account";
+import { createUseNotificationPreferences } from "@notrelix/features-notifications";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import { Button } from "@notrelix/ui-web";
-import { toast } from "sonner";
 
-const NOTIFICATION_CHANNELS = [
-  {
-    id: "email",
-    label: "Email notifications",
-    description: "Receive notifications via email",
-  },
-  {
-    id: "in_app",
-    label: "In-app notifications",
-    description: "Show notifications in the app",
-  },
-  {
-    id: "desktop",
-    label: "Desktop push notifications",
-    description: "Receive push notifications on your desktop",
-  },
-];
+/** Shown when the saved preferences cannot be read. */
+const DEFAULT_PREFERENCES: AccountNotificationValues = {
+  emailEnabled: true,
+  pushEnabled: true,
+};
 
 export function AccountNotificationsPage() {
   const { api: runtimeClient } = useAppRuntime();
+  const copy = useAccountNotificationsCopy();
 
-  const usePreferences = useMemo(
+  const useNotificationPreferences = useMemo(
     () =>
-      createUsePreferences({
+      createUseNotificationPreferences({
         api: runtimeClient.api,
         endpoints: runtimeClient.endpoints,
       }),
     [runtimeClient],
   );
 
-  const useUpdatePreferences = useMemo(
+  const { preferences, isError, refetch, updatePreferences } =
+    useNotificationPreferences();
+  const [save, setSave] = useState<AccountSaveStatus>({ state: "idle" });
+
+  const state = useMemo<AccountNotificationsState>(
     () =>
-      createUseUpdatePreferences({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
+      preferences
+        ? {
+            status: "ready",
+            values: {
+              emailEnabled: preferences.emailEnabled,
+              pushEnabled: preferences.pushEnabled,
+            },
+          }
+        : isError
+          ? { status: "error", fallback: DEFAULT_PREFERENCES }
+          : { status: "loading" },
+    [preferences, isError],
   );
 
-  const { preferences: _preferences, isLoading } = usePreferences();
-  const updateMutation = useUpdatePreferences();
-
-  const [settings, setSettings] = useState({
-    email: true,
-    in_app: true,
-    desktop: false,
-  });
-
-  const handleToggle = (id: keyof typeof settings) => {
-    setSettings((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const handleSave = async () => {
-    try {
-      await updateMutation.mutateAsync({});
-      toast.success("Notification preferences saved");
-    } catch {
-      toast.success("Notification preferences saved");
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+  const handleSave = useCallback(
+    (values: AccountNotificationValues) => {
+      setSave({ state: "saving" });
+      updatePreferences(values, {
+        onSuccess: () => setSave({ state: "saved" }),
+        onError: () => setSave({ state: "error" }),
+      });
+    },
+    [updatePreferences],
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-semibold text-sm mb-1">Notifications</h2>
-        <p className="text-xs text-muted-foreground">
-          Choose how you want to be notified.
-        </p>
-      </div>
-
-      <div className="space-y-3">
-        {NOTIFICATION_CHANNELS.map((channel) => (
-          <div
-            key={channel.id}
-            className="flex items-center justify-between rounded-lg border border-border p-4"
-          >
-            <div>
-              <p className="text-sm font-medium">{channel.label}</p>
-              <p className="text-xs text-muted-foreground">
-                {channel.description}
-              </p>
-            </div>
-            <button
-              onClick={() => handleToggle(channel.id as keyof typeof settings)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                settings[channel.id as keyof typeof settings]
-                  ? "bg-primary"
-                  : "bg-input"
-              }`}
-            >
-              <span
-                className={`pointer-events-none block size-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                  settings[channel.id as keyof typeof settings]
-                    ? "translate-x-4"
-                    : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <Button onClick={handleSave} disabled={updateMutation.isPending}>
-        {updateMutation.isPending ? "Saving..." : "Save preferences"}
-      </Button>
-    </div>
+    <AccountNotificationsSurface
+      copy={copy}
+      preferences={state}
+      save={save}
+      onSave={handleSave}
+      onRetry={() => void refetch()}
+    />
   );
 }

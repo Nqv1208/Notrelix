@@ -11,6 +11,7 @@ import {
 import {
   accountNavCatalog,
   accountAppearanceCatalog,
+  accountNotificationsCatalog,
   accountProfileCatalog,
   accountSecurityCatalog,
 } from "@notrelix/features-account";
@@ -39,4 +40,5 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountProfileCatalog,
   accountAppearanceCatalog,
   accountSecurityCatalog,
+  accountNotificationsCatalog,
 ];
