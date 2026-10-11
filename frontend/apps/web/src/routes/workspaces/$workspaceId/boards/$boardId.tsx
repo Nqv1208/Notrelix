@@ -37,8 +37,16 @@ export function BoardPage() {
     });
   };
 
-  const handleSelectedItemChange = (item: string | undefined) => {
-    navigate({ search: (prev: BoardSearch) => ({ ...prev, item }) });
+  // Opening a card pushes history; closing or clearing a stale item passes
+  // `replace` so Back does not reopen the sheet.
+  const handleSelectedItemChange = (
+    item: string | undefined,
+    options?: { replace?: boolean },
+  ) => {
+    navigate({
+      search: (prev: BoardSearch) => ({ ...prev, item }),
+      replace: options?.replace ?? false,
+    });
   };
 
   return (

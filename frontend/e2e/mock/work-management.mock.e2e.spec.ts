@@ -81,6 +81,14 @@ test.describe("Kanban item detail through the item search parameter", () => {
     expect(closed.searchParams.get("filter")).toBe("mine");
     expect(closed.searchParams.get("sort")).toBe("due");
     expect(closed.searchParams.get("groupBy")).toBe("status");
+    // Focus returns to the card that opened the sheet.
+    await expect(
+      page.getByRole("button", { name: "Ship mock runtime", exact: true }),
+    ).toBeFocused();
+
+    // Closing replaced the history entry, so Back does not reopen the sheet.
+    await page.goBack();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
@@ -95,6 +103,13 @@ test.describe("Kanban item detail through the item search parameter", () => {
       page.getByRole("button", { name: "Ship mock runtime", exact: true }),
     ).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
+    // The stale id is cleared from the URL once the lookup fails.
+    await expect
+      .poll(() => new URL(page.url()).searchParams.has("item"), {
+        timeout: 15_000,
+      })
+      .toBe(false);
+    expect(new URL(page.url()).searchParams.get("view")).toBe("kanban");
     expect(errors).toEqual([]);
   });
 });

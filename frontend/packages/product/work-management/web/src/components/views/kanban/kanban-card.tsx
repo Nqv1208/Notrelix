@@ -206,6 +206,7 @@ export function KanbanCard({
         type="button"
         className="absolute inset-0 z-10 rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         aria-label={card.title}
+        data-card-id={card.id}
         onClick={() => onOpenDetails(card.id)}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {

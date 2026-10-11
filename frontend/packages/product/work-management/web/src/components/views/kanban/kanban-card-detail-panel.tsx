@@ -13,6 +13,8 @@ interface KanbanCardDetailPanelProps {
   card: CardDetail | null;
   detailData: TaskDetailData;
   callbacks: TaskDetailCallbacks;
+  /** Called as the sheet closes; the container puts focus back on the opener. */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 /**
@@ -25,6 +27,7 @@ export function KanbanCardDetailPanel({
   card,
   detailData,
   callbacks,
+  onCloseAutoFocus,
 }: KanbanCardDetailPanelProps) {
   if (!card) return null;
 
@@ -35,7 +38,10 @@ export function KanbanCardDetailPanel({
         if (!open) callbacks.onClose();
       }}
     >
-      <SheetContent className="w-full gap-0 p-0 sm:max-w-2xl overflow-y-auto">
+      <SheetContent
+        className="w-full gap-0 p-0 sm:max-w-2xl overflow-y-auto"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <SheetTitle className="sr-only">{card.title}</SheetTitle>
         <TaskDetailPanelSurface
           status="ready"

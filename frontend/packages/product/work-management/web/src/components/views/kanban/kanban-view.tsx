@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   useBoardKanban,
@@ -37,7 +37,14 @@ export function KanbanView({
   workspaceId: string;
   /** Card id from the `item` search parameter; unknown ids show nothing. */
   selectedItemId?: string;
-  onSelectedItemChange?: (id: string | undefined) => void;
+  /**
+   * Opening passes the id (push). Closing or clearing a stale id passes
+   * undefined with `replace` so Back does not reopen the sheet.
+   */
+  onSelectedItemChange?: (
+    id: string | undefined,
+    options?: { replace?: boolean },
+  ) => void;
 }) {
   const {
     board,
@@ -68,8 +75,21 @@ export function KanbanView({
   );
 
   const handleClosePanel = useCallback(() => {
-    onSelectedItemChange?.(undefined);
+    onSelectedItemChange?.(undefined, { replace: true });
   }, [onSelectedItemChange]);
+
+  const boardRef = useRef<HTMLDivElement>(null);
+  // Radix returns focus to the element focused before the sheet opened, which
+  // is lost on a deep link or a re-render. Put it back on the opening card, or
+  // on the board region when that card is gone.
+  const restoreFocus = useCallback((cardId: string) => {
+    const board = boardRef.current;
+    if (!board) return;
+    const opener = Array.from(
+      board.querySelectorAll<HTMLElement>("[data-card-id]"),
+    ).find((element) => element.dataset.cardId === cardId);
+    (opener ?? board).focus();
+  }, []);
 
   if (isLoading) return <KanbanSkeleton />;
   if (error || !board) {
@@ -95,7 +115,12 @@ export function KanbanView({
   };
 
   return (
-    <div className="h-full min-h-0 overflow-hidden bg-card font-body select-none flex flex-col">
+    <div
+      ref={boardRef}
+      data-kanban-board=""
+      tabIndex={-1}
+      className="h-full min-h-0 overflow-hidden bg-card font-body select-none flex flex-col focus:outline-hidden"
+    >
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card px-4 sm:px-6">
         <KanbanToolbar
           searchQuery={search.query}
@@ -160,6 +185,7 @@ export function KanbanView({
           board={board}
           cardId={selectedItemId}
           onClose={handleClosePanel}
+          onRestoreFocus={restoreFocus}
         />
       ) : null}
     </div>
@@ -182,25 +208,46 @@ function buildCardLink(
 
 /**
  * Resolves the selected card and its detail state, then hands them to the
- * pure sheet. An id that does not resolve to a card on this board renders
- * nothing; the URL is not rewritten here.
+ * pure sheet. An id that fails to load, or resolves to a card outside this
+ * board and workspace, is stale: nothing renders and the `item` parameter is
+ * cleared with history replace. A cached card is never trusted once the query
+ * has errored (a deleted card stays in the query cache).
  */
 function KanbanSelectedItem({
   board,
   cardId,
   onClose,
+  onRestoreFocus,
 }: {
   board: Board;
   cardId: string;
   onClose: () => void;
+  onRestoreFocus: (cardId: string) => void;
 }) {
-  const { card } = useCard(cardId, board.workspaceId);
-  if (!card || card.boardId !== board.id) return null;
+  const { card, error } = useCard(cardId, board.workspaceId);
+  const notFound =
+    Boolean(error) ||
+    (card !== undefined &&
+      (card.boardId !== board.id || card.workspaceId !== board.workspaceId));
+
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+  useEffect(() => {
+    if (notFound) onCloseRef.current();
+  }, [notFound, cardId]);
+
+  if (notFound || !card) return null;
   return (
     <KanbanSelectedItemReady
       board={board}
-      card={card as CardDetail}
+      card={card}
       onClose={onClose}
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        onRestoreFocus(card.id);
+      }}
     />
   );
 }
@@ -209,10 +256,12 @@ function KanbanSelectedItemReady({
   board,
   card,
   onClose,
+  onCloseAutoFocus,
 }: {
   board: Board;
   card: CardDetail;
   onClose: () => void;
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   const files = useCardFiles(card.id, card.workspaceId);
   const activity = useCardActivity(card.id, card.workspaceId);
@@ -229,6 +278,7 @@ function KanbanSelectedItemReady({
     <KanbanCardDetailPanel
       board={board}
       card={card}
+      onCloseAutoFocus={onCloseAutoFocus}
       detailData={{
         files: files.data ?? card.files,
         filesLoading: files.isLoading,
