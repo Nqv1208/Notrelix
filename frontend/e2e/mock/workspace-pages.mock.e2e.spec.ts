@@ -72,6 +72,27 @@ test("Members changes a role and confirms removal (WX-MEM-001)", async ({
   await expect(page.locator("tbody tr")).toHaveCount(3);
 });
 
+test("Members keeps names readable at 320 px without page overflow (WX-QUAL-001)", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto(`${workspace}/members`);
+  const firstName = page
+    .locator("tbody tr")
+    .filter({
+      has: page.getByRole("combobox", { name: "Role for Jordan Lee (Member)" }),
+    })
+    .locator("td")
+    .first();
+  await expect(firstName).toBeVisible();
+  const box = await firstName.boundingBox();
+  expect(box?.width ?? 0).toBeGreaterThanOrEqual(140);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
 test("Settings saves the profile with the workspace version, and the next save carries the advanced one (WX-SET-001)", async ({
   page,
 }) => {

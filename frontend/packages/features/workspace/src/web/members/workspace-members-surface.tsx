@@ -179,7 +179,7 @@ function MemberRow({
 
   return (
     <tr className="border-t border-border first:border-t-0 hover:bg-state-hover">
-      <td className="w-full max-w-0 px-4 py-2.5 align-middle">
+      <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle">
         <span className="flex min-w-0 items-center gap-3">
           <IdentityMark
             name={member.name}
@@ -222,7 +222,7 @@ function MemberRow({
           >
             <SelectTrigger
               size="sm"
-              className="w-28 focus-visible:ring-focus-ring sm:w-36"
+              className="w-24 focus-visible:ring-focus-ring sm:w-36"
               aria-label={formatCopy(
                 pending ? copy.roleUpdating : copy.roleSelect,
                 { name: member.name },
@@ -682,7 +682,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                         expired && "text-muted-foreground",
                       )}
                     >
-                      <td className="w-full max-w-0 px-4 py-2.5 align-middle">
+                      <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle">
                         <span className="block truncate text-label">
                           {invitation.email}
                         </span>
