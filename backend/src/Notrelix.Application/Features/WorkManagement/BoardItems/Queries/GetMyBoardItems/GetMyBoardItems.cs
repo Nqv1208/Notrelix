@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems;
 
@@ -12,7 +13,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyB
 /// (earliest first, undated last, ties by id) so the client can group the page
 /// into due windows (overdue / today / this week / later / no date) without
 /// reloading. Completed, archived and deleted Items, and Items on archived or
-/// deleted Boards, are excluded.
+/// deleted Boards, are excluded. Only Items on Boards the caller may read
+/// (the single-read ViewBoard decision, GOV-029) are returned: losing access to a
+/// Private Board hides its assigned Items too.
 /// </summary>
 public record GetMyBoardItemsQuery(Guid WorkspaceId, string? Cursor = null, int? Limit = null)
     : IQuery<Result<CursorPage<MyWorkItemDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
@@ -36,12 +39,18 @@ public record MyWorkItemDto(
 
 public class GetMyBoardItemsQueryHandler(
     IWorkManagementDbContext context,
-    ICurrentRequestContext requestContext) : IRequestHandler<GetMyBoardItemsQuery, Result<CursorPage<MyWorkItemDto>>>
+    ICurrentRequestContext requestContext,
+    IResourceVisibility visibility) : IRequestHandler<GetMyBoardItemsQuery, Result<CursorPage<MyWorkItemDto>>>
 {
     public async Task<Result<CursorPage<MyWorkItemDto>>> Handle(GetMyBoardItemsQuery request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
         var limit = request.Limit ?? GetMyBoardItemsQuery.DefaultLimit;
+        var visibleBoardIds = await visibility.VisibleBoardIdsAsync(request.WorkspaceId, userId, cancellationToken);
+        if (visibleBoardIds.Count == 0)
+        {
+            return Result<CursorPage<MyWorkItemDto>>.Success(new CursorPage<MyWorkItemDto>([], null));
+        }
 
         var query =
             from member in context.BoardItemMembers.AsNoTracking()
@@ -56,6 +65,7 @@ public class GetMyBoardItemsQueryHandler(
                   && item.CompletedAt == null
                   && board.DeletedAt == null
                   && !board.IsArchived
+                  && visibleBoardIds.Contains(board.Id)
             select item;
 
         if (MyWorkCursor.TryDecode(request.Cursor, out var cursor))

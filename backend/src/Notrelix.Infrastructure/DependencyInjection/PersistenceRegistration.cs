@@ -119,6 +119,8 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Data.WorkManagement.PostgresOrderingConflictClassifier>();
         services.AddScoped<IResourceLocator, ResourceLocator>();
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility,
+            Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();

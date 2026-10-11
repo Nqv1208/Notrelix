@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 
@@ -8,13 +9,15 @@ namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 /// </summary>
 public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
 {
+    private readonly FakeResourceVisibility _visibility = new();
     private readonly GetMyBoardItemsQueryHandler _handler;
 
     public GetMyBoardItemsTests()
     {
         _handler = new GetMyBoardItemsQueryHandler(
             DbContextMock.Object,
-            RequestContextMock.Object);
+            RequestContextMock.Object,
+            _visibility);
     }
 
     [Fact]
@@ -22,6 +25,7 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
     {
         var board = CreateBoard();
         SetupBoards(board);
+        _visibility.Boards.AddRange([board.Id]);
 
         var groupId = Guid.CreateVersion7();
         var item = CreateBoardItem(boardId: board.Id, groupId: groupId);
@@ -59,6 +63,7 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
     {
         var board = CreateBoard();
         SetupBoards(board);
+        _visibility.Boards.AddRange([board.Id]);
 
         var item = CreateBoardItem(boardId: board.Id);
         item.Delete(TestUserId, TestNow);
@@ -78,6 +83,7 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
         var archivedBoard = CreateBoard();
         archivedBoard.Archive(TestUserId, TestNow);
         SetupBoards(board, archivedBoard);
+        _visibility.Boards.AddRange([board.Id, archivedBoard.Id]);
 
         var open = CreateBoardItem(boardId: board.Id);
         var completed = CreateBoardItem(boardId: board.Id);
@@ -102,6 +108,7 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
     {
         var board = CreateBoard();
         SetupBoards(board);
+        _visibility.Boards.AddRange([board.Id]);
 
         var item = CreateBoardItem(boardId: board.Id);
         SetupBoardItems(item);
@@ -117,6 +124,7 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
     {
         var board = CreateBoard();
         SetupBoards(board);
+        _visibility.Boards.AddRange([board.Id]);
 
         var item = CreateBoardItem(boardId: board.Id);
         SetupBoardItems(item);
@@ -133,6 +141,7 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
     {
         var board = CreateBoard();
         SetupBoards(board);
+        _visibility.Boards.AddRange([board.Id]);
 
         var undatedA = CreateBoardItem(boardId: board.Id);
         var undatedB = CreateBoardItem(boardId: board.Id);
@@ -180,6 +189,7 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
     {
         var board = CreateBoard();
         SetupBoards(board);
+        _visibility.Boards.AddRange([board.Id]);
 
         var items = Enumerable.Range(0, 55).Select(_ => CreateBoardItem(boardId: board.Id)).ToArray();
         SetupBoardItems(items);
@@ -220,5 +230,26 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
 
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain(e => e.PropertyName == nameof(GetMyBoardItemsQuery.Cursor));
+    }
+
+    [Fact]
+    public async Task Handle_ItemOnABoardTheCallerCannotRead_IsNotReturned()
+    {
+        var visibleBoard = CreateBoard();
+        var hiddenBoard = CreateBoard();
+        SetupBoards(visibleBoard, hiddenBoard);
+        _visibility.Boards.Add(visibleBoard.Id);
+
+        var visibleItem = CreateBoardItem(boardId: visibleBoard.Id, groupId: Guid.CreateVersion7());
+        var hiddenItem = CreateBoardItem(boardId: hiddenBoard.Id, groupId: Guid.CreateVersion7());
+        SetupBoardItems(visibleItem, hiddenItem);
+        SetupBoardItemMembers(
+            CreateBoardItemMember(itemId: visibleItem.Id, userId: TestUserId),
+            CreateBoardItemMember(itemId: hiddenItem.Id, userId: TestUserId));
+
+        var result = await _handler.Handle(new GetMyBoardItemsQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Data!.Items.Should().ContainSingle().Which.Id.Should().Be(visibleItem.Id,
+            "assigned items on a Board the caller cannot read stay hidden (GOV-029)");
     }
 }

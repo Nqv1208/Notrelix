@@ -2,6 +2,7 @@ using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Documents.Common;
 using global::Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Abstractions;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.SearchPages;
 
@@ -14,15 +15,28 @@ public record SearchPagesQuery(Guid WorkspaceId, string Query) : IQuery<Result<L
 public class SearchPagesQueryHandler : IRequestHandler<SearchPagesQuery, Result<List<PageDto>>>
 {
     private readonly IDocumentDbContext _context;
-    public SearchPagesQueryHandler(IDocumentDbContext context) => _context = context;
+    private readonly IResourceVisibility _visibility;
+    private readonly ICurrentRequestContext _requestContext;
+
+    public SearchPagesQueryHandler(IDocumentDbContext context, IResourceVisibility visibility, ICurrentRequestContext requestContext)
+    {
+        _context = context;
+        _visibility = visibility;
+        _requestContext = requestContext;
+    }
 
     public async Task<Result<List<PageDto>>> Handle(SearchPagesQuery request, CancellationToken ct)
     {
         var query = request.Query.Trim().ToLower();
         if (query.Length < 2) return Result<List<PageDto>>.Success([]);
 
+        // Search never reveals a title/id the caller could not read (BE-SEC-028, GOV-029).
+        var visible = await _visibility.VisiblePageIdsAsync(request.WorkspaceId, _requestContext.UserId, ct);
+        if (visible.Count == 0) return Result<List<PageDto>>.Success([]);
+
         var pageEntities = await _context.Pages.AsNoTracking()
             .Where(page => page.WorkspaceId == request.WorkspaceId && page.DeletedAt == null && page.Status != PageStatus.Archived)
+            .Where(page => visible.Contains(page.Id))
             .Where(page => page.Title.ToLower().Contains(query))
             .OrderBy(page => page.Title)
             .Take(25)

@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2668
+Rule count: 2678
 
 ## Namespace summary
 
@@ -72,7 +72,7 @@ Rule count: 2668
 | `FE-STATE` | 82 |
 | `FE-TST` | 79 |
 | `FE-UI` | 81 |
-| `GOV` | 24 |
+| `GOV` | 29 |
 | `ID` | 18 |
 | `INFRA-CTR` | 70 |
 | `INFRA-ENV` | 40 |
@@ -102,7 +102,7 @@ Rule count: 2668
 | `SYS-OBS` | 1 |
 | `SYS-RT` | 4 |
 | `WM` | 38 |
-| `WSP` | 20 |
+| `WSP` | 25 |
 
 ## Rule inventory
 
@@ -1939,6 +1939,11 @@ Rule count: 2668
 | `GOV-022` | `GOV` | Every new protected resource has explicit authorization vocabulary | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-023` | `GOV` | Frontend capability state is derived | [`docs/product/governance.md`](../product/governance.md) |
 | `GOV-024` | `GOV` | Authorization is compositional but deterministic | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-025` | `GOV` | Space-scoped access composes in a fixed order | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-026` | `GOV` | Team is an evaluated subject | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-027` | `GOV` | Space roles map to permission levels deterministically | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-028` | `GOV` | Space and Team management authority | [`docs/product/governance.md`](../product/governance.md) |
+| `GOV-029` | `GOV` | Collections apply the single-read decision in the datastore | [`docs/product/governance.md`](../product/governance.md) |
 | `ID-001` | `ID` | Authentication and authorization are separate | [`docs/product/identity.md`](../product/identity.md) |
 | `ID-002` | `ID` | Mutable email is not universal identity | [`docs/product/identity.md`](../product/identity.md) |
 | `ID-003` | `ID` | Identity deletion does not cascade business history | [`docs/product/identity.md`](../product/identity.md) |
@@ -2776,6 +2781,11 @@ Rule count: 2668
 | `WSP-018` | `WSP` | Workspace deletion is a process, not ORM cascade | [`docs/product/workspaces.md`](../product/workspaces.md) |
 | `WSP-019` | `WSP` | Membership and invitation races resolve deterministically | [`docs/product/workspaces.md`](../product/workspaces.md) |
 | `WSP-020` | `WSP` | External provisioning uses Workspaces contracts | [`docs/product/workspaces.md`](../product/workspaces.md) |
+| `WSP-021` | `WSP` | Space hierarchy is one acyclic tree per Workspace | [`docs/product/workspaces.md`](../product/workspaces.md) |
+| `WSP-022` | `WSP` | Archive and delete never cascade through a Space | [`docs/product/workspaces.md`](../product/workspaces.md) |
+| `WSP-023` | `WSP` | Space visibility controls who inherits access, Governance defines what access means | [`docs/product/workspaces.md`](../product/workspaces.md) |
+| `WSP-024` | `WSP` | Space membership is Users and Teams with a Space role | [`docs/product/workspaces.md`](../product/workspaces.md) |
+| `WSP-025` | `WSP` | A Team is a membership group that Governance may evaluate as a subject | [`docs/product/workspaces.md`](../product/workspaces.md) |
 
 ## Generation contract
 

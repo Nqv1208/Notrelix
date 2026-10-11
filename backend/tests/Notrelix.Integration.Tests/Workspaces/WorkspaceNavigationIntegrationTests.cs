@@ -604,6 +604,8 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
             sp.GetRequiredService<IdempotencyExecutionContext>());
 
         services.AddScoped<IWorkspaceNavigationStore>(sp => new WorkspaceNavigationStore(sp.GetRequiredService<ApplicationDbContext>()));
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility>(sp =>
+            new PostgresResourceVisibility(sp.GetRequiredService<ApplicationDbContext>(), sp.GetRequiredService<TimeProvider>()));
         services.AddScoped<IRequestHandler<RecordRecentResourceCommand, Result>, RecordRecentResourceCommandHandler>();
         services.AddScoped<IRequestHandler<PinResourceCommand, Result>, PinResourceCommandHandler>();
         services.AddScoped<IRequestHandler<UnpinResourceCommand, Result>, UnpinResourceCommandHandler>();
