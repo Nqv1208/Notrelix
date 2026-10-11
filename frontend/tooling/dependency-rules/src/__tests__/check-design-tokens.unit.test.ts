@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   compareToBaseline,
   countViolations,
+  findRawZIndex,
+  RAW_Z_INDEX_EXCLUDED,
+  scanRawZIndex,
+  zIndexScanRoots,
   readBaseline,
   scanDesignTokenUsage,
   scanRoots,
@@ -77,5 +81,48 @@ describe("check-design-tokens ratchet", () => {
       readBaseline().files,
     );
     expect(regressions).toEqual([]);
+  });
+});
+
+describe("check-design-tokens raw z-index rule", () => {
+  it("flags numeric and arbitrary z-index utilities above local layering", () => {
+    const source = `
+      <div className="fixed inset-0 z-50" />
+      <div className="absolute z-[100] focus-visible:z-40 -z-30" />
+      <div className="z-[1]" />
+    `;
+    expect(findRawZIndex(source)).toEqual([
+      "z-50",
+      "z-[100]",
+      "z-40",
+      "-z-30",
+      "z-[1]",
+    ]);
+  });
+
+  it("allows the semantic roles and local in-component layering", () => {
+    const source = `
+      <div className="z-dropdown z-sticky z-backdrop z-modal z-toast z-tooltip" />
+      <div className="relative z-0 z-10 focus:z-10 data-[active=true]:z-10 z-20" />
+      <div style={{ zIndex: "var(--z-toast)" }} className="z-index-note" />
+    `;
+    expect(findRawZIndex(source)).toEqual([]);
+  });
+
+  it("scans the UI primitives, features, product packages and app, minus the excluded owners", () => {
+    const roots = zIndexScanRoots(frontendRoot).map((root) =>
+      root.replace(frontendRoot, "").replace(/\\/g, "/"),
+    );
+    expect(roots).toContain("/packages/ui/web/src");
+    expect(roots).toContain("/packages/features/workspace/src");
+    expect(roots).toContain("/packages/product/docs/web/src");
+    expect(RAW_Z_INDEX_EXCLUDED).toContain("packages/product/work-management/");
+    expect(RAW_Z_INDEX_EXCLUDED).toContain(
+      "apps/web/src/shell/sidebar/sidebar.tsx",
+    );
+  });
+
+  it("the repository has no raw z-index utilities outside the exclusions", () => {
+    expect(scanRawZIndex(frontendRoot)).toEqual({});
   });
 });

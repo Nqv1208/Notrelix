@@ -16,3 +16,17 @@ describe("cn", () => {
     expect(cn("text-sm", "text-label")).toBe("text-label");
   });
 });
+
+describe("cn z-index roles", () => {
+  it("lets a later z role replace an earlier numeric or role z-index", () => {
+    expect(cn("z-50", "z-modal")).toBe("z-modal");
+    expect(cn("z-modal", "z-tooltip")).toBe("z-tooltip");
+    expect(cn("relative z-dropdown", "z-sticky")).toBe("relative z-sticky");
+  });
+
+  it("does not drop a z role next to other utilities", () => {
+    expect(cn("fixed inset-0 z-backdrop", "bg-black/40")).toBe(
+      "fixed inset-0 z-backdrop bg-black/40",
+    );
+  });
+});

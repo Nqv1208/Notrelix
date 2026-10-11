@@ -26,10 +26,25 @@ export const TEXT_ROLES = [
   "prose",
 ] as const;
 
+/**
+ * The semantic stacking roles (`@notrelix/ui-tokens` `zIndex`, utilities
+ * `z-dropdown` ... `z-tooltip`) are z-index values. Without this, tailwind-merge
+ * keeps a numeric z utility and `z-modal` side by side instead of letting the last win.
+ */
+export const Z_ROLES = [
+  "dropdown",
+  "sticky",
+  "backdrop",
+  "modal",
+  "toast",
+  "tooltip",
+] as const;
+
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
       "font-size": [{ text: [...TEXT_ROLES] }],
+      z: [{ z: [...Z_ROLES] }],
     },
   },
 });

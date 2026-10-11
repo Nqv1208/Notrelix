@@ -158,6 +158,20 @@ generated CSS variables (`@notrelix/ui-tokens/css`)
 
 as current implementation evidence.
 
+Stacking uses the z-index roles (`z-dropdown` < `z-sticky` < `z-backdrop` < `z-modal` < `z-toast` < `z-tooltip`), never a raw number:
+
+```text
+in-flow dropdowns and inline menus   z-dropdown
+sticky headers / table headers       z-sticky
+dialog, sheet, drawer backdrops      z-backdrop
+dialog, sheet, drawer content        z-modal
+portalled popover / select / menus   z-modal (same role as dialogs; portal order puts the later-opened layer on top)
+toaster                              z-toast
+tooltip                              z-tooltip
+```
+
+`z-0`, `z-10` and `z-20` remain allowed for local layering inside one component. `pnpm check:design-tokens` fails on any other numeric or arbitrary z utility outside the explicit exclusions in `check-design-tokens.ts`.
+
 ---
 
 # 6. FE-UI-003 — Primitive and semantic token roles are distinct

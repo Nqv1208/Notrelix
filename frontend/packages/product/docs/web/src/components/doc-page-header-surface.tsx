@@ -76,7 +76,7 @@ export function DocPageHeaderSurface({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
             {showActions ? (
-              <div className="absolute right-0 top-10 z-20 w-48 overflow-hidden rounded-lg border bg-popover p-1 shadow-lg">
+              <div className="absolute right-0 top-10 z-dropdown w-48 overflow-hidden rounded-lg border bg-popover p-1 shadow-lg">
                 {["Duplicate", "Move to...", "Export", "Delete"].map(
                   (action) => (
                     <button

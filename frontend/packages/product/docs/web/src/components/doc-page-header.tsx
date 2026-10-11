@@ -97,10 +97,10 @@ export function DocPageHeader({
           {showActions && (
             <>
               <div
-                className="fixed inset-0 z-40"
+                className="fixed inset-0 z-dropdown"
                 onClick={() => setShowActions(false)}
               />
-              <div className="absolute right-0 top-8 z-50 w-48 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-8 z-dropdown w-48 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
                 <div className="p-1">
                   <button className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
                     Duplicate

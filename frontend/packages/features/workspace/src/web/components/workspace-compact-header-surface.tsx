@@ -68,7 +68,7 @@ export function WorkspaceCompactHeaderSurface({
             <ChevronDown className="ml-1 size-4 text-muted-foreground" />
           </Button>
           {open ? (
-            <div className="absolute left-0 top-11 z-20 w-64 rounded-xl border border-border bg-popover p-1 shadow-lg">
+            <div className="absolute left-0 top-11 z-dropdown w-64 rounded-xl border border-border bg-popover p-1 shadow-lg">
               <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                 Workspace actions
               </p>

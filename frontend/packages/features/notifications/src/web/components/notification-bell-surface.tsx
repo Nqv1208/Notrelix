@@ -71,7 +71,7 @@ export function NotificationBellSurface({
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-11 z-20 w-80 rounded-xl border border-border bg-card p-0 shadow-xl">
+        <div className="absolute right-0 top-11 z-dropdown w-80 rounded-xl border border-border bg-card p-0 shadow-xl">
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <span className="text-sm font-semibold">Notifications</span>
             {unreadCount > 0 ? (

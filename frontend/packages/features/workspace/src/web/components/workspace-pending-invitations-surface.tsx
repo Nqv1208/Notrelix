@@ -38,7 +38,7 @@ export function PendingInvitationsMenuSurface({
         ) : null}
       </button>
       {open ? (
-        <div className="absolute right-0 top-10 z-20 w-80 overflow-hidden rounded-2xl border border-border/40 bg-card/95 p-0 shadow-xl backdrop-blur-md">
+        <div className="absolute right-0 top-10 z-dropdown w-80 overflow-hidden rounded-2xl border border-border/40 bg-card/95 p-0 shadow-xl backdrop-blur-md">
           <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/30">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <UserPlus className="size-4 text-primary" />

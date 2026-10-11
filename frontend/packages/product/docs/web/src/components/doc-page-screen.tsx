@@ -196,7 +196,7 @@ function SlashCommandMenu({
   return (
     <div
       ref={menuRef}
-      className="absolute z-50 w-64 bg-popover border border-border rounded-lg shadow-lg overflow-hidden"
+      className="absolute z-dropdown w-64 bg-popover border border-border rounded-lg shadow-lg overflow-hidden"
     >
       <div className="p-1.5 max-h-64 overflow-y-auto">
         {filtered.map((item, index) => (

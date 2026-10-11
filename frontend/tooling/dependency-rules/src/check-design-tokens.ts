@@ -9,6 +9,14 @@
  *
  * Semantic tokens replace all three (FE-UI-004, FE-UI-021, FE-UI-078).
  *
+ * Separately (not baselined), `raw-z-index` forbids numeric and arbitrary
+ * z-index utilities (`z-50`, `z-[100]`) in UI source: stacking uses the
+ * `@notrelix/ui-tokens` roles (`z-dropdown`, `z-sticky`, `z-backdrop`,
+ * `z-modal`, `z-toast`, `z-tooltip`). `z-0`, `z-10` and `z-20` stay allowed
+ * as local, in-component layering (focus ring over a sibling, a resize handle).
+ * Excluded: `packages/product/work-management/**` and the legacy
+ * `shell/sidebar/sidebar.tsx`, both owned by other pending work.
+ *
  * Ratchet: a committed baseline (`design-token-baseline.json`) records the
  * current offenders per file and rule. The gate fails only when a file gains
  * violations beyond its baseline or a new file has any. Fixing offenders lowers
@@ -48,6 +56,25 @@ const PATTERNS: Record<DesignTokenRule, RegExp> = {
   "arbitrary-text-size":
     /(?<![\w-])text-\[(?:length:)?\d*\.?\d+(?:px|rem|em)\]/g,
 };
+
+/** Roles that replace raw z-index utilities (`@notrelix/ui-tokens` `zIndex`). */
+export const Z_INDEX_ROLE_UTILITIES = [
+  "z-dropdown",
+  "z-sticky",
+  "z-backdrop",
+  "z-modal",
+  "z-toast",
+  "z-tooltip",
+] as const;
+
+const RAW_Z_INDEX = /(?<![\w-])-?z-(?:\[[^\]\s]+\]|\d+)(?![\w-])/g;
+const LOCAL_LAYERING_Z = /^-?z-(?:0|10|20)$/;
+
+/** Files excluded from the raw z-index rule (other sessions' pending work). */
+export const RAW_Z_INDEX_EXCLUDED = [
+  "packages/product/work-management/",
+  "apps/web/src/shell/sidebar/sidebar.tsx",
+] as const;
 
 export type FileCounts = Partial<Record<DesignTokenRule, number>>;
 export type CountsByFile = Record<string, FileCounts>;
@@ -90,6 +117,50 @@ export function countViolations(source: string, isCss = false): FileCounts {
     if (matches && matches.length > 0) counts[rule] = matches.length;
   }
   return counts;
+}
+
+export function findRawZIndex(source: string): string[] {
+  return (source.match(RAW_Z_INDEX) ?? []).filter(
+    (utility) => !LOCAL_LAYERING_Z.test(utility),
+  );
+}
+
+export function zIndexScanRoots(rootDir: string): string[] {
+  const productDir = join(rootDir, "packages/product");
+  const product = existsSync(productDir)
+    ? readdirSync(productDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .flatMap((entry) => {
+          const family = join(productDir, entry.name);
+          return readdirSync(family, { withFileTypes: true })
+            .filter((layer) => layer.isDirectory())
+            .map((layer) => join(family, layer.name, "src"));
+        })
+    : [];
+  return [
+    ...scanRoots(rootDir),
+    join(rootDir, "packages/ui/web/src"),
+    ...product,
+  ];
+}
+
+/** Raw z-index utilities per file, outside the exclusions. */
+export function scanRawZIndex(
+  rootDir: string = DEFAULT_ROOT,
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  for (const root of zIndexScanRoots(rootDir)) {
+    for (const file of walk(root)) {
+      const rel = relative(rootDir, file).replace(/\\/g, "/");
+      if (EXCLUDED.test(`/${rel}`)) continue;
+      if (RAW_Z_INDEX_EXCLUDED.some((prefix) => rel.startsWith(prefix))) {
+        continue;
+      }
+      const found = findRawZIndex(readFileSync(file, "utf8"));
+      if (found.length > 0) result[rel] = found;
+    }
+  }
+  return result;
 }
 
 export function scanDesignTokenUsage(
@@ -166,6 +237,16 @@ function writeBaseline(counts: CountsByFile, path: string = BASELINE_PATH) {
 }
 
 if (process.argv[1]?.endsWith("check-design-tokens.ts")) {
+  const rawZ = scanRawZIndex();
+  if (Object.keys(rawZ).length > 0) {
+    console.error(
+      `[design-tokens] FAIL — raw z-index utilities (use ${Z_INDEX_ROLE_UTILITIES.join(", ")}):`,
+    );
+    for (const [file, found] of Object.entries(rawZ)) {
+      console.error(`  - ${file}: ${found.join(", ")}`);
+    }
+    process.exitCode = 1;
+  }
   const current = scanDesignTokenUsage();
   if (process.argv.includes("--update-baseline")) {
     writeBaseline(current);

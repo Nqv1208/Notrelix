@@ -102,7 +102,7 @@ export interface WorkspaceLibrarySurfaceProps {
 /** Fixed row height of the dense table (`h-10`), used by windowing. */
 const ROW_HEIGHT = 40;
 
-const STICKY_CELL = "sticky z-[1] bg-surface-panel";
+const STICKY_CELL = "sticky z-10 bg-surface-panel";
 
 function pluralCopy(
   forms: { one: string; other: string },

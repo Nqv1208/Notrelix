@@ -218,7 +218,7 @@ function SortableTabItem({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
-    zIndex: isDragging ? 50 : ("auto" as const),
+    zIndex: isDragging ? ("var(--z-dropdown)" as const) : ("auto" as const),
   };
 
   const handleClick = (e: React.MouseEvent) => {

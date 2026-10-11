@@ -89,7 +89,7 @@ export function PendingInvitationsMenu({
 
       <PopoverContent
         align="end"
-        className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden z-[100]"
+        className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden"
       >
         <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/30">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
