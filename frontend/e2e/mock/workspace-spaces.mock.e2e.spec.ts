@@ -23,13 +23,14 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
 }) => {
   await page.goto(workspace);
   const nav = page.getByRole("navigation", { name: "Workspace navigation" });
-  const tree = nav.getByRole("tree", { name: "Spaces" });
+  // The sidebar names the Space tree "Departments" (Final-Space).
+  const tree = nav.getByRole("tree", { name: "Departments" });
   await expect(
     tree.getByRole("treeitem", { name: /Engineering/ }),
   ).toBeVisible();
 
   // Create a top-level department Space (Private by default).
-  await nav.getByRole("button", { name: "New Space" }).click();
+  await nav.getByRole("button", { name: "Create department" }).click();
   const create = page.getByRole("dialog", { name: "New Space" });
   await create.getByLabel("Name").fill("IT");
   await expect(create.getByRole("radio", { name: /Private/ })).toBeChecked();
@@ -114,7 +115,8 @@ test("Space org tree: create a Space, add a member, create a Board and a Doc in 
 
   // The directory offers the same move for the root Doc (in-app navigation:
   // a reload would reset the in-page mock world).
-  await nav.getByRole("link", { name: "Boards & Docs" }).click();
+  // The sidebar's short label for Boards & Docs is "Docs".
+  await nav.getByRole("link", { name: "Docs", exact: true }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: "Boards & Docs" }),
   ).toBeVisible();

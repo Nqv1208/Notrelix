@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -18,15 +18,24 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+/** Teams sits under the role-gated "Workspace setup" disclosure. */
+async function openTeams(nav: Locator) {
+  const setup = nav.getByRole("button", { name: "Workspace setup" });
+  if ((await setup.getAttribute("aria-expanded")) !== "true") {
+    await setup.click();
+  }
+  await nav.getByRole("link", { name: "Teams" }).click();
+}
+
 test("Teams: create a Team, add a member, promote and demote Leads, remove, archive (WX-TEAM-001)", async ({
   page,
 }) => {
   await page.goto(workspace);
 
-  // Open Teams from the sidebar (in-app navigation: a reload would reset the
-  // in-page mock world).
+  // Open Teams from the sidebar's setup disclosure (in-app navigation: a
+  // reload would reset the in-page mock world).
   const nav = page.getByRole("navigation", { name: "Workspace navigation" });
-  await nav.getByRole("link", { name: "Teams" }).click();
+  await openTeams(nav);
   await expect(page).toHaveURL(/\/teams$/);
   await expect(
     page.getByRole("heading", { level: 1, name: "Teams" }),
@@ -107,7 +116,7 @@ test("Teams: create a Team, add a member, promote and demote Leads, remove, arch
     page.getByRole("button", { name: "Unarchive Team" }),
   ).toBeVisible();
 
-  await nav.getByRole("link", { name: "Teams" }).click();
+  await openTeams(nav);
   await expect(
     page.getByRole("heading", { level: 1, name: "Teams" }),
   ).toBeVisible();
