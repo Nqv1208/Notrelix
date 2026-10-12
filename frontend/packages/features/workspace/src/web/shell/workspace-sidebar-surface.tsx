@@ -621,9 +621,9 @@ function SidebarSpaces({
 /**
  * The one workspace sidebar (WX-SHELL-001) at the October 2026 layout: the
  * workspace chip (opens the Notrelix system rail), the command row, the
- * primary destinations with counts, the department tree with its Boards,
- * and a footer with workspace setup and the member. Pins and recents live
- * on Home. Renders inside a `SidebarProvider`; on mobile the primitive turns
+ * primary destinations with counts, the pinned items (Ghim), the
+ * department tree with its Boards, and a footer with workspace setup and
+ * the member. Recents live on Home. Renders inside a `SidebarProvider`; on mobile the primitive turns
  * it into a drawer. Every entry points at a real destination.
  */
 export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {

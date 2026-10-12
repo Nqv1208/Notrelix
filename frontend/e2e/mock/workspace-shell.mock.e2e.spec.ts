@@ -167,6 +167,73 @@ test("Pinning the system rail survives a reload", async ({ page }) => {
   await expect(rail(page)).toHaveCount(0);
 });
 
+test("The sidebar still collapses and expands while the system rail is pinned", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(workspace);
+  await chip(page).click();
+  const pin = rail(page).getByRole("button", {
+    name: "Giữ thanh hệ thống Notrelix luôn mở",
+  });
+  await pin.click();
+  await expect(rail(page)).toHaveAttribute("data-presentation", "pinned");
+
+  const container = page.locator('[data-slot="sidebar-container"]');
+  const main = page.locator("#workspace-main");
+  const toggle = page.getByRole("button", { name: "Hiện hoặc ẩn điều hướng" });
+  const railBox = await rail(page).boundingBox();
+  const railRight = railBox!.x + railBox!.width;
+
+  // Expanded: the sidebar sits right of the rail (after its 200 ms slide).
+  await expect
+    .poll(async () => (await container.boundingBox())?.x ?? -1)
+    .toBeGreaterThanOrEqual(railRight - 0.5);
+
+  // Collapse: the sidebar container leaves the screen and main is uncovered.
+  await toggle.click();
+  await expect
+    .poll(async () => {
+      const current = await container.boundingBox();
+      return current ? current.x + current.width : 0;
+    })
+    .toBeLessThanOrEqual(0.5);
+  await expect
+    .poll(async () => (await main.boundingBox())?.x ?? -1)
+    .toBeLessThanOrEqual(railRight + 0.5);
+  const mainBox = await main.boundingBox();
+  const hit = await page.evaluate(
+    ({ x, y }) =>
+      document.elementFromPoint(x, y)?.closest("#workspace-main") !== null,
+    { x: mainBox!.x + 40, y: mainBox!.y + 40 },
+  );
+  expect(hit).toBe(true);
+
+  // Expand again: the sidebar returns beside the rail.
+  await toggle.click();
+  await expect
+    .poll(async () => (await container.boundingBox())?.x ?? -1)
+    .toBeGreaterThanOrEqual(railRight - 0.5);
+  const box = await container.boundingBox();
+  expect(box!.x).toBeLessThanOrEqual(railRight + 0.5);
+});
+
+test("The workspace chip moves focus into a pinned rail", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(workspace);
+  await chip(page).click();
+  await rail(page)
+    .getByRole("button", { name: "Giữ thanh hệ thống Notrelix luôn mở" })
+    .click();
+  await expect(rail(page)).toHaveAttribute("data-presentation", "pinned");
+
+  await chip(page).focus();
+  await page.keyboard.press("Enter");
+  await expect(rail(page).locator('[aria-current="page"]')).toBeFocused();
+  await expect(chip(page)).toHaveAttribute("aria-expanded", "true");
+  await expect(rail(page)).toHaveAttribute("data-presentation", "pinned");
+});
+
 test("At 320 px the sidebar is the off-canvas sheet with the workspaces at its top and nothing overflows", async ({
   page,
 }) => {

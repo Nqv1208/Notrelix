@@ -312,11 +312,13 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   }, [role, workspace, workspaceId, workspaces.data]);
 
   const openSystemRail = useCallback(() => {
-    if (isMobile) {
-      // The drawer already lists the workspaces at its top.
+    if (isMobile || rail.presentation === "pinned") {
+      // The drawer (mobile) or the pinned rail already shows the
+      // workspaces: move focus to the current one instead of opening.
+      const shown = isMobile ? "drawer" : "pinned";
       document
         .querySelector<HTMLElement>(
-          '[data-presentation="drawer"] [aria-current="page"]',
+          `[data-presentation="${shown}"] [aria-current="page"]`,
         )
         ?.focus();
       return;
@@ -475,9 +477,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       data-system-rail={desktopRail}
       className={cn(
         "h-svh overflow-hidden bg-surface-canvas",
-        // A pinned rail sits in flow before the sidebar; the sidebar's fixed
-        // container moves right by the rail width (w-19).
-        desktopRail === "pinned" && "[&_[data-slot=sidebar-container]]:left-19",
+        // A pinned rail sits in flow before the sidebar; the expanded
+        // sidebar's fixed container moves right by the rail width (w-19).
+        // Scoped to data-state=expanded so the collapsed off-screen rule wins.
+        desktopRail === "pinned" &&
+          "[&_[data-state=expanded]_[data-slot=sidebar-container]]:left-19",
       )}
     >
       {desktopRail === "hidden" ? null : railSurface(desktopRail)}
