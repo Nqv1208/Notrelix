@@ -121,7 +121,7 @@ export function buildAppearanceColors(
     input: nr.input,
     sidebar: nr.sidebar,
     "sidebar-foreground": nr.text,
-    "sidebar-accent": nr.hover,
+    "sidebar-accent": nr.hoverStrong,
     "sidebar-accent-foreground": nr.text,
     "sidebar-border": nr.border,
 

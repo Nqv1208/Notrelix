@@ -173,7 +173,7 @@
   --color-work-status-done: var(--work-status-done);
   --color-work-status-done-text: var(--work-status-done-text);
 
-  /* Identity (workspace/Board/avatar marks, chart series; never status). */
+  /* Identity (logo marks, Board/Doc tiles, avatars, chart series; never status). Workspace/Space chips: mark tones below (WX-DEC-014). */
   --color-identity-blue: var(--identity-blue);
   --color-identity-blue-foreground: var(--identity-blue-foreground);
   --color-identity-coral: var(--identity-coral);

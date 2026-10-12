@@ -19,7 +19,7 @@ Rebuild of the authenticated workspace surface — shell, Home, Boards/Docs dire
 | WX-DEC-003 | Color strategy is Restrained. Light is the default mode; Dark and High contrast are complete modes, not inversions. |
 | WX-DEC-004 | Brand palette comes from the Notrelix logo. Blue `#1E90FF` (OKLCH hue ≈255) is the default accent, split into `brand-mark` (L≈0.63, marks only), `brand-solid` (L≈0.53, filled actions with white text, ≥4.5:1) and `brand-ink` (L≈0.45, links). Dark mode uses L≈0.72 for text and links. |
 | WX-DEC-005 | Theme has two independent axes: mode (Light / Dark / System / High contrast) and accent (Notrelix Blue default; Coral from `#FC744C`; Ember from `#FE3154`, kept distinct from error red; Sage from `#8CADA1`, deepened for contrast; Amber from `#F9C942`, dark text on fills). They replace the seven current accent themes. |
-| WX-DEC-006 | The warm logo colors are identity colors (workspace, Board, avatar, chart series) only, never status colors (DESIGN.md §9.3). |
+| WX-DEC-006 | The warm logo colors are identity colors (logo marks, Board/Doc tiles, avatars, chart series) only, never status colors (DESIGN.md §9.3). Workspace and department (Space) chips use the mark tones of WX-DEC-014. |
 | WX-DEC-007 | Superseded by WX-DEC-013. One family: Inter with tabular numerals; fixed rem scale, ratio 1.125–1.2. |
 | WX-DEC-008 | The UI is internationalized from the start: Vietnamese and English. |
 | WX-DEC-009 | Backend-first: missing producer endpoints are delivered before the frontend phase that needs them. |

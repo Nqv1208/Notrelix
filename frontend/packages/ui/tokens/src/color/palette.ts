@@ -3,8 +3,9 @@
  *
  * Strategy: Restrained. Neutrals carry the interface; one accent marks
  * interactive intent; status colors keep stable meaning; the logo's warm
- * colors are identity colors (workspace/Board/avatar marks, chart series)
- * and are never status colors (DESIGN.md §9, WX-DEC-003..006).
+ * colors are identity colors (Board/avatar marks, chart series) and are
+ * never status colors (DESIGN.md §9, WX-DEC-003..006); workspace and
+ * department (Space) chips use the mark tones (WX-DEC-014).
  *
  * Framework-neutral: no React, no DOM.
  */
@@ -50,8 +51,10 @@ export interface NeutralRoles {
   readonly raised: Oklch;
   /** Subtle fill (secondary buttons, tracks, header bands). */
   readonly subtle: Oklch;
-  /** Pointer hover / keyboard-highlight fill. */
+  /** Pointer hover / keyboard-highlight fill on canvas, panel and menus. */
   readonly hover: Oklch;
+  /** Hover on the sidebar tier (one step stronger than `hover`). */
+  readonly hoverStrong: Oklch;
   readonly border: Oklch;
   /** Form control boundary. */
   readonly input: Oklch;
@@ -71,7 +74,9 @@ const n = (l: number, c: number) => tone(l, c, NEUTRAL_HUE);
  * Mockup neutrals (docs/design/mockups/2026-10, `.nx` light / `.nx.mode-dem`
  * dark) are authored on the CSS emit grid (L, C to 3 decimals) at the brand
  * hue so the emitted value renders the mockup hex exactly. Light muted text
- * (#4F5866) has no hue-255 fit, so it keeps its own hue.
+ * (#4F5866) has no hue-255 fit, so it keeps its own hue. Subtle and hover
+ * fills are the mockup `--hover`; the sidebar hover is the mockup `--hover2`
+ * (light #EFF1F4 → #E6E9EE is ΔL 0.024; dark #13181E → #232A34 is ΔL 0.076).
  */
 export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
   light: {
@@ -79,8 +84,9 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     sidebar: n(0.957, 0.005), // #EFF1F4
     panel: n(0.997, 0.002),
     raised: n(1, 0),
-    subtle: n(0.955, 0.006),
-    hover: n(0.945, 0.006),
+    subtle: n(0.964, 0.005), // #F1F3F6
+    hover: n(0.964, 0.005), // #F1F3F6
+    hoverStrong: n(0.933, 0.007), // #E6E9EE
     border: n(0.933, 0.007), // #E6E9EE
     input: n(0.87, 0.008),
     text: n(0.22, 0.008),
@@ -95,8 +101,9 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     sidebar: n(0.207, 0.014), // #13181E
     panel: n(0.216, 0.016), // #151A21
     raised: n(0.235, 0.009),
-    subtle: n(0.25, 0.009),
-    hover: n(0.27, 0.01),
+    subtle: n(0.253, 0.02), // #1C232C
+    hover: n(0.253, 0.02), // #1C232C
+    hoverStrong: n(0.283, 0.021), // #232A34
     border: n(0.286, 0.022), // #232B35
     input: n(0.36, 0.01),
     text: n(0.933, 0.007), // #E6E9EE
@@ -113,6 +120,7 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     raised: n(1, 0),
     subtle: n(0.95, 0.004),
     hover: n(0.92, 0.006),
+    hoverStrong: n(0.92, 0.006),
     border: n(0.45, 0.01),
     input: n(0.4, 0.01),
     text: n(0.13, 0.01),
@@ -211,7 +219,8 @@ function buildAccent(id: AccentId, recipe: AccentRecipe): AccentDefinition {
         solid: tone(recipe.lightFill ? 0.8 : 0.72, chroma, hue),
         onSolid: dark.onLightFill,
         ink: tone(recipe.lightFill ? 0.8 : 0.72, chroma, hue),
-        subtle: tone(0.3, 0.05, hue),
+        // Mockup `--sel` #172334 for Blue; every accent shares its L and C.
+        subtle: tone(0.254, 0.036, hue),
         onSubtle: tone(recipe.lightFill ? 0.84 : 0.8, chroma, hue),
         ring: tone(recipe.lightFill ? 0.8 : 0.72, chroma, hue),
       },
@@ -464,8 +473,9 @@ export interface IdentityTone {
 }
 
 /**
- * Identity colors: exact logo values. Used for workspace/Board/avatar marks
- * and chart series — never for status (DESIGN.md §9.3).
+ * Identity colors: exact logo values. Used for logo marks, Board/Doc tiles,
+ * avatars and chart series — never for status (DESIGN.md §9.3). Workspace
+ * and department (Space) chips use the mark tones (WX-DEC-014).
  */
 export const identity: Record<IdentityId, IdentityTone> = {
   blue: { fill: fromHex(logoHex.blue), onFill: neutrals.light.onLightFill },

@@ -15,6 +15,7 @@ import {
   easing,
   fontSizeScale,
   fonts,
+  deltaEOk,
   fromHex,
   oklch,
   radiusBase,
@@ -210,6 +211,13 @@ const MOCKUP_VALUES: Record<"light" | "dark", Record<string, string>> = {
     "work-status-doing-text": "#0f56ae",
     "work-status-review-text": "#8a5a00",
     "work-status-done-text": "#1d6b40",
+    // Hover tiers under the mockup sidebar (`--hover` / `--hover2`).
+    muted: "#f1f3f6",
+    secondary: "#f1f3f6",
+    accent: "#f1f3f6",
+    "state-hover": "#f1f3f6",
+    "table-row-hover": "#f1f3f6",
+    "sidebar-accent": "#e6e9ee",
   },
   dark: {
     "surface-canvas": "#0e1116",
@@ -227,6 +235,12 @@ const MOCKUP_VALUES: Record<"light" | "dark", Record<string, string>> = {
     "work-status-doing-text": "#5aa9ff",
     "work-status-review-text": "#f2c14e",
     "work-status-done-text": "#56c98a",
+    muted: "#1c232c",
+    secondary: "#1c232c",
+    accent: "#1c232c",
+    "state-hover": "#1c232c",
+    "table-row-hover": "#1c232c",
+    "sidebar-accent": "#232a34",
   },
 };
 
@@ -239,6 +253,31 @@ describe("mockup colour values", () => {
       },
     );
   }
+
+  it("lifts the sidebar hover off the sidebar in every appearance", () => {
+    // Light uses the mockup pair as is: #EFF1F4 → #E6E9EE is ΔL 0.024.
+    for (const appearance of THEME_APPEARANCES) {
+      const colors = resolveSemanticColors(appearance, "blue");
+      const delta = colors["sidebar"]!.l - colors["sidebar-accent"]!.l;
+      expect(Math.abs(delta), appearance).toBeGreaterThanOrEqual(0.024 - 1e-9);
+    }
+  });
+
+  it("selects with the mockup tint (blue accent; other accents share L and C)", () => {
+    expect(
+      deltaEOk(
+        resolveSemanticColors("dark", "blue")["state-selected"]!,
+        fromHex("#172334"),
+      ),
+    ).toBeLessThanOrEqual(0.005);
+    // Light #EEF4FD is within ΔE_OK 0.02 (just noticeable) of the current tone.
+    expect(
+      deltaEOk(
+        resolveSemanticColors("light", "blue")["state-selected"]!,
+        fromHex("#eef4fd"),
+      ),
+    ).toBeLessThan(0.02);
+  });
 
   it("names the four work-status roles (labels are Work Management copy, not tokens)", () => {
     expect(WORK_STATUS_IDS).toEqual(["todo", "doing", "review", "done"]);
