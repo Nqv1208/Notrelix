@@ -101,6 +101,9 @@ describe("NotrelixSystemRailSurface", () => {
       expect(badgeOf(guestButton)).toBeNull();
       expect(badgeOf(currentButton)).toBeNull();
 
+      // Dedicated rail roles: dark in every appearance, no borrowed `.dark` scope.
+      expect(nav.classList.contains("bg-rail")).toBe(true);
+      expect(nav.classList.contains("dark")).toBe(false);
       expect(within(nav).getByRole("img", { name: copy.logo })).toBeTruthy();
       expect(
         within(nav).getByRole("img", {

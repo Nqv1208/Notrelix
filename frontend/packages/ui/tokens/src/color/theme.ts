@@ -28,6 +28,7 @@ import {
   identity,
   markTones,
   neutrals,
+  railTones,
   statuses,
   workStatuses,
   type AccentId,
@@ -188,6 +189,15 @@ export function buildAppearanceColors(
     roles[`mark-${id}`] = markTones[id].fill;
     roles[`mark-${id}-foreground`] = markTones[id].onFill;
   }
+
+  const rail = railTones[appearance];
+  roles.rail = rail.surface;
+  roles["rail-foreground"] = rail.ink;
+  roles["rail-active-foreground"] = rail.activeInk;
+  roles["rail-hover"] = rail.hover;
+  roles["rail-separator"] = rail.separator;
+  roles["rail-badge"] = rail.badge;
+  roles["rail-badge-foreground"] = rail.onBadge;
 
   CHART_SERIES.forEach((id, index) => {
     roles[`chart-${index + 1}`] = identity[id].fill;

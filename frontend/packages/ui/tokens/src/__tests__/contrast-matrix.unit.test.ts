@@ -194,6 +194,28 @@ describe("contrast matrix (appearance × accent)", () => {
       ).toBeGreaterThanOrEqual(4.5);
     });
 
+    it("system rail ink, active ink and badge stay legible on the dark rail", () => {
+      const rail = get("rail");
+      const hover = get("rail-hover");
+      for (const fg of ["rail-foreground", "rail-active-foreground"]) {
+        const plain = contrastRatio(get(fg), rail);
+        expect(plain, `${fg} on rail = ${plain.toFixed(2)}`).toBeGreaterThanOrEqual(
+          minimumText(appearance),
+        );
+        const hovered = contrastOverComposite(get(fg), hover, rail);
+        expect(
+          hovered,
+          `${fg} on rail-hover = ${hovered.toFixed(2)}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+      const badge = contrastRatio(get("rail-badge-foreground"), get("rail-badge"));
+      expect(badge, `badge = ${badge.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
+      // The current-workspace ring (active foreground) is visible on the rail.
+      expect(
+        contrastRatio(get("rail-active-foreground"), rail),
+      ).toBeGreaterThanOrEqual(3);
+    });
+
     it.each(IDENTITY_PAIRS)("identity label %s on %s ≥ 4.5:1", (fg, bg) => {
       expect(contrastRatio(get(fg), get(bg))).toBeGreaterThanOrEqual(4.5);
     });

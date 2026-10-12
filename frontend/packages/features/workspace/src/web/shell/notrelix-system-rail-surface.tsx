@@ -67,7 +67,7 @@ function UnreadBadge({ count }: { readonly count: number | null }) {
     <span
       aria-hidden="true"
       data-slot="system-rail-badge"
-      className="absolute top-0.5 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-caption leading-none font-bold text-danger-foreground tabular-nums"
+      className="absolute top-0.5 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rail-badge px-1 text-caption leading-none font-bold text-rail-badge-foreground tabular-nums"
     >
       {count > BADGE_CAP ? `${BADGE_CAP}+` : count}
     </span>
@@ -76,7 +76,7 @@ function UnreadBadge({ count }: { readonly count: number | null }) {
 
 /** One 64 px rail entry: icon or mark above a short label. */
 const RAIL_ITEM_CLASS =
-  "relative flex w-16 flex-col items-center gap-1 rounded-lg px-0.5 pt-2 pb-1.5 text-caption font-medium text-muted-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-60 [&_svg]:size-5";
+  "relative flex w-16 flex-col items-center gap-1 rounded-lg px-0.5 pt-2 pb-1.5 text-caption font-medium text-rail-foreground outline-none hover:bg-rail-hover hover:text-rail-active-foreground focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-60 [&_svg]:size-5";
 
 function RailLabel({ children }: { readonly children: React.ReactNode }) {
   return <span className="block max-w-full truncate">{children}</span>;
@@ -85,7 +85,7 @@ function RailLabel({ children }: { readonly children: React.ReactNode }) {
 /**
  * The Notrelix system rail (Final-Space `nav=hien-de` / `nav=hien-day`):
  * the member's workspaces, account-level inbox and search, and settings.
- * It always renders on the dark rail surface (a `.dark` token scope).
+ * It always renders on the dark rail roles (`--rail-*`) in every appearance.
  * Overlay sits at `z-sticky` (below dialogs) with a scrim; Escape and the
  * scrim call `onClose`, and focus moves to the current workspace on open.
  */
@@ -130,7 +130,7 @@ export function NotrelixSystemRailSurface({
         }
       }}
       className={cn(
-        "dark flex w-19 shrink-0 flex-col items-center gap-1 overflow-y-auto bg-background py-3 text-foreground",
+        "flex w-19 shrink-0 flex-col items-center gap-1 overflow-y-auto bg-rail py-3 text-rail-foreground",
         overlay
           ? "fixed inset-y-0 left-0 z-sticky shadow-modal motion-safe:animate-in motion-safe:slide-in-from-left motion-safe:duration-180 motion-safe:ease-out"
           : "relative h-full",
@@ -156,7 +156,7 @@ export function NotrelixSystemRailSurface({
             onClick={() => {
               if (!workspace.current) onSwitchWorkspace(workspace.id);
             }}
-            className={cn(RAIL_ITEM_CLASS, workspace.current && "text-foreground")}
+            className={cn(RAIL_ITEM_CLASS, workspace.current && "text-rail-active-foreground")}
           >
             <span
               aria-hidden="true"
@@ -164,7 +164,7 @@ export function NotrelixSystemRailSurface({
                 "flex size-10 items-center justify-center rounded-xl text-label font-bold",
                 MARK_TONE_CLASS[workspace.tone],
                 workspace.current &&
-                  "ring-2 ring-foreground ring-offset-2 ring-offset-background",
+                  "ring-2 ring-rail-active-foreground ring-offset-2 ring-offset-rail",
               )}
             >
               {workspace.initials}
@@ -183,14 +183,14 @@ export function NotrelixSystemRailSurface({
       >
         <span
           aria-hidden="true"
-          className="flex size-10 items-center justify-center rounded-xl border-2 border-dashed border-border"
+          className="flex size-10 items-center justify-center rounded-xl border-2 border-dashed border-rail-separator"
         >
           <Plus />
         </span>
         <RailLabel>{copy.create.label}</RailLabel>
       </button>
 
-      <span aria-hidden="true" className="my-1.5 h-px w-9 bg-border" />
+      <span aria-hidden="true" className="my-1.5 h-px w-9 bg-rail-separator" />
 
       <button
         type="button"
@@ -212,7 +212,7 @@ export function NotrelixSystemRailSurface({
       {allInboxAvailable ? null : (
         <span
           id={reasonId}
-          className="-mt-1 w-16 text-center text-caption text-muted-foreground"
+          className="-mt-1 w-16 text-center text-caption text-rail-foreground"
         >
           {copy.allInbox.unavailable}
         </span>
@@ -246,7 +246,7 @@ export function NotrelixSystemRailSurface({
         aria-pressed={presentation === "pinned"}
         title={copy.pin.label}
         onClick={onTogglePinned}
-        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:focus-ring aria-pressed:bg-state-selected aria-pressed:text-state-selected-foreground [&_svg]:size-4"
+        className="flex size-8 items-center justify-center rounded-lg text-rail-foreground outline-none hover:bg-rail-hover hover:text-rail-active-foreground focus-visible:focus-ring aria-pressed:bg-rail-hover aria-pressed:text-rail-active-foreground [&_svg]:size-4"
       >
         <Pin aria-hidden="true" />
       </button>

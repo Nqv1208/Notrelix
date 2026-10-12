@@ -185,6 +185,15 @@
   --color-identity-ember: var(--identity-ember);
   --color-identity-ember-foreground: var(--identity-ember-foreground);
 
+  /* Notrelix system rail: dark in every appearance (Final-Space `.rail`). */
+  --color-rail: var(--rail);
+  --color-rail-foreground: var(--rail-foreground);
+  --color-rail-active-foreground: var(--rail-active-foreground);
+  --color-rail-hover: var(--rail-hover);
+  --color-rail-separator: var(--rail-separator);
+  --color-rail-badge: var(--rail-badge);
+  --color-rail-badge-foreground: var(--rail-badge-foreground);
+
   /* Mark tones: workspace and department (Space) initials chips (WX-DEC-014; never status). */
   --color-mark-blue: var(--mark-blue);
   --color-mark-blue-foreground: var(--mark-blue-foreground);

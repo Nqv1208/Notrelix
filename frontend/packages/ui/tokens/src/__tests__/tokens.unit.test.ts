@@ -333,6 +333,52 @@ describe("mark tones (WX-DEC-014)", () => {
   }
 });
 
+/**
+ * Notrelix system rail (Final-Space `.rail`): dark in every appearance.
+ * Light rail #16202E with ink #AFBACB; dark rail #05070A with ink #8C97A8;
+ * high contrast black with white ink. Active white, badge #E8174B + white.
+ */
+const RAIL_VALUES: Record<ThemeAppearance, Record<string, string>> = {
+  light: {
+    rail: "#16202e",
+    "rail-foreground": "#afbacb",
+    "rail-active-foreground": "#ffffff",
+    "rail-badge": "#e8174b",
+    "rail-badge-foreground": "#ffffff",
+  },
+  dark: {
+    rail: "#05070a",
+    "rail-foreground": "#8c97a8",
+    "rail-active-foreground": "#ffffff",
+    "rail-badge": "#e8174b",
+    "rail-badge-foreground": "#ffffff",
+  },
+  "high-contrast": {
+    rail: "#000000",
+    "rail-foreground": "#ffffff",
+    "rail-active-foreground": "#ffffff",
+    "rail-badge": "#e8174b",
+    "rail-badge-foreground": "#ffffff",
+  },
+};
+
+describe("system rail roles", () => {
+  for (const appearance of THEME_APPEARANCES) {
+    it.each(Object.entries(RAIL_VALUES[appearance]))(
+      `${appearance} --%s renders %s`,
+      (role, hex) => {
+        expect(emittedHex(appearance, role)).toBe(hex);
+      },
+    );
+
+    it(`${appearance} rail hover and separator are white at 8 % and 14 %`, () => {
+      const variables = resolveThemeVariables(appearance, "blue");
+      expect(variables["--rail-hover"]).toBe("oklch(1 0 0 / 0.08)");
+      expect(variables["--rail-separator"]).toBe("oklch(1 0 0 / 0.14)");
+    });
+  }
+});
+
 describe("color model", () => {
   it("round-trips hex through OKLCH", () => {
     for (const hex of ["#1e90ff", "#fc744c", "#f9c942", "#8cada1", "#fe3154"]) {

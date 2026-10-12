@@ -525,6 +525,57 @@ export const markTones: Record<MarkToneId, MarkTone> = {
   violet: { fill: oklch(0.54, 0.184, 278.3), onFill: markInitials }, // #5B5BD6 5.37:1
 };
 
+// ─── System rail ─────────────────────────────────────────────────────────
+
+export interface RailTones {
+  /** The rail column; dark in every appearance. */
+  readonly surface: Oklch;
+  /** Labels and icons on the rail. */
+  readonly ink: Oklch;
+  /** Current workspace label and ring, hovered labels. */
+  readonly activeInk: Oklch;
+  /** Hover fill (translucent white over the rail). */
+  readonly hover: Oklch;
+  /** Separator line (translucent white over the rail). */
+  readonly separator: Oklch;
+  /** Unread badge fill and its text. */
+  readonly badge: Oklch;
+  readonly onBadge: Oklch;
+}
+
+const railWhite = oklch(1, 0, 0);
+const railShared = {
+  activeInk: railWhite,
+  hover: oklch(1, 0, 0, 0.08),
+  separator: oklch(1, 0, 0, 0.14),
+  badge: oklch(0.596, 0.23, 16.8), // #E8174B, white 4.52:1
+  onBadge: railWhite,
+} as const;
+
+/*
+ * The Notrelix system rail (Final-Space `.rail`), authored on the CSS emit
+ * grid so it renders the mockup hex: light rail #16202E with ink #AFBACB
+ * (8.37:1), dark rail #05070A with ink #8C97A8 (6.82:1), high contrast black
+ * with white ink. The rail stays dark in every appearance.
+ */
+export const railTones: Record<ThemeAppearance, RailTones> = {
+  light: {
+    surface: oklch(0.241, 0.031, 256.9), // #16202E
+    ink: oklch(0.786, 0.027, 259), // #AFBACB
+    ...railShared,
+  },
+  dark: {
+    surface: oklch(0.127, 0.009, 253.7), // #05070A
+    ink: oklch(0.673, 0.028, 259), // #8C97A8
+    ...railShared,
+  },
+  "high-contrast": {
+    surface: oklch(0, 0, 0),
+    ink: railWhite,
+    ...railShared,
+  },
+};
+
 /** Chart series order (identity colors, never status). */
 export const CHART_SERIES: readonly IdentityId[] = [
   "blue",
