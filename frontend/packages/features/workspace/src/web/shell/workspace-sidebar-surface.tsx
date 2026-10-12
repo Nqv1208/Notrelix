@@ -48,7 +48,10 @@ import { SpaceTreeNav, type SpaceTreeNavProps } from "../spaces/space-tree-nav";
 import { IdentityMark, ShellLink } from "./shell-link";
 import {
   formatCopy,
+  pluralCopy,
   sidebarCountBadge,
+  workspaceSetupLinks,
+  type WorkspaceSetupLink,
   type ShellCurrentWorkspace,
   type ShellNavigation,
   type ShellSidebarCounts,
@@ -78,6 +81,12 @@ export interface WorkspaceSidebarSurfaceProps {
   readonly onOpenCommand: () => void;
   readonly onOpenShortcuts: () => void;
   readonly onSignOut: () => void;
+  /**
+   * Mobile drawer only: rendered first inside the drawer, above the
+   * workspace chip (the system rail's workspaces on narrow screens).
+   * Ignored on desktop.
+   */
+  readonly mobileSystemRail?: React.ReactNode;
 }
 
 const ACTIVE_ITEM =
@@ -93,12 +102,6 @@ interface NavItem {
   readonly count?: CountKind;
 }
 
-const SETUP_SECTIONS: ReadonlySet<WorkspaceDestination["section"]> = new Set([
-  "settings",
-  "members",
-  "teams",
-  "billing",
-]);
 
 function useCloseMobileDrawer(): () => void {
   const { isMobile, setOpenMobile } = useSidebar();
@@ -146,12 +149,19 @@ function PrimaryNav({
         const count = item.count ? counts[item.count] : null;
         const badge = sidebarCountBadge(count);
         const label =
-          item.count && badge !== null
-            ? formatCopy(
+          item.count && badge !== null && count !== null
+            ? pluralCopy(
                 item.count === "inbox"
-                  ? copy.sidebar.inboxCount
-                  : copy.sidebar.myWorkCount,
-                { label: item.label, count: count ?? 0 },
+                  ? {
+                      one: copy.sidebar.inboxCount_one,
+                      other: copy.sidebar.inboxCount_other,
+                    }
+                  : {
+                      one: copy.sidebar.myWorkCount_one,
+                      other: copy.sidebar.myWorkCount_other,
+                    },
+                count,
+                { label: item.label },
               )
             : undefined;
         return (
@@ -210,8 +220,20 @@ function WorkspaceChip({
   const meta =
     workspace.departmentCount != null && workspace.memberCount != null
       ? formatCopy(copy.sidebar.workspaceMeta, {
-          departments: workspace.departmentCount,
-          members: workspace.memberCount,
+          departments: pluralCopy(
+            {
+              one: copy.sidebar.departments_one,
+              other: copy.sidebar.departments_other,
+            },
+            workspace.departmentCount,
+          ),
+          members: pluralCopy(
+            {
+              one: copy.sidebar.people_one,
+              other: copy.sidebar.people_other,
+            },
+            workspace.memberCount,
+          ),
         })
       : workspace.role
         ? copy.sidebar.roles[workspace.role]
@@ -274,24 +296,45 @@ function CommandRow({
   );
 }
 
+function setupLabel(
+  copy: WorkspaceShellCopy,
+  link: WorkspaceSetupLink,
+): string {
+  switch (link) {
+    case "settings":
+      return copy.sidebar.setupGeneral;
+    case "members":
+      return copy.sidebar.setupMembers;
+    case "teams":
+      return copy.sidebar.setupTeams;
+    case "billing":
+      return copy.sidebar.setupBilling;
+  }
+}
+
+/**
+ * The "Workspace setup" disclosure, gated by the member's workspace role
+ * (owners/admins: every link; members: Members and Teams; guests: none).
+ */
 function WorkspaceSetup({
   copy,
+  links,
   location,
   navigation,
 }: {
   copy: WorkspaceShellCopy;
+  links: readonly WorkspaceSetupLink[];
   location: WorkspaceDestination | null;
   navigation: ShellNavigation;
 }) {
   const closeDrawer = useCloseMobileDrawer();
-  const items: readonly { label: string; destination: WorkspaceDestination }[] =
-    [
-      { label: copy.sidebar.setupGeneral, destination: { section: "settings" } },
-      { label: copy.sidebar.setupMembers, destination: { section: "members" } },
-      { label: copy.sidebar.setupTeams, destination: { section: "teams" } },
-      { label: copy.sidebar.setupBilling, destination: { section: "billing" } },
-    ];
-  const inSetup = location !== null && SETUP_SECTIONS.has(location.section);
+  const items = links.map((link) => ({
+    label: setupLabel(copy, link),
+    destination: { section: link } satisfies WorkspaceDestination,
+  }));
+  const inSetup =
+    location !== null &&
+    links.some((link) => link === location.section);
 
   return (
     <Collapsible defaultOpen={inSetup} className="group/setup">
@@ -458,6 +501,8 @@ function SidebarSpaces({
  */
 export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
   const { copy, navigation, location } = props;
+  const { isMobile } = useSidebar();
+  const setupLinks = workspaceSetupLinks(props.workspace?.role ?? null);
 
   const primary: NavItem[] = [
     {
@@ -500,6 +545,7 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
       mobileDescription={props.workspace?.name ?? copy.switcher.loading}
       className="border-sidebar-border"
     >
+      {isMobile ? props.mobileSystemRail : null}
       <SidebarHeader className="gap-1.5 pb-1">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -529,15 +575,18 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
             />
           ) : null}
         </SidebarContent>
-        <SidebarFooter className="gap-1 pt-1">
-          <SidebarMenu>
-            <WorkspaceSetup
-              copy={copy}
-              location={location}
-              navigation={navigation}
-            />
-          </SidebarMenu>
-        </SidebarFooter>
+        {setupLinks.length > 0 ? (
+          <SidebarFooter className="gap-1 pt-1">
+            <SidebarMenu>
+              <WorkspaceSetup
+                copy={copy}
+                links={setupLinks}
+                location={location}
+                navigation={navigation}
+              />
+            </SidebarMenu>
+          </SidebarFooter>
+        ) : null}
       </nav>
       <SidebarFooter className="pt-0">
         <SidebarMenu>

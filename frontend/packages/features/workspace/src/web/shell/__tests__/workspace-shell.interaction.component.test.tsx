@@ -34,6 +34,7 @@ beforeAll(() => {
 
 const copy = shellCopyFixture();
 const viCopy = shellCopyFixture("vi");
+const LOCALES = ["vi", "en"] as const;
 
 function frame(ui: ReactNode) {
   return <SidebarProvider>{ui}</SidebarProvider>;
@@ -114,53 +115,108 @@ describe("WorkspaceSidebarSurface", () => {
     expect(props.navigation.onNavigate).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[workspace.sidebar:counts] shows quiet counts, 99+ above 99 with the full number spoken, and nothing when unavailable or zero", () => {
-    const first = renderSidebar(
-      { counts: { myWork: 7, inbox: null } },
-      sidebarMockupScenario(),
-    );
-    const myWork = screen.getByRole("link", { name: "Việc của tôi, 7 việc" });
-    expect(myWork.textContent).toContain("7");
-    const inbox = screen.getByRole("link", { name: "Hộp thư" });
-    expect(inbox.textContent).toBe("Hộp thư");
-    expect(inbox.textContent).not.toContain("0");
-    first.unmount();
+  it("FUI[workspace.sidebar:counts] shows quiet counts, 99+ above 99 with the full number spoken, and nothing when unavailable or zero, in vi and en", () => {
+    const expected = {
+      vi: {
+        myWork: "Việc của tôi",
+        inbox: "Hộp thư",
+        seven: "Việc của tôi, 7 việc",
+        one: "Việc của tôi, 1 việc",
+        busy: "Hộp thư, 120 chưa đọc",
+      },
+      en: {
+        myWork: "My work",
+        inbox: "Inbox",
+        seven: "My work, 7 tasks",
+        one: "My work, 1 task",
+        busy: "Inbox, 120 unread",
+      },
+    } as const;
+    for (const locale of LOCALES) {
+      const text = expected[locale];
+      const first = renderSidebar(
+        { counts: { myWork: 7, inbox: null } },
+        sidebarMockupScenario(locale),
+      );
+      const myWork = screen.getByRole("link", { name: text.seven });
+      expect(myWork.textContent).toContain("7");
+      const inbox = screen.getByRole("link", { name: text.inbox });
+      expect(inbox.textContent).toBe(text.inbox);
+      expect(inbox.textContent).not.toContain("0");
+      first.unmount();
 
-    renderSidebar(
-      { counts: { myWork: 0, inbox: 120 } },
-      sidebarMockupScenario(),
-    );
-    expect(
-      screen.getByRole("link", { name: "Việc của tôi" }).textContent,
-    ).toBe("Việc của tôi");
-    const busy = screen.getByRole("link", { name: "Hộp thư, 120 chưa đọc" });
-    expect(busy.textContent).toContain("99+");
-    expect(busy.textContent).not.toContain("120");
+      const second = renderSidebar(
+        { counts: { myWork: 0, inbox: 120 } },
+        sidebarMockupScenario(locale),
+      );
+      expect(screen.getByRole("link", { name: text.myWork }).textContent).toBe(
+        text.myWork,
+      );
+      const busy = screen.getByRole("link", { name: text.busy });
+      expect(busy.textContent).toContain("99+");
+      expect(busy.textContent).not.toContain("120");
+      second.unmount();
+
+      const third = renderSidebar(
+        { counts: { myWork: 1, inbox: null } },
+        sidebarMockupScenario(locale),
+      );
+      expect(screen.getByRole("link", { name: text.one })).toBeTruthy();
+      third.unmount();
+    }
   });
 
-  it("FUI[workspace.sidebar:command] opens the command palette from the search row", () => {
-    const { props } = renderSidebar({}, sidebarMockupScenario());
-    const search = screen.getByRole("button", { name: /Tìm hoặc chạy lệnh/ });
-    expect(search.textContent).toContain("⌘K");
-    fireEvent.click(search);
-    expect(props.onOpenCommand).toHaveBeenCalledTimes(1);
+  it("FUI[workspace.sidebar:command] opens the command palette from the search row, in vi and en", () => {
+    for (const locale of LOCALES) {
+      const { props, unmount } = renderSidebar(
+        {},
+        sidebarMockupScenario(locale),
+      );
+      const search = screen.getByRole("button", {
+        name: new RegExp(shellCopyFixture(locale).sidebar.search),
+      });
+      expect(search.textContent).toContain("⌘K");
+      fireEvent.click(search);
+      expect(props.onOpenCommand).toHaveBeenCalledTimes(1);
+      unmount();
+    }
+    expect(shellCopyFixture("vi").sidebar.search).toBe("Tìm hoặc chạy lệnh");
   });
 
-  it("FUI[workspace.sidebar:departments] heads the Space tree with Departments and offers Create department only to managers", () => {
-    const spaces = { ...sidebarDepartmentsFixture(), onCreateSpace: vi.fn() };
-    const manager = renderSidebar({ spaces }, sidebarMockupScenario());
-    const nav = screen.getByRole("navigation", { name: viCopy.nav.label });
-    expect(within(nav).getByText("Phòng ban")).toBeTruthy();
-    fireEvent.click(within(nav).getByRole("button", { name: "Tạo phòng ban" }));
-    expect(spaces.onCreateSpace).toHaveBeenCalledTimes(1);
-    manager.unmount();
+  it("FUI[workspace.sidebar:departments] heads the Space tree with Departments and offers Create department only to managers, in vi and en", () => {
+    const text = {
+      vi: { title: "Phòng ban", create: "Tạo phòng ban" },
+      en: { title: "Departments", create: "Create department" },
+    } as const;
+    for (const locale of LOCALES) {
+      const spaces = {
+        ...sidebarDepartmentsFixture(locale),
+        onCreateSpace: vi.fn(),
+      };
+      const manager = renderSidebar(
+        { spaces },
+        sidebarMockupScenario(locale),
+      );
+      const nav = screen.getByRole("navigation", {
+        name: shellCopyFixture(locale).nav.label,
+      });
+      expect(within(nav).getByText(text[locale].title)).toBeTruthy();
+      fireEvent.click(
+        within(nav).getByRole("button", { name: text[locale].create }),
+      );
+      expect(spaces.onCreateSpace).toHaveBeenCalledTimes(1);
+      manager.unmount();
 
-    renderSidebar(
-      { spaces: { ...spaces, canCreateRoot: false } },
-      sidebarMockupScenario(),
-    );
-    expect(screen.getByText("Phòng ban")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Tạo phòng ban" })).toBeNull();
+      const member = renderSidebar(
+        { spaces: { ...spaces, canCreateRoot: false } },
+        sidebarMockupScenario(locale),
+      );
+      expect(screen.getByText(text[locale].title)).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: text[locale].create }),
+      ).toBeNull();
+      member.unmount();
+    }
   });
 
   it("FUI[workspace.sidebar:spaces] lists an expanded department's boards, marks private ones and keeps sub-departments indented", () => {
@@ -200,21 +256,71 @@ describe("WorkspaceSidebarSurface", () => {
     );
   });
 
-  it("FUI[workspace.sidebar:setup] keeps workspace setup in a footer disclosure", () => {
-    renderSidebar({}, sidebarMockupScenario());
-    const toggle = screen.getByRole("button", { name: "Thiết lập workspace" });
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  it("FUI[workspace.sidebar:setup] keeps every workspace setup link in a footer disclosure for owners and admins, in vi and en", () => {
+    const cases = [
+      {
+        locale: "vi",
+        role: "admin",
+        toggle: "Thiết lập workspace",
+        links: ["Cài đặt chung", "Thành viên", "Nhóm", "Gói và thanh toán"],
+      },
+      {
+        locale: "en",
+        role: "owner",
+        toggle: "Workspace setup",
+        links: ["General settings", "Members", "Teams", "Plan and billing"],
+      },
+    ] as const;
+    for (const item of cases) {
+      const scenario = sidebarMockupScenario(item.locale);
+      const { unmount } = renderSidebar(
+        { workspace: { ...scenario.workspace!, role: item.role } },
+        scenario,
+      );
+      const toggle = screen.getByRole("button", { name: item.toggle });
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      expect(screen.queryByRole("link", { name: item.links[0] })).toBeNull();
+
+      fireEvent.click(toggle);
+
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      const href = (name: string) =>
+        screen.getByRole("link", { name }).getAttribute("href");
+      expect(item.links.map(href)).toEqual([
+        "/workspaces/ws-product/settings",
+        "/workspaces/ws-product/members",
+        "/workspaces/ws-product/teams",
+        "/workspaces/ws-product/billing",
+      ]);
+      unmount();
+    }
+  });
+
+  it("FUI[workspace.sidebar:setup-member] shows members only Members and Teams", () => {
+    const scenario = sidebarMockupScenario();
+    renderSidebar(
+      { workspace: { ...scenario.workspace!, role: "member" } },
+      scenario,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Thiết lập workspace" }));
+    expect(screen.getByRole("link", { name: "Thành viên" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Nhóm" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Cài đặt chung" })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Gói và thanh toán" }),
+    ).toBeNull();
+  });
 
-    fireEvent.click(toggle);
-
-    expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    const href = (name: string) =>
-      screen.getByRole("link", { name }).getAttribute("href");
-    expect(href("Cài đặt chung")).toBe("/workspaces/ws-product/settings");
-    expect(href("Thành viên")).toBe("/workspaces/ws-product/members");
-    expect(href("Nhóm")).toBe("/workspaces/ws-product/teams");
-    expect(href("Gói và thanh toán")).toBe("/workspaces/ws-product/billing");
+  it("FUI[workspace.sidebar:setup-guest] gives guests no workspace setup", () => {
+    const scenario = sidebarMockupScenario();
+    renderSidebar(
+      { workspace: { ...scenario.workspace!, role: "guest" } },
+      scenario,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Thiết lập workspace" }),
+    ).toBeNull();
+    expect(screen.queryByRole("link", { name: "Thành viên" })).toBeNull();
   });
 
   it("FUI[workspace.sidebar:user] shows the member's name and workspace role and keeps the account menu", () => {
@@ -250,9 +356,8 @@ describe("WorkspaceSidebarSurface", () => {
     expect(chip.textContent).toContain("5 phòng ban · 86 người");
 
     fireEvent.click(chip);
-    openMenu(chip);
 
-    expect(props.onOpenSystemRail).toHaveBeenCalled();
+    expect(props.onOpenSystemRail).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("menu")).toBeNull();
   });
 

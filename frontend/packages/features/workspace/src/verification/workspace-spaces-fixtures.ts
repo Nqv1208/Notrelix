@@ -384,9 +384,11 @@ export function departmentBoardsFixture(): ReadonlyMap<
 }
 
 /** The mockup sidebar tree: Công nghệ open and current. */
-export function sidebarDepartmentsFixture(): SidebarSpaces {
+export function sidebarDepartmentsFixture(
+  locale: "vi" | "en" = "vi",
+): SidebarSpaces {
   return sidebarSpaces({
-    copy: spacesCopyFixture("vi"),
+    copy: spacesCopyFixture(locale),
     navigation: shellNavigationFixture(),
     state: { status: "ready", nodes: departmentTreeFixture() },
     boardsBySpace: departmentBoardsFixture(),

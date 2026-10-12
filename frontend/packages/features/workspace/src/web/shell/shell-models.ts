@@ -1,7 +1,6 @@
 import type {
   IdentityTone,
   MarkToneId,
-  NavigationEntry,
   WorkspaceDestination,
 } from "../../core/model/navigation";
 import type { WorkspaceBreadcrumbLabels } from "../../core/model/breadcrumb";
@@ -17,11 +16,6 @@ export interface ShellNavigation {
   readonly getHref: (destination: WorkspaceDestination) => string;
   readonly onNavigate: (destination: WorkspaceDestination) => void;
 }
-
-export type NavigationListState =
-  | { readonly status: "loading" }
-  | { readonly status: "error" }
-  | { readonly status: "ready"; readonly entries: readonly NavigationEntry[] };
 
 export interface ShellWorkspace {
   readonly id: string;
@@ -147,6 +141,40 @@ export function formatCopy(
   return template.replace(/\{\{(\w+)\}\}/g, (match, name: string) =>
     name in values ? String(values[name]) : match,
   );
+}
+
+/** Picks the `_one` form for exactly 1 and `_other` otherwise, then fills it. */
+export function pluralCopy(
+  forms: { readonly one: string; readonly other: string },
+  count: number,
+  values: Readonly<Record<string, string | number>> = {},
+): string {
+  return formatCopy(count === 1 ? forms.one : forms.other, {
+    ...values,
+    count,
+  });
+}
+
+/** Workspace setup links a role may open (WX-SHELL-001, GOV role matrix). */
+export type WorkspaceSetupLink = "settings" | "members" | "teams" | "billing";
+
+/**
+ * Setup links per workspace role: owners and admins see every link, members
+ * see Members and Teams, guests and an unknown role see none. The links only
+ * shape the UI; every page and write is authorized by the server.
+ */
+export function workspaceSetupLinks(
+  role: WorkspaceMember["role"] | null,
+): readonly WorkspaceSetupLink[] {
+  switch (role) {
+    case "owner":
+    case "admin":
+      return ["settings", "members", "teams", "billing"];
+    case "member":
+      return ["members", "teams"];
+    default:
+      return [];
+  }
 }
 
 /** Breadcrumb labels from the shell copy. */

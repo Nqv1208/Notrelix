@@ -131,10 +131,15 @@ export function sidebarLoadingScenario(): SidebarScenario {
   };
 }
 
-/** Nothing to do yet: zero counts show no badge. */
+/**
+ * Nothing to do yet: zero counts show no badge. A member, so setup offers
+ * only Members and Teams.
+ */
 export function sidebarEmptyScenario(): SidebarScenario {
+  const base = sidebarDefaultScenario();
   return {
-    ...sidebarDefaultScenario(),
+    ...base,
+    workspace: base.workspace ? { ...base.workspace, role: "member" } : null,
     location: { section: "home" },
     counts: { myWork: 0, inbox: 0 },
   };
@@ -150,9 +155,11 @@ export function sidebarErrorScenario(): SidebarScenario {
 }
 
 /** The `Final-Space` mockup (state `tong-quan`): Vietnamese, Minh An Group. */
-export function sidebarMockupScenario(): SidebarScenario {
+export function sidebarMockupScenario(
+  locale: "vi" | "en" = "vi",
+): SidebarScenario {
   return {
-    copy: shellCopyFixture("vi"),
+    copy: shellCopyFixture(locale),
     workspace: shellWorkspace({
       id: "ws-minh-an",
       name: "Minh An Group",

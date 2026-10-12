@@ -224,6 +224,14 @@
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
+          "id": "setup-member",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
+          "id": "setup-guest",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
           "id": "user",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
