@@ -72,6 +72,20 @@ export {
   type WorkspaceScopeStateSurfaceProps,
 } from "./shell/workspace-scope-state-surface";
 
+// ── Notrelix system rail (Final-Space nav=hien-de / hien-day) ─────
+export { notrelixSystemRailCatalog } from "./shell/notrelix-system-rail.catalog";
+export {
+  notrelixSystemRailCopy,
+  type NotrelixSystemRailCopy,
+} from "./shell/notrelix-system-rail.copy";
+export { useNotrelixSystemRailCopy } from "./shell/use-notrelix-system-rail-copy";
+export {
+  NotrelixSystemRailSurface,
+  type NotrelixSystemRailSurfaceProps,
+  type SystemRailPresentation,
+  type SystemRailWorkspace,
+} from "./shell/notrelix-system-rail-surface";
+
 // ── Home and My work (WX-HOME-001/002) ────────────────────────────
 export { workspaceHomeCatalog } from "./home/workspace-home.catalog";
 export {
