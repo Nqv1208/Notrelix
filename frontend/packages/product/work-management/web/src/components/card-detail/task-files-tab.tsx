@@ -7,14 +7,18 @@ import { Skeleton } from "@notrelix/ui-web";
 import { ToggleGroup, ToggleGroupItem } from "@notrelix/ui-web";
 import type { CardFile } from "@notrelix/work-management-core";
 import { TaskDetailEmptyState } from "./task-detail-empty-state";
+import type { ItemSheetCopy } from "./item-sheet.copy";
 
 export function TaskFilesTab({
   files,
   isLoading,
+  copy,
 }: {
   files: readonly CardFile[];
   isLoading: boolean;
+  copy: ItemSheetCopy;
 }) {
+  const t = copy.files;
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"grid" | "list">("grid");
   const filteredFiles = useMemo(() => {
@@ -28,7 +32,7 @@ export function TaskFilesTab({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="outline" size="sm" className="w-fit bg-card" disabled>
           <Upload className="size-4" />
-          Add file
+          {t.add}
         </Button>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -37,8 +41,8 @@ export function TaskFilesTab({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="h-8 w-56 bg-card pl-8"
-              placeholder="Search files"
-              aria-label="Search files"
+              placeholder={t.search}
+              aria-label={t.searchLabel}
             />
           </div>
           <ToggleGroup
@@ -48,10 +52,10 @@ export function TaskFilesTab({
               if (value === "grid" || value === "list") setMode(value);
             }}
           >
-            <ToggleGroupItem value="grid" size="sm" aria-label="Grid view">
+            <ToggleGroupItem value="grid" size="sm" aria-label={t.grid}>
               <Grid2X2 className="size-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="list" size="sm" aria-label="List view">
+            <ToggleGroupItem value="list" size="sm" aria-label={t.list}>
               <List className="size-4" />
             </ToggleGroupItem>
           </ToggleGroup>
@@ -64,7 +68,7 @@ export function TaskFilesTab({
         disabled
       >
         <Upload className="mb-2 size-5 text-primary" />
-        Drag files here or click to upload
+        {t.drop}
       </button>
 
       {isLoading ? (
@@ -75,8 +79,8 @@ export function TaskFilesTab({
       ) : filteredFiles.length === 0 ? (
         <TaskDetailEmptyState
           icon={Paperclip}
-          title="No files attached"
-          description="Attach specs, screenshots, or handoff assets so they stay with the task."
+          title={t.emptyTitle}
+          description={t.emptyBody}
         />
       ) : mode === "grid" ? (
         <div className="grid gap-3 sm:grid-cols-2">

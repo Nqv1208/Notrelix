@@ -147,7 +147,7 @@ describe("KanbanView item detail through selectedItemId", () => {
     const dialog = screen.getByRole("dialog", { name: "Item card" });
     expect(dialog).toBeTruthy();
     expect(
-      screen.getByRole("textbox", { name: "Edit task title" }).textContent,
+      screen.getByRole("textbox", { name: "Edit title" }).textContent,
     ).toBe("Item card");
   });
 
@@ -186,7 +186,7 @@ describe("KanbanView item detail through selectedItemId", () => {
     cardQuery.current = { card: existingCard(), isLoading: false, error: null };
     const onSelectedItemChange = vi.fn();
     renderView({ selectedItemId: "card-item", onSelectedItemChange });
-    fireEvent.click(screen.getByRole("button", { name: "Close task details" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close (Esc)" }));
     expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);
   });
 
@@ -194,7 +194,7 @@ describe("KanbanView item detail through selectedItemId", () => {
     cardQuery.current = { card: existingCard(), isLoading: false, error: null };
     const onSelectedItemChange = vi.fn();
     renderView({ selectedItemId: "card-item", onSelectedItemChange });
-    fireEvent.keyDown(screen.getByLabelText("Task detail panel"), {
+    fireEvent.keyDown(screen.getByRole("dialog"), {
       key: "Escape",
     });
     expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);
@@ -254,10 +254,10 @@ describe("KanbanView item detail through selectedItemId", () => {
       selectedItemId: "card-item",
       onSelectedItemChange,
     });
-    fireEvent.keyDown(screen.getByRole("button", { name: "Task menu" }), {
+    fireEvent.keyDown(screen.getByRole("button", { name: "More" }), {
       key: "Enter",
     });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Archive task" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Archive" }));
     expect(cardQuery.deleteMutate).toHaveBeenCalledWith("card-item");
     expect(onSelectedItemChange).toHaveBeenCalledWith(undefined, REPLACE);
 
@@ -287,7 +287,7 @@ describe("KanbanView item detail through selectedItemId", () => {
       opener.focus();
       fireEvent.click(opener);
       fireEvent.click(
-        await screen.findByRole("button", { name: "Close task details" }),
+        await screen.findByRole("button", { name: "Close (Esc)" }),
       );
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       await waitFor(() => expect(document.activeElement).toBe(opener));
@@ -303,7 +303,7 @@ describe("KanbanView item detail through selectedItemId", () => {
       const opener = screen.getByRole("button", { name: "Item card" });
       opener.focus();
       fireEvent.click(opener);
-      fireEvent.keyDown(await screen.findByLabelText("Task detail panel"), {
+      fireEvent.keyDown(await screen.findByRole("dialog"), {
         key: "Escape",
       });
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -319,7 +319,7 @@ describe("KanbanView item detail through selectedItemId", () => {
       boardState.showCards = false;
       renderPureUi(<StatefulView initial="card-item" />);
       fireEvent.click(
-        await screen.findByRole("button", { name: "Close task details" }),
+        await screen.findByRole("button", { name: "Close (Esc)" }),
       );
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       await waitFor(() =>

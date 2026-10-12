@@ -1,9 +1,14 @@
-import { Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
+import { useState } from "react";
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { TaskDetailPanelSurface } from "../../card-detail/task-detail-panel-surface";
+import type { ItemSheetCopy } from "../../card-detail/item-sheet.copy";
+import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import {
   defaultTaskDetailCapabilities,
+  type ItemSheetGroup,
+  type ItemSheetMark,
   type TaskDetailCallbacks,
+  type TaskDetailCapabilities,
   type TaskDetailData,
 } from "../../card-detail/task-detail-types";
 
@@ -13,14 +18,25 @@ interface KanbanCardDetailPanelProps {
   card: CardDetail | null;
   detailData: TaskDetailData;
   callbacks: TaskDetailCallbacks;
-  /** Called as the sheet closes; the container puts focus back on the opener. */
+  /**
+   * Called as the sheet closes (unmounts). `preventDefault()` skips the
+   * default focus return so the container can put focus on the opener.
+   */
   onCloseAutoFocus?: (event: Event) => void;
+  /** The viewer's capabilities on this board; full edit rights when omitted. */
+  capabilities?: TaskDetailCapabilities;
+  /** Copy for the active locale; resolved from the host locale when omitted. */
+  copy?: ItemSheetCopy;
+  /** Injected clock; read once on open when omitted. */
+  now?: Date;
+  departmentMark?: ItemSheetMark;
+  groups?: readonly ItemSheetGroup[];
 }
 
 /**
- * Sheet around the shared task detail surface. Pure: the container resolves
- * the card, its detail data and the mutations, and decides when to pass a
- * card at all (an unknown item id passes null and nothing renders).
+ * Non-modal 560 px item sheet over the right edge of the board: no scrim, no
+ * focus trap, the board behind stays interactive. It is absolutely placed, so
+ * the Kanban view root must be the positioned ancestor.
  */
 export function KanbanCardDetailPanel({
   board,
@@ -28,30 +44,31 @@ export function KanbanCardDetailPanel({
   detailData,
   callbacks,
   onCloseAutoFocus,
+  capabilities = defaultTaskDetailCapabilities,
+  copy,
+  now,
+  departmentMark,
+  groups,
 }: KanbanCardDetailPanelProps) {
+  const localeCopy = useItemSheetCopy();
+  const [openedAt] = useState(() => new Date());
   if (!card) return null;
 
   return (
-    <Sheet
-      open
-      onOpenChange={(open) => {
-        if (!open) callbacks.onClose();
-      }}
-    >
-      <SheetContent
-        className="w-full gap-0 p-0 sm:max-w-2xl overflow-y-auto"
-        onCloseAutoFocus={onCloseAutoFocus}
-      >
-        <SheetTitle className="sr-only">{card.title}</SheetTitle>
-        <TaskDetailPanelSurface
-          status="ready"
-          board={board}
-          card={card}
-          capabilities={defaultTaskDetailCapabilities}
-          detailData={detailData}
-          callbacks={callbacks}
-        />
-      </SheetContent>
-    </Sheet>
+    <div className="absolute inset-y-0 right-0 z-20 flex w-full max-w-full border-l border-border bg-popover shadow-overlay sm:w-140">
+      <TaskDetailPanelSurface
+        status="ready"
+        board={board}
+        card={card}
+        capabilities={capabilities}
+        detailData={detailData}
+        callbacks={callbacks}
+        copy={copy ?? localeCopy}
+        now={now ?? openedAt}
+        departmentMark={departmentMark}
+        groups={groups}
+        onReturnFocus={onCloseAutoFocus}
+      />
+    </div>
   );
 }

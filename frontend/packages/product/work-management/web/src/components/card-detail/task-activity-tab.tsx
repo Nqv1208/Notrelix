@@ -1,164 +1,63 @@
-import { useMemo, useState } from "react";
-import {
-  Activity,
-  Bot,
-  Download,
-  RefreshCw,
-  Search,
-  UserRound,
-} from "lucide-react";
-import { Button } from "@notrelix/ui-web";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@notrelix/ui-web";
-import { Input } from "@notrelix/ui-web";
-import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
 import { Skeleton } from "@notrelix/ui-web";
 import type { CardActivity } from "@notrelix/work-management-core";
-import { TaskDetailEmptyState } from "./task-detail-empty-state";
+import { describeSheetTime } from "./item-sheet-format";
+import type { ItemSheetCopy } from "./item-sheet.copy";
 
+/**
+ * "Lịch sử" subtab: one line per recorded change, newest last. The activity
+ * contract carries no before/after values yet, so a line is the actor, the
+ * recorded action and the time.
+ */
 export function TaskActivityTab({
   activity,
   isLoading,
-  isFetching,
-  onRefresh,
-  onAiFilter,
-  onExport,
+  copy,
+  now,
+  timeZone,
 }: {
   activity: readonly CardActivity[];
   isLoading: boolean;
-  isFetching: boolean;
-  onRefresh: () => void;
-  onAiFilter?: () => void;
-  onExport?: () => void;
+  isFetching?: boolean;
+  copy: ItemSheetCopy;
+  now: Date;
+  timeZone?: string;
+  onRefresh?: () => void;
 }) {
-  const [query, setQuery] = useState("");
-  const [person, setPerson] = useState<string | null>(null);
-  const filteredActivity = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return activity.filter((item) => {
-      const matchesQuery =
-        !normalized ||
-        `${item.actor} ${item.action}`.toLowerCase().includes(normalized);
-      const matchesPerson = !person || item.actor === person;
-      return matchesQuery && matchesPerson;
-    });
-  }, [activity, person, query]);
-  const people = Array.from(new Set(activity.map((item) => item.actor)));
-
-  return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className="h-8 w-56 bg-card pl-8"
-              placeholder="Filter log"
-              aria-label="Filter activity log"
-            />
-          </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-card">
-                <UserRound className="size-4" />
-                {person ?? "Person"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-60 p-0">
-              <Command>
-                <CommandInput placeholder="Filter people..." />
-                <CommandList>
-                  <CommandEmpty>No people found.</CommandEmpty>
-                  <CommandGroup heading="People">
-                    <CommandItem
-                      data-checked={!person}
-                      onSelect={() => setPerson(null)}
-                    >
-                      All people
-                    </CommandItem>
-                    {people.map((name: string) => (
-                      <CommandItem
-                        key={String(name)}
-                        value={name}
-                        data-checked={person === name}
-                        onSelect={() => setPerson(name)}
-                      >
-                        {name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-card"
-            onClick={onAiFilter}
-          >
-            <Bot className="size-4" />
-            AI filter
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Refresh activity"
-            onClick={onRefresh}
-            disabled={isFetching}
-          >
-            <RefreshCw
-              className={isFetching ? "size-4 animate-spin" : "size-4"}
-            />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Export activity log"
-            onClick={onExport}
-          >
-            <Download className="size-4" />
-          </Button>
-        </div>
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-2" aria-busy="true">
+        <Skeleton className="h-6 rounded-md" />
+        <Skeleton className="h-6 rounded-md" />
       </div>
-
-      {isLoading ? (
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-14 rounded-lg" />
-          <Skeleton className="h-14 rounded-lg" />
-          <Skeleton className="h-14 rounded-lg" />
-        </div>
-      ) : filteredActivity.length === 0 ? (
-        <TaskDetailEmptyState
-          icon={Activity}
-          title="No activity found"
-          description="Changes, comments, files, and automations will appear here."
-        />
-      ) : (
-        <div className="flex flex-col gap-2">
-          {filteredActivity.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-lg border border-border bg-card p-3"
-            >
-              <p className="text-sm text-foreground">
-                <span className="font-medium">{item.actor}</span> {item.action}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {new Date(item.createdAt).toLocaleString()}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    );
+  }
+  if (activity.length === 0) {
+    return (
+      <p className="m-0 text-sm text-muted-foreground">
+        {copy.sections.noHistory}
+      </p>
+    );
+  }
+  return (
+    <ul className="m-0 flex list-none flex-col p-0">
+      {activity.map((item) => (
+        <li
+          key={item.id}
+          className="flex items-center gap-2 py-1.5 text-xs text-muted-foreground"
+        >
+          <span
+            aria-hidden="true"
+            className="size-1.5 shrink-0 rounded-full bg-muted-foreground"
+          />
+          <span>
+            <span className="font-medium text-foreground">{item.actor}</span>{" "}
+            {item.action} ·{" "}
+            <time dateTime={item.createdAt}>
+              {describeSheetTime(item.createdAt, now, copy, timeZone)}
+            </time>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -1,467 +1,689 @@
 import {
-  useState,
-  useRef,
   useCallback,
   useEffect,
+  useId,
+  useRef,
+  type ComponentPropsWithRef,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
-import { Bell, BellOff, CalendarDays, MoreHorizontal, X } from "lucide-react";
-import { Avatar, AvatarFallback } from "@notrelix/ui-web";
-import { Badge } from "@notrelix/ui-web";
-import { Button } from "@notrelix/ui-web";
 import {
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Flag,
+  Link2,
+  Maximize2,
+  MoreHorizontal,
+  Plus,
+  X,
+} from "lucide-react";
+import {
+  Avatar,
+  AvatarFallback,
+  Button,
+  Calendar,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  cn,
 } from "@notrelix/ui-web";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@notrelix/ui-web";
-import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
-import { Calendar } from "@notrelix/ui-web";
 import type {
   Board,
   CardDetail,
+  FieldDefinition,
   UpdateCardInput,
   UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
-import { cn } from "@notrelix/ui-web";
-import { formatDate } from "../views/table/table-utils";
-import type { TaskDetailCapabilities } from "./task-detail-types";
+import {
+  KANBAN_LABEL_TONE_CLASS,
+  kanbanLabelTone,
+} from "../views/kanban/kanban-card";
+import { describeSheetDue, type SheetDueTone } from "./item-sheet-format";
+import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
+import type {
+  ItemSheetGroup,
+  ItemSheetMark,
+  ItemSheetMarkTone,
+  TaskDetailCapabilities,
+} from "./task-detail-types";
+
+/** Department mark tones (literal classes so Tailwind generates them). */
+const MARK_TONE_CLASS: Readonly<Record<ItemSheetMarkTone, string>> = {
+  blue: "bg-mark-blue text-mark-blue-foreground",
+  gold: "bg-mark-gold text-mark-gold-foreground",
+  coral: "bg-mark-coral text-mark-coral-foreground",
+  sage: "bg-mark-sage text-mark-sage-foreground",
+  crimson: "bg-mark-crimson text-mark-crimson-foreground",
+  violet: "bg-mark-violet text-mark-violet-foreground",
+};
+
+type StatusCategory = NonNullable<CardDetail["statusCategory"]>;
+
+/** Status pill tint = the lane tint of the status category. */
+const STATUS_LANE_CLASS: Readonly<Record<StatusCategory, string>> = {
+  todo: "bg-work-status-todo-lane",
+  in_progress: "bg-work-status-doing-lane",
+  review: "bg-work-status-review-lane",
+  done: "bg-work-status-done-lane",
+};
+
+const STATUS_DOT_CLASS: Readonly<Record<StatusCategory, string>> = {
+  todo: "bg-work-status-todo",
+  in_progress: "bg-work-status-doing",
+  review: "bg-work-status-review",
+  done: "bg-work-status-done",
+};
+
+const DUE_TONE_CLASS: Readonly<Record<SheetDueTone, string>> = {
+  overdue: "border-transparent bg-danger-subtle font-semibold text-danger-text",
+  today: "border-transparent bg-warning-subtle text-warning-text",
+  upcoming: "",
+  done: "text-muted-foreground",
+};
+
+type Priority = NonNullable<CardDetail["priority"]>;
+
+const PRIORITY_CLASS: Readonly<Record<Priority, string>> = {
+  urgent: "text-danger-text",
+  high: "text-priority-high-text",
+  medium: "text-muted-foreground",
+  low: "text-muted-foreground",
+};
+
+const PILL_CLASS =
+  "inline-flex h-7.5 max-w-full items-center gap-1.5 rounded-lg border border-border bg-popover px-2.5 text-sm font-medium text-foreground transition-colors hover:bg-state-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:hover:bg-popover";
+
+/** Board fields the sheet edits, found the same way as the table cells. */
+function findFields(board: Board) {
+  const fields = board.fieldDefinitions;
+  const byId = (suffix: string) =>
+    fields.find((field) => field.id.endsWith(suffix));
+  return {
+    status: byId("field-status"),
+    priority: byId("field-priority"),
+    person:
+      fields.find((field) => field.fieldType === "person") ??
+      byId("field-person"),
+    due:
+      fields.find((field) => field.fieldType === "date") ??
+      byId("field-due-date"),
+  };
+}
+
+function isDone(card: CardDetail): boolean {
+  return card.statusCategory === "done" || Boolean(card.completedAt);
+}
+
+// ─── Head bar ───────────────────────────────────────────────────────────────
 
 export function TaskDetailHeader({
   board,
   card,
   capabilities,
+  copy,
+  departmentMark,
+  groups = [],
   onClose,
-  onRenameTitle,
-  onToggleWatch,
+  onPrevious,
+  onNext,
+  onCopyLink,
   onDuplicate,
   onArchive,
-  onUpdateFieldValue,
+  onMoveToGroup,
 }: {
   board: Board;
   card: CardDetail;
   capabilities: TaskDetailCapabilities;
+  copy: ItemSheetCopy;
+  departmentMark?: ItemSheetMark;
+  groups?: readonly ItemSheetGroup[];
   onClose: () => void;
-  onRenameTitle: (cardId: string, patch: UpdateCardInput) => void;
-  onToggleWatch: (watched: boolean) => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onCopyLink?: (cardId: string) => void;
   onDuplicate: (cardId: string) => void;
   onArchive: (cardId: string) => void;
-  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  onMoveToGroup?: (cardId: string, groupId: string) => void;
 }) {
+  const fullPageReasonId = useId();
+  const otherGroups = groups.filter((group) => group.id !== card.listId);
+  const canMove =
+    capabilities.canMoveCard && !!onMoveToGroup && otherGroups.length > 0;
+  const hasMenu =
+    capabilities.canCreateCard || capabilities.canDelete || canMove;
+
   return (
-    <TaskDetailHeaderImpl
-      board={board}
-      card={card}
-      capabilities={capabilities}
-      onClose={onClose}
-      onRenameTitle={onRenameTitle}
-      onToggleWatch={onToggleWatch}
-      onDuplicate={onDuplicate}
-      onArchive={onArchive}
-      onUpdateFieldValue={onUpdateFieldValue}
-    />
+    <header className="flex h-12 shrink-0 items-center gap-1 border-b border-border pr-2.5 pl-4.5">
+      <nav
+        aria-label={copy.head.crumb}
+        className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
+      >
+        {departmentMark ? (
+          <span
+            className={cn(
+              "grid size-4.5 shrink-0 place-items-center rounded-md text-caption font-bold",
+              MARK_TONE_CLASS[departmentMark.tone],
+            )}
+          >
+            {departmentMark.initials}
+          </span>
+        ) : null}
+        <span className="truncate">{board.title}</span>
+        {card.itemKey ? (
+          <>
+            <span aria-hidden="true">/</span>
+            <span className="shrink-0 font-mono text-foreground">
+              {card.itemKey}
+            </span>
+          </>
+        ) : null}
+      </nav>
+      <span className="flex-1" aria-hidden="true" />
+
+      <HeadIconButton
+        label={copy.head.previous}
+        disabled={!onPrevious}
+        onClick={onPrevious}
+      >
+        <ChevronUp />
+      </HeadIconButton>
+      <HeadIconButton
+        label={copy.head.next}
+        disabled={!onNext}
+        onClick={onNext}
+      >
+        <ChevronDown />
+      </HeadIconButton>
+      <HeadIconButton
+        label={copy.head.copyLink}
+        disabled={!onCopyLink}
+        onClick={() => onCopyLink?.(card.id)}
+      >
+        <Link2 />
+      </HeadIconButton>
+      {/* No full-page item route exists yet: focusable, explained, inert. */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={copy.head.openFullPage}
+            aria-disabled="true"
+            aria-describedby={fullPageReasonId}
+            className="text-muted-foreground aria-disabled:opacity-50"
+          >
+            <Maximize2 aria-hidden="true" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{copy.head.openFullPageUnavailable}</TooltipContent>
+      </Tooltip>
+      <span id={fullPageReasonId} className="sr-only">
+        {copy.head.openFullPageUnavailable}
+      </span>
+
+      {hasMenu ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.head.more}
+              className="text-muted-foreground"
+            >
+              <MoreHorizontal aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {capabilities.canCreateCard ? (
+              <DropdownMenuItem onSelect={() => onDuplicate(card.id)}>
+                {copy.head.duplicate}
+              </DropdownMenuItem>
+            ) : null}
+            {canMove ? (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  {copy.head.moveToGroup}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {otherGroups.map((group) => (
+                    <DropdownMenuItem
+                      key={group.id}
+                      onSelect={() => onMoveToGroup?.(card.id, group.id)}
+                    >
+                      {group.title}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ) : null}
+            {capabilities.canDelete ? (
+              <DropdownMenuItem onSelect={() => onArchive(card.id)}>
+                {copy.head.archive}
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+
+      <HeadIconButton label={copy.head.close} onClick={onClose}>
+        <X />
+      </HeadIconButton>
+    </header>
   );
 }
 
-function TaskDetailHeaderImpl({
-  board,
-  card,
-  capabilities,
-  onClose,
-  onRenameTitle,
-  onToggleWatch,
-  onDuplicate,
-  onArchive,
-  onUpdateFieldValue,
+function HeadIconButton({
+  label,
+  disabled,
+  onClick,
+  children,
 }: {
-  board: Board;
-  card: CardDetail;
-  capabilities: TaskDetailCapabilities;
-  onClose: () => void;
-  onRenameTitle: (cardId: string, patch: UpdateCardInput) => void;
-  onToggleWatch: (watched: boolean) => void;
-  onDuplicate: (cardId: string) => void;
-  onArchive: (cardId: string) => void;
-  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+  label: string;
+  disabled?: boolean;
+  onClick?: () => void;
+  children: ReactNode;
 }) {
-  const [isWatched, setIsWatched] = useState(card.isWatched);
-  const titleRef = useRef<HTMLDivElement>(null);
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="text-muted-foreground hover:text-foreground [&_svg]:size-4"
+    >
+      {children}
+    </Button>
+  );
+}
 
-  const personField = board.fieldDefinitions.find(
-    (f) => f.fieldType === "person" || f.id.endsWith("field-person"),
-  );
-  const statusField = board.fieldDefinitions.find((f) =>
-    f.id.endsWith("field-status"),
-  );
-  const priorityField = board.fieldDefinitions.find((f) =>
-    f.id.endsWith("field-priority"),
-  );
-  const dueDateField = board.fieldDefinitions.find(
-    (f) => f.fieldType === "date" || f.id.endsWith("field-due-date"),
-  );
+// ─── Title ──────────────────────────────────────────────────────────────────
 
-  const selectedUserIds = new Set(card.members.map((m) => m.userId));
-  const status = statusField?.options.find(
-    (option) => option.id === card.status,
-  );
-  const priority = priorityField?.options.find(
-    (option) => option.id === card.priority,
-  );
+export function TaskDetailTitle({
+  card,
+  titleId,
+  editable,
+  copy,
+  onRenameTitle,
+}: {
+  card: CardDetail;
+  titleId: string;
+  editable: boolean;
+  copy: ItemSheetCopy;
+  onRenameTitle: (cardId: string, patch: UpdateCardInput) => void;
+}) {
+  const editorRef = useRef<HTMLSpanElement>(null);
 
-  // Sync contentEditable text when card.title changes externally
+  // Keep the editable text in step with a title changed elsewhere.
   useEffect(() => {
-    if (titleRef.current && titleRef.current.textContent !== card.title) {
-      titleRef.current.textContent = card.title;
+    const editor = editorRef.current;
+    if (editor && editor.textContent !== card.title) {
+      editor.textContent = card.title;
     }
   }, [card.title]);
 
-  const commitTitle = useCallback(() => {
-    const nextTitle = (titleRef.current?.textContent ?? "").trim();
+  const commit = useCallback(() => {
+    const editor = editorRef.current;
+    const nextTitle = (editor?.textContent ?? "").trim();
     if (!nextTitle || nextTitle === card.title) {
-      if (titleRef.current) titleRef.current.textContent = card.title;
+      if (editor) editor.textContent = card.title;
       return;
     }
     onRenameTitle(card.id, { title: nextTitle });
   }, [card.id, card.title, onRenameTitle]);
 
-  function handleTitleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleKeyDown(event: KeyboardEvent<HTMLSpanElement>) {
     if (event.key === "Enter") {
       event.preventDefault();
       event.currentTarget.blur();
     }
     if (event.key === "Escape") {
-      if (titleRef.current) titleRef.current.textContent = card.title;
+      // Escape reverts the edit; a second Escape closes the sheet.
+      event.stopPropagation();
+      if (editorRef.current) editorRef.current.textContent = card.title;
       event.currentTarget.blur();
     }
   }
 
-  function toggleMember(memberId: string) {
-    if (!personField) return;
-    const next = new Set(selectedUserIds);
-    if (next.has(memberId)) next.delete(memberId);
-    else next.add(memberId);
-    if (!capabilities.canEditFields) return;
-    onUpdateFieldValue({
-      cardId: card.id,
-      fieldDefinitionId: personField.id,
-      value: Array.from(next),
-    });
-  }
-
-  function updateStatus(statusId: string) {
-    if (!statusField) return;
-    if (!capabilities.canEditFields) return;
-    onUpdateFieldValue({
-      cardId: card.id,
-      fieldDefinitionId: statusField.id,
-      value: statusId,
-    });
-  }
-
-  function updatePriority(priorityId: string) {
-    if (!priorityField) return;
-    if (!capabilities.canEditFields) return;
-    onUpdateFieldValue({
-      cardId: card.id,
-      fieldDefinitionId: priorityField.id,
-      value: priorityId,
-    });
-  }
-
-  function updateDueDate(date: Date | undefined) {
-    if (!dueDateField) return;
-    if (!capabilities.canEditFields) return;
-    onUpdateFieldValue({
-      cardId: card.id,
-      fieldDefinitionId: dueDateField.id,
-      value: date ? date.toISOString() : null,
-    });
-  }
-
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-popover">
-      {/* Title row — title + actions */}
-      <div className="flex items-start gap-2 px-5 pt-3.5 pb-1">
-        <div
-          ref={titleRef}
+    <h2
+      id={titleId}
+      className="m-0 text-xl leading-snug font-semibold tracking-tight text-balance text-foreground"
+    >
+      {editable ? (
+        <span
+          ref={editorRef}
           role="textbox"
-          aria-label="Edit task title"
+          aria-label={copy.title.edit}
           contentEditable
           suppressContentEditableWarning
           spellCheck={false}
-          onBlur={commitTitle}
-          onKeyDown={handleTitleKeyDown}
-          className={cn(
-            "min-w-0 flex-1 outline-none",
-            "text-lg leading-snug font-semibold tracking-tight",
-            "text-foreground",
-            "bg-transparent",
-            "rounded-md px-1.5 py-1",
-            "cursor-text",
-            "empty:before:content-['Untitled'] empty:before:text-muted-foreground/40",
-            "hover:bg-muted/30",
-            "focus:bg-muted/20 focus:ring-1 focus:ring-border/60 focus:ring-offset-0",
-            "transition-all duration-150",
-            "[word-break:break-word]",
-          )}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
+          className="-mx-1 block rounded-md px-1 outline-none [word-break:break-word] hover:bg-state-hover focus:bg-state-hover focus:ring-1 focus:ring-border"
         >
           {card.title}
-        </div>
+        </span>
+      ) : (
+        card.title
+      )}
+    </h2>
+  );
+}
 
-        <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={isWatched ? "Unfollow task" : "Follow task"}
-                onClick={() =>
-                  setIsWatched((current) => {
-                    const next = !current;
-                    onToggleWatch(next);
-                    return next;
-                  })
-                }
-                disabled={!capabilities.canEditFields}
+// ─── Property pills ─────────────────────────────────────────────────────────
+
+type PillProps = ComponentPropsWithRef<"button"> & {
+  readonly readOnly: boolean;
+  readonly srLabel: string;
+  readonly chevron?: boolean;
+};
+
+/**
+ * One property pill. Read-only pills stay in the tab order with
+ * `aria-disabled` (the commenter can still read them) and lose their chevron.
+ */
+function PropertyPill({
+  readOnly,
+  srLabel,
+  chevron = false,
+  className,
+  children,
+  ...rest
+}: PillProps) {
+  return (
+    <button
+      type="button"
+      {...rest}
+      aria-disabled={readOnly ? "true" : undefined}
+      className={cn(PILL_CLASS, className)}
+    >
+      <span className="sr-only">{`${srLabel}: `}</span>
+      {children}
+      {chevron && !readOnly ? (
+        <ChevronDown
+          data-pill-chevron=""
+          aria-hidden="true"
+          className="size-3.5 shrink-0"
+        />
+      ) : null}
+    </button>
+  );
+}
+
+export function TaskDetailProperties({
+  board,
+  card,
+  capabilities,
+  copy,
+  now,
+  timeZone,
+  onUpdateFieldValue,
+}: {
+  board: Board;
+  card: CardDetail;
+  capabilities: TaskDetailCapabilities;
+  copy: ItemSheetCopy;
+  now: Date;
+  timeZone?: string;
+  onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
+}) {
+  const readOnly = !capabilities.canEditFields;
+  const addPropertyReasonId = useId();
+  const fields = findFields(board);
+  const t = copy.properties;
+
+  function update(field: FieldDefinition | undefined, value: unknown) {
+    if (!field || readOnly) return;
+    onUpdateFieldValue({ cardId: card.id, fieldDefinitionId: field.id, value });
+  }
+
+  // Status
+  const statusId = card.statusOptionId ?? card.status;
+  const statusOption = fields.status?.options.find(
+    (option) => option.id === statusId,
+  );
+  const category = card.statusCategory ?? null;
+  const statusPill = (props: Partial<PillProps> = {}) => (
+    <PropertyPill
+      {...props}
+      readOnly={readOnly || !fields.status}
+      srLabel={t.status}
+      chevron
+      className={cn(
+        "font-semibold",
+        category
+          ? cn("border-transparent", STATUS_LANE_CLASS[category])
+          : "text-muted-foreground",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-2 shrink-0 rounded-full",
+          category ? STATUS_DOT_CLASS[category] : "bg-muted-foreground",
+        )}
+      />
+      {statusOption?.label ?? t.noStatus}
+    </PropertyPill>
+  );
+
+  // Assignee
+  const [firstMember, ...otherMembers] = card.members;
+  const selectedUserIds = new Set(card.members.map((member) => member.userId));
+  const assigneePill = (props: Partial<PillProps> = {}) => (
+    <PropertyPill
+      {...props}
+      readOnly={readOnly || !fields.person}
+      srLabel={t.assignee}
+      className={firstMember ? undefined : "text-muted-foreground"}
+    >
+      {firstMember ? (
+        <>
+          <Avatar className="size-5">
+            <AvatarFallback className="bg-foreground text-caption font-bold text-background">
+              {firstMember.initials}
+            </AvatarFallback>
+          </Avatar>
+          <span className="truncate">
+            {otherMembers.length > 0
+              ? fillSheetCopy(t.assigneeMore, {
+                  name: firstMember.name,
+                  count: otherMembers.length,
+                })
+              : firstMember.name}
+          </span>
+        </>
+      ) : (
+        t.unassigned
+      )}
+    </PropertyPill>
+  );
+
+  // Due
+  const dueAt = card.dueAt ?? card.dueDate ?? null;
+  const due = describeSheetDue(dueAt, now, isDone(card), copy, timeZone);
+  const duePill = (props: Partial<PillProps> = {}) => (
+    <PropertyPill
+      {...props}
+      readOnly={readOnly || !fields.due}
+      srLabel={t.due}
+      className={due ? DUE_TONE_CLASS[due.tone] : "text-muted-foreground"}
+    >
+      <Clock aria-hidden="true" className="size-3.5 shrink-0" />
+      {due?.text ?? t.noDue}
+    </PropertyPill>
+  );
+
+  // Priority
+  const priority = card.priority;
+  const priorityPill = (props: Partial<PillProps> = {}) => (
+    <PropertyPill
+      {...props}
+      readOnly={readOnly || !fields.priority}
+      srLabel={t.priority}
+      className={priority ? PRIORITY_CLASS[priority] : "text-muted-foreground"}
+    >
+      <Flag aria-hidden="true" className="size-3.5 shrink-0" />
+      {priority ? t.priorities[priority] : t.noPriority}
+    </PropertyPill>
+  );
+
+  const label = card.labels[0];
+
+  return (
+    <div role="group" aria-label={t.group} className="flex flex-wrap gap-1.5">
+      {readOnly || !fields.status ? (
+        statusPill()
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>{statusPill()}</DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {fields.status.options.map((option) => (
+              <DropdownMenuItem
+                key={option.id}
+                onSelect={() => update(fields.status, option.id)}
               >
-                {isWatched ? (
-                  <Bell className="size-4" />
-                ) : (
-                  <BellOff className="size-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {isWatched ? "Following" : "Follow"}
-            </TooltipContent>
-          </Tooltip>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Task menu">
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Copy task link</DropdownMenuItem>
-              <DropdownMenuItem>Move to group</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDuplicate(card.id)}>
-                Duplicate task
+                {option.label}
               </DropdownMenuItem>
-              {capabilities.canDelete ? (
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => onArchive(card.id)}
-                >
-                  Archive task
-                </DropdownMenuItem>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Close task details"
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </Button>
-        </div>
-      </div>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
-      {/* Meta */}
-      <div className="flex flex-wrap items-center gap-1.5 px-5 pb-3">
-        {/* Assignees */}
+      {readOnly || !fields.person ? (
+        assigneePill()
+      ) : (
         <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
-              disabled={!capabilities.canEditFields}
-            >
-              {card.members.length > 0 ? (
-                <>
-                  <div className="flex -space-x-1.5">
-                    {card.members.slice(0, 3).map((member) => (
-                      <Avatar
-                        key={member.id}
-                        className="inline-flex size-5 ring-2 ring-popover"
-                      >
-                        <AvatarFallback className="bg-foreground text-[10px] font-bold text-background">
+          <PopoverTrigger asChild>{assigneePill()}</PopoverTrigger>
+          <PopoverContent align="start" className="w-64 p-1">
+            <ul aria-label={t.assignee} className="flex flex-col gap-0.5">
+              {board.members.map((member) => {
+                const selected = selectedUserIds.has(member.userId);
+                return (
+                  <li key={member.id}>
+                    <button
+                      type="button"
+                      aria-pressed={selected}
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-state-hover"
+                      onClick={() => {
+                        const next = new Set(selectedUserIds);
+                        if (selected) next.delete(member.userId);
+                        else next.add(member.userId);
+                        update(fields.person, Array.from(next));
+                      }}
+                    >
+                      <Avatar className="size-6">
+                        <AvatarFallback className="bg-foreground text-caption font-bold text-background">
                           {member.initials}
                         </AvatarFallback>
                       </Avatar>
-                    ))}
-                  </div>
-                  <span className="text-foreground">
-                    {card.members[0]?.name}
-                    {card.members.length > 1
-                      ? ` +${card.members.length - 1}`
-                      : ""}
-                  </span>
-                </>
-              ) : (
-                <span>Unassigned</span>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            className="w-64 p-2"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="px-2 py-1 text-xs font-semibold uppercase text-muted-foreground">
-              Assignees
-            </div>
-            <div className="space-y-0.5">
-              {board.members.map((member) => (
-                <button
-                  type="button"
-                  key={member.id}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition hover:bg-accent"
-                  onClick={() => toggleMember(member.userId)}
-                >
-                  <Avatar className="size-6">
-                    <AvatarFallback className="bg-foreground text-[10px] font-bold text-background">
-                      {member.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="min-w-0 flex-1 truncate">{member.name}</span>
-                  {selectedUserIds.has(member.userId) ? (
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full px-1.5 py-0 text-[10px]"
-                    >
-                      ✓
-                    </Badge>
-                  ) : null}
-                </button>
-              ))}
-            </div>
+                      <span className="min-w-0 flex-1 truncate">
+                        {member.name}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </PopoverContent>
         </Popover>
+      )}
 
-        {/* Status */}
-        {statusField && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/40",
-                  status ? "text-foreground" : "text-muted-foreground",
-                )}
-                disabled={!capabilities.canEditFields}
-              >
-                <span
-                  className="size-2 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: status?.color ?? "currentColor",
-                    opacity: status ? 1 : 0.4,
-                  }}
-                />
-                <span>{status ? status.label : "No status"}</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {statusField.options.map((item) => (
-                <DropdownMenuItem
-                  key={item.id}
-                  onClick={() => updateStatus(item.id)}
-                >
-                  <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  {item.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
-        {/* Priority */}
-        {priorityField && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/40",
-                  priority ? "text-foreground" : "text-muted-foreground",
-                )}
-                disabled={!capabilities.canEditFields}
-              >
-                <span
-                  className="size-2 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: priority?.color ?? "currentColor",
-                    opacity: priority ? 1 : 0.4,
-                  }}
-                />
-                <span>{priority ? priority.label : "No priority"}</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {priorityField.options.map((item) => (
-                <DropdownMenuItem
-                  key={item.id}
-                  onClick={() => updatePriority(item.id)}
-                >
-                  <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  {item.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
-        {/* Due date */}
+      {readOnly || !fields.due ? (
+        duePill()
+      ) : (
         <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/40",
-                card.dueDate ? "text-foreground" : "text-muted-foreground",
-              )}
-              disabled={!capabilities.canEditFields}
-            >
-              <CalendarDays className="size-3.5 shrink-0" />
-              <span>{card.dueDate ? formatDate(card.dueDate) : "No date"}</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            className="w-auto p-0"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex flex-col">
-              <Calendar
-                mode="single"
-                selected={card.dueDate ? new Date(card.dueDate) : undefined}
-                onSelect={updateDueDate}
-                initialFocus
-              />
-              {card.dueDate && (
-                <div className="border-t p-2 flex justify-end bg-muted/20">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => updateDueDate(undefined)}
-                  >
-                    Clear date
-                  </Button>
-                </div>
-              )}
-            </div>
+          <PopoverTrigger asChild>{duePill()}</PopoverTrigger>
+          <PopoverContent align="start" className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={dueAt ? new Date(dueAt) : undefined}
+              onSelect={(date: Date | undefined) =>
+                update(fields.due, date ? date.toISOString() : null)
+              }
+            />
+            {dueAt ? (
+              <div className="flex justify-end border-t border-border p-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-danger-text"
+                  onClick={() => update(fields.due, null)}
+                >
+                  {t.clearDue}
+                </Button>
+              </div>
+            ) : null}
           </PopoverContent>
         </Popover>
-      </div>
-    </header>
+      )}
+
+      {readOnly || !fields.priority ? (
+        priorityPill()
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>{priorityPill()}</DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {fields.priority.options.map((option) => (
+              <DropdownMenuItem
+                key={option.id}
+                onSelect={() => update(fields.priority, option.id)}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {label ? (
+        <span className={cn(PILL_CLASS, "hover:bg-popover")}>
+          <span className="sr-only">{`${t.labels}: `}</span>
+          <span
+            className={cn(
+              "rounded-sm px-1.5 text-xs font-semibold",
+              KANBAN_LABEL_TONE_CLASS[kanbanLabelTone(label)],
+            )}
+          >
+            {label.name}
+          </span>
+        </span>
+      ) : null}
+
+      {readOnly ? null : (
+        <>
+          <button
+            type="button"
+            aria-label={t.addProperty}
+            aria-disabled="true"
+            aria-describedby={addPropertyReasonId}
+            title={t.addPropertyUnavailable}
+            className={cn(PILL_CLASS, "border-transparent text-muted-foreground")}
+          >
+            <Plus aria-hidden="true" className="size-4" />
+          </button>
+          <span id={addPropertyReasonId} className="sr-only">
+            {t.addPropertyUnavailable}
+          </span>
+        </>
+      )}
+    </div>
   );
 }
