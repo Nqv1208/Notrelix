@@ -565,12 +565,16 @@
           "state": "Default",
           "visualTargets": [
             {
-              "viewport": "mobile",
+              "viewport": "desktop",
               "theme": "light"
             },
             {
-              "viewport": "mobile",
+              "viewport": "desktop",
               "theme": "dark"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "light"
             }
           ]
         },
