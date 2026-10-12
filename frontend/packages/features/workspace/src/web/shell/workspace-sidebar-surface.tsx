@@ -244,6 +244,9 @@ function WorkspaceChip({
       size="lg"
       type="button"
       onClick={onOpenSystemRail}
+      // Hosts return focus here when the rail closes (WebKit does not focus
+      // a clicked button).
+      data-workspace-chip=""
       aria-label={formatCopy(copy.sidebar.workspaceChip, {
         name: workspace.name,
       })}

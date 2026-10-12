@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 import type { KeyValueStorage } from "@notrelix/runtime-web";
@@ -36,7 +36,7 @@ afterEach(() => {
   host = null;
 });
 
-function renderPreference(storage: KeyValueStorage) {
+function renderPreference(storage: KeyValueStorage, strict = false) {
   const result: { current: ReturnType<typeof useSystemRailPreference> } = {
     current: undefined as never,
   };
@@ -47,7 +47,17 @@ function renderPreference(storage: KeyValueStorage) {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  act(() => root!.render(<Probe />));
+  act(() =>
+    root!.render(
+      strict ? (
+        <StrictMode>
+          <Probe />
+        </StrictMode>
+      ) : (
+        <Probe />
+      ),
+    ),
+  );
   return result;
 }
 
@@ -121,5 +131,19 @@ describe("useSystemRailPreference", () => {
     expect(rail.current.presentation).toBe("hidden");
     act(() => rail.current.togglePinned());
     expect(rail.current.presentation).toBe("pinned");
+  });
+
+  it("writes storage once per change under StrictMode (no writes in state updaters)", () => {
+    const { storage, writes } = memoryStorage();
+    const rail = renderPreference(storage, true);
+    act(() => rail.current.togglePinned());
+    expect(rail.current.presentation).toBe("pinned");
+    expect(writes).toEqual([[SYSTEM_RAIL_STORAGE_KEY, "pinned"]]);
+    act(() => rail.current.close());
+    expect(rail.current.presentation).toBe("hidden");
+    expect(writes).toEqual([
+      [SYSTEM_RAIL_STORAGE_KEY, "pinned"],
+      [SYSTEM_RAIL_STORAGE_KEY, "hidden"],
+    ]);
   });
 });

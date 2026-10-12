@@ -335,6 +335,7 @@
   --rail-active-foreground: oklch(1 0 0);
   --rail-badge: oklch(0.596 0.23 16.8);
   --rail-badge-foreground: oklch(1 0 0);
+  --rail-focus-ring: oklch(1 0 0);
   --rail-foreground: oklch(0.786 0.027 259);
   --rail-hover: oklch(1 0 0 / 0.08);
   --rail-separator: oklch(1 0 0 / 0.14);
@@ -475,6 +476,7 @@
   --rail-active-foreground: oklch(1 0 0);
   --rail-badge: oklch(0.596 0.23 16.8);
   --rail-badge-foreground: oklch(1 0 0);
+  --rail-focus-ring: oklch(1 0 0);
   --rail-foreground: oklch(0.673 0.028 259);
   --rail-hover: oklch(1 0 0 / 0.08);
   --rail-separator: oklch(1 0 0 / 0.14);
@@ -615,6 +617,7 @@
   --rail-active-foreground: oklch(1 0 0);
   --rail-badge: oklch(0.596 0.23 16.8);
   --rail-badge-foreground: oklch(1 0 0);
+  --rail-focus-ring: oklch(1 0 0);
   --rail-foreground: oklch(1 0 0);
   --rail-hover: oklch(1 0 0 / 0.08);
   --rail-separator: oklch(1 0 0 / 0.14);

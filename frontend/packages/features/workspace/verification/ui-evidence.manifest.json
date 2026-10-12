@@ -657,6 +657,10 @@
           "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
         },
         {
+          "id": "pin-focus",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
           "id": "keyboard",
           "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
         }

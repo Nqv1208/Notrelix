@@ -111,6 +111,14 @@ test("The workspace chip opens the system rail; Escape closes it and returns foc
   await expect(rail(page)).toHaveCount(0);
   await expect(chip(page)).toBeFocused();
   await expect(chip(page)).toHaveAttribute("aria-expanded", "false");
+
+  // A click that does not focus the chip (WebKit) still returns focus to it.
+  await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+  await chip(page).dispatchEvent("click");
+  await expect(rail(page)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(rail(page)).toHaveCount(0);
+  await expect(chip(page)).toBeFocused();
 });
 
 test("Switching workspace from the rail goes through the workspace route", async ({
@@ -136,6 +144,8 @@ test("Pinning the system rail survives a reload", async ({ page }) => {
   await pin.click();
   await expect(rail(page)).toHaveAttribute("data-presentation", "pinned");
   await expect(pin).toHaveAttribute("aria-pressed", "true");
+  // Pinning keeps the rail mounted: focus stays on the pin button.
+  await expect(pin).toBeFocused();
 
   await page.reload();
   await expect(rail(page)).toHaveAttribute("data-presentation", "pinned");
@@ -194,6 +204,10 @@ test("At 320 px the sidebar is the off-canvas sheet with the workspaces at its t
     .boundingBox();
   expect(railBox!.y - sheetBox!.y).toBeLessThanOrEqual(1);
   expect(chipBox!.y).toBeGreaterThanOrEqual(railBox!.y + railBox!.height - 1);
+  // On mobile the chip opens no rail, so it claims no expanded state.
+  await expect(
+    sheet.getByRole("button", { name: /mở thanh hệ thống Notrelix$/ }),
+  ).not.toHaveAttribute("aria-expanded", /.*/);
 
   result = await overflow(page);
   expect(result.page).toBeLessThanOrEqual(0);

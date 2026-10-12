@@ -52,20 +52,18 @@ export function useSystemRailPreference(
     setPresentation((current) => (current === "pinned" ? "pinned" : "overlay"));
   }, []);
 
+  // Storage writes stay out of state updaters (StrictMode runs updaters
+  // twice): compute the next value from the rendered state, write, then set.
   const close = useCallback(() => {
-    setPresentation((current) => {
-      if (current === "pinned") writeStored(storage, "hidden");
-      return "hidden";
-    });
-  }, [storage]);
+    if (presentation === "pinned") writeStored(storage, "hidden");
+    setPresentation("hidden");
+  }, [presentation, storage]);
 
   const togglePinned = useCallback(() => {
-    setPresentation((current) => {
-      const next: PersistedRail = current === "pinned" ? "hidden" : "pinned";
-      writeStored(storage, next);
-      return next;
-    });
-  }, [storage]);
+    const next: PersistedRail = presentation === "pinned" ? "hidden" : "pinned";
+    writeStored(storage, next);
+    setPresentation(next);
+  }, [presentation, storage]);
 
   return useMemo(
     () => ({ presentation, open, close, togglePinned }),

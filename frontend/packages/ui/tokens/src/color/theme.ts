@@ -198,6 +198,7 @@ export function buildAppearanceColors(
   roles["rail-separator"] = rail.separator;
   roles["rail-badge"] = rail.badge;
   roles["rail-badge-foreground"] = rail.onBadge;
+  roles["rail-focus-ring"] = rail.focusRing;
 
   CHART_SERIES.forEach((id, index) => {
     roles[`chart-${index + 1}`] = identity[id].fill;

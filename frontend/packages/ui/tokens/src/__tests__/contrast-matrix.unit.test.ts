@@ -216,6 +216,18 @@ describe("contrast matrix (appearance × accent)", () => {
       ).toBeGreaterThanOrEqual(3);
     });
 
+    it("system rail focus ring reaches 3:1 on the rail and on its hover tint", () => {
+      const ring = get("rail-focus-ring");
+      const rail = get("rail");
+      const plain = contrastRatio(ring, rail);
+      expect(plain, `rail-focus-ring on rail = ${plain.toFixed(2)}`).toBeGreaterThanOrEqual(3);
+      const hovered = contrastOverComposite(ring, get("rail-hover"), rail);
+      expect(
+        hovered,
+        `rail-focus-ring on rail-hover = ${hovered.toFixed(2)}`,
+      ).toBeGreaterThanOrEqual(3);
+    });
+
     it.each(IDENTITY_PAIRS)("identity label %s on %s ≥ 4.5:1", (fg, bg) => {
       expect(contrastRatio(get(fg), get(bg))).toBeGreaterThanOrEqual(4.5);
     });

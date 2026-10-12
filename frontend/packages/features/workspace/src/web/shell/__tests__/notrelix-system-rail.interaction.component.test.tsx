@@ -415,6 +415,37 @@ describe("NotrelixSystemRailSurface", () => {
     }
   });
 
+  it("FUI[workspace.system-rail:pin-focus] keeps focus on the pin button when the overlay becomes pinned", () => {
+    for (const locale of LOCALES) {
+      const copy = systemRailCopyFixture(locale);
+      const props: NotrelixSystemRailSurfaceProps = {
+        ...systemRailOverlayScenario(locale),
+        onSwitchWorkspace: vi.fn(),
+        onCreateWorkspace: vi.fn(),
+        onOpenAllInbox: vi.fn(),
+        onOpenAccount: vi.fn(),
+        onTogglePinned: vi.fn(),
+        onClose: vi.fn(),
+      };
+      const view = renderPureUi(<NotrelixSystemRailSurface {...props} />);
+      const pin = within(rail(copy)).getByRole("button", {
+        name: copy.pin.label,
+      });
+      pin.focus();
+      fireEvent.click(pin);
+      view.rerender(
+        <NotrelixSystemRailSurface {...props} presentation="pinned" />,
+      );
+      // Same element (no remount), still focused, now pressed.
+      expect(
+        within(rail(copy)).getByRole("button", { name: copy.pin.label }),
+      ).toBe(pin);
+      expect(document.activeElement).toBe(pin);
+      expect(pin.getAttribute("aria-pressed")).toBe("true");
+      view.unmount();
+    }
+  });
+
   it("FUI[workspace.system-rail:keyboard] moves focus into the overlay and keeps a top-to-bottom tab order", () => {
     for (const locale of LOCALES) {
       const copy = systemRailCopyFixture(locale);
@@ -425,6 +456,8 @@ describe("NotrelixSystemRailSurface", () => {
         name: workspaceName(copy, scenario.workspaces[0]!),
       });
       expect(document.activeElement).toBe(current);
+      // The rail scopes its own focus ring (the app ring is < 3:1 on it).
+      expect(nav.className).toContain("[--focus-ring:var(--rail-focus-ring)]");
 
       const focusable = Array.from(
         nav.querySelectorAll<HTMLElement>("button:not([disabled]), a[href]"),

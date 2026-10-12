@@ -297,9 +297,13 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         ?.focus();
       return;
     }
+    // WebKit does not focus a clicked button: fall back to the chip so
+    // Escape and the scrim can still return focus to it.
     const active = document.activeElement;
     railOpener.current =
-      active instanceof HTMLElement && active !== document.body ? active : null;
+      active instanceof HTMLElement && active !== document.body
+        ? active
+        : document.querySelector<HTMLElement>("[data-workspace-chip]");
     rail.open();
   }, [isMobile, rail]);
 
@@ -475,7 +479,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         signingOut={logout.isPending}
         commandShortcut={commandShortcut}
         onOpenCommand={() => setPaletteOpen(true)}
-        systemRailOpen={desktopRail !== "hidden"}
+        // On mobile the chip focuses the drawer row; it opens no rail.
+        systemRailOpen={isMobile ? undefined : desktopRail !== "hidden"}
         onOpenSystemRail={openSystemRail}
         mobileSystemRail={railSurface("drawer")}
         onOpenShortcuts={() => setShortcutsOpen(true)}

@@ -541,6 +541,11 @@ export interface RailTones {
   /** Unread badge fill and its text. */
   readonly badge: Oklch;
   readonly onBadge: Oklch;
+  /**
+   * Keyboard focus ring on the rail: the app `focus-ring` is < 3:1 on the
+   * dark rail in light and high contrast, so the rail scopes its own.
+   */
+  readonly focusRing: Oklch;
 }
 
 const railWhite = oklch(1, 0, 0);
@@ -550,6 +555,7 @@ const railShared = {
   separator: oklch(1, 0, 0, 0.14),
   badge: oklch(0.596, 0.23, 16.8), // #E8174B, white 4.52:1
   onBadge: railWhite,
+  focusRing: railWhite, // ≥ 13:1 on every rail surface and its hover tint
 } as const;
 
 /*

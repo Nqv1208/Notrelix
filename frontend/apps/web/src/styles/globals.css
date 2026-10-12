@@ -193,6 +193,7 @@
   --color-rail-separator: var(--rail-separator);
   --color-rail-badge: var(--rail-badge);
   --color-rail-badge-foreground: var(--rail-badge-foreground);
+  --color-rail-focus-ring: var(--rail-focus-ring);
 
   /* Mark tones: workspace and department (Space) initials chips (WX-DEC-014; never status). */
   --color-mark-blue: var(--mark-blue);

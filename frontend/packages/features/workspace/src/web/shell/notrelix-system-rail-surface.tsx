@@ -150,7 +150,9 @@ export function NotrelixSystemRailSurface({
         onClose();
       }}
       className={cn(
-        "flex gap-1 bg-rail text-rail-foreground outline-none",
+        // The app focus ring is < 3:1 on the dark rail in light and high
+        // contrast: scope the rail's own ring for every focus-ring below.
+        "flex gap-1 bg-rail text-rail-foreground outline-none [--focus-ring:var(--rail-focus-ring)]",
         drawer
           ? "w-full shrink-0 flex-row flex-wrap items-start p-2"
           : "w-19 shrink-0 flex-col items-center overflow-y-auto py-3",
@@ -315,16 +317,18 @@ export function NotrelixSystemRailSurface({
     </nav>
   );
 
-  if (!overlay) return nav;
-
+  // One tree shape for every presentation (scrim slot first, nav second):
+  // switching overlay ↔ pinned keeps the nav mounted and its focus.
   return (
     <>
-      <div
-        aria-hidden="true"
-        data-slot="system-rail-scrim"
-        onClick={onClose}
-        className="fixed inset-0 z-sticky bg-black/15 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-180 dark:bg-black/40"
-      />
+      {overlay ? (
+        <div
+          aria-hidden="true"
+          data-slot="system-rail-scrim"
+          onClick={onClose}
+          className="fixed inset-0 z-sticky bg-black/15 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-180 dark:bg-black/40"
+        />
+      ) : null}
       {nav}
     </>
   );

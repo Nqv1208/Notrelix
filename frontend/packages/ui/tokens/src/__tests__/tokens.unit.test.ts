@@ -336,7 +336,8 @@ describe("mark tones (WX-DEC-014)", () => {
 /**
  * Notrelix system rail (Final-Space `.rail`): dark in every appearance.
  * Light rail #16202E with ink #AFBACB; dark rail #05070A with ink #8C97A8;
- * high contrast black with white ink. Active white, badge #E8174B + white.
+ * high contrast black with white ink. Active white, badge #E8174B + white,
+ * focus ring white (the app ring is < 3:1 on the rail in light and HC).
  */
 const RAIL_VALUES: Record<ThemeAppearance, Record<string, string>> = {
   light: {
@@ -345,6 +346,7 @@ const RAIL_VALUES: Record<ThemeAppearance, Record<string, string>> = {
     "rail-active-foreground": "#ffffff",
     "rail-badge": "#e8174b",
     "rail-badge-foreground": "#ffffff",
+    "rail-focus-ring": "#ffffff",
   },
   dark: {
     rail: "#05070a",
@@ -352,6 +354,7 @@ const RAIL_VALUES: Record<ThemeAppearance, Record<string, string>> = {
     "rail-active-foreground": "#ffffff",
     "rail-badge": "#e8174b",
     "rail-badge-foreground": "#ffffff",
+    "rail-focus-ring": "#ffffff",
   },
   "high-contrast": {
     rail: "#000000",
@@ -359,6 +362,7 @@ const RAIL_VALUES: Record<ThemeAppearance, Record<string, string>> = {
     "rail-active-foreground": "#ffffff",
     "rail-badge": "#e8174b",
     "rail-badge-foreground": "#ffffff",
+    "rail-focus-ring": "#ffffff",
   },
 };
 
