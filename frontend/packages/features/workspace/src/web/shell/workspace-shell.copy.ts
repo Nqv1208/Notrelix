@@ -146,6 +146,10 @@ export const en = {
     inboxEmptyTitle: "Inbox isn't available yet",
     inboxEmptyDescription:
       "Mentions and requests will collect here. Until then, updates arrive in the notifications bell at the top of the page.",
+    reportsTitle: "Reports",
+    reportsDescription: "Workspace figures across departments and Boards.",
+    reportsEmptyTitle: "Reports are not available yet",
+    reportsEmptyDescription: "Dashboards arrive with the Reports phase.",
     openPalette: "Find a Board or Doc",
   },
   createWorkspace: {
@@ -311,6 +315,10 @@ export const vi: WorkspaceShellCopy = {
     inboxEmptyTitle: "Hộp thư chưa khả dụng",
     inboxEmptyDescription:
       "Lượt nhắc và yêu cầu sẽ được gom ở đây. Trong lúc chờ, thông báo vẫn đến ở chuông thông báo phía trên trang.",
+    reportsTitle: "Báo cáo",
+    reportsDescription: "Số liệu của workspace theo phòng ban và Bảng.",
+    reportsEmptyTitle: "Báo cáo chưa khả dụng",
+    reportsEmptyDescription: "Bảng điều khiển sẽ có cùng giai đoạn Báo cáo.",
     openPalette: "Tìm Bảng hoặc Tài liệu",
   },
   createWorkspace: {

@@ -9,9 +9,11 @@ import { formatCopy, MARK_TONE_CLASS, type ShellUser } from "./shell-models";
 
 /**
  * hidden: not rendered. overlay: over the layout with a scrim (`nav=hien-de`).
- * pinned: in flow, pushes the layout (`nav=hien-day`).
+ * pinned: in flow, pushes the layout (`nav=hien-day`). drawer: narrow
+ * screens, a row of the workspaces (and Add) at the top of the navigation
+ * drawer, which owns focus and dismissal.
  */
-export type SystemRailPresentation = "hidden" | "overlay" | "pinned";
+export type SystemRailPresentation = "hidden" | "overlay" | "pinned" | "drawer";
 
 export interface SystemRailWorkspace {
   readonly id: string;
@@ -106,6 +108,7 @@ export function NotrelixSystemRailSurface({
   onClose,
 }: NotrelixSystemRailSurfaceProps) {
   const overlay = presentation === "overlay";
+  const drawer = presentation === "drawer";
   const navRef = React.useRef<HTMLElement>(null);
   const reasonId = React.useId();
 
@@ -140,17 +143,22 @@ export function NotrelixSystemRailSurface({
         onClose();
       }}
       className={cn(
-        "flex w-19 shrink-0 flex-col items-center gap-1 overflow-y-auto bg-rail py-3 text-rail-foreground outline-none",
-        overlay
-          ? "fixed inset-y-0 left-0 z-sticky shadow-modal motion-safe:animate-in motion-safe:slide-in-from-left motion-safe:duration-180 motion-safe:ease-out"
-          : "relative h-full",
+        "flex gap-1 bg-rail text-rail-foreground outline-none",
+        drawer
+          ? "w-full shrink-0 flex-row flex-wrap items-start p-2"
+          : "w-19 shrink-0 flex-col items-center overflow-y-auto py-3",
+        overlay &&
+          "fixed inset-y-0 left-0 z-sticky shadow-modal motion-safe:animate-in motion-safe:slide-in-from-left motion-safe:duration-180 motion-safe:ease-out",
+        presentation === "pinned" && "relative h-full",
       )}
     >
-      <NotrelixLogoMark
-        role="img"
-        aria-label={copy.logo}
-        className="mb-3 h-7 w-9"
-      />
+      {drawer ? null : (
+        <NotrelixLogoMark
+          role="img"
+          aria-label={copy.logo}
+          className="mb-3 h-7 w-9"
+        />
+      )}
 
       {workspaces.map((workspace) => {
         const name = workspace.isGuest
@@ -204,82 +212,89 @@ export function NotrelixSystemRailSurface({
         <RailLabel>{copy.create.label}</RailLabel>
       </button>
 
-      <span aria-hidden="true" className="my-1.5 h-px w-9 bg-rail-separator" />
-
-      <button
-        type="button"
-        title={copy.allInbox.title}
-        aria-label={
-          allInboxAvailable
-            ? withUnread(copy.allInbox.label, allInboxUnread, copy)
-            : copy.allInbox.label
-        }
-        aria-describedby={allInboxAvailable ? undefined : reasonId}
-        disabled={!allInboxAvailable}
-        onClick={onOpenAllInbox}
-        className={RAIL_ITEM_CLASS}
-      >
-        <Inbox aria-hidden="true" />
-        <RailLabel>{copy.allInbox.label}</RailLabel>
-        {allInboxAvailable ? <UnreadBadge count={allInboxUnread} /> : null}
-      </button>
-      {allInboxAvailable ? null : (
-        <span
-          id={reasonId}
-          className="-mt-1 w-16 text-center text-caption text-rail-foreground"
-        >
-          {copy.allInbox.unavailable}
-        </span>
-      )}
-
-      <button
-        type="button"
-        title={copy.search.title}
-        onClick={onOpenGlobalSearch}
-        className={RAIL_ITEM_CLASS}
-      >
-        <Search aria-hidden="true" />
-        <RailLabel>{copy.search.label}</RailLabel>
-      </button>
-
-      <span aria-hidden="true" className="flex-1" />
-
-      <button
-        type="button"
-        title={copy.settings.title}
-        onClick={onOpenAccount}
-        className={RAIL_ITEM_CLASS}
-      >
-        <SlidersHorizontal aria-hidden="true" />
-        <RailLabel>{copy.settings.label}</RailLabel>
-      </button>
-
-      <button
-        type="button"
-        aria-label={copy.pin.label}
-        aria-pressed={presentation === "pinned"}
-        title={copy.pin.label}
-        onClick={onTogglePinned}
-        className="flex size-8 items-center justify-center rounded-lg text-rail-foreground outline-none hover:bg-rail-hover hover:text-rail-active-foreground focus-visible:focus-ring aria-pressed:bg-rail-hover aria-pressed:text-rail-active-foreground [&_svg]:size-4"
-      >
-        <Pin aria-hidden="true" />
-      </button>
-
-      {user ? (
-        <span
-          role="img"
-          aria-label={formatCopy(copy.user, { name: user.name })}
-          title={user.name}
-          className="mt-1.5"
-        >
-          <IdentityMark
-            name={user.name}
-            tone={user.identity}
-            imageUrl={user.avatarUrl}
-            shape="round"
+      {drawer ? null : (
+        <>
+          <span
+            aria-hidden="true"
+            className="my-1.5 h-px w-9 bg-rail-separator"
           />
-        </span>
-      ) : null}
+
+          <button
+            type="button"
+            title={copy.allInbox.title}
+            aria-label={
+              allInboxAvailable
+                ? withUnread(copy.allInbox.label, allInboxUnread, copy)
+                : copy.allInbox.label
+            }
+            aria-describedby={allInboxAvailable ? undefined : reasonId}
+            disabled={!allInboxAvailable}
+            onClick={onOpenAllInbox}
+            className={RAIL_ITEM_CLASS}
+          >
+            <Inbox aria-hidden="true" />
+            <RailLabel>{copy.allInbox.label}</RailLabel>
+            {allInboxAvailable ? <UnreadBadge count={allInboxUnread} /> : null}
+          </button>
+          {allInboxAvailable ? null : (
+            <span
+              id={reasonId}
+              className="-mt-1 w-16 text-center text-caption text-rail-foreground"
+            >
+              {copy.allInbox.unavailable}
+            </span>
+          )}
+
+          <button
+            type="button"
+            title={copy.search.title}
+            onClick={onOpenGlobalSearch}
+            className={RAIL_ITEM_CLASS}
+          >
+            <Search aria-hidden="true" />
+            <RailLabel>{copy.search.label}</RailLabel>
+          </button>
+
+          <span aria-hidden="true" className="flex-1" />
+
+          <button
+            type="button"
+            title={copy.settings.title}
+            onClick={onOpenAccount}
+            className={RAIL_ITEM_CLASS}
+          >
+            <SlidersHorizontal aria-hidden="true" />
+            <RailLabel>{copy.settings.label}</RailLabel>
+          </button>
+
+          <button
+            type="button"
+            aria-label={copy.pin.label}
+            aria-pressed={presentation === "pinned"}
+            title={copy.pin.label}
+            onClick={onTogglePinned}
+            className="flex size-8 items-center justify-center rounded-lg text-rail-foreground outline-none hover:bg-rail-hover hover:text-rail-active-foreground focus-visible:focus-ring aria-pressed:bg-rail-hover aria-pressed:text-rail-active-foreground [&_svg]:size-4"
+          >
+            <Pin aria-hidden="true" />
+          </button>
+
+          {user ? (
+            <span
+              role="img"
+              aria-label={formatCopy(copy.user, { name: user.name })}
+              title={user.name}
+              className="mt-1.5"
+            >
+              <IdentityMark
+                name={user.name}
+                tone={user.identity}
+                imageUrl={user.avatarUrl}
+                shape="round"
+              />
+            </span>
+          ) : null}
+        </>
+      )}
     </nav>
   );
 

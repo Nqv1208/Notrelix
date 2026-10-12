@@ -9,6 +9,7 @@ import { TeamsPage } from "../../routes/workspaces/$workspaceId/teams";
 import { TeamPage } from "../../routes/workspaces/$workspaceId/teams.$teamId";
 import { MyWorkPage } from "../../routes/workspaces/$workspaceId/my-work";
 import { InboxPage } from "../../routes/workspaces/$workspaceId/inbox";
+import { ReportsPage } from "../../routes/workspaces/$workspaceId/reports";
 import { SpacePage } from "../../routes/workspaces/$workspaceId/spaces/$spaceId";
 
 export const workspaceIndexRoute = createRoute({
@@ -77,6 +78,13 @@ export const inboxRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/inbox",
   component: InboxPage,
+});
+
+/** Reports placeholder until the Reports phase (Final-Space sidebar). */
+export const reportsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/reports",
+  component: ReportsPage,
 });
 
 const spaceSearchSchema = z.object({

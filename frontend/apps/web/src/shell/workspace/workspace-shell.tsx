@@ -15,6 +15,7 @@ import {
   buildWorkspaceBreadcrumb,
   canCreateRootSpace,
   identityToneFor,
+  initialsFor,
   markToneFor,
   spaceAncestors,
   spacePath,
@@ -24,11 +25,14 @@ import {
 import {
   commandShortcutLabel,
   createUseRecordRecent,
+  createUseWorkspaceList,
   createUseWorkspaceMembers,
   useShellShortcuts,
   useSpaceTreeExpansion,
   useWorkspaceShellCopy,
   useWorkspaceSpacesCopy,
+  NotrelixSystemRailSurface,
+  useNotrelixSystemRailCopy,
   WorkspaceCommandPaletteSurface,
   WorkspaceShortcutSheetSurface,
   WorkspaceSidebarSurface,
@@ -37,16 +41,21 @@ import {
   type ShellNavigation,
   type ShellPaletteSelection,
   type ShellShortcutId,
+  type SpaceBoardLink,
   type SpaceTreeState,
+  type SystemRailWorkspace,
 } from "@notrelix/features-workspace/web";
 import {
   useAppRuntime,
   useFeatureRuntimeDependencies,
 } from "@notrelix/runtime-web";
-import { SidebarProvider, useTheme } from "@notrelix/ui-web";
+import { SidebarProvider, cn, useIsMobile, useTheme } from "@notrelix/ui-web";
 import { useWorkspaceBoards } from "@notrelix/work-management-state";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { useBoardPlacements } from "./board-placement-bridge";
 import { CreateWorkspaceDialog } from "./create-workspace-dialog";
+import { useSystemRailPreference } from "./use-system-rail-preference";
+import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
 import { useCreateSpace } from "./use-create-space";
 import { useSpaceHooks } from "./use-workspace-spaces";
 import {
@@ -67,12 +76,13 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const matches = useMatches();
   const user = useCurrentUser();
   const theme = useTheme();
-  const { api: runtimeClient } = useAppRuntime();
+  const { api: runtimeClient, storage } = useAppRuntime();
   const featureDeps = useFeatureRuntimeDependencies();
 
   const hooks = useMemo(() => {
     const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
     return {
+      useWorkspaceList: createUseWorkspaceList(deps),
       useMembers: createUseWorkspaceMembers({ api: runtimeClient.api }),
       useRecordRecent: createUseRecordRecent(deps),
       usePageList: createUsePageList(featureDeps.api, featureDeps.endpoints),
@@ -87,8 +97,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     };
   }, [runtimeClient, featureDeps, navigate]);
 
+  const workspaces = hooks.useWorkspaceList();
   const members = hooks.useMembers(workspaceId);
   const boards = useWorkspaceBoards(workspaceId);
+  const placements = useBoardPlacements(workspaceId);
+  const myWork = useMyWorkItems(workspaceId);
   const pages = hooks.usePageList(workspaceId);
   const recordRecent = hooks.useRecordRecent();
   const logout = hooks.useLogout();
@@ -195,6 +208,34 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     };
   }, [spaceTree.data, spaceTree.isError]);
 
+  // Boards under their Space (placement from the Board list, OT-5).
+  const boardsBySpace = useMemo(() => {
+    const bySpace = new Map<string, SpaceBoardLink[]>();
+    if (!boards.data || !placements.data) return bySpace;
+    const spaceOf = new Map(
+      placements.data.map((placement) => [placement.id, placement.spaceId]),
+    );
+    for (const board of boards.data) {
+      const spaceId = spaceOf.get(board.id);
+      if (!spaceId) continue;
+      const links = bySpace.get(spaceId) ?? [];
+      links.push({
+        id: board.id,
+        name: board.title,
+        isPrivate: board.visibility === "private",
+      });
+      bySpace.set(spaceId, links);
+    }
+    return bySpace;
+  }, [boards.data, placements.data]);
+
+  // My work count: the open Items assigned to the member. Unknown (no badge)
+  // while loading, on error, or when more pages exist than are loaded.
+  const myWorkCount =
+    myWork.isSuccess && !myWork.hasNextPage
+      ? flattenMyWork(myWork.data).length
+      : null;
+
   // ── Identity ────────────────────────────────────────────────────
   const role =
     members.data?.find((member) => member.userId === user?.id)?.role ?? null;
@@ -224,6 +265,66 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         identity: identityToneFor(user.id),
       }
     : null;
+
+  // ── Notrelix system rail (Final-Space `nav`) ────────────────────
+  const railCopy = useNotrelixSystemRailCopy();
+  const rail = useSystemRailPreference(storage);
+  const isMobile = useIsMobile();
+  const railOpener = useRef<HTMLElement | null>(null);
+  const railWorkspaces = useMemo<SystemRailWorkspace[]>(() => {
+    const list = workspaces.data ?? (workspace ? [workspace] : []);
+    return list.map((item) => ({
+      id: item.id,
+      name: item.name,
+      shortName: item.name,
+      initials: initialsFor(item.name),
+      tone: markToneFor(item.id),
+      // The workspace list carries no role; only the current role is known.
+      isGuest: item.id === workspaceId && role === "guest",
+      // No per-workspace unread producer yet (gap register).
+      unread: null,
+      current: item.id === workspaceId,
+    }));
+  }, [role, workspace, workspaceId, workspaces.data]);
+
+  const openSystemRail = useCallback(() => {
+    if (isMobile) {
+      // The drawer already lists the workspaces at its top.
+      document
+        .querySelector<HTMLElement>(
+          '[data-presentation="drawer"] [aria-current="page"]',
+        )
+        ?.focus();
+      return;
+    }
+    const active = document.activeElement;
+    railOpener.current =
+      active instanceof HTMLElement && active !== document.body ? active : null;
+    rail.open();
+  }, [isMobile, rail]);
+
+  const closeSystemRail = useCallback(() => {
+    rail.close();
+    // Escape and the scrim return focus to the chip; when focus already
+    // moved on (Tab out of the rail), leave it there.
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (active && active !== document.body) return;
+      railOpener.current?.focus();
+    });
+  }, [rail]);
+
+  const switchWorkspace = useCallback(
+    (id: string) => {
+      if (rail.presentation === "overlay") rail.close();
+      // The workspace route runs prepareWorkspaceTransition (base.routes).
+      void navigate({
+        to: "/workspaces/$workspaceId",
+        params: { workspaceId: id },
+      });
+    },
+    [navigate, rail],
+  );
 
   // ── Overlays and shortcuts ──────────────────────────────────────
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -314,15 +415,54 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   const NotificationBell = hooks.NotificationBell;
 
+  const railSurface = (presentation: typeof rail.presentation) => (
+    <NotrelixSystemRailSurface
+      copy={railCopy}
+      presentation={presentation}
+      workspaces={railWorkspaces}
+      user={shellUser}
+      // No all-workspace inbox producer yet: the entry shows why.
+      allInboxAvailable={false}
+      allInboxUnread={null}
+      onSwitchWorkspace={switchWorkspace}
+      onCreateWorkspace={() => {
+        if (rail.presentation === "overlay") rail.close();
+        setCreateOpen(true);
+      }}
+      onOpenAllInbox={() => goTo({ section: "inbox" })}
+      // Search runs in the current workspace until a cross-workspace search exists.
+      onOpenGlobalSearch={() => {
+        if (rail.presentation === "overlay") rail.close();
+        goTo({ section: "search" });
+      }}
+      onOpenAccount={() => {
+        if (rail.presentation === "overlay") rail.close();
+        goTo({ section: "account" });
+      }}
+      onTogglePinned={rail.togglePinned}
+      onClose={closeSystemRail}
+    />
+  );
+  const desktopRail = isMobile ? "hidden" : rail.presentation;
+
   return (
-    <SidebarProvider className="h-svh overflow-hidden bg-surface-canvas">
+    <SidebarProvider
+      data-system-rail={desktopRail}
+      className={cn(
+        "h-svh overflow-hidden bg-surface-canvas",
+        // A pinned rail sits in flow before the sidebar; the sidebar's fixed
+        // container moves right by the rail width (w-19).
+        desktopRail === "pinned" && "[&_[data-slot=sidebar-container]]:left-19",
+      )}
+    >
+      {desktopRail === "hidden" ? null : railSurface(desktopRail)}
       <WorkspaceSidebarSurface
         copy={copy}
         navigation={navigation}
         workspace={currentWorkspace}
         location={location}
-        // Counts arrive with My work / Inbox (P3, P4); until then no badge.
-        counts={{ myWork: null, inbox: null }}
+        // No inbox producer yet (gap register): no badge.
+        counts={{ myWork: myWorkCount, inbox: null }}
         spaces={{
           copy: spacesCopy,
           state: sidebarSpaces,
@@ -332,14 +472,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           onExpandedChange: expansion.setExpanded,
           onCreateSpace: () => createSpace.open(null),
           onRetry: () => void spaceTree.refetch(),
+          boardsBySpace,
         }}
         user={shellUser}
         signingOut={logout.isPending}
         commandShortcut={commandShortcut}
         onOpenCommand={() => setPaletteOpen(true)}
-        // Interim until Task 7 mounts the Notrelix system rail: the chip
-        // opens the command palette.
-        onOpenSystemRail={() => setPaletteOpen(true)}
+        systemRailOpen={desktopRail !== "hidden"}
+        onOpenSystemRail={openSystemRail}
+        mobileSystemRail={railSurface("drawer")}
         onOpenShortcuts={() => setShortcutsOpen(true)}
         onSignOut={() => logout.mutate()}
       />

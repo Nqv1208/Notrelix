@@ -607,7 +607,15 @@
           "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
         },
         {
+          "id": "focus-loss",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
           "id": "pinned",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "drawer",
           "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
         },
         {

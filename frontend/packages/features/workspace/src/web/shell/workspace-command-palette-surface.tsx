@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  BarChart3,
   FileText,
   Home,
   Inbox,
@@ -148,6 +149,12 @@ export function WorkspaceCommandPaletteSurface({
       label: copy.sections.library,
       icon: Library,
       destination: { section: "library" },
+    },
+    {
+      id: "reports",
+      label: copy.nav.reports,
+      icon: BarChart3,
+      destination: { section: "reports" },
     },
     {
       id: "members",

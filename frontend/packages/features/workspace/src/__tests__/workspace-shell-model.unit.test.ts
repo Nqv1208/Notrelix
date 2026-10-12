@@ -176,6 +176,25 @@ describe("buildWorkspaceBreadcrumb (WX-SHELL-002)", () => {
     expect(list.map((item) => item.label)).toEqual(["Product", "Teams"]);
     expect(list[1]?.destination).toBeUndefined();
   });
+
+  it("names the Reports section in both locales", () => {
+    for (const locale of ["vi", "en"] as const) {
+      const copy = workspaceShellCopy(locale);
+      const items = buildWorkspaceBreadcrumb({
+        workspaceName: "Minh An Group",
+        location: { section: "reports" },
+        boards: [],
+        docs: [],
+        labels: workspaceBreadcrumbLabels(copy),
+      });
+      expect(items.map((item) => item.label)).toEqual([
+        "Minh An Group",
+        locale === "vi" ? "Báo cáo" : "Reports",
+      ]);
+      expect(items[0]?.destination).toEqual({ section: "home" });
+      expect(items[1]?.destination).toBeUndefined();
+    }
+  });
 });
 
 describe("createShortcutMatcher (WX-SHELL-005)", () => {

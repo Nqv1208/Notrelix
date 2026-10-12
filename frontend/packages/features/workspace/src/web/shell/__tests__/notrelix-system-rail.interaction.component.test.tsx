@@ -163,7 +163,7 @@ describe("NotrelixSystemRailSurface", () => {
     }
   });
 
-  it("FUI[workspace.system-rail:dismiss] closes the overlay when focus leaves it, not when it moves inside", () => {
+  it("FUI[workspace.system-rail:focus-loss] closes the overlay when focus leaves it, not when it moves inside", () => {
     for (const locale of LOCALES) {
       const copy = systemRailCopyFixture(locale);
       const scenario = systemRailOverlayScenario(locale);
@@ -207,6 +207,59 @@ describe("NotrelixSystemRailSurface", () => {
     expect(rail(copy).getAttribute("data-presentation")).toBe("pinned");
     fireEvent.keyDown(rail(copy), { key: "Escape" });
     expect(props.onClose).not.toHaveBeenCalled();
+  });
+
+  it("FUI[workspace.system-rail:drawer] lists the workspaces as a row at the top of the mobile drawer", () => {
+    for (const locale of LOCALES) {
+      const copy = systemRailCopyFixture(locale);
+      const scenario: SystemRailScenario = {
+        ...systemRailOverlayScenario(locale),
+        presentation: "drawer",
+      };
+      const outside = document.createElement("button");
+      document.body.append(outside);
+      outside.focus();
+      const { props, view } = renderRail(scenario);
+      const nav = rail(copy);
+      expect(nav.getAttribute("data-presentation")).toBe("drawer");
+      // The drawer owns focus and dismissal: no scrim, no focus move.
+      expect(
+        view.container.querySelector('[data-slot="system-rail-scrim"]'),
+      ).toBeNull();
+      expect(document.activeElement).toBe(outside);
+
+      // Workspaces and Add only; account-level entries stay on desktop.
+      expect(
+        within(nav)
+          .getAllByRole("button")
+          .map(
+            (button) => button.getAttribute("aria-label") ?? button.textContent,
+          ),
+      ).toEqual([
+        ...scenario.workspaces.map((workspace) =>
+          workspaceName(copy, workspace),
+        ),
+        copy.create.label,
+      ]);
+
+      fireEvent.click(
+        within(nav).getByRole("button", {
+          name: workspaceName(copy, scenario.workspaces[1]!),
+        }),
+      );
+      expect(props.onSwitchWorkspace).toHaveBeenCalledWith(
+        "ws-minh-an-da-nang",
+      );
+      fireEvent.click(
+        within(nav).getByRole("button", { name: copy.create.label }),
+      );
+      expect(props.onCreateWorkspace).toHaveBeenCalledTimes(1);
+      fireEvent.keyDown(nav, { key: "Escape" });
+      fireEvent.blur(nav.querySelector("button")!, { relatedTarget: outside });
+      expect(props.onClose).not.toHaveBeenCalled();
+      view.unmount();
+      outside.remove();
+    }
   });
 
   it("FUI[workspace.system-rail:switch-workspace] switches to another workspace; the current one closes the overlay", () => {

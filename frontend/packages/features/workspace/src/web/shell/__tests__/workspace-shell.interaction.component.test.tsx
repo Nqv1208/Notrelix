@@ -193,10 +193,7 @@ describe("WorkspaceSidebarSurface", () => {
         ...sidebarDepartmentsFixture(locale),
         onCreateSpace: vi.fn(),
       };
-      const manager = renderSidebar(
-        { spaces },
-        sidebarMockupScenario(locale),
-      );
+      const manager = renderSidebar({ spaces }, sidebarMockupScenario(locale));
       const nav = screen.getByRole("navigation", {
         name: shellCopyFixture(locale).nav.label,
       });
@@ -302,7 +299,9 @@ describe("WorkspaceSidebarSurface", () => {
       { workspace: { ...scenario.workspace!, role: "member" } },
       scenario,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Thiết lập workspace" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Thiết lập workspace" }),
+    );
     expect(screen.getByRole("link", { name: "Thành viên" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Nhóm" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Cài đặt chung" })).toBeNull();
@@ -338,14 +337,18 @@ describe("WorkspaceSidebarSurface", () => {
     expect(props.onOpenShortcuts).toHaveBeenCalledTimes(1);
 
     openMenu(trigger);
-    fireEvent.click(screen.getByRole("menuitem", { name: viCopy.user.profile }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: viCopy.user.profile }),
+    );
     expect(props.navigation.onNavigate).toHaveBeenCalledWith({
       section: "account",
       page: "profile",
     });
 
     openMenu(trigger);
-    fireEvent.click(screen.getByRole("menuitem", { name: viCopy.user.signOut }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: viCopy.user.signOut }),
+    );
     expect(props.onSignOut).toHaveBeenCalledTimes(1);
   });
 
@@ -518,6 +521,14 @@ describe("WorkspaceCommandPaletteSurface", () => {
     expect(props.onSelect).toHaveBeenCalledWith({
       type: "navigate",
       destination: { section: "board", boardId: "board-roadmap" },
+    });
+
+    // Reports is a "Go to" destination like the sidebar's primary items.
+    fireEvent.change(input, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("option", { name: copy.nav.reports }));
+    expect(props.onSelect).toHaveBeenLastCalledWith({
+      type: "navigate",
+      destination: { section: "reports" },
     });
   });
 

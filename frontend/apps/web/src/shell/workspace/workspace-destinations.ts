@@ -116,6 +116,7 @@ const SECTION_BY_ROUTE_ID: Readonly<Record<string, WorkspaceDestination>> = {
   "/workspaces/$workspaceId/inbox": { section: "inbox" },
   "/workspaces/$workspaceId/search": { section: "search" },
   "/workspaces/$workspaceId/library": { section: "library" },
+  "/workspaces/$workspaceId/reports": { section: "reports" },
   "/workspaces/$workspaceId/members": { section: "members" },
   "/workspaces/$workspaceId/teams": { section: "teams" },
   "/workspaces/$workspaceId/settings": { section: "settings" },

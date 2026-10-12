@@ -130,6 +130,19 @@ describe("workspace shell routing (WX-SHELL-001/002)", () => {
     ).toEqual({ section: "account" });
     expect(resolveShellLocation([root, workspace])).toBeNull();
   });
+
+  it("maps Reports to its placeholder route and resolves it back", () => {
+    expect(destinationHref("ws-1", { section: "reports" })).toBe(
+      "/workspaces/ws-1/reports",
+    );
+    expect(
+      resolveShellLocation([
+        root,
+        workspace,
+        { routeId: "/workspaces/$workspaceId/reports", params: {}, search: {} },
+      ]),
+    ).toEqual({ section: "reports" });
+  });
 });
 
 describe("resolveWorkspaceScope (WX-SHELL-004)", () => {
