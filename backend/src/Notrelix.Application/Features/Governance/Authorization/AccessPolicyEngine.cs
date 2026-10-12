@@ -290,6 +290,88 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     }
 
     /// <summary>
+    /// The principal's effective level on a Board and its source, over the same
+    /// facts as the single read (<c>ViewBoard</c>), in GOV-025 order: a missing
+    /// resource or no Workspace membership → none; workspace Owner → Owner;
+    /// a first-priority Deny rule → none. Otherwise the highest of: the explicit
+    /// resource-permission rank (User or active Team); board membership without
+    /// a grant (an Observer only reads, every other board role edits, as the
+    /// board actions allow); and, on a Workspace-visible Board only, the Space
+    /// level when placed (GOV-027) or the Workspace default for non-Guest
+    /// members when unplaced (non-management actions allowed, i.e. Editor).
+    /// On a tie the earlier source wins (explicit grant first). An Allow rule
+    /// with no other source gives Viewer. The result is none exactly when the
+    /// single read is denied; it describes access for clients and never
+    /// replaces the per-action decision.
+    /// </summary>
+    public static EffectiveResourceAccess EvaluateEffectiveBoardAccess(AccessFacts facts)
+    {
+        var role = facts.WorkspaceMemberRole;
+        if (role is null || !facts.ResourceExists)
+        {
+            return EffectiveResourceAccess.None;
+        }
+
+        if (string.Equals(role, "Owner", StringComparison.Ordinal))
+        {
+            return new EffectiveResourceAccess(OwnerRank, EffectiveAccessBasis.WorkspaceOwner);
+        }
+
+        var firstPriority = facts.PermissionRules.Count == 0
+            ? []
+            : facts.PermissionRules
+                .Where(rule => rule.Priority == facts.PermissionRules.Min(candidate => candidate.Priority))
+                .ToArray();
+        if (firstPriority.Any(rule => string.Equals(rule.Effect, "Deny", StringComparison.OrdinalIgnoreCase)))
+        {
+            return EffectiveResourceAccess.None;
+        }
+
+        var best = EffectiveResourceAccess.None;
+        if (facts.HasExplicitResourcePermission)
+        {
+            best = Higher(best, new EffectiveResourceAccess(
+                Math.Max(facts.ActiveResourcePermissionRank ?? 0, ViewerRank), EffectiveAccessBasis.ResourcePermission));
+        }
+
+        if (facts.ResourceMemberRole is { } boardRole)
+        {
+            var memberRank = string.Equals(boardRole, "Observer", StringComparison.Ordinal) ? ViewerRank : EditorRank;
+            best = Higher(best, new EffectiveResourceAccess(memberRank, EffectiveAccessBasis.BoardMembership));
+        }
+
+        if (string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal))
+        {
+            if (facts.ResourceSpaceId is not null)
+            {
+                var spaceRank = SpaceRank(facts, role);
+                if (spaceRank > 0)
+                {
+                    var basis = string.Equals(role, "Admin", StringComparison.Ordinal)
+                        ? EffectiveAccessBasis.WorkspaceAdmin
+                        : EffectiveAccessBasis.Space;
+                    best = Higher(best, new EffectiveResourceAccess(spaceRank, basis));
+                }
+            }
+            else if (!string.Equals(role, "Guest", StringComparison.Ordinal))
+            {
+                best = Higher(best, new EffectiveResourceAccess(EditorRank, EffectiveAccessBasis.WorkspaceDefault));
+            }
+        }
+
+        if (best.Basis == EffectiveAccessBasis.None
+            && firstPriority.Any(rule => string.Equals(rule.Effect, "Allow", StringComparison.OrdinalIgnoreCase)))
+        {
+            return new EffectiveResourceAccess(ViewerRank, EffectiveAccessBasis.PermissionRule);
+        }
+
+        return best;
+    }
+
+    private static EffectiveResourceAccess Higher(EffectiveResourceAccess current, EffectiveResourceAccess candidate) =>
+        candidate.Rank > current.Rank ? candidate : current;
+
+    /// <summary>
     /// Managing a resource's ACL (viewing or mutating governance.resource_permissions)
     /// requires explicit management authority: workspace owners, or an active
     /// resource permission of at least Manager. Ordinary workspace visibility

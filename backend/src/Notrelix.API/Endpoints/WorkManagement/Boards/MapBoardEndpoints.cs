@@ -23,6 +23,7 @@ public static class MapBoardEndpoints
         boardGroup.MapGetBoard();
         boardGroup.MapRenameBoard();
         boardGroup.MapGetBoardOverview();
+        boardGroup.MapGetBoardAccess();
         boardGroup.MapArchiveBoard();
         boardGroup.MapUnarchiveBoard();
         boardGroup.MapDeleteBoard();

@@ -123,6 +123,8 @@ public static class DependencyInjection
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessSummary,
+            Notrelix.Application.Features.Governance.Authorization.ResourceAccessSummaryService>();
 
         // Producer-owned public projection source (WorkManagement placement facts)
         services.AddScoped<IWorkItemProjectionSource, WorkItemProjectionSourceService>();

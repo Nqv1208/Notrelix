@@ -131,6 +131,10 @@ public static class PersistenceRegistration
         services.AddScoped<IAccessFactsProvider, Notrelix.Infrastructure.Data.Authz.PostgresAccessFactsProvider>();
         services.AddScoped<global::Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility,
             Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
+        services.AddScoped<global::Notrelix.Application.Features.Governance.Abstractions.IResourceAccessEntriesReader,
+            Notrelix.Infrastructure.Data.Authz.PostgresResourceAccessEntriesReader>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.BoardAccess.IBoardAccessSubjectFacts,
+            global::Notrelix.Infrastructure.CrossContext.Governance.WorkManagement.BoardAccessSubjectFactsAdapter>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();

@@ -32,6 +32,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["Boards.GetBoardQuery"] = PermissionAction.ViewBoard,
         ["Boards.GetFullBoardQuery"] = PermissionAction.ViewBoard,
         ["Boards.GetBoardMembersQuery"] = PermissionAction.ViewBoard,
+        ["Boards.GetBoardAccessQuery"] = PermissionAction.ViewBoard,
         ["Boards.GetBoardsQuery"] = PermissionAction.ViewWorkspace,
         ["Boards.GetBoardsBySlugQuery"] = PermissionAction.ViewWorkspace,
         ["Boards.CreateBoardInWorkspaceCommand"] = PermissionAction.CreateBoard,

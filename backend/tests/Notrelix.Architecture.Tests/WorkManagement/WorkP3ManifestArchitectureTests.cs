@@ -64,6 +64,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["Boards.GetBoardsQuery"] = new(Disposition.Keep, "-"),
         ["Boards.GetBoardsBySlugQuery"] = new(Disposition.Keep, "-"),
         ["Boards.GetBoardMembersQuery"] = new(Disposition.Keep, "-"),
+        ["Boards.GetBoardAccessQuery"] = new(Disposition.Keep, "-"),
         ["Boards.CreateBoardInWorkspaceCommand"] = new(Disposition.Harden, "APP-BOARD-001 (default-schema ordering writer)"),
         ["Boards.UpdateBoardCommand"] = new(Disposition.Harden, "APP-BOARD-001, CONC-001", VersionedTarget: true),
         ["Boards.MoveBoardToSpaceCommand"] = new(Disposition.Keep, "ADR-009 Space placement (OT-4), CONC-001", VersionedTarget: true),
