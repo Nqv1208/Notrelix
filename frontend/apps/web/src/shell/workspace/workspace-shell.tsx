@@ -15,6 +15,7 @@ import {
   buildWorkspaceBreadcrumb,
   canCreateRootSpace,
   identityToneFor,
+  markToneFor,
   spaceAncestors,
   spacePath,
   NAVIGATION_RESOURCE_KIND,
@@ -264,7 +265,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     ? {
         id: workspace.id,
         name: workspace.name,
-        identity: identityToneFor(workspace.id),
+        mark: markToneFor(workspace.id),
         role,
       }
     : null;
@@ -273,7 +274,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       (workspaces.data ?? []).map((item) => ({
         id: item.id,
         name: item.name,
-        identity: identityToneFor(item.id),
+        mark: markToneFor(item.id),
       })),
     [workspaces.data],
   );

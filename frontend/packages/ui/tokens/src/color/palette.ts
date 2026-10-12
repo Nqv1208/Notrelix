@@ -475,6 +475,46 @@ export const identity: Record<IdentityId, IdentityTone> = {
   ember: { fill: fromHex(logoHex.ember), onFill: neutrals.light.onLightFill },
 };
 
+// ─── Mark tones ──────────────────────────────────────────────────────────
+
+/**
+ * Mark tones: workspace and department (Space) initials chips (WX-DEC-014).
+ * Identity colours stay for logo marks, Board/Doc tiles, avatars and charts.
+ * Never status colours (WX-DEC-006).
+ */
+export const MARK_TONE_IDS = [
+  "blue",
+  "gold",
+  "coral",
+  "sage",
+  "crimson",
+  "violet",
+] as const;
+export type MarkToneId = (typeof MARK_TONE_IDS)[number];
+
+export interface MarkTone {
+  readonly fill: Oklch;
+  /** White initials on `fill`. ≥4.5:1 in every appearance. */
+  readonly onFill: Oklch;
+}
+
+const markInitials = oklch(1, 0, 0);
+
+/*
+ * The mockup department colours (CN, KT, MK, NS, GĐ, PC), one fill in every
+ * appearance, authored on the CSS emit grid so they render the mockup hex.
+ * Contrast adjustment: sage #4E8574 is 4.26:1 under white; L lowered in 0.01
+ * steps from 0.573 to 0.553 → #487F6E (4.63:1).
+ */
+export const markTones: Record<MarkToneId, MarkTone> = {
+  blue: { fill: oklch(0.549, 0.168, 256), onFill: markInitials }, // #1E6FD0 4.94:1
+  gold: { fill: oklch(0.561, 0.112, 76), onFill: markInitials }, // #9A6A12 4.72:1
+  coral: { fill: oklch(0.553, 0.174, 38.3), onFill: markInitials }, // #C2410C 5.19:1
+  sage: { fill: oklch(0.553, 0.065, 172.1), onFill: markInitials }, // #487F6E 4.63:1
+  crimson: { fill: oklch(0.534, 0.205, 17.2), onFill: markInitials }, // #C8143F 5.80:1
+  violet: { fill: oklch(0.54, 0.184, 278.3), onFill: markInitials }, // #5B5BD6 5.37:1
+};
+
 /** Chart series order (identity colors, never status). */
 export const CHART_SERIES: readonly IdentityId[] = [
   "blue",

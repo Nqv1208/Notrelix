@@ -1,5 +1,6 @@
 import type {
   IdentityTone,
+  MarkToneId,
   NavigationEntry,
   WorkspaceDestination,
 } from "../../core/model/navigation";
@@ -25,7 +26,8 @@ export type NavigationListState =
 export interface ShellWorkspace {
   readonly id: string;
   readonly name: string;
-  readonly identity: IdentityTone;
+  /** Initials chip tone (WX-DEC-014), from `markToneFor(id)`. */
+  readonly mark: MarkToneId;
 }
 
 export interface ShellCurrentWorkspace extends ShellWorkspace {
@@ -74,6 +76,19 @@ export const IDENTITY_MARK_CLASS: Readonly<Record<IdentityTone, string>> = {
   gold: "bg-identity-gold text-identity-gold-foreground",
   sage: "bg-identity-sage text-identity-sage-foreground",
   ember: "bg-identity-ember text-identity-ember-foreground",
+};
+
+/**
+ * Mark chip classes per tone for workspace and department (Space) initials
+ * (WX-DEC-014). Literal strings so Tailwind generates them. Never status.
+ */
+export const MARK_TONE_CLASS: Readonly<Record<MarkToneId, string>> = {
+  blue: "bg-mark-blue text-mark-blue-foreground",
+  gold: "bg-mark-gold text-mark-gold-foreground",
+  coral: "bg-mark-coral text-mark-coral-foreground",
+  sage: "bg-mark-sage text-mark-sage-foreground",
+  crimson: "bg-mark-crimson text-mark-crimson-foreground",
+  violet: "bg-mark-violet text-mark-violet-foreground",
 };
 
 /** Identity tone as an icon color on a neutral tile (Boards and Docs). */

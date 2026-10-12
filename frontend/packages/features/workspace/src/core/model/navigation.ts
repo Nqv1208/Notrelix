@@ -180,13 +180,41 @@ export const IDENTITY_TONES = [
 ] as const;
 export type IdentityTone = (typeof IDENTITY_TONES)[number];
 
-/** Deterministic identity tone for a workspace, member or resource id. */
-export function identityToneFor(id: string): IdentityTone {
+function toneHash(id: string): number {
   let hash = 0;
   for (let index = 0; index < id.length; index += 1) {
     hash = (hash * 31 + id.charCodeAt(index)) | 0;
   }
-  return IDENTITY_TONES[Math.abs(hash) % IDENTITY_TONES.length] ?? "blue";
+  return Math.abs(hash);
+}
+
+/** Deterministic identity tone for a member or resource id. */
+export function identityToneFor(id: string): IdentityTone {
+  return IDENTITY_TONES[toneHash(id) % IDENTITY_TONES.length] ?? "blue";
+}
+
+/**
+ * Mark tones for workspace and department (Space) initials chips
+ * (WX-DEC-014; mirrors `MARK_TONE_IDS` in `@notrelix/ui-tokens`). Never
+ * status colours (WX-DEC-006).
+ */
+export const MARK_TONE_IDS = [
+  "blue",
+  "gold",
+  "coral",
+  "sage",
+  "crimson",
+  "violet",
+] as const;
+export type MarkToneId = (typeof MARK_TONE_IDS)[number];
+
+/**
+ * Deterministic mark tone for a workspace or Space id (same hash as
+ * {@link identityToneFor}, modulo six). Until Spaces store a chosen colour
+ * (gap register), the tone is derived from the id.
+ */
+export function markToneFor(id: string): MarkToneId {
+  return MARK_TONE_IDS[toneHash(id) % MARK_TONE_IDS.length] ?? "blue";
 }
 
 /** One or two uppercase initials for an identity mark (letters/digits only). */

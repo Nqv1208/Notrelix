@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ACCENT_IDS,
   IDENTITY_IDS,
+  MARK_TONE_IDS,
   STATUS_IDS,
   THEME_APPEARANCES,
   WORK_STATUS_IDS,
@@ -98,6 +99,11 @@ const WORK_STATUS_FILL_PAIRS: readonly Pair[] = WORK_STATUS_IDS.map(
   (id) => [`work-status-${id}`, "surface-panel"] as const,
 );
 
+/** White initials on workspace/department mark chips: ≥ 4.5:1 in every appearance. */
+const MARK_PAIRS: readonly Pair[] = MARK_TONE_IDS.map(
+  (id) => [`mark-${id}-foreground`, `mark-${id}`] as const,
+);
+
 function minimumText(appearance: ThemeAppearance): number {
   return appearance === "high-contrast" ? 7 : 4.5;
 }
@@ -179,6 +185,14 @@ describe("contrast matrix (appearance × accent)", () => {
         ).toBeGreaterThanOrEqual(appearance === "high-contrast" ? 4.5 : 3);
       },
     );
+
+    it.each(MARK_PAIRS)("mark initials %s on %s ≥ 4.5:1", (fg, bg) => {
+      const ratio = contrastRatio(get(fg), get(bg));
+      expect(
+        ratio,
+        `${fg} ${toHex(get(fg))} on ${bg} ${toHex(get(bg))} = ${ratio.toFixed(2)}`,
+      ).toBeGreaterThanOrEqual(4.5);
+    });
 
     it.each(IDENTITY_PAIRS)("identity label %s on %s ≥ 4.5:1", (fg, bg) => {
       expect(contrastRatio(get(fg), get(bg))).toBeGreaterThanOrEqual(4.5);

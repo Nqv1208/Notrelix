@@ -21,10 +21,12 @@ import type { Oklch } from "./oklch";
 import {
   CHART_SERIES,
   IDENTITY_IDS,
+  MARK_TONE_IDS,
   STATUS_IDS,
   WORK_STATUS_IDS,
   accents,
   identity,
+  markTones,
   neutrals,
   statuses,
   workStatuses,
@@ -180,6 +182,11 @@ export function buildAppearanceColors(
   for (const id of IDENTITY_IDS) {
     roles[`identity-${id}`] = identity[id].fill;
     roles[`identity-${id}-foreground`] = identity[id].onFill;
+  }
+
+  for (const id of MARK_TONE_IDS) {
+    roles[`mark-${id}`] = markTones[id].fill;
+    roles[`mark-${id}-foreground`] = markTones[id].onFill;
   }
 
   CHART_SERIES.forEach((id, index) => {

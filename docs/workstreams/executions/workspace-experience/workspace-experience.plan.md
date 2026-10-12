@@ -27,6 +27,7 @@ Rebuild of the authenticated workspace surface — shell, Home, Boards/Docs dire
 | WX-DEC-011 | Pins are personal. Recents keep the 30 most recent entries per member per workspace. Both are per-member navigation state owned by the Workspaces context and store only resource references (kind + id); display names are joined on the client from the authorized Board and Doc lists, so a reference to a resource the member can no longer view is dropped instead of leaking its name. |
 | WX-DEC-012 | i18n library: i18next with react-i18next (decided 2026-10-10). |
 | WX-DEC-013 | UI family Be Vietnam Pro (400/500/600/700) with tabular numerals for data; IBM Plex Mono (400/500) for keys, code and IDs. Decided 2026-10-12 from the approved mockups; reason: Vietnamese diacritics and the mockup type. Supersedes WX-DEC-007; the fixed rem scale (ratio 1.125–1.2) stays. |
+| WX-DEC-014 | Workspace and department (Space) initials chips use six mark tones taken from the approved mockups; logo identity colours stay for logo marks, Board/Doc tiles, avatars and charts. Until Spaces store a chosen colour (gap register), the tone is derived from the id. Decided 2026-10-12. |
 
 ## 2. Baseline findings (to be removed, not reused as precedent — FE-UI-078)
 

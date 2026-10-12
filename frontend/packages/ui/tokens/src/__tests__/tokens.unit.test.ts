@@ -6,6 +6,7 @@ import {
   ACCENT_IDS,
   ACCENT_ROLES,
   ELEVATION_ROLES,
+  MARK_TONE_IDS,
   THEME_APPEARANCES,
   WORK_STATUS_IDS,
   Z_INDEX_ORDER,
@@ -182,7 +183,8 @@ describe("motion, stacking, shape", () => {
 function emittedHex(appearance: ThemeAppearance, role: string): string {
   const value = resolveThemeVariables(appearance, "blue")[`--${role}`];
   const match = /^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/.exec(value ?? "");
-  if (!match) throw new Error(`--${role} (${appearance}) is not opaque oklch: ${value}`);
+  if (!match)
+    throw new Error(`--${role} (${appearance}) is not opaque oklch: ${value}`);
   return toHex(oklch(Number(match[1]), Number(match[2]), Number(match[3])));
 }
 
@@ -252,6 +254,44 @@ describe("mockup colour values", () => {
       }
     }
   });
+});
+
+/**
+ * Mark tones: workspace and department (Space) initials chips, the mockup
+ * department colours (CN, KT, MK, NS, GĐ, PC), one fill in every appearance
+ * with white initials. Sage #4E8574 is 4.26:1 under white, lowered by L 0.01
+ * steps to #487F6E (4.63:1).
+ */
+const MARK_TONE_VALUES: Record<string, string> = {
+  blue: "#1e6fd0",
+  gold: "#9a6a12",
+  coral: "#c2410c",
+  sage: "#487f6e",
+  crimson: "#c8143f",
+  violet: "#5b5bd6",
+};
+
+describe("mark tones (WX-DEC-014)", () => {
+  it("names the six mark tones in mockup order", () => {
+    expect(MARK_TONE_IDS).toEqual([
+      "blue",
+      "gold",
+      "coral",
+      "sage",
+      "crimson",
+      "violet",
+    ]);
+  });
+
+  for (const appearance of THEME_APPEARANCES) {
+    it.each(Object.entries(MARK_TONE_VALUES))(
+      `${appearance} --mark-%s renders %s with white initials`,
+      (id, hex) => {
+        expect(emittedHex(appearance, `mark-${id}`)).toBe(hex);
+        expect(emittedHex(appearance, `mark-${id}-foreground`)).toBe("#ffffff");
+      },
+    );
+  }
 });
 
 describe("color model", () => {

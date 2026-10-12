@@ -143,7 +143,7 @@ Current token exports include:
 
 ```text
 OKLCH color model (sRGB conversion, contrast, ΔE)
-palette: tinted neutrals (mockup values), accents, status, work status (todo/doing/review/done), identity
+palette: tinted neutrals (mockup values), accents, status, work status (todo/doing/review/done), identity, mark tones (workspace/Space chips)
 semantic color roles per appearance × accent
 typography (Be Vietnam Pro + IBM Plex Mono, rem scale, semantic text roles)
 spacing / sizes / layout

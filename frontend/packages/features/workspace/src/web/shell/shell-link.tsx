@@ -6,12 +6,14 @@ import {
   initialsFor,
   NAVIGATION_RESOURCE_KIND,
   type IdentityTone,
+  type MarkToneId,
   type NavigationResourceKind,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
 import {
   IDENTITY_ICON_CLASS,
   IDENTITY_MARK_CLASS,
+  MARK_TONE_CLASS,
   isPlainClick,
   type ShellNavigation,
 } from "./shell-models";
@@ -45,19 +47,27 @@ export const ShellLink = React.forwardRef<HTMLAnchorElement, ShellLinkProps>(
   },
 );
 
-export interface IdentityMarkProps {
+/**
+ * Chip colour: an identity tone (members, avatars) or a mark tone
+ * (workspace and department initials, WX-DEC-014). Exactly one is given.
+ */
+export type IdentityMarkToneProps =
+  | { readonly tone: IdentityTone; readonly markTone?: never }
+  | { readonly markTone: MarkToneId; readonly tone?: never };
+
+export type IdentityMarkProps = IdentityMarkToneProps & {
   readonly name: string;
-  readonly tone: IdentityTone;
   readonly size?: "sm" | "md";
   readonly shape?: "square" | "round";
   readonly imageUrl?: string | null;
   readonly className?: string;
-}
+};
 
-/** Initials on an identity color (workspace, member). Decorative. */
+/** Initials on an identity or mark colour (workspace, Space, member). Decorative. */
 export function IdentityMark({
   name,
   tone,
+  markTone,
   size = "md",
   shape = "square",
   imageUrl,
@@ -80,7 +90,13 @@ export function IdentityMark({
     );
   }
   return (
-    <span aria-hidden="true" className={cn(box, IDENTITY_MARK_CLASS[tone])}>
+    <span
+      aria-hidden="true"
+      className={cn(
+        box,
+        markTone ? MARK_TONE_CLASS[markTone] : IDENTITY_MARK_CLASS[tone],
+      )}
+    >
       {initialsFor(name)}
     </span>
   );

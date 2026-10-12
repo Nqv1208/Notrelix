@@ -185,6 +185,20 @@
   --color-identity-ember: var(--identity-ember);
   --color-identity-ember-foreground: var(--identity-ember-foreground);
 
+  /* Mark tones: workspace and department (Space) initials chips (WX-DEC-014; never status). */
+  --color-mark-blue: var(--mark-blue);
+  --color-mark-blue-foreground: var(--mark-blue-foreground);
+  --color-mark-gold: var(--mark-gold);
+  --color-mark-gold-foreground: var(--mark-gold-foreground);
+  --color-mark-coral: var(--mark-coral);
+  --color-mark-coral-foreground: var(--mark-coral-foreground);
+  --color-mark-sage: var(--mark-sage);
+  --color-mark-sage-foreground: var(--mark-sage-foreground);
+  --color-mark-crimson: var(--mark-crimson);
+  --color-mark-crimson-foreground: var(--mark-crimson-foreground);
+  --color-mark-violet: var(--mark-violet);
+  --color-mark-violet-foreground: var(--mark-violet-foreground);
+
   /* Transitional aliases (current consumers only; new code uses surface/state roles). */
   --color-app-header: var(--app-header);
   --color-app-shell: var(--app-shell);

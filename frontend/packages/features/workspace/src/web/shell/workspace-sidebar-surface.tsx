@@ -186,7 +186,7 @@ function WorkspaceSwitcher({
           })}
           className="data-[state=open]:bg-sidebar-accent focus-visible:ring-focus-ring"
         >
-          <IdentityMark name={workspace.name} tone={workspace.identity} />
+          <IdentityMark name={workspace.name} markTone={workspace.mark} />
           <span className="flex min-w-0 flex-1 flex-col text-left">
             <span className="truncate text-label text-foreground">
               {workspace.name}
@@ -217,7 +217,7 @@ function WorkspaceSwitcher({
               }}
               className="gap-2"
             >
-              <IdentityMark name={item.name} tone={item.identity} size="sm" />
+              <IdentityMark name={item.name} markTone={item.mark} size="sm" />
               <span className="min-w-0 flex-1 truncate">{item.name}</span>
               {current ? (
                 <>

@@ -8,7 +8,7 @@ import {
 } from "../core/model/breadcrumb";
 import {
   NAVIGATION_RESOURCE_KIND,
-  identityToneFor,
+  markToneFor,
   type NavigationEntry,
   type WorkspaceDestination,
 } from "../core/model/navigation";
@@ -72,7 +72,7 @@ export function shellWorkspace(
     Pick<ShellCurrentWorkspace, "id" | "name">,
 ): ShellCurrentWorkspace {
   return {
-    identity: identityToneFor(overrides.id),
+    mark: markToneFor(overrides.id),
     role: "admin",
     ...overrides,
   };
@@ -80,9 +80,9 @@ export function shellWorkspace(
 
 export function shellWorkspaceList(): ShellWorkspace[] {
   return [
-    { id: "ws-product", name: "Product", identity: "blue" },
-    { id: "ws-design", name: "Design Studio", identity: "coral" },
-    { id: "ws-ops", name: "Operations", identity: "sage" },
+    { id: "ws-product", name: "Product", mark: "blue" },
+    { id: "ws-design", name: "Design Studio", mark: "coral" },
+    { id: "ws-ops", name: "Operations", mark: "sage" },
   ];
 }
 
@@ -158,7 +158,7 @@ export function sidebarDefaultScenario(): SidebarScenario {
     workspace: shellWorkspace({
       id: "ws-product",
       name: "Product",
-      identity: "blue",
+      mark: "blue",
     }),
     workspaces: shellWorkspaceList(),
     location: { section: "board", boardId: "board-roadmap" },
@@ -206,7 +206,7 @@ export function sidebarEdgeDataScenario(): SidebarScenario {
       id: "ws-global",
       name: "Không gian làm việc của nhóm Vận hành Toàn cầu",
       role: "guest",
-      identity: "ember",
+      mark: "crimson",
     }),
     location: { section: "doc", docId: "doc-edge-3" },
     pinned: ready(
