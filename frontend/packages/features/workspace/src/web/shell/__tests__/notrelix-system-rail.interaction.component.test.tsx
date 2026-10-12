@@ -163,6 +163,41 @@ describe("NotrelixSystemRailSurface", () => {
     }
   });
 
+  it("FUI[workspace.system-rail:dismiss] closes the overlay when focus leaves it, not when it moves inside", () => {
+    for (const locale of LOCALES) {
+      const copy = systemRailCopyFixture(locale);
+      const scenario = systemRailOverlayScenario(locale);
+      const outside = document.createElement("button");
+      document.body.append(outside);
+      const { props, view } = renderRail(scenario);
+      const nav = rail(copy);
+      const [current, other] = scenario.workspaces;
+      const currentButton = within(nav).getByRole("button", {
+        name: workspaceName(copy, current!),
+      });
+      const otherButton = within(nav).getByRole("button", {
+        name: workspaceName(copy, other!),
+      });
+
+      // Focus moving between rail entries keeps it open.
+      fireEvent.blur(currentButton, { relatedTarget: otherButton });
+      expect(props.onClose).not.toHaveBeenCalled();
+
+      // Tabbing past the last entry closes the overlay.
+      fireEvent.blur(otherButton, { relatedTarget: outside });
+      expect(props.onClose).toHaveBeenCalledTimes(1);
+      view.unmount();
+      outside.remove();
+    }
+
+    // Pinned: focus leaving the rail is ordinary navigation.
+    const copy = systemRailCopyFixture("vi");
+    const pinned = renderRail(systemRailPinnedScenario("vi"));
+    const first = within(rail(copy)).getAllByRole("button")[0]!;
+    fireEvent.blur(first, { relatedTarget: document.body });
+    expect(pinned.props.onClose).not.toHaveBeenCalled();
+  });
+
   it("FUI[workspace.system-rail:pinned] stays in flow without a scrim and ignores Escape when pinned", () => {
     const copy = systemRailCopyFixture("vi");
     const { props, view } = renderRail(systemRailPinnedScenario("vi"));
@@ -174,7 +209,7 @@ describe("NotrelixSystemRailSurface", () => {
     expect(props.onClose).not.toHaveBeenCalled();
   });
 
-  it("FUI[workspace.system-rail:switch-workspace] switches to another workspace and ignores the current one", () => {
+  it("FUI[workspace.system-rail:switch-workspace] switches to another workspace; the current one closes the overlay", () => {
     for (const locale of LOCALES) {
       const copy = systemRailCopyFixture(locale);
       const scenario = systemRailOverlayScenario(locale);
@@ -188,14 +223,28 @@ describe("NotrelixSystemRailSurface", () => {
       expect(props.onSwitchWorkspace).toHaveBeenCalledWith(
         "ws-minh-an-da-nang",
       );
+      // The current workspace closes the overlay instead of switching.
       fireEvent.click(
         within(nav).getByRole("button", {
           name: workspaceName(copy, scenario.workspaces[0]!),
         }),
       );
       expect(props.onSwitchWorkspace).toHaveBeenCalledTimes(1);
+      expect(props.onClose).toHaveBeenCalledTimes(1);
       view.unmount();
     }
+
+    // Pinned: the current workspace does nothing.
+    const copy = systemRailCopyFixture("vi");
+    const scenario = systemRailPinnedScenario("vi");
+    const pinned = renderRail(scenario);
+    fireEvent.click(
+      within(rail(copy)).getByRole("button", {
+        name: workspaceName(copy, scenario.workspaces[0]!),
+      }),
+    );
+    expect(pinned.props.onSwitchWorkspace).not.toHaveBeenCalled();
+    expect(pinned.props.onClose).not.toHaveBeenCalled();
   });
 
   it("FUI[workspace.system-rail:create] opens workspace creation from Add", () => {

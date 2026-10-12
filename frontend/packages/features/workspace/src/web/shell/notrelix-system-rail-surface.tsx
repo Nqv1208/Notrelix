@@ -86,8 +86,9 @@ function RailLabel({ children }: { readonly children: React.ReactNode }) {
  * The Notrelix system rail (Final-Space `nav=hien-de` / `nav=hien-day`):
  * the member's workspaces, account-level inbox and search, and settings.
  * It always renders on the dark rail roles (`--rail-*`) in every appearance.
- * Overlay sits at `z-sticky` (below dialogs) with a scrim; Escape and the
- * scrim call `onClose`, and focus moves to the current workspace on open.
+ * Overlay sits at `z-sticky` (below dialogs) with a scrim; Escape, the
+ * scrim, focus leaving the rail and the current workspace call `onClose`,
+ * and focus moves to the current workspace on open.
  */
 export function NotrelixSystemRailSurface({
   copy,
@@ -123,14 +124,23 @@ export function NotrelixSystemRailSurface({
       ref={navRef}
       aria-label={copy.label}
       data-presentation={presentation}
+      // Overlay only: clicks on the rail background keep focus on the nav,
+      // so only focus leaving the rail (Tab past the last entry) closes it.
+      tabIndex={overlay ? -1 : undefined}
       onKeyDown={(event) => {
         if (overlay && event.key === "Escape") {
           event.stopPropagation();
           onClose();
         }
       }}
+      onBlur={(event) => {
+        if (!overlay) return;
+        const next = event.relatedTarget;
+        if (next instanceof Node && navRef.current?.contains(next)) return;
+        onClose();
+      }}
       className={cn(
-        "flex w-19 shrink-0 flex-col items-center gap-1 overflow-y-auto bg-rail py-3 text-rail-foreground",
+        "flex w-19 shrink-0 flex-col items-center gap-1 overflow-y-auto bg-rail py-3 text-rail-foreground outline-none",
         overlay
           ? "fixed inset-y-0 left-0 z-sticky shadow-modal motion-safe:animate-in motion-safe:slide-in-from-left motion-safe:duration-180 motion-safe:ease-out"
           : "relative h-full",
@@ -155,8 +165,12 @@ export function NotrelixSystemRailSurface({
             title={name}
             onClick={() => {
               if (!workspace.current) onSwitchWorkspace(workspace.id);
+              else if (overlay) onClose();
             }}
-            className={cn(RAIL_ITEM_CLASS, workspace.current && "text-rail-active-foreground")}
+            className={cn(
+              RAIL_ITEM_CLASS,
+              workspace.current && "text-rail-active-foreground",
+            )}
           >
             <span
               aria-hidden="true"
