@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Tablet · View Bảng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* tablet shell — shared (copy verbatim into every Final-T-*.dc.html; source Final-T-Board) */
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--seg:#E4E7EC;--line:#E1E5EA;--line2:#D2D7DE;--ring:#7A8391;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok-soft:#E2F1E7;--high:#B4500B;--badge:#C42340;--kbd:#EEF0F3;--lane-todo:#ECEEF2;--lane-doing:#E6EFFB;--lane-review:#FDF3DC;--lane-done:#E5F3EA;--card-line:transparent;--card-shadow:0 1px 2px rgba(20,26,36,.08);--lift-shadow:0 22px 44px rgba(20,26,36,.24),0 4px 12px rgba(20,26,36,.12);--pop-shadow:0 14px 40px rgba(15,23,42,.18),0 2px 6px rgba(15,23,42,.08);--toast-bg:#161A21;--toast-ink:#FFFFFF;--pop:#FFFFFF;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14.5px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--side:#13181E;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--seg:#1C232C;--line:#232B35;--line2:#2E3743;--ring:#8C95A3;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok-soft:#153024;--high:#FFA060;--badge:#C42340;--kbd:#232B35;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--lane-done:#16291F;--card-line:#29313C;--card-shadow:0 1px 2px rgba(0,0,0,.4);--lift-shadow:0 22px 44px rgba(0,0,0,.6),0 4px 12px rgba(0,0,0,.4);--pop-shadow:0 14px 40px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4);--toast-bg:#E6E9EE;--toast-ink:#0E1116;--pop:#1C232C}
+/* frame 1180×820: status bar overlays the top 24px; sidebar + main fill the height */
+.nx.t{width:1180px;height:820px;position:relative;overflow:hidden;display:flex;border-radius:0}
+.nx.t :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:15px;height:15px}
+.i.xs{width:13px;height:13px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}
+.kbd{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--kbd);border:1px solid var(--line2);border-radius:5px;padding:0 5px;color:var(--muted);line-height:18px}
+.dm{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:9.5px;font-weight:700;color:#FFFFFF;flex:none}
+.av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#FFFFFF;flex:none}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+.dot.todo{box-shadow:inset 0 0 0 2px var(--st-todo)}
+.dot.doing{background:var(--st-doing)}
+.dot.review{background:var(--st-review)}
+.dot.done{background:var(--st-done)}
+.tag{height:24px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;white-space:nowrap}
+.t-data{background:#E1EEFC;color:#124C8E}
+.t-sec{background:#FDE5EA;color:#9E1736}
+.t-train{background:#E1F0EA;color:#2C5E4F}
+.t-rep{background:#FBF0D3;color:#6E4F0A}
+.t-doc{background:#ECEEF2;color:#3E4757}
+.t-test{background:#EEE7FB;color:#5532A8}
+.mode-dem .t-data{background:#16304F;color:#9CC8FA}
+.mode-dem .t-sec{background:#4A1A26;color:#FFA8B8}
+.mode-dem .t-train{background:#173A30;color:#9ED6C2}
+.mode-dem .t-rep{background:#3C3014;color:#F2D58A}
+.mode-dem .t-doc{background:#262E39;color:#C3CBD6}
+.mode-dem .t-test{background:#2E2350;color:#C9B6FA}
+.prio{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600}
+.prio.urgent{color:var(--danger)}
+.prio.high{color:var(--high)}
+.due{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 7px;border-radius:7px;font-size:13px;font-weight:500;color:var(--meta)}
+.due.over{background:var(--danger-soft);color:var(--danger);font-weight:600}
+.due.today{background:var(--warn-soft);color:var(--warn-text);font-weight:600}
+/* iPadOS status bar 24px (decorative) */
+.t-sbar{position:absolute;top:0;left:0;right:0;height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 24px;box-sizing:border-box;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text);z-index:70;pointer-events:none}
+.t-sbar .sg{display:flex;align-items:center;gap:6px}
+.t-sbar svg{display:block}
+/* buttons 44px */
+.t-ib{width:44px;height:44px;border-radius:10px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;padding:0;flex:none;text-decoration:none;font:inherit;position:relative}
+.t-ib:hover,.t-ib:active{background:var(--hover2);color:var(--text)}
+.t-ib.pri{background:var(--accent);color:var(--accent-ink)}
+.t-btn{height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:14.5px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box;flex:none}
+.t-btn:hover,.t-btn:active{background:var(--hover)}
+.t-btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+/* workspace sidebar 248px (open) / 64px icon column (.mini); rows 44px */
+.tside{width:248px;flex:none;height:100%;box-sizing:border-box;padding-top:24px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;color:var(--text)}
+.tside a{text-decoration:none}
+.ts-head{padding:8px 8px 6px;flex:none}
+.ts-ws{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:6px 10px 6px 8px;border:0;border-radius:12px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer;box-sizing:border-box}
+.ts-ws:hover,.ts-ws:active,.ts-ws[aria-expanded="true"]{background:var(--hover2)}
+.ts-ws .dm{width:32px;height:32px;border-radius:9px;font-size:12px}
+.ts-ws .tx{flex:1;min-width:0}
+.ts-ws b{display:block;font-size:15px;font-weight:650}
+.ts-ws small{display:block;font-size:12.5px;color:var(--meta)}
+.ts-ws .i{color:var(--meta)}
+.ts-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 8px 8px;display:flex;flex-direction:column;gap:2px;scrollbar-width:none}
+.ts-scroll::-webkit-scrollbar{display:none}
+.ts-nav{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:10px;color:var(--muted);font-size:14.5px;font-weight:500;flex:none;position:relative}
+.ts-nav:hover,.ts-nav:active{background:var(--hover2);color:var(--text)}
+.ts-count{margin-left:auto;font-size:13px;color:var(--meta);font-weight:500;font-variant-numeric:tabular-nums}
+.ts-count.hot{background:var(--accent);color:var(--accent-ink);border-radius:999px;min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;display:inline-grid;place-items:center;font-weight:650;font-size:12px}
+.ts-grp{display:flex;align-items:center;justify-content:space-between;min-height:44px;margin-top:8px;padding:0 0 0 12px;font-size:12.5px;font-weight:600;color:var(--meta);flex:none}
+.ts-srow{display:flex;align-items:center;flex:none}
+.ts-srow .ts-space{flex:1;min-width:0}
+.ts-space{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:10px;color:var(--text);font-size:14.5px;font-weight:500;flex:none}
+.ts-space:hover,.ts-space:active{background:var(--hover2)}
+.ts-board,.ts-sub{display:flex;align-items:center;gap:9px;min-height:44px;padding:0 12px 0 44px;border-radius:10px;color:var(--muted);font-size:14px;flex:none}
+.ts-board:hover,.ts-sub:hover,.ts-board:active,.ts-sub:active{background:var(--hover2);color:var(--text)}
+.ts-board.flat{padding-left:12px;gap:10px}
+.ts-board.on,.ts-space.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.ts-sub .dm{width:18px;height:18px;border-radius:5px;font-size:7.5px}
+.tside .lk{margin-left:auto;color:var(--meta);width:14px;height:14px}
+.ts-foot{flex:none;border-top:1px solid var(--line);padding:6px 8px 12px;display:flex;flex-direction:column;gap:2px}
+.ts-user{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 10px}
+.ts-user .av{width:32px;height:32px;font-size:11.5px}
+.ts-user b{display:block;font-size:14px;font-weight:600}
+.ts-user small{display:block;font-size:12.5px;color:var(--meta)}
+.tside.mini{width:64px}
+.tside.mini .ts-head,.tside.mini .ts-scroll,.tside.mini .ts-foot{padding-left:10px;padding-right:10px;align-items:center}
+.tside.mini .ts-ws{width:44px;min-height:44px;padding:0;justify-content:center}
+.tside.mini .ts-ws .dm{width:32px;height:32px}
+.tside.mini .ts-nav,.tside.mini .ts-space,.tside.mini .ts-board{width:44px;padding:0;justify-content:center}
+.tside.mini .ts-count{position:absolute;top:2px;right:0;margin:0;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--hover2);color:var(--text)}
+.tside.mini .ts-count.hot{background:var(--accent);color:var(--accent-ink)}
+.tside.mini .ts-space .dm,.tside.mini .ts-board .dm{width:28px;height:28px;border-radius:8px;font-size:10.5px}
+.ts-sep{width:32px;height:1px;background:var(--line2);margin:8px auto;flex:none}
+.tside.mini .ts-user{padding:0;justify-content:center;width:44px}
+/* main column: top bar 56px + work area */
+.t-main{flex:1;min-width:0;height:100%;box-sizing:border-box;padding-top:24px;display:flex;flex-direction:column;position:relative}
+.t-top{height:56px;flex:none;display:flex;align-items:center;gap:6px;padding:0 12px 0 6px;border-bottom:1px solid var(--line);box-sizing:border-box}
+.t-crumb{display:flex;align-items:center;gap:2px;min-width:0;flex:0 1 auto}
+.t-crumb .sl{color:var(--meta);margin:0 2px}
+.t-crumb h1{margin:0 6px 0 2px;font-size:17px;font-weight:650;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.t-crumb .t-ib .dm{width:28px;height:28px;border-radius:8px;font-size:10.5px}
+.t-seg{display:flex;align-items:center;height:48px;padding:2px;box-sizing:border-box;border-radius:12px;background:var(--seg);flex:none}
+.t-seg a{height:44px;padding:0 14px;border-radius:10px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;color:var(--muted);text-decoration:none;white-space:nowrap}
+.t-seg a:hover{color:var(--text)}
+.t-seg a[aria-current="page"]{background:var(--panel);color:var(--text);font-weight:650;box-shadow:0 1px 3px rgba(15,23,42,.14)}
+.t-top .sp{flex:1}
+.t-search{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:var(--meta);font:inherit;font-size:14px;cursor:pointer;flex:none}
+.t-search:hover{color:var(--text)}
+.t-work{flex:1;min-height:0;display:flex;position:relative}
+/* toolbar row: 44px chips */
+.t-tool{height:60px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px;overflow-x:auto;scrollbar-width:none;box-sizing:border-box}
+.t-tool::-webkit-scrollbar{display:none}
+.t-chip{height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;flex:none;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.t-chip:hover,.t-chip:active{background:var(--hover);color:var(--text)}
+.t-chip b{color:var(--text);font-weight:650}
+.t-stack{height:44px;display:inline-flex;align-items:center;padding:0 8px 0 14px;border:0;border-radius:10px;background:transparent;cursor:pointer;flex:none;font:inherit}
+.t-stack:hover{background:var(--hover2)}
+.t-stack .av{margin-left:-6px;box-shadow:0 0 0 2px var(--bg)}
+.t-stack .av.more{background:var(--hover2);color:var(--muted)}
+.t-banner{display:flex;align-items:center;gap:10px;min-height:44px;margin:10px 16px 0;padding:0 14px;border-radius:10px;background:var(--accent-soft);color:var(--accent-text);font-size:14px;font-weight:500;flex:none;box-sizing:border-box}
+/* popover: anchored to its trigger, max 360px, never a bottom sheet */
+.t-pop{position:absolute;z-index:50;width:280px;max-width:360px;box-sizing:border-box;padding:6px;border-radius:14px;background:var(--pop);border:1px solid var(--line);box-shadow:var(--pop-shadow);color:var(--text);text-align:left;cursor:default}
+.t-pop-h{margin:0;padding:8px 10px 6px;font-size:13px;font-weight:600;color:var(--meta)}
+.t-mi{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:var(--text);font:inherit;font-size:15px;font-weight:500;text-align:left;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.t-mi:hover,.t-mi:active,.t-mi[aria-expanded="true"]{background:var(--hover2)}
+.t-mi .i{color:var(--muted)}
+.t-mi .end{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:13.5px;color:var(--meta);font-weight:500}
+.t-mi .ck{margin-left:auto;color:var(--accent-text)}
+.t-mi.tall{min-height:56px}
+.t-mi .tx{flex:1;min-width:0}
+.t-mi .tx b{display:block;font-size:15px;font-weight:600}
+.t-mi .tx small{display:block;font-size:12.5px;color:var(--meta);font-weight:400}
+.t-mi .wsm{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#FFFFFF;font-size:12.5px;font-weight:700;flex:none}
+.t-msep{height:1px;background:var(--line);margin:4px 8px}
+.t-mnote{margin:0;padding:8px 12px 6px;font-size:13px;line-height:1.45;color:var(--meta)}
+.t-cnt{min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;background:var(--badge);color:#FFFFFF;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.t-tagk{height:22px;padding:0 8px;border-radius:6px;background:var(--hover2);color:var(--muted);font-size:12px;font-weight:600;display:inline-flex;align-items:center}
+/* split view: list/board left · divider with grip · item pane right (52%) */
+.t-left{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.t-div{position:relative;width:1px;flex:none;background:var(--line2);z-index:8}
+.t-grip{position:absolute;top:50%;left:-22px;width:44px;height:56px;margin-top:-28px;border:0;padding:0;background:transparent;cursor:col-resize;display:grid;place-items:center}
+.t-grip span{display:block;width:8px;height:44px;border-radius:4px;background:var(--panel);box-shadow:inset 0 0 0 1.5px var(--ring)}
+.t-pane{width:52%;flex:none;min-width:0;display:flex;flex-direction:column;background:var(--panel)}
+.dp-head{height:56px;flex:none;display:flex;align-items:center;gap:0;padding:0 6px;border-bottom:1px solid var(--line);box-sizing:border-box}
+.dp-crumb{flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:0 8px;font-size:13px;color:var(--meta);white-space:nowrap;overflow:hidden}
+.dp-crumb .mono{color:var(--muted)}
+.dp-crumb .dm{width:18px;height:18px;font-size:7.5px;border-radius:5px}
+.dp-body{flex:1;min-height:0;overflow:hidden;padding:18px 20px 12px;display:flex;flex-direction:column;gap:18px}
+.dp-title{margin:0;font-size:20px;font-weight:650;line-height:1.35;letter-spacing:-0.01em;text-wrap:balance}
+.dp-props{display:flex;flex-wrap:wrap;gap:8px}
+.dp-pp{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:14px;font-weight:500;cursor:pointer;box-sizing:border-box}
+.dp-pp:hover,.dp-pp:active{background:var(--hover)}
+.dp-pp .av{width:24px;height:24px;font-size:9px}
+.dp-pp.st{background:var(--lane-doing);border-color:transparent;font-weight:600}
+.dp-pp.over{background:var(--danger-soft);border-color:transparent;color:var(--danger);font-weight:600}
+.dp-pp.add{width:44px;padding:0;justify-content:center;color:var(--meta)}
+.dp-sec h3{margin:0 0 6px;font-size:13.5px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:8px}
+.dp-sec h3 .n{color:var(--meta);font-weight:500}
+.dp-desc{margin:0;font-size:14.5px;line-height:1.6}
+.dp-ck{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 8px;margin:0 -8px;border:0;border-radius:9px;background:transparent;color:var(--text);font:inherit;font-size:14.5px;text-align:left;cursor:pointer;box-sizing:content-box}
+.dp-ck:hover{background:var(--hover)}
+.dp-ck .box{width:20px;height:20px;border-radius:5px;border:1.75px solid var(--ring);display:grid;place-items:center;flex:none;box-sizing:border-box;color:#FFFFFF}
+.dp-ck[aria-checked="true"] .box{background:var(--st-done);border-color:var(--st-done)}
+.dp-ck[aria-checked="true"] .tx{color:var(--meta);text-decoration:line-through}
+.dp-more{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 8px;margin:0 -8px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:500;text-align:left;cursor:pointer;box-sizing:content-box}
+.dp-more:hover{background:var(--hover);color:var(--text)}
+.dp-bar{flex:0 0 96px;height:6px;border-radius:3px;background:var(--hover2);overflow:hidden;display:block}
+.dp-bar span{display:block;height:100%;border-radius:3px;background:var(--st-done)}
+.dp-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.dp-tabs button{height:44px;padding:0 12px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
+.dp-tabs button[aria-selected="true"]{color:var(--text);font-weight:650;border-bottom-color:var(--accent)}
+.dp-cm{display:flex;gap:10px;padding:8px 0;font-size:14.5px}
+.dp-cm b{font-weight:600}
+.dp-cm time{color:var(--meta);font-size:12.5px;margin-left:6px}
+.dp-cm p{margin:3px 0 0;line-height:1.55}
+.dp-sys{display:flex;align-items:center;gap:8px;padding:4px 0 4px 38px;font-size:13px;color:var(--meta)}
+.dp-comp{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px 14px;border-top:1px solid var(--line);background:var(--panel)}
+.dp-comp label{flex:1;min-width:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 10px 0 14px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);box-sizing:border-box}
+.dp-comp input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:14.5px}
+.dp-comp input::placeholder{color:var(--meta)}
+/* toast / hint */
+.t-toast{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:40;min-height:44px;display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:12px;background:var(--toast-bg);color:var(--toast-ink);font-size:14px;font-weight:500;white-space:nowrap;box-shadow:var(--pop-shadow)}
+/* home indicator */
+.t-home{position:absolute;left:50%;bottom:7px;width:150px;height:5px;margin-left:-75px;border-radius:3px;background:var(--text);opacity:.85;z-index:60;pointer-events:none}
+/* end tablet shell */
+
+/* screen: Bảng — pinned title column, the rest scrolls sideways; rows 52px */
+.nx.t{--grp:#F3F5F8;--sel-row:#EEF4FD;--fade0:rgba(255,255,255,0);--bulk-danger:#FF9AAA}
+.nx.t.mode-dem{--grp:#1A2029;--sel-row:#172334;--fade0:rgba(21,26,33,0);--bulk-danger:#C42340}
+.tb{--name-w:312px;--cols:48px var(--name-w) 124px 116px 200px 128px 112px 128px 140px}
+.tb.split{--name-w:192px}
+.t-left.tb.split ~ .t-pane{width:46%}
+.tb.split .wide-only{display:none}
+.t-tool .sp{flex:1}
+/* filter chip = label button + remove button, both 44px */
+.fchip{height:44px;display:inline-flex;align-items:center;border-radius:10px;background:var(--accent-soft);color:var(--accent-text);flex:none}
+.fchip .fl{height:44px;padding:0 2px 0 14px;border:0;background:transparent;color:inherit;font:inherit;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+.fchip .fl b{font-weight:650}
+.fchip .fx{width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer;padding:0}
+.fchip .fx:hover,.fchip .fx:active{background:var(--hover2)}
+/* table box */
+.tb-box{flex:1;min-height:0;margin:0 16px 20px;border:1px solid var(--line);border-radius:14px;background:var(--panel);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.tb.split .tb-box{margin:0;border-width:1px 0 0;border-radius:0}
+.tb.crowd .stack-only{display:none}
+.tb.split .tb-fade{width:36px}
+.tb.bulk-on .tb-box{margin-bottom:88px}
+.tb-view{flex:1;min-height:0;position:relative}
+.tb-scroll{position:absolute;inset:0;overflow:auto;scrollbar-width:none}
+.tb-scroll::-webkit-scrollbar{display:none}
+.tb-grid{width:max-content;min-width:100%;font-size:14px}
+.tb-tr{display:grid;grid-template-columns:var(--cols);position:relative}
+.tb-td{height:52px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:8px;box-sizing:border-box;min-width:0;white-space:nowrap;color:var(--text)}
+.tb-th{position:sticky;top:0;z-index:6}
+.tb-th .tb-td{height:44px;color:var(--muted);font-size:13px;font-weight:600;border-bottom-color:var(--line2);gap:6px}
+.tb-th .tb-td .i{color:var(--meta)}
+.c-cb{position:sticky;left:0;z-index:3;padding:0 2px;justify-content:center}
+.c-name{position:sticky;left:48px;z-index:3;border-right:1px solid var(--line2);white-space:normal}
+.tb-th .tb-td.sorted{color:var(--text)}
+.cols-btn{margin:0 -8px 0 auto}
+.tb-sort{height:44px;margin:0 -8px;padding:0 8px;border:0;border-radius:9px;background:transparent;color:inherit;font:inherit;font-weight:650;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.tb-sort .i{color:var(--accent-text) !important}
+.tb-sort:hover,.tb-sort:active{background:var(--hover2)}
+/* row checkbox: 44px button, 22px box */
+.tb-cb{width:44px;height:44px;border:0;border-radius:10px;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0}
+.tb-cb:hover,.tb-cb:active{background:var(--hover2)}
+.tb-cb .box{width:22px;height:22px;border-radius:6px;box-shadow:inset 0 0 0 1.75px var(--ring);display:grid;place-items:center;color:var(--accent-ink);box-sizing:border-box}
+.tb-cb .box svg{display:none;width:14px;height:14px;stroke-width:3}
+.tb-cb[aria-checked="true"] .box,.tb-cb[aria-checked="mixed"] .box{background:var(--accent);box-shadow:none}
+.tb-cb[aria-checked="true"] .ck,.tb-cb[aria-checked="mixed"] .mx{display:block}
+/* title cell: key + title, 2-line clamp; whole cell opens split view */
+.tb-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14.5px;font-weight:500;line-height:1.38;text-decoration:none;color:var(--text);text-wrap:pretty}
+.tb-name .k{font-size:12.5px;color:var(--meta);margin-right:6px}
+.tb-name::after{content:"";position:absolute;inset:0}
+.tb-name:focus-visible{outline:none}
+.tb-name:focus-visible::after{outline:2px solid var(--accent);outline-offset:-3px;border-radius:8px}
+.row.sel .tb-td{background:var(--sel-row)}
+.row.cur .tb-td{background:var(--accent-soft)}
+.row.cur .tb-name{font-weight:650}
+.row.cur .tb-name .k{color:var(--accent-text)}
+.row.cur::after{content:"";position:absolute;inset:0 0 1px 0;box-shadow:inset 0 0 0 2px var(--accent);z-index:4;pointer-events:none}
+/* editable cell = 44px button opening an anchored popover */
+.tb-cell{width:calc(100% + 16px);margin:0 -8px;height:44px;padding:0 8px;border:0;border-radius:9px;background:transparent;color:var(--text);font:inherit;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left;min-width:0;box-sizing:border-box}
+.tb-cell:hover,.tb-cell:active{background:var(--hover2)}
+.tb-cell.editing{background:var(--panel);box-shadow:inset 0 0 0 2px var(--accent)}
+.tb-cell .ov{overflow:hidden;text-overflow:ellipsis}
+.stp{height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:var(--text)}
+.stp .dot{width:8px;height:8px}
+.stp.todo{background:var(--lane-todo)}
+.stp.doing{background:var(--lane-doing)}
+.stp.review{background:var(--lane-review)}
+.dd{display:flex;flex-direction:column;line-height:1.25;font-variant-numeric:tabular-nums}
+.dd b{font-size:14px;font-weight:500}
+.dd small{font-size:12px;font-weight:600}
+.dd.over{color:var(--danger)}
+.dd.over b,.dd.today b{font-weight:650}
+.dd.today{color:var(--warn-text)}
+.dd.unset b{color:var(--meta);font-style:italic;font-weight:400}
+.tb-cell .av{width:28px;height:28px}
+.tb-cell .av.none{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ring);color:var(--meta)}
+.pr{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.pr.urgent{color:var(--danger)}
+.pr.high{color:var(--high)}
+.pr.mid{color:var(--muted);font-weight:500}
+.pr.low{color:var(--meta);font-weight:500}
+.pg{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;width:100%}
+.pg .track{flex:0 0 48px;height:6px;border-radius:3px;background:var(--hover2);overflow:hidden;display:block}
+.pg .track span{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.nil{color:var(--meta)}
+.upd{color:var(--meta);font-size:13.5px}
+/* group header row: 44px toggle button, content pinned left */
+.tb-gh{height:44px;border-bottom:1px solid var(--line2);background:var(--panel);box-sizing:border-box;position:relative}
+.tb-gh .ghc{position:sticky;left:0;display:inline-flex;align-items:center;gap:2px;height:43px;padding-left:2px;z-index:3}
+.tb-tog{height:43px;padding:0 12px 0 10px;border:0;border-radius:10px;background:transparent;color:var(--text);font:inherit;font-size:15px;font-weight:650;display:inline-flex;align-items:center;gap:9px;cursor:pointer}
+.tb-tog:hover,.tb-tog:active{background:var(--hover2)}
+.tb-tog .i{color:var(--meta)}
+.tb-tog.shut .i{transform:rotate(-90deg)}
+.tb-tog .n{min-width:24px;height:24px;border-radius:12px;background:var(--hover2);color:var(--muted);font-size:12.5px;font-weight:600;display:inline-grid;place-items:center;padding:0 7px;box-sizing:border-box}
+.tb-tog .warn{color:var(--danger);font-size:13px;font-weight:600}
+.tb-gh .t-ib{width:44px;height:43px}
+/* sideways-scroll affordance: solid-colour fade over the right edge + next-columns button */
+.tb-fade{position:absolute;top:0;right:0;bottom:0;width:72px;background:linear-gradient(90deg,var(--fade0),var(--panel) 78%);pointer-events:none;z-index:8}
+.tb-next{position:absolute;top:0;right:2px;z-index:9;height:44px}
+.tb-empty{position:absolute;top:45px;left:0;right:0;bottom:0;z-index:9;background:var(--panel);display:flex;flex-direction:column;align-items:center;gap:10px;padding:88px 24px 0;text-align:center;color:var(--muted);font-size:14.5px}
+.tb-empty .ic{width:56px;height:56px;border-radius:16px;background:var(--hover);display:grid;place-items:center;color:var(--meta);margin-bottom:6px}
+.tb-empty .ic .i{width:26px;height:26px}
+.tb-empty b{color:var(--text);font-size:17px;font-weight:650}
+.tb-empty .t-btn{margin-top:8px}
+/* table footer */
+.tb-foot{height:56px;flex:none;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 6px 0 16px;font-size:14px;color:var(--muted);box-sizing:border-box}
+.tb-foot .grow{flex:1}
+.tb-lnk{height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--accent-text);font:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.tb-lnk:hover,.tb-lnk:active{background:var(--accent-soft)}
+.tb-foot .meta{color:var(--meta);font-size:13.5px;padding-right:10px;white-space:nowrap}
+/* floating bulk bar inside the safe area */
+.tb-bulk{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:2px;padding:4px 4px 4px 18px;border-radius:14px;background:var(--toast-bg);color:var(--toast-ink);box-shadow:var(--pop-shadow);white-space:nowrap}
+.tb-bulk b{font-weight:650;font-size:14.5px;margin-right:6px}
+.tb-bulk button{height:44px;padding:0 14px;border:0;border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:14.5px;font-weight:500;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.tb-bulk button:hover,.tb-bulk button:active{background:rgba(128,128,128,.22)}
+.tb-bulk .danger{color:var(--bulk-danger)}
+.tb-bulk .sepb{width:1px;height:24px;background:currentColor;opacity:.25;margin:0 4px}
+/* date popover anchored above the Hạn chót cell of ERP-144 */
+.tb-dpop{left:389px;bottom:193px;width:340px;padding:8px}
+.tb-dpop .t-pop-h{padding:4px 6px 8px;display:flex;align-items:center;gap:8px;color:var(--text);font-size:14.5px;font-weight:650}
+.tb-dpop .t-pop-h .mono{font-size:12.5px;color:var(--meta);font-weight:500}
+.qk{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.qk button{height:44px;border-radius:10px;border:1px solid var(--line2);background:transparent;color:var(--text);font:inherit;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 12px;cursor:pointer;box-sizing:border-box}
+.qk button small{color:var(--meta);font-size:12.5px;font-variant-numeric:tabular-nums}
+.qk button:hover,.qk button:active{background:var(--hover2)}
+.qk button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text);font-weight:650}
+.qk button[aria-pressed="true"] small{color:var(--accent-text)}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.mh b{font-size:15px;font-weight:650}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);height:26px;align-items:center;text-align:center;font-size:12.5px;font-weight:600;color:var(--meta)}
+.days{display:grid;grid-template-columns:repeat(7,1fr)}
+.days button{width:44px;height:44px;justify-self:center;border:0;border-radius:22px;background:transparent;color:var(--text);font:inherit;font-size:14.5px;font-variant-numeric:tabular-nums;cursor:pointer;padding:0}
+.days button:hover,.days button:active{background:var(--hover2)}
+.days button.out{color:var(--meta)}
+.days button[aria-current="date"]{font-weight:700;box-shadow:inset 0 0 0 1.5px var(--accent)}
+.days button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700;box-shadow:none}
+.tm{display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 0 0 8px;border-top:1px solid var(--line);font-size:14.5px;color:var(--muted)}
+.tm .i{color:var(--meta)}
+.tm .t-btn{margin-left:auto;font-variant-numeric:tabular-nums}
+.tb-arw{position:absolute;bottom:-8px;left:163px;width:14px;height:14px;background:var(--pop);transform:rotate(45deg);border-right:1px solid var(--line);border-bottom:1px solid var(--line);box-sizing:border-box}
+</style>
+</helmet>
+<div class="nx t mode-{{mode}}">
+  <div class="t-sbar" aria-hidden="true">
+    <span>10:40&nbsp;&nbsp;Thứ Hai 12 thg 10</span>
+    <span class="sg">
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.2 10.4 8.6a3.4 3.4 0 0 0-4.8 0z" fill="currentColor"></path><path d="M3.6 6.6a6.2 6.2 0 0 1 8.8 0l1.4-1.5a8.3 8.3 0 0 0-11.6 0z" fill="currentColor"></path><path d="M.8 3.6a10.2 10.2 0 0 1 14.4 0L16 2.2a12.2 12.2 0 0 0-16 0z" fill="currentColor" opacity=".9"></path></svg>
+      <span style="font-size:12px">86%</span>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".45"></rect><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"></rect><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"></path></svg>
+    </span>
+  </div>
+
+  <sc-if value="{{sideOpen}}" hint-placeholder-val="{{ true }}">
+  <nav class="tside" id="tside" aria-label="Điều hướng trong workspace">
+    <div class="ts-head">
+      <button class="ts-ws" type="button" aria-haspopup="dialog" aria-expanded="{{wsExpanded}}"><span class="dm" style="background:#1666CC" aria-hidden="true">MA</span><span class="tx"><b>Minh An Group</b><small>5 phòng ban · 86 người</small></span><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg></button>
+    </div>
+    <div class="ts-scroll">
+      <a class="ts-nav" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>Trang chủ</a>
+      <a class="ts-nav" href="Final-T-MyWork.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>Việc của tôi<span class="ts-count">{{myCount}}</span></a>
+      <a class="ts-nav" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"></path></svg>Hộp thư<span class="ts-count hot">{{inboxCount}}<span class="vh"> chưa đọc</span></span></a>
+      <a class="ts-nav" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>Tài liệu</a>
+      <a class="ts-nav" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-7M21 20H3"></path></svg>Báo cáo</a>
+      <sc-if value="{{isMember}}" hint-placeholder-val="{{ true }}">
+      <div class="ts-grp">Phòng ban<button class="t-ib" type="button" aria-label="Tạo phòng ban"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></div>
+      <div class="ts-srow"><a class="ts-space" href="#"><span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span>Công nghệ<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a><button class="t-ib" type="button" aria-expanded="true" aria-label="Thu gọn Công nghệ"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+      <a class="ts-board on" href="Final-T-Board.dc.html" aria-current="page">Triển khai ERP Q4</a>
+      <a class="ts-board" href="#">Hạ tầng &amp; bảo mật</a>
+      <a class="ts-board" href="#">Hỗ trợ nội bộ</a>
+      <a class="ts-board" href="#">Ngân sách CNTT 2027<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+      <a class="ts-sub" href="#"><span class="dm" style="background:#1E6FD0" aria-hidden="true">HT</span>Nhóm Hạ tầng</a>
+      <a class="ts-sub" href="#"><span class="dm" style="background:#1E6FD0" aria-hidden="true">UD</span>Nhóm Ứng dụng<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+      <a class="ts-space" href="#"><span class="dm" style="background:#9A6A12" aria-hidden="true">KT</span>Kế toán<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+      <a class="ts-space" href="#"><span class="dm" style="background:#C2410C" aria-hidden="true">MK</span>Marketing</a>
+      <a class="ts-space" href="#"><span class="dm" style="background:#4E8574" aria-hidden="true">NS</span>Nhân sự<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+      <a class="ts-space" href="#"><span class="dm" style="background:#C8143F" aria-hidden="true">GĐ</span>Ban giám đốc<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+      </sc-if>
+      <sc-if value="{{isCommenter}}" hint-placeholder-val="{{ false }}">
+      <div class="ts-grp">Phòng ban</div>
+      <a class="ts-space" href="#"><span class="dm" style="background:#9A6A12" aria-hidden="true">KT</span>Kế toán<svg class="i lk" viewBox="0 0 24 24" aria-label="Riêng tư" role="img"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></a>
+      <a class="ts-space" href="#"><span class="dm" style="background:#C2410C" aria-hidden="true">MK</span>Marketing</a>
+      <div class="ts-grp">Được chia sẻ với bạn</div>
+      <a class="ts-board flat on" href="Final-T-Board.dc.html" aria-current="page"><span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span>Triển khai ERP Q4</a>
+      </sc-if>
+    </div>
+    <div class="ts-foot">
+      <sc-if value="{{isMember}}" hint-placeholder-val="{{ true }}">
+      <a class="ts-nav" href="Final-Teams.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg>Thiết lập workspace</a>
+      </sc-if>
+      <div class="ts-user"><span class="av" style="background:{{meColor}}" aria-hidden="true">{{meInit}}</span><span><b>{{meName}}</b><small>{{meRole}}</small></span></div>
+    </div>
+  </nav>
+  </sc-if>
+
+  <sc-if value="{{sideMini}}" hint-placeholder-val="{{ false }}">
+  <nav class="tside mini" id="tside" aria-label="Điều hướng trong workspace">
+    <div class="ts-head">
+      <button class="ts-ws" type="button" aria-haspopup="dialog" aria-expanded="{{wsExpanded}}" aria-label="Minh An Group, đổi workspace"><span class="dm" style="background:#1666CC" aria-hidden="true">MA</span></button>
+    </div>
+    <div class="ts-scroll">
+      <a class="ts-nav" href="#" aria-label="Trang chủ"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg></a>
+      <a class="ts-nav" href="Final-T-MyWork.dc.html" aria-label="Việc của tôi, {{myCount}} việc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><span class="ts-count" aria-hidden="true">{{myCount}}</span></a>
+      <a class="ts-nav" href="#" aria-label="Hộp thư, {{inboxCount}} chưa đọc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"></path></svg><span class="ts-count hot" aria-hidden="true">{{inboxCount}}</span></a>
+      <a class="ts-nav" href="#" aria-label="Tài liệu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg></a>
+      <a class="ts-nav" href="#" aria-label="Báo cáo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-7M21 20H3"></path></svg></a>
+      <span class="ts-sep"></span>
+      <sc-if value="{{isMember}}" hint-placeholder-val="{{ true }}">
+      <a class="ts-space on" href="#" aria-label="Phòng Công nghệ (riêng tư), đang mở board Triển khai ERP Q4"><span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span></a>
+      <a class="ts-space" href="#" aria-label="Phòng Kế toán (riêng tư)"><span class="dm" style="background:#9A6A12" aria-hidden="true">KT</span></a>
+      <a class="ts-space" href="#" aria-label="Phòng Marketing"><span class="dm" style="background:#C2410C" aria-hidden="true">MK</span></a>
+      <a class="ts-space" href="#" aria-label="Phòng Nhân sự (riêng tư)"><span class="dm" style="background:#4E8574" aria-hidden="true">NS</span></a>
+      <a class="ts-space" href="#" aria-label="Ban giám đốc (riêng tư)"><span class="dm" style="background:#C8143F" aria-hidden="true">GĐ</span></a>
+      </sc-if>
+      <sc-if value="{{isCommenter}}" hint-placeholder-val="{{ false }}">
+      <a class="ts-space" href="#" aria-label="Phòng Kế toán (riêng tư)"><span class="dm" style="background:#9A6A12" aria-hidden="true">KT</span></a>
+      <a class="ts-space" href="#" aria-label="Phòng Marketing"><span class="dm" style="background:#C2410C" aria-hidden="true">MK</span></a>
+      <span class="ts-sep"></span>
+      <a class="ts-board on" href="Final-T-Board.dc.html" aria-current="page" aria-label="Được chia sẻ với bạn: Triển khai ERP Q4"><span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span></a>
+      </sc-if>
+    </div>
+    <div class="ts-foot">
+      <sc-if value="{{isMember}}" hint-placeholder-val="{{ true }}">
+      <a class="ts-nav" href="Final-Teams.dc.html" aria-label="Thiết lập workspace"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg></a>
+      </sc-if>
+      <div class="ts-user"><span class="av" style="background:{{meColor}}" role="img" aria-label="{{meName}}, {{meRole}}">{{meInit}}</span></div>
+    </div>
+  </nav>
+  </sc-if>
+
+  <div class="t-main">
+    <header class="t-top">
+      <button class="t-ib" type="button" aria-controls="tside" aria-expanded="{{sideExpanded}}" aria-label="{{sideToggleLabel}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"></rect><path d="M9 4v16"></path></svg></button>
+      <div class="t-crumb">
+        <a class="t-ib" href="#" aria-label="Phòng Công nghệ"><span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span></a>
+        <span class="sl" aria-hidden="true">/</span>
+        <h1>Triển khai ERP Q4</h1>
+      </div>
+      <nav class="t-seg" aria-label="Chế độ xem">
+        <a href="Final-T-Board.dc.html">Kanban</a>
+        <a href="Final-T-Table.dc.html" aria-current="page">Bảng</a>
+        <a href="Final-T-Calendar.dc.html">Lịch</a>
+        <a href="#">Dòng thời gian</a>
+      </nav>
+      <span class="sp"></span>
+      <button class="t-search" type="button" aria-label="Tìm hoặc chạy lệnh (⌘K)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span class="kbd" aria-hidden="true">⌘K</span></button>
+      <button class="t-ib pri" type="button" aria-label="Thêm công việc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+      <button class="t-btn" type="button" aria-haspopup="dialog">Chia sẻ</button>
+      <button class="t-ib" type="button" aria-haspopup="menu" aria-label="Tuỳ chọn board"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button>
+    </header>
+
+    <div class="t-work">
+      <div class="t-left tb {{tbCls}}" role="region" aria-label="Bảng công việc Triển khai ERP Q4">
+        <div class="t-tool" role="group" aria-label="Lọc, sắp xếp và nhóm">
+          <sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
+          <span class="fchip"><button class="fl" type="button" aria-haspopup="dialog">Người phụ trách: <b>Đặng Minh Tuấn</b></button><button class="fx" type="button" aria-label="Bỏ lọc Người phụ trách"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></span>
+          </sc-if>
+          <span class="fchip"><button class="fl" type="button" aria-haspopup="dialog">Trạng thái: <b>chưa xong</b></button><button class="fx" type="button" aria-label="Bỏ lọc Trạng thái"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></span>
+          <button class="t-chip" type="button" aria-haspopup="dialog"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"></path></svg>Lọc</button>
+          <button class="t-chip" type="button" aria-haspopup="dialog" aria-label="Sắp xếp: Hạn chót tăng dần"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"></path></svg><b>Hạn chót ↑</b></button>
+          <button class="t-chip wide-only" type="button" aria-haspopup="menu">Nhóm: <b>Trạng thái</b></button>
+                    <span class="sp wide-only stack-only"></span>
+          <button class="t-stack wide-only stack-only" type="button" aria-haspopup="dialog" aria-label="32 người vào được board: 24 người Phòng Công nghệ, 6 người Nhóm Kế toán tổng hợp, Đỗ Khánh Linh và 1 khách"><span class="av" style="background:#4E8574" aria-hidden="true">HA</span><span class="av" style="background:#1E6FD0" aria-hidden="true">MQ</span><span class="av" style="background:#B4500B" aria-hidden="true">HP</span><span class="av more" aria-hidden="true">+29</span></button>
+        </div>
+
+        <div class="tb-box">
+          <div class="tb-view">
+            <div class="tb-scroll" id="tb-scroll">
+              <div class="tb-grid" role="grid" aria-label="Công việc của board Triển khai ERP Q4, sắp xếp theo hạn chót tăng dần" aria-multiselectable="true" aria-colcount="9">
+                <div class="tb-tr tb-th" role="row">
+                  <div class="tb-td c-cb" role="columnheader"><button class="tb-cb" type="button" role="checkbox" aria-checked="{{allChecked}}" aria-label="Chọn tất cả việc đang hiện"><span class="box" aria-hidden="true"><svg class="i ck" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg><svg class="i mx" viewBox="0 0 24 24"><path d="M6 12h12"></path></svg></span></button></div>
+                  <div class="tb-td c-name" role="columnheader">Công việc<button class="t-ib cols-btn" type="button" aria-haspopup="dialog" aria-label="Tuỳ chỉnh cột, đang hiện 9/12 cột"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v16"></path></svg></button></div>
+                  <div class="tb-td" role="columnheader">Trạng thái</div>
+                  <div class="tb-td sorted" role="columnheader" aria-sort="ascending"><button class="tb-sort" type="button">Hạn chót<svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"></path></svg></button></div>
+                  <div class="tb-td" role="columnheader">Người phụ trách</div>
+                  <div class="tb-td" role="columnheader">Mức ưu tiên</div>
+                  <div class="tb-td" role="columnheader">Tiến độ</div>
+                  <div class="tb-td" role="columnheader">Phân hệ</div>
+                  <div class="tb-td" role="columnheader">Cập nhật</div>
+                </div>
+                <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+                <div role="rowgroup" aria-label="{{g.name}}, {{g.count}} việc">
+                  <div class="tb-gh" role="row">
+                    <div class="ghc" role="gridcell" aria-colspan="9"><button class="tb-tog {{g.togCls}}" type="button" aria-expanded="{{g.expanded}}" aria-controls="grp-{{g.cls}}"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg><span class="dot {{g.cls}}" aria-hidden="true"></span>{{g.name}}<span class="n"><span class="vh">, </span>{{g.count}}<span class="vh"> việc</span></span><sc-if value="{{g.hasWarn}}" hint-placeholder-val="{{ false }}"><span class="warn">· {{g.warn}}</span></sc-if></button><button class="t-ib" type="button" aria-label="Thêm việc vào {{g.name}}"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></div>
+                  </div>
+                  <div id="grp-{{g.cls}}" role="presentation">
+                  <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+                  <div class="tb-tr row {{r.rowCls}}" role="row" aria-selected="{{r.selected}}" aria-current="{{r.current}}">
+                    <div class="tb-td c-cb" role="gridcell"><button class="tb-cb" type="button" role="checkbox" aria-checked="{{r.selected}}" aria-label="Chọn {{r.key}}"><span class="box" aria-hidden="true"><svg class="i ck" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"></path></svg><svg class="i mx" viewBox="0 0 24 24"><path d="M6 12h12"></path></svg></span></button></div>
+                    <div class="tb-td c-name" role="gridcell"><a class="tb-name" href="{{r.href}}"><span class="mono k">{{r.key}}</span>{{r.title}}</a></div>
+                    <div class="tb-td" role="gridcell"><button class="tb-cell" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Trạng thái {{r.key}}: {{g.name}}"><span class="stp {{g.cls}}"><span class="dot {{g.cls}}" aria-hidden="true"></span>{{g.name}}</span></button></div>
+                    <div class="tb-td" role="gridcell"><button class="tb-cell {{r.dueEditCls}}" type="button" aria-haspopup="dialog" aria-expanded="{{r.dueExpanded}}" aria-label="Hạn chót {{r.key}}: {{r.dueSay}}"><span class="dd {{r.dueCls}}"><b>{{r.due}}</b><sc-if value="{{r.hasDueSub}}" hint-placeholder-val="{{ false }}"><small>{{r.dueSub}}</small></sc-if></span></button></div>
+                    <div class="tb-td" role="gridcell"><button class="tb-cell" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Người phụ trách {{r.key}}: {{r.whoName}}"><span class="av {{r.avCls}}" style="background:{{r.color}}" aria-hidden="true">{{r.who}}</span><span class="ov">{{r.whoName}}</span></button></div>
+                    <div class="tb-td" role="gridcell"><button class="tb-cell" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Mức ưu tiên {{r.key}}: {{r.prio}}"><span class="pr {{r.prioCls}}"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg>{{r.prio}}</span></button></div>
+                    <div class="tb-td" role="gridcell"><sc-if value="{{r.hasProg}}" hint-placeholder-val="{{ true }}"><span class="pg"><span class="track" aria-hidden="true"><span style="width:{{r.pct}}"></span></span>{{r.sub}}<span class="vh"> việc con xong</span></span></sc-if><sc-if value="{{r.noProg}}" hint-placeholder-val="{{ false }}"><span class="nil" aria-hidden="true">—</span><span class="vh">Không có việc con</span></sc-if></div>
+                    <div class="tb-td" role="gridcell"><button class="tb-cell" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Phân hệ {{r.key}}: {{r.modSay}}"><span class="{{r.modCls}}">{{r.mod}}</span></button></div>
+                    <div class="tb-td" role="gridcell"><span class="upd">{{r.upd}}</span></div>
+                  </div>
+                  </sc-for>
+                  </div>
+                </div>
+                </sc-for>
+              </div>
+            </div>
+            <span class="tb-fade" aria-hidden="true"></span>
+            <button class="t-ib tb-next" type="button" aria-controls="tb-scroll" aria-label="Xem các cột tiếp theo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></button>
+            <sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
+            <div class="tb-empty" role="status">
+              <span class="ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"></path></svg></span>
+              <b>Không có việc khớp bộ lọc</b>
+              <span>Đặng Minh Tuấn chưa phụ trách việc nào chưa xong trên board này.</span>
+              <button class="t-btn" type="button">Bỏ lọc</button>
+            </div>
+            </sc-if>
+          </div>
+          <div class="tb-foot">
+            <span>{{footText}}</span>
+            <sc-if value="{{hasHidden}}" hint-placeholder-val="{{ true }}"><button class="tb-lnk" type="button">Hiện việc đã xong</button></sc-if>
+            <span class="grow"></span>
+            <span class="meta wide-only">{{footMeta}}</span>
+          </div>
+        </div>
+
+        <sc-if value="{{editDue}}" hint-placeholder-val="{{ false }}">
+        <div class="t-pop tb-dpop" id="due-pop" role="dialog" aria-label="Đổi hạn chót ERP-144">
+          <h2 class="t-pop-h">Hạn chót<span class="mono">ERP-144</span></h2>
+          <div class="qk" role="group" aria-label="Chọn nhanh">
+            <button type="button" aria-pressed="true">Hôm nay<small>12/10</small></button>
+            <button type="button" aria-pressed="false">Ngày mai<small>13/10</small></button>
+            <button type="button" aria-pressed="false">Thứ Hai tới<small>19/10</small></button>
+            <button type="button" aria-pressed="false">Không có hạn</button>
+          </div>
+          <div class="mh">
+            <button class="t-ib" type="button" aria-label="Tháng trước"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg></button>
+            <b id="due-month">Tháng 10, 2026</b>
+            <button class="t-ib" type="button" aria-label="Tháng sau"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></button>
+          </div>
+          <div class="wk" aria-hidden="true"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
+          <div class="days" role="group" aria-labelledby="due-month">
+            <sc-for list="{{days}}" as="d" hint-placeholder-count="35"><button class="{{d.cls}}" type="button" aria-pressed="{{d.pressed}}" aria-current="{{d.cur}}" aria-label="{{d.label}}">{{d.n}}</button></sc-for>
+          </div>
+          <div class="tm"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Giờ hết hạn<button class="t-btn" type="button" aria-haspopup="listbox" aria-label="Giờ hết hạn: 17:00, múi giờ GMT+7">17:00 · GMT+7</button></div>
+          <span class="tb-arw" aria-hidden="true"></span>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{bulk}}" hint-placeholder-val="{{ false }}">
+        <div class="tb-bulk" role="toolbar" aria-label="Thao tác với 2 việc đã chọn">
+          <b>2 đã chọn</b>
+          <span class="sepb" aria-hidden="true"></span>
+          <button type="button" aria-haspopup="dialog"><span class="dot doing" aria-hidden="true"></span>Trạng thái</button>
+          <button type="button" aria-haspopup="dialog"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Người phụ trách</button>
+          <button type="button" aria-haspopup="dialog"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Hạn</button>
+          <button class="danger" type="button"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"></rect><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"></path></svg>Lưu trữ</button>
+          <span class="sepb" aria-hidden="true"></span>
+          <button type="button" aria-keyshortcuts="Escape"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>Bỏ chọn</button>
+        </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{isSplit}}" hint-placeholder-val="{{ false }}">
+      <div class="t-div"><button class="t-grip" type="button" aria-label="Đổi độ rộng" aria-controls="detail-pane"><span aria-hidden="true"></span></button></div>
+      <section class="t-pane" id="detail-pane" role="region" aria-label="Chi tiết ERP-142">
+        <div class="dp-head">
+          <button class="t-ib" type="button" aria-label="Đóng (Esc)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+          <a class="t-ib" href="Final-T-Detail.dc.html" aria-label="Mở toàn màn hình"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></a>
+          <nav class="dp-crumb" aria-label="Vị trí"><span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span>Triển khai ERP Q4<span aria-hidden="true">/</span><span class="mono">ERP-142</span></nav>
+          <button class="t-ib" type="button" aria-label="Công việc trước (K)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></button>
+          <button class="t-ib" type="button" aria-label="Công việc sau (J)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <button class="t-ib" type="button" aria-label="Sao chép liên kết"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></button>
+        </div>
+        <div class="dp-body">
+          <h2 class="dp-title">Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP</h2>
+          <div class="dp-props" role="group" aria-label="Thuộc tính">
+            <button class="dp-pp st" type="button" aria-haspopup="menu"><span class="dot doing" aria-hidden="true"></span>Đang làm<svg class="i xs" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+            <button class="dp-pp" type="button" aria-haspopup="dialog"><span class="av" style="background:#1E6FD0" aria-hidden="true">MQ</span>Trần Minh Quân</button>
+            <button class="dp-pp" type="button" aria-haspopup="menu"><span class="prio urgent"><svg class="i xs" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg>Khẩn</span></button>
+            <button class="dp-pp over" type="button" aria-haspopup="dialog"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>10/10 · quá hạn 2 ngày</button>
+            <button class="dp-pp" type="button" aria-haspopup="dialog"><span class="tag t-data">Dữ liệu</span></button>
+            <button class="dp-pp add" type="button" aria-label="Thêm thuộc tính"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+          <section class="dp-sec" aria-labelledby="dp-desc-h">
+            <h3 id="dp-desc-h">Mô tả</h3>
+            <p class="dp-desc">Chuyển 48.200 hồ sơ khách hàng từ phần mềm bán hàng cũ. Giữ nguyên mã khách hàng, gộp bản ghi trùng theo mã số thuế, đối chiếu công nợ đầu kỳ với phòng Kế toán trước khi chốt.</p>
+          </section>
+          <section class="dp-sec" aria-labelledby="dp-sub-h">
+            <h3 id="dp-sub-h">Việc con <span class="n">3/5</span><span class="dp-bar" aria-hidden="true"><span style="width:60%"></span></span></h3>
+            <button class="dp-ck" type="button" role="checkbox" aria-checked="false"><span class="box" aria-hidden="true"></span><span class="tx">Đối chiếu công nợ đầu kỳ với Kế toán</span></button>
+            <button class="dp-ck" type="button" role="checkbox" aria-checked="false"><span class="box" aria-hidden="true"></span><span class="tx">Nhập chính thức và kiểm tra mẫu</span></button>
+            <button class="dp-more" type="button" aria-expanded="false"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>Hiện 3 việc đã xong</button>
+          </section>
+          <section class="dp-sec" aria-label="Hoạt động">
+            <div class="dp-tabs" role="tablist" aria-label="Hoạt động"><button type="button" role="tab" aria-selected="true">Bình luận 2</button><button type="button" role="tab" aria-selected="false">Lịch sử</button></div>
+            <div class="dp-cm"><span class="av" style="background:#9A6A12" aria-hidden="true">KL</span><div><b>Đỗ Khánh Linh</b><time>Hôm qua, 16:40</time><p>Bên mình cần file công nợ đầu kỳ trước thứ Tư để đối chiếu, anh Quân gửi giúp nhé.</p></div></div>
+            <div class="dp-sys"><span class="dot doing" aria-hidden="true"></span>Trần Minh Quân đổi hạn từ 08/10 sang 10/10 · 5 ngày trước</div>
+            <div class="dp-cm"><span class="av" style="background:#1E6FD0" aria-hidden="true">MQ</span><div><b>Trần Minh Quân</b><time>2 giờ trước</time><p>Đã gộp xong bản ghi trùng. Còn chờ file đối chiếu từ Kế toán, dự kiến chốt thứ Tư.</p></div></div>
+          </section>
+        </div>
+        <div class="dp-comp"><label><input type="text" placeholder="Viết bình luận, gõ @ để nhắc ai đó…" aria-label="Viết bình luận"><span class="kbd" aria-hidden="true">⌘↵</span></label><button class="t-ib pri" type="button" aria-label="Gửi bình luận"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></div>
+      </section>
+      </sc-if>
+    </div>
+  </div>
+  <span class="t-home" aria-hidden="true"></span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["binh-thuong","chia-doi","sua-o","chon-nhieu","khong-ket-qua"],"default":"binh-thuong","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"sidebar":{"editor":"enum","options":["mo","thu-gon"],"default":"mo","section":"Thanh bên"},"$preview":{"width":1180,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.props.state ?? 'binh-thuong';
+    const sidebar = this.props.sidebar ?? 'mo';
+    const sideOpen = sidebar === 'mo';
+    const split = state === 'chia-doi';
+    const editDue = state === 'sua-o';
+    const multi = state === 'chon-nhieu';
+    const none = state === 'khong-ket-qua';
+    const P = { HA: '#4E8574', MQ: '#1E6FD0', HP: '#B4500B', NA: '#7C4DDB', KL: '#9A6A12', VT: '#0E7490', TT: '#475569' };
+    const N = { HA: 'Nguyễn Thu Hà', MQ: 'Trần Minh Quân', HP: 'Lê Hoàng Phúc', NA: 'Phan Ngọc Anh', KL: 'Đỗ Khánh Linh', VT: 'Vũ Thanh', TT: 'Bùi Thanh Tâm' };
+    const PR = { 'Khẩn': 'urgent', 'Cao': 'high', 'Trung bình': 'mid', 'Thấp': 'low' };
+    const picked = multi ? ['ERP-144', 'ERP-146'] : [];
+    const r = (o) => {
+      const sel = picked.indexOf(o.key) >= 0;
+      const cur = split && o.key === 'ERP-142';
+      const editing = editDue && o.key === 'ERP-144';
+      const unset = o.due === 'Chưa đặt';
+      return Object.assign({ dueCls: '', dueSub: '', pct: '', sub: '', mod: '' }, o, {
+        href: o.key === 'ERP-142' ? 'Final-T-Detail.dc.html' : 'Final-T-Board.dc.html',
+        color: o.who ? P[o.who] : 'transparent',
+        whoName: o.who ? N[o.who] : 'Chưa giao',
+        who: o.who || '+',
+        avCls: o.who ? '' : 'none',
+        prioCls: PR[o.prio],
+        dueCls: unset ? 'unset' : (o.dueCls || ''),
+        hasDueSub: Boolean(o.dueSub),
+        dueSay: o.dueSub ? o.due + ', ' + o.dueSub.toLowerCase() : o.due,
+        hasProg: Boolean(o.sub),
+        noProg: !o.sub,
+        mod: o.mod || '—',
+        modCls: o.mod ? '' : 'nil',
+        modSay: o.mod || 'chưa đặt',
+        rowCls: [sel ? 'sel' : '', cur ? 'cur' : ''].join(' ').trim(),
+        selected: sel ? 'true' : 'false',
+        current: cur ? 'true' : 'false',
+        dueExpanded: editing ? 'true' : 'false',
+        dueEditCls: editing ? 'editing' : ''
+      });
+    };
+    const groups = none ? [] : [
+      { name: 'Cần làm', cls: 'todo', count: 6, warn: '', rows: [
+        r({ key: 'ERP-151', title: 'Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán', who: 'NA', due: '18/10', prio: 'Cao', pct: '0%', sub: '0/4', mod: 'Kế toán', upd: 'Hôm qua' }),
+        r({ key: 'ERP-147', title: 'Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng', who: 'TT', due: '21/10', prio: 'Trung bình', mod: 'Kế toán', upd: '2 ngày trước' }),
+        r({ key: 'ERP-149', title: 'Viết tài liệu quy trình nhập hoá đơn đầu vào', who: 'KL', due: '25/10', prio: 'Thấp', mod: 'Mua hàng', upd: 'Hôm qua' }),
+        r({ key: 'ERP-150', title: 'Thiết lập cảnh báo khi đồng bộ tồn kho thất bại', who: 'VT', due: '28/10', prio: 'Trung bình', mod: 'Kho', upd: '4 ngày trước' }),
+        r({ key: 'ERP-152', title: 'Kế hoạch hỗ trợ người dùng tuần đầu vận hành', who: 'HA', due: '30/10', prio: 'Trung bình', upd: '5 ngày trước' }),
+        r({ key: 'ERP-153', title: 'Rà soát hợp đồng bản quyền phần mềm với nhà cung cấp', due: 'Chưa đặt', prio: 'Thấp', mod: 'Mua hàng', upd: 'Tuần trước' })
+      ] },
+      { name: 'Đang làm', cls: 'doing', count: 3, warn: '1 quá hạn', rows: [
+        r({ key: 'ERP-142', title: 'Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP', who: 'MQ', due: '10/10', dueSub: 'Quá hạn 2 ngày', dueCls: 'over', prio: 'Khẩn', pct: '60%', sub: '3/5', mod: 'Kế toán', upd: '2 giờ trước' }),
+        r({ key: 'ERP-144', title: 'Kiểm thử phân hệ công nợ với số liệu tháng 9', who: 'HP', due: '12/10', dueSub: 'Hôm nay', dueCls: 'today', prio: 'Cao', pct: '67%', sub: '6/9', mod: 'Kế toán', upd: '35 phút trước' }),
+        r({ key: 'ERP-146', title: 'Đồng bộ tồn kho giữa kho Bình Dương và kho Long An', who: 'VT', due: '16/10', prio: 'Trung bình', pct: '33%', sub: '1/3', mod: 'Kho', upd: 'Hôm qua' })
+      ] },
+      { name: 'Chờ duyệt', cls: 'review', count: 2, warn: '', rows: [
+        r({ key: 'ERP-138', title: 'Thiết lập đăng nhập một lần (SSO) cho toàn công ty', who: 'MQ', due: '14/10', prio: 'Cao', upd: '12 phút trước' }),
+        r({ key: 'ERP-140', title: 'Mẫu báo cáo doanh thu theo chi nhánh', who: 'NA', due: '15/10', prio: 'Trung bình', mod: 'Kế toán', upd: '3 ngày trước' })
+      ] }
+    ].map((g) => {
+      const shut = multi && g.cls === 'todo';
+      return Object.assign({}, g, { hasWarn: Boolean(g.warn), expanded: shut ? 'false' : 'true', togCls: shut ? 'shut' : '', rows: shut ? [] : g.rows });
+    });
+    const WD = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+    const cells = [[28, 9], [29, 9], [30, 9]];
+    for (let n = 1; n <= 31; n += 1) cells.push([n, 10]);
+    cells.push([1, 11]);
+    const days = cells.map((c, i) => {
+      const today = c[1] === 10 && c[0] === 12;
+      const dd = String(c[0]).padStart(2, '0') + '/' + String(c[1]).padStart(2, '0');
+      return {
+        n: c[0],
+        cls: c[1] === 10 ? '' : 'out',
+        pressed: today ? 'true' : 'false',
+        cur: today ? 'date' : 'false',
+        label: WD[i % 7] + ' ' + dd + '/2026' + (today ? ', hôm nay, đang chọn' : '')
+      };
+    });
+    return {
+      mode: this.props.mode ?? 'sang',
+      sideOpen,
+      sideMini: !sideOpen,
+      sideExpanded: sideOpen ? 'true' : 'false',
+      sideToggleLabel: sideOpen ? 'Thu gọn thanh bên' : 'Mở thanh bên',
+      wsExpanded: 'false',
+      isMember: true,
+      isCommenter: false,
+      myCount: 7,
+      inboxCount: 3,
+      meInit: 'HA',
+      meColor: '#4E8574',
+      meName: 'Nguyễn Thu Hà',
+      meRole: 'Quản trị workspace',
+      isSplit: split,
+      editDue,
+      bulk: multi,
+      noResults: none,
+      hasHidden: !none,
+      tbCls: [split ? 'split' : '', multi ? 'bulk-on' : '', none ? 'crowd' : ''].join(' ').trim(),
+      allChecked: picked.length > 0 ? 'mixed' : 'false',
+      footText: none ? '16 việc ẩn bởi bộ lọc' : '5 việc đã xong ẩn bởi bộ lọc',
+      footMeta: none ? '' : '11 việc đang hiện',
+      groups,
+      days
+    };
+  }
+}
+</script>
+</body>
+</html>

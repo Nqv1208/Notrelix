@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Đăng nhập</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nx{--bg:#FFFFFF;--brand:#EEF1F5;--brand-ink:#161A21;--brand-muted:#4F5866;--brand-line:#DDE2E9;--field:#FFFFFF;--line:#E1E5EA;--line2:#D2D7DE;--field-line:#7D8794;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--hover:#F1F3F6;--accent:#1666CC;--accent-hover:#0F56AE;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--focus:#1666CC;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok:#2E8B57;--ok-soft:#E2F1E7;--off-bg:#E6E9EE;--off-ink:#4F5866;--chip:#EEF0F3;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--brand:#151A21;--brand-ink:#E6E9EE;--brand-muted:#AAB3C0;--brand-line:#232B35;--field:#11161C;--line:#232B35;--line2:#2E3743;--field-line:#6E7887;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--hover:#1C232C;--accent:#5AA9FF;--accent-hover:#7DBBFF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--focus:#7DBBFF;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok:#56C98A;--ok-soft:#153024;--off-bg:#232A34;--off-ink:#AAB3C0;--chip:#1C232C}
+.nx a{color:var(--accent-text);text-decoration:none;font-weight:500}
+.nx a:hover{text-decoration:underline}
+.nx :focus-visible,.nx .ring{outline:2px solid var(--focus);outline-offset:2px}
+.nx{color-scheme:light}.nx.mode-dem{color-scheme:dark}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0;margin:-1px}
+
+/* brand panel: text sits on the solid field, the gradient lives only in the shape below */
+.brandp{flex:0 0 44%;max-width:44%;background:var(--brand);border-right:1px solid var(--brand-line);position:relative;overflow:hidden;display:flex;flex-direction:column;padding:40px 52px;box-sizing:border-box;color:var(--brand-ink)}
+.mark{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.mark b{font-size:21px;font-weight:700;letter-spacing:-0.01em}
+.promise{position:relative;z-index:1;margin:112px 0 0;max-width:460px;font-size:32px;line-height:1.28;font-weight:650;letter-spacing:-0.02em}
+.shape{position:absolute;left:-30px;bottom:-170px;width:700px;height:700px;pointer-events:none}
+
+/* form column */
+.formcol{flex:1 1 56%;min-width:0;display:flex;flex-direction:column;padding:28px 48px 24px;box-sizing:border-box;background:var(--bg)}
+.formwrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.form{width:100%;max-width:400px;display:flex;flex-direction:column;gap:18px}
+.form form{display:flex;flex-direction:column;gap:18px;margin:0}
+h1{margin:0;font-size:28px;font-weight:650;letter-spacing:-0.02em;line-height:1.25}
+h1.md{font-size:23px;line-height:1.32}
+.sub{margin:6px 0 0;color:var(--muted);font-size:14.5px}
+.fld{display:flex;flex-direction:column;gap:6px}
+.lrow{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+label,.lbl{font-size:13.5px;font-weight:600;color:var(--text)}
+.inp{height:44px;width:100%;box-sizing:border-box;border:1px solid var(--field-line);border-radius:9px;background:var(--field);color:var(--text);font:inherit;font-size:15px;padding:0 13px}
+.inp::placeholder{color:var(--meta);opacity:1}
+.inp:focus,.inp.ring{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--accent-soft),0 0 0 1px var(--focus) inset}
+.inp[readonly]{background:var(--hover);color:var(--text);border-style:dashed}
+.inp[aria-invalid="true"]{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset}
+.pw{position:relative}
+.pw .inp{padding-right:52px}
+.eye{position:absolute;right:4px;top:4px;width:36px;height:36px;border:0;border-radius:7px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.eye:hover{background:var(--hover);color:var(--text)}
+.eye .i{width:18px;height:18px}
+.hint{margin:0;font-size:12.5px;color:var(--meta)}
+.err{margin:0;display:flex;align-items:flex-start;gap:6px;font-size:13px;font-weight:500;color:var(--danger)}
+.err .i{margin-top:2px;width:15px;height:15px}
+.btn{height:44px;width:100%;border-radius:9px;border:1px solid var(--line2);background:var(--bg);color:var(--text);font:inherit;font-size:14.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;box-sizing:border-box;text-decoration:none}
+.btn:hover{background:var(--hover)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.pri:hover{background:var(--accent-hover)}
+.btn[disabled]{background:var(--off-bg);border-color:var(--off-bg);color:var(--off-ink);cursor:not-allowed}
+.btn .brand-ic{width:18px;height:18px;flex:none}
+.stack{display:flex;flex-direction:column;gap:10px}
+.or{display:flex;align-items:center;gap:12px;color:var(--meta);font-size:12.5px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.alt{margin:0;text-align:center;font-size:13.5px;color:var(--muted)}
+.linkbtn{border:0;background:transparent;padding:2px 0;font:inherit;font-size:13.5px;font-weight:500;color:var(--accent-text);cursor:pointer;border-radius:4px}
+.linkbtn:hover{text-decoration:underline}
+.who{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.who .ic{width:28px;height:28px;border-radius:50%;background:var(--chip);color:var(--muted);display:grid;place-items:center;flex:none}
+.who span.e{flex:1;min-width:0;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .linkbtn{padding:4px 8px}
+.wsrow{display:flex;align-items:center;gap:12px}
+.wsm{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:none}
+.wsrow b{display:block;font-size:14.5px;font-weight:600}
+.wsrow small{display:block;font-size:12.5px;color:var(--meta)}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:var(--hover);color:var(--muted);font-size:13px;line-height:1.5}
+.note .i{margin-top:2px;color:var(--meta)}
+.note b{color:var(--text);font-weight:600}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:var(--warn-soft);color:var(--text);font-size:13.5px}
+.alert .i{margin-top:2px;color:var(--warn-text)}
+.alert b{display:block;color:var(--warn-text);font-weight:650}
+.alert p{margin:2px 0 0;color:var(--text)}
+.otp{display:flex;gap:10px;margin:0;padding:0;border:0;min-width:0}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{padding:0;margin:0 0 8px;font-size:13.5px;font-weight:600}
+.otp input{width:52px;height:58px;box-sizing:border-box;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:500;border:1px solid var(--field-line);border-radius:10px;background:var(--field);color:var(--text);padding:0}
+.otp input:focus,.otp input.ring{outline:none;border-color:var(--focus);box-shadow:0 0 0 3px var(--accent-soft),0 0 0 1px var(--focus) inset}
+.otp .gap{width:8px;flex:none}
+.chk{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;cursor:pointer}
+.chk input{width:18px;height:18px;margin:0;accent-color:var(--accent);flex:none}
+.links{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.role{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:var(--accent-soft);color:var(--accent-text);font-size:13px;font-weight:600}
+.see{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.see h2{margin:0;font-size:13.5px;font-weight:650;display:flex;align-items:center;gap:8px}
+.see p{margin:0;font-size:13.5px;color:var(--muted)}
+.row2{display:flex;gap:10px}
+.row2 .btn.pri{flex:1}
+.row2 .btn.sec{width:auto;padding:0 18px;flex:none}
+.big-ic{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;flex:none}
+.big-ic .i{width:24px;height:24px}
+.big-ic.calm{background:var(--hover);color:var(--muted)}
+.big-ic.ok{background:var(--ok-soft);color:var(--ok)}
+.done-txt{margin:0;font-size:14.5px;color:var(--muted)}
+.done-txt b{color:var(--text);font-weight:600}
+
+/* footer */
+.foot{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:12.5px;color:var(--meta)}
+.foot nav{display:flex;align-items:center;gap:6px}
+.foot nav a{color:var(--meta);font-weight:500;padding:4px 2px;border-radius:4px}
+.foot nav a:hover{color:var(--text)}
+.lang{display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px}
+.lang button{height:28px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:inherit;font-size:12.5px;font-weight:500;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--chip);color:var(--text);font-weight:600}
+.lang .i{margin:0 4px 0 6px;color:var(--meta);width:14px;height:14px}
+</style>
+</helmet>
+<div class="nx mode-{{mode}}" style="display:flex;width:100%;min-height:900px;height:900px;overflow:hidden;position:relative">
+
+  <aside class="brandp" aria-label="Notrelix">
+    <div class="mark">
+      <svg width="36" height="36" viewBox="0 0 408 408" aria-hidden="true"><path d="M336.1 230.49L156.821 73.4495C116.321 35.9495 51.8207 52.9495 40.3233 110.752L27.6001 181C34.6001 166 53.1001 160.5 68.6001 171.5C116.439 213.286 240.005 321.949 240.005 321.949C298.505 373.449 354.505 343.449 367.823 291.252C367.823 291.252 373.206 261.526 380 223.449C371.1 241.99 349.1 242.99 336.1 230.49Z" fill="url(#au-g0)"></path><path d="M380.005 223.46C371.1 242 349.1 243 336.005 230.46L276.505 178.262C281.972 146.825 284.537 129.7 290.005 98.2624C291.982 84.263 296.401 80.1727 305.505 74.2624L377.505 46.7624C392.005 39.2622 409.141 44.5717 407.504 63.9597C406.485 76.0378 391.23 160.547 380.005 223.46Z" fill="#1E90FF"></path><path d="M27.6 181C36.5045 162.46 58.5133 161.539 71.6088 174.079L131.109 226.277C125.641 257.714 123.076 274.84 117.609 306.277C115.631 320.276 111.212 324.366 102.109 330.277L30.1087 357.777C15.6087 365.277 -1.52779 359.967 0.10881 340.579C1.12836 328.501 16.3745 243.912 27.6 181Z" fill="#FF1E56"></path><defs><linearGradient id="au-g0" x1="52.1" y1="90.49" x2="350.6" y2="317.99" gradientUnits="userSpaceOnUse"><stop stop-color="#FF1E56"></stop><stop offset="0.25" stop-color="#FC744C"></stop><stop offset="0.5" stop-color="#F9C942"></stop><stop offset="0.75" stop-color="#8CADA1"></stop><stop offset="1" stop-color="#1E90FF"></stop></linearGradient></defs></svg>
+      <b>Notrelix</b>
+    </div>
+    <p class="promise">Mọi phòng ban, mọi board, một chỗ để biết việc gì đang chờ ai.</p>
+    <svg class="shape" viewBox="0 0 408 408" aria-hidden="true" focusable="false"><path d="M336.1 230.49L156.821 73.4495C116.321 35.9495 51.8207 52.9495 40.3233 110.752L27.6001 181C34.6001 166 53.1001 160.5 68.6001 171.5C116.439 213.286 240.005 321.949 240.005 321.949C298.505 373.449 354.505 343.449 367.823 291.252C367.823 291.252 373.206 261.526 380 223.449C371.1 241.99 349.1 242.99 336.1 230.49Z" fill="url(#au-g1)"></path><path d="M380.005 223.46C371.1 242 349.1 243 336.005 230.46L276.505 178.262C281.972 146.825 284.537 129.7 290.005 98.2624C291.982 84.263 296.401 80.1727 305.505 74.2624L377.505 46.7624C392.005 39.2622 409.141 44.5717 407.504 63.9597C406.485 76.0378 391.23 160.547 380.005 223.46Z" fill="#1E90FF"></path><path d="M27.6 181C36.5045 162.46 58.5133 161.539 71.6088 174.079L131.109 226.277C125.641 257.714 123.076 274.84 117.609 306.277C115.631 320.276 111.212 324.366 102.109 330.277L30.1087 357.777C15.6087 365.277 -1.52779 359.967 0.10881 340.579C1.12836 328.501 16.3745 243.912 27.6 181Z" fill="#FF1E56"></path><defs><linearGradient id="au-g1" x1="52.1" y1="90.49" x2="350.6" y2="317.99" gradientUnits="userSpaceOnUse"><stop stop-color="#FF1E56"></stop><stop offset="0.25" stop-color="#FC744C"></stop><stop offset="0.5" stop-color="#F9C942"></stop><stop offset="0.75" stop-color="#8CADA1"></stop><stop offset="1" stop-color="#1E90FF"></stop></linearGradient></defs></svg>
+  </aside>
+
+  <main class="formcol">
+    <div class="formwrap">
+      <div class="form">
+
+<sc-if value="{{isEmail}}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h1>Đăng nhập Notrelix</h1>
+          <p class="sub">Nhập email công việc. Chúng tôi đưa bạn tới cách đăng nhập của công ty bạn.</p>
+        </div>
+        <form action="#" novalidate>
+          <div class="fld">
+            <label for="au-email">Email</label>
+            <input class="inp" id="au-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" placeholder="ten@congty.vn">
+          </div>
+          <button class="btn pri" type="submit">Tiếp tục</button>
+        </form>
+        <div class="or" role="separator">hoặc</div>
+        <div class="stack">
+          <button class="btn" type="button"><svg class="brand-ic" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"></path><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"></path><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"></path><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"></path></svg>Tiếp tục với Google</button>
+          <button class="btn" type="button"><svg class="brand-ic" viewBox="0 0 21 21" aria-hidden="true"><path fill="#F25022" d="M1 1h9v9H1z"></path><path fill="#7FBA00" d="M11 1h9v9h-9z"></path><path fill="#00A4EF" d="M1 11h9v9H1z"></path><path fill="#FFB900" d="M11 11h9v9h-9z"></path></svg>Tiếp tục với Microsoft</button>
+        </div>
+        <p class="alt">Chưa có tài khoản? <a href="#">Tạo workspace</a></p>
+</sc-if>
+
+<sc-if value="{{isPwLike}}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1>Nhập mật khẩu</h1>
+          <p class="sub">Tài khoản Notrelix cá nhân, đăng nhập bằng mật khẩu.</p>
+        </div>
+        <form action="#" novalidate>
+          <input type="email" name="username" autocomplete="username" value="thuha.nguyen@gmail.com" hidden>
+          <div class="who">
+            <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg></span>
+            <span class="e" id="au-who">thuha.nguyen@gmail.com</span>
+            <button class="linkbtn" type="button" aria-describedby="au-who">Đổi</button>
+          </div>
+          <div class="fld">
+            <div class="lrow"><label for="au-pw">Mật khẩu</label><a href="#" style="font-size:13px">Quên mật khẩu?</a></div>
+            <div class="pw">
+<sc-if value="{{isPw}}" hint-placeholder-val="{{ false }}">
+              <input class="inp ring" id="au-pw" name="password" type="password" autocomplete="current-password" value="matkhaumau12" required>
+</sc-if>
+<sc-if value="{{isLoi}}" hint-placeholder-val="{{ false }}">
+              <input class="inp" id="au-pw" name="password" type="password" autocomplete="current-password" value="" required aria-invalid="true" aria-describedby="au-pw-err">
+</sc-if>
+              <button class="eye" type="button" aria-pressed="false" aria-controls="au-pw" aria-label="Hiện mật khẩu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            </div>
+<sc-if value="{{isLoi}}" hint-placeholder-val="{{ false }}">
+            <p class="err" id="au-pw-err" role="alert"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16v.01"></path></svg>Email hoặc mật khẩu chưa đúng.</p>
+</sc-if>
+          </div>
+<sc-if value="{{isLoi}}" hint-placeholder-val="{{ false }}">
+          <div class="alert" role="alert" id="au-rate">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9.5 2.5h5"></path></svg>
+            <div><b>Thử lại sau 60 giây</b><p>Để bảo vệ tài khoản, đăng nhập tạm dừng sau nhiều lần thử chưa đúng. Bạn có thể đặt lại mật khẩu ngay.</p></div>
+          </div>
+          <button class="btn pri" type="submit" disabled aria-describedby="au-rate"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2"></path></svg>Đăng nhập <span class="mono" aria-hidden="true">· 0:48</span><span class="sr">, mở lại sau 48 giây</span></button>
+</sc-if>
+<sc-if value="{{isPw}}" hint-placeholder-val="{{ false }}">
+          <button class="btn pri" type="submit">Đăng nhập</button>
+</sc-if>
+        </form>
+        <div class="links"><button class="linkbtn" type="button">Đăng nhập bằng cách khác</button></div>
+</sc-if>
+
+<sc-if value="{{isSso}}" hint-placeholder-val="{{ false }}">
+        <div class="wsrow">
+          <span class="wsm" style="background:#1666CC" aria-hidden="true">MA</span>
+          <span><b>Minh An Group</b><small>Đăng nhập một lần cho email @minhan.vn</small></span>
+        </div>
+        <div>
+          <h1 class="md">Minh An Group dùng đăng nhập một lần qua Microsoft Entra</h1>
+          <p class="sub">Bạn sẽ chuyển sang trang đăng nhập của công ty, rồi quay lại Notrelix.</p>
+        </div>
+        <div class="who">
+          <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg></span>
+          <span class="e">thuha.nguyen@minhan.vn</span>
+        </div>
+        <button class="btn pri" type="button"><svg class="brand-ic" viewBox="0 0 21 21" aria-hidden="true" style="background:#fff;border-radius:3px;padding:2px;box-sizing:border-box"><path fill="#F25022" d="M1 1h9v9H1z"></path><path fill="#7FBA00" d="M11 1h9v9h-9z"></path><path fill="#00A4EF" d="M1 11h9v9H1z"></path><path fill="#FFB900" d="M11 11h9v9h-9z"></path></svg>Tiếp tục với Microsoft Entra</button>
+        <div class="note">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+          <span><b>Mật khẩu do công ty bạn quản lý.</b> Notrelix không lưu mật khẩu này. Quên mật khẩu thì liên hệ bộ phận CNTT của công ty.</span>
+        </div>
+        <div class="links"><button class="linkbtn" type="button">Dùng email khác</button></div>
+</sc-if>
+
+<sc-if value="{{isOtp}}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1>Xác minh hai bước</h1>
+          <p class="sub">Mở ứng dụng xác thực trên điện thoại và nhập mã 6 số cho thuha.nguyen@gmail.com.</p>
+        </div>
+        <form action="#" novalidate>
+          <fieldset aria-describedby="au-otp-h">
+            <legend>Mã trong ứng dụng xác thực</legend>
+            <div class="otp">
+              <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" autocomplete="one-time-code" aria-label="Chữ số 1 trên 6" value="4">
+              <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" autocomplete="off" aria-label="Chữ số 2 trên 6" value="8">
+              <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" autocomplete="off" aria-label="Chữ số 3 trên 6" value="2">
+              <span class="gap" aria-hidden="true"></span>
+              <input class="ring" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" autocomplete="off" aria-label="Chữ số 4 trên 6" value="">
+              <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" autocomplete="off" aria-label="Chữ số 5 trên 6" value="">
+              <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" autocomplete="off" aria-label="Chữ số 6 trên 6" value="">
+            </div>
+            <p class="hint" id="au-otp-h" style="margin-top:8px">Mã đổi sau mỗi 30 giây. Dán cả 6 số vào ô đầu cũng được.</p>
+          </fieldset>
+          <label class="chk"><input type="checkbox" name="remember">Ghi nhớ thiết bị này 30 ngày</label>
+          <button class="btn pri" type="submit">Xác minh</button>
+        </form>
+        <div class="links">
+          <button class="linkbtn" type="button">Dùng mã dự phòng</button>
+          <button class="linkbtn" type="button">Quay lại đăng nhập</button>
+        </div>
+</sc-if>
+
+<sc-if value="{{isForgot}}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1>Đặt lại mật khẩu</h1>
+          <p class="sub">Nhập email bạn dùng để đăng nhập. Chúng tôi sẽ gửi một liên kết đặt lại, dùng được trong 30 phút.</p>
+        </div>
+        <form action="#" novalidate>
+          <div class="fld">
+            <label for="au-reset">Email</label>
+            <input class="inp" id="au-reset" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" value="thuha.nguyen@gmail.com">
+          </div>
+          <button class="btn pri" type="submit">Gửi liên kết đặt lại</button>
+        </form>
+        <div class="note">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8v.01"></path></svg>
+          <span>Đăng nhập qua công ty (đăng nhập một lần)? Mật khẩu đó do bộ phận CNTT của công ty bạn đặt lại.</span>
+        </div>
+        <div class="links"><button class="linkbtn" type="button">Quay lại đăng nhập</button></div>
+</sc-if>
+
+<sc-if value="{{isSent}}" hint-placeholder-val="{{ false }}">
+        <span class="big-ic ok" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg></span>
+        <div role="status">
+          <h1>Kiểm tra email của bạn</h1>
+          <p class="sub">Nếu email có tài khoản, chúng tôi đã gửi liên kết đặt lại tới <b style="color:var(--text);font-weight:600">thuha.nguyen@gmail.com</b>. Liên kết dùng được trong 30 phút.</p>
+        </div>
+        <p class="done-txt">Chưa thấy thư? Xem trong mục thư rác, hoặc gửi lại sau ít phút.</p>
+        <button class="btn" type="button" disabled>Gửi lại <span class="mono" aria-hidden="true">· 0:42</span><span class="sr">, dùng được sau 42 giây</span></button>
+        <div class="links"><button class="linkbtn" type="button">Quay lại đăng nhập</button><button class="linkbtn" type="button">Dùng email khác</button></div>
+</sc-if>
+
+<sc-if value="{{isInvite}}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <span class="av" style="background:#4E8574" aria-hidden="true">HA</span>
+          <h1 class="md">Nguyễn Thu Hà mời bạn vào board Triển khai ERP Q4 của Minh An Group</h1>
+          <span class="role"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Khách · Có thể sửa · đến 31/01/2027</span>
+        </div>
+        <section class="see" aria-labelledby="au-see-t">
+          <h2 id="au-see-t"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>Bạn sẽ thấy gì</h2>
+          <p>Chỉ board này. Bạn không thấy các phòng ban hay board khác.</p>
+        </section>
+        <form action="#" novalidate>
+          <div class="fld">
+            <label for="au-inv-email">Email được mời</label>
+            <input class="inp" id="au-inv-email" name="email" type="email" autocomplete="email" value="tuan@doitac-erp.vn" readonly aria-describedby="au-inv-email-h">
+            <p class="hint" id="au-inv-email-h">Lời mời gắn với email này, không đổi được.</p>
+          </div>
+          <div class="fld">
+            <label for="au-inv-name">Họ và tên</label>
+            <input class="inp" id="au-inv-name" name="name" type="text" autocomplete="name" value="Đặng Minh Tuấn">
+          </div>
+          <div class="fld">
+            <label for="au-inv-pw">Tạo mật khẩu</label>
+            <div class="pw">
+              <input class="inp" id="au-inv-pw" name="new-password" type="password" autocomplete="new-password" aria-describedby="au-inv-pw-h">
+              <button class="eye" type="button" aria-pressed="false" aria-controls="au-inv-pw" aria-label="Hiện mật khẩu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            </div>
+            <p class="hint" id="au-inv-pw-h">Ít nhất 12 ký tự.</p>
+          </div>
+          <div class="row2">
+            <button class="btn pri" type="submit">Chấp nhận và tạo tài khoản</button>
+            <button class="btn sec" type="button">Từ chối</button>
+          </div>
+        </form>
+        <p class="hint">Lời mời chưa cho bạn quyền gì cho đến khi bạn chấp nhận. Bấm chấp nhận hai lần cũng an toàn, bạn chỉ được thêm một lần.</p>
+        <p class="alt">Đã có tài khoản Notrelix? <a href="#">Đăng nhập để chấp nhận</a></p>
+</sc-if>
+
+<sc-if value="{{isExpired}}" hint-placeholder-val="{{ false }}">
+        <span class="big-ic calm" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M7 3h10M7 21h10M8 3v3a4 4 0 0 0 8 0V3M8 21v-3a4 4 0 0 1 8 0v3"></path></svg></span>
+        <div>
+          <h1>Lời mời đã hết hạn</h1>
+          <p class="sub">Lời mời đến Minh An Group không còn dùng được.</p>
+        </div>
+        <p class="done-txt">Nhờ người đã mời bạn gửi lại một lời mời mới.</p>
+        <a class="btn" href="#">Về trang đăng nhập</a>
+</sc-if>
+
+      </div>
+    </div>
+
+    <footer class="foot">
+      <nav aria-label="Thông tin">
+        <a href="#">Điều khoản</a><span aria-hidden="true">·</span>
+        <a href="#">Quyền riêng tư</a><span aria-hidden="true">·</span>
+        <a href="#">Trợ giúp</a>
+      </nav>
+      <div class="lang" role="group" aria-label="Ngôn ngữ">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"></path></svg>
+        <button type="button" aria-pressed="{{langVi}}" lang="vi">Tiếng Việt</button>
+        <button type="button" aria-pressed="{{langEn}}" lang="en">English</button>
+      </div>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["email","mat-khau","sso","xac-minh","loi","quen-mat-khau","da-gui","loi-moi","het-han"],"default":"email","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.props.state ?? 'email';
+    const isPw = state === 'mat-khau';
+    const isLoi = state === 'loi';
+    return {
+      mode: this.props.mode ?? 'sang',
+      isEmail: state === 'email',
+      isPw,
+      isLoi,
+      isPwLike: isPw || isLoi,
+      isSso: state === 'sso',
+      isOtp: state === 'xac-minh',
+      isForgot: state === 'quen-mat-khau',
+      isSent: state === 'da-gui',
+      isInvite: state === 'loi-moi',
+      isExpired: state === 'het-han',
+      langVi: 'true',
+      langEn: 'false'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Ô chọn và trạng thái hệ thống</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#E6E9EE;--line:#E1E5EA;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--done-soft:#E5F3EA;--done-text:#1F6B43;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--warn-line:#EBCB7A;--high:#B4500B;--kbd:#EEF0F3;--lane-doing:#E6EFFB;--pop-shadow:0 12px 32px rgba(15,23,42,.14),0 2px 6px rgba(15,23,42,.06);--toast:#1B2430;--toast-ink:#F2F4F7;--toast-meta:#A9B4C3;--skel:#E8EBF0;--skel-hi:#F3F5F8;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#1A2028;--hover:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--done-soft:rgba(86,201,138,.14);--done-text:#7FD9A6;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.12);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--warn-line:rgba(242,193,78,.4);--high:#FFA060;--kbd:#232B35;--lane-doing:#13203A;--pop-shadow:0 12px 32px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.3);--toast:#2A3340;--toast-ink:#F2F4F7;--toast-meta:#A9B4C3;--skel:#212833;--skel-hi:#2A323E}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--kbd);border:1px solid var(--line2);border-radius:4px;padding:0 5px;color:var(--muted);line-height:18px}
+.av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:9.5px;font-weight:700;color:#fff;flex:none}
+.dm{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;font-size:8px;font-weight:700;color:#fff;flex:none}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.dot.todo{box-shadow:inset 0 0 0 2px var(--st-todo)}
+.dot.doing{background:var(--st-doing)}
+.dot.review{background:var(--st-review)}
+.dot.done{background:var(--st-done)}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.btn:hover{background:var(--hover)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.sm{height:26px;padding:0 9px;font-size:12px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.grow{flex:1}
+/* page */
+.wrap{padding:40px 48px 56px;max-width:1344px;box-sizing:content-box}
+.hd{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.hd h1{margin:0;font-size:26px;font-weight:650;letter-spacing:-0.015em}
+.hd p{margin:6px 0 0;color:var(--muted);font-size:14px;max-width:72ch;line-height:1.6}
+.hd .back{margin-left:auto;font-size:13px;color:var(--accent-text);font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.sec-t{margin:40px 0 4px;font-size:18px;font-weight:650;letter-spacing:-0.01em}
+.sec-s{margin:0 0 18px;color:var(--meta);font-size:13.5px;line-height:1.55;max-width:90ch}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:stretch}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.cell{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;display:flex;flex-direction:column}
+.cap{padding:13px 16px 12px;border-bottom:1px solid var(--line)}
+.cap b{display:block;font-size:14px;font-weight:600}
+.cap span{display:block;font-size:12.5px;color:var(--meta);margin-top:3px;line-height:1.5}
+.stage{flex:1;background:var(--bg);padding:18px;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+/* trigger */
+.trig{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--meta)}
+.trig .pv{min-height:30px;display:inline-flex;align-items:center;gap:7px;padding:0 9px;border-radius:7px;background:var(--panel);color:var(--text);font-size:13.5px;font-weight:500;box-shadow:0 0 0 2px var(--accent)}
+.trig .pv .av{width:20px;height:20px;font-size:8.5px}
+/* popover */
+.pop{background:var(--panel);border:1px solid var(--line2);border-radius:10px;box-shadow:var(--pop-shadow);overflow:hidden;width:100%;max-width:300px;box-sizing:border-box}
+.pop-s{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-bottom:1px solid var(--line);color:var(--meta);font-size:13.5px}
+.pop-s .q{color:var(--text)}
+.pop-s .caret{width:1.5px;height:16px;background:var(--accent);margin-left:-6px}
+.pop-s .kbd{margin-left:auto}
+.pop-l{padding:4px 0}
+.og{font-size:11.5px;color:var(--meta);font-weight:600;padding:8px 14px 3px}
+.opt{display:flex;align-items:center;gap:9px;min-height:34px;padding:0 10px;margin:0 4px;border-radius:7px;font-size:13.5px}
+.opt.hl{background:var(--hover)}
+.opt .k{margin-left:auto}
+.opt .ck{margin-left:auto;color:var(--accent-text)}
+.opt small{display:block;font-size:11.5px;color:var(--meta)}
+.opt.tall{min-height:44px}
+.opt.dis{color:var(--meta)}
+.opt.dis .av{opacity:.55}
+.opt u{text-decoration:none;font-weight:700;color:var(--accent-text)}
+.sepl{height:1px;background:var(--line);margin:4px 0}
+.pop-f{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:8px 12px;font-size:12px;color:var(--meta)}
+.pop-f a{color:var(--accent-text);font-weight:500}
+.pop-f .btn{margin-left:auto}
+/* calendar */
+.quick{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line)}
+.quick span{height:26px;padding:0 9px;border-radius:999px;border:1px solid var(--line2);font-size:12px;display:inline-flex;align-items:center;color:var(--muted);font-weight:500}
+.cal-h{display:flex;align-items:center;gap:4px;padding:8px 8px 4px 14px;font-size:13.5px;font-weight:600}
+.cal-h .nav{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--meta)}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px 8px;row-gap:2px}
+.wd{height:26px;display:grid;place-items:center;font-size:11.5px;color:var(--meta);font-weight:600}
+.dd{height:32px;display:grid;place-items:center;font-size:13px;font-variant-numeric:tabular-nums}
+.dd.out{color:var(--meta);opacity:.55}
+.dd.we{color:var(--meta)}
+.dd.rng{background:var(--accent-soft)}
+.dd.rs{background:var(--accent-soft);border-radius:8px 0 0 8px}
+.dd.sel{background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:8px}
+.dd.today{box-shadow:inset 0 0 0 1.5px var(--accent);border-radius:8px;color:var(--accent-text);font-weight:700}
+/* composer + mention */
+.comp{width:100%;max-width:340px;border:1px solid var(--line2);border-radius:10px;background:var(--panel);padding:10px 12px;font-size:14px;box-sizing:border-box;box-shadow:0 0 0 2px var(--accent-soft)}
+.comp .at{color:var(--accent-text);background:var(--accent-soft);border-radius:4px;padding:0 2px}
+.warnline{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;color:var(--warn-text);margin-top:2px;line-height:1.4}
+.warnline .i{width:13px;height:13px;margin-top:1px}
+/* segmented */
+.seg{display:flex;gap:2px;padding:3px;margin:10px 12px 2px;background:var(--hover);border-radius:8px}
+.seg span{flex:1;height:26px;border-radius:6px;display:grid;place-items:center;font-size:12.5px;color:var(--muted);font-weight:500}
+.seg span.on{background:var(--panel);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.opt .tag2{margin-left:auto;font-size:11.5px;color:var(--meta)}
+/* upload */
+.up{width:100%;display:flex;flex-direction:column;gap:6px}
+.uf{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--panel);border:1px solid var(--line)}
+.uf.err{border-color:var(--danger);background:var(--danger-soft)}
+.ft{width:32px;height:32px;border-radius:7px;display:grid;place-items:center;font-size:9px;font-weight:700;flex:none}
+.ft.p{background:#FDE5EA;color:#9E1736}
+.ft.g{background:#EEE7FB;color:#5532A8}
+.ft.z{background:#ECEEF2;color:#3E4757}
+.mode-dem .ft.p{background:#4A1A26;color:#FFA8B8}
+.mode-dem .ft.g{background:#2E2350;color:#C9B6FA}
+.mode-dem .ft.z{background:#262E39;color:#C3CBD6}
+.uf .nm{font-size:13px;font-weight:500;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uf small{font-size:11.5px;color:var(--meta);display:block}
+.uf.err small{color:var(--danger);font-weight:500}
+.bar{height:4px;border-radius:2px;background:var(--hover);margin-top:5px;overflow:hidden}
+.bar span{display:block;height:100%;width:64%;background:var(--accent)}
+.uf .x{margin-left:auto;color:var(--meta);display:grid;place-items:center;width:26px;height:26px;border-radius:6px}
+.dropon{width:100%;height:64px;border:1.5px dashed var(--accent);background:var(--accent-soft);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--accent-text);font-weight:600;font-size:13px;box-sizing:border-box}
+/* toasts */
+.toasts{display:flex;flex-direction:column;gap:8px;width:100%}
+.toast{display:flex;align-items:center;gap:10px;background:var(--toast);color:var(--toast-ink);border-radius:10px;padding:10px 10px 10px 14px;font-size:13px;box-shadow:var(--pop-shadow)}
+.toast .i{width:16px;height:16px}
+.toast .ok{color:#6FD39B}
+.toast .bad{color:#FF8DA0}
+.toast .inf{color:#8CC4FF}
+.toast small{display:block;color:var(--toast-meta);font-size:12px}
+.toast a{margin-left:auto;color:#8CC4FF;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap}
+.toast .tb{margin-left:auto;color:#8CC4FF;font:inherit;font-size:13px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;background:transparent;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.toast .tx{color:var(--toast-meta);background:transparent;border:0;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;cursor:pointer;flex:none}
+.toast .tm{font-size:11px;color:var(--toast-meta);white-space:nowrap}
+/* state frames */
+.fr{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;display:flex;flex-direction:column;height:300px}
+.fr-h{display:flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--meta);flex:none;background:var(--bg)}
+.fr-h .mono{color:var(--muted);font-weight:500}
+.fr-b{flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden}
+.fr-b h4{margin:0;font-size:15px;font-weight:650;line-height:1.35;text-wrap:balance}
+.fr-c{margin-top:8px}
+.fr-c b{display:block;font-size:13.5px;font-weight:600}
+.fr-c span{display:block;font-size:12px;color:var(--meta);margin-top:2px;line-height:1.5}
+.lbl{font-size:11px;color:var(--meta);font-weight:600}
+.ph{font-size:12.5px;color:var(--meta)}
+.empty{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--meta);border:1px dashed var(--line2);border-radius:8px;padding:8px 10px}
+.empty b{color:var(--accent-text);font-weight:500}
+.sk{background:var(--skel);border-radius:6px;height:12px}
+@media (prefers-reduced-motion: no-preference){.sk{background:linear-gradient(90deg,var(--skel) 0%,var(--skel-hi) 50%,var(--skel) 100%);background-size:200% 100%;animation:sk 1.4s ease-in-out infinite}}
+@keyframes sk{from{background-position:100% 0}to{background-position:-100% 0}}
+.bn{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.45;border:1px solid var(--line2)}
+.bn .i{width:14px;height:14px;margin-top:1px}
+.bn.ok{background:var(--done-soft);border-color:transparent;color:var(--done-text)}
+.bn.warn{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn-text)}
+.bn.info{background:var(--bg);color:var(--muted)}
+.bn b{font-weight:600}
+.bn a{font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.mrow{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.mrow .k{color:var(--meta);width:72px;flex:none}
+.pend{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--warn-text);font-weight:600}
+.pend::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--st-review)}
+.muted-all{opacity:.62}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:0 12px}
+.center .ic{width:44px;height:44px;border-radius:12px;background:var(--hover);display:grid;place-items:center;color:var(--muted)}
+.center b{font-size:14px;font-weight:650}
+.center p{margin:0;font-size:12.5px;color:var(--meta);line-height:1.55;max-width:34ch}
+.center .acts{display:flex;gap:6px;margin-top:4px}
+.ckr{display:flex;align-items:center;gap:8px;font-size:12.5px;min-height:24px}
+.box{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--line2);box-sizing:border-box;flex:none}
+.box.on{background:var(--st-done);border-color:var(--st-done)}
+.fade{position:relative}
+.fade::after{content:"";position:absolute;left:0;right:0;bottom:0;height:28px;background:linear-gradient(transparent,var(--panel))}
+.lnk{font-size:12px;color:var(--accent-text);font-weight:600}
+</style>
+</helmet>
+<div class="nx mode-{{mode}}" style="width:100%;min-height:2720px">
+<div class="wrap">
+  <header class="hd">
+    <div>
+      <h1>Ô chọn và trạng thái hệ thống</h1>
+      <p>Dùng chung cho mọi màn: Kanban, Bảng, Lịch, Dòng thời gian, bảng bên và trang chi tiết. Bấm vào thuộc tính nào thì mở ô chọn của trường đó ngay tại chỗ; gõ để lọc, ↑↓ để đi, Enter để chọn, Esc để đóng mà không đổi gì.</p>
+    </div>
+    <a class="back" href="Final-Detail.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>Về trang chi tiết ERP-142</a>
+  </header>
+
+  <h2 class="sec-t">Ô chọn thuộc tính</h2>
+  <p class="sec-s">Mỗi ô chọn lấy lựa chọn từ cấu hình trường của board, nên đổi ở Thiết lập board thì mọi nơi đổi theo. Chọn xong là lưu ngay, kèm thông báo có nút Hoàn tác; không có nút Lưu riêng.</p>
+
+  <div class="g3">
+    <section class="cell" aria-labelledby="c-st">
+      <div class="cap"><b id="c-st">Trạng thái</b><span>Phím S mở, phím số chọn ngay. Đổi ở đây cũng là kéo thẻ sang cột khác trên Kanban.</span></div>
+      <div class="stage">
+        <div class="trig">Trạng thái<span class="pv"><span class="dot doing"></span>Đang làm</span></div>
+        <div class="pop" role="listbox" aria-label="Đổi trạng thái">
+          <div class="pop-s"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span>Đổi trạng thái…</span><span class="kbd">S</span></div>
+          <div class="pop-l">
+            <div class="opt" role="option"><span class="dot todo"></span>Cần làm<span class="kbd k">1</span></div>
+            <div class="opt" role="option" aria-selected="true"><span class="dot doing"></span>Đang làm<svg class="i ck" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></div>
+            <div class="opt hl" role="option"><span class="dot review"></span>Chờ duyệt<span class="kbd k">3</span></div>
+            <div class="opt" role="option"><span class="dot done"></span>Hoàn thành<span class="kbd k">4</span></div>
+          </div>
+          <div class="pop-f"><a href="Final-Settings.dc.html">Sửa danh sách trạng thái</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cell" aria-labelledby="c-pp">
+      <div class="cap"><b id="c-pp">Người phụ trách</b><span>Chỉ chọn được người xem được board. Người ngoài board phải được mời trước, không giao việc cho người không thấy việc. Chỉ người quản lý board thấy nút Mời vào; người khác thấy "Nhờ quản lý board mời" (WM-040).</span></div>
+      <div class="stage">
+        <div class="trig">Người phụ trách<span class="pv"><span class="av" style="background:#1E6FD0">MQ</span>Trần Minh Quân</span></div>
+        <div class="pop" role="listbox" aria-label="Chọn người phụ trách">
+          <div class="pop-s"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span class="q">ph</span><span class="caret"></span></div>
+          <div class="pop-l">
+            <div class="og">Thành viên board</div>
+            <div class="opt tall hl" role="option"><span class="av" style="background:#B4500B">HP</span><span>Lê Hoàng <u>Ph</u>úc<small>Công nghệ · đang làm 3 việc</small></span></div>
+            <div class="opt tall" role="option"><span class="av" style="background:#7C4DDB">NA</span><span><u>Ph</u>an Ngọc Anh<small>Công nghệ · đang làm 5 việc</small></span></div>
+            <div class="og">Chưa vào board</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-right:8px"><div class="opt tall dis" role="option" aria-disabled="true" style="flex:1;min-width:0"><span class="av" style="background:#9A6A12">ĐT</span><span><u>Ph</u>ùng Đức Thịnh<small>Kế toán · không xem được board</small></span></div><button class="btn sm" type="button" aria-label="Mời Phùng Đức Thịnh vào board">Mời vào</button></div>
+          </div>
+          <div class="pop-f"><span>Bỏ trống: <span class="kbd">⌫</span></span><span class="grow"></span><span>Tự giao cho tôi <span class="kbd">I</span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cell" aria-labelledby="c-dt">
+      <div class="cap"><b id="c-dt">Hạn chót</b><span>Dải nền là khoảng từ Ngày bắt đầu đến Hạn. Ô viền là hôm nay. Giờ theo múi giờ Hà Nội của workspace.</span></div>
+      <div class="stage">
+        <div class="trig">Hạn chót<span class="pv" style="color:var(--danger);font-weight:600">10/10 · Quá hạn 2 ngày</span></div>
+        <div class="pop" role="dialog" aria-label="Chọn hạn chót">
+          <div class="quick"><span>Hôm nay</span><span>Ngày mai</span><span>Thứ Sáu</span><span>Tuần sau</span></div>
+          <div class="cal-h">Tháng 10, 2026<span class="grow"></span><span class="nav" aria-label="Tháng trước"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></span><span class="nav" aria-label="Tháng sau"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></span></div>
+          <div class="cal-g" role="grid">
+            <sc-for list="{{wds}}" as="w" hint-placeholder-count="7"><span class="wd">{{w}}</span></sc-for>
+            <sc-for list="{{days}}" as="d" hint-placeholder-count="35"><span class="dd {{d.cls}}">{{d.n}}</span></sc-for>
+          </div>
+          <div class="pop-f"><span>+ Thêm giờ</span><span class="grow"></span><button class="btn sm ghost" type="button" style="margin:0">Xoá hạn</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cell" aria-labelledby="c-pr">
+      <div class="cap"><b id="c-pr">Mức ưu tiên</b><span>Phím P. Màu và thứ tự lấy từ <a class="lnk" href="Final-Settings.dc.html">Thiết lập board</a>; "Không đặt" luôn có để bỏ chọn.</span></div>
+      <div class="stage">
+        <div class="trig">Mức ưu tiên<span class="pv" style="color:var(--danger);font-weight:600">Khẩn</span></div>
+        <div class="pop" role="listbox" aria-label="Chọn mức ưu tiên" style="max-width:240px">
+          <div class="pop-l">
+            <div class="opt" role="option" aria-selected="true"><span class="dot" style="background:var(--danger)"></span>Khẩn<svg class="i ck" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg></div>
+            <div class="opt hl" role="option"><span class="dot" style="background:var(--high)"></span>Cao<span class="kbd k">2</span></div>
+            <div class="opt" role="option"><span class="dot" style="background:var(--st-doing)"></span>Trung bình<span class="kbd k">3</span></div>
+            <div class="opt" role="option"><span class="dot todo"></span>Thấp<span class="kbd k">4</span></div>
+            <div class="sepl"></div>
+            <div class="opt" role="option" style="color:var(--meta)">Không đặt<span class="kbd k">0</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cell" aria-labelledby="c-mn">
+      <div class="cap"><b id="c-mn">Nhắc tên trong bình luận</b><span>Gõ @ để gợi ý người và nhóm. Nhắc người không xem được việc thì báo trước, vì họ sẽ không nhận được thông báo và cũng không được thêm quyền (COL-030).</span></div>
+      <div class="stage">
+        <div class="pop" role="listbox" aria-label="Gợi ý nhắc tên" style="max-width:340px">
+          <div class="pop-l">
+            <div class="opt tall hl" role="option"><span class="av" style="background:#9A6A12">KL</span><span>Đỗ <u>Kh</u>ánh Linh<small>Phòng Kế toán · quyền bình luận</small></span></div>
+            <div class="opt tall" role="option"><span class="dm" style="background:#9A6A12;width:24px;height:24px;border-radius:7px;font-size:9px">KT</span><span>Nhóm <u>K</u>ế toán tổng hợp<small>6 người · cả 6 xem được việc</small></span></div>
+            <div class="opt tall dis" role="option"><span class="av" style="background:#0F766E">KV</span><span><u>Kh</u>úc Văn Tài<small>Kho vận</small><span class="warnline"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>Không xem được việc này, nhắc tên sẽ không báo cho Tài</span></span></div>
+          </div>
+        </div>
+        <div class="comp">Chị <span class="at">@Kh</span> xem lại file công nợ giúp em</div>
+      </div>
+    </section>
+
+    <section class="cell" aria-labelledby="c-lk">
+      <div class="cap"><b id="c-lk">Thêm liên kết</b><span>Chọn kiểu liên kết trước rồi tìm việc. Việc đã liên kết hoặc sẽ tạo vòng chờ nhau thì không chọn được, kèm lý do.</span></div>
+      <div class="stage">
+        <div class="pop" role="dialog" aria-label="Thêm liên kết" style="max-width:360px">
+          <div class="seg" role="radiogroup" aria-label="Kiểu liên kết"><span role="radio" aria-checked="false">Đang chờ</span><span class="on" role="radio" aria-checked="true">Đang chặn</span><span role="radio" aria-checked="false">Liên quan</span></div>
+          <div class="pop-s" style="border-top:0"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span class="q">ERP-1</span><span class="caret"></span></div>
+          <div class="pop-l">
+            <div class="opt tall hl" role="option"><span class="dot doing"></span><span style="min-width:0;flex:1"><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span class="mono" style="font-size:12px;color:var(--meta)">ERP-144</span> Kiểm thử phân hệ công nợ với số liệu tháng 9</span><small>CN · Triển khai ERP Q4</small></span></div>
+            <div class="opt tall dis" role="option" aria-disabled="true"><span class="dot todo"></span><span style="min-width:0;flex:1"><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span class="mono" style="font-size:12px">ERP-146</span> Đồng bộ tồn kho giữa kho Bình Dương và kho Long An</span><small>CN · Triển khai ERP Q4</small></span><span class="tag2" style="flex:none">Đã liên kết</span></div>
+            <div class="opt tall dis" role="option" aria-disabled="true"><span class="dot done"></span><span style="min-width:0;flex:1"><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span class="mono" style="font-size:12px">ERP-129</span> Chốt danh mục tài khoản kế toán dùng chung</span><span style="display:block;font-size:11.5px">CN · Triển khai ERP Q4</span><span class="warnline"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>ERP-142 đang chờ ERP-129, chặn ngược sẽ thành vòng chờ nhau (WM-039)</span></span></div>
+          </div>
+          <div class="pop-f"><span>Tìm theo mã hoặc tên, mọi board bạn xem được</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cell" aria-labelledby="c-up">
+      <div class="cap"><b id="c-up">Tải tệp</b><span>Kéo thả vào bất kỳ đâu trên việc. Tệp lỗi giữ lại trong danh sách với lý do và cách xử lý, không biến mất.</span></div>
+      <div class="stage">
+        <div class="dropon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 10l5-5 5 5M5 20h14"></path></svg>Thả để đính kèm vào ERP-142</div>
+        <div class="up">
+          <div class="uf"><span class="ft p">PDF</span><span style="min-width:0;flex:1"><span class="nm">bien-ban-doi-chieu.pdf</span><small>Đang tải 64% · 1,2 / 1,9 MB</small><span class="bar" style="display:block"><span></span></span></span><button class="x" type="button" aria-label="Bỏ tệp bien-ban-doi-chieu.pdf" style="border:0;background:transparent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+          <div class="uf err"><span class="ft z">ZIP</span><span style="min-width:0;flex:1"><span class="nm">du-lieu-goc-48k.zip</span><small>Vượt giới hạn 100 MB mỗi tệp. Nén nhỏ lại hoặc gửi liên kết.</small></span><button class="btn sm" type="button">Thử lại</button><button class="btn sm ghost" type="button" style="padding:0 6px">Bỏ qua</button><button class="x" type="button" aria-label="Bỏ tệp du-lieu-goc-48k.zip" style="border:0;background:transparent;margin-left:0"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+          <div class="uf"><span class="ft g">PNG</span><span style="min-width:0;flex:1"><span class="nm">loi-gop-trung.png</span><small>Đã tải · 840 KB</small></span><button class="x" type="button" aria-label="Bỏ tệp loi-gop-trung.png" style="border:0;background:transparent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cell" aria-labelledby="c-ts" style="grid-column:span 2">
+      <div class="cap"><b id="c-ts">Thông báo nhanh</b><span>Góc dưới bên trái, tối đa 3 cái. Thành công tự ẩn sau 6 giây và luôn có Hoàn tác. Lỗi không tự ẩn cho đến khi xử lý xong. Thay đổi của người khác chỉ báo khi đang mở đúng việc đó.</span></div>
+      <div class="stage" style="flex-direction:row;gap:20px;align-items:flex-start">
+        <div class="toasts" style="max-width:420px">
+          <div class="toast" role="status"><svg class="i ok" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg><span>Đã chuyển <a class="mono" href="Final-Detail.dc.html" style="margin:0;padding:0;color:inherit;font-weight:500;text-decoration:underline;text-underline-offset:2px">ERP-142</a> sang Hoàn thành</span><button class="tb" type="button">Hoàn tác <span class="kbd" style="background:transparent;color:var(--toast-meta);border-color:#3B4656">⌘Z</span></button></div>
+          <div class="toast" role="alert"><svg class="i bad" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg><span>Chưa lưu được Hạn chót<small>Máy chủ không phản hồi. Giá trị cũ 10/10 vẫn giữ nguyên.</small></span><button class="tb" type="button">Thử lại</button><button class="tx" type="button" aria-label="Đóng thông báo lỗi"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+          <div class="toast" role="status"><svg class="i inf" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Lê Hoàng Phúc vừa thêm 1 việc con<small>Danh sách đã cập nhật</small></span><span class="tm">vừa xong</span></div>
+        </div>
+        <div style="flex:1;font-size:13px;color:var(--muted);line-height:1.6;max-width:46ch">
+          <b style="display:block;color:var(--text);font-weight:600;margin-bottom:4px">Khi nào hiện, khi nào không</b>
+          Đổi một thuộc tính: chỉ hiện thông báo khi có thể hoàn tác hoặc khi lưu lỗi; sửa chữ trong mô tả thì không báo gì.<br>
+          Lưu lỗi: giá trị trên màn quay về giá trị cũ, không để màn hiện một giá trị chưa được lưu.<br>
+          Nhiều thay đổi cùng lúc, ví dụ chọn 12 thẻ rồi đổi trạng thái, thì gộp thành một thông báo.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="sec-t">Trạng thái của trang chi tiết</h2>
+  <p class="sec-s">Cùng khung như trang chi tiết toàn trang, thu nhỏ để so sánh. Bảng bên và khung xem giữa màn hình dùng đúng các trạng thái này.</p>
+
+  <div class="g4">
+    <div>
+      <div class="fr" role="group" aria-label="Đang tải">
+        <div class="fr-h"><span class="dm" style="background:#1E6FD0">CN</span>Triển khai ERP Q4 /<span class="mono">ERP-142</span></div>
+        <div class="fr-b">
+          <div class="sk" style="width:38%;height:10px"></div>
+          <div class="sk" style="width:88%;height:18px"></div>
+          <div class="sk" style="width:62%;height:18px"></div>
+          <div class="sk" style="width:100%;margin-top:10px"></div>
+          <div class="sk" style="width:94%"></div>
+          <div class="sk" style="width:70%"></div>
+          <div class="sk" style="width:100%;height:34px;margin-top:10px;border-radius:8px"></div>
+          <div class="sk" style="width:100%;height:34px;border-radius:8px"></div>
+        </div>
+      </div>
+      <div class="fr-c"><b>Đang tải</b><span>Hiện khung ngay theo đúng bố cục, không xoay vòng giữa trang. Mã việc và vị trí có sẵn từ liên kết nên hiện trước. Sau 8 giây chưa xong thì báo "Đang tải lâu hơn bình thường".</span></div>
+    </div>
+
+    <div>
+      <div class="fr" role="group" aria-label="Việc mới, chưa có nội dung">
+        <div class="fr-h"><span class="dm" style="background:#1E6FD0">CN</span>Triển khai ERP Q4 /<span class="mono">ERP-154</span></div>
+        <div class="fr-b">
+          <h4>Kiểm tra quyền xem báo cáo thuế</h4>
+          <div class="ph">Thêm mô tả… gõ / để chèn bảng, việc, tài liệu</div>
+          <div class="lbl">Việc con</div>
+          <div class="empty"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"></path></svg>Chưa có việc con. <b>Thêm việc con</b></div>
+          <div class="lbl">Hoạt động</div>
+          <div class="ph">Nguyễn Thu Hà tạo việc này · vừa xong</div>
+          <div class="empty" style="border-style:solid">Viết bình luận, gõ @ để nhắc ai đó…</div>
+        </div>
+      </div>
+      <div class="fr-c"><b>Việc mới, chưa có gì</b><span>Mỗi khối trống nói luôn việc cần làm tiếp, không để vùng trắng. Các trường chưa điền ẩn đi, gom vào "Hiện 8 trường trống".</span></div>
+    </div>
+
+    <div>
+      <div class="fr" role="group" aria-label="Đã hoàn thành">
+        <div class="fr-h"><span class="dm" style="background:#1E6FD0">CN</span>Triển khai ERP Q4 /<span class="mono">ERP-131</span><span class="grow"></span><a class="lnk" href="Final-Board.dc.html" style="font-size:11.5px">Về board</a></div>
+        <div class="fr-b">
+          <div class="bn ok"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg><span><b>Hoàn thành ngày 06/10</b> bởi Vũ Thanh.</span><span class="grow"></span><button class="btn sm" type="button" style="height:24px">Mở lại</button></div>
+          <h4>Sao lưu cơ sở dữ liệu tự động hằng đêm</h4>
+          <div class="mrow"><span class="k">Trạng thái</span><span class="dot done"></span>Hoàn thành</div>
+          <div class="mrow"><span class="k">Hạn chót</span>08/10 · xong sớm 2 ngày</div>
+          <div class="ckr"><span class="box on"></span><span style="text-decoration:line-through;color:var(--meta)">Cấu hình lịch chạy 2 giờ sáng</span></div>
+          <div class="ckr"><span class="box on"></span><span style="text-decoration:line-through;color:var(--meta)">Thử khôi phục từ bản sao lưu</span></div>
+        </div>
+      </div>
+      <div class="fr-c"><b>Đã hoàn thành</b><span>Vẫn sửa và bình luận được như thường. Hạn không còn tô đỏ mà nói xong sớm hay trễ bao nhiêu.</span></div>
+    </div>
+
+    <div>
+      <div class="fr" role="group" aria-label="Đã lưu trữ">
+        <div class="fr-h"><span class="dm" style="background:#1E6FD0">CN</span>Triển khai ERP Q4 /<span class="mono">ERP-118</span><span class="grow"></span><a class="lnk" href="Final-Board.dc.html" style="font-size:11.5px">Về board</a></div>
+        <div class="fr-b">
+          <div class="bn info"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"></rect><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"></path></svg><span><b>Đã lưu trữ ngày 08/10</b> bởi Nguyễn Thu Hà. Chỉ xem, không sửa.</span><span class="grow"></span><button class="btn sm" type="button" style="height:24px">Khôi phục</button></div>
+          <div class="muted-all" style="display:flex;flex-direction:column;gap:10px">
+            <h4>Khảo sát nhà cung cấp phần mềm kho</h4>
+            <div class="mrow"><span class="k">Trạng thái</span><span class="dot todo"></span>Cần làm</div>
+            <div class="mrow"><span class="k">Người làm</span>Vũ Thanh</div>
+            <div class="ph">Không còn cần vì đã chọn phân hệ kho của ERP.</div>
+          </div>
+        </div>
+      </div>
+      <div class="fr-c"><b>Đã lưu trữ</b><span>Không hiện trong các chế độ xem nhưng vẫn tìm được bằng ⌘K và trong Thiết lập › Đã lưu trữ. Khôi phục trả việc về đúng cột cũ.</span></div>
+    </div>
+
+    <div>
+      <div class="fr" role="group" aria-label="Không có quyền xem">
+        <div class="fr-h"><span class="mono">ERP-171</span></div>
+        <div class="fr-b">
+          <div class="center">
+            <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5M8.5 8.5l5 5M13.5 8.5l-5 5"></path></svg></span>
+            <b>Không tìm thấy ERP-171</b>
+            <p>Mã này không có hoặc việc đã bị xoá hẳn. Nếu việc chỉ chuyển sang board khác, liên kết cũ vẫn tự dẫn tới chỗ mới.</p>
+            <div class="acts"><a class="btn sm" href="Final-Command.dc.html">Tìm bằng ⌘K</a><a class="btn sm" href="Final-Home.dc.html">Về trang chủ</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="fr-c"><b>Không có quyền xem</b><span>Không có quyền trông giống hệt không tìm thấy (GOV-025). Không có nút xin quyền, vì nút đó xác nhận việc tồn tại. Muốn vào, nhờ người gửi liên kết thêm bạn vào board.</span></div>
+    </div>
+
+    <div>
+      <div class="fr" role="group" aria-label="Không tìm thấy">
+        <div class="fr-h"><span class="mono">ERP-999</span></div>
+        <div class="fr-b">
+          <div class="center">
+            <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5M8.5 8.5l5 5M13.5 8.5l-5 5"></path></svg></span>
+            <b>Không tìm thấy ERP-999</b>
+            <p>Mã này không có hoặc việc đã bị xoá hẳn. Nếu việc chỉ chuyển sang board khác, liên kết cũ vẫn tự dẫn tới chỗ mới.</p>
+            <div class="acts"><a class="btn sm" href="Final-Command.dc.html">Tìm bằng ⌘K</a><a class="btn sm" href="Final-Home.dc.html">Về trang chủ</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="fr-c"><b>Không tìm thấy</b><span>Trả lời giống hệt khi mã không tồn tại, để không ai dò được mã nào đang có mà mình không được xem.</span></div>
+    </div>
+
+    <div>
+      <div class="fr" role="group" aria-label="Mất kết nối">
+        <div class="fr-h"><span class="dm" style="background:#1E6FD0">CN</span>Triển khai ERP Q4 /<span class="mono">ERP-142</span></div>
+        <div class="fr-b">
+          <div class="bn warn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.4a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"></path></svg><span><b>Mất kết nối.</b> 2 thay đổi đang chờ, sẽ tự lưu khi có mạng lại. Đừng đóng tab.</span></div>
+          <h4>Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP</h4>
+          <div class="mrow"><span class="k">Hạn chót</span>14/10<span class="pend">chờ lưu</span></div>
+          <div class="mrow"><span class="k">Việc con</span>Đối chiếu công nợ<span class="pend">chờ lưu</span></div>
+          <div class="mrow"><span class="k">Người làm</span>Trần Minh Quân</div>
+        </div>
+      </div>
+      <div class="fr-c"><b>Mất kết nối</b><span>Từng thay đổi chưa lưu có dấu riêng. Có mạng lại thì gửi lần lượt; nếu ai đó đã sửa cùng trường thì chuyển sang trạng thái xung đột ở trang Chi tiết (tweak xung-dot), không ghi đè.</span></div>
+    </div>
+
+    <div>
+      <div class="fr" role="group" aria-label="Nội dung rất dài">
+        <div class="fr-h"><span class="dm" style="background:#1E6FD0">CN</span>Triển khai ERP Q4 /<span class="mono">ERP-160</span></div>
+        <div class="fr-b">
+          <h4>Rà soát và chuẩn hoá toàn bộ danh mục vật tư, hàng hoá, mã kho và đơn vị tính của 14 chi nhánh trước khi nhập số dư đầu kỳ vào ERP</h4>
+          <div class="fade ph" style="line-height:1.55;max-height:56px;overflow:hidden">Danh mục hiện có 23.400 mã, trong đó khoảng 4.100 mã trùng tên khác đơn vị tính giữa các chi nhánh phía Bắc và phía Nam, cần gộp theo quy tắc…</div>
+          <span class="lnk">Xem toàn bộ mô tả</span>
+          <div class="lbl">Việc con 12/48</div>
+          <div class="ckr"><span class="box on"></span><span style="color:var(--meta);text-decoration:line-through">Chi nhánh Hà Nội</span></div>
+          <div class="ckr"><span class="box"></span><span>Chi nhánh Hải Phòng</span></div>
+          <span class="lnk">Hiện 46 việc con còn lại</span>
+        </div>
+      </div>
+      <div class="fr-c"><b>Nội dung rất dài</b><span>Tiêu đề không cắt ở trang chi tiết, chỉ cắt trên thẻ và dòng bảng. Mô tả dài thu lại sau 6 dòng; việc con và hoạt động hiện từng phần, tải thêm khi cuộn.</span></div>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":1440,"height":2720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const days = [];
+    const lead = [28, 29, 30];
+    lead.forEach(n => days.push({ n, cls: 'out' }));
+    for (let n = 1; n <= 31; n++) {
+      const dow = (n + 2) % 7; // 0 = Thứ Hai (1/10/2026 là Thứ Năm)
+      let cls = dow >= 5 ? 'we' : '';
+      if (n === 1) cls = 'rs';
+      else if (n > 1 && n < 10) cls = 'rng';
+      if (n === 10) cls = 'sel';
+      if (n === 12) cls = 'today';
+      days.push({ n, cls });
+    }
+    days.push({ n: 1, cls: 'out' });
+    return {
+      mode: this.props.mode ?? 'sang',
+      wds: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+      days
+    };
+  }
+}
+</script>
+</body>
+</html>

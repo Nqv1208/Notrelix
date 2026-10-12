@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Di động · Tài liệu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* mobile shell — shared (copy verbatim into every Final-M-*.dc.html; source Final-M-Home) */
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--ring:#7A8391;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok-soft:#E2F1E7;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--high:#B4500B;--badge:#C42340;--scrim:rgba(15,23,42,.42);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--ring:#8C95A3;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--ok-soft:#153024;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--high:#FFA060;--badge:#C42340;--scrim:rgba(0,0,0,.6);--act-done:#1F7A4A;--act-snooze:#8A5A00;--act-neutral:#4F5866}
+.nx.m{width:390px;height:844px;position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:0}
+.nx.m .app-layer{flex:1;min-height:0;display:flex;flex-direction:column}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.lg{width:24px;height:24px}
+.i.sm{width:14px;height:14px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}
+/* status bar 47px (decorative) */
+.sbar{height:47px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0 34px;box-sizing:border-box;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--bg);color:var(--text)}
+.sbar .sg{display:flex;align-items:center;gap:6px}
+.sbar svg{display:block}
+/* top bar 52px: leading control · spacer · trailing icon buttons */
+.tbar{height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 8px 0 10px;background:var(--bg)}
+.tbar .sp{flex:1}
+.tbar-t{flex:1;min-width:0;text-align:center;font-size:17px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0;flex:none;text-decoration:none;font:inherit}
+.ib:hover,.ib:active{background:var(--hover2)}
+.ib .me{width:32px;height:32px;border-radius:50%;background:#4E8574;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.wschip{height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;border-radius:12px;border:0;background:transparent;font:inherit;font-size:16px;font-weight:650;color:var(--text);cursor:pointer;min-width:0}
+.wschip:hover,.wschip:active{background:var(--hover2)}
+.wschip .dm{width:28px;height:28px;border-radius:8px;font-size:11px}
+.wschip .i{color:var(--meta)}
+/* scrolling content between top bar and tab bar (mockup clips at the bottom) */
+.content{flex:1;min-height:0;overflow:hidden;padding:0 16px 24px;display:flex;flex-direction:column;gap:18px}
+.tbar.scrolled{box-shadow:0 1px 0 var(--line)}
+.ltitle{margin:0;font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.2}
+.lsub{margin:4px 0 0;font-size:13px;color:var(--muted)}
+/* chips: horizontal scroll, 44px */
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none;flex:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.chip b{font-weight:700;font-variant-numeric:tabular-nums}
+.chip.over{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.chip.today{background:var(--warn-soft);border-color:transparent;color:var(--warn-text)}
+.chip.on{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:600}
+/* section heading */
+.sec{display:flex;flex-direction:column}
+.sec-h{display:flex;align-items:center;gap:8px;min-height:40px;margin:0 0 4px;font-size:17px;font-weight:650;letter-spacing:-0.01em}
+.sec-h .n{color:var(--meta);font-weight:500;font-size:15px}
+.sec-h.over{color:var(--danger)}
+.sec-h a{margin-left:auto;margin-right:-8px;height:44px;padding:0 8px;display:inline-flex;align-items:center;font-size:14px;font-weight:500;color:var(--accent-text);text-decoration:none}
+/* grouped list + rows: [tick 44][link: title 2 lines + meta | due][⋯ 44] */
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.lrow{position:relative;border-top:1px solid var(--line);overflow:hidden}
+.lrow:first-child{border-top:0}
+.lrow-in{position:relative;z-index:1;display:flex;align-items:flex-start;gap:0;padding:6px 0 6px 2px;background:var(--panel)}
+.tick{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer;border-radius:12px}
+.tick span{width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:1.75px solid var(--ring);display:block}
+.lr-main{flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px;padding:5px 0;min-height:44px;box-sizing:border-box;text-decoration:none;color:var(--text);border-radius:8px}
+.lr-txt{flex:1;min-width:0}
+.lr-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px;font-weight:500;line-height:1.36}
+.lr-m{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;color:var(--meta);white-space:nowrap;min-width:0}
+.lr-m .bd{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lr-m .mono{font-size:12px;flex:none}
+.lr-end{flex:none;width:70px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;font-size:13px;line-height:1.3;color:var(--meta);font-variant-numeric:tabular-nums;padding-top:1px}
+.lr-end.over{color:var(--danger);font-weight:600}
+.lr-end.today{color:var(--warn-text);font-weight:600}
+.pr{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600}
+.pr.urgent{color:var(--danger)}
+.pr.high{color:var(--high)}
+.lr-more{color:var(--meta)}
+.lrow-link{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 8px 0 16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);text-decoration:none}
+.lrow-link .go{margin-left:auto;color:var(--accent-text);font-weight:500;display:inline-flex;align-items:center;gap:2px}
+/* swipe: the front layer slides left over .swipe-acts (each action 76px) */
+.lrow.swiped .lrow-in{transform:translateX(-152px)}
+.swipe-acts{position:absolute;top:0;right:0;bottom:0;display:flex}
+.swipe-acts button{width:76px;border:0;margin:0;padding:0;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+.swipe-acts .snooze{background:var(--act-snooze)}
+.swipe-acts .done{background:var(--act-done)}
+/* buttons */
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:15px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.block{width:100%;min-height:50px}
+/* chips & avatars */
+.dm{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.dm.sm{width:16px;height:16px;font-size:7.5px;border-radius:4px}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;color:#fff;flex:none}
+/* bottom tab bar 49 + 34 safe area */
+.tabbar{flex:none;height:83px;box-sizing:border-box;padding:0 4px 34px;display:flex;border-top:1px solid var(--line);background:var(--panel)}
+.tab{flex:1;height:49px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--meta);font-size:11px;font-weight:500;line-height:1.2;position:relative;white-space:nowrap}
+.tab.on{color:var(--accent-text);font-weight:600}
+.tab .bdg{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--badge);color:#FFFFFF;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--panel)}
+.homeind{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);z-index:60}
+/* bottom sheet: scrim + sheet, grabber 36×5, radius 14, primary action above the safe area */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:40}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:var(--panel);border-radius:14px 14px 0 0;padding:6px 0 34px;box-shadow:0 -8px 32px rgba(0,0,0,.18);color:var(--text)}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 2px}
+.sheet-h{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 8px 0 20px}
+.sheet-h h2{margin:0;flex:1;font-size:17px;font-weight:650}
+.sheet-sub{margin:0;padding:6px 20px 4px;font-size:13px;font-weight:600;color:var(--meta)}
+.srow{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 20px;text-decoration:none;color:var(--text)}
+.srow:hover,.srow:active{background:var(--hover)}
+.srow .tx{flex:1;min-width:0}
+.srow .tx b{display:block;font-size:15px;font-weight:600}
+.srow .tx small{display:block;font-size:13px;color:var(--meta)}
+.srow .end{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--meta)}
+.srow .ck{color:var(--accent-text)}
+.srow .ic{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none;box-sizing:border-box}
+.srow .wsm{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:none}
+.cnt{min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;background:var(--badge);color:#FFFFFF;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.tag{height:22px;padding:0 8px;border-radius:6px;background:var(--hover2);color:var(--muted);font-size:12px;font-weight:600;display:inline-flex;align-items:center}
+.sheet-sep{height:1px;background:var(--line);margin:6px 20px}
+.sheet-foot{padding:10px 16px 0}
+/* skeleton (static under reduced motion) */
+.sk{display:block;background:var(--hover2);border-radius:6px}
+@media (prefers-reduced-motion: no-preference){.sk{animation:skp 1.4s ease-in-out infinite}}
+@keyframes skp{50%{opacity:.55}}
+/* end mobile shell */
+
+/* screen: Tài liệu (pushed, tab bar hidden; reading first, editing toolbar above the keyboard) */
+.nx{--body:#272D36;--hl:#FCEFC4;--hl-line:#D9A520;--info-soft:#EEF4FD;--warn-line:#E9C46A;--kb:#D1D4DA;--key:#FFFFFF;--key2:#AEB4BD;--key-ink:#161A21}
+.nx.mode-dem{--body:#D3D8E0;--hl:rgba(242,193,78,.22);--hl-line:#B8912E;--info-soft:rgba(90,169,255,.1);--warn-line:rgba(242,193,78,.38);--kb:#2A2D33;--key:#55585E;--key2:#3E4147;--key-ink:#F1F2F4}
+.dc .tbar{padding:0 6px}
+.dc .tbar .lead{width:96px;display:flex;flex:none}
+.dc .tbar .trail{width:96px;display:flex;justify-content:flex-end;flex:none}
+.crumb{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;text-align:center;line-height:1.2}
+.crumb .c1{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-size:16px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb .c2{display:inline-flex;align-items:center;gap:5px;margin-top:2px;font-size:12px;font-weight:500;color:var(--meta)}
+.crumb .c2 .i{width:13px;height:13px}
+.cmb{width:auto;min-width:44px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text)}
+.cmb[aria-expanded="true"],.ib[aria-expanded="true"]{background:var(--hover2)}
+/* save-error banner (under the top bar, does not scroll) */
+.errbn{flex:none;display:flex;align-items:center;gap:10px;padding:6px 8px 6px 16px;background:var(--warn-soft);border-bottom:1px solid var(--warn-line);color:var(--text);font-size:14px;line-height:1.35}
+.errbn > .i{color:var(--warn-text)}
+.errbn .tx{flex:1;min-width:0}
+.errbn b{display:block;font-size:15px;font-weight:650;color:var(--warn-text)}
+.errbn small{display:block;font-size:13px;color:var(--muted)}
+.errbn .btn{flex:none;padding:0 14px;font-size:14px;font-weight:600}
+/* document body: 16px / 1.6, page width = screen − 2×16 */
+.dc .content{gap:0;padding:0 16px 20px}
+.dc .content > *{flex:none}
+.doc-in{display:flex;flex-direction:column;outline:none;border-radius:8px}
+.ctx{margin:4px 0 0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--meta)}
+.ctx .priv{display:inline-flex;align-items:center;gap:4px}
+.ctx .i{width:13px;height:13px}
+.dtitle{margin:8px 0 0;font-size:26px;font-weight:700;line-height:1.28;letter-spacing:-0.015em}
+.dmeta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:12px 0 0;font-size:13px;color:var(--meta)}
+.stc{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:var(--lane-review);color:var(--text);font-size:13px;font-weight:600}
+.why{display:flex;align-items:flex-start;gap:8px;margin:10px 0 0;padding:9px 12px;border-radius:10px;background:var(--hover);font-size:13px;line-height:1.45;color:var(--muted)}
+.why .i{width:16px;height:16px;margin-top:1px;color:var(--meta)}
+.doc-in h2{margin:28px 0 8px;font-size:19px;font-weight:650;line-height:1.35;letter-spacing:-0.01em}
+.prose{margin:0 0 12px;font-size:16px;line-height:1.65;color:var(--body)}
+.doc-in ol{margin:0 0 4px;padding-left:24px;font-size:16px;line-height:1.6;color:var(--body)}
+.doc-in ol li{margin:0 0 10px;padding-left:4px}
+.doc-in ol li::marker{color:var(--meta);font-variant-numeric:tabular-nums}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.dot.todo{box-shadow:inset 0 0 0 2px var(--st-todo)}
+.dot.doing{background:var(--st-doing)}
+.dot.review{background:var(--st-review)}
+.dot.done{background:var(--st-done)}
+/* inline task chip: wraps with the sentence (inline target, WCAG 2.5.8 exception) */
+.task{display:inline;padding:2px 7px 3px 6px;border-radius:7px;background:var(--hover);border:1px solid var(--line2);color:var(--text);font-size:15px;font-weight:500;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.task .dot{vertical-align:1px;margin-right:5px}
+.task .nw{white-space:nowrap}
+.task .k{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;color:var(--meta);margin-right:5px}
+.task:active{background:var(--hover2)}
+.task.lk{color:var(--muted);font-weight:500;background:transparent;border-style:dashed}
+.task.lk .i{width:13px;height:13px;vertical-align:-2px;margin-right:4px}
+/* comment anchors */
+.anc{text-decoration:underline;text-decoration-style:dotted;text-decoration-color:var(--hl-line);text-decoration-thickness:2px;text-underline-offset:4px}
+.anc.on{background:var(--hl);text-decoration-style:solid;border-radius:3px}
+.caret{display:inline-block;width:2px;height:20px;background:var(--accent);vertical-align:-4px;margin:0 1px}
+.ins{background:var(--accent-soft);border-radius:3px}
+/* checklist: 44px checkbox buttons */
+.cl{list-style:none;margin:0;padding:0}
+.ck{display:flex;align-items:flex-start;gap:4px;min-height:48px;margin:0 0 0 -10px}
+.ck .box{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer;border-radius:10px;color:var(--accent-ink)}
+.ck .box span{width:22px;height:22px;border-radius:6px;border:1.75px solid var(--ring);box-sizing:border-box;display:grid;place-items:center}
+.ck .box[aria-checked="true"] span{background:var(--st-done);border-color:var(--st-done);color:#FFFFFF}
+.ck .box[aria-disabled="true"]{cursor:default}
+.ck .box[aria-disabled="true"] span{border-style:dashed}
+.ck .t{flex:1;min-width:0;padding:10px 0 4px;font-size:16px;line-height:1.5;color:var(--body)}
+.ck.done .t{color:var(--meta);text-decoration:line-through}
+/* embedded board list ("Việc liên quan") */
+.emb{background:var(--panel);border:1px solid var(--line2);border-radius:14px;overflow:hidden;margin-top:2px}
+.emb-h{display:flex;align-items:center;gap:10px;padding:6px 4px 6px 14px;border-bottom:1px solid var(--line)}
+.emb-h .tx{flex:1;min-width:0}
+.emb-h b{display:block;font-size:15px;font-weight:650}
+.emb-h small{display:block;font-size:13px;color:var(--meta)}
+.emb-h a{flex:none;min-height:44px;padding:0 10px;display:inline-flex;align-items:center;gap:2px;font-size:14px;font-weight:600;color:var(--accent-text);text-decoration:none;border-radius:12px}
+.er{display:flex;align-items:flex-start;gap:10px;padding:11px 12px 11px 14px;border-top:1px solid var(--line);text-decoration:none;color:var(--text);min-height:44px}
+.er:first-child{border-top:0}
+.er:active{background:var(--hover)}
+.er .dot{margin-top:7px}
+.er .tx{flex:1;min-width:0}
+.er .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px;font-weight:500;line-height:1.38}
+.er .m{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px;color:var(--meta);white-space:nowrap}
+.er .m .mono{font-size:12px}
+.er .av{width:20px;height:20px;font-size:8.5px}
+.er .d{flex:none;width:64px;text-align:right;font-size:13px;line-height:1.3;color:var(--meta);padding-top:2px;font-variant-numeric:tabular-nums}
+.er .d.over{color:var(--danger);font-weight:600}
+.er .d.today{color:var(--warn-text);font-weight:600}
+.er.locked{color:var(--muted);font-size:14px;line-height:1.45;align-items:flex-start}
+.er.locked .i{width:16px;height:16px;margin-top:2px;color:var(--meta)}
+.emb-note{display:flex;align-items:flex-start;gap:8px;margin:10px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}
+.emb-note .i{width:16px;height:16px;margin-top:1px;color:var(--meta)}
+.callout{display:flex;gap:12px;margin:24px 0 0;padding:14px 16px;border-radius:12px;background:var(--info-soft);font-size:15px;line-height:1.6;color:var(--body)}
+.callout .i{color:var(--accent-text);margin-top:3px}
+/* bottom bars (inside the 34px safe area) */
+.rbar{flex:none;display:flex;gap:10px;padding:8px 16px 34px;border-top:1px solid var(--line);background:var(--panel)}
+.rbar .btn{flex:1;min-height:48px}
+.rbar .btn .n{font-variant-numeric:tabular-nums;color:var(--meta);font-weight:600}
+.robar{align-items:center}
+.robar .ro{flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.4;color:var(--muted)}
+.robar .ro .i{margin-top:1px;color:var(--meta)}
+.robar .ro b{display:block;font-size:15px;font-weight:600;color:var(--text)}
+.robar .btn{flex:none;padding:0 14px}
+/* editing toolbar above the keyboard */
+.etb{flex:none;height:52px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px;border-top:1px solid var(--line);background:var(--panel);box-sizing:border-box}
+.etb-s{flex:1;min-width:0;display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none}
+.etb-s::-webkit-scrollbar{display:none}
+.etb-s{-webkit-mask-image:linear-gradient(to right,#000 82%,transparent);mask-image:linear-gradient(to right,#000 82%,transparent)}
+.tb{width:44px;height:44px;flex:none;border:0;border-radius:10px;background:transparent;color:var(--text);font:inherit;font-size:17px;display:grid;place-items:center;cursor:pointer;padding:0}
+.tb:active{background:var(--hover2)}
+.tb[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-text)}
+.tb.h{font-weight:700;font-size:16px}
+.tb.b{font-weight:800}
+.tb.it{font-style:italic;font-family:Georgia,'Times New Roman',serif;font-size:19px}
+.tb.ref{font-weight:600}
+.etb .tsep{width:1px;height:28px;background:var(--line2);flex:none}
+.etb .done{flex:none;min-height:44px;padding:0 16px}
+/* simplified keyboard (decorative) */
+.kbd-blk{flex:none;height:291px;box-sizing:border-box;background:var(--kb);padding:8px 3px 0;display:flex;flex-direction:column;gap:11px}
+.kr{display:flex;justify-content:center;gap:6px}
+.kr span{height:42px;flex:0 0 32px;border-radius:5px;background:var(--key);color:var(--key-ink);display:grid;place-items:center;font-size:20px;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.kr span.w{flex:0 0 42px;background:var(--key2);font-size:14px}
+.kr span.sp{flex:1 1 auto;font-size:14px}
+.kr span.rt{flex:0 0 88px;background:var(--key2);font-size:14px}
+/* sheets */
+button.srow{width:100%;border:0;margin:0;background:transparent;font:inherit;text-align:left;cursor:pointer}
+.mrow{min-height:60px}
+.mrow .i{color:var(--muted)}
+.sheet .cap{margin:0;padding:10px 20px 2px;font-size:13px;color:var(--meta);line-height:1.45}
+.sheet.tall{top:58px;display:flex;flex-direction:column;padding-bottom:0}
+.sheet-h .n{color:var(--meta);font-weight:500;font-size:15px;margin-left:6px}
+.sh-body{flex:1;min-height:0;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:12px}
+.th{border:1px solid var(--line);border-radius:14px;padding:12px 12px 6px;background:var(--panel)}
+.th.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.th-q{margin:0 0 6px;font-size:13px;color:var(--meta);line-height:1.5}
+.th-q .qx{display:inline;background:var(--hl);color:var(--text);font-size:14px;padding:1px 3px;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.th-q .wh{display:block;margin-top:4px}
+.cm{display:flex;gap:10px;padding:8px 0 4px}
+.cm .av{width:28px;height:28px;font-size:10px}
+.cm .bd{flex:1;min-width:0}
+.cm .hd{display:flex;align-items:baseline;gap:6px;font-size:14px}
+.cm .hd b{font-weight:650}
+.cm time{color:var(--meta);font-size:13px;font-variant-numeric:tabular-nums}
+.cm p{margin:2px 0 0;font-size:15px;line-height:1.5}
+.cm .at{color:var(--accent-text);font-weight:600}
+.th-a{display:flex;gap:4px;margin:4px -6px 0}
+.th-a button{min-height:44px;padding:0 10px;border:0;border-radius:10px;background:transparent;font:inherit;font-size:14px;font-weight:600;color:var(--accent-text);cursor:pointer}
+.th-a button:active{background:var(--hover)}
+.th-a .rep{margin-left:auto;color:var(--meta);font-weight:500;align-self:center;font-size:13px;padding:0 6px}
+.composer{flex:none;display:flex;align-items:flex-end;gap:4px;padding:8px 8px 34px 12px;border-top:1px solid var(--line);background:var(--panel)}
+.composer .cto{display:block;padding:0 4px 6px;font-size:12px;color:var(--meta)}
+.composer .cw{flex:1;min-width:0}
+.cin{min-height:44px;display:flex;align-items:center;border:1px solid var(--line2);border-radius:22px;background:var(--bg);padding:0 12px;box-sizing:border-box}
+.cin textarea{flex:1;min-width:0;border:0;background:transparent;resize:none;font:inherit;font-size:15px;line-height:20px;color:var(--text);padding:11px 0;height:42px;box-sizing:border-box;outline:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cin textarea::placeholder{color:var(--meta);opacity:1}
+.send{width:44px;height:44px;border:0;background:transparent;padding:0;display:grid;place-items:center;flex:none;cursor:pointer}
+.send span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.send[aria-disabled="true"]{cursor:default}
+.send[aria-disabled="true"] span{background:var(--hover2);color:var(--meta)}
+.toc{display:flex;flex-direction:column;padding:2px 8px 0}
+.tl{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 12px;border-radius:12px;text-decoration:none;color:var(--text);font-size:15px;line-height:1.35}
+.tl:active{background:var(--hover)}
+.tl.l1{font-weight:650;font-size:16px}
+.tl.l2{padding-left:32px}
+.tl .ln{width:2px;align-self:stretch;margin:0 4px 0 -14px;background:var(--line2);border-radius:1px}
+.tl.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.tl.on .ln{background:transparent}
+.tl .tag{margin-left:auto;background:var(--panel);color:var(--accent-text)}
+</style>
+</helmet>
+<div class="nx m dc mode-{{mode}}">
+  <div class="app-layer" aria-hidden="{{sheetOpen}}">
+  <div class="sbar" aria-hidden="true">
+    <span>10:40</span>
+    <span class="sg">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"></rect><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"></rect></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.2 10.4 8.6a3.4 3.4 0 0 0-4.8 0z" fill="currentColor"></path><path d="M3.6 6.6a6.2 6.2 0 0 1 8.8 0l1.4-1.5a8.3 8.3 0 0 0-11.6 0z" fill="currentColor"></path><path d="M.8 3.6a10.2 10.2 0 0 1 14.4 0L16 2.2a12.2 12.2 0 0 0-16 0z" fill="currentColor" opacity=".9"></path></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".45"></rect><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"></rect><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".45"></path></svg>
+    </span>
+  </div>
+
+  <header class="tbar {{tbarCls}}">
+    <span class="lead"><a class="ib" href="Final-M-Space.dc.html" aria-label="Quay lại Tài liệu"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a></span>
+    <p class="crumb"><span class="c1"><span class="vh">Phòng Kế toán, thư mục </span><span aria-hidden="true">KT · </span>Quy trình</span>
+      <sc-if value="{{isEdit}}" hint-placeholder-val="{{ false }}"><span class="c2" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>Đang lưu…</span></sc-if>
+    </p>
+    <span class="trail">
+      <sc-if value="{{notEdit}}" hint-placeholder-val="{{ true }}">
+      <button class="ib cmb" type="button" aria-haspopup="dialog" aria-expanded="{{cmExp}}" aria-label="{{cmLabel}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><span aria-hidden="true">3</span></button>
+      <button class="ib" type="button" aria-haspopup="dialog" aria-expanded="{{menuExp}}" aria-label="Thêm: mục lục, chia sẻ, lịch sử phiên bản, sao chép liên kết"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button>
+      </sc-if>
+      <sc-if value="{{isEdit}}" hint-placeholder-val="{{ false }}">
+      <button class="ib" type="button" aria-label="Hoàn tác"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg></button>
+      <button class="ib" type="button" aria-label="Làm lại" aria-disabled="true" style="color:var(--meta)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9a5 5 0 0 0 0 10h3"></path></svg></button>
+      </sc-if>
+    </span>
+  </header>
+
+  <sc-if value="{{isErr}}" hint-placeholder-val="{{ false }}">
+  <div class="errbn" role="alert">
+    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+    <span class="tx"><b>Chưa lưu được</b><small>Sửa đổi lúc 10:38 vẫn giữ trên máy này, đóng trang không mất.</small></span>
+    <button class="btn" type="button">Thử lại</button>
+  </div>
+  </sc-if>
+
+  <main class="content">
+    <article class="doc-in" style="margin-top:{{scrollOff}}" contenteditable="{{editable}}" spellcheck="false" aria-label="{{docLabel}}">
+      <p class="ctx"><span>Phòng Kế toán · Quy trình</span><span aria-hidden="true">·</span><span class="priv"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Riêng tư</span></p>
+      <h1 class="dtitle" id="d-title">Quy trình nhập hoá đơn đầu vào</h1>
+      <div class="dmeta">
+        <span class="stc"><span class="dot review" aria-hidden="true"></span><span class="vh">Trạng thái: </span>Chờ duyệt</span>
+        <span>Đỗ Khánh Linh sửa 16:40 hôm qua</span>
+      </div>
+      <sc-if value="{{isAdminView}}" hint-placeholder-val="{{ true }}">
+      <p class="why"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v4h1"></path></svg>Bạn thấy trang này vì là quản trị workspace</p>
+      </sc-if>
+      <sc-if value="{{isRO}}" hint-placeholder-val="{{ false }}">
+      <p class="why"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>Bạn là người xem ở Phòng Kế toán</p>
+      </sc-if>
+
+      <h2 id="h-pham-vi">Phạm vi áp dụng</h2>
+      <p class="prose">Quy trình áp dụng cho mọi hoá đơn điện tử đầu vào của Minh An Group từ ngày 01/11/2026, khi phân hệ công nợ của ERP chính thức vận hành. Việc kiểm thử phân hệ đang theo dõi tại
+        <sc-if value="{{seesBoard}}" hint-placeholder-val="{{ true }}"><a class="task" href="Final-M-Board.dc.html"><span class="nw"><span class="dot doing" aria-hidden="true"></span><span class="k">ERP-144</span></span>Kiểm thử phân hệ công nợ với số liệu tháng 9</a></sc-if><sc-if value="{{isRO}}" hint-placeholder-val="{{ false }}"><span class="task lk"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Việc bạn không xem được</span></sc-if>.</p>
+      <p class="prose">Danh mục khách hàng dùng chung lấy từ đợt chuyển dữ liệu ở
+        <sc-if value="{{seesBoard}}" hint-placeholder-val="{{ true }}"><a class="task" href="Final-M-Detail.dc.html"><span class="nw"><span class="dot doing" aria-hidden="true"></span><span class="k">ERP-142</span></span>Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP</a></sc-if><sc-if value="{{isRO}}" hint-placeholder-val="{{ false }}"><span class="task lk"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Việc bạn không xem được</span></sc-if>; việc này chưa xong thì chưa đối chiếu tự động được.</p>
+
+      <h2 id="h-buoc">Các bước xử lý</h2>
+      <ol>
+        <li>Hộp thư hoá đơn tự động chuyển hoá đơn vào hàng chờ của nhóm Công nợ.</li>
+        <li>Kế toán viên đối chiếu với đơn đặt hàng và phiếu nhập kho <span class="anc {{ancCls}}">trong tối đa 2 ngày làm việc</span>.</li>
+        <li>Hoá đơn sai lệch quá <span class="anc">0,5%</span> chuyển cho trưởng nhóm duyệt<sc-if value="{{isEdit}}" hint-placeholder-val="{{ false }}"> <span class="ins">trong ngày</span><span class="caret" aria-hidden="true"></span></sc-if><sc-if value="{{isErr}}" hint-placeholder-val="{{ false }}"> trong ngày</sc-if>.</li>
+        <li>Hạch toán vào ERP và gắn mã chi phí theo phòng ban, theo phân quyền ở
+          <sc-if value="{{seesBoard}}" hint-placeholder-val="{{ true }}"><a class="task" href="Final-M-Board.dc.html"><span class="nw"><span class="dot todo" aria-hidden="true"></span><span class="k">ERP-151</span></span>Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán</a></sc-if><sc-if value="{{isRO}}" hint-placeholder-val="{{ false }}"><span class="task lk"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Việc bạn không xem được</span></sc-if>.</li>
+      </ol>
+
+      <h2 id="h-chuan-bi">Chuẩn bị trước khi áp dụng</h2>
+      <ul class="cl">
+        <li class="ck done"><button class="box" type="button" role="checkbox" aria-checked="true" aria-disabled="{{ckDis}}" aria-label="Chốt danh mục tài khoản dùng chung"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;stroke-width:3"><path d="m5 12 5 5L20 7"></path></svg></span></button><span class="t">Chốt danh mục tài khoản dùng chung</span></li>
+        <li class="ck"><button class="box" type="button" role="checkbox" aria-checked="false" aria-disabled="{{ckDis}}" aria-label="Đào tạo nhóm Công nợ về đối chiếu tự động"><span></span></button><span class="t">Đào tạo nhóm Công nợ về đối chiếu tự động</span></li>
+        <li class="ck"><button class="box" type="button" role="checkbox" aria-checked="false" aria-disabled="{{ckDis}}" aria-label="Thông báo 42 nhà cung cấp về hộp thư hoá đơn mới"><span></span></button><span class="t"><span class="anc">Thông báo 42 nhà cung cấp về hộp thư hoá đơn mới</span></span></li>
+      </ul>
+
+      <h2 id="h-viec">Việc liên quan</h2>
+      <section class="emb" aria-label="Việc liên quan, cập nhật theo board" aria-describedby="emb-note">
+        <sc-if value="{{seesBoard}}" hint-placeholder-val="{{ true }}">
+        <div class="emb-h"><span class="dm" style="background:#1E6FD0" aria-hidden="true">CN</span><span class="tx"><b>Triển khai ERP Q4</b><small>Phân hệ Kế toán · chưa xong</small></span><a href="Final-M-Board.dc.html" aria-label="Mở board Triển khai ERP Q4">Mở board<svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></a></div>
+        <div role="list">
+          <a class="er" role="listitem" href="Final-M-Detail.dc.html"><span class="dot doing" aria-hidden="true"></span><span class="tx"><span class="t">Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP</span><span class="m"><span class="mono">ERP-142</span><span aria-hidden="true">·</span>Đang làm<span aria-hidden="true">·</span><span class="av" style="background:#1E6FD0" aria-hidden="true">MQ</span>Quân</span></span><span class="d over">Quá hạn 2&nbsp;ngày</span></a>
+          <a class="er" role="listitem" href="Final-M-Board.dc.html"><span class="dot doing" aria-hidden="true"></span><span class="tx"><span class="t">Kiểm thử phân hệ công nợ với số liệu tháng 9</span><span class="m"><span class="mono">ERP-144</span><span aria-hidden="true">·</span>Đang làm<span aria-hidden="true">·</span><span class="av" style="background:#B4500B" aria-hidden="true">HP</span>Phúc</span></span><span class="d today">Hôm nay</span></a>
+          <a class="er" role="listitem" href="Final-M-Board.dc.html"><span class="dot todo" aria-hidden="true"></span><span class="tx"><span class="t">Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán</span><span class="m"><span class="mono">ERP-151</span><span aria-hidden="true">·</span>Cần làm<span aria-hidden="true">·</span><span class="av" style="background:#7C4DDB" aria-hidden="true">NA</span>Ngọc Anh</span></span><span class="d">18/10</span></a>
+          <a class="er" role="listitem" href="Final-M-Board.dc.html"><span class="dot todo" aria-hidden="true"></span><span class="tx"><span class="t">Viết tài liệu quy trình nhập hoá đơn đầu vào</span><span class="m"><span class="mono">ERP-149</span><span aria-hidden="true">·</span>Cần làm<span aria-hidden="true">·</span><span class="av" style="background:#9A6A12" aria-hidden="true">KL</span>Linh</span></span><span class="d">25/10</span></a>
+          <div class="er locked" role="listitem"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><span>1 việc thuộc board riêng tư của phòng Nhân sự, bạn không có quyền xem.</span></div>
+        </div>
+        </sc-if>
+        <sc-if value="{{isRO}}" hint-placeholder-val="{{ false }}">
+        <div role="list">
+          <div class="er locked" role="listitem"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><span>5 việc nằm trên board bạn không có quyền xem. Người quản lý board thêm bạn vào thì mới thấy.</span></div>
+        </div>
+        </sc-if>
+      </section>
+      <p class="emb-note" id="emb-note"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v4h1"></path></svg><span>Bảng này theo quyền của board; nhúng không cấp quyền vào board.</span></p>
+
+      <div class="callout"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v4h1"></path></svg><div>Hoá đơn từ 20 triệu đồng phải có chứng từ thanh toán không dùng tiền mặt mới được khấu trừ thuế GTGT.</div></div>
+    </article>
+  </main>
+
+  <sc-if value="{{showReadBar}}" hint-placeholder-val="{{ true }}">
+  <div class="rbar">
+    <button class="btn" type="button" aria-haspopup="dialog" aria-label="Bình luận, 3 chuỗi đang mở"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Bình luận<span class="n" aria-hidden="true">3</span></button>
+    <button class="btn pri" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Sửa</button>
+  </div>
+  </sc-if>
+  <sc-if value="{{isRO}}" hint-placeholder-val="{{ false }}">
+  <div class="rbar robar">
+    <p class="ro" style="margin:0" role="note"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg><span><b>Bạn chỉ xem được trang này</b>Không sửa, không bình luận được</span></p>
+    <button class="btn" type="button" aria-haspopup="dialog" aria-label="Xem bình luận, 3 chuỗi"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Xem<span class="n" aria-hidden="true">3</span></button>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{isEdit}}" hint-placeholder-val="{{ false }}">
+  <div class="etb">
+    <div class="etb-s" role="toolbar" aria-label="Định dạng và chèn">
+      <button class="tb h" type="button" aria-label="Tiêu đề">H</button>
+      <button class="tb b" type="button" aria-pressed="false" aria-label="In đậm">B</button>
+      <button class="tb it" type="button" aria-pressed="false" aria-label="In nghiêng">I</button>
+      <button class="tb" type="button" aria-pressed="true" aria-label="Danh sách số"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11M4 4v4M3 18h3l-3 2h3"></path></svg></button>
+      <button class="tb" type="button" aria-pressed="false" aria-label="Danh sách kiểm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11"></path></svg></button>
+      <button class="tb ref" type="button" aria-label="Nhắc tên người, gõ @"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"></path></svg></button>
+      <button class="tb ref" type="button" aria-label="Chèn công việc, gõ #"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"></path></svg></button>
+      <button class="tb" type="button" aria-label="Chèn ảnh"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="m21 16-5-5L5 20"></path></svg></button>
+    </div>
+    <span class="tsep" aria-hidden="true"></span>
+    <button class="btn pri done" type="button" aria-label="Xong, thoát chế độ sửa">Xong</button>
+  </div>
+  <div class="kbd-blk" aria-hidden="true">
+    <div class="kr"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span></div>
+    <div class="kr"><span>a</span><span>s</span><span>d</span><span>f</span><span>g</span><span>h</span><span>j</span><span>k</span><span>l</span></div>
+    <div class="kr"><span class="w">⇧</span><span>z</span><span>x</span><span>c</span><span>v</span><span>b</span><span>n</span><span>m</span><span class="w">⌫</span></div>
+    <div class="kr" style="padding:0 3px"><span class="w">123</span><span class="w">VI</span><span class="sp">dấu cách</span><span class="rt">Xuống dòng</span></div>
+  </div>
+  </sc-if>
+  </div>
+
+  <sc-if value="{{isMenu}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mn-sheet-t">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-h"><h2 id="mn-sheet-t">Quy trình nhập hoá đơn đầu vào</h2><button class="ib" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    <div role="menu" aria-labelledby="mn-sheet-t">
+      <button class="srow mrow" type="button" role="menuitem" aria-haspopup="dialog"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></span><span class="tx"><b>Mục lục</b><small>4 mục, tự cập nhật theo tiêu đề</small></span></button>
+      <button class="srow mrow" type="button" role="menuitem" aria-haspopup="dialog"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"></path></svg></span><span class="tx"><b>Chia sẻ</b><small>Theo Phòng Kế toán · 4 quyền riêng</small></span></button>
+      <button class="srow mrow" type="button" role="menuitem"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5M12 7v5l3 2"></path></svg></span><span class="tx"><b>Lịch sử phiên bản</b><small>Bản mới nhất 16:40 hôm qua · Đỗ Khánh Linh</small></span></button>
+      <button class="srow mrow" type="button" role="menuitem"><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span><span class="tx"><b>Sao chép liên kết</b><small>Chỉ người đã có quyền mở được, gửi không cấp thêm quyền</small></span></button>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{isToc}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="toc-sheet-t">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-h"><h2 id="toc-sheet-t">Mục lục</h2><button class="ib" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    <nav class="toc" aria-label="Các tiêu đề trong trang">
+      <a class="tl l1" href="#d-title">Quy trình nhập hoá đơn đầu vào</a>
+      <a class="tl l2" href="#h-pham-vi"><span class="ln" aria-hidden="true"></span>Phạm vi áp dụng</a>
+      <a class="tl l2 on" href="#h-buoc" aria-current="location"><span class="ln" aria-hidden="true"></span>Các bước xử lý<span class="tag">Đang đọc</span></a>
+      <a class="tl l2" href="#h-chuan-bi"><span class="ln" aria-hidden="true"></span>Chuẩn bị trước khi áp dụng</a>
+      <a class="tl l2" href="#h-viec"><span class="ln" aria-hidden="true"></span>Việc liên quan</a>
+    </nav>
+    <div class="sheet-sep"></div>
+    <p class="cap">Mục lục tự cập nhật theo các tiêu đề trong trang. Chạm một mục để nhảy tới.</p>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{isComments}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="cm-sheet-t">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-h"><h2 id="cm-sheet-t">Bình luận<span class="n">3 chuỗi đang mở</span></h2><button class="ib" type="button" aria-label="Đóng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    <div class="sh-body">
+      <article class="th on" aria-labelledby="th1-q">
+        <p class="th-q" id="th1-q"><span class="vh">Về đoạn: </span><span class="qx">trong tối đa 2 ngày làm việc</span><span class="wh">Các bước xử lý · bước 2</span></p>
+        <div class="cm"><span class="av" style="background:#BE185D" aria-hidden="true">LT</span><div class="bd"><div class="hd"><b>Lý Thu Trang</b><time>Hôm qua 17:10</time></div><p>Cuối tháng lượng hoá đơn gấp ba, đề xuất 3 ngày cho tuần cuối tháng.</p></div></div>
+        <div class="cm"><span class="av" style="background:#9A6A12" aria-hidden="true">KL</span><div class="bd"><div class="hd"><b>Đỗ Khánh Linh</b><time>Hôm qua 17:25</time></div><p>Đồng ý, mình sẽ thêm ngoại lệ cho tuần cuối tháng.</p></div></div>
+        <div class="cm"><span class="av" style="background:#BE185D" aria-hidden="true">LT</span><div class="bd"><div class="hd"><b>Lý Thu Trang</b><time>09:40</time></div><p><span class="at">@Hà</span> chị xem giúp đề xuất 3 ngày đối chiếu cuối tháng trong quy trình nhập hoá đơn.</p></div></div>
+        <div class="th-a"><button type="button">Đã xử lý</button><button type="button">Tạo việc</button></div>
+      </article>
+      <article class="th" aria-labelledby="th2-q">
+        <p class="th-q" id="th2-q"><span class="vh">Về đoạn: </span><span class="qx">0,5%</span><span class="wh">Các bước xử lý · bước 3</span></p>
+        <div class="cm"><span class="av" style="background:#9A6A12" aria-hidden="true">KL</span><div class="bd"><div class="hd"><b>Đỗ Khánh Linh</b><time>10/10</time></div><p>Ngưỡng 0,5% áp dụng cả cho hoá đơn ngoại tệ không? Cần chốt trước 01/11.</p></div></div>
+        <div class="th-a"><button type="button">Trả lời</button><button type="button">Đã xử lý</button><span class="rep">1 trả lời</span></div>
+      </article>
+      <article class="th" aria-labelledby="th3-q">
+        <p class="th-q" id="th3-q"><span class="vh">Về đoạn: </span><span class="qx">Thông báo 42 nhà cung cấp về hộp thư hoá đơn mới</span><span class="wh">Chuẩn bị trước khi áp dụng</span></p>
+        <div class="cm"><span class="av" style="background:#BE185D" aria-hidden="true">LT</span><div class="bd"><div class="hd"><b>Lý Thu Trang</b><time>08/10</time></div><p>Danh sách 42 nhà cung cấp em để trong ERP-149, chị Linh xem giúp.</p></div></div>
+      </article>
+    </div>
+    <div class="composer">
+      <div class="cw"><span class="cto" id="cto">Trả lời chuỗi “trong tối đa 2 ngày làm việc”</span>
+        <label class="cin"><span class="vh">Trả lời bình luận</span><textarea rows="1" aria-describedby="cto" placeholder="Trả lời, gõ @ để nhắc ai đó…"></textarea></label></div>
+      <button class="send" type="button" aria-disabled="true" aria-label="Gửi trả lời"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></span></button>
+    </div>
+  </div>
+  </sc-if>
+  <span class="homeind" aria-hidden="true"></span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["doc","sua","binh-luan","muc-luc","loi-luu","chi-xem","thao-tac"],"default":"doc","section":"Trạng thái minh hoạ"},"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'doc';
+    const edit = s === 'sua';
+    const comments = s === 'binh-luan';
+    const toc = s === 'muc-luc';
+    const err = s === 'loi-luu';
+    const ro = s === 'chi-xem';
+    const menu = s === 'thao-tac';
+    const sheetOpen = comments || toc || menu;
+    // the document is shown scrolled in some states so every part of it appears in at least one state
+    const off = edit ? '-372px' : (toc ? '-330px' : (err ? '-1000px' : (ro ? '-760px' : '0')));
+    return {
+      mode: this.props.mode ?? 'sang',
+      sheetOpen,
+      isEdit: edit,
+      notEdit: !edit,
+      isComments: comments,
+      isToc: toc,
+      isMenu: menu,
+      isErr: err,
+      isRO: ro,
+      // Hà (workspace admin) reads the page and sees the ERP board; the Viewer does not see that board
+      isAdminView: !ro,
+      seesBoard: !ro,
+      showReadBar: !edit && !ro,
+      editable: edit ? 'true' : 'false',
+      docLabel: edit ? 'Nội dung tài liệu, đang sửa' : 'Nội dung tài liệu',
+      ckDis: ro ? 'true' : 'false',
+      ancCls: comments ? 'on' : '',
+      cmExp: comments ? 'true' : 'false',
+      menuExp: menu ? 'true' : 'false',
+      cmLabel: ro ? 'Xem bình luận, 3 chuỗi' : 'Bình luận, 3 chuỗi đang mở',
+      scrollOff: off,
+      tbarCls: off === '0' ? '' : 'scrolled'
+    };
+  }
+}
+</script>
+</body>
+</html>
