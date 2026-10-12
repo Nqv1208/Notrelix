@@ -10,8 +10,22 @@ public record BoardFieldDto(
     string Position,
     bool IsSystem,
     bool IsDeleted,
-    long Version
+    long Version,
+    // Options of a Select or Status field in display order; null for other field types.
+    List<BoardFieldOptionDto>? Options = null
 );
+
+/// <summary>
+/// One option of a Select or Status field. <see cref="Category"/> is the
+/// work-status category of a Status option ("todo", "in_progress", "review",
+/// "done"); null for Select options.
+/// </summary>
+public record BoardFieldOptionDto(
+    Guid Id,
+    string Name,
+    string Color,
+    string Position,
+    string? Category);
 
 public record BoardFieldSchemaDto(
     Guid Id,

@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
@@ -78,13 +79,27 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
         var collaborationCounts = await _collabReadPort.GetCountsAsync([card.Id], ct);
         var itemCounts = collaborationCounts.GetValueOrDefault(card.Id);
 
+        var fields = await _context.BoardFields.AsNoTracking()
+            .Include(field => field.Options)
+            .Where(field => field.BoardId == listContext.BoardId)
+            .ToListAsync(ct);
+        var values = (await BoardItemReadValues.LoadAsync(_context, fields, [card.Id], ct))[card.Id];
+
         return Result<BoardItemDto>.Success(new BoardItemDto(
             card.Id, listContext.BoardId, listContext.WorkspaceId, card.GroupId, card.Name,
             members, labels, checklists,
             itemCounts.CommentCount, itemCounts.AttachmentCount,
             card.Position.Value,
             card.CreatedAt.DateTime, card.UpdatedAt?.DateTime,
-            card.Version
+            card.Version,
+            card.ItemKey,
+            card.ParentItemId,
+            values.StatusOptionId,
+            values.PriorityOptionId,
+            card.DueAt,
+            card.StartedAt,
+            card.CompletedAt,
+            values.ChildProgress
         ));
     }
 }

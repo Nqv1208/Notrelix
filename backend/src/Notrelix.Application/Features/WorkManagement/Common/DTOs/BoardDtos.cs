@@ -27,7 +27,12 @@ public record FullBoardDto(
     List<BoardFieldDto> Columns,
     List<BoardGroupDto> Lists,
     List<BoardMemberDto> Members,
-    long Version
+    long Version,
+    // The Workspaces Space the board is placed in; null at the Workspace root and
+    // when the caller cannot see that Space (never disclosed).
+    Guid? SpaceId = null,
+    // Prefix of the board's Item keys ("WEB" in "WEB-12"); null when keys are plain numbers.
+    string? ItemKeyPrefix = null
 );
 
 public record BoardMemberDto(

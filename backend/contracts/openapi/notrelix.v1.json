@@ -7131,6 +7131,44 @@
         ]
       }
     },
+    "/api/v1/boards/{boardId}/access": {
+      "get": {
+        "tags": [
+          "WorkManagement.Boards",
+          "WorkManagement.Boards"
+        ],
+        "summary": "Get the caller's access to a board and who can reach it",
+        "operationId": "WorkManagement.Boards.GetAccess",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/boards/{boardId}/archive": {
       "post": {
         "tags": [
@@ -16755,6 +16793,95 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
+        "type": "object",
+        "properties": {
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "myLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "mySource": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceDto"
+          },
+          "peopleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "guestCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "peopleCountComplete": {
+            "type": "boolean"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceCountDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedBy": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardDto": {
         "type": "object",
         "properties": {
@@ -16849,6 +16976,39 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "position": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -16955,6 +17115,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto": {
+        "type": "object",
+        "properties": {
+          "done": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemDto": {
         "type": "object",
         "properties": {
@@ -17023,6 +17197,43 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "itemKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentItemId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "statusOptionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "priorityOptionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "childProgress": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"
           }
         },
         "additionalProperties": false
@@ -17170,6 +17381,43 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "itemKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentItemId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "statusOptionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "priorityOptionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "childProgress": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"
           }
         },
         "additionalProperties": false
@@ -17348,6 +17596,15 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "spaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "itemKeyPrefix": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -1,7 +1,10 @@
 using System.Text.Json;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
+using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
@@ -17,12 +20,21 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
     private readonly IWorkManagementDbContext _context;
     private readonly IActorLookupService _actorLookup;
     private readonly IWorkManagementCollaborationReadPort _collabReadPort;
+    private readonly IResourceVisibility _visibility;
+    private readonly ICurrentRequestContext _requestContext;
 
-    public GetFullBoardQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort)
+    public GetFullBoardQueryHandler(
+        IWorkManagementDbContext context,
+        IActorLookupService actorLookup,
+        IWorkManagementCollaborationReadPort collabReadPort,
+        IResourceVisibility visibility,
+        ICurrentRequestContext requestContext)
     {
         _context = context;
         _actorLookup = actorLookup;
         _collabReadPort = collabReadPort;
+        _visibility = visibility;
+        _requestContext = requestContext;
     }
 
     public async Task<Result<FullBoardDto>> Handle(GetFullBoardQuery request, CancellationToken cancellationToken)
@@ -41,9 +53,11 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .ToListAsync(cancellationToken);
 
         var listIds = lists.Select(list => list.Id).ToList();
+        // Group items are the non-archived root Items; child Items appear only in
+        // their parent's progress and in the item detail.
         var cards = await _context.BoardItems
             .AsNoTracking()
-            .Where(card => listIds.Contains(card.GroupId) && card.DeletedAt == null)
+            .Where(card => listIds.Contains(card.GroupId) && card.DeletedAt == null && !card.IsArchived && card.ParentItemId == null)
             .OrderBy(card => card.Position)
             .ToListAsync(cancellationToken);
 
@@ -93,6 +107,13 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
 
         var collaborationCounts = await _collabReadPort.GetCountsAsync(cardIds, cancellationToken);
 
+        var fields = await _context.BoardFields
+            .AsNoTracking()
+            .Include(field => field.Options)
+            .Where(field => field.BoardId == request.BoardId)
+            .ToListAsync(cancellationToken);
+        var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
+
         var membersByCardId = cardMembers
             .GroupBy(member => member.ItemId)
             .ToDictionary(group => group.Key, group => group.Select(member => member.Dto).ToList());
@@ -117,6 +138,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 {
                     checklistStatsByCardId.TryGetValue(card.Id, out var checklistStats);
                     collaborationCounts.TryGetValue(card.Id, out var collaborationStats);
+                    var values = readValues[card.Id];
 
                     return new BoardItemSummaryDto(
                         card.Id,
@@ -131,7 +153,15 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         card.Position.Value,
                         card.CreatedAt.DateTime,
                         card.UpdatedAt?.DateTime,
-                        card.Version
+                        card.Version,
+                        card.ItemKey,
+                        card.ParentItemId,
+                        values.StatusOptionId,
+                        values.PriorityOptionId,
+                        card.DueAt,
+                        card.StartedAt,
+                        card.CompletedAt,
+                        values.ChildProgress
                     );
                 })
                 .ToList());
@@ -147,9 +177,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 list.Version))
             .ToList();
 
-        var columns = await _context.BoardFields
-            .AsNoTracking()
-            .Where(column => column.BoardId == request.BoardId)
+        var columns = fields
             .OrderBy(column => column.Position)
             .Select(column => new BoardFieldDto(
                 column.Id,
@@ -161,9 +189,10 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.Position.Value,
                 column.IsSystem,
                 column.DeletedAt != null,
-                column.Version
+                column.Version,
+                OptionsOf(column)
             ))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         if (!columns.Any(column => IsTitleColumn(column.Name)))
         {
@@ -201,6 +230,15 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             ))
             .ToList();
 
+        // A board reachable through an explicit grant may sit in a Space the
+        // caller cannot see; that Space's id is not disclosed.
+        Guid? spaceId = null;
+        if (board.SpaceId is { } placedIn
+            && (await _visibility.VisibleSpaceIdsAsync(board.WorkspaceId, _requestContext.UserId, cancellationToken)).Contains(placedIn))
+        {
+            spaceId = placedIn;
+        }
+
         return Result<FullBoardDto>.Success(new FullBoardDto(
             board.Id,
             board.WorkspaceId,
@@ -211,9 +249,25 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             columns,
             listDtos,
             members,
-            board.Version
+            board.Version,
+            spaceId,
+            string.IsNullOrWhiteSpace(board.ItemKeyPrefix) ? null : board.ItemKeyPrefix
         ));
     }
+
+    private static List<BoardFieldOptionDto>? OptionsOf(BoardField field) =>
+        field.Type is FieldType.Select or FieldType.Status
+            ? field.Options
+                .OrderBy(option => option.Position)
+                .ThenBy(option => option.Id)
+                .Select(option => new BoardFieldOptionDto(
+                    option.Id,
+                    option.Name,
+                    option.Color.Value,
+                    option.Position.Value,
+                    WorkStatusCategoryNames.ToName(option.Category)))
+                .ToList()
+            : null;
 
     private static bool IsTitleColumn(string name)
     {

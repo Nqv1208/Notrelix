@@ -50,5 +50,7 @@ public class BoardItemConfiguration : IEntityTypeConfiguration<BoardItem>
         // An Item key is unique within its Board across every Item, deleted ones
         // included, so a key is never reused.
         builder.HasIndex(x => new { x.BoardId, x.ItemKey }).IsUnique().HasDatabaseName("ux_work_board_items_board_item_key");
+        // Child Items of a set of parents are read together (board progress, item detail).
+        builder.HasIndex(x => x.ParentItemId).HasFilter("parent_item_id IS NOT NULL").HasDatabaseName("idx_board_items_parent_item_id");
     }
 }

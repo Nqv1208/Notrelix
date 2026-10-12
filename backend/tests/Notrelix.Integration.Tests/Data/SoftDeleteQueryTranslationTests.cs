@@ -80,7 +80,9 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
 
         await using var context = _db.CreateContext(SystemTenant());
         var handler = new GetFullBoardQueryHandler(
-            context, new ActorLookupService(context), new EmptyCollaborationReadPort());
+            context, new ActorLookupService(context), new EmptyCollaborationReadPort(),
+            Mock.Of<Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility>(),
+            new FakeCurrentRequestContext().AsUser(Guid.NewGuid()));
 
         var result = await handler.Handle(new GetFullBoardQuery(board.Id), CancellationToken.None);
 

@@ -2088,6 +2088,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the caller's access to a board and who can reach it */
+        get: operations["WorkManagement.Boards.GetAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/archive": {
         parameters: {
             query?: never;
@@ -4580,6 +4597,37 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto": {
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: int64 */
+            version?: number;
+            myLevel?: string | null;
+            mySource?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceDto"];
+            /** Format: int32 */
+            peopleCount?: number;
+            /** Format: int32 */
+            guestCount?: number;
+            peopleCountComplete?: boolean;
+            sources?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceCountDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceCountDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            id?: string | null;
+            name?: string | null;
+            /** Format: int32 */
+            count?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessSourceDto": {
+            kind?: string | null;
+            grantedBy?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessGrantorDto"];
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardDto": {
             /** Format: uuid */
             id?: string;
@@ -4615,6 +4663,15 @@ export interface components {
             isDeleted?: boolean;
             /** Format: int64 */
             version?: number;
+            options?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldOptionDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            color?: string | null;
+            position?: string | null;
+            category?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldSchemaDto": {
             /** Format: uuid */
@@ -4649,6 +4706,12 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto": {
+            /** Format: int32 */
+            done?: number;
+            /** Format: int32 */
+            total?: number;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemDto": {
             /** Format: uuid */
             id?: string;
@@ -4673,6 +4736,20 @@ export interface components {
             updatedAt?: string | null;
             /** Format: int64 */
             version?: number;
+            itemKey?: string | null;
+            /** Format: uuid */
+            parentItemId?: string | null;
+            /** Format: uuid */
+            statusOptionId?: string | null;
+            /** Format: uuid */
+            priorityOptionId?: string | null;
+            /** Format: date-time */
+            dueAt?: string | null;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            childProgress?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"];
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto": {
             /** Format: uuid */
@@ -4723,6 +4800,20 @@ export interface components {
             updatedAt?: string | null;
             /** Format: int64 */
             version?: number;
+            itemKey?: string | null;
+            /** Format: uuid */
+            parentItemId?: string | null;
+            /** Format: uuid */
+            statusOptionId?: string | null;
+            /** Format: uuid */
+            priorityOptionId?: string | null;
+            /** Format: date-time */
+            dueAt?: string | null;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            childProgress?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemChildProgressDto"];
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto": {
             /** Format: uuid */
@@ -4777,6 +4868,9 @@ export interface components {
             members?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: uuid */
+            spaceId?: string | null;
+            itemKeyPrefix?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceDto": {
             /** Format: uuid */
@@ -9211,6 +9305,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FullBoardDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.GetAccess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardAccessDto"];
                 };
             };
         };
