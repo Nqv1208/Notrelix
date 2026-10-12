@@ -143,7 +143,8 @@ Current token exports include:
 
 ```text
 OKLCH color model (sRGB conversion, contrast, ΔE)
-palette: tinted neutrals (mockup values), accents, status, work status (todo/doing/review/done), identity, mark tones (workspace/Space chips)
+palette: tinted neutrals (mockup values), accents, status, work status (todo/doing/review/done), identity, mark tones (workspace/Space chips), system rail tones
+system rail roles: --rail, --rail-foreground, --rail-active-foreground, --rail-hover, --rail-separator, --rail-badge, --rail-badge-foreground, --rail-focus-ring (dark in every appearance; Notrelix system rail only)
 semantic color roles per appearance × accent
 typography (Be Vietnam Pro + IBM Plex Mono, rem scale, semantic text roles)
 spacing / sizes / layout
