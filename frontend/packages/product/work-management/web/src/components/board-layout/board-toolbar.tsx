@@ -1,18 +1,22 @@
 import { useContext } from "react";
-import { Search, Filter } from "lucide-react";
-import { Button, Input } from "@notrelix/ui-web";
 import type { BoardHeaderCopy } from "./board-header.copy";
 import { BoardHeaderCopyContext } from "./board-header-copy-context";
+import { BoardHeaderDataContext } from "./board-header-data-context";
+import {
+  BoardHeaderSurface,
+  type BoardHeaderData,
+} from "./board-header-surface";
 import { ViewTabs, AddViewMenu } from "./view-tabs";
 
 interface BoardToolbarProps {
   boardTitle: string;
   activeView: string;
   onViewChange: (viewType: string) => void;
-  searchQuery?: string;
-  onSearchChange?: (query: string) => void;
-  /** The filter control is rendered only when a handler is supplied. */
-  onFilter?: () => void;
+  /**
+   * Header data (Space crumb, access summary, actions). Defaults to the data
+   * the board route provides through `BoardHeaderDataContext`.
+   */
+  header?: BoardHeaderData;
   /**
    * Header copy. Defaults to the copy provided through
    * `BoardHeaderCopyContext` by the board route.
@@ -20,66 +24,34 @@ interface BoardToolbarProps {
   copy?: BoardHeaderCopy;
 }
 
+/**
+ * The board header: the title row (see `BoardHeaderSurface`), then the view
+ * tabs on their own row with the icon-only Add view menu. Search and filters
+ * belong to each view's own toolbar. One DOM order at every width, so focus
+ * order equals reading order.
+ */
 export function BoardToolbar({
   boardTitle,
   activeView,
   onViewChange,
-  searchQuery = "",
-  onSearchChange,
-  onFilter,
+  header: headerProp,
   copy: copyProp,
 }: BoardToolbarProps) {
   const contextCopy = useContext(BoardHeaderCopyContext);
+  const contextHeader = useContext(BoardHeaderDataContext);
   const copy = copyProp ?? contextCopy;
+  const header = headerProp ?? contextHeader;
   return (
-    // One DOM order at every width (title, views, search, actions): on a
-    // narrow screen the title and the view strip take a row each and the
-    // search and actions wrap below, so focus order equals reading order.
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2 sm:px-4">
-      <h2 className="min-w-0 basis-full truncate text-sm font-semibold text-foreground sm:basis-auto">
-        {boardTitle}
-      </h2>
-
-      <div className="hidden h-4 w-px bg-border sm:block" />
-
-      <div className="w-full min-w-0 overflow-x-auto sm:w-auto">
-        <ViewTabs
-          activeView={activeView}
-          onViewChange={onViewChange}
-          copy={copy}
-        />
-      </div>
-
-      {onSearchChange && (
-        <div className="relative min-w-32 flex-1 sm:ml-auto sm:w-48 sm:flex-none">
-          <Search
-            className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            placeholder={copy.search}
-            aria-label={copy.searchLabel}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="h-7 pl-8 text-xs"
+    <div className="flex flex-col">
+      <BoardHeaderSurface title={boardTitle} copy={copy} {...header} />
+      <div className="flex items-end gap-0.5 border-b border-border px-4 pt-2.5 sm:px-6">
+        <div className="min-w-0 overflow-x-auto">
+          <ViewTabs
+            activeView={activeView}
+            onViewChange={onViewChange}
+            copy={copy}
           />
         </div>
-      )}
-
-      <div
-        className={`flex items-center gap-1 ${onSearchChange ? "" : "ml-auto"}`}
-      >
-        {onFilter && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 text-muted-foreground hover:text-foreground"
-            aria-label={copy.filter}
-            onClick={onFilter}
-          >
-            <Filter className="size-3.5" aria-hidden="true" />
-          </Button>
-        )}
         <AddViewMenu onAddView={onViewChange} copy={copy} />
       </div>
     </div>

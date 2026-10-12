@@ -155,13 +155,13 @@ test.describe("Board header and view bar at 320 px", () => {
     expect(addBox?.x ?? -1).toBeGreaterThanOrEqual(0);
 
     // Keyboard reaches every view tab; the focused tab is scrolled into view.
-    const tablist = page.getByRole("tablist", { name: "Board views" });
-    await expect(tablist.getByRole("tab", { name: "Board" })).toHaveAttribute(
+    const tablist = page.getByRole("tablist", { name: "Views" });
+    await expect(tablist.getByRole("tab", { name: "Kanban" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    await tablist.getByRole("tab", { name: "Board" }).focus();
-    for (const name of ["Table", "Calendar", "Timeline"]) {
+    await tablist.getByRole("tab", { name: "Table" }).focus();
+    for (const name of ["Kanban", "Calendar", "Timeline"]) {
       await page.keyboard.press("ArrowRight");
       await expect(
         tablist.getByRole("tab", { name, exact: true }),
@@ -247,7 +247,7 @@ test.describe("Board header in a real browser", () => {
       }, mode);
       await page.goto(`${board}?view=table`);
       const selected = page.getByRole("tab", { name: "Table" });
-      const other = page.getByRole("tab", { name: "Board" });
+      const other = page.getByRole("tab", { name: "Kanban" });
       await expect(selected).toHaveAttribute("aria-selected", "true");
       const paint = (locator: typeof selected) =>
         locator.evaluate((element) => {
@@ -255,14 +255,18 @@ test.describe("Board header in a real browser", () => {
           return {
             background: style.backgroundColor,
             underline: style.borderBottomColor,
+            weight: style.fontWeight,
           };
         });
       const selectedPaint = await paint(selected);
       const otherPaint = await paint(other);
-      // The selected tab carries a visible tint that unselected tabs do not.
-      expect(selectedPaint.background).not.toBe(otherPaint.background);
-      expect(selectedPaint.background).not.toMatch(/rgba\(0, 0, 0, 0\)|\/ 0\)/);
+      // The selected tab is underlined and set heavier; unselected tabs are not
+      // (no fill, as in the mockup), so the state never rests on colour alone.
       expect(selectedPaint.underline).not.toBe(otherPaint.underline);
+      expect(selectedPaint.underline).not.toMatch(/rgba\(0, 0, 0, 0\)|\/ 0\)/);
+      expect(Number(selectedPaint.weight)).toBeGreaterThan(
+        Number(otherPaint.weight),
+      );
 
       // Hover gives an unselected tab a background too.
       await other.hover();
@@ -285,7 +289,7 @@ test.describe("Board header in a real browser", () => {
     }) => {
       await page.setViewportSize({ width, height: 700 });
       await page.goto(`${board}?view=kanban`);
-      const tab = page.getByRole("tab", { name: "Board" });
+      const tab = page.getByRole("tab", { name: "Kanban" });
       const addView = page.getByRole("button", { name: "Add view" });
       await expect(addView).toBeVisible();
       await tab.focus();
@@ -326,7 +330,7 @@ test.describe("Board header in a real browser", () => {
       await page.getByRole("tab", { name: "Table" }).hover();
       await page.getByRole("tab", { name: "Calendar" }).focus();
       await page.keyboard.press("Shift+Tab");
-      await page.getByRole("tab", { name: "Board" }).hover();
+      await page.getByRole("tab", { name: "Kanban" }).hover();
       await page.waitForTimeout(300);
       await page.screenshot({
         path: `${process.env.HEADER_SHOTS_DIR}/header-${scheme}-${width}.png`,

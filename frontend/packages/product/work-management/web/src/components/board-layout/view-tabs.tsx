@@ -12,8 +12,8 @@ import {
 import type { BoardHeaderCopy } from "./board-header.copy";
 
 const VIEW_TYPES = [
-  { type: "kanban", icon: LayoutGrid },
   { type: "table", icon: Table },
+  { type: "kanban", icon: LayoutGrid },
   { type: "calendar", icon: Calendar },
   { type: "timeline", icon: GanttChart },
 ] as const;
@@ -39,7 +39,7 @@ export function ViewTabs({ activeView, onViewChange, copy }: ViewTabsProps) {
       <TabsList
         variant="line"
         aria-label={copy.boardViews}
-        className="h-auto w-max gap-1 p-0 group-data-horizontal/tabs:h-auto"
+        className="h-auto w-max gap-0.5 p-0 group-data-horizontal/tabs:h-auto"
       >
         {VIEW_TYPES.map((view) => {
           const Icon = view.icon;
@@ -58,10 +58,12 @@ export function ViewTabs({ activeView, onViewChange, copy }: ViewTabsProps) {
               // No panels exist (the board renders outside the tabs), so drop
               // the aria-controls Radix would point at a missing element.
               aria-controls={undefined}
-              // The shared line-variant rules paint every trigger transparent
-              // (also under `dark:`) with high specificity, so the state
-              // tokens go through the same group variants to win.
-              className="h-auto flex-none gap-1.5 px-2.5 py-1.5 text-label font-medium text-muted-foreground group-data-[variant=line]/tabs-list:hover:bg-state-hover hover:bg-state-hover hover:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:bg-state-selected data-[state=active]:bg-state-selected dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-state-selected group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary data-[state=active]:text-state-selected-foreground"
+              // The selected tab is underlined in the primary colour and
+              // set in semibold, with no fill. The shared line-variant rules
+              // paint borders (also under `dark:`) through group variants, so
+              // the underline goes through the same variants to win; the
+              // primitive's pseudo-element underline is not used.
+              className="h-9 flex-none gap-1.5 rounded-t-md border-0 border-b-2 border-transparent px-3 py-0 text-body font-medium text-muted-foreground after:hidden hover:bg-state-hover hover:text-foreground data-[state=active]:font-semibold data-[state=active]:text-foreground dark:data-[state=active]:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary"
             >
               <Icon className="size-3.5" aria-hidden="true" />
               {copy.views[view.type]}
@@ -85,11 +87,11 @@ export function AddViewMenu({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
-          className="h-7 gap-1 text-label text-muted-foreground hover:text-foreground"
+          size="icon-sm"
+          aria-label={copy.addView}
+          className="mb-0.5 text-muted-foreground hover:text-foreground"
         >
-          <Plus className="size-3.5" aria-hidden="true" />
-          {copy.addView}
+          <Plus aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
