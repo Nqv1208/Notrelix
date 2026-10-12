@@ -320,9 +320,7 @@ describe("mapFullBoardDto over the generated board read", () => {
       position: "a0",
       category: "todo",
     });
-    expect(findPriorityField(mapped.fieldDefinitions)?.id).toBe(
-      PRIORITY_FIELD,
-    );
+    expect(findPriorityField(mapped.fieldDefinitions)?.id).toBe(PRIORITY_FIELD);
   });
 
   it("parses an old bundle's response shape (lists[].cards) unchanged", () => {
@@ -479,9 +477,12 @@ describe("groupCardsByStatus", () => {
     expect(last.cards.map((card) => card.id)).toEqual(["b", "c"]);
 
     const allKnown = groupCardsByStatus(
-      mapFullBoardDto(generatedBoard([item("a", "a0", { statusOptionId: TODO })]), {
-        workspaceId: "workspace-1",
-      }),
+      mapFullBoardDto(
+        generatedBoard([item("a", "a0", { statusOptionId: TODO })]),
+        {
+          workspaceId: "workspace-1",
+        },
+      ),
     );
     expect(allKnown.map((lane) => lane.optionId)).not.toContain(null);
     expect(allKnown).toHaveLength(4);
@@ -551,6 +552,36 @@ describe("mapBoardAccessDto", () => {
 });
 
 describe("mapCardDto over the generated item read", () => {
+  it("prefers the item read values carried next to the hand-written fields", () => {
+    const detail = mapCardDto({
+      id: "card-1",
+      boardId: "board-1",
+      workspaceId: "workspace-1",
+      listId: "group-1",
+      title: "Legacy detail",
+      status: "todo",
+      position: 1,
+      members: [],
+      labels: [],
+      checklists: [],
+      commentCount: 0,
+      attachmentCount: 0,
+      createdAt: "2026-10-01T02:00:00Z",
+      ...{
+        itemKey: "ERP-149",
+        statusOptionId: DOING,
+        dueAt: "2026-10-25T10:00:00Z",
+      },
+    });
+    expect(detail).toMatchObject({
+      itemKey: "ERP-149",
+      statusOptionId: DOING,
+      status: DOING,
+      dueAt: "2026-10-25T10:00:00Z",
+      dueDate: "2026-10-25T10:00:00Z",
+    });
+  });
+
   it("reads the name, key and dates of the generated item", () => {
     const dto: GeneratedBoardItemDto = {
       id: "i-142",

@@ -46,7 +46,9 @@ type GeneratedGroup = NonNullable<GeneratedFullBoardDto["lists"]>[number];
 type GeneratedItemSummary = NonNullable<GeneratedGroup["boardItems"]>[number];
 type GeneratedItemMember = NonNullable<GeneratedItemSummary["members"]>[number];
 type GeneratedItemLabel = NonNullable<GeneratedItemSummary["labels"]>[number];
-type GeneratedChecklist = NonNullable<GeneratedBoardItemDto["checklists"]>[number];
+type GeneratedChecklist = NonNullable<
+  GeneratedBoardItemDto["checklists"]
+>[number];
 
 /**
  * The board read as the client receives it: the generated contract, or the
@@ -163,14 +165,16 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
   const members = (dto.members ?? []).map(mapCardMember);
   const values = readItemValues(dto);
   const legacy = isLegacyItem(dto) ? dto : null;
-  const status = legacy
-    ? normalizeStatus(legacy.status)
-    : (values.statusOptionId ?? "");
-  const dueDate = legacy ? legacy.dueDate : values.dueAt;
+  // Item read values win over the hand-written words when both are present.
+  const status =
+    values.statusOptionId ?? (legacy ? normalizeStatus(legacy.status) : "");
+  const dueDate = values.dueAt ?? (legacy ? legacy.dueDate : null);
   const checklists = (dto.checklists ?? []).map(mapChecklist);
   const card: CardDetail = {
     id: dto.id ?? "",
-    listId: legacy ? legacy.listId : ((dto as GeneratedBoardItemDto).groupId ?? ""),
+    listId: legacy
+      ? legacy.listId
+      : ((dto as GeneratedBoardItemDto).groupId ?? ""),
     boardId: dto.boardId ?? "",
     workspaceId: dto.workspaceId ?? "",
     title: itemTitle(dto),
@@ -204,7 +208,7 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     updatedAt: dto.updatedAt ?? undefined,
     itemKey: values.itemKey,
     parentItemId: values.parentItemId,
-    statusOptionId: legacy ? status || null : values.statusOptionId,
+    statusOptionId: status || null,
     dueAt: dueDate ?? null,
     childProgress: values.childProgress,
     boardTitle: "",
@@ -253,7 +257,10 @@ export interface BoardAccess {
   readonly myLevel: BoardAccessLevel;
   readonly mySource: {
     readonly kind: BoardAccessSourceKind;
-    readonly grantedBy: { readonly userId: string; readonly name: string } | null;
+    readonly grantedBy: {
+      readonly userId: string;
+      readonly name: string;
+    } | null;
   };
   readonly peopleCount: number;
   readonly guestCount: number;
@@ -293,8 +300,7 @@ export function mapBoardAccessDto(dto: GeneratedBoardAccessDto): BoardAccess {
     // Fail closed: a level this client does not know grants the least.
     myLevel: ACCESS_LEVELS.find((value) => value === level) ?? "viewer",
     mySource: {
-      kind:
-        ACCESS_SOURCE_KINDS.find((value) => value === kind) ?? "explicit",
+      kind: ACCESS_SOURCE_KINDS.find((value) => value === kind) ?? "explicit",
       grantedBy:
         grantedBy?.userId && grantedBy.name
           ? { userId: grantedBy.userId, name: grantedBy.name }
@@ -345,7 +351,8 @@ export function findPriorityField(
     fields.find((field) => field.semanticRole === "priority") ??
     fields.find(
       (field) =>
-        field.fieldType === "select" && PRIORITY_FIELD_NAMES.has(normalizeName(field.name)),
+        field.fieldType === "select" &&
+        PRIORITY_FIELD_NAMES.has(normalizeName(field.name)),
     )
   );
 }
@@ -381,7 +388,8 @@ export function groupCardsByStatus(board: {
     for (const card of group.cards) {
       if (card.parentItemId || card.isArchived || card.isDeleted) continue;
       const optionId = card.statusOptionId ?? undefined;
-      const lane = optionId === undefined ? undefined : cardsByOption.get(optionId);
+      const lane =
+        optionId === undefined ? undefined : cardsByOption.get(optionId);
       if (lane) lane.push(card);
       else withoutStatus.push(card);
     }
@@ -518,7 +526,9 @@ function mapCardSummaryDto(
   const status = legacy
     ? normalizeStatus(legacy.status)
     : (values.statusOptionId ?? "");
-  const legacyPriority = legacy ? normalizePriority(legacy.priority) : undefined;
+  const legacyPriority = legacy
+    ? normalizePriority(legacy.priority)
+    : undefined;
   const priorityOptionId = legacy
     ? normalizeOptionValue(
         legacyPriority,
@@ -533,8 +543,11 @@ function mapCardSummaryDto(
           ?.label,
       );
   const statusOptionId = legacy
-    ? (normalizeOptionValue(legacy.status, statusField?.options ?? [], status) ??
-      null)
+    ? (normalizeOptionValue(
+        legacy.status,
+        statusField?.options ?? [],
+        status,
+      ) ?? null)
     : values.statusOptionId;
   const statusOption = statusField?.options.find(
     (option) => option.id === statusOptionId,
@@ -583,7 +596,8 @@ function mapCardSummaryDto(
 
   const semanticValues = Object.fromEntries(
     fields.map((field) => {
-      if (field.id === statusField?.id) return [field.id, statusOptionId ?? undefined];
+      if (field.id === statusField?.id)
+        return [field.id, statusOptionId ?? undefined];
       if (field.id === priorityField?.id)
         return [field.id, priorityOptionId ?? undefined];
       const semantic = getSemanticField(field);
@@ -718,7 +732,8 @@ function mapChecklist(
           : ["done", "completed", "checked"].includes(
               (item.status ?? "").trim().toLowerCase(),
             ),
-      position: typeof item.position === "number" ? item.position : itemIndex + 1,
+      position:
+        typeof item.position === "number" ? item.position : itemIndex + 1,
     })),
   };
 }
