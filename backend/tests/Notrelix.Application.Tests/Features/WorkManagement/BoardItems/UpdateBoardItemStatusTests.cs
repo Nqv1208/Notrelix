@@ -87,4 +87,30 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
 
         result.Succeeded.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task Handle_OnTheSystemStatusFieldOfAnAppCreatedBoard_WritesTheStatus()
+    {
+        var created = new List<BoardField>();
+        var fieldSet = new Mock<Microsoft.EntityFrameworkCore.DbSet<BoardField>>();
+        fieldSet.Setup(s => s.AddRange(It.IsAny<BoardField[]>())).Callback<BoardField[]>(created.AddRange);
+        DbContextMock.Setup(c => c.BoardFields).Returns(fieldSet.Object);
+        var boardId = (await new Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace.CreateBoardInWorkspaceCommandHandler(
+                DbContextMock.Object,
+                Mock.Of<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement>(),
+                RequestContextMock.Object,
+                DateTimeProviderMock.Object)
+            .Handle(new Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace.CreateBoardInWorkspaceCommand(TestWorkspaceId, "App board", null, null, null), CancellationToken.None)).Data;
+        var status = created.Single(f => f.Type == FieldType.Status);
+        status.IsSystem.Should().BeTrue("the app creates the Status field as a system field");
+        var item = CreateBoardItem(boardId: boardId);
+        SetupBoardItems(item);
+        SetupBoardFields(created.ToArray());
+        var done = status.Options.Single(o => o.Category == WorkStatusCategory.Done).Id;
+
+        var result = await _handler.Handle(new UpdateBoardItemStatusCommand(item.Id, done.ToString()), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        item.FieldValues.Should().ContainSingle(v => v.FieldId == status.Id).Which.Value.Data.Value.Should().Be($"\"{done}\"");
+    }
 }

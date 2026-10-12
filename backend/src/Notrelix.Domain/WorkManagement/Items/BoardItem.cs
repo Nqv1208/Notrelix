@@ -174,8 +174,9 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (field.IsDeleted)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateDeleted, "Cannot update value for a deleted field.");
 
-        if (field.IsSystem)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateSystem, "Cannot update a system field.");
+        // A system field's definition is protected by the field itself (it cannot be
+        // deleted); the Item's value of that field (its Status, Due Date, Assignee)
+        // is ordinary Item data and is written like any other value.
 
         if (field.Type is FieldType.Formula or FieldType.Rollup)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotWriteComputed, "Cannot manually write to a computed field (Formula or Rollup).");

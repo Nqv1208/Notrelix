@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
@@ -35,6 +36,8 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
     private Guid _textFieldId;
     private Guid _selectFieldId;
     private Guid _optionId;
+    private Guid _statusFieldId;
+    private Guid _doneOptionId;
 
     public WorkItemFieldValueIntegrationTests(PostgresTestContainer db)
     {
@@ -53,14 +56,19 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
         var text = BoardField.Create(_accountId, workspace.Id, board.Id, "Notes", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), _userId, Now);
         var select = BoardField.Create(_accountId, workspace.Id, board.Id, "Priority", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a1"), _userId, Now);
         var option = select.AddOption("High", Color.Create("#FF0000"), FractionalIndex.Create("a0"), _userId, Now);
+        // The Status field as the app creates it: a system field seeded with the default statuses.
+        var status = BoardField.Create(_accountId, workspace.Id, board.Id, "Status", FieldType.Status,
+            FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")), FractionalIndex.Create("a2"), _userId, Now, isSystem: true);
+        status.AddDefaultStatusOptions(_userId, Now);
         (_workspaceId, _itemId, _textFieldId, _selectFieldId, _optionId) = (workspace.Id, item.Id, text.Id, select.Id, option.Id);
+        (_statusFieldId, _doneOptionId) = (status.Id, status.Options.Single(o => o.Category == WorkStatusCategory.Done).Id);
 
         await using var seed = _db.CreateContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(board);
         seed.BoardGroups.Add(group);
         seed.BoardItems.Add(item);
-        seed.BoardFields.AddRange(text, select);
+        seed.BoardFields.AddRange(text, select, status);
         await seed.SaveChangesAsync();
     }
 
@@ -94,6 +102,15 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
         await BulkAsync(new Dictionary<Guid, object?> { [_textFieldId] = "two" });
 
         (await StoredValuesAsync(_textFieldId)).Should().ContainSingle().Which.Should().Contain("two");
+    }
+
+    [Fact]
+    public async Task StatusOfASystemStatusField_IsWrittenThroughTheStatusCommand()
+    {
+        await InTransactionAsync(context => new UpdateBoardItemStatusCommandHandler(context, CurrentUser(), Clock())
+            .Handle(new UpdateBoardItemStatusCommand(_itemId, _doneOptionId.ToString()), CancellationToken.None));
+
+        (await StoredValuesAsync(_statusFieldId)).Should().ContainSingle().Which.Should().Contain(_doneOptionId.ToString());
     }
 
     private Task SetValueAsync(Guid fieldId, object value) =>
