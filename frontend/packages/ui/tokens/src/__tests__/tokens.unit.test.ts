@@ -6,6 +6,7 @@ import {
   ACCENT_IDS,
   ACCENT_ROLES,
   ELEVATION_ROLES,
+  LABEL_TONE_IDS,
   MARK_TONE_IDS,
   THEME_APPEARANCES,
   WORK_STATUS_IDS,
@@ -400,6 +401,125 @@ describe("color model", () => {
           Object.keys(resolveSemanticColors(appearance, accent)).sort(),
         ).toEqual(reference);
       }
+    }
+  });
+});
+
+/**
+ * Board Kanban (Final-Board): lane tints (`--lane-*`), label chips (`.t-*`)
+ * and the high priority colour (`--high`), light and dark as the mockup.
+ * Contrast adjustment: dark todo lane #151B23 is ΔL 0.004 from the dark
+ * panel (cards would vanish into the lane); L raised in 0.01 steps from
+ * 0.22 to 0.24 → #1A2028 (ΔL 0.024, the same side of the panel as the
+ * other dark lanes). High contrast reuses the light lanes and label fills.
+ */
+const BOARD_VALUES: Record<"light" | "dark", Record<string, string>> = {
+  light: {
+    "work-status-todo-lane": "#eceef2",
+    "work-status-doing-lane": "#e6effb",
+    "work-status-review-lane": "#fdf3dc",
+    "work-status-done-lane": "#e5f3ea",
+    "label-data": "#e1eefc",
+    "label-data-foreground": "#124c8e",
+    "label-security": "#fde5ea",
+    "label-security-foreground": "#9e1736",
+    "label-training": "#e1f0ea",
+    "label-training-foreground": "#2c5e4f",
+    "label-report": "#fbf0d3",
+    "label-report-foreground": "#6e4f0a",
+    "label-doc": "#eceef2",
+    "label-doc-foreground": "#3e4757",
+    "label-test": "#eee7fb",
+    "label-test-foreground": "#5532a8",
+    "priority-high": "#b4500b",
+    "priority-high-text": "#b4500b",
+  },
+  dark: {
+    "work-status-todo-lane": "#1a2028",
+    "work-status-doing-lane": "#13203a",
+    "work-status-review-lane": "#272012",
+    "work-status-done-lane": "#12251c",
+    "label-data": "#16304f",
+    "label-data-foreground": "#9cc8fa",
+    "label-security": "#4a1a26",
+    "label-security-foreground": "#ffa8b8",
+    "label-training": "#173a30",
+    "label-training-foreground": "#9ed6c2",
+    "label-report": "#3c3014",
+    "label-report-foreground": "#f2d58a",
+    "label-doc": "#262e39",
+    "label-doc-foreground": "#c3cbd6",
+    "label-test": "#2e2350",
+    "label-test-foreground": "#c9b6fa",
+    "priority-high": "#ffa060",
+    "priority-high-text": "#ffa060",
+  },
+};
+
+describe("board lane, label and priority colours", () => {
+  it("names the six label tones in mockup order", () => {
+    expect(LABEL_TONE_IDS).toEqual([
+      "data",
+      "security",
+      "training",
+      "report",
+      "doc",
+      "test",
+    ]);
+  });
+
+  for (const appearance of ["light", "dark"] as const) {
+    it.each(Object.entries(BOARD_VALUES[appearance]))(
+      `${appearance} --%s renders %s`,
+      (role, hex) => {
+        expect(emittedHex(appearance, role)).toBe(hex);
+      },
+    );
+  }
+
+  it("high contrast reuses the light lane tints and label fills", () => {
+    for (const id of WORK_STATUS_IDS) {
+      expect(emittedHex("high-contrast", `work-status-${id}-lane`)).toBe(
+        emittedHex("light", `work-status-${id}-lane`),
+      );
+    }
+    for (const id of LABEL_TONE_IDS) {
+      expect(emittedHex("high-contrast", `label-${id}`)).toBe(
+        emittedHex("light", `label-${id}`),
+      );
+    }
+  });
+
+  it("keeps the high priority orange visibly distinct from danger", () => {
+    for (const appearance of THEME_APPEARANCES) {
+      const colors = resolveSemanticColors(appearance, "blue");
+      for (const role of ["priority-high", "priority-high-text"]) {
+        for (const danger of ["danger", "danger-text"]) {
+          expect(
+            deltaEOk(colors[role]!, colors[danger]!),
+            `${appearance} ${role} vs ${danger}`,
+          ).toBeGreaterThanOrEqual(0.08);
+        }
+      }
+    }
+  });
+
+  it("maps every new role to a Tailwind colour in the web globals", () => {
+    const globals = readFileSync(
+      resolve(here, "../../../../../apps/web/src/styles/globals.css"),
+      "utf8",
+    );
+    const roles = [
+      ...WORK_STATUS_IDS.map((id) => `work-status-${id}-lane`),
+      ...LABEL_TONE_IDS.flatMap((id) => [
+        `label-${id}`,
+        `label-${id}-foreground`,
+      ]),
+      "priority-high",
+      "priority-high-text",
+    ];
+    for (const role of roles) {
+      expect(globals, role).toContain(`--color-${role}: var(--${role});`);
     }
   });
 });

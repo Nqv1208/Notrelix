@@ -461,6 +461,179 @@ export const workStatuses: Record<
   },
 };
 
+/**
+ * Lane tints: the Board Kanban column background behind cards of one status
+ * bucket. Cards (panel) must stay distinguishable on every lane (ΔL ≥ 0.02).
+ */
+export const workStatusLanes: Record<
+  WorkStatusId,
+  Record<ThemeAppearance, Oklch>
+> = (() => {
+  /*
+   * Light and dark are the Final-Board `--lane-*` values on the CSS emit
+   * grid. Contrast adjustment: dark todo #151B23 is ΔL 0.004 from the dark
+   * panel #151A21; L raised in 0.01 steps from 0.22 to 0.24 → #1A2028
+   * (ΔL 0.024, lighter than the panel like the other dark lanes). High
+   * contrast reuses the light tints (ΔL ≥ 0.034 from its white panel).
+   */
+  const light = {
+    todo: oklch(0.949, 0.006, 264.5), // #ECEEF2
+    doing: oklch(0.949, 0.019, 255.5), // #E6EFFB
+    review: oklch(0.966, 0.032, 87.3), // #FDF3DC
+    done: oklch(0.951, 0.019, 157.9), // #E5F3EA
+  };
+  const dark = {
+    todo: oklch(0.24, 0.018, 255.7), // #1A2028 (mockup #151B23, contrast)
+    doing: oklch(0.247, 0.053, 263), // #13203A
+    review: oklch(0.247, 0.027, 84), // #272012
+    done: oklch(0.245, 0.031, 162.5), // #12251C
+  };
+  const lanes = {} as Record<WorkStatusId, Record<ThemeAppearance, Oklch>>;
+  for (const id of WORK_STATUS_IDS) {
+    lanes[id] = {
+      light: light[id],
+      dark: dark[id],
+      "high-contrast": light[id],
+    };
+  }
+  return lanes;
+})();
+
+// ─── Label tones ─────────────────────────────────────────────────────────
+
+/**
+ * Label tones: Board item label chips (Final-Board `.t-*`). Colour only; a
+ * label always shows its name. The label names are Work Management data,
+ * not tokens.
+ */
+export const LABEL_TONE_IDS = [
+  "data",
+  "security",
+  "training",
+  "report",
+  "doc",
+  "test",
+] as const;
+export type LabelToneId = (typeof LABEL_TONE_IDS)[number];
+
+export interface LabelTone {
+  readonly fill: Oklch;
+  /** Chip text on `fill`. ≥4.5:1 (≥7:1 in high contrast). */
+  readonly onFill: Oklch;
+}
+
+/*
+ * Light and dark are the mockup chips on the CSS emit grid (every pair is
+ * ≥ 6.3:1). High contrast keeps the light fills; text below 7:1 is lowered
+ * in 0.01 L steps: security 0.455 → 0.435 #970C31 (7.28), training
+ * 0.442 → 0.412 #235547 (7.20), report 0.448 → 0.428 #684901 (7.28).
+ */
+export const labelTones: Record<
+  LabelToneId,
+  Record<ThemeAppearance, LabelTone>
+> = (() => {
+  const light: Record<LabelToneId, LabelTone> = {
+    data: {
+      fill: oklch(0.944, 0.023, 250.1), // #E1EEFC
+      onFill: oklch(0.419, 0.124, 255.1), // #124C8E
+    },
+    security: {
+      fill: oklch(0.943, 0.027, 3.4), // #FDE5EA
+      onFill: oklch(0.455, 0.167, 15.6), // #9E1736
+    },
+    training: {
+      fill: oklch(0.942, 0.018, 170.1), // #E1F0EA
+      onFill: oklch(0.442, 0.06, 171.6), // #2C5E4F
+    },
+    report: {
+      fill: oklch(0.956, 0.04, 89.7), // #FBF0D3
+      onFill: oklch(0.448, 0.088, 80.8), // #6E4F0A
+    },
+    doc: {
+      fill: oklch(0.949, 0.006, 264.5), // #ECEEF2
+      onFill: oklch(0.396, 0.03, 261.9), // #3E4757
+    },
+    test: {
+      fill: oklch(0.939, 0.028, 301.8), // #EEE7FB
+      onFill: oklch(0.432, 0.178, 290.6), // #5532A8
+    },
+  };
+  const dark: Record<LabelToneId, LabelTone> = {
+    data: {
+      fill: oklch(0.306, 0.065, 254.1), // #16304F
+      onFill: oklch(0.819, 0.085, 252), // #9CC8FA
+    },
+    security: {
+      fill: oklch(0.295, 0.074, 7.3), // #4A1A26
+      onFill: oklch(0.821, 0.104, 7.6), // #FFA8B8
+    },
+    training: {
+      fill: oklch(0.319, 0.045, 172.2), // #173A30
+      onFill: oklch(0.832, 0.064, 170.7), // #9ED6C2
+    },
+    report: {
+      fill: oklch(0.316, 0.046, 86.4), // #3C3014
+      onFill: oklch(0.881, 0.099, 89.1), // #F2D58A
+    },
+    doc: {
+      fill: oklch(0.298, 0.023, 256.4), // #262E39
+      onFill: oklch(0.839, 0.018, 256.3), // #C3CBD6
+    },
+    test: {
+      fill: oklch(0.294, 0.079, 292.1), // #2E2350
+      onFill: oklch(0.816, 0.096, 297), // #C9B6FA
+    },
+  };
+  const highContrastText: Partial<Record<LabelToneId, Oklch>> = {
+    security: oklch(0.435, 0.167, 15.6), // #970C31
+    training: oklch(0.412, 0.06, 171.6), // #235547
+    report: oklch(0.428, 0.088, 80.8), // #684901
+  };
+  const tones = {} as Record<LabelToneId, Record<ThemeAppearance, LabelTone>>;
+  for (const id of LABEL_TONE_IDS) {
+    tones[id] = {
+      light: light[id],
+      dark: dark[id],
+      "high-contrast": {
+        fill: light[id].fill,
+        onFill: highContrastText[id] ?? light[id].onFill,
+      },
+    };
+  }
+  return tones;
+})();
+
+// ─── Priority ────────────────────────────────────────────────────────────
+
+export interface PriorityTones {
+  /** Icon / dot. ≥3:1 on panel (≥4.5:1 in high contrast). */
+  readonly fill: Oklch;
+  /** Priority-coloured text. ≥4.5:1 on canvas, panel and sidebar (≥7:1 in high contrast). */
+  readonly text: Oklch;
+}
+
+/*
+ * High priority: the Final-Board `--high` orange, distinct from the danger
+ * red (ΔE_OK ≥ 0.08). Light #B4500B, dark #FFA060 for both fill and text.
+ * High contrast keeps the light fill (5.12:1 on white); text lowered in
+ * 0.01 L steps from 0.551 to 0.451, chroma capped to sRGB → #893B06 (7.78:1
+ * on panel, 7.14:1 on sidebar).
+ */
+export const priorityHigh: Record<ThemeAppearance, PriorityTones> = {
+  light: {
+    fill: oklch(0.551, 0.147, 47.4), // #B4500B
+    text: oklch(0.551, 0.147, 47.4),
+  },
+  dark: {
+    fill: oklch(0.79, 0.138, 53.3), // #FFA060
+    text: oklch(0.79, 0.138, 53.3),
+  },
+  "high-contrast": {
+    fill: oklch(0.551, 0.147, 47.4),
+    text: oklch(0.451, 0.12, 47.4), // #893B06, 7.14:1 on sidebar
+  },
+};
+
 // ─── Identity ────────────────────────────────────────────────────────────
 
 export const IDENTITY_IDS = ["blue", "coral", "gold", "sage", "ember"] as const;

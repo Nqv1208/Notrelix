@@ -21,15 +21,19 @@ import type { Oklch } from "./oklch";
 import {
   CHART_SERIES,
   IDENTITY_IDS,
+  LABEL_TONE_IDS,
   MARK_TONE_IDS,
   STATUS_IDS,
   WORK_STATUS_IDS,
   accents,
   identity,
+  labelTones,
   markTones,
   neutrals,
+  priorityHigh,
   railTones,
   statuses,
+  workStatusLanes,
   workStatuses,
   type AccentId,
   type AccentTones,
@@ -178,7 +182,16 @@ export function buildAppearanceColors(
   for (const id of WORK_STATUS_IDS) {
     roles[`work-status-${id}`] = workStatuses[id][appearance].fill;
     roles[`work-status-${id}-text`] = workStatuses[id][appearance].text;
+    roles[`work-status-${id}-lane`] = workStatusLanes[id][appearance];
   }
+
+  for (const id of LABEL_TONE_IDS) {
+    roles[`label-${id}`] = labelTones[id][appearance].fill;
+    roles[`label-${id}-foreground`] = labelTones[id][appearance].onFill;
+  }
+
+  roles["priority-high"] = priorityHigh[appearance].fill;
+  roles["priority-high-text"] = priorityHigh[appearance].text;
 
   for (const id of IDENTITY_IDS) {
     roles[`identity-${id}`] = identity[id].fill;

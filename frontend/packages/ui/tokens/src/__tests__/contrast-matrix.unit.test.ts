@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ACCENT_IDS,
   IDENTITY_IDS,
+  LABEL_TONE_IDS,
   MARK_TONE_IDS,
   STATUS_IDS,
   THEME_APPEARANCES,
@@ -104,6 +105,23 @@ const MARK_PAIRS: readonly Pair[] = MARK_TONE_IDS.map(
   (id) => [`mark-${id}-foreground`, `mark-${id}`] as const,
 );
 
+/** Label chip text on its own tone fill. */
+const LABEL_PAIRS: readonly Pair[] = LABEL_TONE_IDS.map(
+  (id) => [`label-${id}-foreground`, `label-${id}`] as const,
+);
+
+/** Lane header and empty-lane text on every lane tint. */
+const LANE_TEXT_PAIRS: readonly Pair[] = WORK_STATUS_IDS.flatMap((id) =>
+  (["foreground", "muted-foreground"] as const).map(
+    (fg) => [fg, `work-status-${id}-lane`] as const,
+  ),
+);
+
+/** High priority text on the page surfaces (canvas, panel, sidebar). */
+const PRIORITY_TEXT_PAIRS: readonly Pair[] = (
+  ["surface-canvas", "surface-panel", "surface-sidebar"] as const
+).map((s) => ["priority-high-text", s] as const);
+
 function minimumText(appearance: ThemeAppearance): number {
   return appearance === "high-contrast" ? 7 : 4.5;
 }
@@ -185,6 +203,59 @@ describe("contrast matrix (appearance × accent)", () => {
         ).toBeGreaterThanOrEqual(appearance === "high-contrast" ? 4.5 : 3);
       },
     );
+
+    it.each(LABEL_PAIRS)(
+      "label text %s on %s meets the text minimum",
+      (fg, bg) => {
+        const ratio = contrastRatio(get(fg), get(bg));
+        expect(
+          ratio,
+          `${fg} ${toHex(get(fg))} on ${bg} ${toHex(get(bg))} = ${ratio.toFixed(2)}`,
+        ).toBeGreaterThanOrEqual(minimumText(appearance));
+      },
+    );
+
+    it.each(LANE_TEXT_PAIRS)(
+      "lane text %s on %s meets the text minimum",
+      (fg, bg) => {
+        const ratio = contrastRatio(get(fg), get(bg));
+        expect(
+          ratio,
+          `${fg} ${toHex(get(fg))} on ${bg} ${toHex(get(bg))} = ${ratio.toFixed(2)}`,
+        ).toBeGreaterThanOrEqual(minimumText(appearance));
+      },
+    );
+
+    it.each(WORK_STATUS_IDS)(
+      "cards stay distinguishable on the %s lane (panel vs lane ΔL ≥ 0.02)",
+      (id) => {
+        const lane = get(`work-status-${id}-lane`);
+        const panel = get("surface-panel");
+        const delta = Math.abs(lane.l - panel.l);
+        expect(
+          delta,
+          `${toHex(lane)} vs panel ${toHex(panel)} ΔL ${delta.toFixed(3)}`,
+        ).toBeGreaterThanOrEqual(0.02);
+      },
+    );
+
+    it.each(PRIORITY_TEXT_PAIRS)(
+      "priority text %s on %s meets the text minimum",
+      (fg, bg) => {
+        const ratio = contrastRatio(get(fg), get(bg));
+        expect(
+          ratio,
+          `${fg} ${toHex(get(fg))} on ${bg} ${toHex(get(bg))} = ${ratio.toFixed(2)}`,
+        ).toBeGreaterThanOrEqual(minimumText(appearance));
+      },
+    );
+
+    it("priority-high fill meets the non-text minimum on panel", () => {
+      const ratio = contrastRatio(get("priority-high"), get("surface-panel"));
+      expect(ratio, ratio.toFixed(2)).toBeGreaterThanOrEqual(
+        appearance === "high-contrast" ? 4.5 : 3,
+      );
+    });
 
     it.each(MARK_PAIRS)("mark initials %s on %s ≥ 4.5:1", (fg, bg) => {
       const ratio = contrastRatio(get(fg), get(bg));

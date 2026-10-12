@@ -173,6 +173,30 @@
   --color-work-status-done: var(--work-status-done);
   --color-work-status-done-text: var(--work-status-done-text);
 
+  /* Board Kanban lane tints (column background behind cards of one status bucket). */
+  --color-work-status-todo-lane: var(--work-status-todo-lane);
+  --color-work-status-doing-lane: var(--work-status-doing-lane);
+  --color-work-status-review-lane: var(--work-status-review-lane);
+  --color-work-status-done-lane: var(--work-status-done-lane);
+
+  /* Label tones: Board item label chips (always with the label name). */
+  --color-label-data: var(--label-data);
+  --color-label-data-foreground: var(--label-data-foreground);
+  --color-label-security: var(--label-security);
+  --color-label-security-foreground: var(--label-security-foreground);
+  --color-label-training: var(--label-training);
+  --color-label-training-foreground: var(--label-training-foreground);
+  --color-label-report: var(--label-report);
+  --color-label-report-foreground: var(--label-report-foreground);
+  --color-label-doc: var(--label-doc);
+  --color-label-doc-foreground: var(--label-doc-foreground);
+  --color-label-test: var(--label-test);
+  --color-label-test-foreground: var(--label-test-foreground);
+
+  /* High priority (orange, distinct from danger; always with an icon or label). */
+  --color-priority-high: var(--priority-high);
+  --color-priority-high-text: var(--priority-high-text);
+
   /* Identity (logo marks, Board/Doc tiles, avatars, chart series; never status). Workspace/Space chips: mark tones below (WX-DEC-014). */
   --color-identity-blue: var(--identity-blue);
   --color-identity-blue-foreground: var(--identity-blue-foreground);
