@@ -114,6 +114,7 @@ export const endpoints = {
       `/workspaces/${workspaceId}/boards`,
     detail: (boardId: string) => `/boards/${boardId}`,
     full: (boardId: string) => `/boards/${boardId}/full`,
+    access: (boardId: string) => `/boards/${boardId}/access`,
     schema: (boardId: string) => `/boards/${boardId}/schema`,
     labels: (boardId: string) => `/boards/${boardId}/labels`,
     label: (boardId: string, labelId: string) =>

@@ -12,11 +12,25 @@ export type FieldType =
   | "relation"
   | "formula";
 
+/** Work status category of a Status option (board read contract). */
+export type WorkStatusCategory = "todo" | "in_progress" | "review" | "done";
+
 export interface FieldOption {
   id: string;
   label: string;
   color: string;
+  /** Ordering key from the board read; options are listed in this order. */
+  position?: string;
+  /** Category of a Status option; absent on other fields and older reads. */
+  category?: WorkStatusCategory | null;
 }
+
+/**
+ * The board's semantic fields, resolved by the board read mapper: the Status
+ * field (field type Status) and the priority field (first Select field named
+ * priority / ưu tiên / độ ưu tiên / mức ưu tiên).
+ */
+export type FieldSemanticRole = "status" | "priority";
 
 export interface FieldDefinition {
   id: string;
@@ -27,6 +41,7 @@ export interface FieldDefinition {
   position: number;
   isHidden: boolean;
   isSystemField: boolean;
+  semanticRole?: FieldSemanticRole;
 }
 
 export interface FieldValue {

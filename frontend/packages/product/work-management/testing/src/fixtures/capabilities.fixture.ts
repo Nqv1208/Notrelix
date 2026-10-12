@@ -4,6 +4,11 @@ export type WorkManagementUiCapabilities = {
   readonly canRenameGroup: boolean;
   readonly canDelete: boolean;
   readonly canEditFields: boolean;
+  /**
+   * Writing comments; when omitted, commenting follows `canEditFields`. A
+   * commenter has it without any edit capability.
+   */
+  readonly canComment?: boolean;
 };
 
 export const ownerCapabilities: WorkManagementUiCapabilities = {
@@ -25,4 +30,10 @@ export const viewerCapabilities: WorkManagementUiCapabilities = {
   canRenameGroup: false,
   canDelete: false,
   canEditFields: false,
+};
+
+/** Đỗ Khánh Linh on the ERP board: "Có thể bình luận" (explicit entry). */
+export const commenterCapabilities: WorkManagementUiCapabilities = {
+  ...viewerCapabilities,
+  canComment: true,
 };

@@ -6,6 +6,7 @@ import {
 } from "react";
 import type { NotrelixClient } from "@notrelix/contracts";
 import { createBoardApi } from "./api/board.api";
+import { createBoardAccessApi } from "./api/board-access.api";
 import { createCardApi } from "./api/item.api";
 import { createGroupApi } from "./api/group.api";
 import { createListApi } from "./api/list.api";
@@ -16,6 +17,7 @@ import { createCommentApi } from "./api/item-comments.api";
 
 export interface WorkManagementServices {
   readonly boards: ReturnType<typeof createBoardApi>;
+  readonly access: ReturnType<typeof createBoardAccessApi>;
   readonly cards: ReturnType<typeof createCardApi>;
   readonly groups: ReturnType<typeof createGroupApi>;
   readonly lists: ReturnType<typeof createListApi>;
@@ -30,6 +32,7 @@ export function createWorkManagementServices(
 ): WorkManagementServices {
   return {
     boards: createBoardApi(client),
+    access: createBoardAccessApi(client),
     cards: createCardApi(client),
     groups: createGroupApi(client),
     lists: createListApi(client),
