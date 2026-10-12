@@ -7,6 +7,7 @@ import {
   ACCENT_ROLES,
   ELEVATION_ROLES,
   THEME_APPEARANCES,
+  WORK_STATUS_IDS,
   Z_INDEX_ORDER,
   buildTokensCss,
   durationMs,
@@ -14,12 +15,15 @@ import {
   fontSizeScale,
   fonts,
   fromHex,
+  oklch,
   radiusBase,
   resolveSemanticColors,
+  resolveThemeVariables,
   semanticColorRoleNames,
   textRoles,
   toHex,
   zIndex,
+  type ThemeAppearance,
 } from "../index";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -171,6 +175,82 @@ describe("motion, stacking, shape", () => {
 
   it("keeps the shadcn radius base", () => {
     expect(radiusBase).toBe("0.625rem");
+  });
+});
+
+/** Hex the browser renders for an emitted `--role: oklch(l c h)` value. */
+function emittedHex(appearance: ThemeAppearance, role: string): string {
+  const value = resolveThemeVariables(appearance, "blue")[`--${role}`];
+  const match = /^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/.exec(value ?? "");
+  if (!match) throw new Error(`--${role} (${appearance}) is not opaque oklch: ${value}`);
+  return toHex(oklch(Number(match[1]), Number(match[2]), Number(match[3])));
+}
+
+/**
+ * Approved mockup values (docs/design/mockups/2026-10, `.nx` / `.nx.mode-dem`).
+ * Compared as the hex of the emitted CSS value, so the page renders the
+ * mockup colour exactly. Light `work-status-review` is the one contrast
+ * adjustment: the mockup #D99A00 is 2.43:1 on panel, lowered by L 0.01 steps
+ * to #C18A12 (3.02:1).
+ */
+const MOCKUP_VALUES: Record<"light" | "dark", Record<string, string>> = {
+  light: {
+    border: "#e6e9ee",
+    "muted-foreground": "#4f5866",
+    "danger-text": "#c42340",
+    "surface-canvas": "#f7f8fa",
+    "surface-sidebar": "#eff1f4",
+    "work-status-todo": "#7a8391",
+    "work-status-doing": "#1e7be0",
+    "work-status-review": "#c18a12",
+    "work-status-done": "#2e8b57",
+    "work-status-todo-text": "#4f5866",
+    "work-status-doing-text": "#0f56ae",
+    "work-status-review-text": "#8a5a00",
+    "work-status-done-text": "#1d6b40",
+  },
+  dark: {
+    "surface-canvas": "#0e1116",
+    "surface-sidebar": "#13181e",
+    "surface-panel": "#151a21",
+    border: "#232b35",
+    foreground: "#e6e9ee",
+    "muted-foreground": "#aab3c0",
+    "danger-text": "#ff6b81",
+    "work-status-todo": "#8c95a3",
+    "work-status-doing": "#5aa9ff",
+    "work-status-review": "#f2c14e",
+    "work-status-done": "#56c98a",
+    "work-status-todo-text": "#8c95a3",
+    "work-status-doing-text": "#5aa9ff",
+    "work-status-review-text": "#f2c14e",
+    "work-status-done-text": "#56c98a",
+  },
+};
+
+describe("mockup colour values", () => {
+  for (const appearance of ["light", "dark"] as const) {
+    it.each(Object.entries(MOCKUP_VALUES[appearance]))(
+      `${appearance} --%s renders %s`,
+      (role, hex) => {
+        expect(emittedHex(appearance, role)).toBe(hex);
+      },
+    );
+  }
+
+  it("names the four work-status roles (labels are Work Management copy, not tokens)", () => {
+    expect(WORK_STATUS_IDS).toEqual(["todo", "doing", "review", "done"]);
+    for (const appearance of THEME_APPEARANCES) {
+      const variables = resolveThemeVariables(appearance, "blue");
+      for (const id of WORK_STATUS_IDS) {
+        expect(variables, `${appearance} ${id}`).toHaveProperty(
+          `--work-status-${id}`,
+        );
+        expect(variables, `${appearance} ${id}`).toHaveProperty(
+          `--work-status-${id}-text`,
+        );
+      }
+    }
   });
 });
 

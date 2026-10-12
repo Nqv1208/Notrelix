@@ -4,6 +4,7 @@ import {
   IDENTITY_IDS,
   STATUS_IDS,
   THEME_APPEARANCES,
+  WORK_STATUS_IDS,
   accents,
   contrastOverComposite,
   contrastRatio,
@@ -85,6 +86,18 @@ const IDENTITY_PAIRS: readonly Pair[] = IDENTITY_IDS.map(
   (id) => [`identity-${id}-foreground`, `identity-${id}`] as const,
 );
 
+/** Work-status text on the three page surfaces (canvas, panel, sidebar). */
+const WORK_STATUS_TEXT_PAIRS: readonly Pair[] = WORK_STATUS_IDS.flatMap((id) =>
+  (["surface-canvas", "surface-panel", "surface-sidebar"] as const).map(
+    (s) => [`work-status-${id}-text`, s] as const,
+  ),
+);
+
+/** Work-status dots/fills on panel: ≥ 3:1 (≥ 4.5:1 in high contrast). */
+const WORK_STATUS_FILL_PAIRS: readonly Pair[] = WORK_STATUS_IDS.map(
+  (id) => [`work-status-${id}`, "surface-panel"] as const,
+);
+
 function minimumText(appearance: ThemeAppearance): number {
   return appearance === "high-contrast" ? 7 : 4.5;
 }
@@ -144,6 +157,28 @@ describe("contrast matrix (appearance × accent)", () => {
         `${fg} on ${bg} = ${ratio.toFixed(2)}`,
       ).toBeGreaterThanOrEqual(3);
     });
+
+    it.each(WORK_STATUS_TEXT_PAIRS)(
+      "work-status text %s on %s meets the text minimum",
+      (fg, bg) => {
+        const ratio = contrastRatio(get(fg), get(bg));
+        expect(
+          ratio,
+          `${fg} ${toHex(get(fg))} on ${bg} ${toHex(get(bg))} = ${ratio.toFixed(2)}`,
+        ).toBeGreaterThanOrEqual(minimumText(appearance));
+      },
+    );
+
+    it.each(WORK_STATUS_FILL_PAIRS)(
+      "work-status fill %s on %s meets the non-text minimum",
+      (fg, bg) => {
+        const ratio = contrastRatio(get(fg), get(bg));
+        expect(
+          ratio,
+          `${fg} ${toHex(get(fg))} on ${bg} ${toHex(get(bg))} = ${ratio.toFixed(2)}`,
+        ).toBeGreaterThanOrEqual(appearance === "high-contrast" ? 4.5 : 3);
+      },
+    );
 
     it.each(IDENTITY_PAIRS)("identity label %s on %s ≥ 4.5:1", (fg, bg) => {
       expect(contrastRatio(get(fg), get(bg))).toBeGreaterThanOrEqual(4.5);

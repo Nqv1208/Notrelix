@@ -9,7 +9,7 @@
  * Framework-neutral: no React, no DOM.
  */
 
-import { fromHex, toCss, tone, type Oklch } from "./oklch";
+import { fromHex, oklch, toCss, tone, type Oklch } from "./oklch";
 
 /** Appearances that have a complete, independently tuned palette. */
 export const THEME_APPEARANCES = ["light", "dark", "high-contrast"] as const;
@@ -67,34 +67,40 @@ export interface NeutralRoles {
 
 const n = (l: number, c: number) => tone(l, c, NEUTRAL_HUE);
 
+/*
+ * Mockup neutrals (docs/design/mockups/2026-10, `.nx` light / `.nx.mode-dem`
+ * dark) are authored on the CSS emit grid (L, C to 3 decimals) at the brand
+ * hue so the emitted value renders the mockup hex exactly. Light muted text
+ * (#4F5866) has no hue-255 fit, so it keeps its own hue.
+ */
 export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
   light: {
-    canvas: n(0.985, 0.003),
-    sidebar: n(0.965, 0.006),
+    canvas: n(0.979, 0.003), // #F7F8FA
+    sidebar: n(0.957, 0.005), // #EFF1F4
     panel: n(0.997, 0.002),
     raised: n(1, 0),
     subtle: n(0.955, 0.006),
     hover: n(0.945, 0.006),
-    border: n(0.91, 0.006),
+    border: n(0.933, 0.007), // #E6E9EE
     input: n(0.87, 0.008),
     text: n(0.22, 0.008),
-    textMuted: n(0.49, 0.01),
+    textMuted: oklch(0.458, 0.026, 259.2), // #4F5866
     disabled: n(0.94, 0.004),
     textDisabled: n(0.66, 0.006),
     onFill: n(0.99, 0.002),
     onLightFill: n(0.2, 0.01),
   },
   dark: {
-    canvas: n(0.18, 0.008),
-    sidebar: n(0.155, 0.008),
-    panel: n(0.205, 0.008),
+    canvas: n(0.177, 0.011), // #0E1116
+    sidebar: n(0.207, 0.014), // #13181E
+    panel: n(0.216, 0.016), // #151A21
     raised: n(0.235, 0.009),
     subtle: n(0.25, 0.009),
     hover: n(0.27, 0.01),
-    border: n(0.3, 0.01),
+    border: n(0.286, 0.022), // #232B35
     input: n(0.36, 0.01),
-    text: n(0.95, 0.004),
-    textMuted: n(0.73, 0.01),
+    text: n(0.933, 0.007), // #E6E9EE
+    textMuted: n(0.764, 0.021), // #AAB3C0
     disabled: n(0.24, 0.006),
     textDisabled: n(0.5, 0.008),
     onFill: n(0.99, 0.002),
@@ -164,6 +170,8 @@ interface AccentRecipe {
   readonly lightFill?: boolean;
   /** Hue used for ink/marks when it should differ from the fill hue. */
   readonly inkHue?: number;
+  /** Light-appearance mark lightness when the default fails 3:1 on a surface. */
+  readonly lightMarkL?: number;
 }
 
 function buildAccent(id: AccentId, recipe: AccentRecipe): AccentDefinition {
@@ -186,7 +194,11 @@ function buildAccent(id: AccentId, recipe: AccentRecipe): AccentDefinition {
     lightFill: recipe.lightFill ?? false,
     tones: {
       light: {
-        mark: tone(recipe.lightFill ? 0.62 : 0.63, chroma, inkHue),
+        mark: tone(
+          recipe.lightMarkL ?? (recipe.lightFill ? 0.62 : 0.63),
+          chroma,
+          inkHue,
+        ),
         solid: lightSolid,
         onSolid: recipe.lightFill ? light.onLightFill : light.onFill,
         ink: tone(0.45, chroma, inkHue),
@@ -240,11 +252,15 @@ export const accents: Record<AccentId, AccentDefinition> = {
     hue: 358,
     chroma: 0.2,
   }),
-  /** Sage — from #8CADA1, deepened (more chroma, lower L) to pass contrast. */
+  /**
+   * Sage — from #8CADA1, deepened (more chroma, lower L) to pass contrast.
+   * Light mark L 0.62 (#539581): 0.63 is 2.98:1 on the mockup sidebar #EFF1F4.
+   */
   sage: buildAccent("sage", {
     seedHex: logoHex.sage,
     hue: 172,
     chroma: 0.075,
+    lightMarkL: 0.62,
   }),
   /** Amber — from #F9C942; fills carry dark text, ink warms toward brown. */
   amber: buildAccent("amber", {
@@ -324,8 +340,116 @@ export const statuses: Record<
     lightFill: true,
     textHue: 62,
   }),
-  danger: buildStatus({ hue: 27, chroma: 0.21 }),
+  danger: withText(buildStatus({ hue: 27, chroma: 0.21 }), {
+    light: oklch(0.535, 0.194, 18), // #C42340 (mockup)
+    dark: oklch(0.716, 0.18, 13.8), // #FF6B81 (mockup)
+  }),
   info: buildStatus({ hue: 238, chroma: 0.13 }),
+};
+
+/** Replaces the status text tone in the named appearances (mockup values). */
+function withText(
+  tones: Record<ThemeAppearance, StatusTones>,
+  text: Partial<Record<ThemeAppearance, Oklch>>,
+): Record<ThemeAppearance, StatusTones> {
+  const result = { ...tones };
+  for (const appearance of THEME_APPEARANCES) {
+    const override = text[appearance];
+    if (override) result[appearance] = { ...tones[appearance], text: override };
+  }
+  return result;
+}
+
+// ─── Work status ─────────────────────────────────────────────────────────
+
+/**
+ * Work-status roles: the four lifecycle buckets an item's status falls into.
+ * Colour only; status always carries a label or icon as well (DESIGN.md §9,
+ * §46). The labels are Work Management copy, not tokens.
+ */
+export const WORK_STATUS_IDS = ["todo", "doing", "review", "done"] as const;
+export type WorkStatusId = (typeof WORK_STATUS_IDS)[number];
+
+export interface WorkStatusTones {
+  /** Dot / fill. ≥3:1 on panel (≥4.5:1 in high contrast). */
+  readonly fill: Oklch;
+  /** Status-coloured text. ≥4.5:1 on canvas, panel and sidebar (≥7:1 in high contrast). */
+  readonly text: Oklch;
+}
+
+/*
+ * Light and dark are the mockup values (`--st-*` dots, `--muted` /
+ * `--accent-text` / `--warn-text` and the done green for text), authored on
+ * the CSS emit grid so they render the mockup hex. Dark text equals the dark
+ * fill. Contrast adjustment: light review fill #D99A00 is 2.43:1 on panel;
+ * L lowered in 0.01 steps to 0.67 → #C18A12 (3.02:1).
+ * High contrast is derived from the light hue/chroma by lowering L in 0.01
+ * steps until fill ≥4.5:1 on panel and text ≥7:1 on canvas/panel/sidebar:
+ *   todo   fill L 0.56 #6C7583 (4.65)  text L 0.44 #4A5361 (7.12)
+ *   doing  fill L 0.57 #1676DB (4.52)  text L 0.44 #064FA4 (7.26)
+ *   review fill L 0.57 #9B6E0C (4.53)  text L 0.44 #704905 (7.25)
+ *   done   fill L 0.55 #278552 (4.58)  text L 0.43 #0B6035 (7.07)
+ */
+export const workStatuses: Record<
+  WorkStatusId,
+  Record<ThemeAppearance, WorkStatusTones>
+> = {
+  todo: {
+    light: {
+      fill: oklch(0.607, 0.024, 259.2), // #7A8391
+      text: oklch(0.458, 0.026, 259.2), // #4F5866
+    },
+    dark: {
+      fill: oklch(0.667, 0.023, 259.2), // #8C95A3
+      text: oklch(0.667, 0.023, 259.2),
+    },
+    "high-contrast": {
+      fill: oklch(0.56, 0.024, 259.2),
+      text: oklch(0.44, 0.026, 259.2),
+    },
+  },
+  doing: {
+    light: {
+      fill: oklch(0.586, 0.175, 254.7), // #1E7BE0
+      text: oklch(0.466, 0.155, 257.1), // #0F56AE
+    },
+    dark: {
+      fill: oklch(0.722, 0.148, 252.3), // #5AA9FF
+      text: oklch(0.722, 0.148, 252.3),
+    },
+    "high-contrast": {
+      fill: oklch(0.57, 0.175, 254.7),
+      text: oklch(0.44, 0.153, 257.2),
+    },
+  },
+  review: {
+    light: {
+      fill: oklch(0.67, 0.135, 79.3), // #C18A12 (mockup #D99A00, contrast)
+      text: oklch(0.508, 0.108, 73.3), // #8A5A00
+    },
+    dark: {
+      fill: oklch(0.834, 0.141, 85.4), // #F2C14E
+      text: oklch(0.834, 0.141, 85.4),
+    },
+    "high-contrast": {
+      fill: oklch(0.57, 0.115, 79.3),
+      text: oklch(0.44, 0.091, 73.3),
+    },
+  },
+  done: {
+    light: {
+      fill: oklch(0.569, 0.119, 154.9), // #2E8B57
+      text: oklch(0.47, 0.102, 154.7), // #1D6B40
+    },
+    dark: {
+      fill: oklch(0.753, 0.14, 156.5), // #56C98A
+      text: oklch(0.753, 0.14, 156.5),
+    },
+    "high-contrast": {
+      fill: oklch(0.55, 0.119, 154.9),
+      text: oklch(0.43, 0.102, 154.7),
+    },
+  },
 };
 
 // ─── Identity ────────────────────────────────────────────────────────────

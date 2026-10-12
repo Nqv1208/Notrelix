@@ -22,10 +22,12 @@ import {
   CHART_SERIES,
   IDENTITY_IDS,
   STATUS_IDS,
+  WORK_STATUS_IDS,
   accents,
   identity,
   neutrals,
   statuses,
+  workStatuses,
   type AccentId,
   type AccentTones,
   type ThemeAppearance,
@@ -168,6 +170,11 @@ export function buildAppearanceColors(
     roles[`${id}-text`] = tones.text;
     roles[`${id}-subtle`] = tones.subtle;
     roles[`${id}-subtle-foreground`] = tones.onSubtle;
+  }
+
+  for (const id of WORK_STATUS_IDS) {
+    roles[`work-status-${id}`] = workStatuses[id][appearance].fill;
+    roles[`work-status-${id}-text`] = workStatuses[id][appearance].text;
   }
 
   for (const id of IDENTITY_IDS) {

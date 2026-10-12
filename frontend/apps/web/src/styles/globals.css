@@ -163,6 +163,16 @@
   --color-info-subtle: var(--info-subtle);
   --color-info-subtle-foreground: var(--info-subtle-foreground);
 
+  /* Work status: dot/fill and text per lifecycle bucket (always with a label or icon). */
+  --color-work-status-todo: var(--work-status-todo);
+  --color-work-status-todo-text: var(--work-status-todo-text);
+  --color-work-status-doing: var(--work-status-doing);
+  --color-work-status-doing-text: var(--work-status-doing-text);
+  --color-work-status-review: var(--work-status-review);
+  --color-work-status-review-text: var(--work-status-review-text);
+  --color-work-status-done: var(--work-status-done);
+  --color-work-status-done-text: var(--work-status-done-text);
+
   /* Identity (workspace/Board/avatar marks, chart series; never status). */
   --color-identity-blue: var(--identity-blue);
   --color-identity-blue-foreground: var(--identity-blue-foreground);
