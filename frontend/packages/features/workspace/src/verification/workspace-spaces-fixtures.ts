@@ -460,10 +460,7 @@ export function sidebarDepartmentsStateFixture(
 ): SidebarSpaces {
   return {
     ...sidebarDepartmentsFixture(),
-    state:
-      status === "empty"
-        ? { status: "ready", nodes: [] }
-        : { status },
+    state: status === "empty" ? { status: "ready", nodes: [] } : { status },
     activeSpaceId: null,
   };
 }

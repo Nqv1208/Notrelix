@@ -199,16 +199,20 @@ describe("contrast matrix (appearance × accent)", () => {
       const hover = get("rail-hover");
       for (const fg of ["rail-foreground", "rail-active-foreground"]) {
         const plain = contrastRatio(get(fg), rail);
-        expect(plain, `${fg} on rail = ${plain.toFixed(2)}`).toBeGreaterThanOrEqual(
-          minimumText(appearance),
-        );
+        expect(
+          plain,
+          `${fg} on rail = ${plain.toFixed(2)}`,
+        ).toBeGreaterThanOrEqual(minimumText(appearance));
         const hovered = contrastOverComposite(get(fg), hover, rail);
         expect(
           hovered,
           `${fg} on rail-hover = ${hovered.toFixed(2)}`,
         ).toBeGreaterThanOrEqual(4.5);
       }
-      const badge = contrastRatio(get("rail-badge-foreground"), get("rail-badge"));
+      const badge = contrastRatio(
+        get("rail-badge-foreground"),
+        get("rail-badge"),
+      );
       expect(badge, `badge = ${badge.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
       // The current-workspace ring (active foreground) is visible on the rail.
       expect(
@@ -220,7 +224,10 @@ describe("contrast matrix (appearance × accent)", () => {
       const ring = get("rail-focus-ring");
       const rail = get("rail");
       const plain = contrastRatio(ring, rail);
-      expect(plain, `rail-focus-ring on rail = ${plain.toFixed(2)}`).toBeGreaterThanOrEqual(3);
+      expect(
+        plain,
+        `rail-focus-ring on rail = ${plain.toFixed(2)}`,
+      ).toBeGreaterThanOrEqual(3);
       const hovered = contrastOverComposite(ring, get("rail-hover"), rail);
       expect(
         hovered,

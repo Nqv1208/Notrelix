@@ -257,7 +257,9 @@ export function NotrelixSystemRailSurface({
           <button
             type="button"
             title={copy.search.title}
-            aria-describedby={globalSearchAvailable ? undefined : searchReasonId}
+            aria-describedby={
+              globalSearchAvailable ? undefined : searchReasonId
+            }
             disabled={!globalSearchAvailable}
             onClick={onOpenGlobalSearch}
             className={RAIL_ITEM_CLASS}

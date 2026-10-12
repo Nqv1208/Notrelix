@@ -102,7 +102,6 @@ interface NavItem {
   readonly count?: CountKind;
 }
 
-
 function useCloseMobileDrawer(): () => void {
   const { isMobile, setOpenMobile } = useSidebar();
   return React.useCallback(() => {
@@ -110,7 +109,13 @@ function useCloseMobileDrawer(): () => void {
   }, [isMobile, setOpenMobile]);
 }
 
-function CountBadge({ kind, count }: { kind: CountKind; count: number | null }) {
+function CountBadge({
+  kind,
+  count,
+}: {
+  kind: CountKind;
+  count: number | null;
+}) {
   const text = sidebarCountBadge(count);
   if (text === null) return null;
   return (
@@ -336,8 +341,7 @@ function WorkspaceSetup({
     destination: { section: link } satisfies WorkspaceDestination,
   }));
   const inSetup =
-    location !== null &&
-    links.some((link) => link === location.section);
+    location !== null && links.some((link) => link === location.section);
 
   return (
     <Collapsible defaultOpen={inSetup} className="group/setup">
