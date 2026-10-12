@@ -430,11 +430,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         setCreateOpen(true);
       }}
       onOpenAllInbox={() => goTo({ section: "inbox" })}
-      // Search runs in the current workspace until a cross-workspace search exists.
-      onOpenGlobalSearch={() => {
-        if (rail.presentation === "overlay") rail.close();
-        goTo({ section: "search" });
-      }}
+      // No cross-workspace search producer yet: omitting the handler disables
+      // "Search" with its reason (current-workspace search stays on ⌘K).
       onOpenAccount={() => {
         if (rail.presentation === "overlay") rail.close();
         goTo({ section: "account" });

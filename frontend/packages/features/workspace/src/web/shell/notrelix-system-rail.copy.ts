@@ -22,6 +22,7 @@ export const en = {
   search: {
     label: "Search",
     title: "Search across all workspaces",
+    unavailable: "Not available yet",
   },
   settings: {
     label: "Settings",
@@ -52,6 +53,7 @@ export const vi: NotrelixSystemRailCopy = {
   search: {
     label: "Tìm",
     title: "Tìm trong mọi workspace",
+    unavailable: "Chưa khả dụng",
   },
   settings: {
     label: "Cài đặt",

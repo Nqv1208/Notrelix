@@ -104,6 +104,16 @@ export function systemRailPinnedScenario(
   return { ...systemRailOverlayScenario(locale), presentation: "pinned" };
 }
 
+/**
+ * Drawer (narrow screens): the workspaces and Add as a row at the top of the
+ * off-canvas navigation sheet, which owns focus and dismissal.
+ */
+export function systemRailDrawerScenario(
+  locale: "en" | "vi" = "en",
+): SystemRailScenario {
+  return { ...systemRailOverlayScenario(locale), presentation: "drawer" };
+}
+
 export function systemRailHiddenScenario(
   locale: "en" | "vi" = "en",
 ): SystemRailScenario {

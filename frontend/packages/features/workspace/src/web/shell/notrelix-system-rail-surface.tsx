@@ -41,7 +41,12 @@ export interface NotrelixSystemRailSurfaceProps {
   readonly onSwitchWorkspace: (workspaceId: string) => void;
   readonly onCreateWorkspace: () => void;
   readonly onOpenAllInbox: () => void;
-  readonly onOpenGlobalSearch: () => void;
+  /**
+   * Cross-workspace search. Omitted until a producer exists: the entry is
+   * then disabled with the visible reason (never a current-workspace search
+   * under the "all workspaces" title).
+   */
+  readonly onOpenGlobalSearch?: () => void;
   readonly onOpenAccount: () => void;
   readonly onTogglePinned: () => void;
   readonly onClose: () => void;
@@ -111,6 +116,8 @@ export function NotrelixSystemRailSurface({
   const drawer = presentation === "drawer";
   const navRef = React.useRef<HTMLElement>(null);
   const reasonId = React.useId();
+  const searchReasonId = React.useId();
+  const globalSearchAvailable = onOpenGlobalSearch !== undefined;
 
   React.useEffect(() => {
     if (!overlay) return;
@@ -248,12 +255,22 @@ export function NotrelixSystemRailSurface({
           <button
             type="button"
             title={copy.search.title}
+            aria-describedby={globalSearchAvailable ? undefined : searchReasonId}
+            disabled={!globalSearchAvailable}
             onClick={onOpenGlobalSearch}
             className={RAIL_ITEM_CLASS}
           >
             <Search aria-hidden="true" />
             <RailLabel>{copy.search.label}</RailLabel>
           </button>
+          {globalSearchAvailable ? null : (
+            <span
+              id={searchReasonId}
+              className="-mt-1 w-16 text-center text-caption text-rail-foreground"
+            >
+              {copy.search.unavailable}
+            </span>
+          )}
 
           <span aria-hidden="true" className="flex-1" />
 

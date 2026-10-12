@@ -3,6 +3,7 @@ import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
   systemRailCopyFixture,
+  systemRailDrawerScenario,
   systemRailEdgeDataScenario,
   systemRailHiddenScenario,
   systemRailOverlayScenario,
@@ -27,7 +28,7 @@ function renderRail(
     onSwitchWorkspace: vi.fn(),
     onCreateWorkspace: vi.fn(),
     onOpenAllInbox: vi.fn(),
-    onOpenGlobalSearch: vi.fn(),
+    // No cross-workspace search producer: omitted by default, as in the app.
     onOpenAccount: vi.fn(),
     onTogglePinned: vi.fn(),
     onClose: vi.fn(),
@@ -212,10 +213,7 @@ describe("NotrelixSystemRailSurface", () => {
   it("FUI[workspace.system-rail:drawer] lists the workspaces as a row at the top of the mobile drawer", () => {
     for (const locale of LOCALES) {
       const copy = systemRailCopyFixture(locale);
-      const scenario: SystemRailScenario = {
-        ...systemRailOverlayScenario(locale),
-        presentation: "drawer",
-      };
+      const scenario = systemRailDrawerScenario(locale);
       const outside = document.createElement("button");
       document.body.append(outside);
       outside.focus();
@@ -323,17 +321,25 @@ describe("NotrelixSystemRailSurface", () => {
         name: copy.allInbox.label,
       }) as HTMLButtonElement;
       expect(allInbox.disabled).toBe(true);
-      const reason = within(nav).getByText(copy.allInbox.unavailable);
-      expect(allInbox.getAttribute("aria-describedby")).toBe(reason.id);
+      // Global search shows the same reason text, so find this one by id.
+      const reasonId = allInbox.getAttribute("aria-describedby") ?? "";
+      const reason = within(nav).getByText(copy.allInbox.unavailable, {
+        selector: `#${CSS.escape(reasonId)}`,
+      });
+      expect(reason.id).toBe(reasonId);
       fireEvent.click(allInbox);
       expect(props.onOpenAllInbox).not.toHaveBeenCalled();
       view.unmount();
 
-      const available = renderRail(systemRailEdgeDataScenario(locale));
+      // Both account-level entries available: no reason is shown at all.
+      const available = renderRail(systemRailEdgeDataScenario(locale), {
+        onOpenGlobalSearch: vi.fn(),
+      });
       const enabled = within(rail(copy)).getByRole("button", {
         name: new RegExp(`^${copy.allInbox.label}`),
       }) as HTMLButtonElement;
       expect(enabled.disabled).toBe(false);
+      expect(enabled.getAttribute("aria-describedby")).toBeNull();
       expect(screen.queryByText(copy.allInbox.unavailable)).toBeNull();
       fireEvent.click(enabled);
       expect(available.props.onOpenAllInbox).toHaveBeenCalledTimes(1);
@@ -341,17 +347,34 @@ describe("NotrelixSystemRailSurface", () => {
     }
   });
 
-  it("FUI[workspace.system-rail:search] opens global search", () => {
+  it("FUI[workspace.system-rail:search] disables global search with a visible reason until a handler exists, then opens it", () => {
     for (const locale of LOCALES) {
       const copy = systemRailCopyFixture(locale);
-      const { props, view } = renderRail(systemRailOverlayScenario(locale));
-      const search = within(rail(copy)).getByRole("button", {
+      const { view } = renderRail(systemRailOverlayScenario(locale));
+      const nav = rail(copy);
+      const search = within(nav).getByRole("button", {
         name: copy.search.label,
-      });
+      }) as HTMLButtonElement;
       expect(search.getAttribute("title")).toBe(copy.search.title);
-      fireEvent.click(search);
-      expect(props.onOpenGlobalSearch).toHaveBeenCalledTimes(1);
+      expect(search.disabled).toBe(true);
+      const reason = within(nav).getByText(copy.search.unavailable, {
+        selector: `#${CSS.escape(search.getAttribute("aria-describedby") ?? "")}`,
+      });
+      expect(reason).toBeTruthy();
       view.unmount();
+
+      const onOpenGlobalSearch = vi.fn();
+      const available = renderRail(systemRailEdgeDataScenario(locale), {
+        onOpenGlobalSearch,
+      });
+      const enabled = within(rail(copy)).getByRole("button", {
+        name: copy.search.label,
+      }) as HTMLButtonElement;
+      expect(enabled.disabled).toBe(false);
+      expect(enabled.getAttribute("aria-describedby")).toBeNull();
+      fireEvent.click(enabled);
+      expect(onOpenGlobalSearch).toHaveBeenCalledTimes(1);
+      available.view.unmount();
     }
   });
 
@@ -416,7 +439,6 @@ describe("NotrelixSystemRailSurface", () => {
           workspaceName(copy, workspace),
         ),
         copy.create.label,
-        copy.search.label,
         copy.settings.label,
         copy.pin.label,
       ]);

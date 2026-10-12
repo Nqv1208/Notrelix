@@ -561,6 +561,20 @@
           ]
         },
         {
+          "id": "workspace-system-rail--drawer",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "mobile",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
           "id": "workspace-system-rail--edge-data",
           "state": "EdgeData",
           "visualTargets": [

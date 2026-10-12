@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import type { ReactNode } from "react";
 
 import {
+  systemRailDrawerScenario,
   systemRailEdgeDataScenario,
   systemRailOverlayScenario,
   systemRailPinnedScenario,
@@ -21,11 +22,15 @@ const callbacks = {
   onSwitchWorkspace: noop,
   onCreateWorkspace: noop,
   onOpenAllInbox: noop,
-  onOpenGlobalSearch: noop,
   onOpenAccount: noop,
   onTogglePinned: noop,
   onClose: noop,
 };
+
+/**
+ * No cross-workspace search producer yet: Overlay, Pinned and Drawer omit
+ * `onOpenGlobalSearch` (the entry shows "Chưa khả dụng"); EdgeData passes it.
+ */
 
 /** A neutral sidebar and canvas so the rail's overlay and push are visible. */
 function RailFrame({ children }: { readonly children: ReactNode }) {
@@ -70,8 +75,25 @@ export const EdgeData: Story = {
       <NotrelixSystemRailSurface
         {...systemRailEdgeDataScenario("vi")}
         {...callbacks}
+        onOpenGlobalSearch={noop}
       />
     </RailFrame>
   ),
   tags: ["fui-surface--workspace.system-rail", "fui-state--EdgeData"],
+};
+
+/** Narrow screens: the rail's workspaces at the top of the navigation sheet. */
+export const Drawer: Story = {
+  render: () => (
+    <div className="flex h-screen w-72 max-w-full flex-col border-r border-border bg-surface-sidebar">
+      <NotrelixSystemRailSurface
+        {...systemRailDrawerScenario("vi")}
+        {...callbacks}
+      />
+      <div className="flex-1 p-4 text-body text-muted-foreground">
+        Workspace navigation
+      </div>
+    </div>
+  ),
+  tags: ["fui-surface--workspace.system-rail", "fui-state--Default"],
 };
