@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 using Notrelix.Application.Features.WorkManagement.Ordering;
 
@@ -19,9 +20,11 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly BoardItemKeyAllocator _keys;
 
-    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement)
+    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, BoardItemKeyAllocator keys)
     {
+        _keys = keys;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
@@ -42,6 +45,8 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
             ct);
 
         var now = _timeProvider.UtcNow;
+        // The copy is a new Item with its own key, allocated after the ordering lock.
+        var key = (await _keys.AllocateAsync(source.BoardId, 1, _requestContext.UserId, now, ct))[0];
 
         var duplicate = DuplicateBoardGroupCommandHandler.CloneCard(
             source,
@@ -52,7 +57,8 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
             _requestContext.UserId,
             $"{source.Name} copy",
             nextPosition,
-            now);
+            now,
+            key);
 
         _context.BoardItems.Add(duplicate);
         return Result<Guid>.Success(duplicate.Id);

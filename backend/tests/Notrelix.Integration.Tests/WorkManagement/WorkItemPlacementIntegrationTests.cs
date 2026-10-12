@@ -149,7 +149,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
         var second = await CreateAsync("second");
 
         var copy = await InTransactionAsync(async context =>
-            (await new DuplicateBoardItemCommandHandler(context, Request(), Clock(), Resolver(context))
+            (await new DuplicateBoardItemCommandHandler(context, Request(), Clock(), Resolver(context), Keys(context))
                 .Handle(new DuplicateBoardItemCommand(first), CancellationToken.None)).Data);
 
         (await OrderInGroupAsync(_todoId)).Should().Equal(first, copy, second);
@@ -168,7 +168,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
         var a = await CreateAsync("a");
         var b = await CreateAsync("b");
         var copy = await InTransactionAsync(async context =>
-            (await new DuplicateBoardGroupCommandHandler(context, Request(), Clock(), Resolver(context))
+            (await new DuplicateBoardGroupCommandHandler(context, Request(), Clock(), Resolver(context), Keys(context))
                 .Handle(new DuplicateBoardGroupCommand(_todoId), CancellationToken.None)).Data);
 
         (await GroupOrderAsync()).Should().Equal(_todoId, copy, third, _doneId);
@@ -388,7 +388,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
     {
         return await InTransactionAsync(async context =>
         {
-            var handler = new CreateBoardItemCommandHandler(context, Request(), Clock(), Resolver(context));
+            var handler = new CreateBoardItemCommandHandler(context, Request(), Clock(), Resolver(context), Keys(context));
             var created = await handler.Handle(new CreateBoardItemCommand(_boardId, group ?? _todoId, title, previous, next), CancellationToken.None);
             return created.Id;
         });
@@ -435,6 +435,8 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
     }
 
     private static WorkPlacementResolver Resolver(ApplicationDbContext context) => new(new PostgresWorkOrderingScopeLock(context));
+
+    private static BoardItemKeyAllocator Keys(ApplicationDbContext context) => new(context, new PostgresBoardItemKeyLock(context));
 
     private static IDateTimeProvider Clock() => FakeDateTimeProvider.WithFixedTime(Now);
 

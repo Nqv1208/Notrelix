@@ -13,7 +13,8 @@ public class CreateBoardItemTests : WorkManagementHandlerTestBase
             DbContextMock.Object,
             RequestContextMock.Object,
             DateTimeProviderMock.Object,
-            Placement);
+            Placement,
+            KeyAllocator);
     }
 
     [Fact]
@@ -59,5 +60,70 @@ public class CreateBoardItemTests : WorkManagementHandlerTestBase
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<NotFoundException>();
+    }
+}
+
+/// <summary>
+/// Every created Item gets a Board-scoped key from the Board sequence in the same
+/// unit of work; the Board version advances with the sequence.
+/// </summary>
+public class CreateBoardItemKeyTests : WorkManagementHandlerTestBase
+{
+    private readonly List<BoardItem> _items = [];
+
+    public CreateBoardItemKeyTests()
+    {
+        DbContextMock.Setup(c => c.BoardItems).Returns(CreateAsyncDbSet(_items));
+    }
+
+    private (Board Board, BoardGroup Group) Seed(string? prefix)
+    {
+        var board = Board.Create(TestAccountId, TestWorkspaceId, TestUserId, "Board", null, TestNow, itemKeyPrefix: prefix);
+        var group = BoardGroup.Create(TestAccountId, TestWorkspaceId, board.Id, "Group",
+            Color.Create("#FF0000"), FractionalIndex.Create("a0"), TestUserId, TestNow);
+        SetupBoards(board);
+        SetupBoardGroups(group);
+        return (board, group);
+    }
+
+    [Fact]
+    public async Task Create_AssignsSequentialPrefixedKeys_AndAdvancesTheBoard()
+    {
+        var (board, group) = Seed("WEB");
+        var version = board.Version;
+        var handler = new CreateBoardItemCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator);
+
+        await handler.Handle(new CreateBoardItemCommand(board.Id, group.Id, "First"), CancellationToken.None);
+        await handler.Handle(new CreateBoardItemCommand(board.Id, group.Id, "Second"), CancellationToken.None);
+
+        _items.Select(i => (i.Name, i.ItemKey, i.ItemSequence)).Should().Equal(("First", "WEB-1", 1L), ("Second", "WEB-2", 2L));
+        board.ItemSequence.Should().Be(2);
+        board.Version.Should().Be(version + 2);
+    }
+
+    [Fact]
+    public async Task Create_OnABoardWithoutPrefix_AssignsPlainNumbers()
+    {
+        var (board, group) = Seed(null);
+        var handler = new CreateBoardItemCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator);
+
+        await handler.Handle(new CreateBoardItemCommand(board.Id, group.Id, "Only"), CancellationToken.None);
+
+        _items.Single().ItemKey.Should().Be("1");
+    }
+
+    [Fact]
+    public async Task Duplicate_GivesTheCopyItsOwnNewKey()
+    {
+        var (board, group) = Seed("OPS");
+        var create = new CreateBoardItemCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator);
+        await create.Handle(new CreateBoardItemCommand(board.Id, group.Id, "Source"), CancellationToken.None);
+        var source = _items.Single();
+        var duplicate = new Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem.DuplicateBoardItemCommandHandler(
+            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator);
+
+        await duplicate.Handle(new Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem.DuplicateBoardItemCommand(source.Id), CancellationToken.None);
+
+        _items.Select(i => i.ItemKey).Should().Equal("OPS-1", "OPS-2");
     }
 }

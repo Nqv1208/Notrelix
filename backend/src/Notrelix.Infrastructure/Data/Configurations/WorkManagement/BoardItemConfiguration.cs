@@ -47,5 +47,8 @@ public class BoardItemConfiguration : IEntityTypeConfiguration<BoardItem>
 
         builder.HasIndex(x => new { x.GroupId, x.Position }).IsUnique().HasFilter("deleted_at IS NULL AND parent_item_id IS NULL").HasDatabaseName(WorkOrderingConstraints.GroupItems);
         builder.HasIndex(x => x.BoardId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_items_board_id");
+        // An Item key is unique within its Board across every Item, deleted ones
+        // included, so a key is never reused.
+        builder.HasIndex(x => new { x.BoardId, x.ItemKey }).IsUnique().HasDatabaseName("ux_work_board_items_board_item_key");
     }
 }

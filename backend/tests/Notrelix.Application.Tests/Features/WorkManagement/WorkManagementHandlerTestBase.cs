@@ -17,6 +17,10 @@ public abstract class WorkManagementHandlerTestBase
         new(new Mock<Notrelix.Application.Features.WorkManagement.Ordering.IWorkOrderingScopeLock>().Object);
 
     protected readonly Mock<IWorkManagementDbContext> DbContextMock = new();
+
+    /// <summary>Item-key allocator over a no-op board key lock; serialization is proven on PostgreSQL.</summary>
+    protected Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemKeyAllocator KeyAllocator =>
+        new(DbContextMock.Object, new Mock<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyLock>().Object);
     protected readonly Mock<ICurrentRequestContext> RequestContextMock = new();
     protected readonly Mock<IDateTimeProvider> DateTimeProviderMock = new();
 

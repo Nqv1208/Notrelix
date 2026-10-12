@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Domain.SharedKernel.Ordering;
 
@@ -18,9 +19,11 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
+    private readonly BoardItemKeyAllocator _keys;
 
-    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement)
+    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, BoardItemKeyAllocator keys)
     {
+        _keys = keys;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
@@ -60,15 +63,18 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
             .OrderBy(c => c.Position)
             .ToListAsync(ct);
 
-        foreach (var card in cards)
+        // Every copy is a new Item with its own key, allocated after the ordering lock.
+        var keys = await _keys.AllocateAsync(board.Id, cards.Count, _requestContext.UserId, now, ct);
+        for (var i = 0; i < cards.Count; i++)
         {
-            _context.BoardItems.Add(CloneCard(card, accountId, duplicate.Id, board.Id, board.WorkspaceId, _requestContext.UserId, card.Name, card.Position, now));
+            var card = cards[i];
+            _context.BoardItems.Add(CloneCard(card, accountId, duplicate.Id, board.Id, board.WorkspaceId, _requestContext.UserId, card.Name, card.Position, now, keys[i]));
         }
 
         return Result<Guid>.Success(duplicate.Id);
     }
 
-    internal static BoardItem CloneCard(BoardItem source, Guid accountId, Guid groupId, Guid boardId, Guid workspaceId, Guid createdByUserId, string name, FractionalIndex position, DateTimeOffset createdAt)
+    internal static BoardItem CloneCard(BoardItem source, Guid accountId, Guid groupId, Guid boardId, Guid workspaceId, Guid createdByUserId, string name, FractionalIndex position, DateTimeOffset createdAt, BoardItemKey key)
     {
         var copy = BoardItem.CreateRoot(
             accountId,
@@ -79,6 +85,8 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
             position,
             createdByUserId,
             createdAt,
+            itemKey: key.Key,
+            itemSequence: key.Sequence,
             startedAt: source.StartedAt,
             dueAt: source.DueAt);
 

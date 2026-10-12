@@ -442,10 +442,17 @@ internal static class InitDb
                         _ => $"Task {itemIndex + 1}"
                     };
 
+                    // The board's audit clock never runs backwards, so the key is
+                    // stamped no earlier than the board's last update.
+                    var keyStamp = Epoch.AddDays(itemIndex);
+                    var boardStamp = bs.Board.UpdatedAt ?? bs.Board.CreatedAt;
+                    var (itemSequence, itemKey) = bs.Board.GenerateNextItemIdentity(
+                        creator.Id, keyStamp > boardStamp ? keyStamp : boardStamp);
                     var item = BoardItem.CreateRoot(
                         account.Id, bs.Board.WorkspaceId, bs.Board.Id, group.Id,
                         itemName, order,
-                        creator.Id, Epoch.AddDays(itemIndex));
+                        creator.Id, Epoch.AddDays(itemIndex),
+                        itemKey: itemKey, itemSequence: itemSequence);
 
                     context.BoardItems.Add(item);
 

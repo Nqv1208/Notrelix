@@ -6400,6 +6400,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_board_items_board_id")
                         .HasFilter("deleted_at IS NULL");
 
+                    b.HasIndex("BoardId", "ItemKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_items_board_item_key");
+
                     b.HasIndex("GroupId", "Position")
                         .IsUnique()
                         .HasDatabaseName("ux_work_board_items_group_position_active")

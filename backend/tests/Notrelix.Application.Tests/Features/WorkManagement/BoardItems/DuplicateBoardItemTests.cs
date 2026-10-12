@@ -12,13 +12,16 @@ public class DuplicateBoardItemTests : WorkManagementHandlerTestBase
             DbContextMock.Object,
             RequestContextMock.Object,
             DateTimeProviderMock.Object,
-            Placement);
+            Placement,
+            KeyAllocator);
     }
 
     [Fact]
     public async Task Handle_ValidCommand_CreatesDuplicate()
     {
-        var item = CreateBoardItem();
+        var board = CreateBoard();
+        var item = CreateBoardItem(boardId: board.Id);
+        SetupBoards(board);
         SetupBoardItems(item);
 
         var command = new DuplicateBoardItemCommand(item.Id);

@@ -37,6 +37,9 @@ public class RawSqlArchitectureTests
         // WM-V3-ORDER-001: transaction-scoped advisory lock (pg_advisory_xact_lock)
         // serializing one Work ordering scope inside the request transaction.
         "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresWorkOrderingScopeLock.cs",
+        // Transaction-scoped advisory lock (pg_advisory_xact_lock) serializing
+        // one Board's Item-key allocation inside the request transaction.
+        "src/Notrelix.Infrastructure/Data/WorkManagement/PostgresBoardItemKeyLock.cs",
         // ADR-009: transaction-scoped advisory lock (pg_advisory_xact_lock)
         // serializing one Workspace's Space hierarchy writes (create/move/rename/
         // restore) so ancestry, sibling and closure reads cannot interleave.

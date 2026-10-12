@@ -13,7 +13,8 @@ public class DuplicateBoardGroupTests : WorkManagementHandlerTestBase
             DbContextMock.Object,
             RequestContextMock.Object,
             DateTimeProviderMock.Object,
-            Placement);
+            Placement,
+            KeyAllocator);
     }
 
     [Fact]
