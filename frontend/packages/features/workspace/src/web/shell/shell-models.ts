@@ -33,6 +33,25 @@ export interface ShellWorkspace {
 export interface ShellCurrentWorkspace extends ShellWorkspace {
   /** The member's role in this workspace, when known. */
   readonly role: WorkspaceMember["role"] | null;
+  /** Department Spaces the member can see; `null`/absent = not known. */
+  readonly departmentCount?: number | null;
+  /** Workspace members; `null`/absent = not known. */
+  readonly memberCount?: number | null;
+}
+
+/**
+ * Sidebar counts (My work, Inbox). `null` = unavailable: the row shows no
+ * badge and never a guessed "0".
+ */
+export interface ShellSidebarCounts {
+  readonly myWork: number | null;
+  readonly inbox: number | null;
+}
+
+/** Badge text for a count: none for `null` or 0, "99+" above 99. */
+export function sidebarCountBadge(count: number | null): string | null {
+  if (count === null || !Number.isFinite(count) || count <= 0) return null;
+  return count > 99 ? "99+" : String(Math.floor(count));
 }
 
 export interface ShellUser {
@@ -68,7 +87,8 @@ export type ShellAppearance = "light" | "dark";
 
 /**
  * Identity mark classes per tone. Literal strings so Tailwind generates them.
- * Identity colors mark workspaces, people and resources; never status.
+ * Identity colors mark people (avatars) and Board/Doc tiles; workspace and
+ * department chips use {@link MARK_TONE_CLASS} (WX-DEC-014). Never status.
  */
 export const IDENTITY_MARK_CLASS: Readonly<Record<IdentityTone, string>> = {
   blue: "bg-identity-blue text-identity-blue-foreground",
@@ -140,6 +160,7 @@ export function workspaceBreadcrumbLabels(
       inbox: copy.sections.inbox,
       search: copy.sections.search,
       library: copy.sections.library,
+      reports: copy.sections.reports,
       members: copy.sections.members,
       teams: copy.sections.teams,
       settings: copy.sections.settings,

@@ -17,7 +17,10 @@ import {
 import type { CreateSpaceDialogProps } from "../web/spaces/create-space-dialog";
 import type { MoveToSpaceDialogProps } from "../web/spaces/move-to-space-dialog";
 import type { SpaceMemberCandidate } from "../web/spaces/space-members-panel";
-import type { SpaceTreeNavProps } from "../web/spaces/space-tree-nav";
+import type {
+  SpaceBoardLink,
+  SpaceTreeNavProps,
+} from "../web/spaces/space-tree-nav";
 import type { WorkspaceSpaceSurfaceProps } from "../web/spaces/workspace-space-surface";
 import {
   workspaceSpacesCopy,
@@ -284,17 +287,182 @@ export function spaceTreeHighDensityScenario(): TreeScenario {
   };
 }
 
-/** The sidebar's `spaces` prop (Space org tree in the workspace sidebar). */
-export function sidebarSpacesFixture(): Omit<
-  SpaceTreeNavProps,
-  "navigation" | "onNavigated"
-> {
-  const { navigation: _navigation, ...rest } = spaceTreeDefaultScenario();
+type SidebarSpaces = Omit<SpaceTreeNavProps, "navigation" | "onNavigated">;
+
+function sidebarSpaces(scenario: TreeScenario): SidebarSpaces {
+  const { navigation: _navigation, ...rest } = scenario;
   return {
     ...rest,
     onExpandedChange: () => undefined,
     onCreateSpace: () => undefined,
     onRetry: () => undefined,
+  };
+}
+
+/** The sidebar's `spaces` prop (Space org tree in the workspace sidebar). */
+export function sidebarSpacesFixture(): SidebarSpaces {
+  return sidebarSpaces(spaceTreeDefaultScenario());
+}
+
+function board(id: string, name: string, isPrivate = false): SpaceBoardLink {
+  return { id, name, isPrivate };
+}
+
+/** Boards of the default tree: IT has two (one private), Marketing one. */
+export function spaceBoardsFixture(): ReadonlyMap<
+  string,
+  readonly SpaceBoardLink[]
+> {
+  return new Map([
+    [
+      "sp-it",
+      [
+        board("board-it-erp", "ERP rollout"),
+        board("board-it-budget", "IT budget 2027", true),
+      ],
+    ],
+    ["sp-marketing", [board("board-mk-calendar", "Campaign calendar")]],
+  ]);
+}
+
+/** The default tree with Boards; IT is open, nothing is current. */
+export function spaceTreeBoardsScenario(): TreeScenario {
+  return {
+    ...spaceTreeDefaultScenario(),
+    boardsBySpace: spaceBoardsFixture(),
+    expandedIds: new Set(["sp-it"]),
+    activeSpaceId: null,
+  };
+}
+
+/** Departments of the `Final-Space` mockup (Minh An Group). */
+export function departmentTreeFixture(): SpaceNode[] {
+  return [
+    spaceNode({ id: "sp-cn", name: "Công nghệ", position: "a0" }),
+    spaceNode({
+      id: "sp-cn-ht",
+      name: "Nhóm Hạ tầng",
+      parentId: "sp-cn",
+      visibility: "Workspace",
+      position: "a0",
+    }),
+    spaceNode({
+      id: "sp-cn-ud",
+      name: "Nhóm Ứng dụng",
+      parentId: "sp-cn",
+      position: "a1",
+    }),
+    spaceNode({ id: "sp-kt", name: "Kế toán", position: "a1" }),
+    spaceNode({
+      id: "sp-mk",
+      name: "Marketing",
+      position: "a2",
+      visibility: "Workspace",
+    }),
+    spaceNode({ id: "sp-ns", name: "Nhân sự", position: "a3" }),
+    spaceNode({ id: "sp-gd", name: "Ban giám đốc", position: "a4" }),
+  ];
+}
+
+export function departmentBoardsFixture(): ReadonlyMap<
+  string,
+  readonly SpaceBoardLink[]
+> {
+  return new Map([
+    [
+      "sp-cn",
+      [
+        board("board-cn-erp", "Triển khai ERP Q4"),
+        board("board-cn-infra", "Hạ tầng & bảo mật"),
+        board("board-cn-support", "Hỗ trợ nội bộ"),
+        board("board-cn-budget", "Ngân sách CNTT 2027", true),
+      ],
+    ],
+    ["sp-kt", [board("board-kt-close", "Khóa sổ tháng 10")]],
+    ["sp-mk", [board("board-mk-campaign", "Chiến dịch Tết 2027")]],
+  ]);
+}
+
+/** The mockup sidebar tree: Công nghệ open and current. */
+export function sidebarDepartmentsFixture(): SidebarSpaces {
+  return sidebarSpaces({
+    copy: spacesCopyFixture("vi"),
+    navigation: shellNavigationFixture(),
+    state: { status: "ready", nodes: departmentTreeFixture() },
+    boardsBySpace: departmentBoardsFixture(),
+    expandedIds: new Set(["sp-cn"]),
+    activeSpaceId: "sp-cn",
+    canCreateRoot: true,
+  });
+}
+
+/**
+ * Edge data: a long department name with 12 Boards (one long, two private),
+ * a nested sub-department two levels deep, and a department with 0 Boards.
+ */
+export function sidebarDepartmentsEdgeFixture(): SidebarSpaces {
+  const root = "sp-edge-root";
+  const nodes = [
+    spaceNode({
+      id: root,
+      name: "Phòng Kế toán – Tài chính doanh nghiệp và Kiểm soát nội bộ khu vực miền Nam",
+      position: "a0",
+    }),
+    spaceNode({
+      id: "sp-edge-1",
+      name: "Nhóm đối soát ngân hàng và công nợ phải thu",
+      parentId: root,
+      visibility: "Workspace",
+      position: "a0",
+    }),
+    spaceNode({
+      id: "sp-edge-2",
+      name: "Tổ đối soát chi nhánh Cần Thơ",
+      parentId: "sp-edge-1",
+      position: "a0",
+    }),
+    spaceNode({
+      id: "sp-edge-empty",
+      name: "Đội IT",
+      position: "a1",
+      visibility: "Workspace",
+    }),
+  ];
+  const boards = Array.from({ length: 12 }, (_, index) => {
+    const number = String(index + 1).padStart(2, "0");
+    return board(
+      `board-edge-${number}`,
+      index === 0
+        ? "Kế hoạch đối soát công nợ toàn quốc — giai đoạn hai (bản nháp cuối cùng)"
+        : `Bảng số ${number}`,
+      index === 3 || index === 7,
+    );
+  });
+  return sidebarSpaces({
+    copy: spacesCopyFixture("vi"),
+    navigation: shellNavigationFixture(),
+    state: { status: "ready", nodes },
+    boardsBySpace: new Map([
+      [root, boards],
+      ["sp-edge-2", [board("board-edge-nested", "Đối soát tháng 10", true)]],
+    ]),
+    expandedIds: new Set([root, "sp-edge-1", "sp-edge-2"]),
+    activeSpaceId: null,
+    canCreateRoot: false,
+  });
+}
+
+/** Sidebar tree states for the sidebar stories. */
+export function sidebarDepartmentsStateFixture(
+  status: "loading" | "error" | "empty",
+): SidebarSpaces {
+  return {
+    ...sidebarDepartmentsFixture(),
+    state:
+      status === "empty"
+        ? { status: "ready", nodes: [] }
+        : { status },
+    activeSpaceId: null,
   };
 }
 

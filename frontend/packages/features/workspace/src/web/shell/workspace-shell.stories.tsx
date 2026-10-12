@@ -9,12 +9,17 @@ import {
   shellDocsFixture,
   shellMembersFixture,
   shellNavigationFixture,
-  sidebarDefaultScenario,
   sidebarEdgeDataScenario,
   sidebarEmptyScenario,
   sidebarErrorScenario,
   sidebarLoadingScenario,
+  sidebarMockupScenario,
 } from "../../verification/workspace-shell-fixtures";
+import {
+  sidebarDepartmentsEdgeFixture,
+  sidebarDepartmentsFixture,
+  sidebarDepartmentsStateFixture,
+} from "../../verification/workspace-spaces-fixtures";
 import { WorkspaceCommandPaletteSurface } from "./workspace-command-palette-surface";
 import { WorkspaceScopeStateSurface } from "./workspace-scope-state-surface";
 import { WorkspaceShortcutSheetSurface } from "./workspace-shortcut-sheet-surface";
@@ -33,10 +38,8 @@ const noop = () => undefined;
 
 const sidebarCallbacks = {
   navigation: shellNavigationFixture(),
-  onSwitchWorkspace: noop,
-  onCreateWorkspace: noop,
-  onTogglePin: noop,
-  onRetryNavigation: noop,
+  onOpenSystemRail: noop,
+  onOpenCommand: noop,
   onOpenShortcuts: noop,
   onSignOut: noop,
 };
@@ -63,13 +66,14 @@ function ShellFrame({
   );
 }
 
-// ── Sidebar (WX-SHELL-001) ────────────────────────────────────────
+// ── Sidebar (WX-SHELL-001, Final-Space `tong-quan`) ──────────────
 
 export const SidebarDefault: Story = {
   render: () => (
     <ShellFrame openMobile>
       <WorkspaceSidebarSurface
-        {...sidebarDefaultScenario()}
+        {...sidebarMockupScenario()}
+        spaces={sidebarDepartmentsFixture()}
         {...sidebarCallbacks}
       />
     </ShellFrame>
@@ -82,6 +86,7 @@ export const SidebarLoading: Story = {
     <ShellFrame>
       <WorkspaceSidebarSurface
         {...sidebarLoadingScenario()}
+        spaces={sidebarDepartmentsStateFixture("loading")}
         {...sidebarCallbacks}
       />
     </ShellFrame>
@@ -94,6 +99,7 @@ export const SidebarEmpty: Story = {
     <ShellFrame>
       <WorkspaceSidebarSurface
         {...sidebarEmptyScenario()}
+        spaces={sidebarDepartmentsStateFixture("empty")}
         {...sidebarCallbacks}
       />
     </ShellFrame>
@@ -106,6 +112,7 @@ export const SidebarError: Story = {
     <ShellFrame>
       <WorkspaceSidebarSurface
         {...sidebarErrorScenario()}
+        spaces={sidebarDepartmentsStateFixture("error")}
         {...sidebarCallbacks}
       />
     </ShellFrame>
@@ -118,6 +125,7 @@ export const SidebarEdgeData: Story = {
     <ShellFrame>
       <WorkspaceSidebarSurface
         {...sidebarEdgeDataScenario()}
+        spaces={sidebarDepartmentsEdgeFixture()}
         {...sidebarCallbacks}
       />
     </ShellFrame>

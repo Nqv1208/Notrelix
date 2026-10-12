@@ -4,10 +4,9 @@
  */
 export const en = {
   tree: {
-    title: "Spaces",
-    label: "Spaces",
-    toggle: "Show or hide Spaces",
-    create: "New Space",
+    title: "Departments",
+    label: "Departments",
+    create: "Create department",
     loading: "Loading Spaces",
     error: "Spaces couldn't load.",
     retry: "Try again",
@@ -253,10 +252,9 @@ export type WorkspaceSpacesCopy = typeof en;
 
 export const vi: WorkspaceSpacesCopy = {
   tree: {
-    title: "Không gian",
-    label: "Không gian",
-    toggle: "Hiện hoặc ẩn Không gian",
-    create: "Không gian mới",
+    title: "Phòng ban",
+    label: "Phòng ban",
+    create: "Tạo phòng ban",
     loading: "Đang tải Không gian",
     error: "Chưa tải được Không gian.",
     retry: "Thử lại",

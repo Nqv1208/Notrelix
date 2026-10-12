@@ -144,7 +144,8 @@ export function WorkspaceCommandPaletteSurface({
     },
     {
       id: "library",
-      label: copy.nav.library,
+      // The page name ("Boards & Docs"), not the sidebar's short "Docs".
+      label: copy.sections.library,
       icon: Library,
       destination: { section: "library" },
     },

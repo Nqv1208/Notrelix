@@ -9,12 +9,9 @@ import {
 } from "@notrelix/testing";
 import { SidebarProvider } from "@notrelix/ui-web";
 
+import { shellNavigationFixture } from "../../../verification/workspace-shell-fixtures";
 import {
-  shellNavigationFixture,
-  sidebarDefaultScenario,
-} from "../../../verification/workspace-shell-fixtures";
-import {
-  sidebarSpacesFixture,
+  spaceTreeBoardsScenario,
   spaceTreeDefaultScenario,
   spaceTreeEmptyScenario,
   spaceTreeErrorScenario,
@@ -23,7 +20,6 @@ import {
   spaceTreeReadOnlyScenario,
   spacesCopyFixture,
 } from "../../../verification/workspace-spaces-fixtures";
-import { WorkspaceSidebarSurface } from "../../shell/workspace-sidebar-surface";
 import { SpaceTreeNav, type SpaceTreeNavProps } from "../space-tree-nav";
 
 const copy = spacesCopyFixture();
@@ -222,27 +218,50 @@ describe("SpaceTreeNav", () => {
     expect(elapsed).toBeLessThan(1500);
   });
 
-  it("FUI[workspace.sidebar:spaces] places the Space tree in the workspace sidebar", () => {
-    renderPureUi(
-      <SidebarProvider>
-        <WorkspaceSidebarSurface
-          {...sidebarDefaultScenario()}
-          spaces={sidebarSpacesFixture()}
-          navigation={shellNavigationFixture(vi.fn())}
-          onSwitchWorkspace={vi.fn()}
-          onCreateWorkspace={vi.fn()}
-          onTogglePin={vi.fn()}
-          onRetryNavigation={vi.fn()}
-          onOpenShortcuts={vi.fn()}
-          onSignOut={vi.fn()}
-        />
-      </SidebarProvider>,
-    );
-    const nav = screen.getByRole("navigation", {
-      name: /Workspace navigation/,
+  it("FUI[workspace.space-tree:boards] lists boards under an expanded Space, before its sub-Spaces, and moves through them with the keys", () => {
+    const props = renderTree(spaceTreeBoardsScenario());
+    const tree = screen.getByRole("tree", { name: copy.tree.label });
+    const names = within(tree)
+      .getAllByRole("treeitem")
+      .map((node) => node.textContent?.trim());
+    expect(names.slice(0, 6)).toEqual([
+      "IIT, Private",
+      "ERP rollout",
+      "IT budget 2027, Private",
+      "PPlatform",
+      "SSecurity, Private",
+      "AAccounting, Private",
+    ]);
+    const erp = item(/ERP rollout/);
+    expect(erp.getAttribute("aria-level")).toBe("2");
+    expect(erp.getAttribute("aria-posinset")).toBe("1");
+    expect(erp.getAttribute("aria-setsize")).toBe("4");
+    expect(item(/Platform/).getAttribute("aria-posinset")).toBe("3");
+    expect(item(/IT budget 2027/).querySelector("svg")).toBeTruthy();
+
+    act(() => item(/^IT(?! budget)/).focus());
+    fireEvent.keyDown(item(/^IT(?! budget)/), { key: "ArrowDown" });
+    expect(document.activeElement).toBe(erp);
+    fireEvent.keyDown(erp, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(item(/IT budget 2027/));
+    // ← on a board goes to its Space.
+    fireEvent.keyDown(item(/IT budget 2027/), { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(item(/^IT(?! budget)/));
+
+    fireEvent.click(erp, { button: 0 });
+    expect(props.navigation.onNavigate).toHaveBeenCalledWith({
+      section: "board",
+      boardId: "board-it-erp",
     });
-    expect(
-      within(nav).getByRole("tree", { name: copy.tree.label }),
-    ).toBeTruthy();
+
+    // A Space with only boards can still be opened.
+    const marketing = item(/Marketing/);
+    expect(marketing.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.keyDown(marketing, { key: "ArrowRight" });
+    expect(props.onExpandedChange).toHaveBeenLastCalledWith(
+      "sp-marketing",
+      true,
+    );
+    expect(item(/Campaign calendar/)).toBeTruthy();
   });
 });

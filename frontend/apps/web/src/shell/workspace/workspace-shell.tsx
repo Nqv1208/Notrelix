@@ -19,19 +19,12 @@ import {
   spaceAncestors,
   spacePath,
   NAVIGATION_RESOURCE_KIND,
-  resolveNavigationEntries,
-  type NavigationEntry,
-  type NavigationReference,
   type WorkspaceDestination,
 } from "@notrelix/features-workspace/core";
 import {
   commandShortcutLabel,
   createUseRecordRecent,
-  createUseTogglePin,
-  createUseWorkspaceList,
   createUseWorkspaceMembers,
-  createUseWorkspacePins,
-  createUseWorkspaceRecents,
   useShellShortcuts,
   useSpaceTreeExpansion,
   useWorkspaceShellCopy,
@@ -41,7 +34,6 @@ import {
   WorkspaceSidebarSurface,
   WorkspaceTopbarSurface,
   workspaceBreadcrumbLabels,
-  type NavigationListState,
   type ShellNavigation,
   type ShellPaletteSelection,
   type ShellShortcutId,
@@ -63,33 +55,6 @@ import {
   routerTarget,
 } from "./workspace-destinations";
 
-const RECENT_LIMIT = 8;
-
-function listState(
-  references: {
-    data?: NavigationReference[];
-    isLoading: boolean;
-    isError: boolean;
-  },
-  catalog: {
-    ready: boolean;
-    failed: boolean;
-    boards: { id: string; name: string }[];
-    docs: { id: string; name: string }[];
-  },
-  pinned: readonly NavigationReference[],
-  select: (entries: NavigationEntry[]) => NavigationEntry[] = (entries) =>
-    entries,
-): NavigationListState {
-  if (references.isError || catalog.failed) return { status: "error" };
-  if (references.isLoading || !catalog.ready || !references.data)
-    return { status: "loading" };
-  return {
-    status: "ready",
-    entries: select(resolveNavigationEntries(references.data, catalog, pinned)),
-  };
-}
-
 /**
  * The workspace shell (WX-SHELL-001…005): one sidebar, the topbar, the
  * command palette, the shortcut sheet and one scroll container. The app
@@ -108,11 +73,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const hooks = useMemo(() => {
     const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
     return {
-      useWorkspaceList: createUseWorkspaceList(deps),
       useMembers: createUseWorkspaceMembers({ api: runtimeClient.api }),
-      useRecents: createUseWorkspaceRecents(deps),
-      usePins: createUseWorkspacePins(deps),
-      useTogglePin: createUseTogglePin(deps),
       useRecordRecent: createUseRecordRecent(deps),
       usePageList: createUsePageList(featureDeps.api, featureDeps.endpoints),
       NotificationBell: createNotificationBell(deps),
@@ -126,13 +87,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     };
   }, [runtimeClient, featureDeps, navigate]);
 
-  const workspaces = hooks.useWorkspaceList();
   const members = hooks.useMembers(workspaceId);
-  const recents = hooks.useRecents(workspaceId);
-  const pins = hooks.usePins(workspaceId);
   const boards = useWorkspaceBoards(workspaceId);
   const pages = hooks.usePageList(workspaceId);
-  const togglePin = hooks.useTogglePin(workspaceId);
   const recordRecent = hooks.useRecordRecent();
   const logout = hooks.useLogout();
 
@@ -211,26 +168,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     ],
   );
 
-  const pinnedReferences = useMemo(() => pins.data ?? [], [pins.data]);
-  const pinnedState = useMemo(
-    () => listState(pins, catalog, pinnedReferences),
-    [pins, catalog, pinnedReferences],
-  );
-  const recentState = useMemo(
-    () =>
-      listState(recents, catalog, pinnedReferences, (entries) =>
-        entries.slice(0, RECENT_LIMIT),
-      ),
-    [recents, catalog, pinnedReferences],
-  );
-
-  const retryNavigation = useCallback(() => {
-    void recents.refetch();
-    void pins.refetch();
-    if (boards.isError) void boards.refetch();
-    if (pages.isError) void pages.refetch();
-  }, [recents, pins, boards, pages]);
-
   // ── Space org tree (OT-5) ───────────────────────────────────────
   const spacesCopy = useWorkspaceSpacesCopy();
   const spaceHooks = useSpaceHooks();
@@ -267,17 +204,17 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         name: workspace.name,
         mark: markToneFor(workspace.id),
         role,
+        departmentCount: spaceTree.data
+          ? spaceTree.data.filter(
+              (node) =>
+                node.type === "Department" &&
+                node.parentId === null &&
+                !node.isArchived,
+            ).length
+          : null,
+        memberCount: members.data ? members.data.length : null,
       }
     : null;
-  const workspaceOptions = useMemo(
-    () =>
-      (workspaces.data ?? []).map((item) => ({
-        id: item.id,
-        name: item.name,
-        mark: markToneFor(item.id),
-      })),
-    [workspaces.data],
-  );
   const shellUser = user
     ? {
         id: user.id,
@@ -383,10 +320,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         copy={copy}
         navigation={navigation}
         workspace={currentWorkspace}
-        workspaces={workspaceOptions}
         location={location}
-        pinned={pinnedState}
-        recent={recentState}
+        // Counts arrive with My work / Inbox (P3, P4); until then no badge.
+        counts={{ myWork: null, inbox: null }}
         spaces={{
           copy: spacesCopy,
           state: sidebarSpaces,
@@ -399,21 +335,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         }}
         user={shellUser}
         signingOut={logout.isPending}
-        onSwitchWorkspace={(id) =>
-          void navigate({
-            to: "/workspaces/$workspaceId",
-            params: { workspaceId: id },
-          })
-        }
-        onCreateWorkspace={() => setCreateOpen(true)}
-        onTogglePin={(entry, pinned) =>
-          togglePin.mutate({
-            kind: entry.kind,
-            resourceId: entry.resourceId,
-            pinned,
-          })
-        }
-        onRetryNavigation={retryNavigation}
+        commandShortcut={commandShortcut}
+        onOpenCommand={() => setPaletteOpen(true)}
+        // Interim until Task 7 mounts the Notrelix system rail: the chip
+        // opens the command palette.
+        onOpenSystemRail={() => setPaletteOpen(true)}
         onOpenShortcuts={() => setShortcutsOpen(true)}
         onSignOut={() => logout.mutate()}
       />

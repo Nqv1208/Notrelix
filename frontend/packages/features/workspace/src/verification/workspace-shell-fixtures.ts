@@ -7,14 +7,11 @@ import {
   type WorkspaceBreadcrumbItem,
 } from "../core/model/breadcrumb";
 import {
-  NAVIGATION_RESOURCE_KIND,
   markToneFor,
-  type NavigationEntry,
   type WorkspaceDestination,
 } from "../core/model/navigation";
 import {
   workspaceBreadcrumbLabels,
-  type NavigationListState,
   type ShellCurrentWorkspace,
   type ShellNavigation,
   type ShellPaletteMember,
@@ -97,61 +94,16 @@ export function shellUser(overrides: Partial<ShellUser> = {}): ShellUser {
   };
 }
 
-export function navigationEntry(
-  overrides: Partial<NavigationEntry> &
-    Pick<NavigationEntry, "resourceId" | "name">,
-): NavigationEntry {
-  return {
-    kind: NAVIGATION_RESOURCE_KIND.board,
-    at: "2026-10-09T08:00:00.000Z",
-    pinned: false,
-    ...overrides,
-  };
-}
-
-export function pinnedEntriesFixture(): NavigationEntry[] {
-  return [
-    navigationEntry({
-      resourceId: "board-roadmap",
-      name: "Product Roadmap",
-      pinned: true,
-    }),
-    navigationEntry({
-      kind: NAVIGATION_RESOURCE_KIND.doc,
-      resourceId: "doc-spec",
-      name: "Q4 product specification",
-      pinned: true,
-    }),
-  ];
-}
-
-export function recentEntriesFixture(): NavigationEntry[] {
-  return [
-    navigationEntry({ resourceId: "board-launch", name: "Launch checklist" }),
-    navigationEntry({
-      kind: NAVIGATION_RESOURCE_KIND.doc,
-      resourceId: "doc-retro",
-      name: "Sprint 42 retro",
-    }),
-    navigationEntry({ resourceId: "board-bugs", name: "Bug triage" }),
-  ];
-}
-
-function ready(entries: NavigationEntry[]): NavigationListState {
-  return { status: "ready", entries };
-}
-
 type SidebarScenario = Omit<
   WorkspaceSidebarSurfaceProps,
   | "navigation"
-  | "onSwitchWorkspace"
-  | "onCreateWorkspace"
-  | "onTogglePin"
-  | "onRetryNavigation"
+  | "onOpenSystemRail"
+  | "onOpenCommand"
   | "onOpenShortcuts"
   | "onSignOut"
 >;
 
+/** English product world: four departments, My work 7, Inbox 3. */
 export function sidebarDefaultScenario(): SidebarScenario {
   return {
     copy: shellCopyFixture(),
@@ -159,79 +111,88 @@ export function sidebarDefaultScenario(): SidebarScenario {
       id: "ws-product",
       name: "Product",
       mark: "blue",
+      departmentCount: 4,
+      memberCount: 32,
     }),
-    workspaces: shellWorkspaceList(),
     location: { section: "board", boardId: "board-roadmap" },
-    pinned: ready(pinnedEntriesFixture()),
-    recent: ready(recentEntriesFixture()),
+    counts: { myWork: 7, inbox: 3 },
     user: shellUser(),
+    commandShortcut: "⌘K",
   };
 }
 
+/** Workspace record and counts still loading (counts unavailable). */
 export function sidebarLoadingScenario(): SidebarScenario {
   return {
     ...sidebarDefaultScenario(),
     workspace: null,
     location: { section: "home" },
-    pinned: { status: "loading" },
-    recent: { status: "loading" },
+    counts: { myWork: null, inbox: null },
   };
 }
 
+/** Nothing to do yet: zero counts show no badge. */
 export function sidebarEmptyScenario(): SidebarScenario {
   return {
     ...sidebarDefaultScenario(),
     location: { section: "home" },
-    pinned: ready([]),
-    recent: ready([]),
+    counts: { myWork: 0, inbox: 0 },
   };
 }
 
+/** Counts unavailable after a failed load (no badge, never "0"). */
 export function sidebarErrorScenario(): SidebarScenario {
   return {
     ...sidebarDefaultScenario(),
-    location: { section: "members" },
-    pinned: { status: "error" },
-    recent: { status: "error" },
+    location: { section: "home" },
+    counts: { myWork: null, inbox: null },
   };
 }
 
-export function sidebarEdgeDataScenario(): SidebarScenario {
-  const longName =
-    "Kế hoạch ra mắt sản phẩm toàn cầu — giai đoạn hai (bản nháp cuối cùng)";
+/** The `Final-Space` mockup (state `tong-quan`): Vietnamese, Minh An Group. */
+export function sidebarMockupScenario(): SidebarScenario {
   return {
-    ...sidebarDefaultScenario(),
     copy: shellCopyFixture("vi"),
+    workspace: shellWorkspace({
+      id: "ws-minh-an",
+      name: "Minh An Group",
+      mark: "blue",
+      role: "admin",
+      departmentCount: 5,
+      memberCount: 86,
+    }),
+    location: { section: "space", spaceId: "sp-cn" },
+    counts: { myWork: 7, inbox: 3 },
+    user: shellUser({
+      id: "user-thu-ha",
+      name: "Nguyễn Thu Hà",
+      email: "thuha.nguyen@minhan.test",
+      identity: "sage",
+    }),
+    commandShortcut: "⌘K",
+  };
+}
+
+/** Long names, a guest, My work 0 (no badge) and Inbox 120 ("99+"). */
+export function sidebarEdgeDataScenario(): SidebarScenario {
+  return {
+    ...sidebarMockupScenario(),
     workspace: shellWorkspace({
       id: "ws-global",
       name: "Không gian làm việc của nhóm Vận hành Toàn cầu",
       role: "guest",
       mark: "crimson",
+      departmentCount: 12,
+      memberCount: 1250,
     }),
-    location: { section: "doc", docId: "doc-edge-3" },
-    pinned: ready(
-      Array.from({ length: 6 }, (_, index) =>
-        navigationEntry({
-          resourceId: `board-edge-${index}`,
-          name: index === 0 ? longName : `Bảng số ${index + 1}`,
-          pinned: true,
-        }),
-      ),
-    ),
-    recent: ready(
-      Array.from({ length: 8 }, (_, index) =>
-        navigationEntry({
-          kind: NAVIGATION_RESOURCE_KIND.doc,
-          resourceId: `doc-edge-${index}`,
-          name: index === 1 ? `${longName} 📄` : `Tài liệu ${index + 1}`,
-        }),
-      ),
-    ),
+    location: { section: "board", boardId: "board-edge-03" },
+    counts: { myWork: 0, inbox: 120 },
     user: shellUser({
       name: "Nguyễn Thị Phương Thảo",
       email: "nguyen.thi.phuong.thao.operations@notrelix.test",
       identity: "sage",
     }),
+    commandShortcut: "Ctrl K",
   };
 }
 

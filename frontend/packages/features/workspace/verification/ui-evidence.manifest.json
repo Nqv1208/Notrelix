@@ -186,7 +186,7 @@
         "notApplicable": [
           {
             "state": "ReadOnly",
-            "reason": "Sidebar entries are navigation and per-member pins; Workspaces defines no read-only member state that changes them (guests also pin and open recents).",
+            "reason": "Sidebar entries are navigation; Workspaces defines no read-only member state that changes them. Department creation is gated by canCreateRoot and proven by the departments case; pins and recents moved to Home.",
             "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
           }
         ]
@@ -204,19 +204,23 @@
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
-          "id": "switch-workspace",
+          "id": "counts",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
-          "id": "pin",
+          "id": "command",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
-          "id": "collapse",
+          "id": "departments",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
-          "id": "states",
+          "id": "spaces",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
+          "id": "setup",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
@@ -224,12 +228,16 @@
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
-          "id": "keyboard",
+          "id": "system-rail",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
-          "id": "spaces",
-          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+          "id": "states",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         }
       ]
     },
@@ -1535,6 +1543,10 @@
         },
         {
           "id": "windowing",
+          "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
+        },
+        {
+          "id": "boards",
           "testFile": "src/web/spaces/__tests__/space-tree.interaction.component.test.tsx"
         }
       ]

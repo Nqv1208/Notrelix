@@ -116,6 +116,7 @@ export type WorkspaceDestination =
   | { readonly section: "inbox" }
   | { readonly section: "search" }
   | { readonly section: "library" }
+  | { readonly section: "reports" }
   | { readonly section: "members"; readonly tab?: "members" | "invitations" }
   | {
       readonly section: "teams";

@@ -11,10 +11,13 @@ import {
   shellMembersFixture,
   shellNavigationFixture,
   sidebarDefaultScenario,
-  sidebarEmptyScenario,
-  sidebarErrorScenario,
   sidebarLoadingScenario,
+  sidebarMockupScenario,
 } from "../../../verification/workspace-shell-fixtures";
+import {
+  sidebarDepartmentsFixture,
+  sidebarSpacesFixture,
+} from "../../../verification/workspace-spaces-fixtures";
 import { WorkspaceCommandPaletteSurface } from "../workspace-command-palette-surface";
 import { WorkspaceScopeStateSurface } from "../workspace-scope-state-surface";
 import { WorkspaceShortcutSheetSurface } from "../workspace-shortcut-sheet-surface";
@@ -30,64 +33,77 @@ beforeAll(() => {
 });
 
 const copy = shellCopyFixture();
+const viCopy = shellCopyFixture("vi");
 
 function frame(ui: ReactNode) {
   return <SidebarProvider>{ui}</SidebarProvider>;
 }
 
-function renderSidebar(overrides: Partial<WorkspaceSidebarSurfaceProps> = {}) {
+function renderSidebar(
+  overrides: Partial<WorkspaceSidebarSurfaceProps> = {},
+  scenario = sidebarDefaultScenario(),
+) {
   const props: WorkspaceSidebarSurfaceProps = {
-    ...sidebarDefaultScenario(),
+    ...scenario,
     navigation: shellNavigationFixture(vi.fn()),
-    onSwitchWorkspace: vi.fn(),
-    onCreateWorkspace: vi.fn(),
-    onTogglePin: vi.fn(),
-    onRetryNavigation: vi.fn(),
+    onOpenSystemRail: vi.fn(),
+    onOpenCommand: vi.fn(),
     onOpenShortcuts: vi.fn(),
     onSignOut: vi.fn(),
     ...overrides,
   };
-  renderPureUi(frame(<WorkspaceSidebarSurface {...props} />));
-  return props;
+  const view = renderPureUi(frame(<WorkspaceSidebarSurface {...props} />));
+  return { props, unmount: view.unmount };
 }
 
 function openMenu(trigger: HTMLElement) {
   fireEvent.keyDown(trigger, { key: "Enter" });
 }
 
+function primaryLinks(name: string) {
+  const nav = screen.getByRole("navigation", { name });
+  const list = within(nav).getByRole("list", { name: /Main|Chính/ });
+  return within(list).getAllByRole("link");
+}
+
 describe("WorkspaceSidebarSurface", () => {
-  it("FUI[workspace.sidebar:render] renders every entry as a real destination and marks the current one", () => {
-    renderSidebar();
-
-    const nav = screen.getByRole("navigation", { name: copy.nav.label });
-    const href = (name: string) =>
-      within(nav).getByRole("link", { name }).getAttribute("href");
-    expect(href(copy.nav.home)).toBe("/workspaces/ws-product");
-    expect(href(copy.nav.myWork)).toBe("/workspaces/ws-product/my-work");
-    expect(href(copy.nav.inbox)).toBe("/workspaces/ws-product/inbox");
-    expect(href(copy.nav.library)).toBe("/workspaces/ws-product/library");
-    expect(href(copy.nav.search)).toBe("/workspaces/ws-product/search");
-    expect(href(copy.nav.members)).toBe("/workspaces/ws-product/members");
-    expect(href(copy.nav.teams)).toBe("/workspaces/ws-product/teams");
-    expect(href(copy.nav.settings)).toBe("/workspaces/ws-product/settings");
-
-    const roadmap = within(nav).getByRole("link", { name: /Product Roadmap/ });
-    expect(roadmap.getAttribute("href")).toBe(
-      "/workspaces/ws-product/boards/board-roadmap",
-    );
-    expect(roadmap.getAttribute("aria-current")).toBe("page");
+  it("FUI[workspace.sidebar:render] lists Home, My work, Inbox, Docs and Reports in order as real destinations, in vi and en", () => {
+    const en = renderSidebar({ location: { section: "home" } });
     expect(
-      within(nav)
-        .getByRole("link", { name: /Sprint 42 retro/ })
-        .getAttribute("href"),
-    ).toBe("/workspaces/ws-product/docs/doc-retro");
-    expect(screen.queryByText("Team online")).toBeNull();
-    expect(screen.queryByText("Quick access")).toBeNull();
+      primaryLinks(copy.nav.label).map((link) => [
+        link.textContent?.replace(/\d+|99\+/g, "").trim(),
+        link.getAttribute("href"),
+      ]),
+    ).toEqual([
+      ["Home", "/workspaces/ws-product"],
+      ["My work", "/workspaces/ws-product/my-work"],
+      ["Inbox", "/workspaces/ws-product/inbox"],
+      ["Docs", "/workspaces/ws-product/library"],
+      ["Reports", "/workspaces/ws-product/reports"],
+    ]);
+    expect(
+      screen.getByRole("link", { name: "Home" }).getAttribute("aria-current"),
+    ).toBe("page");
+    en.unmount();
+
+    renderSidebar({}, sidebarMockupScenario());
+    expect(
+      primaryLinks(viCopy.nav.label).map((link) =>
+        link.textContent?.replace(/\d+|99\+/g, "").trim(),
+      ),
+    ).toEqual(["Trang chủ", "Việc của tôi", "Hộp thư", "Tài liệu", "Báo cáo"]);
+    expect(
+      primaryLinks(viCopy.nav.label).some((link) =>
+        link.hasAttribute("aria-current"),
+      ),
+    ).toBe(false);
+    // Pins and recents stay on Home; the old Manage group is gone.
+    expect(screen.queryByText(/Đã ghim|Gần đây|Pinned|Recent/)).toBeNull();
   });
 
   it("FUI[workspace.sidebar:navigate] hands plain clicks to the host router and leaves modified clicks to the browser", () => {
-    const props = renderSidebar();
-    const link = screen.getByRole("link", { name: copy.nav.myWork });
+    const { props } = renderSidebar();
+    const link = screen.getByRole("link", { name: /^My work/ });
 
     fireEvent.click(link, { button: 0 });
     expect(props.navigation.onNavigate).toHaveBeenCalledWith({
@@ -98,158 +114,178 @@ describe("WorkspaceSidebarSurface", () => {
     expect(props.navigation.onNavigate).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[workspace.sidebar:switch-workspace] switches and creates workspaces from the switcher", () => {
-    const props = renderSidebar();
-    const trigger = screen.getByRole("button", {
-      name: /Switch workspace, current: Product/,
+  it("FUI[workspace.sidebar:counts] shows quiet counts, 99+ above 99 with the full number spoken, and nothing when unavailable or zero", () => {
+    const first = renderSidebar(
+      { counts: { myWork: 7, inbox: null } },
+      sidebarMockupScenario(),
+    );
+    const myWork = screen.getByRole("link", { name: "Việc của tôi, 7 việc" });
+    expect(myWork.textContent).toContain("7");
+    const inbox = screen.getByRole("link", { name: "Hộp thư" });
+    expect(inbox.textContent).toBe("Hộp thư");
+    expect(inbox.textContent).not.toContain("0");
+    first.unmount();
+
+    renderSidebar(
+      { counts: { myWork: 0, inbox: 120 } },
+      sidebarMockupScenario(),
+    );
+    expect(
+      screen.getByRole("link", { name: "Việc của tôi" }).textContent,
+    ).toBe("Việc của tôi");
+    const busy = screen.getByRole("link", { name: "Hộp thư, 120 chưa đọc" });
+    expect(busy.textContent).toContain("99+");
+    expect(busy.textContent).not.toContain("120");
+  });
+
+  it("FUI[workspace.sidebar:command] opens the command palette from the search row", () => {
+    const { props } = renderSidebar({}, sidebarMockupScenario());
+    const search = screen.getByRole("button", { name: /Tìm hoặc chạy lệnh/ });
+    expect(search.textContent).toContain("⌘K");
+    fireEvent.click(search);
+    expect(props.onOpenCommand).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[workspace.sidebar:departments] heads the Space tree with Departments and offers Create department only to managers", () => {
+    const spaces = { ...sidebarDepartmentsFixture(), onCreateSpace: vi.fn() };
+    const manager = renderSidebar({ spaces }, sidebarMockupScenario());
+    const nav = screen.getByRole("navigation", { name: viCopy.nav.label });
+    expect(within(nav).getByText("Phòng ban")).toBeTruthy();
+    fireEvent.click(within(nav).getByRole("button", { name: "Tạo phòng ban" }));
+    expect(spaces.onCreateSpace).toHaveBeenCalledTimes(1);
+    manager.unmount();
+
+    renderSidebar(
+      { spaces: { ...spaces, canCreateRoot: false } },
+      sidebarMockupScenario(),
+    );
+    expect(screen.getByText("Phòng ban")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Tạo phòng ban" })).toBeNull();
+  });
+
+  it("FUI[workspace.sidebar:spaces] lists an expanded department's boards, marks private ones and keeps sub-departments indented", () => {
+    const { props } = renderSidebar(
+      { spaces: sidebarDepartmentsFixture() },
+      sidebarMockupScenario(),
+    );
+    const tree = screen.getByRole("tree", { name: "Phòng ban" });
+    const items = within(tree).getAllByRole("treeitem");
+    expect(items.slice(0, 7).map((node) => node.textContent?.trim())).toEqual([
+      "CNCông nghệ, Riêng tư",
+      "Triển khai ERP Q4",
+      "Hạ tầng & bảo mật",
+      "Hỗ trợ nội bộ",
+      "Ngân sách CNTT 2027, Riêng tư",
+      "NTNhóm Hạ tầng",
+      "NDNhóm Ứng dụng, Riêng tư",
+    ]);
+    const budget = within(tree).getByRole("treeitem", {
+      name: /Ngân sách CNTT 2027/,
+    });
+    expect(budget.getAttribute("href")).toBe(
+      "/workspaces/ws-product/boards/board-cn-budget",
+    );
+    expect(budget.getAttribute("aria-level")).toBe("2");
+    fireEvent.click(budget, { button: 0 });
+    expect(props.navigation.onNavigate).toHaveBeenCalledWith({
+      section: "board",
+      boardId: "board-cn-budget",
     });
 
-    openMenu(trigger);
-    fireEvent.click(screen.getByRole("menuitem", { name: /Design Studio/ }));
-    expect(props.onSwitchWorkspace).toHaveBeenCalledWith("ws-design");
-
-    openMenu(trigger);
-    fireEvent.click(
-      screen.getByRole("menuitem", { name: copy.switcher.create }),
-    );
-    expect(props.onCreateWorkspace).toHaveBeenCalledTimes(1);
-  });
-
-  it("FUI[workspace.sidebar:pin] pins and unpins from the row menu", () => {
-    const props = renderSidebar();
-
-    openMenu(
-      screen.getByRole("button", { name: "More actions for Product Roadmap" }),
-    );
-    fireEvent.click(screen.getByRole("menuitem", { name: copy.lists.unpin }));
-    expect(props.onTogglePin).toHaveBeenCalledWith(
-      expect.objectContaining({ resourceId: "board-roadmap" }),
-      false,
-    );
-
-    openMenu(
-      screen.getByRole("button", { name: "More actions for Launch checklist" }),
-    );
-    fireEvent.click(screen.getByRole("menuitem", { name: copy.lists.pin }));
-    expect(props.onTogglePin).toHaveBeenLastCalledWith(
-      expect.objectContaining({ resourceId: "board-launch" }),
-      true,
+    const sub = within(tree).getByRole("treeitem", { name: /Nhóm Hạ tầng/ });
+    const top = within(tree).getByRole("treeitem", { name: /Công nghệ/ });
+    expect(sub.getAttribute("aria-level")).toBe("2");
+    expect(parseInt(sub.style.paddingInlineStart, 10)).toBeGreaterThan(
+      parseInt(top.style.paddingInlineStart, 10),
     );
   });
 
-  it("FUI[workspace.sidebar:collapse] collapses the Pinned section", () => {
-    renderSidebar();
-    const toggle = screen.getByRole("button", { name: "Show or hide Pinned" });
-    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  it("FUI[workspace.sidebar:setup] keeps workspace setup in a footer disclosure", () => {
+    renderSidebar({}, sidebarMockupScenario());
+    const toggle = screen.getByRole("button", { name: "Thiết lập workspace" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("link", { name: "Cài đặt chung" })).toBeNull();
 
     fireEvent.click(toggle);
 
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByRole("link", { name: /Product Roadmap/ })).toBeNull();
-    expect(screen.getByRole("link", { name: /Launch checklist/ })).toBeTruthy();
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    const href = (name: string) =>
+      screen.getByRole("link", { name }).getAttribute("href");
+    expect(href("Cài đặt chung")).toBe("/workspaces/ws-product/settings");
+    expect(href("Thành viên")).toBe("/workspaces/ws-product/members");
+    expect(href("Nhóm")).toBe("/workspaces/ws-product/teams");
+    expect(href("Gói và thanh toán")).toBe("/workspaces/ws-product/billing");
   });
 
-  it("FUI[workspace.sidebar:states] shows loading, empty teaching hints and a retry on error", () => {
-    const onRetryNavigation = vi.fn();
-    const { unmount } = renderPureUi(
-      frame(
-        <WorkspaceSidebarSurface
-          {...sidebarLoadingScenario()}
-          navigation={shellNavigationFixture()}
-          onSwitchWorkspace={vi.fn()}
-          onCreateWorkspace={vi.fn()}
-          onTogglePin={vi.fn()}
-          onRetryNavigation={onRetryNavigation}
-          onOpenShortcuts={vi.fn()}
-          onSignOut={vi.fn()}
-        />,
-      ),
-    );
-    expect(
-      screen.getByRole("status", { name: copy.switcher.loading }),
-    ).toBeTruthy();
-    unmount();
-
-    const empty = renderPureUi(
-      frame(
-        <WorkspaceSidebarSurface
-          {...sidebarEmptyScenario()}
-          navigation={shellNavigationFixture()}
-          onSwitchWorkspace={vi.fn()}
-          onCreateWorkspace={vi.fn()}
-          onTogglePin={vi.fn()}
-          onRetryNavigation={onRetryNavigation}
-          onOpenShortcuts={vi.fn()}
-          onSignOut={vi.fn()}
-        />,
-      ),
-    );
-    expect(screen.getByText(copy.lists.pinnedEmpty)).toBeTruthy();
-    expect(screen.getByText(copy.lists.recentEmpty)).toBeTruthy();
-    empty.unmount();
-
-    renderPureUi(
-      frame(
-        <WorkspaceSidebarSurface
-          {...sidebarErrorScenario()}
-          navigation={shellNavigationFixture()}
-          onSwitchWorkspace={vi.fn()}
-          onCreateWorkspace={vi.fn()}
-          onTogglePin={vi.fn()}
-          onRetryNavigation={onRetryNavigation}
-          onOpenShortcuts={vi.fn()}
-          onSignOut={vi.fn()}
-        />,
-      ),
-    );
-    fireEvent.click(
-      screen.getAllByRole("button", { name: copy.lists.retry })[0]!,
-    );
-    expect(onRetryNavigation).toHaveBeenCalledTimes(1);
-  });
-
-  it("FUI[workspace.sidebar:user] opens shortcuts and signs out from the user card", () => {
-    const props = renderSidebar();
+  it("FUI[workspace.sidebar:user] shows the member's name and workspace role and keeps the account menu", () => {
+    const { props } = renderSidebar({}, sidebarMockupScenario());
     const trigger = screen.getByRole("button", {
-      name: "Account menu for Linh Tran",
+      name: "Menu tài khoản của Nguyễn Thu Hà",
     });
+    expect(trigger.textContent).toContain("Nguyễn Thu Hà");
+    expect(trigger.textContent).toContain("Quản trị workspace");
 
     openMenu(trigger);
     fireEvent.click(
-      screen.getByRole("menuitem", { name: copy.user.shortcuts }),
+      screen.getByRole("menuitem", { name: viCopy.user.shortcuts }),
     );
     expect(props.onOpenShortcuts).toHaveBeenCalledTimes(1);
 
     openMenu(trigger);
-    fireEvent.click(screen.getByRole("menuitem", { name: copy.user.profile }));
+    fireEvent.click(screen.getByRole("menuitem", { name: viCopy.user.profile }));
     expect(props.navigation.onNavigate).toHaveBeenCalledWith({
       section: "account",
       page: "profile",
     });
 
     openMenu(trigger);
-    fireEvent.click(screen.getByRole("menuitem", { name: copy.user.signOut }));
+    fireEvent.click(screen.getByRole("menuitem", { name: viCopy.user.signOut }));
     expect(props.onSignOut).toHaveBeenCalledTimes(1);
   });
 
+  it("FUI[workspace.sidebar:system-rail] the workspace chip shows the name and size and opens the system rail", () => {
+    const { props } = renderSidebar({}, sidebarMockupScenario());
+    const chip = screen.getByRole("button", { name: /^Minh An Group/ });
+    expect(chip.textContent).toContain("Minh An Group");
+    expect(chip.textContent).toContain("5 phòng ban · 86 người");
+
+    fireEvent.click(chip);
+    openMenu(chip);
+
+    expect(props.onOpenSystemRail).toHaveBeenCalled();
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("FUI[workspace.sidebar:states] shows a workspace placeholder while loading and no counts when unavailable", () => {
+    renderSidebar({}, sidebarLoadingScenario());
+    expect(
+      screen.getByRole("status", { name: copy.switcher.loading }),
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "My work" }).textContent).toBe(
+      "My work",
+    );
+    expect(screen.getByRole("link", { name: "Inbox" }).textContent).toBe(
+      "Inbox",
+    );
+  });
+
   it("FUI[workspace.sidebar:keyboard] keeps every destination keyboard reachable in reading order", () => {
-    renderSidebar();
+    renderSidebar({ spaces: sidebarSpacesFixture() });
     const nav = screen.getByRole("navigation", { name: copy.nav.label });
-    const links = within(nav).getAllByRole("link");
+    fireEvent.click(screen.getByRole("button", { name: copy.sidebar.setup }));
+    const links = within(nav)
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("role") !== "treeitem");
     expect(links.map((link) => link.textContent?.trim())).toEqual([
       copy.nav.home,
-      copy.nav.myWork,
-      copy.nav.inbox,
+      `${copy.nav.myWork}7`,
+      `${copy.nav.inbox}3`,
       copy.nav.library,
-      copy.nav.search,
-      "Board: Product Roadmap",
-      "Doc: Q4 product specification",
-      "Board: Launch checklist",
-      "Doc: Sprint 42 retro",
-      "Board: Bug triage",
-      copy.nav.members,
-      copy.nav.teams,
-      copy.nav.settings,
+      copy.nav.reports,
+      copy.sidebar.setupGeneral,
+      copy.sidebar.setupMembers,
+      copy.sidebar.setupTeams,
+      copy.sidebar.setupBilling,
     ]);
     for (const link of links) {
       expect(link.getAttribute("tabindex")).not.toBe("-1");

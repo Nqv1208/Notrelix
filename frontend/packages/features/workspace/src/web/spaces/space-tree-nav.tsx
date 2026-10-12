@@ -12,9 +12,6 @@ import {
 } from "lucide-react";
 import {
   Button,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
   SidebarGroup,
   SidebarGroupAction,
   SidebarGroupContent,
@@ -25,19 +22,31 @@ import {
 import { libraryWindow } from "../../core/model/library";
 import {
   buildSpaceIndex,
-  visibleSpaceRows,
+  childrenOf,
+  type SpaceIndex,
   type SpaceNode,
-  type SpaceTreeRow,
   type SpaceType,
 } from "../../core/model/spaces";
-import type { WorkspaceDestination } from "../../core/model/navigation";
+import {
+  markToneFor,
+  type MarkToneId,
+  type WorkspaceDestination,
+} from "../../core/model/navigation";
 import { isPlainClick, type ShellNavigation } from "../shell/shell-models";
+import { IdentityMark } from "../shell/shell-link";
 import type { WorkspaceSpacesCopy } from "./workspace-spaces.copy";
 
 export type SpaceTreeState =
   | { readonly status: "loading" }
   | { readonly status: "error" }
   | { readonly status: "ready"; readonly nodes: readonly SpaceNode[] };
+
+/** A Board the member can open, listed under its Space in the sidebar. */
+export interface SpaceBoardLink {
+  readonly id: string;
+  readonly name: string;
+  readonly isPrivate: boolean;
+}
 
 export interface SpaceTreeNavProps {
   readonly copy: WorkspaceSpacesCopy;
@@ -47,6 +56,14 @@ export interface SpaceTreeNavProps {
   readonly expandedIds: ReadonlySet<string>;
   /** The Space of the current page, when it is a Space page. */
   readonly activeSpaceId: string | null;
+  /** The Board of the current page, when it is a Board page. */
+  readonly activeBoardId?: string | null;
+  /**
+   * Boards per Space id, from the authorized Board list (never guessed).
+   * They render under their Space while it is expanded, before its
+   * sub-Spaces; omitted = the tree shows Spaces only.
+   */
+  readonly boardsBySpace?: ReadonlyMap<string, readonly SpaceBoardLink[]>;
   /** Workspace owners and admins create top-level Spaces (GOV-028). */
   readonly canCreateRoot: boolean;
   readonly onExpandedChange: (spaceId: string, expanded: boolean) => void;
@@ -58,11 +75,15 @@ export interface SpaceTreeNavProps {
   readonly windowThreshold?: number;
 }
 
-/** Fixed row height (`h-8`), used by windowing. */
+/** Fixed row height (`--size-row-dense`, 32 px), used by windowing. */
 const ROW_HEIGHT = 32;
 /** Height of the windowed scroll region (`max-h-96`). */
 const WINDOW_HEIGHT = 384;
-const INDENT = 12;
+/** Inline start of a top-level row and the step per level (px). */
+const ROW_START = 8;
+const INDENT = 20;
+/** Chip width plus gap, so a Board's name lines up with its Space's name. */
+const CHIP_OFFSET = 26;
 export const SPACE_TREE_WINDOW_THRESHOLD = 150;
 
 export const SPACE_TYPE_ICON: Readonly<Record<SpaceType, LucideIcon>> = {
@@ -72,95 +93,208 @@ export const SPACE_TYPE_ICON: Readonly<Record<SpaceType, LucideIcon>> = {
   ProjectArea: FolderKanban,
 };
 
-function destinationFor(spaceId: string): WorkspaceDestination {
-  return { section: "space", spaceId };
+const NO_BOARDS: readonly SpaceBoardLink[] = [];
+
+interface TreeEntryBase {
+  readonly key: string;
+  /** 1-based level (`aria-level`). */
+  readonly level: number;
+  readonly posInSet: number;
+  readonly setSize: number;
+  /** Key of the parent Space entry (`null` at the root). */
+  readonly parentKey: string | null;
 }
 
-function TreeRow({
-  row,
+interface SpaceEntry extends TreeEntryBase {
+  readonly kind: "space";
+  readonly node: SpaceNode;
+  readonly expandable: boolean;
+  readonly expanded: boolean;
+  /** The top-level department's tone, shared by its sub-Spaces. */
+  readonly tone: MarkToneId;
+}
+
+interface BoardEntry extends TreeEntryBase {
+  readonly kind: "board";
+  readonly spaceId: string;
+  readonly board: SpaceBoardLink;
+}
+
+type TreeEntry = SpaceEntry | BoardEntry;
+
+function spaceKey(id: string): string {
+  return `space:${id}`;
+}
+
+function entryName(entry: TreeEntry): string {
+  return entry.kind === "space" ? entry.node.name : entry.board.name;
+}
+
+/**
+ * The rows the tree shows: roots, then — for expanded Spaces only — their
+ * Boards followed by their sub-Spaces. Collapsed subtrees are never visited,
+ * so a large tree costs only what is open (depth is unlimited, WSP-021).
+ */
+function visibleTreeEntries(
+  index: SpaceIndex,
+  expanded: ReadonlySet<string>,
+  boardsBySpace: SpaceTreeNavProps["boardsBySpace"],
+): TreeEntry[] {
+  const entries: TreeEntry[] = [];
+  const visit = (
+    parent: SpaceNode | null,
+    level: number,
+    offset: number,
+    path: Set<string>,
+    tone: MarkToneId | null,
+  ) => {
+    const siblings = childrenOf(index, parent?.id ?? null);
+    siblings.forEach((node, position) => {
+      if (path.has(node.id)) return;
+      const boards = boardsBySpace?.get(node.id) ?? NO_BOARDS;
+      const children = childrenOf(index, node.id);
+      const expandable = children.length > 0 || boards.length > 0;
+      const open = expandable && expanded.has(node.id);
+      const nodeTone = tone ?? markToneFor(node.id);
+      entries.push({
+        kind: "space",
+        key: spaceKey(node.id),
+        node,
+        level,
+        posInSet: offset + position + 1,
+        setSize: offset + siblings.length,
+        parentKey: parent ? spaceKey(parent.id) : null,
+        expandable,
+        expanded: open,
+        tone: nodeTone,
+      });
+      if (!open) return;
+      const childSetSize = boards.length + children.length;
+      boards.forEach((board, boardPosition) => {
+        entries.push({
+          kind: "board",
+          key: `board:${node.id}:${board.id}`,
+          spaceId: node.id,
+          board,
+          level: level + 1,
+          posInSet: boardPosition + 1,
+          setSize: childSetSize,
+          parentKey: spaceKey(node.id),
+        });
+      });
+      path.add(node.id);
+      visit(node, level + 1, boards.length, path, nodeTone);
+      path.delete(node.id);
+    });
+  };
+  visit(null, 1, 0, new Set(), null);
+  return entries;
+}
+
+function spaceInset(level: number): number {
+  return ROW_START + (level - 1) * INDENT;
+}
+
+const ROW_CLASS =
+  "flex h-(--size-row-dense) w-full min-w-0 items-center gap-2 rounded-md pr-1 text-left text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-focus-ring";
+const ACTIVE_ROW_CLASS =
+  "bg-state-selected font-semibold text-state-selected-foreground hover:bg-state-selected hover:text-state-selected-foreground";
+
+interface RowProps<T extends TreeEntry> {
+  entry: T;
+  copy: WorkspaceSpacesCopy;
+  navigation: ShellNavigation;
+  active: boolean;
+  focusable: boolean;
+  onToggle: (entry: SpaceEntry) => void;
+  onKeyDown: (event: React.KeyboardEvent, entry: TreeEntry) => void;
+  onFocusEntry: (entry: TreeEntry) => void;
+  onNavigated?: () => void;
+}
+
+function navigateOnPlainClick(
+  event: React.MouseEvent,
+  destination: WorkspaceDestination,
+  navigation: ShellNavigation,
+  onNavigated?: () => void,
+) {
+  if (!isPlainClick(event)) return;
+  event.preventDefault();
+  navigation.onNavigate(destination);
+  onNavigated?.();
+}
+
+function PrivateMarker({ label }: { label: string }) {
+  return (
+    <span className="flex shrink-0 items-center text-muted-foreground">
+      <Lock aria-hidden="true" className="size-3.5" />
+      <span className="sr-only">, {label}</span>
+    </span>
+  );
+}
+
+function SpaceRow({
+  entry,
   copy,
   navigation,
   active,
   focusable,
   onToggle,
   onKeyDown,
-  onFocusRow,
+  onFocusEntry,
   onNavigated,
-}: {
-  row: SpaceTreeRow;
-  copy: WorkspaceSpacesCopy;
-  navigation: ShellNavigation;
-  active: boolean;
-  focusable: boolean;
-  onToggle: (row: SpaceTreeRow) => void;
-  onKeyDown: (event: React.KeyboardEvent, row: SpaceTreeRow) => void;
-  onFocusRow: (row: SpaceTreeRow) => void;
-  onNavigated?: () => void;
-}) {
-  const { node } = row;
-  const Icon = SPACE_TYPE_ICON[node.type];
-  const destination = destinationFor(node.id);
+}: RowProps<SpaceEntry>) {
+  const { node } = entry;
+  const destination: WorkspaceDestination = {
+    section: "space",
+    spaceId: node.id,
+  };
   return (
     <a
       role="treeitem"
       href={navigation.getHref(destination)}
+      data-tree-key={entry.key}
       data-space-id={node.id}
-      aria-level={row.level}
-      aria-posinset={row.posInSet}
-      aria-setsize={row.setSize}
-      aria-expanded={row.hasChildren ? row.expanded : undefined}
+      aria-level={entry.level}
+      aria-posinset={entry.posInSet}
+      aria-setsize={entry.setSize}
+      aria-expanded={entry.expandable ? entry.expanded : undefined}
       aria-selected={active}
       aria-current={active ? "page" : undefined}
       tabIndex={focusable ? 0 : -1}
-      onFocus={() => onFocusRow(row)}
-      onKeyDown={(event) => onKeyDown(event, row)}
+      onFocus={() => onFocusEntry(entry)}
+      onKeyDown={(event) => onKeyDown(event, entry)}
       onClick={(event) => {
         const toggle = (event.target as Element).closest("[data-tree-toggle]");
         if (toggle) {
           event.preventDefault();
-          onToggle(row);
+          onToggle(entry);
           return;
         }
-        if (!isPlainClick(event)) return;
-        event.preventDefault();
-        navigation.onNavigate(destination);
-        onNavigated?.();
+        navigateOnPlainClick(event, destination, navigation, onNavigated);
       }}
-      style={{ paddingInlineStart: `${(row.level - 1) * INDENT + 4}px` }}
+      style={{ paddingInlineStart: `${spaceInset(entry.level)}px` }}
       className={cn(
-        "group/space flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md pr-2 text-left text-sm text-sidebar-foreground outline-none",
-        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-focus-ring",
-        active &&
-          "bg-state-selected font-medium text-state-selected-foreground hover:bg-state-selected hover:text-state-selected-foreground",
+        ROW_CLASS,
+        "font-medium text-sidebar-foreground",
+        active && ACTIVE_ROW_CLASS,
         node.isArchived && "text-muted-foreground",
       )}
     >
-      <span
-        data-tree-toggle={row.hasChildren ? "" : undefined}
-        aria-hidden="true"
+      <IdentityMark
+        name={node.name}
+        markTone={entry.tone}
+        size="sm"
         className={cn(
-          "flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground",
-          row.hasChildren && "hover:bg-state-hover hover:text-foreground",
+          "rounded-sm leading-none",
+          entry.level === 1 ? "size-4.5" : "size-4",
         )}
-      >
-        {row.hasChildren ? (
-          <ChevronRight
-            className={cn(
-              "size-3.5 transition-transform duration-fast",
-              row.expanded && "rotate-90",
-            )}
-          />
-        ) : null}
-      </span>
-      <Icon aria-hidden="true" className="size-4 shrink-0 text-icon" />
+      />
       <span className="min-w-0 flex-1 truncate" title={node.name}>
         {node.name}
       </span>
       {node.visibility === "Private" ? (
-        <span className="flex shrink-0 items-center text-muted-foreground">
-          <Lock aria-hidden="true" className="size-3.5" />
-          <span className="sr-only">, {copy.tree.private}</span>
-        </span>
+        <PrivateMarker label={copy.tree.private} />
       ) : null}
       {node.isArchived ? (
         <span className="flex shrink-0 items-center text-muted-foreground">
@@ -168,17 +302,85 @@ function TreeRow({
           <span className="sr-only">, {copy.tree.archived}</span>
         </span>
       ) : null}
+      <span
+        data-tree-toggle={entry.expandable ? "" : undefined}
+        aria-hidden="true"
+        className={cn(
+          "flex size-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground",
+          entry.expandable && "hover:bg-state-hover hover:text-foreground",
+        )}
+      >
+        {entry.expandable ? (
+          <ChevronRight
+            className={cn(
+              "size-3.5 transition-transform duration-fast",
+              entry.expanded && "rotate-90",
+            )}
+          />
+        ) : null}
+      </span>
+    </a>
+  );
+}
+
+function BoardRow({
+  entry,
+  copy,
+  navigation,
+  active,
+  focusable,
+  onKeyDown,
+  onFocusEntry,
+  onNavigated,
+}: RowProps<BoardEntry>) {
+  const { board } = entry;
+  const destination: WorkspaceDestination = {
+    section: "board",
+    boardId: board.id,
+  };
+  return (
+    <a
+      role="treeitem"
+      href={navigation.getHref(destination)}
+      data-tree-key={entry.key}
+      data-board-id={board.id}
+      aria-level={entry.level}
+      aria-posinset={entry.posInSet}
+      aria-setsize={entry.setSize}
+      aria-selected={active}
+      aria-current={active ? "page" : undefined}
+      tabIndex={focusable ? 0 : -1}
+      onFocus={() => onFocusEntry(entry)}
+      onKeyDown={(event) => onKeyDown(event, entry)}
+      onClick={(event) =>
+        navigateOnPlainClick(event, destination, navigation, onNavigated)
+      }
+      style={{
+        paddingInlineStart: `${spaceInset(entry.level - 1) + CHIP_OFFSET}px`,
+      }}
+      className={cn(
+        ROW_CLASS,
+        "pr-2 text-muted-foreground",
+        active && ACTIVE_ROW_CLASS,
+      )}
+    >
+      <span className="min-w-0 flex-1 truncate" title={board.name}>
+        {board.name}
+      </span>
+      {board.isPrivate ? <PrivateMarker label={copy.tree.private} /> : null}
     </a>
   );
 }
 
 /**
- * The Space org tree in the workspace sidebar (OT-5): a WAI-ARIA navigation
- * tree (roving focus; ↑ ↓ move, → opens or enters, ← closes or goes to the
- * parent, Home/End, type-ahead). Only expanded subtrees are rendered, and
+ * The department (Space) tree in the workspace sidebar (OT-5): a WAI-ARIA
+ * navigation tree (roving focus; ↑ ↓ move, → opens or enters, ← closes or
+ * goes to the parent, Home/End, type-ahead). An expanded Space lists its
+ * Boards, then its sub-Spaces. Only expanded subtrees are rendered, and
  * above the threshold the visible rows are windowed inside their own scroll
- * region, so depth and size are unlimited (WSP-021). Private Spaces carry a
- * lock marker; which actions show is governed by the caller's access.
+ * region, so depth and size are unlimited (WSP-021). Private Spaces and
+ * Boards carry a lock marker; which actions show is governed by the caller's
+ * access.
  */
 export function SpaceTreeNav({
   copy,
@@ -186,6 +388,8 @@ export function SpaceTreeNav({
   state,
   expandedIds,
   activeSpaceId,
+  activeBoardId = null,
+  boardsBySpace,
   canCreateRoot,
   onExpandedChange,
   onCreateSpace,
@@ -198,26 +402,32 @@ export function SpaceTreeNav({
   const treeRef = React.useRef<HTMLDivElement>(null);
   const focusPending = React.useRef<string | null>(null);
   const typeAhead = React.useRef({ text: "", at: 0 });
-  const [focusedId, setFocusedId] = React.useState<string | null>(null);
+  const [focusedKey, setFocusedKey] = React.useState<string | null>(null);
   const [scrollTop, setScrollTop] = React.useState(0);
 
   const nodes = state.status === "ready" ? state.nodes : null;
   const index = React.useMemo(() => buildSpaceIndex(nodes ?? []), [nodes]);
   const rows = React.useMemo(
-    () => visibleSpaceRows(index, expandedIds),
-    [index, expandedIds],
+    () => visibleTreeEntries(index, expandedIds, boardsBySpace),
+    [index, expandedIds, boardsBySpace],
   );
-  const rowIndexById = React.useMemo(
-    () => new Map(rows.map((row, position) => [row.node.id, position])),
+  const rowIndexByKey = React.useMemo(
+    () => new Map(rows.map((row, position) => [row.key, position])),
     [rows],
   );
 
+  const isActive = (entry: TreeEntry) =>
+    entry.kind === "space"
+      ? entry.node.id === activeSpaceId
+      : entry.board.id === activeBoardId;
+
   // The focusable row: the focused one if still visible, else the current
-  // Space, else the first row.
-  const tabStopId =
-    (focusedId && rowIndexById.has(focusedId) ? focusedId : null) ??
-    (activeSpaceId && rowIndexById.has(activeSpaceId) ? activeSpaceId : null) ??
-    rows[0]?.node.id ??
+  // Space or Board, else the first row.
+  const activeKey = rows.find(isActive)?.key ?? null;
+  const tabStopKey =
+    (focusedKey && rowIndexByKey.has(focusedKey) ? focusedKey : null) ??
+    activeKey ??
+    rows[0]?.key ??
     null;
 
   const windowed = rows.length > windowThreshold;
@@ -231,22 +441,22 @@ export function SpaceTreeNav({
     : { start: 0, end: rows.length };
 
   React.useEffect(() => {
-    const id = focusPending.current;
-    if (!id) return;
-    const node = Array.from(
-      treeRef.current?.querySelectorAll<HTMLElement>("[data-space-id]") ?? [],
-    ).find((element) => element.dataset.spaceId === id);
-    if (node) {
+    const key = focusPending.current;
+    if (!key) return;
+    const element = Array.from(
+      treeRef.current?.querySelectorAll<HTMLElement>("[data-tree-key]") ?? [],
+    ).find((candidate) => candidate.dataset.treeKey === key);
+    if (element) {
       focusPending.current = null;
-      node.focus();
+      element.focus();
     }
   });
 
   const focusRow = (position: number) => {
     const target = rows[Math.max(0, Math.min(rows.length - 1, position))];
     if (!target) return;
-    setFocusedId(target.node.id);
-    focusPending.current = target.node.id;
+    setFocusedKey(target.key);
+    focusPending.current = target.key;
     const region = scrollRef.current;
     if (region && windowed) {
       const top = position * ROW_HEIGHT;
@@ -258,12 +468,12 @@ export function SpaceTreeNav({
     }
   };
 
-  const toggle = (row: SpaceTreeRow) => {
-    if (row.hasChildren) onExpandedChange(row.node.id, !row.expanded);
+  const toggle = (entry: SpaceEntry) => {
+    if (entry.expandable) onExpandedChange(entry.node.id, !entry.expanded);
   };
 
-  const onKeyDown = (event: React.KeyboardEvent, row: SpaceTreeRow) => {
-    const position = rowIndexById.get(row.node.id) ?? 0;
+  const onKeyDown = (event: React.KeyboardEvent, entry: TreeEntry) => {
+    const position = rowIndexByKey.get(entry.key) ?? 0;
     switch (event.key) {
       case "ArrowDown":
         event.preventDefault();
@@ -283,19 +493,20 @@ export function SpaceTreeNav({
         return;
       case "ArrowRight":
         event.preventDefault();
-        if (!row.hasChildren) return;
-        if (!row.expanded) onExpandedChange(row.node.id, true);
+        if (entry.kind !== "space" || !entry.expandable) return;
+        if (!entry.expanded) onExpandedChange(entry.node.id, true);
         else focusRow(position + 1);
         return;
       case "ArrowLeft": {
         event.preventDefault();
-        if (row.hasChildren && row.expanded) {
-          onExpandedChange(row.node.id, false);
+        if (entry.kind === "space" && entry.expandable && entry.expanded) {
+          onExpandedChange(entry.node.id, false);
           return;
         }
-        const parentId = row.node.parentId;
         const parentPosition =
-          parentId !== null ? rowIndexById.get(parentId) : undefined;
+          entry.parentKey !== null
+            ? rowIndexByKey.get(entry.parentKey)
+            : undefined;
         if (parentPosition !== undefined) focusRow(parentPosition);
         return;
       }
@@ -316,7 +527,7 @@ export function SpaceTreeNav({
       const needle = buffer.text.toLocaleLowerCase();
       for (let step = 1; step <= rows.length; step += 1) {
         const candidate = (position + step) % rows.length;
-        const name = rows[candidate]!.node.name.toLocaleLowerCase();
+        const name = entryName(rows[candidate]!).toLocaleLowerCase();
         if (name.startsWith(needle)) {
           focusRow(candidate);
           break;
@@ -373,20 +584,23 @@ export function SpaceTreeNav({
             style={{ height: range.start * ROW_HEIGHT }}
           />
         ) : null}
-        {shown.map((row) => (
-          <TreeRow
-            key={row.node.id}
-            row={row}
-            copy={copy}
-            navigation={navigation}
-            active={row.node.id === activeSpaceId}
-            focusable={row.node.id === tabStopId}
-            onToggle={toggle}
-            onKeyDown={onKeyDown}
-            onFocusRow={(focused) => setFocusedId(focused.node.id)}
-            onNavigated={onNavigated}
-          />
-        ))}
+        {shown.map((entry) => {
+          const rowProps = {
+            copy,
+            navigation,
+            active: isActive(entry),
+            focusable: entry.key === tabStopKey,
+            onToggle: toggle,
+            onKeyDown,
+            onFocusEntry: (focused: TreeEntry) => setFocusedKey(focused.key),
+            onNavigated,
+          };
+          return entry.kind === "space" ? (
+            <SpaceRow key={entry.key} entry={entry} {...rowProps} />
+          ) : (
+            <BoardRow key={entry.key} entry={entry} {...rowProps} />
+          );
+        })}
         {windowed && range.end < rows.length ? (
           <div
             role="none"
@@ -418,35 +632,22 @@ export function SpaceTreeNav({
   }
 
   return (
-    <Collapsible defaultOpen className="group/spaces">
-      <SidebarGroup className="py-1">
-        <SidebarGroupLabel asChild>
-          <CollapsibleTrigger
-            aria-label={copy.tree.toggle}
-            className="w-full gap-1 text-metadata font-medium text-muted-foreground hover:text-foreground focus-visible:ring-focus-ring"
-          >
-            <ChevronRight
-              aria-hidden="true"
-              className="transition-transform duration-fast group-data-[state=open]/spaces:rotate-90"
-            />
-            <span>{copy.tree.title}</span>
-          </CollapsibleTrigger>
-        </SidebarGroupLabel>
-        {canCreateRoot ? (
-          <SidebarGroupAction
-            type="button"
-            onClick={onCreateSpace}
-            aria-label={copy.tree.create}
-            title={copy.tree.create}
-            className="focus-visible:ring-focus-ring"
-          >
-            <Plus aria-hidden="true" />
-          </SidebarGroupAction>
-        ) : null}
-        <CollapsibleContent>
-          <SidebarGroupContent>{body}</SidebarGroupContent>
-        </CollapsibleContent>
-      </SidebarGroup>
-    </Collapsible>
+    <SidebarGroup className="py-1">
+      <SidebarGroupLabel className="mt-2 text-metadata font-semibold text-muted-foreground">
+        {copy.tree.title}
+      </SidebarGroupLabel>
+      {canCreateRoot ? (
+        <SidebarGroupAction
+          type="button"
+          onClick={onCreateSpace}
+          aria-label={copy.tree.create}
+          title={copy.tree.create}
+          className="mt-2 focus-visible:ring-focus-ring"
+        >
+          <Plus aria-hidden="true" />
+        </SidebarGroupAction>
+      ) : null}
+      <SidebarGroupContent>{body}</SidebarGroupContent>
+    </SidebarGroup>
   );
 }

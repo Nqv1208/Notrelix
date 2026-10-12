@@ -27,6 +27,8 @@ export function routerTarget(
       return { to: "/workspaces/$workspaceId/search", params };
     case "library":
       return { to: "/workspaces/$workspaceId/library", params };
+    case "reports":
+      return { to: "/workspaces/$workspaceId/reports", params };
     case "members":
       return {
         to: "/workspaces/$workspaceId/members",

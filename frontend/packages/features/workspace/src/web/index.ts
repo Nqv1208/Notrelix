@@ -174,6 +174,7 @@ export {
 export {
   SpaceTreeNav,
   SPACE_TREE_WINDOW_THRESHOLD,
+  type SpaceBoardLink,
   type SpaceTreeNavProps,
   type SpaceTreeState,
 } from "./spaces/space-tree-nav";
