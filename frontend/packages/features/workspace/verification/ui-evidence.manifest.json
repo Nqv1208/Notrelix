@@ -518,6 +518,121 @@
       ]
     },
     {
+      "surfaceId": "workspace.system-rail",
+      "owner": "@notrelix/features-workspace",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/web/shell/notrelix-system-rail-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "workspace-system-rail--overlay",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-system-rail--pinned",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-system-rail--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "EdgeData"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "ReadOnly",
+            "reason": "The rail lists the member's own workspace memberships and account-level entries; guest memberships are labelled, and no read-only member state changes what the rail offers.",
+            "authority": "docs/workstreams/executions/workspace-experience/workspace-experience.plan.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "hidden",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "render",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge-data",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "dismiss",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "pinned",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "switch-workspace",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "create",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "all-inbox",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "search",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "account",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "pin",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/web/shell/__tests__/notrelix-system-rail.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
       "surfaceId": "workspace.home",
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "composition",
