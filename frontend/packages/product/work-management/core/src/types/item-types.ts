@@ -33,6 +33,18 @@ export interface Card {
   _count: { comments: number; attachments: number; checklistItems: number };
   createdAt: string;
   updatedAt?: string;
+  /** Board item key such as "ERP-142", or a plain number on a board without a prefix. */
+  itemKey?: string | null;
+  /** Parent item id when this item is a child item; child items are not top-level cards. */
+  parentItemId?: string | null;
+  /** Selected option of the board's Status field. */
+  statusOptionId?: string | null;
+  /** Work status category of the selected Status option. */
+  statusCategory?: "todo" | "in_progress" | "review" | "done" | null;
+  /** Due date and time as an ISO 8601 string. */
+  dueAt?: string | null;
+  /** Child item progress; a card shows it only when `total > 0`. */
+  childProgress?: { done: number; total: number } | null;
 }
 
 export type CardDetailTab =
