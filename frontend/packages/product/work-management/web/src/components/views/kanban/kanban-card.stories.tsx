@@ -11,13 +11,6 @@ const noOp = () => undefined;
 const meta = {
   title: "Work Management/Kanban/Card",
   component: KanbanCard,
-  decorators: [
-    (Story) => (
-      <div className="w-72">
-        <Story />
-      </div>
-    ),
-  ],
 } satisfies Meta<typeof KanbanCard>;
 export default meta;
 type Story = StoryObj<typeof meta>;
