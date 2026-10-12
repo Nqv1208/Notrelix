@@ -42,6 +42,8 @@ const sidebarCallbacks = {
   onOpenCommand: noop,
   onOpenShortcuts: noop,
   onSignOut: noop,
+  onTogglePin: noop,
+  onRetryNavigation: noop,
 };
 
 function ShellFrame({

@@ -244,6 +244,14 @@
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         },
         {
+          "id": "pinned",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
+          "id": "pinned-empty",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
           "id": "keyboard",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         }

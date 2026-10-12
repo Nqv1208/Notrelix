@@ -20,13 +20,16 @@ import {
   spaceAncestors,
   spacePath,
   NAVIGATION_RESOURCE_KIND,
+  resolveNavigationEntries,
   type WorkspaceDestination,
 } from "@notrelix/features-workspace/core";
 import {
   commandShortcutLabel,
   createUseRecordRecent,
+  createUseTogglePin,
   createUseWorkspaceList,
   createUseWorkspaceMembers,
+  createUseWorkspacePins,
   useShellShortcuts,
   useSpaceTreeExpansion,
   useWorkspaceShellCopy,
@@ -38,6 +41,7 @@ import {
   WorkspaceSidebarSurface,
   WorkspaceTopbarSurface,
   workspaceBreadcrumbLabels,
+  type NavigationListState,
   type ShellNavigation,
   type ShellPaletteSelection,
   type ShellShortcutId,
@@ -85,6 +89,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       useWorkspaceList: createUseWorkspaceList(deps),
       useMembers: createUseWorkspaceMembers({ api: runtimeClient.api }),
       useRecordRecent: createUseRecordRecent(deps),
+      usePins: createUseWorkspacePins(deps),
+      useTogglePin: createUseTogglePin(deps),
       usePageList: createUsePageList(featureDeps.api, featureDeps.endpoints),
       NotificationBell: createNotificationBell(deps),
       useLogout: createUseLogout({
@@ -104,6 +110,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const myWork = useMyWorkItems(workspaceId);
   const pages = hooks.usePageList(workspaceId);
   const recordRecent = hooks.useRecordRecent();
+  const pins = hooks.usePins(workspaceId);
+  const togglePin = hooks.useTogglePin(workspaceId);
   const logout = hooks.useLogout();
 
   const location = useMemo(
@@ -180,6 +188,22 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       pages.isSuccess,
     ],
   );
+
+  // ── Pinned Boards and Docs (WX-DEC-011, ruling R6) ──────────────
+  const pinnedState = useMemo<NavigationListState>(() => {
+    if (pins.isError || catalog.failed) return { status: "error" };
+    if (pins.isLoading || !catalog.ready || !pins.data)
+      return { status: "loading" };
+    return {
+      status: "ready",
+      entries: resolveNavigationEntries(pins.data, catalog, pins.data),
+    };
+  }, [pins.data, pins.isError, pins.isLoading, catalog]);
+  const retryPins = useCallback(() => {
+    void pins.refetch();
+    if (boards.isError) void boards.refetch();
+    if (pages.isError) void pages.refetch();
+  }, [pins, boards, pages]);
 
   // ── Space org tree (OT-5) ───────────────────────────────────────
   const spacesCopy = useWorkspaceSpacesCopy();
@@ -464,6 +488,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         location={location}
         // No inbox producer yet (gap register): no badge.
         counts={{ myWork: myWorkCount, inbox: null }}
+        pinned={pinnedState}
+        onTogglePin={(entry, pinned) =>
+          togglePin.mutate({
+            kind: entry.kind,
+            resourceId: entry.resourceId,
+            pinned,
+          })
+        }
+        onRetryNavigation={retryPins}
         spaces={{
           copy: spacesCopy,
           state: sidebarSpaces,

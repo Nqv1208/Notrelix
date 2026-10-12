@@ -1,6 +1,7 @@
 import type {
   IdentityTone,
   MarkToneId,
+  NavigationEntry,
   WorkspaceDestination,
 } from "../../core/model/navigation";
 import type { WorkspaceBreadcrumbLabels } from "../../core/model/breadcrumb";
@@ -16,6 +17,12 @@ export interface ShellNavigation {
   readonly getHref: (destination: WorkspaceDestination) => string;
   readonly onNavigate: (destination: WorkspaceDestination) => void;
 }
+
+/** The member's pinned Boards and Docs, joined with the authorized lists. */
+export type NavigationListState =
+  | { readonly status: "loading" }
+  | { readonly status: "error" }
+  | { readonly status: "ready"; readonly entries: readonly NavigationEntry[] };
 
 export interface ShellWorkspace {
   readonly id: string;

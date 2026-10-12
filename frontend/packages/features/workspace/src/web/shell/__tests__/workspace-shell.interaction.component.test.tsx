@@ -51,6 +51,8 @@ function renderSidebar(
     onOpenCommand: vi.fn(),
     onOpenShortcuts: vi.fn(),
     onSignOut: vi.fn(),
+    onTogglePin: vi.fn(),
+    onRetryNavigation: vi.fn(),
     ...overrides,
   };
   const view = renderPureUi(frame(<WorkspaceSidebarSurface {...props} />));
@@ -377,6 +379,89 @@ describe("WorkspaceSidebarSurface", () => {
     );
   });
 
+  it("FUI[workspace.sidebar:pinned] lists pinned Boards and Docs above the departments and unpins from the keyboard, in vi and en", () => {
+    const text = {
+      vi: {
+        heading: "Ghim",
+        departments: "Phòng ban",
+        unpin: "Bỏ ghim Triển khai ERP Q4",
+      },
+      en: {
+        heading: "Pinned",
+        departments: "Departments",
+        unpin: "Unpin Triển khai ERP Q4",
+      },
+    } as const;
+    for (const locale of LOCALES) {
+      const { props, unmount } = renderSidebar(
+        { spaces: sidebarDepartmentsFixture(locale) },
+        sidebarMockupScenario(locale),
+      );
+      const nav = screen.getByRole("navigation", {
+        name: shellCopyFixture(locale).nav.label,
+      });
+      const heading = within(nav).getByText(text[locale].heading);
+      const departments = within(nav).getByText(text[locale].departments);
+      expect(
+        heading.compareDocumentPosition(departments) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+
+      const pinned = within(nav).getByRole("list", {
+        name: text[locale].heading,
+      });
+      const links = within(pinned).getAllByRole("link");
+      expect(links.map((link) => link.getAttribute("href"))).toEqual([
+        "/workspaces/ws-product/boards/board-cn-erp",
+        "/workspaces/ws-product/docs/doc-cn-handbook",
+      ]);
+      expect(links[0]!.textContent).toContain("Triển khai ERP Q4");
+
+      const unpin = within(pinned).getByRole("button", {
+        name: text[locale].unpin,
+      });
+      expect(unpin.getAttribute("tabindex")).not.toBe("-1");
+      unpin.focus();
+      expect(document.activeElement).toBe(unpin);
+      fireEvent.click(unpin);
+      expect(props.onTogglePin).toHaveBeenCalledTimes(1);
+      expect(props.onTogglePin).toHaveBeenCalledWith(
+        expect.objectContaining({ resourceId: "board-cn-erp" }),
+        false,
+      );
+      unmount();
+    }
+  });
+
+  it("FUI[workspace.sidebar:pinned-empty] hides the Pinned group without pins and while loading, and offers a retry when pins fail, in vi and en", () => {
+    const text = {
+      vi: { heading: "Ghim", retry: "Thử lại" },
+      en: { heading: "Pinned", retry: "Retry" },
+    } as const;
+    for (const locale of LOCALES) {
+      for (const pinned of [
+        { status: "ready", entries: [] },
+        { status: "loading" },
+      ] as const) {
+        const view = renderSidebar({ pinned }, sidebarMockupScenario(locale));
+        expect(screen.queryByText(text[locale].heading)).toBeNull();
+        view.unmount();
+      }
+
+      const failed = renderSidebar(
+        { pinned: { status: "error" } },
+        sidebarMockupScenario(locale),
+      );
+      expect(screen.getByText(text[locale].heading)).toBeTruthy();
+      expect(
+        screen.getByText(shellCopyFixture(locale).sidebar.pinnedError),
+      ).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: text[locale].retry }));
+      expect(failed.props.onRetryNavigation).toHaveBeenCalledTimes(1);
+      failed.unmount();
+    }
+  });
+
   it("FUI[workspace.sidebar:keyboard] keeps every destination keyboard reachable in reading order", () => {
     renderSidebar({ spaces: sidebarSpacesFixture() });
     const nav = screen.getByRole("navigation", { name: copy.nav.label });
@@ -390,6 +475,8 @@ describe("WorkspaceSidebarSurface", () => {
       `${copy.nav.inbox}3`,
       copy.nav.library,
       copy.nav.reports,
+      "Board: Product Roadmap",
+      "Doc: Q4 product specification",
       copy.sidebar.setupGeneral,
       copy.sidebar.setupMembers,
       copy.sidebar.setupTeams,

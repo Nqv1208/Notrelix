@@ -9,6 +9,7 @@ import {
   Keyboard,
   LogOut,
   Palette,
+  PinOff,
   Search,
   Settings2,
   User,
@@ -27,10 +28,13 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  Button,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -41,17 +45,21 @@ import {
   useSidebar,
 } from "@notrelix/ui-web";
 import {
+  destinationForEntry,
   isDestinationActive,
+  NAVIGATION_RESOURCE_KIND,
+  type NavigationEntry,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
 import { SpaceTreeNav, type SpaceTreeNavProps } from "../spaces/space-tree-nav";
-import { IdentityMark, ShellLink } from "./shell-link";
+import { IdentityMark, ResourceMark, ShellLink } from "./shell-link";
 import {
   formatCopy,
   pluralCopy,
   sidebarCountBadge,
   workspaceSetupLinks,
   type WorkspaceSetupLink,
+  type NavigationListState,
   type ShellCurrentWorkspace,
   type ShellNavigation,
   type ShellSidebarCounts,
@@ -68,6 +76,11 @@ export interface WorkspaceSidebarSurfaceProps {
   readonly location: WorkspaceDestination | null;
   /** My work and Inbox counts; `null` = unavailable (no badge, never "0"). */
   readonly counts: ShellSidebarCounts;
+  /**
+   * The member's pinned Boards and Docs (WX-DEC-011). The group shows above
+   * the departments only when there is at least one pin (or pins failed).
+   */
+  readonly pinned: NavigationListState;
   /** The department (Space) tree (OT-5); omitted by hosts without Spaces. */
   readonly spaces?: Omit<SpaceTreeNavProps, "navigation" | "onNavigated">;
   readonly user: ShellUser | null;
@@ -81,6 +94,10 @@ export interface WorkspaceSidebarSurfaceProps {
   readonly onOpenCommand: () => void;
   readonly onOpenShortcuts: () => void;
   readonly onSignOut: () => void;
+  /** Pins or unpins a Board or Doc (the sidebar only unpins). */
+  readonly onTogglePin: (entry: NavigationEntry, pinned: boolean) => void;
+  /** Reloads the pinned list after an error. */
+  readonly onRetryNavigation: () => void;
   /**
    * Mobile drawer only: rendered first inside the drawer, above the
    * workspace chip (the system rail's workspaces on narrow screens).
@@ -478,6 +495,109 @@ function UserCard({
   );
 }
 
+/**
+ * Pinned Boards and Docs (WX-DEC-011), above the departments as in the
+ * mobile mockup (`Final-M-Space` `danh-sach`). Hidden while loading and when
+ * empty so members without pins see no empty group; an error stays visible
+ * with a retry. Each row has a keyboard-reachable unpin action.
+ */
+function PinnedList({
+  copy,
+  state,
+  location,
+  navigation,
+  onTogglePin,
+  onRetry,
+}: {
+  copy: WorkspaceShellCopy;
+  state: NavigationListState;
+  location: WorkspaceDestination | null;
+  navigation: ShellNavigation;
+  onTogglePin: WorkspaceSidebarSurfaceProps["onTogglePin"];
+  onRetry: () => void;
+}) {
+  const closeDrawer = useCloseMobileDrawer();
+  if (state.status === "loading") return null;
+  if (state.status === "ready" && state.entries.length === 0) return null;
+
+  return (
+    <SidebarGroup className="py-1">
+      <SidebarGroupLabel className="mt-2 text-metadata font-semibold text-muted-foreground"
+      >
+        <span>{copy.sidebar.pinned}</span>
+        {state.status === "ready" ? (
+          <span
+            aria-hidden="true"
+            className="ml-1.5 font-medium tabular-nums"
+          >
+            {state.entries.length}
+          </span>
+        ) : null}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        {state.status === "error" ? (
+          <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+            <p className="text-metadata text-muted-foreground">
+              {copy.sidebar.pinnedError}
+            </p>
+            <Button variant="ghost" size="xs" onClick={onRetry}>
+              {copy.sidebar.pinnedRetry}
+            </Button>
+          </div>
+        ) : (
+          <SidebarMenu aria-label={copy.sidebar.pinned}>
+            {state.entries.map((entry) => {
+              const destination = destinationForEntry(entry);
+              const active = isDestinationActive(destination, location);
+              const isBoard = entry.kind === NAVIGATION_RESOURCE_KIND.board;
+              return (
+                <SidebarMenuItem key={`${entry.kind}:${entry.resourceId}`}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={active}
+                    className={ACTIVE_ITEM}
+                  >
+                    <ShellLink
+                      destination={destination}
+                      navigation={navigation}
+                      onNavigated={closeDrawer}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      <ResourceMark
+                        kind={entry.kind}
+                        id={entry.resourceId}
+                        size="sm"
+                      />
+                      <span className="sr-only">
+                        {isBoard ? copy.sidebar.board : copy.sidebar.doc}:{" "}
+                      </span>
+                      <span className="truncate" title={entry.name}>
+                        {entry.name}
+                      </span>
+                    </ShellLink>
+                  </SidebarMenuButton>
+                  <SidebarMenuAction
+                    showOnHover
+                    type="button"
+                    onClick={() => onTogglePin(entry, false)}
+                    aria-label={formatCopy(copy.sidebar.unpin, {
+                      name: entry.name,
+                    })}
+                    title={formatCopy(copy.sidebar.unpin, { name: entry.name })}
+                    className="focus-visible:ring-focus-ring"
+                  >
+                    <PinOff aria-hidden="true" />
+                  </SidebarMenuAction>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        )}
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 function SidebarSpaces({
   spaces,
   location,
@@ -574,6 +694,14 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
               />
             </SidebarGroupContent>
           </SidebarGroup>
+          <PinnedList
+            copy={copy}
+            state={props.pinned}
+            location={location}
+            navigation={navigation}
+            onTogglePin={props.onTogglePin}
+            onRetry={props.onRetryNavigation}
+          />
           {props.spaces ? (
             <SidebarSpaces
               spaces={props.spaces}

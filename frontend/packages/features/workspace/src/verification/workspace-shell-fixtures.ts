@@ -7,11 +7,14 @@ import {
   type WorkspaceBreadcrumbItem,
 } from "../core/model/breadcrumb";
 import {
+  NAVIGATION_RESOURCE_KIND,
   markToneFor,
+  type NavigationEntry,
   type WorkspaceDestination,
 } from "../core/model/navigation";
 import {
   workspaceBreadcrumbLabels,
+  type NavigationListState,
   type ShellCurrentWorkspace,
   type ShellNavigation,
   type ShellPaletteMember,
@@ -101,7 +104,49 @@ type SidebarScenario = Omit<
   | "onOpenCommand"
   | "onOpenShortcuts"
   | "onSignOut"
+  | "onTogglePin"
+  | "onRetryNavigation"
 >;
+
+export function navigationEntry(
+  overrides: Partial<NavigationEntry> &
+    Pick<NavigationEntry, "resourceId" | "name">,
+): NavigationEntry {
+  return {
+    kind: NAVIGATION_RESOURCE_KIND.board,
+    at: "2026-10-09T08:00:00.000Z",
+    pinned: true,
+    ...overrides,
+  };
+}
+
+function pinnedReady(entries: NavigationEntry[]): NavigationListState {
+  return { status: "ready", entries };
+}
+
+/** English pins: a Board and a Doc. */
+export function pinnedEntriesFixture(): NavigationEntry[] {
+  return [
+    navigationEntry({ resourceId: "board-roadmap", name: "Product Roadmap" }),
+    navigationEntry({
+      kind: NAVIGATION_RESOURCE_KIND.doc,
+      resourceId: "doc-spec",
+      name: "Q4 product specification",
+    }),
+  ];
+}
+
+/** Mockup pins (Minh An Group): a Board and a Doc of Công nghệ. */
+export function mockupPinnedEntriesFixture(): NavigationEntry[] {
+  return [
+    navigationEntry({ resourceId: "board-cn-erp", name: "Triển khai ERP Q4" }),
+    navigationEntry({
+      kind: NAVIGATION_RESOURCE_KIND.doc,
+      resourceId: "doc-cn-handbook",
+      name: "Sổ tay vận hành CNTT",
+    }),
+  ];
+}
 
 /** English product world: four departments, My work 7, Inbox 3. */
 export function sidebarDefaultScenario(): SidebarScenario {
@@ -116,6 +161,7 @@ export function sidebarDefaultScenario(): SidebarScenario {
     }),
     location: { section: "board", boardId: "board-roadmap" },
     counts: { myWork: 7, inbox: 3 },
+    pinned: pinnedReady(pinnedEntriesFixture()),
     user: shellUser(),
     commandShortcut: "⌘K",
   };
@@ -128,6 +174,7 @@ export function sidebarLoadingScenario(): SidebarScenario {
     workspace: null,
     location: { section: "home" },
     counts: { myWork: null, inbox: null },
+    pinned: { status: "loading" },
   };
 }
 
@@ -142,6 +189,7 @@ export function sidebarEmptyScenario(): SidebarScenario {
     workspace: base.workspace ? { ...base.workspace, role: "member" } : null,
     location: { section: "home" },
     counts: { myWork: 0, inbox: 0 },
+    pinned: pinnedReady([]),
   };
 }
 
@@ -151,6 +199,7 @@ export function sidebarErrorScenario(): SidebarScenario {
     ...sidebarDefaultScenario(),
     location: { section: "home" },
     counts: { myWork: null, inbox: null },
+    pinned: { status: "error" },
   };
 }
 
@@ -170,6 +219,7 @@ export function sidebarMockupScenario(
     }),
     location: { section: "space", spaceId: "sp-cn" },
     counts: { myWork: 7, inbox: 3 },
+    pinned: pinnedReady(mockupPinnedEntriesFixture()),
     user: shellUser({
       id: "user-thu-ha",
       name: "Nguyễn Thu Hà",
@@ -194,6 +244,18 @@ export function sidebarEdgeDataScenario(): SidebarScenario {
     }),
     location: { section: "board", boardId: "board-edge-03" },
     counts: { myWork: 0, inbox: 120 },
+    pinned: pinnedReady([
+      navigationEntry({
+        resourceId: "board-edge-01",
+        name: "Kế hoạch đối soát công nợ toàn quốc — giai đoạn hai (bản nháp cuối cùng)",
+      }),
+      navigationEntry({
+        kind: NAVIGATION_RESOURCE_KIND.doc,
+        resourceId: "doc-edge-policy",
+        name: "Quy trình phê duyệt chi phí 📄",
+      }),
+      navigationEntry({ resourceId: "board-edge-03", name: "Bảng số 03" }),
+    ]),
     user: shellUser({
       name: "Nguyễn Thị Phương Thảo",
       email: "nguyen.thi.phuong.thao.operations@notrelix.test",
