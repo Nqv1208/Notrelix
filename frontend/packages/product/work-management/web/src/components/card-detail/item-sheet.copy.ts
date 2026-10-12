@@ -58,7 +58,7 @@ export const en = {
   },
   sections: {
     description: "Description",
-    noDescription: "No description yet.",
+    descriptionUnavailable: "Description isn't available yet",
     childItems: "Sub-items",
     childProgress: "{{done}}/{{total}}",
     noChildItems: "No sub-items yet.",
@@ -165,7 +165,7 @@ export const vi: ItemSheetCopy = {
   },
   sections: {
     description: "Mô tả",
-    noDescription: "Chưa có mô tả.",
+    descriptionUnavailable: "Mô tả chưa khả dụng",
     childItems: "Việc con",
     childProgress: "{{done}}/{{total}}",
     noChildItems: "Chưa có việc con.",

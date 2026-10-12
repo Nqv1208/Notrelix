@@ -27,15 +27,7 @@ export type KanbanFilterState = {
   overdue: boolean;
 };
 
-export const EMPTY_KANBAN_FILTER: KanbanFilterState = Object.freeze({
-  statusOptionIds: [],
-  priorities: [],
-  assigneeIds: [],
-  labelIds: [],
-  overdue: false,
-}) as KanbanFilterState;
-
-/** A fresh empty filter, safe to mutate. */
+/** A fresh empty filter, safe to mutate (no shared empty constant). */
 export function emptyKanbanFilter(): KanbanFilterState {
   return {
     statusOptionIds: [],

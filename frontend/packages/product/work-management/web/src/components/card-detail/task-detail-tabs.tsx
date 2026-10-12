@@ -47,7 +47,9 @@ export function TaskDetailTabs({
             {card.descriptionMd}
           </p>
         ) : (
-          <p className="m-0 text-sm text-muted-foreground">{t.noDescription}</p>
+          <p className="m-0 text-sm text-muted-foreground">
+            {t.descriptionUnavailable}
+          </p>
         )}
       </section>
 

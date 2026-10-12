@@ -10,151 +10,14 @@ import {
   pluralCopy,
   type KanbanCardCopy,
 } from "./kanban-card.copy";
+import {
+  ITEM_LABEL_TONE_CLASS,
+  itemDueState,
+  itemLabelTone,
+  type ItemDueState,
+} from "../../shared/item-display";
 
 const defaultCopy = kanbanCardCopy("en");
-
-/** The six label tones of the design tokens (`--label-<tone>`). */
-export type KanbanLabelTone =
-  "data" | "security" | "training" | "report" | "doc" | "test";
-
-/** Literal tone classes, so Tailwind sees every one of them. */
-export const KANBAN_LABEL_TONE_CLASS: Readonly<
-  Record<KanbanLabelTone, string>
-> = {
-  data: "bg-label-data text-label-data-foreground",
-  security: "bg-label-security text-label-security-foreground",
-  training: "bg-label-training text-label-training-foreground",
-  report: "bg-label-report text-label-report-foreground",
-  doc: "bg-label-doc text-label-doc-foreground",
-  test: "bg-label-test text-label-test-foreground",
-};
-
-/** Whole-word name keywords (normalised: lower case, no diacritics). */
-const LABEL_TONE_KEYWORDS: ReadonlyArray<
-  readonly [KanbanLabelTone, readonly string[]]
-> = [
-  ["data", ["du lieu", "data"]],
-  ["security", ["bao mat", "an ninh", "security"]],
-  ["training", ["dao tao", "training"]],
-  ["report", ["bao cao", "report", "reports", "reporting"]],
-  ["test", ["kiem thu", "test", "tests", "testing", "qa"]],
-  [
-    "doc",
-    ["tai lieu", "doc", "docs", "documentation", "ha tang", "infrastructure"],
-  ],
-];
-
-function normaliseLabelName(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "d")
-    .toLowerCase()
-    .trim();
-}
-
-function hasWord(text: string, phrase: string): boolean {
-  return ` ${text.replace(/[^a-z0-9]+/g, " ")} `.includes(` ${phrase} `);
-}
-
-/** Hue (0–360) and saturation (0–1) of a `#rgb` / `#rrggbb` colour. */
-function hueOf(color: string): { hue: number; saturation: number } | null {
-  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
-  if (!match?.[1]) return null;
-  const hex =
-    match[1].length === 3
-      ? Array.from(match[1], (digit) => digit + digit).join("")
-      : match[1];
-  const [r, g, b] = [0, 2, 4].map(
-    (offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255,
-  ) as [number, number, number];
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const delta = max - min;
-  const lightness = (max + min) / 2;
-  const saturation =
-    delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
-  if (delta === 0) return { hue: 0, saturation };
-  let hue: number;
-  if (max === r) hue = ((g - b) / delta) % 6;
-  else if (max === g) hue = (b - r) / delta + 2;
-  else hue = (r - g) / delta + 4;
-  hue *= 60;
-  if (hue < 0) hue += 360;
-  return { hue, saturation };
-}
-
-/**
- * The label tone of a label, deterministic:
- * 1. by name — normalised (lower case, diacritics removed, đ → d) and matched
- *    as whole words against the keyword table (Dữ liệu/data, Bảo mật/security,
- *    Đào tạo/training, Báo cáo/report, Kiểm thử/test, Tài liệu/Hạ tầng/doc);
- * 2. otherwise by the hue of the label colour: grey (saturation < 0.15) → doc,
- *    red/pink → security, orange/yellow → report, green → training,
- *    blue → data, purple → test;
- * 3. otherwise doc. The raw label colour is never painted.
- */
-export function kanbanLabelTone(label: {
-  readonly name: string;
-  readonly color?: string | null;
-}): KanbanLabelTone {
-  const name = normaliseLabelName(label.name);
-  for (const [tone, keywords] of LABEL_TONE_KEYWORDS) {
-    if (keywords.some((keyword) => hasWord(name, keyword))) return tone;
-  }
-  const colour = label.color ? hueOf(label.color) : null;
-  if (!colour || colour.saturation < 0.15) return "doc";
-  const { hue } = colour;
-  if (hue < 20 || hue >= 330) return "security";
-  if (hue < 70) return "report";
-  if (hue < 170) return "training";
-  if (hue < 250) return "data";
-  return "test";
-}
-
-export type KanbanDueState =
-  | { readonly kind: "overdue"; readonly days: number }
-  | { readonly kind: "today" }
-  | { readonly kind: "date"; readonly text: string };
-
-function startOfDay(date: Date): number {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-  ).getTime();
-}
-
-function pad(value: number): string {
-  return String(value).padStart(2, "0");
-}
-
-/**
- * Due state by calendar day in the runtime time zone against `now`: before
- * today → overdue by N days; the same day → today (even after the hour);
- * later → "dd/MM", with "/yyyy" when the year differs from `now`. An absent
- * or unparseable date gives `null`.
- */
-export function kanbanDueState(
-  dueIso: string | null | undefined,
-  now: Date,
-): KanbanDueState | null {
-  if (!dueIso) return null;
-  const due = new Date(dueIso);
-  if (Number.isNaN(due.getTime())) return null;
-  const days = Math.round((startOfDay(now) - startOfDay(due)) / 86_400_000);
-  if (days > 0) return { kind: "overdue", days };
-  if (days === 0) return { kind: "today" };
-  const dayMonth = `${pad(due.getDate())}/${pad(due.getMonth() + 1)}`;
-  return {
-    kind: "date",
-    text:
-      due.getFullYear() === now.getFullYear()
-        ? dayMonth
-        : `${dayMonth}/${due.getFullYear()}`,
-  };
-}
 
 /** The identity tones of the design tokens, as literal classes for Tailwind. */
 const IDENTITY_MARK_CLASSES = [
@@ -186,7 +49,7 @@ function markFor(member: CardMember): string {
   return initials.toUpperCase();
 }
 
-const DUE_CLASS: Readonly<Record<KanbanDueState["kind"], string>> = {
+const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
   today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
   date: "font-medium text-muted-foreground",
@@ -202,6 +65,7 @@ const DUE_CLASS: Readonly<Record<KanbanDueState["kind"], string>> = {
 export function KanbanCard({
   card,
   now,
+  timeZone,
   copy = defaultCopy,
   selected = false,
   onOpenDetails,
@@ -209,6 +73,8 @@ export function KanbanCard({
   card: Card;
   /** The reference time for the due wording; read once by the container. */
   now?: Date;
+  /** IANA time zone for calendar days; the runtime zone when omitted. */
+  timeZone?: string;
   copy?: KanbanCardCopy;
   /** The card whose item sheet is open. */
   selected?: boolean;
@@ -230,7 +96,7 @@ export function KanbanCard({
   const isDone = card.statusCategory === "done" || Boolean(card.completedAt);
   const due = isDone
     ? null
-    : kanbanDueState(card.dueAt ?? card.dueDate, reference);
+    : itemDueState(card.dueAt ?? card.dueDate, reference, timeZone);
   const dueText =
     due?.kind === "overdue"
       ? pluralCopy(
@@ -242,7 +108,7 @@ export function KanbanCard({
         : (due?.text ?? null);
 
   const label = card.labels?.[0];
-  const labelTone = label ? kanbanLabelTone(label) : null;
+  const labelTone = label ? itemLabelTone(label) : null;
   const itemKey = card.itemKey?.trim() || null;
 
   const progress =
@@ -290,7 +156,6 @@ export function KanbanCard({
         transition,
       }}
       onPointerDown={onPointerDown}
-      aria-label={card.title}
       aria-current={selected ? "true" : undefined}
       className={cn(
         "group relative flex cursor-pointer flex-col gap-2 rounded-xl bg-card p-3 shadow-xs transition-shadow hover:shadow-md",
@@ -325,7 +190,7 @@ export function KanbanCard({
                 data-label-tone={labelTone}
                 className={cn(
                   "inline-flex h-5.5 min-w-0 items-center truncate rounded-md px-2 text-caption font-semibold",
-                  KANBAN_LABEL_TONE_CLASS[labelTone],
+                  ITEM_LABEL_TONE_CLASS[labelTone],
                 )}
               >
                 {label.name}

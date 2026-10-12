@@ -55,8 +55,9 @@ export function UpdateComposer({
         onSuccess: () => {
           setBody("");
           setMentionUserIds([]);
-          setIsSubmitting(false);
         },
+        // Success or failure: a failed post keeps its text for a retry.
+        onSettled: () => setIsSubmitting(false),
       },
     );
   }

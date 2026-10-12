@@ -33,7 +33,7 @@ function members(count: number) {
 
 function renderCard(
   overrides: Partial<Card> = {},
-  props: { copy?: KanbanCardCopy; selected?: boolean } = {},
+  props: { copy?: KanbanCardCopy; selected?: boolean; timeZone?: string; now?: Date } = {},
 ) {
   const card = cardFixture({
     title: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
@@ -45,7 +45,8 @@ function renderCard(
       <SortableContext items={[card.id]}>
         <KanbanCard
           card={card}
-          now={NOW}
+          now={props.now ?? NOW}
+          timeZone={props.timeZone}
           copy={props.copy ?? VI}
           selected={props.selected}
           onOpenDetails={onOpenDetails}
@@ -53,7 +54,10 @@ function renderCard(
       </SortableContext>
     </DndContext>,
   );
-  const article = screen.getByRole("article", { name: card.title });
+  // The article is not named: the open control carries the title.
+  const article = screen
+    .getByRole("button", { name: card.title })
+    .closest("article")!;
   return { ...view, card, article, onOpenDetails };
 }
 
@@ -190,7 +194,7 @@ describe("KanbanCard top row", () => {
 });
 
 describe("KanbanCard title and states", () => {
-  it("names the article and its open control by the title, clamped to three lines", () => {
+  it("names only the open control by the title, clamped to three lines", () => {
     const title =
       "Một tiêu đề rất dài để kiểm tra việc xuống dòng và cắt bớt sau ba dòng mà tên truy cập vẫn đầy đủ "
         .repeat(3)
@@ -200,6 +204,7 @@ describe("KanbanCard title and states", () => {
     expect(heading.textContent).toBe(title);
     expect(heading.className).toContain("line-clamp-3");
     expect(within(article).getByRole("button", { name: title })).toBeTruthy();
+    expect(article.hasAttribute("aria-label")).toBe(false);
   });
 
   it("describes the open control with the key, label, progress, due, priority and assignee", () => {
@@ -361,6 +366,21 @@ describe("KanbanCard due wording", () => {
   it("judges the due date against the injected now", () => {
     const { article } = renderCard({ dueAt: dueOn(10, 13) });
     expect(article.querySelector("[data-due]")!.getAttribute("data-due")).toBe(
+      "date",
+    );
+  });
+
+  it("judges near-midnight due times in the given time zone", () => {
+    // 00:10 on 12/10 in Hồ Chí Minh is still 11/10 in UTC.
+    const now = new Date("2026-10-12T00:10:00+07:00");
+    const dueAt = "2026-10-12T23:30:00+07:00";
+    const local = renderCard({ dueAt }, { now, timeZone: "Asia/Ho_Chi_Minh" });
+    expect(local.article.querySelector("[data-due]")!.getAttribute("data-due")).toBe(
+      "today",
+    );
+    local.unmount();
+    const utc = renderCard({ dueAt }, { now, timeZone: "UTC" });
+    expect(utc.article.querySelector("[data-due]")!.getAttribute("data-due")).toBe(
       "date",
     );
   });

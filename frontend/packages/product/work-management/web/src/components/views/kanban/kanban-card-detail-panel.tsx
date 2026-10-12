@@ -3,13 +3,12 @@ import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { TaskDetailPanelSurface } from "../../card-detail/task-detail-panel-surface";
 import type { ItemSheetCopy } from "../../card-detail/item-sheet.copy";
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
-import {
-  defaultTaskDetailCapabilities,
-  type ItemSheetGroup,
-  type ItemSheetMark,
-  type TaskDetailCallbacks,
-  type TaskDetailCapabilities,
-  type TaskDetailData,
+import type {
+  ItemSheetGroup,
+  ItemSheetMark,
+  TaskDetailCallbacks,
+  TaskDetailCapabilities,
+  TaskDetailData,
 } from "../../card-detail/task-detail-types";
 
 interface KanbanCardDetailPanelProps {
@@ -23,8 +22,11 @@ interface KanbanCardDetailPanelProps {
    * default focus return so the container can put focus on the opener.
    */
   onCloseAutoFocus?: (event: Event) => void;
-  /** The viewer's capabilities on this board; full edit rights when omitted. */
-  capabilities?: TaskDetailCapabilities;
+  /**
+   * The viewer's capabilities on this board. Required: the container decides
+   * (a commenter gets read-only properties and keeps the composer).
+   */
+  capabilities: TaskDetailCapabilities;
   /** Copy for the active locale; resolved from the host locale when omitted. */
   copy?: ItemSheetCopy;
   /** Injected clock; read once on open when omitted. */
@@ -44,7 +46,7 @@ export function KanbanCardDetailPanel({
   detailData,
   callbacks,
   onCloseAutoFocus,
-  capabilities = defaultTaskDetailCapabilities,
+  capabilities,
   copy,
   now,
   departmentMark,

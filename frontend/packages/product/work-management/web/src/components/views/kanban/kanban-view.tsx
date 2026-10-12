@@ -23,6 +23,7 @@ import {
 import { KanbanToolbar } from "./kanban-toolbar";
 import { KanbanBoard } from "./kanban-board";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
+import { defaultTaskDetailCapabilities } from "../../card-detail/task-detail-types";
 import { KanbanSkeleton } from "./kanban-skeleton";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
 import { useKanbanCardCopy } from "./use-kanban-card-copy";
@@ -292,6 +293,8 @@ function KanbanSelectedItemReady({
     <KanbanCardDetailPanel
       board={board}
       card={card}
+      // Explicit until the board access query feeds the viewer's capabilities.
+      capabilities={defaultTaskDetailCapabilities}
       onCloseAutoFocus={onCloseAutoFocus}
       detailData={{
         files: files.data ?? card.files,
@@ -316,7 +319,10 @@ function KanbanSelectedItemReady({
           void activity.refetch();
         },
         onCreateUpdate: (input, options) =>
-          createUpdate.mutate(input, { onSuccess: options?.onSuccess }),
+          createUpdate.mutate(input, {
+            onSuccess: options?.onSuccess,
+            onSettled: options?.onSettled,
+          }),
         onUpdateUpdate: (updateId, body) =>
           updateUpdate.mutate({ updateId, body }),
         onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),

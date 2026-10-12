@@ -47,6 +47,12 @@ export interface TaskDetailPanelSurfaceProps {
    * to the element that was focused when the sheet opened.
    */
   readonly onReturnFocus?: (event: Event) => void;
+  /**
+   * Whether the surface is the dialog itself (default). A host that already
+   * wraps it in a dialog (the mobile Radix Sheet) passes false so dialogs do
+   * not nest.
+   */
+  readonly asDialog?: boolean;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -79,6 +85,7 @@ export function TaskDetailPanelSurface({
   departmentMark,
   groups,
   onReturnFocus,
+  asDialog = true,
 }: TaskDetailPanelSurfaceProps) {
   const rootRef = useRef<HTMLElement>(null);
   const titleId = useId();
@@ -124,10 +131,10 @@ export function TaskDetailPanelSurface({
   return (
     <section
       ref={rootRef}
-      role="dialog"
-      aria-modal="false"
-      aria-labelledby={ready ? titleId : undefined}
-      aria-label={ready ? undefined : copy.dialogLabel}
+      role={asDialog ? "dialog" : undefined}
+      aria-modal={asDialog ? "false" : undefined}
+      aria-labelledby={asDialog && ready ? titleId : undefined}
+      aria-label={asDialog && !ready ? copy.dialogLabel : undefined}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
       className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-popover text-popover-foreground outline-none"

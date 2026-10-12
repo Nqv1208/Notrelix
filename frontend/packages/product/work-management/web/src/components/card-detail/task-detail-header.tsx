@@ -45,10 +45,7 @@ import type {
   UpdateCardInput,
   UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
-import {
-  KANBAN_LABEL_TONE_CLASS,
-  kanbanLabelTone,
-} from "../views/kanban/kanban-card";
+import { ITEM_LABEL_TONE_CLASS, itemLabelTone } from "../shared/item-display";
 import { describeSheetDue, type SheetDueTone } from "./item-sheet-format";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
 import type {
@@ -659,7 +656,7 @@ export function TaskDetailProperties({
           <span
             className={cn(
               "rounded-sm px-1.5 text-xs font-semibold",
-              KANBAN_LABEL_TONE_CLASS[kanbanLabelTone(label)],
+              ITEM_LABEL_TONE_CLASS[itemLabelTone(label)],
             )}
           >
             {label.name}
@@ -667,23 +664,20 @@ export function TaskDetailProperties({
         </span>
       ) : null}
 
-      {readOnly ? null : (
-        <>
-          <button
-            type="button"
-            aria-label={t.addProperty}
-            aria-disabled="true"
-            aria-describedby={addPropertyReasonId}
-            title={t.addPropertyUnavailable}
-            className={cn(PILL_CLASS, "border-transparent text-muted-foreground")}
-          >
-            <Plus aria-hidden="true" className="size-4" />
-          </button>
-          <span id={addPropertyReasonId} className="sr-only">
-            {t.addPropertyUnavailable}
-          </span>
-        </>
-      )}
+      {/* Visible for everyone, inert until custom properties exist. */}
+      <button
+        type="button"
+        aria-label={t.addProperty}
+        aria-disabled="true"
+        aria-describedby={addPropertyReasonId}
+        title={t.addPropertyUnavailable}
+        className={cn(PILL_CLASS, "border-transparent text-muted-foreground")}
+      >
+        <Plus aria-hidden="true" className="size-4" />
+      </button>
+      <span id={addPropertyReasonId} className="sr-only">
+        {t.addPropertyUnavailable}
+      </span>
     </div>
   );
 }

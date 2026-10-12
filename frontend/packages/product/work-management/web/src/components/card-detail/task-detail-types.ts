@@ -27,7 +27,7 @@ export function canWriteComment(capabilities: TaskDetailCapabilities): boolean {
   return capabilities.canComment ?? capabilities.canEditFields;
 }
 
-/** A child item listed under "Việc con" (WM-041); `done` = done category. */
+/** A child item listed under "Việc con"; `done` = done category. */
 export interface ItemSheetChildItem {
   readonly id: string;
   readonly title: string;
@@ -69,9 +69,17 @@ export interface TaskDetailCallbacks {
   readonly onArchive: (cardId: string) => void;
   readonly onUpdateFieldValue: (payload: UpdateFieldValueInput) => void;
   readonly onRefreshActivity: () => void;
+  /**
+   * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after
+   * success or failure so the composer can be used again (a failed post keeps
+   * the text for a retry).
+   */
   readonly onCreateUpdate: (
     input: CreateCardUpdateInput,
-    options?: { readonly onSuccess?: () => void },
+    options?: {
+      readonly onSuccess?: () => void;
+      readonly onSettled?: () => void;
+    },
   ) => void;
   readonly onUpdateUpdate: (updateId: string, body: string) => void;
   readonly onDeleteUpdate: (updateId: string) => void;

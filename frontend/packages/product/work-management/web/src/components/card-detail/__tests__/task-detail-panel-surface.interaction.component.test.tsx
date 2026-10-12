@@ -20,7 +20,7 @@ import {
   erpSheetGroups,
   erpSheetItem,
   erpSheetMark,
-} from "../item-sheet.fixture";
+} from "../../../verification/item-sheet-fixtures";
 
 type SurfaceProps = Parameters<typeof TaskDetailPanelSurface>[0];
 
@@ -33,7 +33,11 @@ function callbacksMock(): SurfaceProps["callbacks"] {
     onArchive: vi.fn(),
     onUpdateFieldValue: vi.fn(),
     onRefreshActivity: vi.fn(),
-    onCreateUpdate: vi.fn((_input, options) => options?.onSuccess?.()),
+    // Like a mutation: success, then settled.
+    onCreateUpdate: vi.fn((_input, options) => {
+      options?.onSuccess?.();
+      options?.onSettled?.();
+    }),
     onUpdateUpdate: vi.fn(),
     onDeleteUpdate: vi.fn(),
     onSelectTab: vi.fn(),
@@ -137,7 +141,8 @@ describe.each([
     expect(
       screen.getByRole("heading", { level: 3, name: copy.sections.description }),
     ).toBeTruthy();
-    expect(screen.getByText(/48.200 hồ sơ khách hàng/)).toBeTruthy();
+    expect(screen.getByText(copy.sections.descriptionUnavailable)).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: copy.sections.description })).toBeNull();
     expect(
       screen.getByRole("heading", {
         level: 3,
@@ -346,11 +351,12 @@ describe.each([
       expect(pill.getAttribute("aria-disabled")).toBe("true");
       expect(pill.getAttribute("aria-haspopup")).toBeNull();
     }
+    // "Thêm thuộc tính" stays visible but inert, as in the chi-xem mockup.
     expect(
-      within(properties).queryByRole("button", {
-        name: copy.properties.addProperty,
-      }),
-    ).toBeNull();
+      within(properties)
+        .getByRole("button", { name: copy.properties.addProperty })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
     expect(properties.querySelector("[data-pill-chevron]")).toBeNull();
 
     fireEvent.click(within(properties).getByRole("button", { name: /Đang làm/ }));
@@ -405,8 +411,31 @@ describe.each([
     expect(screen.getByText(copy.properties.unassigned)).toBeTruthy();
     expect(screen.getByText(copy.properties.noDue)).toBeTruthy();
     expect(screen.getByText(copy.properties.noPriority)).toBeTruthy();
-    expect(screen.getByText(copy.sections.noDescription)).toBeTruthy();
+    expect(screen.getByText(copy.sections.descriptionUnavailable)).toBeTruthy();
     expect(screen.getByText(copy.sections.noChildItems)).toBeTruthy();
     expect(screen.getByText(copy.sections.noComments)).toBeTruthy();
+  });
+  it(`FUI[wm.task-detail.panel:submit] keeps the comment and allows a retry when posting fails (${locale})`, () => {
+    const onCreateUpdate = vi.fn(
+      (
+        _input: Parameters<SurfaceProps["callbacks"]["onCreateUpdate"]>[0],
+        options?: Parameters<SurfaceProps["callbacks"]["onCreateUpdate"]>[1],
+      ) => options?.onSettled?.(),
+    );
+    renderSheet(copy, { callbacks: { ...callbacksMock(), onCreateUpdate } });
+    const composer = screen.getByRole("textbox", { name: copy.composer.label });
+    fireEvent.change(composer, { target: { value: "Đã nhận file" } });
+    fireEvent.keyDown(composer, { key: "Enter", metaKey: true });
+    expect((composer as HTMLTextAreaElement).value).toBe("Đã nhận file");
+    const submit = screen.getByRole("button", { name: copy.composer.submit });
+    expect((submit as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(submit);
+    expect(onCreateUpdate).toHaveBeenCalledTimes(2);
+  });
+
+  it(`FUI[wm.task-detail.panel:panel] can render without its own dialog role inside a host dialog (${locale})`, () => {
+    renderSheet(copy, { asDialog: false });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: TITLE })).toBeTruthy();
   });
 });

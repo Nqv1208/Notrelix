@@ -44,6 +44,8 @@ export function TaskDetailPanel({
       cardId={cardId}
       copy={copy}
       now={now}
+      // The mobile Radix Sheet is already the dialog; do not nest another.
+      asDialog={!isMobile}
       onClose={onClose}
     />
   ) : null;
@@ -107,12 +109,14 @@ function TaskDetailPanelContent({
   cardId,
   copy,
   now,
+  asDialog,
   onClose,
 }: {
   board: Board;
   cardId: string;
   copy: ItemSheetCopy;
   now: Date;
+  asDialog: boolean;
   onClose: () => void;
 }) {
   const { card, isLoading, error } = useCard(cardId, board.workspaceId);
@@ -127,6 +131,7 @@ function TaskDetailPanelContent({
         callbacks={emptyCallbacks(onClose)}
         copy={copy}
         now={now}
+        asDialog={asDialog}
       />
     );
   if (error || !card)
@@ -139,6 +144,7 @@ function TaskDetailPanelContent({
         callbacks={emptyCallbacks(onClose)}
         copy={copy}
         now={now}
+        asDialog={asDialog}
       />
     );
 
@@ -148,6 +154,7 @@ function TaskDetailPanelContent({
       card={card as CardDetail}
       copy={copy}
       now={now}
+      asDialog={asDialog}
       onClose={onClose}
     />
   );
@@ -158,12 +165,14 @@ function TaskDetailReadyContainer({
   card,
   copy,
   now,
+  asDialog,
   onClose,
 }: {
   board: Board;
   card: CardDetail;
   copy: ItemSheetCopy;
   now: Date;
+  asDialog: boolean;
   onClose: () => void;
 }) {
   const files = useCardFiles(card.id, card.workspaceId);
@@ -185,6 +194,7 @@ function TaskDetailReadyContainer({
       capabilities={defaultTaskDetailCapabilities}
       copy={copy}
       now={now}
+      asDialog={asDialog}
       detailData={{
         files: files.data ?? card.files,
         filesLoading: files.isLoading,
@@ -210,6 +220,7 @@ function TaskDetailReadyContainer({
         onCreateUpdate: (input, options) =>
           createUpdate.mutate(input, {
             onSuccess: options?.onSuccess,
+            onSettled: options?.onSettled,
           }),
         onUpdateUpdate: (updateId, body) =>
           updateUpdate.mutate({ updateId, body }),

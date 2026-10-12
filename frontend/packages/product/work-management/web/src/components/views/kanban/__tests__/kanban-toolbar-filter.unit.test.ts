@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  EMPTY_KANBAN_FILTER,
+  emptyKanbanFilter,
   countKanbanFilter,
   isKanbanFilterActive,
   parseKanbanFilter,
@@ -18,8 +18,8 @@ const FULL: KanbanFilterState = {
 
 describe("serializeKanbanFilter / parseKanbanFilter", () => {
   it("serialises an empty filter to an empty string", () => {
-    expect(serializeKanbanFilter(EMPTY_KANBAN_FILTER)).toBe("");
-    expect(parseKanbanFilter("")).toEqual(EMPTY_KANBAN_FILTER);
+    expect(serializeKanbanFilter(emptyKanbanFilter())).toBe("");
+    expect(parseKanbanFilter("")).toEqual(emptyKanbanFilter());
   });
 
   it("round-trips every facet, including ids that contain separators", () => {
@@ -41,12 +41,12 @@ describe("serializeKanbanFilter / parseKanbanFilter", () => {
 
   it("is canonical: priority order and duplicates do not change the string", () => {
     const a = serializeKanbanFilter({
-      ...EMPTY_KANBAN_FILTER,
+      ...emptyKanbanFilter(),
       priorities: ["low", "urgent", "low"],
       assigneeIds: ["user-an", "user-an"],
     });
     const b = serializeKanbanFilter({
-      ...EMPTY_KANBAN_FILTER,
+      ...emptyKanbanFilter(),
       priorities: ["urgent", "low"],
       assigneeIds: ["user-an"],
     });
@@ -56,7 +56,7 @@ describe("serializeKanbanFilter / parseKanbanFilter", () => {
   it("serialises the overdue-and-low filter of the no-results state readably", () => {
     expect(
       serializeKanbanFilter({
-        ...EMPTY_KANBAN_FILTER,
+        ...emptyKanbanFilter(),
         priorities: ["low"],
         overdue: true,
       }),
@@ -74,12 +74,12 @@ describe("serializeKanbanFilter / parseKanbanFilter", () => {
     ["a malformed escape", "s.%E0%A4%A"],
     ["separators only", "~~..~"],
   ])("tolerates %s by returning only what it can read", (_name, value) => {
-    expect(parseKanbanFilter(value)).toEqual(EMPTY_KANBAN_FILTER);
+    expect(parseKanbanFilter(value)).toEqual(emptyKanbanFilter());
   });
 
   it("keeps the readable facets when others are garbage", () => {
     expect(parseKanbanFilter("p.high.critical~bogus~o~s.%ZZ.doing")).toEqual({
-      ...EMPTY_KANBAN_FILTER,
+      ...emptyKanbanFilter(),
       statusOptionIds: ["doing"],
       priorities: ["high"],
       overdue: true,
@@ -89,8 +89,8 @@ describe("serializeKanbanFilter / parseKanbanFilter", () => {
 
 describe("isKanbanFilterActive / countKanbanFilter", () => {
   it("is inactive and zero for the empty filter", () => {
-    expect(isKanbanFilterActive(EMPTY_KANBAN_FILTER)).toBe(false);
-    expect(countKanbanFilter(EMPTY_KANBAN_FILTER)).toBe(0);
+    expect(isKanbanFilterActive(emptyKanbanFilter())).toBe(false);
+    expect(countKanbanFilter(emptyKanbanFilter())).toBe(0);
   });
 
   it("counts every selected value and the overdue flag", () => {

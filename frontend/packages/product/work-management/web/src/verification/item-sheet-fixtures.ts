@@ -10,11 +10,12 @@ import type {
   ItemSheetMark,
   TaskDetailCapabilities,
   TaskDetailData,
-} from "./task-detail-types";
+} from "../components/card-detail/task-detail-types";
 
 /**
  * Mockup world for the item side sheet (ERP-142 on "Triển khai ERP Q4"),
- * for stories and tests only. Deterministic: the clock is injected
+ * for stories and tests only. No description: items have no description
+ * model yet, so the sheet shows that it is unavailable. Deterministic: the clock is injected
  * (12/10/2026 10:40, Asia/Ho_Chi_Minh) and every date is a literal.
  */
 export const ERP_SHEET_NOW = new Date("2026-10-12T10:40:00+07:00");
@@ -118,8 +119,6 @@ export function erpSheetItem(overrides: Partial<CardDetail> = {}): CardDetail {
     boardId: BOARD_ID,
     workspaceId: WORKSPACE_ID,
     title: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
-    descriptionMd:
-      "Chuyển 48.200 hồ sơ khách hàng từ phần mềm bán hàng cũ. Giữ nguyên mã khách hàng, gộp bản ghi trùng theo mã số thuế, đối chiếu công nợ đầu kỳ với phòng Kế toán trước khi chốt.",
     position: 1,
     priority: "urgent",
     status: "status-doing",

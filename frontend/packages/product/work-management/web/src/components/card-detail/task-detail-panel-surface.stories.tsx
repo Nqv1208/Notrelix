@@ -17,7 +17,7 @@ import {
   erpSheetGroups,
   erpSheetItem,
   erpSheetMark,
-} from "./item-sheet.fixture";
+} from "../../verification/item-sheet-fixtures";
 import type {
   TaskDetailCapabilities,
   TaskDetailData,
@@ -155,7 +155,7 @@ export const Unavailable: Story = {
   tags: ["fui-surface--wm.task-detail.panel", "fui-state--Unavailable"],
 };
 
-/** No key, due, priority, label, description, sub-items or comments; a long title. */
+/** No key, due, priority, label, sub-items or comments; a long title. */
 export const EdgeData: Story = {
   render: () => (
     <ItemSheetStory
@@ -168,7 +168,6 @@ export const EdgeData: Story = {
         priority: undefined,
         labels: [],
         members: [],
-        descriptionMd: undefined,
         childProgress: null,
         statusOptionId: null,
         statusCategory: null,
