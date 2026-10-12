@@ -1,120 +1,129 @@
-import { Filter, X } from "lucide-react";
-import { Button } from "@notrelix/ui-web";
-import { Checkbox } from "@notrelix/ui-web";
-import { Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
-import { Separator } from "@notrelix/ui-web";
-import type { KanbanFiltersState } from "@notrelix/work-management-core";
+import { Filter } from "lucide-react";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@notrelix/ui-web";
+import {
+  KANBAN_FILTER_PRIORITIES,
+  type KanbanFilterState,
+} from "./kanban-filter";
+import type { KanbanToolbarCopy } from "./kanban-toolbar.copy";
 
-const STATUS_OPTIONS = [
-  { id: "status-not-started", label: "Not Started" },
-  { id: "status-working", label: "Working on it" },
-  { id: "status-stuck", label: "Stuck" },
-  { id: "status-done", label: "Done" },
-  { id: "status-completed", label: "Completed" },
-];
+/** One choosable filter value: a status option, a person or a label. */
+export interface KanbanFilterOption {
+  id: string;
+  name: string;
+}
 
-const PRIORITY_OPTIONS = [
-  { id: "urgent", label: "Urgent" },
-  { id: "high", label: "High" },
-  { id: "medium", label: "Medium" },
-  { id: "low", label: "Low" },
-];
+export interface KanbanToolbarFilterOptions {
+  statuses: readonly KanbanFilterOption[];
+  assignees: readonly KanbanFilterOption[];
+  labels: readonly KanbanFilterOption[];
+}
 
+type ListFacet = "statusOptionIds" | "assigneeIds" | "labelIds" | "priorities";
+
+function toggled<T extends string>(values: readonly T[], value: T): T[] {
+  return values.includes(value)
+    ? values.filter((current) => current !== value)
+    : [...values, value];
+}
+
+/**
+ * The "Lọc" menu: checkable values grouped by Trạng thái, Ưu tiên, Người phụ
+ * trách and Nhãn, then Quá hạn. Each toggle emits the whole next filter and
+ * keeps the menu open for the next choice.
+ */
 export function KanbanFilterMenu({
-  filters,
+  copy,
+  filter,
+  options,
   onFilterChange,
-  onClear,
 }: {
-  filters: KanbanFiltersState;
-  onFilterChange: (key: keyof KanbanFiltersState, values: string[]) => void;
-  onClear: () => void;
+  copy: KanbanToolbarCopy["filter"];
+  filter: KanbanFilterState;
+  options: KanbanToolbarFilterOptions;
+  onFilterChange: (filter: KanbanFilterState) => void;
 }) {
-  const hasActiveFilters =
-    filters.status.length > 0 || filters.priority.length > 0;
-  const activeCount = filters.status.length + filters.priority.length;
-
-  const handleToggle = (key: "status" | "priority", optionId: string) => {
-    const current = filters[key];
-    const next = current.includes(optionId)
-      ? current.filter((id) => id !== optionId)
-      : [...current, optionId];
-    onFilterChange(key, next);
+  const toggle = (facet: ListFacet, value: string) => {
+    if (facet === "priorities") {
+      const priority = KANBAN_FILTER_PRIORITIES.find((p) => p === value);
+      if (!priority) return;
+      onFilterChange({
+        ...filter,
+        priorities: toggled(filter.priorities, priority),
+      });
+      return;
+    }
+    onFilterChange({ ...filter, [facet]: toggled(filter[facet], value) });
   };
 
+  const group = (
+    heading: string,
+    facet: ListFacet,
+    values: readonly KanbanFilterOption[],
+  ) => (
+    <DropdownMenuGroup>
+      <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+        {heading}
+      </DropdownMenuLabel>
+      {values.length === 0 ? (
+        <p className="px-2 py-1.5 text-sm text-muted-foreground">
+          {copy.noOptions}
+        </p>
+      ) : (
+        values.map((option) => (
+          <DropdownMenuCheckboxItem
+            key={option.id}
+            checked={(filter[facet] as readonly string[]).includes(option.id)}
+            onCheckedChange={() => toggle(facet, option.id)}
+            onSelect={(event) => event.preventDefault()}
+          >
+            <span className="min-w-0 truncate">{option.name}</span>
+          </DropdownMenuCheckboxItem>
+        ))
+      )}
+    </DropdownMenuGroup>
+  );
+
+  const priorities = KANBAN_FILTER_PRIORITIES.map((priority) => ({
+    id: priority,
+    name: copy.priorities[priority],
+  }));
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="bg-card">
-          <Filter className="size-4" />
-          Filter
-          {activeCount > 0 ? (
-            <span className="ml-1.5 flex size-4.5 items-center justify-center rounded-full bg-primary text-metadata font-bold text-primary-foreground">
-              {activeCount}
-            </span>
-          ) : null}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-muted-foreground">
+          <Filter className="size-4" aria-hidden="true" />
+          {copy.trigger}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-56 p-3 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
-            Filters
-          </span>
-          {hasActiveFilters ? (
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={onClear}
-              aria-label="Clear filters"
-            >
-              <X className="size-3.5" />
-            </Button>
-          ) : null}
-        </div>
-
-        <Separator />
-
-        <div className="space-y-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            Status
-          </span>
-          <div className="space-y-1.5">
-            {STATUS_OPTIONS.map((status) => (
-              <label
-                key={status.id}
-                className="flex items-center gap-2 text-sm text-foreground cursor-pointer"
-              >
-                <Checkbox
-                  checked={filters.status.includes(status.id)}
-                  onCheckedChange={() => handleToggle("status", status.id)}
-                />
-                {status.label}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            Priority
-          </span>
-          <div className="space-y-1.5">
-            {PRIORITY_OPTIONS.map((priority) => (
-              <label
-                key={priority.id}
-                className="flex items-center gap-2 text-sm text-foreground cursor-pointer"
-              >
-                <Checkbox
-                  checked={filters.priority.includes(priority.id)}
-                  onCheckedChange={() => handleToggle("priority", priority.id)}
-                />
-                {priority.label}
-              </label>
-            ))}
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-64">
+        {group(copy.status, "statusOptionIds", options.statuses)}
+        <DropdownMenuSeparator />
+        {group(copy.priority, "priorities", priorities)}
+        <DropdownMenuSeparator />
+        {group(copy.assignee, "assigneeIds", options.assignees)}
+        <DropdownMenuSeparator />
+        {group(copy.label, "labelIds", options.labels)}
+        <DropdownMenuSeparator />
+        <DropdownMenuCheckboxItem
+          checked={filter.overdue}
+          onCheckedChange={() =>
+            onFilterChange({ ...filter, overdue: !filter.overdue })
+          }
+          onSelect={(event) => event.preventDefault()}
+        >
+          {copy.overdue}
+        </DropdownMenuCheckboxItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

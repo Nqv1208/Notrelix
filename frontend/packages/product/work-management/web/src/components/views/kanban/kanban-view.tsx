@@ -26,6 +26,8 @@ import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { KanbanSkeleton } from "./kanban-skeleton";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
 import { useKanbanCardCopy } from "./use-kanban-card-copy";
+import { useKanbanToolbarCopy } from "./use-kanban-toolbar-copy";
+import { emptyKanbanFilter, type KanbanFilterState } from "./kanban-filter";
 
 export function KanbanView({
   boardId,
@@ -63,6 +65,11 @@ export function KanbanView({
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
   const cardCopy = useKanbanCardCopy();
+  const toolbarCopy = useKanbanToolbarCopy();
+  // Held here until the filter moves to the route `filter` parameter; the
+  // current hook applies the priority, assignee and label facets.
+  const [toolbarFilter, setToolbarFilter] =
+    useState<KanbanFilterState>(emptyKanbanFilter);
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const deleteCard = useDeleteCard(boardId, workspaceId);
   const createCard = useCreateCard(boardId, workspaceId);
@@ -103,15 +110,11 @@ export function KanbanView({
     }
   };
 
-  const handleCreateColumn = () => {
-    const lastPos = columns.at(-1)?.position;
-    createColumn.mutate({
-      title: "New Column",
-      // Default column colour is persisted backend data (BoardGroup colour),
-      // not a design token; changing it is a contract change.
-      color: "#6161ff",
-      position: generatePosition(lastPos, undefined),
-    });
+  const handleFilterChange = (next: KanbanFilterState) => {
+    setToolbarFilter(next);
+    filters.setValues("priority", next.priorities);
+    filters.setValues("assigneeId", next.assigneeIds);
+    filters.setValues("labelId", next.labelIds);
   };
 
   return (
@@ -123,13 +126,24 @@ export function KanbanView({
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card px-4 sm:px-6">
         <KanbanToolbar
+          copy={toolbarCopy}
           searchQuery={search.query}
           onSearchChange={search.setQuery}
-          onClearFilters={filters.clear}
-          activeSort="position"
-          onSortChange={() => {}}
-          onCreateCard={handleCreateCard}
-          onAddColumn={handleCreateColumn}
+          filter={toolbarFilter}
+          filterOptions={{
+            statuses: [],
+            assignees: board.members.map((member) => ({
+              id: member.userId,
+              name: member.name,
+            })),
+            labels: [],
+          }}
+          onFilterChange={handleFilterChange}
+          groupByFields={[]}
+          groupByFieldId={null}
+          onGroupByChange={() => undefined}
+          canAdd
+          onAddItem={handleCreateCard}
         />
 
         <div className="min-h-0 flex-1 pt-4 overflow-hidden flex flex-col">
