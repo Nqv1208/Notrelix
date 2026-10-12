@@ -6012,6 +6012,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("category");
+
                     b.Property<Guid>("FieldId")
                         .HasColumnType("uuid")
                         .HasColumnName("field_id");

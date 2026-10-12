@@ -37,7 +37,7 @@ public static class FieldOptionEndpoints
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new AddFieldOptionCommand(
-            boardId, fieldId, body.Name, body.Color, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId), cancellationToken);
+            boardId, fieldId, body.Name, body.Color, body.ExpectedVersion, body.PreviousSiblingId, body.NextSiblingId, body.Category), cancellationToken);
         return result.ToCreatedResult();
     }
 
@@ -62,7 +62,7 @@ public static class FieldOptionEndpoints
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new UpdateFieldOptionCommand(
-            boardId, fieldId, optionId, body.Name, body.Color, body.ExpectedVersion), cancellationToken);
+            boardId, fieldId, optionId, body.Name, body.Color, body.ExpectedVersion, body.Category), cancellationToken);
         return result.ToApiResult();
     }
 
@@ -80,6 +80,8 @@ public static class FieldOptionEndpoints
     }
 }
 
-public record AddFieldOptionRequest(string Name, string Color, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null);
-public record UpdateFieldOptionRequest(string Name, string Color, long ExpectedVersion);
+/// <param name="Category">Work-status category of an option of a Status field: "todo", "in_progress", "review" or "done". Omitted on a Status field it defaults to "in_progress"; other field types take none.</param>
+public record AddFieldOptionRequest(string Name, string Color, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null, string? Category = null);
+/// <param name="Category">New work-status category of an option of a Status field ("todo", "in_progress", "review", "done"); omitted keeps the current one.</param>
+public record UpdateFieldOptionRequest(string Name, string Color, long ExpectedVersion, string? Category = null);
 public record MoveFieldOptionRequest(long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null);

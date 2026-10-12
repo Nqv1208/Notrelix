@@ -18,6 +18,7 @@ public class FieldOptionConfiguration : IEntityTypeConfiguration<FieldOption>
         {
             color.Property(c => c.Value).HasColumnName("color").HasMaxLength(50);
         });
+        builder.Property(x => x.Category).HasColumnName("category").HasConversion<string>().HasMaxLength(50);
         builder.Property(x => x.Position).HasColumnName("position").HasColumnType("text").UseCollation(WorkOrderingConstraints.OrdinalCollation).IsRequired();
 
         builder.HasOne<BoardField>()

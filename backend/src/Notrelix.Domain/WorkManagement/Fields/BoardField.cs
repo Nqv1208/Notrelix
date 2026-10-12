@@ -124,19 +124,27 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardFieldUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
-    public FieldOption AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
+    /// <summary>
+    /// Adds an option. An option of a Status field requires a work-status
+    /// <paramref name="category"/>; options of other field types must not carry one.
+    /// </summary>
+    public FieldOption AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt, WorkStatusCategory? category = null)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(addedBy);
         if (Type != FieldType.Select && Type != FieldType.MultiSelect && Type != FieldType.Status)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotAddOptionsForType, $"Cannot add options to field of type {Type}");
 
+        if (Type == FieldType.Status && category is null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_StatusOptionCategoryRequired, "An option of a Status field requires a work-status category.");
+        EnsureCategoryAllowed(category);
+
         var normalizedName = NormalizeOptionName(name);
 
         if (_options.Any(o => string.Equals(o.Name, normalizedName, StringComparison.OrdinalIgnoreCase)))
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{normalizedName}'.");
 
-        var option = FieldOption.Create(Id, normalizedName, color, position);
+        var option = FieldOption.Create(Id, normalizedName, color, position, category);
         var audit = PrepareAuditUpdate(addedBy, addedAt);
         _options.Add(option);
         ApplyAuditUpdate(audit);
@@ -159,6 +167,8 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
                 WorkManagementRuleCodes.WorkManagement_Field_OptionUsedByDefault,
                 $"Option '{optionId}' is referenced by the field default value and cannot be removed.");
 
+        EnsureKeepsTodoAndDone(option, newCategory: null);
+
         var audit = PrepareAuditUpdate(removedBy, removedAt);
         _options.Remove(option);
         ApplyAuditUpdate(audit);
@@ -166,11 +176,17 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new FieldOptionRemovedDomainEvent(AccountId, WorkspaceId, Id, optionId, removedBy, removedAt));
     }
 
-    public void UpdateOption(Guid optionId, string name, Color color, Guid updatedBy, DateTimeOffset updatedAt)
+    /// <summary>
+    /// Renames/recolours an option and, for a Status field, optionally changes its
+    /// work-status category (null keeps the current one). Changing the category is
+    /// a field change: it bumps the field version.
+    /// </summary>
+    public void UpdateOption(Guid optionId, string name, Color color, Guid updatedBy, DateTimeOffset updatedAt, WorkStatusCategory? category = null)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
+        EnsureCategoryAllowed(category);
 
         var normalizedName = NormalizeOptionName(name);
 
@@ -181,11 +197,16 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (_options.Any(o => o.Id != optionId && string.Equals(o.Name, normalizedName, StringComparison.OrdinalIgnoreCase)))
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{normalizedName}'.");
 
-        if (option.Name == normalizedName && option.Color == color) return;
+        var newCategory = category ?? option.Category;
+        if (option.Name == normalizedName && option.Color == color && option.Category == newCategory) return;
+
+        if (newCategory != option.Category)
+            EnsureKeepsTodoAndDone(option, newCategory);
 
         var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         option.Update(normalizedName, color);
+        option.UpdateCategory(newCategory);
 
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -296,6 +317,25 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardFieldDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
+    /// <summary>
+    /// Seeds a new, empty Status field with <see cref="DefaultWorkStatuses"/> in
+    /// order (one category each, so the field starts with a Todo and a Done option).
+    /// </summary>
+    public void AddDefaultStatusOptions(Guid addedBy, DateTimeOffset addedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(addedBy);
+        if (Type != FieldType.Status || _options.Count > 0)
+            throw new BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Field_DefaultStatusesRequireEmptyStatusField,
+                "Default statuses can only seed a Status field that has no options.");
+
+        var defaults = DefaultWorkStatuses.All;
+        var positions = FractionalIndexGenerator.GenerateNKeysBetween(lower: null, upper: null, count: defaults.Count);
+        for (var i = 0; i < defaults.Count; i++)
+            AddOption(defaults[i].Name, Color.Create(defaults[i].Color), positions[i], addedBy, addedAt, defaults[i].Category);
+    }
+
     public bool CanBeUsedAsKanbanColumn()
     {
         return Type is FieldType.Status
@@ -349,6 +389,34 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+    }
+
+    private void EnsureCategoryAllowed(WorkStatusCategory? category)
+    {
+        if (category is not null && Type != FieldType.Status)
+            throw new BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Field_OptionCategoryNotAllowed,
+                $"Only options of a Status field carry a work-status category; this field is {Type}.");
+    }
+
+    /// <summary>
+    /// A Status field keeps at least one Todo and one Done option: removing an
+    /// option (<paramref name="newCategory"/> null) or moving it to another category
+    /// must not take away the last option of either.
+    /// </summary>
+    private void EnsureKeepsTodoAndDone(FieldOption option, WorkStatusCategory? newCategory)
+    {
+        if (Type != FieldType.Status) return;
+
+        foreach (var required in new[] { WorkStatusCategory.Todo, WorkStatusCategory.Done })
+        {
+            if (option.Category != required || newCategory == required) continue;
+            if (_options.Any(o => o.Id != option.Id && o.Category == required)) continue;
+
+            throw new BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Field_StatusRequiresTodoAndDone,
+                $"A Status field must keep at least one {required} option.");
+        }
     }
 
     private void ValidateDefaultValue(FieldValue? defaultValue, FieldSettings settings)

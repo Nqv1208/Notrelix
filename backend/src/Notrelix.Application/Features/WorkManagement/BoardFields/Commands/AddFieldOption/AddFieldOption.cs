@@ -1,6 +1,7 @@
 using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardField;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
@@ -10,6 +11,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddF
 /// relative to the requested neighbors (append when both are omitted) and is
 /// resolved under the field's FieldOptions ordering lock; the client never sends
 /// a raw ordering key.
+/// An option of a Status field carries a work-status category ("todo",
+/// "in_progress", "review", "done"); when a caller that predates categories omits
+/// it, the option is added as "in_progress". Other field types take no category.
 /// </summary>
 [IdempotencyOperation("work-management.board-fields.add-field-option.v1")]
 public record AddFieldOptionCommand(
@@ -19,7 +23,8 @@ public record AddFieldOptionCommand(
     string Color,
     long ExpectedVersion,
     Guid? PreviousSiblingId = null,
-    Guid? NextSiblingId = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
+    Guid? NextSiblingId = null,
+    string? Category = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
@@ -58,7 +63,11 @@ public class AddFieldOptionCommandHandler : IRequestHandler<AddFieldOptionComman
             token => FieldOptionSiblings.LoadAsync(_context, field.Id, token),
             ct);
 
-        var option = field.AddOption(request.Name, color, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var category = WorkStatusCategoryNames.ParseOptional(request.Category);
+        if (field.Type == FieldType.Status)
+            category ??= WorkStatusCategory.InProgress;
+
+        var option = field.AddOption(request.Name, color, position, _currentUser.UserId, _dateTimeProvider.UtcNow, category);
         return Result<Guid>.Success(option.Id);
     }
 }

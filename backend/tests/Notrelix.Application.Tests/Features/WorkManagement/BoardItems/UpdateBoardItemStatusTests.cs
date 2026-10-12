@@ -26,7 +26,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
             TestAccountId, TestWorkspaceId, board.Id, "Status",
             FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!), FractionalIndex.Create("a0"),
             TestUserId, TestNow);
-        statusField.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a0"), TestUserId, TestNow);
+        statusField.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a0"), TestUserId, TestNow, WorkStatusCategory.Done);
         SetupBoards(board);
         SetupBoardItems(item);
         SetupBoardFields(statusField);

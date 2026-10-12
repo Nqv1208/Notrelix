@@ -1,9 +1,14 @@
 using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardField;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Common;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
 
+/// <summary>
+/// Renames/recolours a field option. For an option of a Status field the optional
+/// <see cref="Category"/> changes its work-status category; null keeps it.
+/// </summary>
 [IdempotencyOperation("work-management.board-fields.update-field-option.v1")]
 public record UpdateFieldOptionCommand(
     Guid BoardId,
@@ -11,7 +16,8 @@ public record UpdateFieldOptionCommand(
     Guid OptionId,
     string Name,
     string Color,
-    long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
+    long ExpectedVersion,
+    string? Category = null) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
@@ -41,7 +47,8 @@ public class UpdateFieldOptionCommandHandler : IRequestHandler<UpdateFieldOption
         if (field is null) throw new NotFoundException(nameof(BoardFieldEntity), request.FieldId);
 
         var color = Color.Create(request.Color);
-        field.UpdateOption(request.OptionId, request.Name, color, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        field.UpdateOption(request.OptionId, request.Name, color, _currentUser.UserId, _dateTimeProvider.UtcNow,
+            WorkStatusCategoryNames.ParseOptional(request.Category));
         return Result.Success();
     }
 }

@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Fields;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -83,6 +84,15 @@ public sealed class CreateBoardInWorkspacePipelineTests : IAsyncLifetime
 
             var defaultFields = await verify.BoardFields.CountAsync(f => f.BoardId == boardId);
             defaultFields.Should().Be(4, "the board is created with its default system fields");
+
+            var statuses = await verify.FieldOptions
+                .Where(o => verify.BoardFields.Any(f => f.Id == o.FieldId && f.BoardId == boardId && f.Type == FieldType.Status))
+                .Select(o => new { o.Name, o.Category, o.Position })
+                .ToListAsync();
+            statuses.OrderBy(o => o.Position).Select(o => (o.Name, o.Category)).Should().Equal(
+                [("Cần làm", WorkStatusCategory.Todo), ("Đang làm", WorkStatusCategory.InProgress),
+                 ("Chờ duyệt", WorkStatusCategory.Review), ("Hoàn thành", WorkStatusCategory.Done)],
+                "a new board's Status field starts with the default work statuses");
         }
     }
 

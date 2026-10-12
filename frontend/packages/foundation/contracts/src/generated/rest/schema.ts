@@ -4469,6 +4469,7 @@ export interface components {
             previousSiblingId?: string | null;
             /** Format: uuid */
             nextSiblingId?: string | null;
+            category?: string | null;
         };
         "Notrelix.API.Endpoints.WorkManagement.BoardFields.MoveFieldOptionRequest": {
             /** Format: int64 */
@@ -4483,6 +4484,7 @@ export interface components {
             color?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+            category?: string | null;
         };
         "Notrelix.Application.Common.Models.CursorPageOfMyWorkItemDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems.MyWorkItemDto"][] | null;

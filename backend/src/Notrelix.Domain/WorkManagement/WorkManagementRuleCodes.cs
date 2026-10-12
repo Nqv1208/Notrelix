@@ -28,6 +28,10 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Field_BelongsToDifferentWorkspace = "WorkManagement_Field_BelongsToDifferentWorkspace";
     public const string WorkManagement_Field_DefaultRequiresConfiguredOptions = "WorkManagement_Field_DefaultRequiresConfiguredOptions";
     public const string WorkManagement_Field_OptionUsedByDefault = "WorkManagement_Field_OptionUsedByDefault";
+    public const string WorkManagement_Field_StatusOptionCategoryRequired = "WorkManagement_Field_StatusOptionCategoryRequired";
+    public const string WorkManagement_Field_OptionCategoryNotAllowed = "WorkManagement_Field_OptionCategoryNotAllowed";
+    public const string WorkManagement_Field_StatusRequiresTodoAndDone = "WorkManagement_Field_StatusRequiresTodoAndDone";
+    public const string WorkManagement_Field_DefaultStatusesRequireEmptyStatusField = "WorkManagement_Field_DefaultStatusesRequireEmptyStatusField";
 
     // ── FieldSettings ─────────────────────────────────────────────────────
     public const string WorkManagement_FieldSettings_TooLarge = "WorkManagement_FieldSettings_TooLarge";

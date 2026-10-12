@@ -73,6 +73,8 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Assignee", FieldType.Person, FieldSettings.Empty(), FractionalIndex.Create("a2"), _requestContext.UserId, createdAt, isSystem: true),
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _requestContext.UserId, createdAt, isSystem: true),
         };
+        // A new board starts with the default work statuses on its Status field.
+        defaultFields.Single(f => f.Type == FieldType.Status).AddDefaultStatusOptions(_requestContext.UserId, createdAt);
         _context.BoardFields.AddRange(defaultFields);
 
         var response = Result<Guid>.Success(board.Id);

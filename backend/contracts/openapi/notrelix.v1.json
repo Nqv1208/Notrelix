@@ -16428,6 +16428,10 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -16466,6 +16470,10 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

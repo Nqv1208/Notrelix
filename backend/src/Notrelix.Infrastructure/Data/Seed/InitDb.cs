@@ -335,7 +335,8 @@ internal static class InitDb
                             var (optName, optColor) = fOptions[o];
                             var option = FieldOption.Create(
                                 field.Id, optName, Color.Create(optColor),
-                                FractionalIndex.Create($"a{o}"));
+                                FractionalIndex.Create($"a{o}"),
+                                fType == FieldType.Status ? SeedStatusCategory(optName) : null);
                             context.FieldOptions.Add(option);
                         }
                     }
@@ -495,6 +496,13 @@ internal static class InitDb
         await ClearAndSaveAsync(context, ct);
         return itemIndex;
     }
+
+    private static WorkStatusCategory SeedStatusCategory(string statusName) => statusName switch
+    {
+        "Backlog" or "To Do" => WorkStatusCategory.Todo,
+        "Done" => WorkStatusCategory.Done,
+        _ => WorkStatusCategory.InProgress,
+    };
 
     private static FieldValue CreateOptionFieldValue(
         Guid fieldId, Dictionary<Guid, List<FieldOption>> optionsByBoard, Guid boardId)
