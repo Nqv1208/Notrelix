@@ -1,16 +1,18 @@
 /**
  * @notrelix/ui-tokens — Typography tokens.
  *
- * One family (Inter) with tabular numerals for data (WX-DEC-007). Fixed rem
- * scale; adjacent steps keep a 1.125–1.2 ratio. Semantic text roles follow
+ * One UI family (Be Vietnam Pro, 400/500/600/700) with tabular numerals for
+ * data, and IBM Plex Mono (400/500) for keys, code and IDs (WX-DEC-013,
+ * superseding WX-DEC-007). Fixed rem scale; adjacent steps keep a 1.125–1.2
+ * ratio. Semantic text roles follow
  * DESIGN.md §8.1 — components choose a role, not a pixel size.
  *
  * Framework-neutral: no React, no DOM.
  */
 
 export const fonts = {
-  sans: '"Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+  sans: '"Be Vietnam Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  mono: '"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
 } as const;
 
 export const weights = {
@@ -130,7 +132,7 @@ export const textRoles = {
 
 export type TextRoleName = keyof typeof textRoles;
 
-/** Inter OpenType features applied to data: tabular, slashed-zero off. */
+/** Be Vietnam Pro OpenType features applied to data: tabular numerals (WX-DEC-013). */
 export const numericFeatures = {
   tabular: "tabular-nums",
 } as const;

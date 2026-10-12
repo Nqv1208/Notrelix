@@ -145,7 +145,7 @@ Current token exports include:
 OKLCH color model (sRGB conversion, contrast, ΔE)
 palette: tinted neutrals, accents, status, identity
 semantic color roles per appearance × accent
-typography (Inter, rem scale, semantic text roles)
+typography (Be Vietnam Pro + IBM Plex Mono, rem scale, semantic text roles)
 spacing / sizes / layout
 radius and radius roles
 elevation (per appearance)
@@ -689,7 +689,7 @@ components demonstrate coherent behavior and accessibility.
 Typography tokens own:
 
 ```text
-font family (Inter only, self-hosted; ui-monospace for code)
+font family (Be Vietnam Pro for UI, IBM Plex Mono for keys/code/IDs; both self-hosted, WX-DEC-013)
 weights
 fixed rem scale (adjacent ratio 1.125–1.2)
 semantic text roles: display, page-title, section-heading, subheading,

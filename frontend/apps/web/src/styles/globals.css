@@ -7,8 +7,17 @@
  * maps those variables into Tailwind; it must not declare literal values.
  */
 @import "@notrelix/ui-tokens/css";
-/* Inter, self-hosted (variable wght axis); the only UI family (WX-DEC-007). */
-@import "@fontsource-variable/inter";
+/*
+ * Be Vietnam Pro, self-hosted (400/500/600/700, Vietnamese subset included):
+ * the only UI family. IBM Plex Mono (400/500) for keys, code and IDs.
+ * WX-DEC-013 (supersedes WX-DEC-007).
+ */
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/500.css";
+@import "@fontsource/be-vietnam-pro/600.css";
+@import "@fontsource/be-vietnam-pro/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -22,7 +31,7 @@
 @source "../../../../packages/product";
 
 @theme inline {
-  /* Typography: Inter only (WX-DEC-007). */
+  /* Typography: Be Vietnam Pro + IBM Plex Mono (WX-DEC-013). */
   --font-sans: var(--font-family-sans);
   --font-mono: var(--font-family-mono);
   /* Legacy `font-display` utility resolves to the single family. */

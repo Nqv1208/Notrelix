@@ -77,7 +77,7 @@ describe("index.html pre-paint theme script", () => {
     expect(actual).toEqual(expected);
   });
 
-  it("loads no third-party fonts (Inter is self-hosted; Poppins removed)", () => {
+  it("loads no third-party fonts (Be Vietnam Pro and IBM Plex Mono are self-hosted; Poppins removed)", () => {
     expect(indexHtml).not.toMatch(/fonts\.googleapis|fonts\.gstatic/);
     expect(indexHtml).not.toMatch(/Poppins/);
   });

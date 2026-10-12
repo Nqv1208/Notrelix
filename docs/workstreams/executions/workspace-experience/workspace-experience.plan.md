@@ -20,12 +20,13 @@ Rebuild of the authenticated workspace surface — shell, Home, Boards/Docs dire
 | WX-DEC-004 | Brand palette comes from the Notrelix logo. Blue `#1E90FF` (OKLCH hue ≈255) is the default accent, split into `brand-mark` (L≈0.63, marks only), `brand-solid` (L≈0.53, filled actions with white text, ≥4.5:1) and `brand-ink` (L≈0.45, links). Dark mode uses L≈0.72 for text and links. |
 | WX-DEC-005 | Theme has two independent axes: mode (Light / Dark / System / High contrast) and accent (Notrelix Blue default; Coral from `#FC744C`; Ember from `#FE3154`, kept distinct from error red; Sage from `#8CADA1`, deepened for contrast; Amber from `#F9C942`, dark text on fills). They replace the seven current accent themes. |
 | WX-DEC-006 | The warm logo colors are identity colors (workspace, Board, avatar, chart series) only, never status colors (DESIGN.md §9.3). |
-| WX-DEC-007 | One family: Inter with tabular numerals; fixed rem scale, ratio 1.125–1.2. |
+| WX-DEC-007 | Superseded by WX-DEC-013. One family: Inter with tabular numerals; fixed rem scale, ratio 1.125–1.2. |
 | WX-DEC-008 | The UI is internationalized from the start: Vietnamese and English. |
 | WX-DEC-009 | Backend-first: missing producer endpoints are delivered before the frontend phase that needs them. |
 | WX-DEC-010 | Workspace views belong to Work Management (decided 2026-10-10). The mock-only workspace view tabs leave the workspace shell; cross-Board views are delivered by the work-management-views workstream. |
 | WX-DEC-011 | Pins are personal. Recents keep the 30 most recent entries per member per workspace. Both are per-member navigation state owned by the Workspaces context and store only resource references (kind + id); display names are joined on the client from the authorized Board and Doc lists, so a reference to a resource the member can no longer view is dropped instead of leaking its name. |
 | WX-DEC-012 | i18n library: i18next with react-i18next (decided 2026-10-10). |
+| WX-DEC-013 | UI family Be Vietnam Pro (400/500/600/700) with tabular numerals for data; IBM Plex Mono (400/500) for keys, code and IDs. Decided 2026-10-12 from the approved mockups; reason: Vietnamese diacritics and the mockup type. Supersedes WX-DEC-007; the fixed rem scale (ratio 1.125–1.2) stays. |
 
 ## 2. Baseline findings (to be removed, not reused as precedent — FE-UI-078)
 
@@ -108,7 +109,7 @@ Open items:
 - Amber's light fill carries dark text, so `text-primary` used as text is illegible under Amber; ui-web link variants now use `text-link`, but other `text-primary` text usages in apps, features and product packages need migrating to `text-link` / `text-brand-ink`.
 - Overlay primitives still use Tailwind `z-50`; moving them to the z-index roles belongs to the shell phase.
 - `apps/marketing` keeps its own `globals.css` and does not consume the generated tokens yet.
-- Legacy aliases kept for current consumers: `--app-*`, `--table-*`, `--badge-*` (Work Management), and the `font-display` utility (now Inter). Remove them when those consumers move to surface/status roles.
+- Legacy aliases kept for current consumers: `--app-*`, `--table-*`, `--badge-*` (Work Management), and the `font-display` utility (now Be Vietnam Pro, WX-DEC-013). Remove them when those consumers move to surface/status roles.
 
 ### Phase 2 — Shell
 

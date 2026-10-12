@@ -86,9 +86,23 @@ describe("generated CSS (@notrelix/ui-tokens/css)", () => {
 });
 
 describe("typography", () => {
-  it("uses Inter as the only sans family", () => {
-    expect(fonts.sans.startsWith('"Inter Variable", "Inter",')).toBe(true);
-    expect(fonts.sans).not.toMatch(/Poppins/);
+  it("uses Be Vietnam Pro as the only sans family (WX-DEC-013)", () => {
+    expect(fonts.sans.startsWith('"Be Vietnam Pro",')).toBe(true);
+    expect(
+      fonts.sans.endsWith(
+        'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      ),
+    ).toBe(true);
+    expect(fonts.sans).not.toMatch(/Inter|Poppins/);
+  });
+
+  it("uses IBM Plex Mono for keys, code and IDs (WX-DEC-013)", () => {
+    expect(fonts.mono.startsWith('"IBM Plex Mono",')).toBe(true);
+    expect(
+      fonts.mono.endsWith(
+        "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+      ),
+    ).toBe(true);
   });
 
   it("keeps a fixed rem scale with a 1.125–1.2 ratio between steps", () => {
