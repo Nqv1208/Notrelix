@@ -67,9 +67,8 @@ describe("Kanban card props reach the card through the column", () => {
         {...columnHandlers}
       />,
     );
-    expect(screen.getByText("Quá hạn")).toBeTruthy();
-    expect(screen.getByText("Đang thực hiện")).toBeTruthy();
-    expect(screen.queryByText("Overdue")).toBeNull();
+    expect(screen.getByText(/^Quá hạn \d+ ngày$/)).toBeTruthy();
+    expect(screen.queryByText(/^Overdue/)).toBeNull();
   });
 
   it("judges overdue against the now passed down, not the wall clock", () => {
@@ -81,7 +80,7 @@ describe("Kanban card props reach the card through the column", () => {
         {...columnHandlers}
       />,
     );
-    expect(screen.queryByText("Overdue")).toBeNull();
+    expect(screen.queryByText(/^Overdue/)).toBeNull();
   });
 });
 
@@ -96,8 +95,8 @@ describe("Kanban card props reach the card through the board", () => {
         {...boardHandlers}
       />,
     );
-    expect(screen.getByText("Quá hạn")).toBeTruthy();
-    expect(screen.queryByText("Overdue")).toBeNull();
+    expect(screen.getByText(/^Quá hạn \d+ ngày$/)).toBeTruthy();
+    expect(screen.queryByText(/^Overdue/)).toBeNull();
   });
 
   it("judges overdue against the now passed down, not the wall clock", () => {
@@ -109,6 +108,6 @@ describe("Kanban card props reach the card through the board", () => {
         {...boardHandlers}
       />,
     );
-    expect(screen.queryByText("Overdue")).toBeNull();
+    expect(screen.queryByText(/^Overdue/)).toBeNull();
   });
 });

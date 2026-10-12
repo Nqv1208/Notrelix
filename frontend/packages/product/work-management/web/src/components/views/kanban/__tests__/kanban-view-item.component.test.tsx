@@ -208,32 +208,6 @@ describe("KanbanView item detail through selectedItemId", () => {
     expect(onSelectedItemChange).toHaveBeenCalledWith("card-item");
   });
 
-  it("copies a card link that carries item and keeps the board path and view", () => {
-    window.history.pushState(
-      {},
-      "",
-      "/workspaces/ws-1/boards/board-1?view=kanban&filter=mine",
-    );
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      value: { writeText },
-      configurable: true,
-    });
-    renderView({ onSelectedItemChange: vi.fn() });
-    fireEvent.keyDown(
-      screen.getByRole("button", { name: "Open Item card menu" }),
-      { key: "Enter" },
-    );
-    fireEvent.click(screen.getByRole("menuitem", { name: "Copy link" }));
-    expect(writeText).toHaveBeenCalledTimes(1);
-    const link = new URL(writeText.mock.calls[0]![0] as string);
-    expect(link.pathname).toBe("/workspaces/ws-1/boards/board-1");
-    expect(link.searchParams.get("item")).toBe("card-item");
-    expect(link.searchParams.get("view")).toBe("kanban");
-    expect(link.searchParams.get("filter")).toBe("mine");
-    expect(link.searchParams.has("taskId")).toBe(false);
-  });
-
   it("looks the card up with its id and the board's workspace", () => {
     cardQuery.current = { card: existingCard(), isLoading: false, error: null };
     renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
@@ -356,22 +330,5 @@ describe("KanbanView item detail through selectedItemId", () => {
         ).toBe(true),
       );
     });
-  });
-
-  it("adds view=kanban to the copied link when the URL has no view", () => {
-    window.history.pushState({}, "", "/workspaces/ws-1/boards/board-1");
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      value: { writeText },
-      configurable: true,
-    });
-    renderView({ onSelectedItemChange: vi.fn() });
-    fireEvent.keyDown(
-      screen.getByRole("button", { name: "Open Item card menu" }),
-      { key: "Enter" },
-    );
-    fireEvent.click(screen.getByRole("menuitem", { name: "Copy link" }));
-    const link = new URL(writeText.mock.calls[0]![0] as string);
-    expect(link.search).toBe("?view=kanban&item=card-item");
   });
 });

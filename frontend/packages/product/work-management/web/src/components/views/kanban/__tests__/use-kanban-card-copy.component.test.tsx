@@ -18,12 +18,12 @@ function copyFor(locale: Locale) {
 describe("useKanbanCardCopy", () => {
   it("selects the Vietnamese copy for the vi locale", () => {
     expect(copyFor("vi")).toBe(vi);
-    expect(copyFor("vi").overdue).toBe("Quá hạn");
+    expect(copyFor("vi").dueToday).toBe("Hôm nay");
   });
 
   it("selects the English copy for the en locale", () => {
     expect(copyFor("en")).toBe(en);
-    expect(copyFor("en").overdue).toBe("Overdue");
+    expect(copyFor("en").dueToday).toBe("Today");
   });
 
   it("registers the card copy as the kanban-card catalog in both locales", () => {

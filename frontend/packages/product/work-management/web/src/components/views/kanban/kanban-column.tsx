@@ -18,7 +18,7 @@ import { KanbanColumnMenu } from "./kanban-column-menu";
 import { kanbanColumnWidthClass } from "./kanban-layout";
 
 export function KanbanColumn({
-  board,
+  board: _board,
   group,
   now,
   cardCopy,
@@ -26,9 +26,10 @@ export function KanbanColumn({
   onRename,
   onColorChange,
   onDelete,
-  onCopyCardLink,
-  onDuplicateCard,
-  onDeleteCard,
+  // Copy link, duplicate and archive move from the card to the item sheet.
+  onCopyCardLink: _onCopyCardLink,
+  onDuplicateCard: _onDuplicateCard,
+  onDeleteCard: _onDeleteCard,
   onCreateCard,
 }: {
   board: Board;
@@ -147,14 +148,10 @@ export function KanbanColumn({
             {group.cards.map((card) => (
               <KanbanCard
                 key={card.id}
-                board={board}
                 card={card}
                 now={now}
                 copy={cardCopy}
                 onOpenDetails={onOpenDetails}
-                onCopyLink={onCopyCardLink}
-                onDuplicate={() => onDuplicateCard(card.id)}
-                onDelete={() => onDeleteCard(card.id)}
               />
             ))}
             <KanbanAddCard

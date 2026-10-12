@@ -5,398 +5,460 @@ import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 import type { Card } from "@notrelix/work-management-core";
 import {
   cardFixture,
-  checklistFixture,
-  checklistItemFixture,
-  fixedClock,
-  fixedIso,
-  kanbanDefaultScenario,
+  labelFixture,
   memberFixture,
 } from "@notrelix/work-management-testing";
 import { KanbanCard } from "../kanban-card";
-import { kanbanCardCopy } from "../kanban-card.copy";
+import { kanbanCardCopy, type KanbanCardCopy } from "../kanban-card.copy";
 
-const NOW = fixedClock();
+/** 12/10/2026 10:40 in the runtime's own time zone. */
+const NOW = new Date(2026, 9, 12, 10, 40);
+const VI = kanbanCardCopy("vi");
+const EN = kanbanCardCopy("en");
+
+function dueOn(month: number, day: number, year = 2026): string {
+  return new Date(year, month - 1, day, 17, 0).toISOString();
+}
 
 function members(count: number) {
   return Array.from({ length: count }, (_, index) =>
     memberFixture({
       id: `member-${index + 1}`,
       userId: `user-${index + 1}`,
-      name: index === 0 ? "Avery Stone" : `Member ${index + 1}`,
-      initials: index === 0 ? "AS" : `M${index + 1}`,
+      name: index === 0 ? "Trần Minh Quân" : `Member ${index + 1}`,
+      initials: index === 0 ? "MQ" : `M${index + 1}`,
     }),
   );
 }
 
 function renderCard(
   overrides: Partial<Card> = {},
-  props: Partial<Parameters<typeof KanbanCard>[0]> = {},
+  props: { copy?: KanbanCardCopy; selected?: boolean } = {},
 ) {
-  const scenario = kanbanDefaultScenario();
-  const card = cardFixture({ title: "Ship the release notes", ...overrides });
-  const handlers = {
-    onOpenDetails: vi.fn(),
-    onCopyLink: vi.fn(),
-    onDuplicate: vi.fn(),
-    onDelete: vi.fn(),
-  };
+  const card = cardFixture({
+    title: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+    ...overrides,
+  });
+  const onOpenDetails = vi.fn();
   const view = renderPureUi(
     <DndContext>
       <SortableContext items={[card.id]}>
         <KanbanCard
-          board={scenario.board}
           card={card}
           now={NOW}
-          {...handlers}
-          {...props}
+          copy={props.copy ?? VI}
+          selected={props.selected}
+          onOpenDetails={onOpenDetails}
         />
       </SortableContext>
     </DndContext>,
   );
-  return { ...view, card, ...handlers };
+  const article = screen.getByRole("article", { name: card.title });
+  return { ...view, card, article, onOpenDetails };
 }
 
-const twoItemChecklist = checklistFixture({
-  items: [
-    checklistItemFixture({ id: "i-1", isDone: true }),
-    checklistItemFixture({ id: "i-2", isDone: false }),
-  ],
-});
-
 describe("KanbanCard interactions", () => {
-  it("FUI[wm.kanban.card:card] opens by pointer and keyboard without bubbling nested actions", () => {
-    const scenario = kanbanDefaultScenario();
-    const card = scenario.columns[0]!.cards[0]!;
-    const onOpenDetails = vi.fn();
-    renderPureUi(
-      <DndContext>
-        <SortableContext items={[card.id]}>
-          <KanbanCard
-            board={scenario.board}
-            card={card}
-            onOpenDetails={onOpenDetails}
-            onCopyLink={vi.fn()}
-            onDuplicate={vi.fn()}
-            onDelete={vi.fn()}
-          />
-        </SortableContext>
-      </DndContext>,
-    );
-    const root = screen.getByRole("button", { name: card.title });
-    fireEvent.click(root);
-    fireEvent.keyDown(root, { key: "Enter" });
-    fireEvent.keyDown(root, { key: " " });
-    expect(onOpenDetails).toHaveBeenCalledTimes(3);
-    fireEvent.click(screen.getByRole("button", { name: `Move ${card.title}` }));
-    expect(onOpenDetails).toHaveBeenCalledTimes(3);
-  });
-});
+  it("FUI[wm.kanban.card:card] opens by pointer, Enter and Space in vi and en, with no nested controls", () => {
+    for (const copy of [VI, EN]) {
+      const { card, article, onOpenDetails, unmount } = renderCard(
+        {
+          itemKey: "ERP-142",
+          labels: [labelFixture({ name: "Dữ liệu" })],
+          dueAt: dueOn(10, 10),
+          priority: "urgent",
+          childProgress: { done: 3, total: 5 },
+          members: members(1),
+        },
+        { copy },
+      );
+      const open = within(article).getByRole("button", { name: card.title });
+      expect(within(article).getAllByRole("button")).toHaveLength(1);
 
-describe("KanbanCard structure", () => {
-  it("is one article named by the title, with a clamped two-line title", () => {
-    const { card } = renderCard({
-      title:
-        "A deliberately long card title that must wrap onto two lines and then be clamped without changing its accessible name",
+      fireEvent.click(open);
+      fireEvent.keyDown(open, { key: "Enter", code: "Enter" });
+      fireEvent.keyDown(open, { key: " ", code: "Space" });
+      expect(onOpenDetails).toHaveBeenCalledTimes(3);
+      expect(onOpenDetails).toHaveBeenLastCalledWith(card.id);
+      // Enter and Space open the card; they never pick it up for a drag.
+      expect(article.className).not.toContain("z-dropdown");
+
+      const overdue = copy === VI ? "Quá hạn 2 ngày" : "Overdue 2 days";
+      const urgent = copy === VI ? "Khẩn" : "Urgent";
+      expect(within(article).getByText(overdue)).toBeTruthy();
+      expect(within(article).getByText(urgent)).toBeTruthy();
+      unmount();
+    }
+  });
+
+  it("starts a pointer drag from anywhere on the card", () => {
+    const { article } = renderCard();
+    // jsdom has no PointerEvent: a mouse event typed pointerdown stands in.
+    const pointerDown = new MouseEvent("pointerdown", {
+      bubbles: true,
+      button: 0,
     });
-    const article = screen.getByRole("article", { name: card.title });
-    expect(screen.getAllByRole("article")).toHaveLength(1);
-    const title = within(article).getByText(card.title, { selector: "p" });
-    expect(title.className).toContain("line-clamp-2");
-    expect(title.textContent).toBe(card.title);
-  });
-
-  it("keeps the open control, the grip and the menu as separate named controls", () => {
-    const { card, onOpenDetails } = renderCard();
-    expect(
-      screen.getByRole("button", { name: `Move ${card.title}` }),
-    ).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: `Open ${card.title} menu` }),
-    ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: card.title }));
-    expect(onOpenDetails).toHaveBeenCalledWith(card.id);
-  });
-
-  it("does not use raw colours, arbitrary text sizes or a raw z-index in its markup", () => {
-    const { container } = renderCard({
-      priority: "urgent",
-      status: "status-working",
-      dueDate: fixedIso(-3),
-      members: members(2),
-      checklists: [twoItemChecklist],
-      _count: { comments: 2, attachments: 1, checklistItems: 2 },
-    });
-    const html = container.innerHTML;
-    expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(html).not.toMatch(/rgba?\(/);
-    expect(html).not.toMatch(/text-\[\d/);
-    expect(html).not.toMatch(/z-index/);
-    expect(html).not.toMatch(/aria-grabbed/);
-  });
-
-  it("lifts a card dragged with the keyboard on the dropdown stacking role", () => {
-    const { card } = renderCard();
-    const grip = screen.getByRole("button", { name: `Move ${card.title}` });
-    grip.focus();
-    fireEvent.keyDown(grip, { code: "Space", key: " " });
-    const article = screen.getByRole("article", { name: card.title });
+    Object.defineProperty(pointerDown, "isPrimary", { value: true });
+    fireEvent(article, pointerDown);
     expect(article.className).toContain("z-dropdown");
     expect(article.getAttribute("style") ?? "").not.toContain("z-index");
   });
-});
 
-describe("KanbanCard due date and overdue", () => {
-  it("shows an Overdue text marker for a past due date on an open card", () => {
-    renderCard({ dueDate: fixedIso(-5) });
-    expect(screen.getByText("Overdue")).toBeTruthy();
-  });
-
-  it("does not mark a future due date as overdue", () => {
-    renderCard({ dueDate: fixedIso(5) });
-    expect(screen.queryByText("Overdue")).toBeNull();
-    expect(screen.getByText("Due")).toBeTruthy();
-  });
-
-  it("does not mark a card due later today as overdue", () => {
-    renderCard({ dueDate: NOW.toISOString() });
-    expect(screen.queryByText("Overdue")).toBeNull();
-  });
-
-  it("does not mark a completed card as overdue", () => {
-    renderCard({ dueDate: fixedIso(-5), status: "status-done" });
-    expect(screen.queryByText("Overdue")).toBeNull();
-  });
-
-  it("does not mark a card with a completion date as overdue", () => {
-    renderCard({ dueDate: fixedIso(-5), completedAt: fixedIso(-6) });
-    expect(screen.queryByText("Overdue")).toBeNull();
-  });
-
-  it("shows nothing for a card without a due date", () => {
-    renderCard({ dueDate: undefined });
-    expect(screen.queryByText("Overdue")).toBeNull();
-    expect(screen.queryByText("Due")).toBeNull();
-  });
-
-  it("treats an unparseable due date as no due date instead of throwing", () => {
-    renderCard({ dueDate: "not-a-date" });
-    expect(screen.queryByText("Overdue")).toBeNull();
-    expect(screen.queryByText("Due")).toBeNull();
-  });
-
-  it("renders the Vietnamese label from the vi copy", () => {
-    renderCard({ dueDate: fixedIso(-5) }, { copy: kanbanCardCopy("vi") });
-    expect(screen.getByText("Quá hạn")).toBeTruthy();
-    expect(screen.queryByText("Overdue")).toBeNull();
-  });
-
-  it("keeps Overdue as text, not colour only, on the danger status role", () => {
-    renderCard({ dueDate: fixedIso(-5) });
-    const marker = screen.getByText("Overdue").closest("[data-overdue]");
-    expect(marker).not.toBeNull();
-    expect(marker!.className).toContain("danger-subtle");
-  });
-});
-
-describe("KanbanCard status", () => {
-  it.each([
-    ["status-not-started", "Not started"],
-    ["status-working", "Working on it"],
-    ["status-stuck", "Stuck"],
-    ["status-done", "Done"],
-    ["status-completed", "Completed"],
-  ])("labels the known status %s as %s", (status, label) => {
-    renderCard({ status });
-    expect(screen.getByText(label)).toBeTruthy();
-  });
-
-  it("uses status roles, never identity colours, for the badge", () => {
-    renderCard({ status: "status-stuck" });
-    const badge = screen.getByText("Stuck");
-    expect(badge.className).toContain("danger-subtle");
-    expect(badge.className).not.toContain("identity");
-  });
-
-  it("localises the status label", () => {
-    renderCard({ status: "status-working" }, { copy: kanbanCardCopy("vi") });
-    expect(screen.getByText("Đang thực hiện")).toBeTruthy();
-  });
-
-  it("renders no badge, and never the raw value, for a status the catalog does not know", () => {
-    const { card } = renderCard({ status: "waiting-on-legal" });
-    const article = screen.getByRole("article", { name: card.title });
-    expect(article.querySelector("[data-slot='badge']")).toBeNull();
-    expect(screen.queryByText("waiting-on-legal")).toBeNull();
-    expect(article.textContent).not.toContain("waiting-on-legal");
-    expect(screen.getByRole("button", { name: card.title })).toBeTruthy();
-  });
-
-  it("renders no badge for the fixture default status", () => {
-    const { card } = renderCard({ status: "todo" });
-    const article = screen.getByRole("article", { name: card.title });
-    expect(article.querySelector("[data-slot='badge']")).toBeNull();
-    expect(screen.queryByText("todo")).toBeNull();
-  });
-
-  it("renders no status badge when the status is empty", () => {
-    const { card } = renderCard({ status: "" });
-    const article = screen.getByRole("article", { name: card.title });
-    expect(article.querySelector("[data-slot='badge']")).toBeNull();
-  });
-});
-
-describe("KanbanCard assignees", () => {
-  it("shows no assignee for a card without members", () => {
-    renderCard({ members: [] });
-    expect(screen.queryByRole("group", { name: /Assigned to/ })).toBeNull();
-  });
-
-  it("exposes the single assignee by name to assistive tech", () => {
-    renderCard({ members: members(1) });
+  it("has no grip, menu, status badge or count indicators", () => {
+    const { article } = renderCard({
+      status: "status-working",
+      linkedPageId: "page-1",
+      _count: { comments: 3, attachments: 2, checklistItems: 4 },
+    });
     expect(
-      screen.getByRole("group", { name: "Assigned to Avery Stone" }),
-    ).toBeTruthy();
-    expect(screen.queryByText(/^\+\d/)).toBeNull();
+      within(article).queryByRole("button", { name: /Di chuyển|Move/ }),
+    ).toBeNull();
+    expect(within(article).queryByRole("button", { name: /menu/i })).toBeNull();
+    expect(article.querySelector("[data-slot='badge']")).toBeNull();
+    expect(article.textContent).not.toMatch(/bình luận|tệp|tài liệu|3|2/);
+  });
+});
+
+describe("KanbanCard top row", () => {
+  it("shows the item key in the mono font", () => {
+    const { article } = renderCard({ itemKey: "ERP-142" });
+    const key = within(article).getByText("ERP-142");
+    expect(key.className).toContain("font-mono");
   });
 
-  it("shows the first assignee and +N for the rest", () => {
-    renderCard({ members: members(3) });
-    const group = screen.getByRole("group", {
-      name: "Assigned to Avery Stone and 2 more",
-    });
-    expect(within(group).getByText("Avery Stone")).toBeTruthy();
-    expect(within(group).getByText("+2")).toBeTruthy();
+  it("shows a plain-number key from a board without a prefix", () => {
+    const { article } = renderCard({ itemKey: "42" });
+    expect(within(article).getByText("42").className).toContain("font-mono");
   });
 
-  it("handles nine or more assignees without listing them all", () => {
-    renderCard({ members: members(12) });
-    const group = screen.getByRole("group", {
-      name: "Assigned to Avery Stone and 11 more",
-    });
-    expect(within(group).getByText("+11")).toBeTruthy();
-    expect(screen.queryByText("Member 12")).toBeNull();
+  it("renders no key and no label chip when both are missing", () => {
+    const { article } = renderCard({ itemKey: null, labels: [] });
+    expect(article.querySelector("[data-label-tone]")).toBeNull();
+    expect(article.querySelector(".font-mono")).toBeNull();
   });
 
-  it("truncates a long name visually while the accessible name stays complete", () => {
-    const longName =
-      "Bartholomew Maximilian Featherstonehaugh-Cholmondeley the Third";
-    renderCard({
-      members: [memberFixture({ name: longName, initials: "BM" })],
+  it.each([
+    ["Dữ liệu", "data"],
+    ["Bảo mật", "security"],
+    ["Đào tạo", "training"],
+    ["Báo cáo", "report"],
+    ["Tài liệu", "doc"],
+    ["Hạ tầng", "doc"],
+    ["Kiểm thử", "test"],
+    ["SECURITY", "security"],
+    ["Data", "data"],
+  ])("maps the label %s to the %s tone token by name", (name, tone) => {
+    const { article } = renderCard({
+      labels: [labelFixture({ name, color: "#c4c4c4" })],
     });
-    const group = screen.getByRole("group", {
-      name: `Assigned to ${longName}`,
-    });
-    const name = within(group).getByText(longName);
-    expect(name.className).toContain("truncate");
+    const chip = within(article).getByText(name);
+    expect(chip.getAttribute("data-label-tone")).toBe(tone);
+    expect(chip.className).toContain(`bg-label-${tone}`);
+    expect(chip.className).toContain(`text-label-${tone}-foreground`);
   });
 
-  it("does not paint the mark with the raw member colour", () => {
+  it.each([
+    ["#579bfc", "data"],
+    ["#e2445c", "security"],
+    ["#00c875", "training"],
+    ["#fdab3d", "report"],
+    ["#a25ddc", "test"],
+    ["#c4c4c4", "doc"],
+    ["not-a-colour", "doc"],
+  ])(
+    "maps an unknown label name by its colour %s to the %s tone",
+    (color, tone) => {
+      const { article } = renderCard({
+        labels: [labelFixture({ name: "Khách hàng", color })],
+      });
+      expect(
+        within(article).getByText("Khách hàng").getAttribute("data-label-tone"),
+      ).toBe(tone);
+    },
+  );
+
+  it("shows only the first label and never paints the raw label colour", () => {
+    const { article, container } = renderCard({
+      labels: [
+        labelFixture({ id: "l-1", name: "Dữ liệu", color: "#ff0000" }),
+        labelFixture({ id: "l-2", name: "Bảo mật" }),
+      ],
+    });
+    expect(within(article).getByText("Dữ liệu")).toBeTruthy();
+    expect(within(article).queryByText("Bảo mật")).toBeNull();
+    expect(container.innerHTML).not.toContain("#ff0000");
+  });
+});
+
+describe("KanbanCard title and states", () => {
+  it("names the article and its open control by the title, clamped to three lines", () => {
+    const title =
+      "Một tiêu đề rất dài để kiểm tra việc xuống dòng và cắt bớt sau ba dòng mà tên truy cập vẫn đầy đủ "
+        .repeat(3)
+        .trim();
+    const { article } = renderCard({ title });
+    const heading = within(article).getByRole("heading", { level: 3 });
+    expect(heading.textContent).toBe(title);
+    expect(heading.className).toContain("line-clamp-3");
+    expect(within(article).getByRole("button", { name: title })).toBeTruthy();
+  });
+
+  it("describes the open control with the key, label, progress, due, priority and assignee", () => {
+    const { article } = renderCard({
+      itemKey: "ERP-142",
+      labels: [labelFixture({ name: "Dữ liệu" })],
+      childProgress: { done: 3, total: 5 },
+      dueAt: dueOn(10, 10),
+      priority: "urgent",
+      members: members(1),
+    });
+    const open = within(article).getByRole("button");
+    const parts = (open.getAttribute("aria-describedby") ?? "")
+      .split(" ")
+      .map((id) => document.getElementById(id));
+    // Text content, plus the accessible name of the assignee group.
+    const description = parts
+      .map(
+        (part) =>
+          `${part?.textContent ?? ""} ${
+            part?.querySelector("[role='group']")?.getAttribute("aria-label") ??
+            ""
+          }`,
+      )
+      .join(" ");
+    expect(description).toContain("ERP-142");
+    expect(description).toContain("Dữ liệu");
+    expect(description).toContain("Đã xong 3 trên 5 việc con");
+    expect(description).toContain("Quá hạn 2 ngày");
+    expect(description).toContain("Khẩn");
+    expect(description).toContain("Được giao cho Trần Minh Quân");
+  });
+
+  it("marks the selected card with aria-current and the selection ring", () => {
+    const { article } = renderCard({}, { selected: true });
+    expect(article.getAttribute("aria-current")).toBe("true");
+    expect(article.className).toContain("ring-2");
+  });
+
+  it("does not mark an unselected card as current", () => {
+    const { article } = renderCard();
+    expect(article.getAttribute("aria-current")).toBeNull();
+    expect(article.className).not.toContain("ring-2");
+  });
+
+  it("mutes the title of a done card and hides its due date", () => {
+    const { article } = renderCard({
+      statusCategory: "done",
+      dueAt: dueOn(10, 2),
+    });
+    const heading = within(article).getByRole("heading", { level: 3 });
+    expect(heading.className).toContain("text-muted-foreground");
+    expect(article.querySelector("[data-due]")).toBeNull();
+    expect(article.textContent).not.toContain("Quá hạn");
+  });
+
+  it("treats a card with a completion date as done", () => {
+    const { article } = renderCard({
+      completedAt: dueOn(10, 3),
+      dueAt: dueOn(10, 2),
+    });
+    expect(article.querySelector("[data-due]")).toBeNull();
+  });
+});
+
+describe("KanbanCard child progress", () => {
+  it("shows the bar and done/total when the item has child items", () => {
+    const { article } = renderCard({ childProgress: { done: 3, total: 5 } });
+    const progress = article.querySelector("[data-child-progress]");
+    expect(progress).not.toBeNull();
+    expect(progress!.textContent).toContain("3/5");
+    const fill = progress!.querySelector("[data-progress-fill]");
+    expect((fill as HTMLElement).style.width).toBe("60%");
+  });
+
+  it("keeps a visible sliver for 0 of 4", () => {
+    const { article } = renderCard({ childProgress: { done: 0, total: 4 } });
+    const fill = article.querySelector("[data-progress-fill]") as HTMLElement;
+    expect(fill.style.width).toBe("4%");
+    expect(article.textContent).toContain("0/4");
+  });
+
+  it.each([
+    ["0/0", { done: 0, total: 0 }],
+    ["missing", null],
+  ])("renders no progress for %s", (_case, childProgress) => {
+    const { article } = renderCard({ childProgress });
+    expect(article.querySelector("[data-child-progress]")).toBeNull();
+  });
+
+  it("never counts checklists as progress", () => {
+    const { article } = renderCard({
+      childProgress: null,
+      _count: { comments: 0, attachments: 0, checklistItems: 3 },
+    });
+    expect(article.querySelector("[data-child-progress]")).toBeNull();
+  });
+});
+
+describe("KanbanCard due wording", () => {
+  it("writes a future due date as day/month", () => {
+    const { article } = renderCard({ dueAt: dueOn(10, 18) });
+    const due = article.querySelector("[data-due]")!;
+    expect(due.getAttribute("data-due")).toBe("date");
+    expect(due.textContent).toContain("18/10");
+    expect(due.textContent).not.toMatch(/thg|Oct/);
+    expect(due.className).not.toMatch(/danger|warning/);
+  });
+
+  it("pads a single-digit day and month", () => {
+    const { article } = renderCard({ dueAt: dueOn(11, 5) });
+    expect(article.querySelector("[data-due]")!.textContent).toContain("05/11");
+  });
+
+  it("adds the year for a date in another year", () => {
+    const { article } = renderCard({ dueAt: dueOn(1, 18, 2027) });
+    expect(article.querySelector("[data-due]")!.textContent).toContain(
+      "18/01/2027",
+    );
+  });
+
+  it("says Hôm nay on the warning role for a date due today", () => {
+    const { article } = renderCard({ dueAt: dueOn(10, 12) });
+    const due = article.querySelector("[data-due]")!;
+    expect(due.getAttribute("data-due")).toBe("today");
+    expect(due.textContent).toContain("Hôm nay");
+    expect(due.className).toContain("warning-subtle");
+  });
+
+  it("keeps Hôm nay when the due time today has already passed", () => {
+    const { article } = renderCard({
+      dueAt: new Date(2026, 9, 12, 8, 0).toISOString(),
+    });
+    expect(article.querySelector("[data-due]")!.getAttribute("data-due")).toBe(
+      "today",
+    );
+  });
+
+  it.each([
+    ["11/10", 10, 11, "Quá hạn 1 ngày", "Overdue 1 day"],
+    ["10/10", 10, 10, "Quá hạn 2 ngày", "Overdue 2 days"],
+    ["30/09", 9, 30, "Quá hạn 12 ngày", "Overdue 12 days"],
+  ])(
+    "counts the overdue days for %s in vi and en",
+    (_date, month, day, viText, enText) => {
+      const first = renderCard({ dueAt: dueOn(month, day) });
+      const due = first.article.querySelector("[data-due]")!;
+      expect(due.getAttribute("data-due")).toBe("overdue");
+      expect(due.textContent).toBe(viText);
+      expect(due.className).toContain("danger-subtle");
+      first.unmount();
+      const second = renderCard({ dueAt: dueOn(month, day) }, { copy: EN });
+      expect(second.article.querySelector("[data-due]")!.textContent).toBe(
+        enText,
+      );
+    },
+  );
+
+  it("judges the due date against the injected now", () => {
+    const { article } = renderCard({ dueAt: dueOn(10, 13) });
+    expect(article.querySelector("[data-due]")!.getAttribute("data-due")).toBe(
+      "date",
+    );
+  });
+
+  it("falls back to the legacy due date", () => {
+    const { article } = renderCard({ dueAt: null, dueDate: dueOn(10, 18) });
+    expect(article.querySelector("[data-due]")!.textContent).toContain("18/10");
+  });
+
+  it.each([
+    ["no due date", { dueAt: null, dueDate: undefined }],
+    ["an unparseable due date", { dueAt: "not-a-date" }],
+  ])("shows nothing for %s", (_case, overrides) => {
+    const { article } = renderCard(overrides);
+    expect(article.querySelector("[data-due]")).toBeNull();
+  });
+});
+
+describe("KanbanCard priority", () => {
+  it.each([
+    ["urgent", "Khẩn", "text-danger-text"],
+    ["high", "Cao", "text-priority-high-text"],
+  ] as const)(
+    "shows %s as an icon and the word %s",
+    (priority, word, className) => {
+      const { article } = renderCard({ priority });
+      const marker = article.querySelector("[data-priority]")!;
+      expect(marker.getAttribute("data-priority")).toBe(priority);
+      expect(marker.textContent).toContain(word);
+      expect(marker.querySelector("svg")?.getAttribute("aria-hidden")).toBe(
+        "true",
+      );
+      expect(marker.className).toContain(className);
+    },
+  );
+
+  it.each(["medium", "low", undefined] as const)(
+    "shows nothing for %s priority",
+    (priority) => {
+      const { article } = renderCard({ priority });
+      expect(article.querySelector("[data-priority]")).toBeNull();
+    },
+  );
+
+  it("localises the priority word", () => {
+    const { article } = renderCard({ priority: "high" }, { copy: EN });
+    expect(article.querySelector("[data-priority]")!.textContent).toContain(
+      "High",
+    );
+  });
+});
+
+describe("KanbanCard assignee", () => {
+  it("shows the avatar only, with the name in the accessible name", () => {
+    const { article } = renderCard({ members: members(1) });
+    const group = within(article).getByRole("group", {
+      name: "Được giao cho Trần Minh Quân",
+    });
+    expect(group.textContent).toBe("MQ");
+    expect(within(article).queryByText("Trần Minh Quân")).toBeNull();
+  });
+
+  it("names the other assignees without listing them", () => {
+    const { article } = renderCard({ members: members(4) }, { copy: EN });
+    const group = within(article).getByRole("group", {
+      name: "Assigned to Trần Minh Quân and 3 more",
+    });
+    expect(group.textContent).toBe("MQ");
+  });
+
+  it("shows no assignee for a card without members", () => {
+    const { article } = renderCard({ members: [] });
+    expect(within(article).queryByRole("group")).toBeNull();
+  });
+
+  it("paints the avatar with an identity tone, not the raw member colour", () => {
     const { container } = renderCard({
       members: [memberFixture({ color: "#ff0000" })],
     });
     expect(container.innerHTML).not.toContain("#ff0000");
     expect(container.innerHTML).toContain("bg-identity-");
   });
-
-  it("localises the assignee label", () => {
-    renderCard({ members: members(2) }, { copy: kanbanCardCopy("vi") });
-    expect(
-      screen.getByRole("group", {
-        name: "Được giao cho Avery Stone và 1 người khác",
-      }),
-    ).toBeTruthy();
-  });
 });
 
-describe("KanbanCard priority", () => {
-  it.each([
-    ["urgent", "Urgent priority"],
-    ["high", "High priority"],
-  ] as const)(
-    "shows %s as an icon with an accessible name",
-    (priority, name) => {
-      renderCard({ priority });
-      const icon = screen.getByRole("img", { name });
-      expect(icon.textContent).toBe("");
-      expect(screen.queryByText(priority, { exact: false })).toBeNull();
-    },
-  );
-
-  it.each(["medium", "low"] as const)(
-    "does not show %s priority",
-    (priority) => {
-      renderCard({ priority });
-      expect(screen.queryByRole("img")).toBeNull();
-    },
-  );
-
-  it("localises the priority name", () => {
-    renderCard({ priority: "urgent" }, { copy: kanbanCardCopy("vi") });
-    expect(screen.getByRole("img", { name: "Ưu tiên khẩn cấp" })).toBeTruthy();
-  });
-});
-
-describe("KanbanCard quiet metadata", () => {
-  it("shows checklist progress, comment and attachment counts", () => {
-    renderCard({
-      checklists: [twoItemChecklist],
-      _count: { comments: 3, attachments: 2, checklistItems: 2 },
-    });
-    expect(screen.getByText("1 of 2 checklist items done")).toBeTruthy();
-    expect(screen.getByText("3 comments")).toBeTruthy();
-    expect(screen.getByText("2 attachments")).toBeTruthy();
-  });
-
-  it.each([
-    [1, "1 comment", "1 attachment"],
-    [2, "2 comments", "2 attachments"],
-  ])(
-    "uses the singular or plural count copy for %i (en)",
-    (count, comments, attachments) => {
-      renderCard({
-        _count: { comments: count, attachments: count, checklistItems: 0 },
-      });
-      expect(screen.getByText(comments)).toBeTruthy();
-      expect(screen.getByText(attachments)).toBeTruthy();
-    },
-  );
-
-  it("renders no comment or attachment count for 0", () => {
-    const { card } = renderCard({
-      _count: { comments: 0, attachments: 0, checklistItems: 0 },
-    });
-    const article = screen.getByRole("article", { name: card.title });
-    expect(article.textContent).not.toMatch(/comment|attachment/i);
-  });
-
-  it.each([1, 2])("localises the count copy for %i (vi)", (count) => {
-    renderCard(
-      { _count: { comments: count, attachments: count, checklistItems: 0 } },
-      { copy: kanbanCardCopy("vi") },
-    );
-    expect(screen.getByText(`${count} bình luận`)).toBeTruthy();
-    expect(screen.getByText(`${count} tệp đính kèm`)).toBeTruthy();
-  });
-
-  it("shows the linked Doc marker", () => {
-    renderCard({ linkedPageId: "page-1" });
-    expect(screen.getByText("Doc linked")).toBeTruthy();
-  });
-});
-
-describe("KanbanCard edge data", () => {
-  it("renders the worst case together without losing the title", () => {
-    const { card } = renderCard({
-      title: "Đa ngôn ngữ — 日本語 — a very long title ".repeat(6).trim(),
-      status: "a-status-nobody-registered-with-a-long-name",
+describe("KanbanCard markup", () => {
+  it("uses no raw colours, arbitrary text sizes or raw z-index", () => {
+    const { container } = renderCard({
+      itemKey: "ERP-142",
+      labels: [labelFixture({ name: "Dữ liệu", color: "#579bfc" })],
+      childProgress: { done: 3, total: 5 },
+      dueAt: dueOn(10, 10),
       priority: "urgent",
-      dueDate: fixedIso(-30),
-      members: members(9),
-      linkedPageId: "page-1",
-      _count: { comments: 120, attachments: 45, checklistItems: 0 },
+      members: members(2),
     });
-    expect(screen.getByRole("article", { name: card.title })).toBeTruthy();
-    expect(screen.getByText("Overdue")).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Urgent priority" })).toBeTruthy();
+    const html = container.innerHTML;
+    expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(html).not.toMatch(/rgba?\(/);
+    expect(html).not.toMatch(/text-\[\d/);
+    expect(html).not.toMatch(/z-index/);
   });
 });

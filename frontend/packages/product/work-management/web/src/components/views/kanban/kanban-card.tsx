@@ -1,21 +1,9 @@
-import { useMemo, useState } from "react";
+import { useId, useState, type PointerEventHandler } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  AlertCircle,
-  CalendarDays,
-  CheckCircle2,
-  ChevronUp,
-  ChevronsUp,
-  FileText,
-  GripVertical,
-  MessageSquareText,
-  MoreHorizontal,
-  Paperclip,
-} from "lucide-react";
-import { Badge, Button, cn } from "@notrelix/ui-web";
-import type { Board, Card, CardMember } from "@notrelix/work-management-core";
-import { KanbanCardMenu } from "./kanban-card-menu";
+import { Flag } from "lucide-react";
+import { cn } from "@notrelix/ui-web";
+import type { Card, CardMember } from "@notrelix/work-management-core";
 import {
   fillCopy,
   kanbanCardCopy,
@@ -25,33 +13,148 @@ import {
 
 const defaultCopy = kanbanCardCopy("en");
 
-/** Status roles, never identity colours (WX-DEC-006). */
-const STATUS_PRESENTATION: Readonly<
-  Record<string, { label: keyof KanbanCardCopy["status"]; className: string }>
+/** The six label tones of the design tokens (`--label-<tone>`). */
+export type KanbanLabelTone =
+  "data" | "security" | "training" | "report" | "doc" | "test";
+
+/** Literal tone classes, so Tailwind sees every one of them. */
+export const KANBAN_LABEL_TONE_CLASS: Readonly<
+  Record<KanbanLabelTone, string>
 > = {
-  "status-not-started": {
-    label: "notStarted",
-    className: "bg-secondary text-secondary-foreground",
-  },
-  "status-working": {
-    label: "working",
-    className: "bg-warning-subtle text-warning-subtle-foreground",
-  },
-  "status-stuck": {
-    label: "stuck",
-    className: "bg-danger-subtle text-danger-subtle-foreground",
-  },
-  "status-done": {
-    label: "done",
-    className: "bg-success-subtle text-success-subtle-foreground",
-  },
-  "status-completed": {
-    label: "completed",
-    className: "bg-success-subtle text-success-subtle-foreground",
-  },
+  data: "bg-label-data text-label-data-foreground",
+  security: "bg-label-security text-label-security-foreground",
+  training: "bg-label-training text-label-training-foreground",
+  report: "bg-label-report text-label-report-foreground",
+  doc: "bg-label-doc text-label-doc-foreground",
+  test: "bg-label-test text-label-test-foreground",
 };
 
-const COMPLETE_STATUSES = new Set(["status-done", "status-completed"]);
+/** Whole-word name keywords (normalised: lower case, no diacritics). */
+const LABEL_TONE_KEYWORDS: ReadonlyArray<
+  readonly [KanbanLabelTone, readonly string[]]
+> = [
+  ["data", ["du lieu", "data"]],
+  ["security", ["bao mat", "an ninh", "security"]],
+  ["training", ["dao tao", "training"]],
+  ["report", ["bao cao", "report", "reports", "reporting"]],
+  ["test", ["kiem thu", "test", "tests", "testing", "qa"]],
+  [
+    "doc",
+    ["tai lieu", "doc", "docs", "documentation", "ha tang", "infrastructure"],
+  ],
+];
+
+function normaliseLabelName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "d")
+    .toLowerCase()
+    .trim();
+}
+
+function hasWord(text: string, phrase: string): boolean {
+  return ` ${text.replace(/[^a-z0-9]+/g, " ")} `.includes(` ${phrase} `);
+}
+
+/** Hue (0–360) and saturation (0–1) of a `#rgb` / `#rrggbb` colour. */
+function hueOf(color: string): { hue: number; saturation: number } | null {
+  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
+  if (!match?.[1]) return null;
+  const hex =
+    match[1].length === 3
+      ? Array.from(match[1], (digit) => digit + digit).join("")
+      : match[1];
+  const [r, g, b] = [0, 2, 4].map(
+    (offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255,
+  ) as [number, number, number];
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  const lightness = (max + min) / 2;
+  const saturation =
+    delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+  if (delta === 0) return { hue: 0, saturation };
+  let hue: number;
+  if (max === r) hue = ((g - b) / delta) % 6;
+  else if (max === g) hue = (b - r) / delta + 2;
+  else hue = (r - g) / delta + 4;
+  hue *= 60;
+  if (hue < 0) hue += 360;
+  return { hue, saturation };
+}
+
+/**
+ * The label tone of a label, deterministic:
+ * 1. by name — normalised (lower case, diacritics removed, đ → d) and matched
+ *    as whole words against the keyword table (Dữ liệu/data, Bảo mật/security,
+ *    Đào tạo/training, Báo cáo/report, Kiểm thử/test, Tài liệu/Hạ tầng/doc);
+ * 2. otherwise by the hue of the label colour: grey (saturation < 0.15) → doc,
+ *    red/pink → security, orange/yellow → report, green → training,
+ *    blue → data, purple → test;
+ * 3. otherwise doc. The raw label colour is never painted.
+ */
+export function kanbanLabelTone(label: {
+  readonly name: string;
+  readonly color?: string | null;
+}): KanbanLabelTone {
+  const name = normaliseLabelName(label.name);
+  for (const [tone, keywords] of LABEL_TONE_KEYWORDS) {
+    if (keywords.some((keyword) => hasWord(name, keyword))) return tone;
+  }
+  const colour = label.color ? hueOf(label.color) : null;
+  if (!colour || colour.saturation < 0.15) return "doc";
+  const { hue } = colour;
+  if (hue < 20 || hue >= 330) return "security";
+  if (hue < 70) return "report";
+  if (hue < 170) return "training";
+  if (hue < 250) return "data";
+  return "test";
+}
+
+export type KanbanDueState =
+  | { readonly kind: "overdue"; readonly days: number }
+  | { readonly kind: "today" }
+  | { readonly kind: "date"; readonly text: string };
+
+function startOfDay(date: Date): number {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  ).getTime();
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+/**
+ * Due state by calendar day in the runtime time zone against `now`: before
+ * today → overdue by N days; the same day → today (even after the hour);
+ * later → "dd/MM", with "/yyyy" when the year differs from `now`. An absent
+ * or unparseable date gives `null`.
+ */
+export function kanbanDueState(
+  dueIso: string | null | undefined,
+  now: Date,
+): KanbanDueState | null {
+  if (!dueIso) return null;
+  const due = new Date(dueIso);
+  if (Number.isNaN(due.getTime())) return null;
+  const days = Math.round((startOfDay(now) - startOfDay(due)) / 86_400_000);
+  if (days > 0) return { kind: "overdue", days };
+  if (days === 0) return { kind: "today" };
+  const dayMonth = `${pad(due.getDate())}/${pad(due.getMonth() + 1)}`;
+  return {
+    kind: "date",
+    text:
+      due.getFullYear() === now.getFullYear()
+        ? dayMonth
+        : `${dayMonth}/${due.getFullYear()}`,
+  };
+}
 
 /** The identity tones of the design tokens, as literal classes for Tailwind. */
 const IDENTITY_MARK_CLASSES = [
@@ -78,116 +181,106 @@ function identityMarkClass(seed: string): string {
   );
 }
 
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function parseDate(value: string | undefined): Date | null {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
 function markFor(member: CardMember): string {
   const initials = member.initials.trim() || Array.from(member.name)[0] || "?";
   return initials.toUpperCase();
 }
 
+const DUE_CLASS: Readonly<Record<KanbanDueState["kind"], string>> = {
+  overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
+  today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
+  date: "font-medium text-muted-foreground",
+};
+
+/**
+ * A Kanban card: label chip and key, title, child-item progress, due wording,
+ * priority (urgent and high only) and the first assignee's avatar. The whole
+ * card opens the item (pointer, Enter, Space) and is the pointer drag handle;
+ * moving with the keyboard happens from the item sheet. Actions such as copy
+ * link, duplicate and archive live in the sheet, not on the card.
+ */
 export function KanbanCard({
-  board: _board,
   card,
   now,
   copy = defaultCopy,
+  selected = false,
   onOpenDetails,
-  onCopyLink,
-  onDuplicate,
-  onDelete,
 }: {
-  board: Board;
   card: Card;
-  /** The reference time for the overdue state; read once by the container. */
+  /** The reference time for the due wording; read once by the container. */
   now?: Date;
   copy?: KanbanCardCopy;
+  /** The card whose item sheet is open. */
+  selected?: boolean;
   onOpenDetails: (cardId: string) => void;
-  onCopyLink: (cardId: string) => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: card.id,
-    data: { type: "kanban-card", card },
-  });
+  const { listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id: card.id,
+      data: { type: "kanban-card", card },
+    });
+  // Pointer drag only: Enter and Space belong to opening the card.
+  const onPointerDown = listeners?.onPointerDown as
+    PointerEventHandler<HTMLElement> | undefined;
 
   const [fallbackNow] = useState(() => new Date());
   const reference = now ?? fallbackNow;
+  const descriptionId = useId();
 
-  const checklistTotal = useMemo(
-    () =>
-      (card.checklists || []).reduce(
-        (count, checklist) => count + (checklist.items?.length || 0),
-        0,
-      ),
-    [card.checklists],
-  );
-  const checklistDone = useMemo(
-    () =>
-      (card.checklists || []).reduce(
-        (count, checklist) =>
-          count + (checklist.items?.filter((item) => item.isDone).length || 0),
-        0,
-      ),
-    [card.checklists],
-  );
+  const isDone = card.statusCategory === "done" || Boolean(card.completedAt);
+  const due = isDone
+    ? null
+    : kanbanDueState(card.dueAt ?? card.dueDate, reference);
+  const dueText =
+    due?.kind === "overdue"
+      ? pluralCopy(
+          { one: copy.overdueDays_one, other: copy.overdueDays_other },
+          due.days,
+        )
+      : due?.kind === "today"
+        ? copy.dueToday
+        : (due?.text ?? null);
 
-  const due = parseDate(card.dueDate);
-  const isComplete =
-    Boolean(card.completedAt) || COMPLETE_STATUSES.has(card.status);
-  const isOverdue =
-    due !== null &&
-    !isComplete &&
-    due.getTime() < startOfDay(reference).getTime();
-  const dueLabel = due
-    ? new Intl.DateTimeFormat(copy.locale, {
-        month: "short",
-        day: "numeric",
-      }).format(due)
-    : null;
+  const label = card.labels?.[0];
+  const labelTone = label ? kanbanLabelTone(label) : null;
+  const itemKey = card.itemKey?.trim() || null;
 
-  // Card.status is a free string: only known statuses get a badge, any other
-  // value is not shown (never printed raw). The authoritative labels are the
-  // board's status field options, which this surface does not receive yet.
-  const known = STATUS_PRESENTATION[card.status];
+  const progress =
+    card.childProgress && card.childProgress.total > 0
+      ? card.childProgress
+      : null;
+  const progressPercent = progress
+    ? Math.max(
+        4,
+        Math.min(100, Math.round((progress.done / progress.total) * 100)),
+      )
+    : 0;
 
-  const PriorityIcon =
-    card.priority === "urgent"
-      ? ChevronsUp
-      : card.priority === "high"
-        ? ChevronUp
-        : null;
+  const priority =
+    card.priority === "urgent" || card.priority === "high"
+      ? card.priority
+      : null;
 
   const assignee = card.members?.[0];
   const moreAssignees = Math.max((card.members?.length ?? 0) - 1, 0);
-  const assigneeName = assignee?.name ?? "";
-  const assigneeLabel =
-    moreAssignees > 0
+  const assigneeLabel = assignee
+    ? moreAssignees > 0
       ? fillCopy(copy.assignedToMore, {
-          name: assigneeName,
+          name: assignee.name,
           count: moreAssignees,
         })
-      : fillCopy(copy.assignedTo, { name: assigneeName });
+      : fillCopy(copy.assignedTo, { name: assignee.name })
+    : "";
 
-  const hasMetadata =
-    due !== null ||
-    checklistTotal > 0 ||
-    card._count.comments > 0 ||
-    card._count.attachments > 0;
+  const hasTop = Boolean(label && labelTone) || itemKey !== null;
+  const hasMeta = dueText !== null || priority !== null || Boolean(assignee);
+  const describedBy = [
+    hasTop ? `${descriptionId}-top` : null,
+    progress ? `${descriptionId}-progress` : null,
+    hasMeta ? `${descriptionId}-meta` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <article
@@ -196,16 +289,20 @@ export function KanbanCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={cn(
-        "group relative flex flex-col gap-2 rounded-xl border border-border bg-card p-3 shadow-xs transition-shadow hover:shadow-md cursor-pointer",
-        isDragging && "z-dropdown border-primary opacity-60",
-      )}
+      onPointerDown={onPointerDown}
       aria-label={card.title}
+      aria-current={selected ? "true" : undefined}
+      className={cn(
+        "group relative flex cursor-pointer flex-col gap-2 rounded-xl bg-card p-3 shadow-xs transition-shadow hover:shadow-md",
+        selected && "shadow-md ring-2 ring-inset ring-primary",
+        isDragging && "z-dropdown opacity-60",
+      )}
     >
       <button
         type="button"
         className="absolute inset-0 z-10 rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         aria-label={card.title}
+        aria-describedby={describedBy || undefined}
         data-card-id={card.id}
         onClick={() => onOpenDetails(card.id)}
         onKeyDown={(event) => {
@@ -216,177 +313,116 @@ export function KanbanCard({
         }}
       />
 
-      <div className="flex items-start gap-2">
-        <button
-          type="button"
-          className="relative z-20 mt-0.5 cursor-grab rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-state-hover active:cursor-grabbing focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={fillCopy(copy.moveCard, { title: card.title })}
-          onClick={(event) => event.stopPropagation()}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="size-3.5" aria-hidden="true" />
-        </button>
-
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 break-words text-label font-medium text-foreground">
-            {card.title}
-          </p>
-          {card.linkedPageId ? (
-            <div className="mt-1 flex items-center gap-1 text-caption text-muted-foreground">
-              <FileText className="size-3 shrink-0" aria-hidden="true" />
-              <span className="truncate">{copy.docLinked}</span>
-            </div>
-          ) : null}
-        </div>
-
+      {hasTop ? (
         <div
-          className="relative z-20 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-          onClick={(event) => event.stopPropagation()}
+          id={`${descriptionId}-top`}
+          className="flex min-w-0 items-center gap-1.5 text-metadata text-muted-foreground"
         >
-          <KanbanCardMenu
-            onCopyLink={() => onCopyLink(card.id)}
-            onDuplicate={onDuplicate}
-            onDelete={onDelete}
-          >
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="size-6"
-              aria-label={fillCopy(copy.cardMenu, { title: card.title })}
-            >
-              <MoreHorizontal className="size-3.5" aria-hidden="true" />
-            </Button>
-          </KanbanCardMenu>
-        </div>
-      </div>
-
-      {known || isOverdue || PriorityIcon ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          {known ? (
-            <Badge
-              variant="secondary"
-              className={cn(
-                "inline-block max-w-full truncate leading-4",
-                known.className,
-              )}
-            >
-              {copy.status[known.label]}
-            </Badge>
+          {label && labelTone ? (
+            <>
+              <span className="sr-only">{copy.label} </span>
+              <span
+                data-label-tone={labelTone}
+                className={cn(
+                  "inline-flex h-5.5 min-w-0 items-center truncate rounded-md px-2 text-caption font-semibold",
+                  KANBAN_LABEL_TONE_CLASS[labelTone],
+                )}
+              >
+                {label.name}
+              </span>
+            </>
           ) : null}
-          {isOverdue ? (
-            <span
-              data-overdue=""
-              className="inline-flex h-5 items-center gap-1 rounded-4xl bg-danger-subtle px-2 text-caption font-medium text-danger-subtle-foreground"
-            >
-              <AlertCircle className="size-3 shrink-0" aria-hidden="true" />
-              {copy.overdue}
-            </span>
-          ) : null}
-          {PriorityIcon && card.priority ? (
-            <span
-              role="img"
-              aria-label={copy.priority[card.priority as "urgent" | "high"]}
-              className={cn(
-                "inline-flex size-5 items-center justify-center",
-                card.priority === "urgent"
-                  ? "text-danger-text"
-                  : "text-info-text",
-              )}
-            >
-              <PriorityIcon className="size-3.5" aria-hidden="true" />
-            </span>
+          {itemKey ? (
+            <span className="ml-auto shrink-0 font-mono">{itemKey}</span>
           ) : null}
         </div>
       ) : null}
 
-      {hasMetadata || assignee ? (
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-          <div className="flex shrink-0 items-center gap-2.5 text-metadata text-muted-foreground">
-            {due && dueLabel ? (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1",
-                  isOverdue && "text-danger-text",
-                )}
-              >
-                <CalendarDays className="size-3" aria-hidden="true" />
-                <span className="sr-only">{copy.due}</span>
-                <time dateTime={card.dueDate}>{dueLabel}</time>
-              </span>
-            ) : null}
-            {checklistTotal > 0 ? (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <CheckCircle2 className="size-3" aria-hidden="true" />
-                <span aria-hidden="true">
-                  {checklistDone}/{checklistTotal}
-                </span>
-                <span className="sr-only">
-                  {fillCopy(copy.checklist, {
-                    done: checklistDone,
-                    total: checklistTotal,
-                  })}
-                </span>
-              </span>
-            ) : null}
-            {card._count.comments > 0 ? (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <MessageSquareText className="size-3" aria-hidden="true" />
-                <span aria-hidden="true">{card._count.comments}</span>
-                <span className="sr-only">
-                  {pluralCopy(
-                    { one: copy.comments_one, other: copy.comments_other },
-                    card._count.comments,
-                  )}
-                </span>
-              </span>
-            ) : null}
-            {card._count.attachments > 0 ? (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <Paperclip className="size-3" aria-hidden="true" />
-                <span aria-hidden="true">{card._count.attachments}</span>
-                <span className="sr-only">
-                  {pluralCopy(
-                    {
-                      one: copy.attachments_one,
-                      other: copy.attachments_other,
-                    },
-                    card._count.attachments,
-                  )}
-                </span>
-              </span>
-            ) : null}
-          </div>
+      <h3
+        className={cn(
+          "line-clamp-3 break-words text-label font-medium",
+          isDone ? "text-muted-foreground" : "text-foreground",
+        )}
+      >
+        {card.title}
+      </h3>
 
+      {progress ? (
+        <div
+          data-child-progress=""
+          className="flex items-center gap-2 text-caption tabular-nums text-muted-foreground"
+        >
+          <span
+            aria-hidden="true"
+            className="block h-1.25 flex-1 overflow-hidden rounded-full bg-muted"
+          >
+            <span
+              data-progress-fill=""
+              className="block h-full rounded-full bg-primary"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </span>
+          <span aria-hidden="true">
+            {progress.done}/{progress.total}
+          </span>
+          <span id={`${descriptionId}-progress`} className="sr-only">
+            {fillCopy(copy.childProgress, {
+              done: progress.done,
+              total: progress.total,
+            })}
+          </span>
+        </div>
+      ) : null}
+
+      {hasMeta ? (
+        <div
+          id={`${descriptionId}-meta`}
+          className="flex min-w-0 flex-wrap items-center gap-1.5 text-metadata text-muted-foreground"
+        >
+          {due && dueText ? (
+            <span
+              data-due={due.kind}
+              className={cn(
+                "inline-flex h-5.5 items-center rounded-md px-1.5",
+                DUE_CLASS[due.kind],
+              )}
+            >
+              {due.kind === "overdue" ? null : (
+                <span className="sr-only">{copy.due} </span>
+              )}
+              {dueText}
+            </span>
+          ) : null}
+          {priority ? (
+            <span
+              data-priority={priority}
+              className={cn(
+                "inline-flex items-center gap-1 font-semibold",
+                priority === "urgent"
+                  ? "text-danger-text"
+                  : "text-priority-high-text",
+              )}
+            >
+              <Flag className="size-3.25" aria-hidden="true" />
+              <span className="sr-only">{copy.priorityPrefix} </span>
+              {copy.priority[priority]}
+            </span>
+          ) : null}
           {assignee ? (
             <span
               role="group"
               aria-label={assigneeLabel}
-              className="ml-auto flex min-w-0 max-w-full items-center gap-1.5"
+              className="ml-auto flex shrink-0 items-center"
             >
               <span
                 aria-hidden="true"
                 className={cn(
-                  "flex size-5 shrink-0 items-center justify-center rounded-full text-caption font-semibold select-none",
+                  "flex size-5.5 items-center justify-center rounded-full text-caption font-semibold select-none",
                   identityMarkClass(assignee.userId || assignee.id),
                 )}
               >
                 {markFor(assignee)}
               </span>
-              <span
-                aria-hidden="true"
-                className="truncate text-metadata text-foreground"
-              >
-                {assigneeName}
-              </span>
-              {moreAssignees > 0 ? (
-                <span
-                  aria-hidden="true"
-                  className="shrink-0 text-caption tabular-nums text-muted-foreground"
-                >
-                  +{moreAssignees}
-                </span>
-              ) : null}
             </span>
           ) : null}
         </div>

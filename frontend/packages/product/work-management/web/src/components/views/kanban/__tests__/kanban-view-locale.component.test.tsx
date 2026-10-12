@@ -66,15 +66,13 @@ function renderView(locale: Locale) {
 describe("KanbanView resolves the card copy by locale", () => {
   it("shows the Vietnamese card copy for the vi locale", () => {
     renderView("vi");
-    expect(screen.getByText("Quá hạn")).toBeTruthy();
-    expect(screen.getByText("Bị kẹt")).toBeTruthy();
-    expect(screen.queryByText("Overdue")).toBeNull();
+    expect(screen.getByText(/^Quá hạn \d+ ngày$/)).toBeTruthy();
+    expect(screen.queryByText(/^Overdue/)).toBeNull();
   });
 
   it("shows the English card copy for the en locale", () => {
     renderView("en");
-    expect(screen.getByText("Overdue")).toBeTruthy();
-    expect(screen.getByText("Stuck")).toBeTruthy();
-    expect(screen.queryByText("Quá hạn")).toBeNull();
+    expect(screen.getByText(/^Overdue \d+ days?$/)).toBeTruthy();
+    expect(screen.queryByText(/^Quá hạn/)).toBeNull();
   });
 });

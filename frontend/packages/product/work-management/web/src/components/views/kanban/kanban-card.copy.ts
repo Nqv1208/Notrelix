@@ -1,65 +1,50 @@
 /**
- * Kanban card copy, vi and en (WX-BOARD-001), registered as the `kanban-card`
- * catalog (`kanban-card.catalog.ts`). The pure surface takes a `copy` prop;
+ * Kanban card copy, vi and en, registered as the `kanban-card` catalog
+ * (`kanban-card.catalog.ts`). The pure surface takes a `copy` prop;
  * `useKanbanCardCopy` resolves it for the active locale in the container.
  * Placeholders use the catalog `{{name}}` form and are filled by `fillCopy`.
+ * Dates are written as day/month ("18/10") in both locales, never with a
+ * month name.
  */
 export const en = {
-  /** BCP 47 tag the surface formats the due date with. */
+  /** BCP 47 tag of this copy. */
   locale: "en",
-  moveCard: "Move {{title}}",
-  cardMenu: "Open {{title}} menu",
-  docLinked: "Doc linked",
+  /** Screen-reader prefix before the label chip. */
+  label: "Label",
+  /** Screen-reader prefix before a due date or "Today". */
   due: "Due",
-  overdue: "Overdue",
+  dueToday: "Today",
+  overdueDays_one: "Overdue {{count}} day",
+  overdueDays_other: "Overdue {{count}} days",
+  /** Screen-reader prefix before the priority word. */
+  priorityPrefix: "Priority",
+  priority: {
+    urgent: "Urgent",
+    high: "High",
+  },
+  childProgress: "{{done}} of {{total}} child items done",
   assignedTo: "Assigned to {{name}}",
   assignedToMore: "Assigned to {{name}} and {{count}} more",
-  priority: {
-    urgent: "Urgent priority",
-    high: "High priority",
-  },
-  status: {
-    notStarted: "Not started",
-    working: "Working on it",
-    stuck: "Stuck",
-    done: "Done",
-    completed: "Completed",
-  },
-  checklist: "{{done}} of {{total}} checklist items done",
-  comments_one: "{{count}} comment",
-  comments_other: "{{count}} comments",
-  attachments_one: "{{count}} attachment",
-  attachments_other: "{{count}} attachments",
 };
 
 export type KanbanCardCopy = typeof en;
 
 export const vi: KanbanCardCopy = {
   locale: "vi",
-  moveCard: "Di chuyển {{title}}",
-  cardMenu: "Mở menu của {{title}}",
-  docLinked: "Đã liên kết tài liệu",
+  label: "Nhãn",
   due: "Hạn",
-  overdue: "Quá hạn",
+  dueToday: "Hôm nay",
+  // Vietnamese has no singular/plural distinction; both forms stay complete.
+  overdueDays_one: "Quá hạn {{count}} ngày",
+  overdueDays_other: "Quá hạn {{count}} ngày",
+  priorityPrefix: "Ưu tiên",
+  priority: {
+    urgent: "Khẩn",
+    high: "Cao",
+  },
+  childProgress: "Đã xong {{done}} trên {{total}} việc con",
   assignedTo: "Được giao cho {{name}}",
   assignedToMore: "Được giao cho {{name}} và {{count}} người khác",
-  priority: {
-    urgent: "Ưu tiên khẩn cấp",
-    high: "Ưu tiên cao",
-  },
-  status: {
-    notStarted: "Chưa bắt đầu",
-    working: "Đang thực hiện",
-    stuck: "Bị kẹt",
-    done: "Hoàn tất",
-    completed: "Đã hoàn thành",
-  },
-  checklist: "Đã xong {{done}} trên {{total}} mục kiểm tra",
-  // Vietnamese has no singular/plural distinction; both forms stay complete.
-  comments_one: "{{count}} bình luận",
-  comments_other: "{{count}} bình luận",
-  attachments_one: "{{count}} tệp đính kèm",
-  attachments_other: "{{count}} tệp đính kèm",
 };
 
 export function kanbanCardCopy(locale: "vi" | "en"): KanbanCardCopy {
