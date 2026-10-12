@@ -39,20 +39,14 @@ import type {
 import { defineMockOperation } from "../../operations/types";
 import { ok, notFound } from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
+import type { MockCardRecord } from "../../state/records";
+import { projectItemReadValues } from "./boards.handlers";
 
-function projectCardDto(
-  c: {
-    id: string;
-    boardId: string;
-    listId: string;
-    title: string;
-    description?: string;
-    position: number;
-    createdAt: string;
-    updatedAt: string;
-  },
-  store: MockStore,
-): CardDtoApi {
+/**
+ * The item detail: the hand-written fields plus the generated item read
+ * values (`name`, key, Status/priority option ids, dates, child progress).
+ */
+function projectCardDto(c: MockCardRecord, store: MockStore): CardDtoApi {
   const board = store.getBoard(c.boardId);
   const labels = store.getCardLabels(c.id).map((l) => ({
     labelId: l.id,
@@ -75,6 +69,7 @@ function projectCardDto(
   }));
   const comments = store.getCardComments(c.id);
   const fieldValues = store.getFieldValues(c.id);
+  const { completedAt, ...readValues } = projectItemReadValues(c, store);
 
   return {
     id: c.id,
@@ -86,9 +81,9 @@ function projectCardDto(
     linkedPageId: null,
     priority: null,
     status: "todo",
-    dueDate: null,
-    startDate: null,
-    completedAt: null,
+    dueDate: c.dueAt ?? null,
+    startDate: c.startedAt ?? null,
+    completedAt,
     cover: null,
     position: c.position,
     members: [],
@@ -99,6 +94,8 @@ function projectCardDto(
     fieldValues: Object.keys(fieldValues).length > 0 ? fieldValues : null,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt ?? null,
+    ...{ name: c.title, groupId: c.listId },
+    ...readValues,
   };
 }
 

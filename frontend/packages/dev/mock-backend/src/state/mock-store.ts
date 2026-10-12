@@ -31,6 +31,9 @@ import type {
   MockBlockRecord,
   MockPageCommentRecord,
   MockPageHistoryRecord,
+  MockBoardMemberRecord,
+  MockBoardGrantRecord,
+  MockBoardAudienceRecord,
 } from "./records";
 import { mockIds } from "./mock-ids";
 import type { MockBackendConfig, MockPersona } from "../config/mock-config";
@@ -39,6 +42,27 @@ import { createMockClock, type MockClock } from "./clock";
 import { createFactories, type MockFactories } from "./factories";
 import { MOCK_DATASET_CARDINALITIES } from "./mock-dataset.manifest";
 import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
+import {
+  defaultStatusOptions,
+  ERP_AUDIENCE,
+  ERP_BOARD_MEMBERS,
+  ERP_COMMENTER,
+  ERP_ITEMS,
+  ERP_LABELS,
+  ERP_LIST_ID,
+  ERP_OWNER_COLUMN_ID,
+  ERP_PEOPLE,
+  ERP_PRIORITY_COLUMN_ID,
+  ERP_PRIORITY_OPTIONS,
+  ERP_STATUS_COLUMN_ID,
+  ERP_STATUS_OPTIONS,
+  erpAssigneeId,
+  erpItemId,
+  erpLabelId,
+  erpPriorityOptionId,
+  erpStatusOptionId,
+  hanoiInstant,
+} from "./mock-erp-board";
 
 export class MockSeedInvariantError extends Error {
   constructor(message: string) {
@@ -139,6 +163,12 @@ export class MockStore {
   private archivedWorkspaceIds = new Set<string>();
   /** Items completed through `WorkManagement.BoardItems.Complete`. */
   private completedCardIds = new Set<string>();
+  /** Board members (`/full` members), keyed by board. */
+  private boardMembersByBoardId = new Map<string, MockBoardMemberRecord[]>();
+  /** Explicit board access entries, keyed by board. */
+  private boardGrantsByBoardId = new Map<string, MockBoardGrantRecord[]>();
+  /** Seeded board audiences for the access read, keyed by board. */
+  private boardAudienceByBoardId = new Map<string, MockBoardAudienceRecord>();
 
   // Secondary indexes (Plan: 03-MOCK-DATA-MODEL.md §Store structure)
   private membershipIdsByWorkspaceId = new Map<string, Set<string>>();
@@ -249,10 +279,25 @@ export class MockStore {
         : "https://api.dicebear.com/7.x/avataaars/svg?seed=viewer",
     });
 
-    const actors = [owner, admin, member, viewer];
+    // Đỗ Khánh Linh (persona `commenter`): a workspace member only in her own
+    // world, so the other personas' member lists stay as they are.
+    const commenter = this.factories.user(4, {
+      id: ERP_COMMENTER.id,
+      email: ERP_COMMENTER.email,
+      name: ERP_COMMENTER.name,
+      avatarUrl: null,
+    });
+
+    const actors = [owner, admin, member, viewer, commenter];
 
     if (this.config.state === "new-user") {
-      const pMap: Record<string, any> = { owner, admin, member, viewer };
+      const pMap: Record<string, any> = {
+        owner,
+        admin,
+        member,
+        viewer,
+        commenter,
+      };
       const u = pMap[this.config.persona] || owner;
       this.insertUser(u);
       this.userPreferencesByUserId.set(u.id, {
@@ -318,6 +363,11 @@ export class MockStore {
         this.insertMembership(
           this.factories.membership(3, id, viewer.id, { role: "guest" }),
         );
+        if (this.config.persona === "commenter") {
+          this.insertMembership(
+            this.factories.membership(4, id, commenter.id, { role: "member" }),
+          );
+        }
       } else {
         this.insertMembership(
           this.factories.membership(w * 10, id, owner.id, { role: "owner" }),
@@ -391,6 +441,7 @@ export class MockStore {
           name: "Status",
           fieldType: "status",
           position: 1,
+          options: defaultStatusOptions("mock-status"),
         });
         this.insertColumn({
           id: "col-0002",
@@ -506,6 +557,9 @@ export class MockStore {
         }
       }
     }
+
+    this.seedRoadmapStatuses();
+    this.seedErpBoard(primaryWsId);
 
     // Extras for card-main-0001
     if (this.cardsById.has("card-main-0001")) {
@@ -662,6 +716,160 @@ export class MockStore {
     });
   }
 
+  /**
+   * The roadmap's Status values follow its groups: To Do → Cần làm,
+   * In Progress → Đang làm, Done → Hoàn thành, any other group → Chờ duyệt.
+   * Items created later have no status until one is set.
+   */
+  private seedRoadmapStatuses(): void {
+    const statusByList: Record<string, string> = {
+      "list-todo": "mock-status-todo",
+      "list-inprogress": "mock-status-doing",
+      "list-done": "mock-status-done",
+    };
+    for (const list of this.getLists(mockIds.boards.roadmap)) {
+      const optionId = statusByList[list.id] ?? "mock-status-review";
+      for (const card of this.getCards(list.id)) {
+        this.updateFieldValue(card.id, "col-0001", optionId);
+      }
+    }
+  }
+
+  /**
+   * The ERP board of the 2026-10 mockups (see `mock-erp-board.ts`), placed
+   * in the Engineering Space, viewed as a Kanban.
+   */
+  private seedErpBoard(workspaceId: string): void {
+    const boardId = mockIds.boards.erp;
+    for (const person of Object.values(ERP_PEOPLE)) {
+      if (!this.usersById.has(person.id)) {
+        this.insertUser({
+          id: person.id,
+          email: person.email,
+          name: person.name,
+          avatarUrl: null,
+        });
+      }
+    }
+    this.insertBoard({
+      id: boardId,
+      workspaceId,
+      title: "Triển khai ERP Q4",
+      description: "Đưa ERP vào vận hành trước ngày 01/11/2026.",
+      background: { type: "color", value: "#1E6FD0" },
+      visibility: "workspace",
+      isArchived: false,
+      createdAt: "2026-09-15T02:00:00.000Z",
+      updatedAt: "2026-10-12T03:28:00.000Z",
+      spaceId: mockIds.spaces.engineering,
+      version: 1,
+      itemKeyPrefix: "ERP",
+    });
+    this.boardViewsByBoardId.set(boardId, {
+      boardId,
+      viewMode: "kanban",
+      viewConfig: "{}",
+    });
+    this.insertColumn({
+      id: ERP_STATUS_COLUMN_ID,
+      boardId,
+      name: "Trạng thái",
+      fieldType: "status",
+      position: 1,
+      options: ERP_STATUS_OPTIONS.map((option) => ({ ...option })),
+    });
+    this.insertColumn({
+      id: ERP_PRIORITY_COLUMN_ID,
+      boardId,
+      name: "Ưu tiên",
+      fieldType: "select",
+      position: 2,
+      options: ERP_PRIORITY_OPTIONS.map((option) => ({ ...option })),
+    });
+    this.insertColumn({
+      id: ERP_OWNER_COLUMN_ID,
+      boardId,
+      name: "Người thực hiện",
+      fieldType: "user",
+      position: 3,
+    });
+    for (const label of ERP_LABELS) this.insertLabel({ ...label });
+    this.insertList({
+      id: ERP_LIST_ID,
+      boardId,
+      title: "Kế hoạch triển khai",
+      color: "#1E6FD0",
+      position: 1,
+      isCollapsed: false,
+    });
+    ERP_ITEMS.forEach((item, index) => {
+      const id = erpItemId(item.key);
+      this.insertCard({
+        id,
+        boardId,
+        listId: ERP_LIST_ID,
+        title: item.title,
+        position: index + 1,
+        createdAt: "2026-09-21T02:00:00.000Z",
+        updatedAt: "2026-10-12T01:40:00.000Z",
+        itemKey: item.key,
+        parentItemId: null,
+        dueAt: item.due ? hanoiInstant(item.due) : null,
+        startedAt: item.start ? hanoiInstant(item.start, 9) : null,
+        completedAt: item.completed ? hanoiInstant(item.completed, 16) : null,
+        assigneeUserIds: item.assignee ? [erpAssigneeId(item.assignee)] : [],
+        childProgress: item.children ? { ...item.children } : null,
+      });
+      this.updateFieldValue(
+        id,
+        ERP_STATUS_COLUMN_ID,
+        erpStatusOptionId(item.status),
+      );
+      this.updateFieldValue(
+        id,
+        ERP_PRIORITY_COLUMN_ID,
+        erpPriorityOptionId(item.priority),
+      );
+      this.addIndex(this.labelIdsByCardId, id, erpLabelId(item.label));
+    });
+    this.boardMembersByBoardId.set(
+      boardId,
+      ERP_BOARD_MEMBERS.map((member) => ({ ...member })),
+    );
+    this.boardGrantsByBoardId.set(boardId, [
+      {
+        boardId,
+        userId: ERP_COMMENTER.id,
+        level: "commenter",
+        grantedByUserId: ERP_PEOPLE.HP.id,
+      },
+    ]);
+    this.boardAudienceByBoardId.set(boardId, {
+      ...ERP_AUDIENCE,
+      sources: ERP_AUDIENCE.sources.map((source) => ({ ...source })),
+    });
+  }
+
+  /** Members of a board, in seeded order. */
+  getBoardMembers(boardId: string): MockBoardMemberRecord[] {
+    return [...(this.boardMembersByBoardId.get(boardId) ?? [])];
+  }
+
+  /** The explicit access entry of a user on a board, when there is one. */
+  getBoardGrant(
+    boardId: string,
+    userId: string,
+  ): MockBoardGrantRecord | undefined {
+    return this.boardGrantsByBoardId
+      .get(boardId)
+      ?.find((grant) => grant.userId === userId);
+  }
+
+  /** The seeded audience of a board, when the world defines one. */
+  getBoardAudience(boardId: string): MockBoardAudienceRecord | undefined {
+    return this.boardAudienceByBoardId.get(boardId);
+  }
+
   /** The current member as a Space access subject. */
   spaceViewer(workspaceId: string): MockSpaceViewer {
     return {
@@ -798,6 +1006,9 @@ export class MockStore {
     this.workspaceVersionById.clear();
     this.workspaceDescriptionById.clear();
     this.archivedWorkspaceIds.clear();
+    this.boardMembersByBoardId.clear();
+    this.boardGrantsByBoardId.clear();
+    this.boardAudienceByBoardId.clear();
     this.spaces.clear();
 
     this.membershipIdsByWorkspaceId.clear();
@@ -940,6 +1151,7 @@ export class MockStore {
       admin: mockIds.users.admin,
       member: mockIds.users.member,
       viewer: mockIds.users.viewer,
+      commenter: mockIds.users.commenter,
     };
     const targetId = personaMap[this.config.persona] ?? mockIds.users.owner;
     const user = this.usersById.get(targetId);
@@ -1397,6 +1609,8 @@ export class MockStore {
       createdAt: this.clock.isoNow(),
       updatedAt: this.clock.isoNow(),
     };
+    const itemKey = this.nextItemKey(boardId);
+    if (itemKey) card.itemKey = itemKey;
     this.insertCard(card);
     return card;
   }
@@ -2213,6 +2427,28 @@ export class MockStore {
     return this.cardsById.get(id);
   }
 
+  /** Child items of an item (never top-level cards of a group). */
+  getChildCards(parentItemId: string): MockCardRecord[] {
+    return Array.from(this.cardsById.values())
+      .filter((card) => card.parentItemId === parentItemId)
+      .sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
+  }
+
+  /** Next item key of a board with a key prefix ("ERP-154"); else none. */
+  private nextItemKey(boardId: string): string | null {
+    const prefix = this.boardsById.get(boardId)?.itemKeyPrefix;
+    if (!prefix) return null;
+    let highest = 0;
+    for (const card of this.cardsById.values()) {
+      if (card.boardId !== boardId || !card.itemKey) continue;
+      const number = Number(
+        card.itemKey.slice(card.itemKey.lastIndexOf("-") + 1),
+      );
+      if (Number.isFinite(number)) highest = Math.max(highest, number);
+    }
+    return `${prefix}-${highest + 1}`;
+  }
+
   getNotifications(userId: string): MockNotificationRecord[] {
     const ids = this.notificationIdsByUserId.get(userId);
     if (!ids) return [];
@@ -2595,6 +2831,9 @@ export class MockStore {
       blocks: Array.from(this.blocksById.values()),
       pageComments: Array.from(this.pageCommentsById.values()),
       pageHistory: Array.from(this.pageHistoryById.values()),
+      boardMembers: Array.from(this.boardMembersByBoardId.values()).flat(),
+      boardGrants: Array.from(this.boardGrantsByBoardId.values()).flat(),
+      boardAudiences: Array.from(this.boardAudienceByBoardId.values()),
       ...this.spaces.snapshot(),
     };
   }

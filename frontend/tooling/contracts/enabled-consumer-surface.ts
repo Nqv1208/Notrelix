@@ -826,6 +826,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "WorkManagement",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createBoardAccessApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-access.api.ts",
+    capability: "WorkManagement.Boards.GetAccess",
+    operationId: "WorkManagement.Boards.GetAccess",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "useMoveBoardToSpace",
     consumerFile:
       "frontend/apps/web/src/shell/workspace/board-placement-bridge.ts",

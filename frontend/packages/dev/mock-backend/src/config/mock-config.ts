@@ -22,7 +22,7 @@ export class MockConfigurationError extends Error {
 
 // ─── Dimension types ──────────────────────────────────────────────────────────
 
-export type MockPersona = "owner" | "admin" | "member" | "viewer";
+export type MockPersona = "owner" | "admin" | "member" | "viewer" | "commenter";
 
 export type MockBusinessState =
   | "default"
@@ -148,7 +148,13 @@ export function applyPreset(
 
 // ─── Env variable parsing (Plan: 05-SCENARIOS-DENSITY-FAULTS.md §Env parsing) ─
 
-const VALID_PERSONAS = new Set<string>(["owner", "admin", "member", "viewer"]);
+const VALID_PERSONAS = new Set<string>([
+  "owner",
+  "admin",
+  "member",
+  "viewer",
+  "commenter",
+]);
 const VALID_STATES = new Set<string>([
   "default",
   "new-user",

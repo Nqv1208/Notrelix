@@ -52,6 +52,8 @@ export interface MockBoardRecord {
   spaceId?: string | null;
   /** Board aggregate version (move-to-space `expectedVersion`). */
   version?: number;
+  /** Item key prefix ("ERP" gives "ERP-142"); absent = plain numbers. */
+  itemKeyPrefix?: string | null;
 }
 
 export interface MockListRecord {
@@ -72,6 +74,17 @@ export interface MockCardRecord {
   position: number;
   createdAt: string;
   updatedAt: string;
+  /** Board item key ("ERP-142"); absent on cards seeded without one. */
+  itemKey?: string | null;
+  /** Parent item; a child item is never a top-level card of a group. */
+  parentItemId?: string | null;
+  dueAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  /** Assigned people (user ids), shown as the item's members. */
+  assigneeUserIds?: string[];
+  /** Child progress of an item whose children are not seeded as cards. */
+  childProgress?: { done: number; total: number } | null;
 }
 
 export interface MockPageRecord {
@@ -104,6 +117,16 @@ export interface MockBoardViewRecord {
   filters?: string;
 }
 
+/** An option of a Status or Select field; Status options carry a category. */
+export interface MockFieldOptionRecord {
+  id: string;
+  name: string;
+  color: string;
+  /** Fractional-index ordering key. */
+  position: string;
+  category?: "todo" | "in_progress" | "review" | "done";
+}
+
 export interface MockColumnRecord {
   id: string;
   boardId: string;
@@ -112,6 +135,39 @@ export interface MockColumnRecord {
   settings?: string;
   position: number;
   isHidden?: boolean;
+  /** Options of a Status or Select field, in position order. */
+  options?: MockFieldOptionRecord[];
+}
+
+/** A board member (`WorkManagement.Boards.GetMembers` / `/full` members). */
+export interface MockBoardMemberRecord {
+  boardId: string;
+  userId: string;
+  role: "Owner" | "Admin" | "Member" | "Observer" | "Guest";
+  joinedAt: string;
+}
+
+/** An explicit board access entry for one user (Governance grant). */
+export interface MockBoardGrantRecord {
+  boardId: string;
+  userId: string;
+  level: "viewer" | "commenter" | "editor" | "manager";
+  grantedByUserId: string;
+}
+
+/**
+ * The board's audience as the access read reports it. The mock cannot
+ * enumerate who reaches a board, so the summary is seeded data.
+ */
+export interface MockBoardAudienceRecord {
+  boardId: string;
+  sources: {
+    kind: "space" | "team" | "user" | "guest";
+    id: string | null;
+    name: string | null;
+    count: number;
+  }[];
+  guestCount: number;
 }
 
 export interface MockLabelRecord {
