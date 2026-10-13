@@ -31,6 +31,7 @@ import {
   markTones,
   neutrals,
   priorityHigh,
+  statusChipTones,
   railTones,
   statuses,
   workStatusLanes,
@@ -136,6 +137,11 @@ export function buildAppearanceColors(
     "surface-panel": nr.panel,
     "surface-raised": nr.raised,
 
+    // Inverse surface (bulk bar over a table)
+    "inverse-surface": nr.inverse,
+    "inverse-foreground": nr.onInverse,
+    "inverse-danger": nr.inverseDanger,
+
     // Text and icon
     "meta-foreground": nr.textMeta,
     line: nr.line,
@@ -157,8 +163,8 @@ export function buildAppearanceColors(
     "table-bg": nr.panel,
     "table-row": nr.panel,
     "table-row-hover": nr.hover,
-    "table-header": nr.subtle,
-    "table-group": nr.subtle,
+    "table-header": nr.groupFill,
+    "table-group": nr.groupFill,
     "badge-default-bg": nr.subtle,
     "badge-default-text": nr.textMuted,
     "badge-low-bg": nr.subtle,
@@ -189,6 +195,13 @@ export function buildAppearanceColors(
     roles[`work-status-${id}-text`] = workStatuses[id][appearance].text;
     roles[`work-status-${id}-lane`] = workStatusLanes[id][appearance];
   }
+
+  const chip = statusChipTones[appearance];
+  roles["status-chip-todo"] = chip.todo;
+  roles["status-chip-doing"] = chip.doing;
+  roles["status-chip-review"] = chip.review;
+  roles["status-chip-done"] = chip.done;
+  roles["status-dot-review"] = chip.reviewDot;
 
   for (const id of LABEL_TONE_IDS) {
     roles[`label-${id}`] = labelTones[id][appearance].fill;

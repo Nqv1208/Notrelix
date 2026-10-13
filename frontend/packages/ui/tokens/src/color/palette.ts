@@ -74,6 +74,14 @@ export interface NeutralRoles {
   readonly onFill: Oklch;
   /** Dark text placed on light fills. */
   readonly onLightFill: Oklch;
+  /** Header and group bands of a data table (the mockup `--grp`). */
+  readonly groupFill: Oklch;
+  /** Inverse surface: the bulk bar over a table, dark in light mode. */
+  readonly inverse: Oklch;
+  /** Text and icons on the inverse surface. */
+  readonly onInverse: Oklch;
+  /** Danger text on the inverse surface. */
+  readonly inverseDanger: Oklch;
 }
 
 const n = (l: number, c: number) => tone(l, c, NEUTRAL_HUE);
@@ -107,6 +115,10 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     textDisabled: n(0.66, 0.006),
     onFill: n(0.99, 0.002),
     onLightFill: n(0.2, 0.01),
+    groupFill: n(0.97, 0.005), // #F3F5F8
+    inverse: oklch(0.217, 0.015, 261.6), // #161A21
+    onInverse: n(0.967, 0.005), // #F2F4F7
+    inverseDanger: oklch(0.794, 0.121, 10), // #FF9AAA
   },
   dark: {
     canvas: n(0.177, 0.011), // #0E1116
@@ -128,6 +140,10 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     textDisabled: n(0.5, 0.008),
     onFill: n(0.99, 0.002),
     onLightFill: n(0.18, 0.01),
+    groupFill: n(0.202, 0.014), // #12171D
+    inverse: n(0.314, 0.023), // #2A323D
+    onInverse: n(0.967, 0.005), // #F2F4F7
+    inverseDanger: oklch(0.794, 0.121, 10), // #FF9AAA
   },
   "high-contrast": {
     canvas: n(1, 0),
@@ -149,6 +165,10 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     textDisabled: n(0.5, 0.008),
     onFill: n(1, 0),
     onLightFill: n(0.13, 0.01),
+    groupFill: n(0.95, 0.004),
+    inverse: n(0.13, 0.01),
+    onInverse: n(1, 0),
+    inverseDanger: oklch(0.794, 0.121, 10),
   },
 };
 
@@ -546,6 +566,44 @@ export const workStatusLanes: Record<
   }
   return lanes;
 })();
+
+// ─── Status chips ────────────────────────────────────────────────────────
+
+/**
+ * Status chip fills: the pill behind a status name in a table row, and the
+ * Chờ duyệt dot (Final-Table `--lane-*` and `#D99A00`; the Board lane tints
+ * above are the Kanban's own, slightly different values). On the CSS emit
+ * grid so they render the mockup hex; dark is the mockup dark lane set; high
+ * contrast reuses the light values.
+ */
+export interface StatusChipTones {
+  readonly todo: Oklch;
+  readonly doing: Oklch;
+  readonly review: Oklch;
+  readonly done: Oklch;
+  /** Chờ duyệt dot. */
+  readonly reviewDot: Oklch;
+}
+
+const statusChipLight: StatusChipTones = {
+  todo: oklch(0.949, 0.006, 264.5), // #ECEEF2
+  doing: oklch(0.94, 0.022, 256.7), // #E2ECFA
+  review: oklch(0.957, 0.036, 87.8), // #FBF0D6
+  done: oklch(0.944, 0.021, 156.8), // #E2F1E7
+  reviewDot: oklch(0.728, 0.151, 79.4), // #D99A00
+};
+
+export const statusChipTones: Record<ThemeAppearance, StatusChipTones> = {
+  light: statusChipLight,
+  dark: {
+    todo: oklch(0.262, 0.021, 257.3), // #1E252F
+    doing: oklch(0.281, 0.067, 262), // #16284A
+    review: oklch(0.282, 0.027, 81.2), // #30281A
+    done: oklch(0.284, 0.04, 163.2), // #153024
+    reviewDot: oklch(0.834, 0.141, 85.4), // #F2C14E
+  },
+  "high-contrast": statusChipLight,
+};
 
 // ─── Label tones ─────────────────────────────────────────────────────────
 

@@ -408,6 +408,9 @@
   --info-subtle-foreground: oklch(0.42 0.09 238);
   --info-text: oklch(0.5 0.108 238);
   --input: oklch(0.87 0.008 255);
+  --inverse-danger: oklch(0.794 0.121 10);
+  --inverse-foreground: oklch(0.967 0.005 255);
+  --inverse-surface: oklch(0.217 0.015 261.6);
   --keycap: oklch(0.954 0.005 255);
   --label-data: oklch(0.944 0.023 250.1);
   --label-data-foreground: oklch(0.419 0.124 255.1);
@@ -463,6 +466,11 @@
   --state-disabled-foreground: oklch(0.66 0.006 255);
   --state-hover: oklch(0.964 0.005 255);
   --state-hover-strong: oklch(0.933 0.007 255);
+  --status-chip-doing: oklch(0.94 0.022 256.7);
+  --status-chip-done: oklch(0.944 0.021 156.8);
+  --status-chip-review: oklch(0.957 0.036 87.8);
+  --status-chip-todo: oklch(0.949 0.006 264.5);
+  --status-dot-review: oklch(0.728 0.151 79.4);
   --success: oklch(0.48 0.128 150);
   --success-foreground: oklch(0.99 0.002 255);
   --success-subtle: oklch(0.955 0.035 150);
@@ -473,8 +481,8 @@
   --surface-raised: oklch(1 0 255);
   --surface-sidebar: oklch(0.957 0.005 255);
   --table-bg: oklch(0.997 0.001 255);
-  --table-group: oklch(0.964 0.005 255);
-  --table-header: oklch(0.964 0.005 255);
+  --table-group: oklch(0.97 0.005 255);
+  --table-header: oklch(0.97 0.005 255);
   --table-row: oklch(0.997 0.001 255);
   --table-row-hover: oklch(0.964 0.005 255);
   --text-muted: oklch(0.458 0.026 259.2);
@@ -521,6 +529,7 @@
   --elevation-card: 0 1px 2px 0 oklch(0.217 0.022 260.5 / 0.08);
   --elevation-card-hover: 0 3px 10px 0 oklch(0.217 0.022 260.5 / 0.12);
   --elevation-sheet: -18px 0 40px 0 oklch(0.208 0.04 265.8 / 0.14);
+  --elevation-bar: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.3);
 }
 
 .dark {
@@ -577,6 +586,9 @@
   --info-subtle-foreground: oklch(0.83 0.094 238);
   --info-text: oklch(0.76 0.13 238);
   --input: oklch(0.36 0.01 255);
+  --inverse-danger: oklch(0.794 0.121 10);
+  --inverse-foreground: oklch(0.967 0.005 255);
+  --inverse-surface: oklch(0.314 0.023 255);
   --keycap: oklch(0.284 0.022 255);
   --label-data: oklch(0.306 0.065 254.1);
   --label-data-foreground: oklch(0.819 0.085 252);
@@ -632,6 +644,11 @@
   --state-disabled-foreground: oklch(0.5 0.008 255);
   --state-hover: oklch(0.253 0.02 255);
   --state-hover-strong: oklch(0.283 0.021 255);
+  --status-chip-doing: oklch(0.281 0.067 262);
+  --status-chip-done: oklch(0.284 0.04 163.2);
+  --status-chip-review: oklch(0.282 0.027 81.2);
+  --status-chip-todo: oklch(0.262 0.021 257.3);
+  --status-dot-review: oklch(0.834 0.141 85.4);
   --success: oklch(0.72 0.14 150);
   --success-foreground: oklch(0.18 0.01 255);
   --success-subtle: oklch(0.29 0.05 150);
@@ -642,8 +659,8 @@
   --surface-raised: oklch(0.235 0.009 255);
   --surface-sidebar: oklch(0.207 0.014 255);
   --table-bg: oklch(0.216 0.016 255);
-  --table-group: oklch(0.253 0.02 255);
-  --table-header: oklch(0.253 0.02 255);
+  --table-group: oklch(0.202 0.014 255);
+  --table-header: oklch(0.202 0.014 255);
   --table-row: oklch(0.216 0.016 255);
   --table-row-hover: oklch(0.253 0.02 255);
   --text-muted: oklch(0.764 0.021 255);
@@ -690,6 +707,7 @@
   --elevation-card: 0 1px 2px 0 oklch(0 0 0 / 0.4);
   --elevation-card-hover: 0 3px 10px 0 oklch(0 0 0 / 0.5);
   --elevation-sheet: -18px 0 40px 0 oklch(0 0 0 / 0.5);
+  --elevation-bar: 0 12px 32px 0 oklch(0 0 0 / 0.5);
 }
 
 [data-contrast="high"] {
@@ -746,6 +764,9 @@
   --info-subtle-foreground: oklch(0.35 0.075 238);
   --info-text: oklch(0.4 0.086 238);
   --input: oklch(0.4 0.01 255);
+  --inverse-danger: oklch(0.794 0.121 10);
+  --inverse-foreground: oklch(1 0 255);
+  --inverse-surface: oklch(0.13 0.01 255);
   --keycap: oklch(0.92 0.006 255);
   --label-data: oklch(0.944 0.023 250.1);
   --label-data-foreground: oklch(0.419 0.124 255.1);
@@ -801,6 +822,11 @@
   --state-disabled-foreground: oklch(0.5 0.008 255);
   --state-hover: oklch(0.92 0.006 255);
   --state-hover-strong: oklch(0.92 0.006 255);
+  --status-chip-doing: oklch(0.94 0.022 256.7);
+  --status-chip-done: oklch(0.944 0.021 156.8);
+  --status-chip-review: oklch(0.957 0.036 87.8);
+  --status-chip-todo: oklch(0.949 0.006 264.5);
+  --status-dot-review: oklch(0.728 0.151 79.4);
   --success: oklch(0.38 0.102 150);
   --success-foreground: oklch(1 0 255);
   --success-subtle: oklch(0.93 0.04 150);
@@ -859,4 +885,5 @@
   --elevation-card: 0 1px 2px 0 oklch(0.217 0.022 260.5 / 0.08);
   --elevation-card-hover: 0 3px 10px 0 oklch(0.217 0.022 260.5 / 0.12);
   --elevation-sheet: -18px 0 40px 0 oklch(0.208 0.04 265.8 / 0.14);
+  --elevation-bar: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.3);
 }

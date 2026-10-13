@@ -200,6 +200,16 @@
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-keycap: var(--keycap);
+  --color-status-chip-todo: var(--status-chip-todo);
+  --color-status-chip-doing: var(--status-chip-doing);
+  --color-status-chip-review: var(--status-chip-review);
+  --color-status-chip-done: var(--status-chip-done);
+  --color-status-dot-review: var(--status-dot-review);
+  --color-inverse-surface: var(--inverse-surface);
+  --color-inverse-foreground: var(--inverse-foreground);
+  --color-inverse-danger: var(--inverse-danger);
+  /* Selected table row: the accent soft tone, one step lighter (Final-Table --sel-row). */
+  --color-row-selected: color-mix(in oklab, var(--state-selected) 70%, var(--surface-panel));
 
   /* State set. */
   --color-state-hover: var(--state-hover);
@@ -333,6 +343,7 @@
   --shadow-card: var(--elevation-card);
   --shadow-card-hover: var(--elevation-card-hover);
   --shadow-sheet: var(--elevation-sheet);
+  --shadow-bar: var(--elevation-bar);
 
   /* Motion: 150–200 ms, ease-out; collapses under reduced motion. */
   --ease-out: var(--motion-ease-out);
