@@ -19,11 +19,25 @@ export function createCommentApi(
       pageId: string,
       payload: CreateCommentPayload,
     ): Promise<PageComment> {
-      const comment = await api.post<CommentDtoApi>(
+      // `Collaboration.Comments.CreatePageComment` takes `contentMd`.
+      const created = await api.post<CommentDtoApi | string>(
         endpoints.pages.comments(pageId),
-        payload,
+        { contentMd: payload.body },
       );
-      return mapComment(comment, pageId);
+      const now = new Date().toISOString();
+      return typeof created === "string"
+        ? {
+            id: created,
+            pageId,
+            blockId: payload.blockId ?? null,
+            authorId: "",
+            body: payload.body,
+            mentionIds: payload.mentionIds ?? [],
+            resolved: false,
+            createdAt: now,
+            updatedAt: now,
+          }
+        : mapComment(created, pageId);
     },
 
     async delete(commentId: string): Promise<void> {

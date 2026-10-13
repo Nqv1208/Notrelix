@@ -12,6 +12,7 @@ export function mapPage(dto: PageDtoApi): Page {
     coverColor: "var(--muted)",
     parentId: dto.parentId ?? null,
     position: dto.position,
+    deadline: dto.deadline ?? null,
     status: dto.isArchived
       ? "archived"
       : dto.publishedAt
@@ -51,13 +52,23 @@ export function mapBreadcrumb(dto: BreadcrumbDtoApi): BreadcrumbItem {
   };
 }
 
+function activityOf(action: string): PageActivity["action"] {
+  const name = action.toLowerCase();
+  if (name.includes("comment")) return "commented";
+  if (name.includes("share")) return "shared";
+  if (name.includes("move")) return "moved";
+  if (name.includes("publish")) return "published";
+  if (name.startsWith("create") && name.includes("page")) return "created";
+  return "edited";
+}
+
 export function mapHistory(dto: HistoryDtoApi, pageId: string): PageActivity {
   return {
     id: dto.id,
     pageId,
     actorId: dto.actorId,
-    action: "edited",
-    targetLabel: dto.resourceTitle ?? dto.action,
+    action: activityOf(dto.action),
+    targetLabel: dto.resourceTitle ?? "",
     createdAt: dto.createdAt,
   };
 }

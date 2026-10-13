@@ -24,6 +24,8 @@ export interface Page {
   coverColor: string;
   parentId: ID | null;
   position: number;
+  /** Date the document takes effect (`PageDto.deadline`), when set. */
+  deadline: string | null;
   status: PageStatus;
   isPublished: boolean;
   isFavorited: boolean;
