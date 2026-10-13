@@ -33,7 +33,13 @@ function members(count: number) {
 
 function renderCard(
   overrides: Partial<Card> = {},
-  props: { copy?: KanbanCardCopy; selected?: boolean; timeZone?: string; now?: Date } = {},
+  props: {
+    copy?: KanbanCardCopy;
+    selected?: boolean;
+    timeZone?: string;
+    now?: Date;
+    dragDisabled?: boolean;
+  } = {},
 ) {
   const card = cardFixture({
     title: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
@@ -49,6 +55,7 @@ function renderCard(
           timeZone={props.timeZone}
           copy={props.copy ?? VI}
           selected={props.selected}
+          dragDisabled={props.dragDisabled}
           onOpenDetails={onOpenDetails}
         />
       </SortableContext>
@@ -105,6 +112,17 @@ describe("KanbanCard interactions", () => {
     fireEvent(article, pointerDown);
     expect(article.className).toContain("z-dropdown");
     expect(article.getAttribute("style") ?? "").not.toContain("z-index");
+  });
+
+  it("never starts a drag when dragging is disabled (read-only board)", () => {
+    const { article } = renderCard({}, { dragDisabled: true });
+    const pointerDown = new MouseEvent("pointerdown", {
+      bubbles: true,
+      button: 0,
+    });
+    Object.defineProperty(pointerDown, "isPrimary", { value: true });
+    fireEvent(article, pointerDown);
+    expect(article.className).not.toContain("z-dropdown");
   });
 
   it("has no grip, menu, status badge or count indicators", () => {
@@ -375,14 +393,14 @@ describe("KanbanCard due wording", () => {
     const now = new Date("2026-10-12T00:10:00+07:00");
     const dueAt = "2026-10-12T23:30:00+07:00";
     const local = renderCard({ dueAt }, { now, timeZone: "Asia/Ho_Chi_Minh" });
-    expect(local.article.querySelector("[data-due]")!.getAttribute("data-due")).toBe(
-      "today",
-    );
+    expect(
+      local.article.querySelector("[data-due]")!.getAttribute("data-due"),
+    ).toBe("today");
     local.unmount();
     const utc = renderCard({ dueAt }, { now, timeZone: "UTC" });
-    expect(utc.article.querySelector("[data-due]")!.getAttribute("data-due")).toBe(
-      "date",
-    );
+    expect(
+      utc.article.querySelector("[data-due]")!.getAttribute("data-due"),
+    ).toBe("date");
   });
 
   it("falls back to the legacy due date", () => {

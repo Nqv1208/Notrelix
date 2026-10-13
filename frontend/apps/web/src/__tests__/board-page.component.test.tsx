@@ -18,8 +18,15 @@ vi.mock("@notrelix/work-management-state", () => ({
   useFullBoard: () => ({ board: loadedBoard.current }),
 }));
 
+vi.mock("../shell/workspace/use-board-header-data", () => ({
+  useBoardHeaderData: () => ({}),
+}));
+
 vi.mock("@notrelix/work-management-web", () => ({
   BoardHeaderCopyContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+  },
+  BoardHeaderDataContext: {
     Provider: ({ children }: { children: React.ReactNode }) => children,
   },
   useBoardHeaderCopy: () => ({ untitledBoard: "Bảng chưa tải" }),
@@ -47,6 +54,8 @@ vi.mock("@notrelix/work-management-web", () => ({
     view,
     selectedItemId,
     onSelectedItemChange,
+    onFilterChange,
+    onGroupByChange,
   }: {
     view: { type: string };
     selectedItemId?: string;
@@ -54,8 +63,25 @@ vi.mock("@notrelix/work-management-web", () => ({
       id: string | undefined,
       options?: { replace?: boolean },
     ) => void;
+    onFilterChange: (
+      value: string | undefined,
+      options?: { replace?: boolean },
+    ) => void;
+    onGroupByChange: (fieldId: string) => void;
   }) => (
     <div>
+      <button type="button" onClick={() => onFilterChange("p.low~o")}>
+        filter low overdue
+      </button>
+      <button
+        type="button"
+        onClick={() => onFilterChange(undefined, { replace: true })}
+      >
+        clean filter
+      </button>
+      <button type="button" onClick={() => onGroupByChange("field-priority")}>
+        group by priority
+      </button>
       <p data-testid="view">{view.type}</p>
       <p data-testid="item">{selectedItemId ?? "none"}</p>
       <button type="button" onClick={() => onSelectedItemChange("card-1")}>
@@ -191,5 +217,37 @@ describe("BoardPage route search", () => {
     await vi.waitFor(() => expect(text("item")).toBe("none"));
     expect(history.length).toBe(before);
     expect(search()).toEqual({ view: "kanban", filter: "mine" });
+  });
+
+  it("a filter change pushes history and keeps the other parameters", async () => {
+    const { history, search } = await renderBoardPage(
+      `${BASE}?view=kanban&groupBy=status`,
+    );
+    const before = history.length;
+    await click("filter low overdue");
+    await vi.waitFor(() =>
+      expect(search()).toMatchObject({ filter: "p.low~o", groupBy: "status" }),
+    );
+    expect(history.length).toBe(before + 1);
+  });
+
+  it("the view's cleanup of a stale filter replaces history", async () => {
+    const { history, search } = await renderBoardPage(
+      `${BASE}?view=kanban&filter=mine&item=card-1`,
+    );
+    const before = history.length;
+    await click("clean filter");
+    await vi.waitFor(() =>
+      expect(search()).toEqual({ view: "kanban", item: "card-1" }),
+    );
+    expect(history.length).toBe(before);
+  });
+
+  it("Nhóm theo writes the groupBy parameter", async () => {
+    const { search } = await renderBoardPage(`${BASE}?view=kanban`);
+    await click("group by priority");
+    await vi.waitFor(() =>
+      expect(search()).toMatchObject({ groupBy: "field-priority" }),
+    );
   });
 });

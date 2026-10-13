@@ -38,12 +38,14 @@ import {
   TooltipTrigger,
   cn,
 } from "@notrelix/ui-web";
-import type {
-  Board,
-  CardDetail,
-  FieldDefinition,
-  UpdateCardInput,
-  UpdateFieldValueInput,
+import {
+  findPriorityField,
+  findStatusField,
+  type Board,
+  type CardDetail,
+  type FieldDefinition,
+  type UpdateCardInput,
+  type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
 import { ITEM_LABEL_TONE_CLASS, itemLabelTone } from "../shared/item-display";
 import { describeSheetDue, type SheetDueTone } from "./item-sheet-format";
@@ -101,14 +103,18 @@ const PRIORITY_CLASS: Readonly<Record<Priority, string>> = {
 const PILL_CLASS =
   "inline-flex h-7.5 max-w-full items-center gap-1.5 rounded-lg border border-border bg-popover px-2.5 text-sm font-medium text-foreground transition-colors hover:bg-state-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:hover:bg-popover";
 
-/** Board fields the sheet edits, found the same way as the table cells. */
+/**
+ * Board fields the sheet edits. Status and priority are resolved by their
+ * role on the board read (`findStatusField`, `findPriorityField`), which
+ * also accept the older fixture ids.
+ */
 function findFields(board: Board) {
   const fields = board.fieldDefinitions;
   const byId = (suffix: string) =>
     fields.find((field) => field.id.endsWith(suffix));
   return {
-    status: byId("field-status"),
-    priority: byId("field-priority"),
+    status: findStatusField(fields),
+    priority: findPriorityField(fields) ?? byId("field-priority"),
     person:
       fields.find((field) => field.fieldType === "person") ??
       byId("field-person"),

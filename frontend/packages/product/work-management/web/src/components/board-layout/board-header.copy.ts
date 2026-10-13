@@ -38,6 +38,13 @@ export const en = {
     peopleWithSources_one: "{{count}} person can open this board: {{sources}}",
     peopleWithSources_other:
       "{{count}} people can open this board: {{sources}}",
+    /** When the count is a lower bound (not every source could be counted). */
+    peopleAtLeast_one: "At least {{count}} person can open this board",
+    peopleAtLeast_other: "At least {{count}} people can open this board",
+    peopleAtLeastWithSources_one:
+      "At least {{count}} person can open this board: {{sources}}",
+    peopleAtLeastWithSources_other:
+      "At least {{count}} people can open this board: {{sources}}",
     sourceGroup_one: "{{count}} person in {{name}}",
     sourceGroup_other: "{{count}} people in {{name}}",
     sourceGroupUnnamed_one: "{{count}} other person",
@@ -90,6 +97,12 @@ export const vi: BoardHeaderCopy = {
     people_other: "{{count}} người vào được board",
     peopleWithSources_one: "{{count}} người vào được board: {{sources}}",
     peopleWithSources_other: "{{count}} người vào được board: {{sources}}",
+    peopleAtLeast_one: "Ít nhất {{count}} người vào được board",
+    peopleAtLeast_other: "Ít nhất {{count}} người vào được board",
+    peopleAtLeastWithSources_one:
+      "Ít nhất {{count}} người vào được board: {{sources}}",
+    peopleAtLeastWithSources_other:
+      "Ít nhất {{count}} người vào được board: {{sources}}",
     sourceGroup_one: "{{count}} người {{name}}",
     sourceGroup_other: "{{count}} người {{name}}",
     sourceGroupUnnamed_one: "{{count}} người khác",

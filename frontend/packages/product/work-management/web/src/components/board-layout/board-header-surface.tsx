@@ -45,13 +45,24 @@ export interface BoardHeaderAccess {
   readonly myLevel: BoardAccessLevel;
   readonly mySource: {
     readonly kind:
-      "owner" | "workspace-admin" | "space" | "team" | "explicit" | "guest";
+      | "owner"
+      | "workspace-admin"
+      | "workspace"
+      | "space"
+      | "team"
+      | "explicit"
+      | "guest";
     readonly grantedBy?: {
       readonly userId: string;
       readonly name: string;
     } | null;
   };
   readonly peopleCount: number;
+  /**
+   * False when `peopleCount` is a lower bound (sources the server could not
+   * count); the stack then says "at least". Absent means complete.
+   */
+  readonly peopleCountComplete?: boolean;
   readonly guestCount: number;
   readonly sources: readonly {
     readonly kind: "space" | "team" | "user" | "guest";
@@ -140,6 +151,7 @@ function joinList(parts: readonly string[], copy: BoardHeaderCopy): string {
  * The avatar stack's accessible name: the total and each source, e.g.
  * "32 người vào được board: 24 người Phòng Công nghệ, …, Đỗ Khánh Linh và 1
  * khách". A source the caller may not see by name is stated as a count.
+ * When the count is not complete the total reads "Ít nhất 32 người…".
  */
 export function boardAccessSentence(
   access: BoardHeaderAccess,
@@ -184,13 +196,23 @@ export function boardAccessSentence(
     }
   });
   const total = access.peopleCount;
+  const atLeast = access.peopleCountComplete === false;
   if (parts.length === 0) {
-    return fillBoardHeaderCopy(countForm(h.people_one, h.people_other, total), {
-      count: total,
-    });
+    return fillBoardHeaderCopy(
+      atLeast
+        ? countForm(h.peopleAtLeast_one, h.peopleAtLeast_other, total)
+        : countForm(h.people_one, h.people_other, total),
+      { count: total },
+    );
   }
   return fillBoardHeaderCopy(
-    countForm(h.peopleWithSources_one, h.peopleWithSources_other, total),
+    atLeast
+      ? countForm(
+          h.peopleAtLeastWithSources_one,
+          h.peopleAtLeastWithSources_other,
+          total,
+        )
+      : countForm(h.peopleWithSources_one, h.peopleWithSources_other, total),
     { count: total, sources: joinList(parts, copy) },
   );
 }

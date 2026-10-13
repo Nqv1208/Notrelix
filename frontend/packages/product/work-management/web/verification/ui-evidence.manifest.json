@@ -14,11 +14,6 @@
         "reason": "Container composing TaskDetailPanelSurface with card-detail state and actions."
       },
       {
-        "path": "src/components/views/kanban/kanban-filter-menu.tsx",
-        "category": "container",
-        "reason": "Unconsumed Kanban filter presentation menu with no registered consumer surface at this baseline; classified rather than silently registered."
-      },
-      {
         "path": "src/components/views/kanban/kanban-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning kanban board query state and composing registered board surfaces."
@@ -115,38 +110,35 @@
               "theme": "dark"
             }
           ]
+        },
+        {
+          "id": "work-management-board-layout-toolbar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
-        "delegated": [],
-        "notApplicable": [
+        "required": ["Default", "ReadOnly"],
+        "delegated": [
           {
             "state": "EdgeData",
-            "reason": "The toolbar renders a short board title and fixed action controls; long-text and Unicode edges are exercised by the data surfaces it composes.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the board toolbar at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "surfaceId": "wm.board-layout.header",
+            "targetState": "EdgeData"
           }
-        ]
+        ],
+        "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "filter",
-          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
-        },
-        {
           "id": "view",
-          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
-        },
-        {
-          "id": "search",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
         },
         {
@@ -164,6 +156,139 @@
         {
           "id": "dom-order",
           "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "header-context",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        },
+        {
+          "id": "untitled",
+          "testFile": "src/components/board-layout/__tests__/board-layout.interaction.component.test.tsx"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wm.board-layout.header",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/board-layout/board-header-surface.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-board-layout-header--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-layout-header--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-board-layout-header--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "ReadOnly", "EdgeData"],
+        "delegated": [],
+        "notApplicable": []
+      },
+      "responsive": true,
+      "themeAware": true,
+      "checks": ["interaction", "a11y", "visual", "purity"],
+      "interactionCases": [
+        {
+          "id": "title",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "crumb-modified-click",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "access-chip",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "avatar-stack",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "share-unavailable",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "share",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "settings",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "more-menu",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "commenter-banner",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "manager-no-banner",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-source",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "access-pending",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-space",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "sentence-counts",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "sentence-at-least",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
+        },
+        {
+          "id": "sentence-empty",
+          "testFile": "src/components/board-layout/__tests__/board-header.interaction.component.test.tsx"
         }
       ]
     },
@@ -336,7 +461,6 @@
       "pureEntry": "src/components/views/kanban/kanban-board.tsx",
       "coveredSources": [
         "src/components/views/kanban/kanban-add-card.tsx",
-        "src/components/views/kanban/kanban-add-column.tsx",
         "src/components/views/kanban/kanban-card-detail-panel.tsx",
         "src/components/views/kanban/kanban-empty-state.tsx"
       ],
@@ -392,10 +516,40 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-kanban-board--no-results",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-board--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-board--english",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
         "delegated": [
           {
             "state": "Loading",
@@ -411,12 +565,7 @@
         "notApplicable": [
           {
             "state": "PermissionLimited",
-            "reason": "No product-authoritative Kanban capability contract exists at this baseline.",
-            "authority": "docs/product/work-management.md"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative Kanban read-only contract exists at this baseline.",
+            "reason": "Board access gives one read-only presentation for commenters and viewers (no drag, no add), evidenced by ReadOnly; there is no partially permitted Kanban state.",
             "authority": "docs/product/work-management.md"
           }
         ]
@@ -430,6 +579,26 @@
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
         },
         {
+          "id": "show-more",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "lane-menu",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty-lane",
+          "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
+        },
+        {
           "id": "move",
           "testFile": "src/components/views/kanban/__tests__/kanban-board.interaction.component.test.tsx"
         }
@@ -440,7 +609,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "composition",
       "pureEntry": "src/components/views/kanban/kanban-column.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-column-menu.tsx"],
+      "coveredSources": [],
       "stories": [
         {
           "id": "work-management-kanban-column--default",
@@ -476,6 +645,16 @@
         },
         {
           "id": "work-management-kanban-column--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-column--collapsed",
           "state": "EdgeData",
           "visualTargets": [
             {
@@ -520,10 +699,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
       "pureEntry": "src/components/views/kanban/kanban-card.tsx",
-      "coveredSources": [
-        "src/components/views/kanban/kanban-card-menu.tsx",
-        "src/components/views/kanban/kanban-card.copy.ts"
-      ],
+      "coveredSources": ["src/components/views/kanban/kanban-card.copy.ts"],
       "stories": [
         {
           "id": "work-management-kanban-card--default",
@@ -573,6 +749,56 @@
         },
         {
           "id": "work-management-kanban-card--no-due-no-status",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--overdue-twelve-days",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--due-today",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--done",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--selected",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-card--english",
           "state": "EdgeData",
           "visualTargets": [
             {
@@ -633,7 +859,7 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/views/kanban/kanban-toolbar.tsx",
-      "coveredSources": ["src/components/views/kanban/kanban-sort-menu.tsx"],
+      "coveredSources": ["src/components/views/kanban/kanban-filter-menu.tsx"],
       "stories": [
         {
           "id": "work-management-kanban-toolbar--default",
@@ -656,23 +882,32 @@
               "theme": "dark"
             }
           ]
+        },
+        {
+          "id": "work-management-kanban-toolbar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-toolbar--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default"],
+        "required": ["Default", "ReadOnly", "EdgeData"],
         "delegated": [],
-        "notApplicable": [
-          {
-            "state": "EdgeData",
-            "reason": "Sort options are a fixed label set; there is no data-driven text edge to stress.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          },
-          {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the kanban toolbar at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
-          }
-        ]
+        "notApplicable": []
       },
       "responsive": true,
       "themeAware": true,
@@ -680,6 +915,26 @@
       "interactionCases": [
         {
           "id": "toolbar",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter-chip",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "group-by",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-results",
           "testFile": "src/components/views/kanban/__tests__/kanban-toolbar.interaction.component.test.tsx"
         }
       ]
@@ -1145,7 +1400,6 @@
         "src/components/card-detail/task-detail-empty-state.tsx",
         "src/components/card-detail/task-detail-header.tsx",
         "src/components/card-detail/task-detail-tabs.tsx",
-        "src/components/card-detail/task-files-tab.tsx",
         "src/components/card-detail/task-updates-tab.tsx",
         "src/components/card-detail/update-composer.tsx"
       ],
@@ -1260,6 +1514,30 @@
         },
         {
           "id": "readonly",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "focus-in",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "focus-return",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "escape",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "kj",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "head",
+          "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge",
           "testFile": "src/components/card-detail/__tests__/task-detail-panel-surface.interaction.component.test.tsx"
         }
       ]

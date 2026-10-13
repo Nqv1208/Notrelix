@@ -68,6 +68,7 @@ export function KanbanCard({
   timeZone,
   copy = defaultCopy,
   selected = false,
+  dragDisabled = false,
   onOpenDetails,
 }: {
   card: Card;
@@ -78,12 +79,15 @@ export function KanbanCard({
   copy?: KanbanCardCopy;
   /** The card whose item sheet is open. */
   selected?: boolean;
+  /** No pointer drag (a read-only board); the card still opens. */
+  dragDisabled?: boolean;
   onOpenDetails: (cardId: string) => void;
 }) {
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
       data: { type: "kanban-card", card },
+      disabled: dragDisabled,
     });
   // Pointer drag only: Enter and Space belong to opening the card.
   const onPointerDown = listeners?.onPointerDown as

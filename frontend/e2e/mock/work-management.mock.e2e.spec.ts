@@ -51,7 +51,12 @@ test.describe("Kanban item detail through the item search parameter", () => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
 
-    await page.goto(`${board}?view=kanban&filter=mine&sort=due&groupBy=status`);
+    // A real Kanban filter (every status of the board), so the view keeps it.
+    const filter =
+      "s.mock-status-todo.mock-status-doing.mock-status-review.mock-status-done";
+    await page.goto(
+      `${board}?view=kanban&filter=${filter}&sort=due&groupBy=status`,
+    );
     await page
       .getByRole("button", { name: "Ship mock runtime", exact: true })
       .click();
@@ -63,7 +68,7 @@ test.describe("Kanban item detail through the item search parameter", () => {
     const item = opened.searchParams.get("item");
     expect(item).toBeTruthy();
     expect(opened.searchParams.get("view")).toBe("kanban");
-    expect(opened.searchParams.get("filter")).toBe("mine");
+    expect(opened.searchParams.get("filter")).toBe(filter);
     expect(opened.searchParams.get("sort")).toBe("due");
     expect(opened.searchParams.get("groupBy")).toBe("status");
 
@@ -78,7 +83,7 @@ test.describe("Kanban item detail through the item search parameter", () => {
     const closed = new URL(page.url());
     expect(closed.searchParams.has("item")).toBe(false);
     expect(closed.searchParams.get("view")).toBe("kanban");
-    expect(closed.searchParams.get("filter")).toBe("mine");
+    expect(closed.searchParams.get("filter")).toBe(filter);
     expect(closed.searchParams.get("sort")).toBe("due");
     expect(closed.searchParams.get("groupBy")).toBe("status");
     // Focus returns to the card that opened the sheet.

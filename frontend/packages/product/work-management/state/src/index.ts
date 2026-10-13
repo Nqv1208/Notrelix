@@ -28,3 +28,6 @@ export * from "./hooks";
 
 // Cache helpers
 export * from "./cache";
+
+// Isolated state scope for component tests and stories
+export * from "./testing/work-management-test-scope";

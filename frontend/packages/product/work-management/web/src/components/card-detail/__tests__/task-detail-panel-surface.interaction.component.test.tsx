@@ -22,6 +22,10 @@ import {
   erpSheetMark,
 } from "../../../verification/item-sheet-fixtures";
 
+/** The interaction-case marker, once per case: on the Vietnamese run only. */
+const fui = (id: string, locale: string) =>
+  locale === "vi" ? `FUI[${id}] ` : "";
+
 type SurfaceProps = Parameters<typeof TaskDetailPanelSurface>[0];
 
 function callbacksMock(): SurfaceProps["callbacks"] {
@@ -69,7 +73,10 @@ function props(
   };
 }
 
-function renderSheet(copy: ItemSheetCopy, overrides: Partial<SurfaceProps> = {}) {
+function renderSheet(
+  copy: ItemSheetCopy,
+  overrides: Partial<SurfaceProps> = {},
+) {
   const sheetProps = props(copy, overrides);
   const view = renderPureUi(<TaskDetailPanelSurface {...sheetProps} />);
   return { ...view, props: sheetProps, callbacks: sheetProps.callbacks };
@@ -81,23 +88,25 @@ describe.each([
   ["vi", viCopy],
   ["en", en],
 ] as const)("item side sheet (%s)", (locale, copy) => {
-  it(`FUI[wm.task-detail.panel:panel] renders the loading state without QueryClient (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:panel", locale)}renders the loading state without QueryClient (${locale})`, () => {
     renderSheet(copy, { status: "loading", card: null, detailData: undefined });
     expect(screen.getByRole("status", { name: copy.loading })).toBeTruthy();
   });
 
-  it(`FUI[wm.task-detail.panel:unavailable] renders the unavailable state and closes from it (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:unavailable", locale)}renders the unavailable state and closes from it (${locale})`, () => {
     const { callbacks } = renderSheet(copy, {
       status: "error",
       card: null,
       detailData: undefined,
     });
     expect(screen.getByText(copy.unavailable.title)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: copy.unavailable.close }));
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.unavailable.close }),
+    );
     expect(callbacks.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it(`FUI[wm.task-detail.panel:ready] renders the non-modal sheet at the mockup (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:ready", locale)}renders the non-modal sheet at the mockup (${locale})`, () => {
     renderSheet(copy);
     const dialog = screen.getByRole("dialog", { name: TITLE });
     expect(dialog.getAttribute("aria-modal")).toBe("false");
@@ -130,19 +139,22 @@ describe.each([
         locale === "vi" ? "10/10 · quá hạn 2 ngày" : "10/10 · 2 days overdue",
       ),
     ).toBeTruthy();
-    expect(
-      pills.getByText(copy.properties.priorities.urgent),
-    ).toBeTruthy();
+    expect(pills.getByText(copy.properties.priorities.urgent)).toBeTruthy();
     expect(pills.getByText("Dữ liệu")).toBeTruthy();
     expect(
       pills.getByRole("button", { name: copy.properties.addProperty }),
     ).toBeTruthy();
 
     expect(
-      screen.getByRole("heading", { level: 3, name: copy.sections.description }),
+      screen.getByRole("heading", {
+        level: 3,
+        name: copy.sections.description,
+      }),
     ).toBeTruthy();
     expect(screen.getByText(copy.sections.descriptionUnavailable)).toBeTruthy();
-    expect(screen.queryByRole("textbox", { name: copy.sections.description })).toBeNull();
+    expect(
+      screen.queryByRole("textbox", { name: copy.sections.description }),
+    ).toBeNull();
     expect(
       screen.getByRole("heading", {
         level: 3,
@@ -152,11 +164,15 @@ describe.each([
     expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(5);
 
     expect(
-      screen.getByRole("tab", {
-        name: copy.sections.comments.replace("{{count}}", "2"),
-      }).getAttribute("aria-selected"),
+      screen
+        .getByRole("tab", {
+          name: copy.sections.comments.replace("{{count}}", "2"),
+        })
+        .getAttribute("aria-selected"),
     ).toBe("true");
-    expect(screen.getByRole("tab", { name: copy.sections.history })).toBeTruthy();
+    expect(
+      screen.getByRole("tab", { name: copy.sections.history }),
+    ).toBeTruthy();
     expect(screen.getByText(/Bên mình cần file công nợ đầu kỳ/)).toBeTruthy();
     expect(
       screen.getByText(locale === "vi" ? "Hôm qua, 16:40" : "Yesterday, 16:40"),
@@ -166,11 +182,13 @@ describe.each([
     ).toBeTruthy();
 
     const composer = screen.getByRole("textbox", { name: copy.composer.label });
-    expect(composer.getAttribute("placeholder")).toBe(copy.composer.placeholder);
+    expect(composer.getAttribute("placeholder")).toBe(
+      copy.composer.placeholder,
+    );
     expect(screen.getByText("⌘↵")).toBeTruthy();
   });
 
-  it(`FUI[wm.task-detail.panel:focus-in] moves focus into the sheet on open (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:focus-in", locale)}moves focus into the sheet on open (${locale})`, () => {
     const opener = document.createElement("button");
     document.body.append(opener);
     opener.focus();
@@ -179,7 +197,7 @@ describe.each([
     opener.remove();
   });
 
-  it(`FUI[wm.task-detail.panel:focus-return] returns focus to the opener on close (${locale})`, async () => {
+  it(`${fui("wm.task-detail.panel:focus-return", locale)}returns focus to the opener on close (${locale})`, async () => {
     function Harness() {
       const [open, setOpen] = useState(false);
       return (
@@ -190,7 +208,10 @@ describe.each([
           {open ? (
             <TaskDetailPanelSurface
               {...props(copy, {
-                callbacks: { ...callbacksMock(), onClose: () => setOpen(false) },
+                callbacks: {
+                  ...callbacksMock(),
+                  onClose: () => setOpen(false),
+                },
               })}
             />
           ) : null}
@@ -207,7 +228,7 @@ describe.each([
     expect(document.activeElement).toBe(opener);
   });
 
-  it(`FUI[wm.task-detail.panel:focus-return] lets the container place focus instead (${locale})`, () => {
+  it(`lets the container place focus instead (${locale})`, () => {
     const onReturnFocus = vi.fn((event: Event) => event.preventDefault());
     const opener = document.createElement("button");
     document.body.append(opener);
@@ -219,14 +240,14 @@ describe.each([
     opener.remove();
   });
 
-  it(`FUI[wm.task-detail.panel:close] closes from Escape and the close button (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:close", locale)}closes from Escape and the close button (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     fireEvent.click(screen.getByRole("button", { name: copy.head.close }));
     expect(callbacks.onClose).toHaveBeenCalledTimes(2);
   });
 
-  it(`FUI[wm.task-detail.panel:escape] closes on Escape from inside the composer (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:escape", locale)}closes on Escape from inside the composer (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     fireEvent.keyDown(
       screen.getByRole("textbox", { name: copy.composer.label }),
@@ -235,7 +256,7 @@ describe.each([
     expect(callbacks.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it(`FUI[wm.task-detail.panel:kj] moves to the previous and next item with K/J and the head buttons (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:kj", locale)}moves to the previous and next item with K/J and the head buttons (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     const dialog = screen.getByRole("dialog");
     fireEvent.keyDown(dialog, { key: "k" });
@@ -253,22 +274,27 @@ describe.each([
     expect(callbacks.onNext).toHaveBeenCalledTimes(2);
   });
 
-  it(`FUI[wm.task-detail.panel:kj] disables previous/next at the ends of the lane (${locale})`, () => {
+  it(`disables previous/next at the ends of the lane (${locale})`, () => {
     const callbacks = { ...callbacksMock(), onPrevious: undefined };
     renderSheet(copy, { callbacks });
     expect(
-      (screen.getByRole("button", { name: copy.head.previous }) as HTMLButtonElement)
-        .disabled,
+      (
+        screen.getByRole("button", {
+          name: copy.head.previous,
+        }) as HTMLButtonElement
+      ).disabled,
     ).toBe(true);
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "k" });
   });
 
-  it(`FUI[wm.task-detail.panel:head] copies the link, explains the full page and runs the more menu (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:head", locale)}copies the link, explains the full page and runs the more menu (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     fireEvent.click(screen.getByRole("button", { name: copy.head.copyLink }));
     expect(callbacks.onCopyLink).toHaveBeenCalledWith("item-erp-142");
 
-    const fullPage = screen.getByRole("button", { name: copy.head.openFullPage });
+    const fullPage = screen.getByRole("button", {
+      name: copy.head.openFullPage,
+    });
     expect(fullPage.getAttribute("aria-disabled")).toBe("true");
     expect(fullPage.getAttribute("aria-describedby")).toBeTruthy();
     expect(
@@ -279,7 +305,9 @@ describe.each([
     fireEvent.keyDown(screen.getByRole("button", { name: copy.head.more }), {
       key: "Enter",
     });
-    fireEvent.click(screen.getByRole("menuitem", { name: copy.head.duplicate }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.head.duplicate }),
+    );
     expect(callbacks.onDuplicate).toHaveBeenCalledWith("item-erp-142");
 
     fireEvent.keyDown(screen.getByRole("button", { name: copy.head.more }), {
@@ -289,7 +317,7 @@ describe.each([
     expect(callbacks.onArchive).toHaveBeenCalledWith("item-erp-142");
   });
 
-  it(`FUI[wm.task-detail.panel:edit] routes title and status edits through callbacks (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:edit", locale)}routes title and status edits through callbacks (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     const title = screen.getByRole("textbox", { name: copy.title.edit });
     title.textContent = "Chuyển dữ liệu khách hàng";
@@ -312,7 +340,7 @@ describe.each([
     expect(callbacks.onSelectTab).toHaveBeenCalledWith("activity");
   });
 
-  it(`FUI[wm.task-detail.panel:submit] submits a comment with the button and with ⌘↵ (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:submit", locale)}submits a comment with the button and with ⌘↵ (${locale})`, () => {
     const { callbacks } = renderSheet(copy);
     const composer = screen.getByRole("textbox", { name: copy.composer.label });
     fireEvent.change(composer, { target: { value: "Đã nhận file" } });
@@ -338,7 +366,7 @@ describe.each([
     expect((composer as HTMLTextAreaElement).value).toBe("");
   });
 
-  it(`FUI[wm.task-detail.panel:readonly] a commenter sees read-only properties and keeps the composer (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:readonly", locale)}a commenter sees read-only properties and keeps the composer (${locale})`, () => {
     const { callbacks } = renderSheet(copy, {
       capabilities: commenterSheetCapabilities,
     });
@@ -359,7 +387,9 @@ describe.each([
     ).toBe("true");
     expect(properties.querySelector("[data-pill-chevron]")).toBeNull();
 
-    fireEvent.click(within(properties).getByRole("button", { name: /Đang làm/ }));
+    fireEvent.click(
+      within(properties).getByRole("button", { name: /Đang làm/ }),
+    );
     expect(screen.queryByRole("menu")).toBeNull();
     expect(callbacks.onUpdateFieldValue).not.toHaveBeenCalled();
 
@@ -374,7 +404,7 @@ describe.each([
     expect(callbacks.onCreateUpdate).toHaveBeenCalledTimes(1);
   });
 
-  it(`FUI[wm.task-detail.panel:readonly] a viewer cannot comment either (${locale})`, () => {
+  it(`a viewer cannot comment either (${locale})`, () => {
     renderSheet(copy, { capabilities: viewerCapabilities });
     expect(
       (
@@ -385,7 +415,7 @@ describe.each([
     ).toBe(true);
   });
 
-  it(`FUI[wm.task-detail.panel:edge] handles an item without key, due, priority, labels or children (${locale})`, () => {
+  it(`${fui("wm.task-detail.panel:edge", locale)}handles an item without key, due, priority, labels or children (${locale})`, () => {
     const item = erpSheetItem({
       itemKey: null,
       dueAt: null,
@@ -415,7 +445,7 @@ describe.each([
     expect(screen.getByText(copy.sections.noChildItems)).toBeTruthy();
     expect(screen.getByText(copy.sections.noComments)).toBeTruthy();
   });
-  it(`FUI[wm.task-detail.panel:submit] keeps the comment and allows a retry when posting fails (${locale})`, () => {
+  it(`keeps the comment and allows a retry when posting fails (${locale})`, () => {
     const onCreateUpdate = vi.fn(
       (
         _input: Parameters<SurfaceProps["callbacks"]["onCreateUpdate"]>[0],
@@ -433,9 +463,44 @@ describe.each([
     expect(onCreateUpdate).toHaveBeenCalledTimes(2);
   });
 
-  it(`FUI[wm.task-detail.panel:panel] can render without its own dialog role inside a host dialog (${locale})`, () => {
+  it(`can render without its own dialog role inside a host dialog (${locale})`, () => {
     renderSheet(copy, { asDialog: false });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByRole("heading", { level: 2, name: TITLE })).toBeTruthy();
+  });
+});
+
+describe("item sheet fields on the generated board read", () => {
+  it("finds the Status and priority fields by their role, not by an id suffix", () => {
+    const board = erpSheetBoard();
+    const STATUS_ID = "0b6f2c1e-6d9a-4f55-9a43-2f1d0c9e7a11";
+    const PRIORITY_ID = "5e1d7b42-3c8f-4a0e-b6a1-9d2c4e8f1a22";
+    const generated = {
+      ...board,
+      fieldDefinitions: board.fieldDefinitions.map((field) =>
+        field.id === "field-status"
+          ? { ...field, id: STATUS_ID, semanticRole: "status" as const }
+          : field.id === "field-priority"
+            ? { ...field, id: PRIORITY_ID, semanticRole: "priority" as const }
+            : field,
+      ),
+    };
+    const { callbacks } = renderSheet(viCopy, { board: generated });
+    fireEvent.keyDown(screen.getByRole("button", { name: /Đang làm/ }), {
+      key: "Enter",
+    });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Chờ duyệt" }));
+    expect(callbacks.onUpdateFieldValue).toHaveBeenCalledWith({
+      cardId: "item-erp-142",
+      fieldDefinitionId: STATUS_ID,
+      value: "status-review",
+    });
+    fireEvent.keyDown(screen.getByRole("button", { name: /Khẩn/ }), {
+      key: "Enter",
+    });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Cao" }));
+    expect(callbacks.onUpdateFieldValue).toHaveBeenCalledWith(
+      expect.objectContaining({ fieldDefinitionId: PRIORITY_ID }),
+    );
   });
 });

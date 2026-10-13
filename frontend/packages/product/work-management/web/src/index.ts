@@ -12,6 +12,8 @@ export * from "./components/board-workspace-view-content";
 export * from "./components/board-layout/board-layout-shell";
 export * from "./components/board-layout/board-toolbar";
 export * from "./components/board-layout/view-tabs";
+export * from "./components/board-layout/board-header-surface";
+export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
 export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
 export {
   boardHeaderCopy,
@@ -31,16 +33,26 @@ export {
   type KanbanCardCopy,
 } from "./components/views/kanban/kanban-card.copy";
 export { useKanbanCardCopy } from "./components/views/kanban/use-kanban-card-copy";
+export { kanbanLaneCatalog } from "./components/views/kanban/kanban-lane.catalog";
+export {
+  kanbanLaneCopy,
+  type KanbanLaneCopy,
+} from "./components/views/kanban/kanban-lane.copy";
+export { useKanbanLaneCopy } from "./components/views/kanban/use-kanban-lane-copy";
+export * from "./components/views/kanban/kanban-dnd";
 export * from "./components/views/kanban/kanban-add-card";
-export * from "./components/views/kanban/kanban-add-column";
 export * from "./components/views/kanban/kanban-card-detail-panel";
-export * from "./components/views/kanban/kanban-card-menu";
-export * from "./components/views/kanban/kanban-column-menu";
 export * from "./components/views/kanban/kanban-empty-state";
+export * from "./components/views/kanban/kanban-filter";
 export * from "./components/views/kanban/kanban-filter-menu";
 export * from "./components/views/kanban/kanban-skeleton";
-export * from "./components/views/kanban/kanban-sort-menu";
 export * from "./components/views/kanban/kanban-toolbar";
+export { kanbanToolbarCatalog } from "./components/views/kanban/kanban-toolbar.catalog";
+export {
+  kanbanToolbarCopy,
+  type KanbanToolbarCopy,
+} from "./components/views/kanban/kanban-toolbar.copy";
+export { useKanbanToolbarCopy } from "./components/views/kanban/use-kanban-toolbar-copy";
 
 // Table view
 export * from "./components/views/table/main-table-view";
@@ -64,6 +76,11 @@ export * from "./components/card-detail/task-detail-header";
 export * from "./components/card-detail/task-detail-tabs";
 export * from "./components/card-detail/task-detail-empty-state";
 export * from "./components/card-detail/task-activity-tab";
-export * from "./components/card-detail/task-files-tab";
 export * from "./components/card-detail/task-updates-tab";
 export * from "./components/card-detail/update-composer";
+export { itemSheetCatalog } from "./components/card-detail/item-sheet.catalog";
+export {
+  itemSheetCopy,
+  type ItemSheetCopy,
+} from "./components/card-detail/item-sheet.copy";
+export { useItemSheetCopy } from "./components/card-detail/use-item-sheet-copy";

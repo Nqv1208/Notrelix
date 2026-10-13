@@ -28,30 +28,44 @@ const columns = [
   }),
 ];
 
-vi.mock("@notrelix/work-management-state", () => {
+vi.mock("@notrelix/work-management-state", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@notrelix/work-management-state")>();
   const mutation = () => ({ mutate: vi.fn() });
+  const lanes = () =>
+    columns.map((column) => ({
+      optionId: "status-doing",
+      name: column.title,
+      category: "in_progress" as const,
+      color: null,
+      cards: column.cards,
+      total: column.cards.length,
+    }));
   return {
+    ...actual,
     useBoardKanban: () => ({
       board: scenario.board,
-      columns,
+      groups: columns,
+      statusField: undefined,
+      groupByField: undefined,
+      groupByFields: [],
+      allLanes: lanes(),
+      lanes: lanes(),
+      visibleCount: 1,
+      totalCount: 1,
+      filterActive: false,
+      filterChoices: { statuses: [], assignees: [], labels: [] },
       isLoading: false,
       error: null,
-      search: { query: "", setQuery: vi.fn() },
-      filters: { clear: vi.fn() },
+      search: { query: "", setQuery: vi.fn(), debouncedQuery: "" },
+      updateStatus: mutation(),
+      updateFieldValue: mutation(),
       moveCard: mutation(),
-      reorderColumns: mutation(),
-      createColumn: mutation(),
-      updateColumn: mutation(),
-      deleteColumn: mutation(),
+      createItemInLane: mutation(),
     }),
-    useSelectedCardPanel: () => ({
-      selectedCardId: null,
-      openCard: vi.fn(),
-      closePanel: vi.fn(),
-    }),
+    useBoardAccess: () => ({ access: null, isLoading: true, error: null }),
     useDuplicateCard: mutation,
     useDeleteCard: mutation,
-    useCreateCard: mutation,
   };
 });
 

@@ -152,6 +152,7 @@ export const endpoints = {
     duplicate: (itemId: string) => `/board-items/${itemId}/duplicate`,
     archive: (itemId: string) => `/board-items/${itemId}/archive`,
     complete: (itemId: string) => `/board-items/${itemId}/complete`,
+    status: (itemId: string) => `/board-items/${itemId}/status`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
     fieldValue: (itemId: string, fieldId: string) =>
       `/board-items/${itemId}/field-values/${fieldId}`,

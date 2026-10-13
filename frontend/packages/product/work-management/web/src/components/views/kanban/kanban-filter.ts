@@ -1,3 +1,6 @@
+import type { Card } from "@notrelix/work-management-core";
+import { itemDueState } from "../../shared/item-display";
+
 /**
  * Kanban filter state carried by the board route `filter` search parameter.
  *
@@ -136,4 +139,19 @@ export function parseKanbanFilter(value: unknown): KanbanFilterState {
     filter[field] = unique([...filter[field], ...ids]);
   }
   return filter;
+}
+
+/**
+ * The "Quá hạn" facet: a card that is not done and whose due day is before
+ * today, judged by calendar day exactly like the card's due wording.
+ */
+export function isKanbanCardOverdue(
+  card: Card,
+  now: Date,
+  timeZone?: string,
+): boolean {
+  if (card.statusCategory === "done" || card.completedAt) return false;
+  return (
+    itemDueState(card.dueAt ?? card.dueDate, now, timeZone)?.kind === "overdue"
+  );
 }

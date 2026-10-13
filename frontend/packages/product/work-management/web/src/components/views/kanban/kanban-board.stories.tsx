@@ -1,51 +1,61 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  kanbanDefaultScenario,
-  kanbanDenseScenario,
-  kanbanEdgeScenario,
-  kanbanEmptyScenario,
-} from "@notrelix/work-management-testing";
 import { KanbanBoard } from "./kanban-board";
+import { kanbanCardCopy } from "./kanban-card.copy";
+import { kanbanLaneCopy } from "./kanban-lane.copy";
+import {
+  KANBAN_STORY_NOW,
+  erpKanbanDenseLanes,
+  erpKanbanEdgeLanes,
+  erpKanbanEmptyLanes,
+  erpKanbanLanes,
+  erpKanbanNoResultLanes,
+} from "../../../verification/kanban-board-fixtures";
 
 const noOp = () => undefined;
-const defaults = {
-  onOpenDetails: noOp,
-  onCopyCardLink: noOp,
-  onMoveCard: noOp,
-  onReorderColumns: noOp,
-  onAdd: noOp,
-  onRenameColumn: noOp,
-  onColorChangeColumn: noOp,
-  onDeleteColumn: noOp,
-  onDuplicateCard: noOp,
-  onDeleteCard: noOp,
-  onCreateCard: noOp,
-};
 
 const meta = {
   title: "Work Management/Kanban/Board",
   component: KanbanBoard,
+  args: {
+    lanes: erpKanbanLanes(),
+    copy: kanbanLaneCopy("vi"),
+    cardCopy: kanbanCardCopy("vi"),
+    now: KANBAN_STORY_NOW,
+    filterActive: false,
+    canAdd: true,
+    canDrag: true,
+    onOpenDetails: noOp,
+    onDropCard: noOp,
+    onCreateItem: noOp,
+  },
 } satisfies Meta<typeof KanbanBoard>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function argsFor(scenario: ReturnType<typeof kanbanDefaultScenario>) {
-  return { ...defaults, board: scenario.board, columns: scenario.columns };
-}
-
 export const Default: Story = {
-  args: argsFor(kanbanDefaultScenario()),
   tags: ["fui-surface--wm.kanban.board", "fui-state--Default"],
 };
 export const Empty: Story = {
-  args: argsFor(kanbanEmptyScenario()),
+  args: { lanes: erpKanbanEmptyLanes() },
   tags: ["fui-surface--wm.kanban.board", "fui-state--Empty"],
 };
 export const EdgeData: Story = {
-  args: argsFor(kanbanEdgeScenario()),
+  args: { lanes: erpKanbanEdgeLanes() },
+  tags: ["fui-surface--wm.kanban.board", "fui-state--EdgeData"],
+};
+export const NoResults: Story = {
+  args: { lanes: erpKanbanNoResultLanes(), filterActive: true, canAdd: false },
   tags: ["fui-surface--wm.kanban.board", "fui-state--EdgeData"],
 };
 export const HighDensity: Story = {
-  args: argsFor(kanbanDenseScenario()),
+  args: { lanes: erpKanbanDenseLanes() },
   tags: ["fui-surface--wm.kanban.board", "fui-state--HighDensity"],
+};
+export const ReadOnly: Story = {
+  args: { canAdd: false, canDrag: false },
+  tags: ["fui-surface--wm.kanban.board", "fui-state--ReadOnly"],
+};
+export const English: Story = {
+  args: { copy: kanbanLaneCopy("en"), cardCopy: kanbanCardCopy("en") },
+  tags: ["fui-surface--wm.kanban.board", "fui-state--EdgeData"],
 };

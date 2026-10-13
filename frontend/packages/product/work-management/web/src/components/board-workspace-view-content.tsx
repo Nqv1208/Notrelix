@@ -16,8 +16,30 @@ export interface BoardScreenProps {
   view: WorkspaceView;
   /** Card id from the `item` search parameter (Kanban opens its detail). */
   selectedItemId?: string;
-  onSelectedItemChange?: (id: string | undefined) => void;
+  onSelectedItemChange?: (
+    id: string | undefined,
+    options?: { replace?: boolean },
+  ) => void;
+  /** The route `filter` parameter (Kanban). */
+  filter?: string;
+  onFilterChange?: (
+    value: string | undefined,
+    options?: { replace?: boolean },
+  ) => void;
+  /** The route `groupBy` parameter: a field id (Kanban). */
+  groupBy?: string;
+  onGroupByChange?: (fieldId: string) => void;
 }
+
+type KanbanParams = Pick<
+  BoardScreenProps,
+  | "selectedItemId"
+  | "onSelectedItemChange"
+  | "filter"
+  | "onFilterChange"
+  | "groupBy"
+  | "onGroupByChange"
+>;
 
 export function BoardScreen(props: BoardScreenProps) {
   return <BoardWorkspaceViewContent {...props} />;
@@ -27,8 +49,7 @@ export function BoardWorkspaceViewContent({
   workspaceId,
   boardId,
   view,
-  selectedItemId,
-  onSelectedItemChange,
+  ...kanbanParams
 }: BoardScreenProps) {
   if (view.type === "table")
     return <MainTableView boardId={boardId} workspaceId={workspaceId} />;
@@ -38,8 +59,7 @@ export function BoardWorkspaceViewContent({
         workspaceId={workspaceId}
         boardId={boardId}
         mode="kanban"
-        selectedItemId={selectedItemId}
-        onSelectedItemChange={onSelectedItemChange}
+        kanbanParams={kanbanParams}
       />
     );
   if (view.type === "calendar")
@@ -70,14 +90,12 @@ function BoardFullDataView({
   workspaceId,
   boardId,
   mode,
-  selectedItemId,
-  onSelectedItemChange,
+  kanbanParams,
 }: {
   workspaceId: string;
   boardId: string;
   mode: "kanban" | "calendar" | "timeline";
-  selectedItemId?: string;
-  onSelectedItemChange?: (id: string | undefined) => void;
+  kanbanParams?: KanbanParams;
 }) {
   const { board, groups, isLoading, error } = useFullBoard(
     boardId,
@@ -102,8 +120,7 @@ function BoardFullDataView({
           <KanbanView
             boardId={board.id}
             workspaceId={workspaceId}
-            selectedItemId={selectedItemId}
-            onSelectedItemChange={onSelectedItemChange}
+            {...kanbanParams}
           />
         ) : mode === "calendar" ? (
           <BoardCalendarView groups={groups} />

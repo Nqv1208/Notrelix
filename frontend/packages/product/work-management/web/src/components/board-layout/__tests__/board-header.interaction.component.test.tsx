@@ -9,6 +9,10 @@ import {
   type BoardHeaderSurfaceProps,
 } from "../board-header-surface";
 
+/** The interaction-case marker, once per case: on the Vietnamese run only. */
+const fui = (id: string, locale: string) =>
+  locale === "vi" ? `FUI[${id}] ` : "";
+
 beforeAll(() => {
   // Radix menus measure and scroll items; JSDOM has no layout.
   Element.prototype.scrollIntoView = () => undefined;
@@ -82,7 +86,7 @@ function fill(template: string, values: Record<string, string | number>) {
 }
 
 describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
-  it("FUI[wm.board-layout.header:title] shows the department mark, the Space crumb and the board title as the page heading", () => {
+  it(`${fui("wm.board-layout.header:title", locale)}shows the department mark, the Space crumb and the board title as the page heading`, () => {
     const onOpenSpace = vi.fn();
     renderHeader(copy, { onOpenSpace });
     expect(
@@ -98,7 +102,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     expect(onOpenSpace).toHaveBeenCalledOnce();
   });
 
-  it("FUI[wm.board-layout.header:crumb-modified-click] leaves a modified click on the Space crumb to the browser", () => {
+  it(`${fui("wm.board-layout.header:crumb-modified-click", locale)}leaves a modified click on the Space crumb to the browser`, () => {
     const onOpenSpace = vi.fn();
     renderHeader(copy, { onOpenSpace });
     const crumb = screen.getByRole("link", { name: "Phòng Công nghệ" });
@@ -119,7 +123,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     expect(preventedBySurface).toBe(false);
   });
 
-  it("FUI[wm.board-layout.header:access-chip] words the access chip by visibility with the guest count", () => {
+  it(`${fui("wm.board-layout.header:access-chip", locale)}words the access chip by visibility with the guest count`, () => {
     const { unmount } = renderHeader(copy);
     const spaceChip =
       locale === "vi"
@@ -152,7 +156,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     ).toBeTruthy();
   });
 
-  it("FUI[wm.board-layout.header:avatar-stack] names everyone who can open the board in one sentence and shows the overflow count", () => {
+  it(`${fui("wm.board-layout.header:avatar-stack", locale)}names everyone who can open the board in one sentence and shows the overflow count`, () => {
     renderHeader(copy);
     const sentence =
       locale === "vi"
@@ -165,7 +169,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     expect(faces).toEqual(["HA", "MQ", "HP", "+29"]);
   });
 
-  it("FUI[wm.board-layout.header:share-unavailable] keeps the chip, the stack and Share focusable but disabled with the stated reason", () => {
+  it(`${fui("wm.board-layout.header:share-unavailable", locale)}keeps the chip, the stack and Share focusable but disabled with the stated reason`, () => {
     renderHeader(copy);
     const share = screen.getByRole("button", { name: copy.header.share });
     const chip = screen.getByRole("button", {
@@ -185,7 +189,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     }
   });
 
-  it("FUI[wm.board-layout.header:share] opens sharing from the chip, the stack and Share when the route provides it", () => {
+  it(`${fui("wm.board-layout.header:share", locale)}opens sharing from the chip, the stack and Share when the route provides it`, () => {
     const onOpenShare = vi.fn();
     renderHeader(copy, { onOpenShare });
     const share = screen.getByRole("button", { name: copy.header.share });
@@ -196,7 +200,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     expect(onOpenShare).toHaveBeenCalledTimes(2);
   });
 
-  it("FUI[wm.board-layout.header:settings] opens settings when available and states why when not", () => {
+  it(`${fui("wm.board-layout.header:settings", locale)}opens settings when available and states why when not`, () => {
     const onOpenSettings = vi.fn();
     const { unmount } = renderHeader(copy, { onOpenSettings });
     fireEvent.click(screen.getByRole("button", { name: copy.header.settings }));
@@ -214,7 +218,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     ).toBe(copy.header.settingsUnavailable);
   });
 
-  it("FUI[wm.board-layout.header:more-menu] opens More options and copies the board link", () => {
+  it(`${fui("wm.board-layout.header:more-menu", locale)}opens More options and copies the board link`, () => {
     const onCopyLink = vi.fn();
     renderHeader(copy, { onCopyLink });
     fireEvent.keyDown(
@@ -230,7 +234,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("FUI[wm.board-layout.header:commenter-banner] tells a commenter their level and who added them, and hides Settings and Share", () => {
+  it(`${fui("wm.board-layout.header:commenter-banner", locale)}tells a commenter their level and who added them, and hides Settings and Share`, () => {
     renderHeader(copy, { access: commenterAccess, onOpenSettings: vi.fn() });
     const banner = screen.getByRole("note");
     expect(banner.textContent).toBe(
@@ -248,12 +252,25 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     expect(screen.getByRole("button", { name: /32/ })).toBeTruthy();
   });
 
-  it("FUI[wm.board-layout.header:manager-no-banner] shows no banner to someone who can edit", () => {
+  it(`${fui("wm.board-layout.header:manager-no-banner", locale)}shows no banner to someone who can edit`, () => {
     renderHeader(copy, { access: { ...managerAccess, myLevel: "editor" } });
     expect(screen.queryByRole("note")).toBeNull();
   });
 
-  it("FUI[wm.board-layout.header:access-pending] shows only the title while the access summary is not loaded", () => {
+  it(`${fui("wm.board-layout.header:workspace-source", locale)}shows the level alone for access through the whole workspace`, () => {
+    renderHeader(copy, {
+      access: {
+        ...managerAccess,
+        myLevel: "viewer",
+        mySource: { kind: "workspace" },
+      },
+    });
+    expect(screen.getByRole("note").textContent).toBe(
+      copy.header.banner.viewer,
+    );
+  });
+
+  it(`${fui("wm.board-layout.header:access-pending", locale)}shows only the title while the access summary is not loaded`, () => {
     renderHeader(copy, { access: null, onOpenSettings: vi.fn() });
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
     expect(screen.queryByRole("note")).toBeNull();
@@ -266,7 +283,7 @@ describe.each(LOCALES)("BoardHeaderSurface (%s)", (locale, copy) => {
     ).toBeNull();
   });
 
-  it("FUI[wm.board-layout.header:no-space] omits the mark and the crumb for a board outside any Space", () => {
+  it(`${fui("wm.board-layout.header:no-space", locale)}omits the mark and the crumb for a board outside any Space`, () => {
     renderHeader(copy, { space: null, visibility: "workspace" });
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByText("CN")).toBeNull();
@@ -300,6 +317,25 @@ describe("boardAccessSentence", () => {
     expect(boardAccessSentence(access, en)).toBe(
       "9 people can open this board: 6 people in Phòng Công nghệ, 2 other people, and 1 person added directly",
     );
+  });
+
+  it("FUI[wm.board-layout.header:sentence-at-least] words the total as a lower bound when the count is not complete", () => {
+    const access: BoardHeaderAccess = {
+      ...managerAccess,
+      peopleCountComplete: false,
+    };
+    expect(boardAccessSentence(access, viCopy)).toBe(
+      "Ít nhất 32 người vào được board: 24 người Phòng Công nghệ, 6 người Nhóm Kế toán tổng hợp, Đỗ Khánh Linh và 1 khách",
+    );
+    expect(boardAccessSentence(access, en)).toBe(
+      "At least 32 people can open this board: 24 people in Phòng Công nghệ, 6 people in Nhóm Kế toán tổng hợp, Đỗ Khánh Linh, and 1 guest",
+    );
+    expect(boardAccessSentence({ ...access, sources: [] }, viCopy)).toBe(
+      "Ít nhất 32 người vào được board",
+    );
+    expect(
+      boardAccessSentence({ ...access, peopleCountComplete: true }, viCopy),
+    ).toMatch(/^32 người vào được board/);
   });
 
   it("FUI[wm.board-layout.header:sentence-empty] states only the total when no source is listed", () => {

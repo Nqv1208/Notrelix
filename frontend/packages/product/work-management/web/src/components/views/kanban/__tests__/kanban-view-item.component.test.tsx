@@ -48,7 +48,9 @@ const cardQuery = vi.hoisted(() => ({
   deleteMutate: vi.fn(),
 }));
 
-vi.mock("@notrelix/work-management-state", () => {
+vi.mock("@notrelix/work-management-state", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@notrelix/work-management-state")>();
   const mutation = () => ({ mutate: vi.fn() });
   const list = () => ({
     data: undefined,
@@ -56,19 +58,41 @@ vi.mock("@notrelix/work-management-state", () => {
     isFetching: false,
     refetch: vi.fn(),
   });
+  const lanes = () =>
+    columns.current.map((column) => ({
+      optionId: "status-doing",
+      name: column.title,
+      category: "in_progress" as const,
+      color: null,
+      cards: column.cards,
+      total: column.cards.length,
+    }));
   return {
+    ...actual,
     useBoardKanban: () => ({
       board: scenario.board,
-      columns: columns.current,
+      groups: columns.current,
+      statusField: undefined,
+      groupByField: undefined,
+      groupByFields: [],
+      allLanes: lanes(),
+      lanes: lanes(),
+      visibleCount: columns.current[0]!.cards.length,
+      totalCount: columns.current[0]!.cards.length,
+      filterActive: false,
+      filterChoices: { statuses: [], assignees: [], labels: [] },
       isLoading: false,
       error: null,
-      search: { query: "", setQuery: vi.fn() },
-      filters: { clear: vi.fn() },
+      search: { query: "", setQuery: vi.fn(), debouncedQuery: "" },
+      updateStatus: mutation(),
+      updateFieldValue: mutation(),
       moveCard: mutation(),
-      reorderColumns: mutation(),
-      createColumn: mutation(),
-      updateColumn: mutation(),
-      deleteColumn: mutation(),
+      createItemInLane: mutation(),
+    }),
+    useBoardAccess: () => ({
+      access: { myLevel: "editor" },
+      isLoading: false,
+      error: null,
     }),
     useCard: (...args: unknown[]) => {
       cardQuery.useCard(...args);
@@ -80,8 +104,6 @@ vi.mock("@notrelix/work-management-state", () => {
     useUpdateCard: mutation,
     useDuplicateCard: mutation,
     useDeleteCard: () => ({ mutate: cardQuery.deleteMutate }),
-    useCreateCard: mutation,
-    useUpdateFieldValue: mutation,
     useCreateCardUpdate: mutation,
     useUpdateCardUpdate: mutation,
     useDeleteCardUpdate: mutation,

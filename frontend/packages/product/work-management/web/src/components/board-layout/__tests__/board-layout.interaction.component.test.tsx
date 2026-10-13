@@ -13,6 +13,10 @@ import type { BoardHeaderData } from "../board-header-surface";
 import { BoardToolbar } from "../board-toolbar";
 import { ViewTabs, AddViewMenu } from "../view-tabs";
 
+/** The interaction-case marker, once per case: on the Vietnamese run only. */
+const fui = (id: string, locale: string) =>
+  locale === "vi" ? `FUI[${id}] ` : "";
+
 beforeAll(() => {
   // Radix menus measure and scroll items; JSDOM has no layout.
   Element.prototype.scrollIntoView = () => undefined;
@@ -58,8 +62,8 @@ function openMenu(trigger: HTMLElement) {
   fireEvent.keyDown(trigger, { key: "Enter" });
 }
 
-describe.each(LOCALES)("BoardToolbar interactions (%s)", (_locale, copy) => {
-  it("FUI[wm.board-layout.toolbar:view] emits view selection through view tabs", () => {
+describe.each(LOCALES)("BoardToolbar interactions (%s)", (locale, copy) => {
+  it(`${fui("wm.board-layout.toolbar:view", locale)}emits view selection through view tabs`, () => {
     const onViewChange = vi.fn();
     renderPureUi(
       <BoardToolbar {...baseToolbar} copy={copy} onViewChange={onViewChange} />,
@@ -69,7 +73,7 @@ describe.each(LOCALES)("BoardToolbar interactions (%s)", (_locale, copy) => {
     expect(onViewChange).toHaveBeenCalledWith("table");
   });
 
-  it("FUI[wm.board-layout.toolbar:add-view] emits the chosen view from the icon-only Add view menu", () => {
+  it(`${fui("wm.board-layout.toolbar:add-view", locale)}emits the chosen view from the icon-only Add view menu`, () => {
     const onAddView = vi.fn();
     renderPureUi(
       <BoardToolbar {...baseToolbar} copy={copy} onViewChange={onAddView} />,
@@ -83,7 +87,7 @@ describe.each(LOCALES)("BoardToolbar interactions (%s)", (_locale, copy) => {
     expect(onAddView).toHaveBeenCalledWith("timeline");
   });
 
-  it("FUI[wm.board-layout.toolbar:filter-absent] carries no search or filter control: the view toolbars own them", () => {
+  it(`${fui("wm.board-layout.toolbar:filter-absent", locale)}carries no search or filter control: the view toolbars own them`, () => {
     renderPureUi(
       <BoardToolbar
         {...baseToolbar}
@@ -96,7 +100,7 @@ describe.each(LOCALES)("BoardToolbar interactions (%s)", (_locale, copy) => {
     expect(screen.queryByRole("searchbox")).toBeNull();
   });
 
-  it("FUI[wm.board-layout.toolbar:header-context] renders the header data the route provides through context", () => {
+  it(`${fui("wm.board-layout.toolbar:header-context", locale)}renders the header data the route provides through context`, () => {
     renderPureUi(
       <BoardHeaderDataContext.Provider value={header}>
         <BoardToolbar {...baseToolbar} copy={copy} onViewChange={vi.fn()} />
@@ -111,7 +115,7 @@ describe.each(LOCALES)("BoardToolbar interactions (%s)", (_locale, copy) => {
     ).toBeTruthy();
   });
 
-  it("FUI[wm.board-layout.toolbar:dom-order] keeps DOM order equal to the reading order with no order-* classes", () => {
+  it(`${fui("wm.board-layout.toolbar:dom-order", locale)}keeps DOM order equal to the reading order with no order-* classes`, () => {
     const { container } = renderPureUi(
       <BoardToolbar
         {...baseToolbar}
@@ -169,8 +173,8 @@ describe("BoardToolbar copy source", () => {
   });
 });
 
-describe.each(LOCALES)("ViewTabs interactions (%s)", (_locale, copy) => {
-  it("FUI[wm.board-layout.view-tabs:select] emits the selected view type", () => {
+describe.each(LOCALES)("ViewTabs interactions (%s)", (locale, copy) => {
+  it(`${fui("wm.board-layout.view-tabs:select", locale)}emits the selected view type`, () => {
     const onViewChange = vi.fn();
     renderPureUi(
       <ViewTabs activeView="kanban" onViewChange={onViewChange} copy={copy} />,
@@ -180,7 +184,7 @@ describe.each(LOCALES)("ViewTabs interactions (%s)", (_locale, copy) => {
     expect(onViewChange).toHaveBeenCalledWith("calendar");
   });
 
-  it("FUI[wm.board-layout.view-tabs:active] lists Table, Kanban, Calendar and Timeline in that order with the active tab selected", () => {
+  it(`${fui("wm.board-layout.view-tabs:active", locale)}lists Table, Kanban, Calendar and Timeline in that order with the active tab selected`, () => {
     renderPureUi(
       <ViewTabs activeView="kanban" onViewChange={vi.fn()} copy={copy} />,
     );
@@ -200,7 +204,7 @@ describe.each(LOCALES)("ViewTabs interactions (%s)", (_locale, copy) => {
     ]);
   });
 
-  it("FUI[wm.board-layout.view-tabs:keyboard] is one tab stop that moves focus with the arrow keys without switching view", async () => {
+  it(`${fui("wm.board-layout.view-tabs:keyboard", locale)}is one tab stop that moves focus with the arrow keys without switching view`, async () => {
     const onViewChange = vi.fn();
     renderPureUi(
       <ViewTabs activeView="table" onViewChange={onViewChange} copy={copy} />,

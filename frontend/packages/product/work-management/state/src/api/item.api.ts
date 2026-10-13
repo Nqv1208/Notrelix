@@ -36,6 +36,9 @@ type MoveItemBody = OperationRequestBody<MoveItemOp>;
 type UpdateFieldValueOp = "WorkManagement.BoardItems.UpdateFieldValue";
 type UpdateFieldValueBody = OperationRequestBody<UpdateFieldValueOp>;
 
+type UpdateStatusOp = "WorkManagement.BoardItems.UpdateStatus";
+type UpdateStatusBody = OperationRequestBody<UpdateStatusOp>;
+
 export function createCardApi(client: NotrelixClient) {
   const api = client.api;
   return {
@@ -46,23 +49,24 @@ export function createCardApi(client: NotrelixClient) {
       return mapCardDto(card);
     },
 
+    /** Creates the item and returns its id (absent when the server sends none). */
     async createCard(
       boardId: string,
       payload: CreateCardInput,
       options?: ApiRequestOptions,
-    ): Promise<void> {
+    ): Promise<string | undefined> {
       const body: CreateItemBody = {
         groupId: payload.listId, // canonical uses groupId!
         title: payload.title,
         // Backend-first cut-over (SPEC WM-V3-DEC-017): the server now owns placement
         // and expects neighbor ids; until WM-V3-FE-001 maps them, omitting both appends.
       };
-      await api.post<CreateItemResponse>(
+      const created = await api.post<CreateItemResponse | null | undefined>(
         endpoints.boardItems.create(boardId),
         body,
         options ?? { headers: { "Idempotency-Key": crypto.randomUUID() } },
       );
-      // no longer returning getCard(id) because response is void.
+      return created?.id ?? undefined;
     },
 
     async updateCard(cardId: string, patch: UpdateCardInput): Promise<void> {
@@ -109,6 +113,23 @@ export function createCardApi(client: NotrelixClient) {
           payload.fieldDefinitionId,
         ),
         body,
+      );
+    },
+
+    /**
+     * Sets the item's Status option (`PATCH /board-items/{id}/status`). The
+     * server resolves the board's Status field; the value is the option id.
+     */
+    async updateStatus(
+      cardId: string,
+      statusOptionId: string,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      const body: UpdateStatusBody = { status: statusOptionId };
+      await api.patch<void>(
+        endpoints.boardItems.status(cardId),
+        body,
+        options ?? { idempotencyKey: crypto.randomUUID() },
       );
     },
 
