@@ -162,7 +162,7 @@ export function KanbanColumn({
           </span>
           <span
             aria-hidden="true"
-            className="grid h-5.5 min-w-5.5 place-items-center rounded-[11px] bg-popover px-1.5 text-caption font-semibold text-muted-foreground"
+            className="grid h-5.5 min-w-5.5 place-items-center rounded-[11px] bg-popover px-1.5 text-caption font-semibold dark:bg-card text-muted-foreground"
           >
             {count}
           </span>
@@ -193,7 +193,7 @@ export function KanbanColumn({
         </h2>
         <span
           aria-hidden="true"
-          className="grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] bg-popover px-1.5 text-caption font-semibold text-muted-foreground"
+          className="grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] bg-popover px-1.5 text-caption font-semibold dark:bg-card text-muted-foreground"
         >
           {count}
         </span>
@@ -254,7 +254,7 @@ export function KanbanColumn({
               lane.cards[KANBAN_LANE_VISIBLE_CARDS]?.id ?? null;
             setExpanded(true);
           }}
-          className="h-7.5 rounded-md bg-popover px-2 text-left text-crumb font-medium text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="h-7.5 rounded-md bg-popover px-2 text-left dark:bg-card text-crumb font-medium text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           {pluralCopy(
             { one: copy.showMore_one, other: copy.showMore_other },

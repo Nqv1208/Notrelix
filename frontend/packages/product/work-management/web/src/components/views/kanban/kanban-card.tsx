@@ -138,7 +138,7 @@ export function KanbanCard({
       onPointerDown={onPointerDown}
       aria-current={selected ? "true" : undefined}
       className={cn(
-        "group relative flex cursor-pointer flex-col gap-[9px] rounded-[11px] bg-popover p-3 shadow-card transition-shadow hover:shadow-card-hover",
+        "group relative flex cursor-pointer flex-col gap-[9px] rounded-[11px] bg-popover p-3 dark:bg-card shadow-card transition-shadow hover:shadow-card-hover",
         selected && "shadow-card-hover ring-2 ring-inset ring-primary",
         isDragging && "z-dropdown opacity-60",
       )}

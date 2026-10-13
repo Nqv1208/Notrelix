@@ -227,7 +227,7 @@ export function KanbanToolbar({
       {noResults ? (
         <div
           role="status"
-          className="mb-2 flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-popover px-3 py-2.5 text-compact text-muted-foreground"
+          className="mb-2 flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-popover px-3 py-2.5 dark:bg-card text-compact text-muted-foreground"
         >
           <span>
             <b className="font-semibold text-foreground">
