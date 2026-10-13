@@ -200,6 +200,8 @@ export const cardsOperations = [
       description?: string;
       descriptionMd?: string;
       listId?: string;
+      dueDate?: string | null;
+      startDate?: string | null;
     },
     void
   >({
@@ -216,15 +218,22 @@ export const cardsOperations = [
         description?: string;
         descriptionMd?: string;
         listId?: string;
+        dueDate?: string | null;
+        startDate?: string | null;
       };
       const description =
         data.descriptionMd !== undefined
           ? data.descriptionMd
           : data.description;
+      // Only the fields the request names change: a spread of `undefined`
+      // would wipe the title of a date-only patch.
       const updated = store.updateCard(params.id, {
-        title: data.title,
-        description,
-        listId: data.listId,
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(data.listId !== undefined ? { listId: data.listId } : {}),
+        // The Calendar moves an item by its dates (null clears one).
+        ...(data.dueDate !== undefined ? { dueAt: data.dueDate } : {}),
+        ...(data.startDate !== undefined ? { startedAt: data.startDate } : {}),
       });
       if (!updated) return notFound("Card not found");
       return ok<void>(undefined);

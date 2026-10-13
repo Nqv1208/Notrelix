@@ -77,7 +77,7 @@ function namesOf(
  * One readable segment per selected value, Quá hạn first as in the mockup
  * ("Quá hạn · Ưu tiên Thấp"). Ids the board no longer has are left out.
  */
-function filterSegments(
+export function filterSegments(
   copy: KanbanToolbarCopy["filter"],
   filter: KanbanFilterState,
   options: KanbanToolbarFilterOptions,

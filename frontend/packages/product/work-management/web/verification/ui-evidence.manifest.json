@@ -14,6 +14,11 @@
         "reason": "Container composing TaskDetailPanelSurface with card-detail state and actions."
       },
       {
+        "path": "src/components/views/calendar/board-calendar-view.tsx",
+        "category": "container",
+        "reason": "Stateful view adapter owning the calendar board query state, route filter and writes, composing the registered calendar surface."
+      },
+      {
         "path": "src/components/views/kanban/kanban-view.tsx",
         "category": "container",
         "reason": "Stateful view adapter owning kanban board query state and composing registered board surfaces."
@@ -1396,8 +1401,14 @@
       "surfaceId": "wm.calendar.board",
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "data",
-      "pureEntry": "src/components/views/calendar/board-calendar-view.tsx",
-      "coveredSources": [],
+      "pureEntry": "src/components/views/calendar/board-calendar-surface.tsx",
+      "coveredSources": [
+        "src/components/views/calendar/calendar-agenda.tsx",
+        "src/components/views/calendar/calendar-aside.tsx",
+        "src/components/views/calendar/calendar-event.tsx",
+        "src/components/views/calendar/calendar-grid.tsx",
+        "src/components/views/calendar/calendar-toolbar.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-calendar-board-calendar--default",
@@ -1450,10 +1461,20 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "work-management-calendar-board-calendar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Empty", "EdgeData", "HighDensity"],
+        "required": ["Default", "Empty", "EdgeData", "HighDensity", "ReadOnly"],
         "delegated": [
           {
             "state": "Loading",
@@ -1468,11 +1489,6 @@
         ],
         "notApplicable": [
           {
-            "state": "ReadOnly",
-            "reason": "No product-authoritative read-only contract exists for the calendar board view at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          },
-          {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for the calendar board view at this baseline.",
             "authority": "frontend-ui-readiness.spec.md §9.3"
@@ -1484,8 +1500,80 @@
       "checks": ["interaction", "a11y", "visual", "purity"],
       "interactionCases": [
         {
-          "id": "calendar",
-          "testFile": "src/components/views/calendar/__tests__/board-calendar-view.component.test.tsx"
+          "id": "month",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "event",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "navigation",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "range-switch",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "week",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "day",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "drag-cancel",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "keyboard",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "undated",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "quick-create",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "overflow",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "date-basis",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "filter",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "no-results",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "read-only",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "empty",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "edge-data",
+          "testFile": "src/components/views/calendar/__tests__/board-calendar-surface.interaction.component.test.tsx"
         }
       ]
     },

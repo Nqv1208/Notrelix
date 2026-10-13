@@ -70,6 +70,13 @@ export * from "./components/views/timeline/board-timeline-view";
 
 // Calendar view
 export * from "./components/views/calendar/board-calendar-view";
+export * from "./components/views/calendar/board-calendar-surface";
+export { calendarCatalog } from "./components/views/calendar/calendar.catalog";
+export {
+  calendarCopy,
+  type CalendarCopy,
+} from "./components/views/calendar/calendar.copy";
+export { useCalendarCopy } from "./components/views/calendar/use-calendar-copy";
 
 // Card detail
 export * from "./components/card-detail/task-detail-panel";

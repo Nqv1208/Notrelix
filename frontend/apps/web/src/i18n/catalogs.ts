@@ -19,6 +19,7 @@ import {
 import { notificationBellCatalog } from "@notrelix/features-notifications";
 import {
   boardHeaderCatalog,
+  calendarCatalog,
   itemSheetCatalog,
   kanbanCardCatalog,
   kanbanLaneCatalog,
@@ -43,6 +44,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   kanbanLaneCatalog,
   kanbanToolbarCatalog,
   mainTableCatalog,
+  calendarCatalog,
   itemSheetCatalog,
   boardHeaderCatalog,
   notificationBellCatalog,

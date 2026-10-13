@@ -74,6 +74,7 @@ export function BoardWorkspaceViewContent({
         workspaceId={workspaceId}
         boardId={boardId}
         mode="calendar"
+        kanbanParams={kanbanParams}
       />
     );
   if (view.type === "timeline")
@@ -121,7 +122,7 @@ function BoardFullDataView({
   return (
     <BoardWorkspaceSurface
       status="ready"
-      flush={mode === "kanban"}
+      flush={mode === "kanban" || mode === "calendar"}
       viewContent={
         mode === "kanban" ? (
           <KanbanView
@@ -130,7 +131,14 @@ function BoardFullDataView({
             {...kanbanParams}
           />
         ) : mode === "calendar" ? (
-          <BoardCalendarView groups={groups} />
+          <BoardCalendarView
+            boardId={board.id}
+            workspaceId={workspaceId}
+            selectedItemId={kanbanParams?.selectedItemId}
+            onSelectedItemChange={kanbanParams?.onSelectedItemChange}
+            filter={kanbanParams?.filter}
+            onFilterChange={kanbanParams?.onFilterChange}
+          />
         ) : (
           <BoardTimelineView groups={groups} />
         )

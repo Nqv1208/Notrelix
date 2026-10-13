@@ -1,6 +1,7 @@
 export * from "./use-create-card";
 export * from "./use-create-card-update";
 export * from "./use-create-column";
+export * from "./use-create-dated-item";
 export * from "./use-create-group";
 export * from "./use-create-kanban-column";
 export * from "./use-delete-card";

@@ -1,4 +1,5 @@
 import { useContext } from "react";
+import { cn } from "@notrelix/ui-web";
 import type { BoardHeaderCopy } from "./board-header.copy";
 import { BoardHeaderCopyContext } from "./board-header-copy-context";
 import { BoardHeaderDataContext } from "./board-header-data-context";
@@ -44,7 +45,14 @@ export function BoardToolbar({
   return (
     <div className="flex flex-col">
       <BoardHeaderSurface title={boardTitle} copy={copy} {...header} />
-      <div className="flex min-h-12 items-end gap-0.5 border-b border-line px-4 pt-2.5 sm:px-6">
+      <div
+        className={cn(
+          "flex items-end gap-0.5 border-b border-line px-4 pt-2.5 sm:px-6",
+          // Final-Board sizes the tab strip 2 px taller than the Table,
+          // Calendar and Timeline mockups do (its tab is content-box).
+          activeView === "kanban" ? "min-h-12" : "min-h-11.5",
+        )}
+      >
         <div className="-mb-px min-w-0 overflow-x-auto">
           <ViewTabs
             activeView={activeView}
