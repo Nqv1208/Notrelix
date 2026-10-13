@@ -332,10 +332,13 @@ describe("palette identity", () => {
     expect(seed.h).toBeLessThan(256);
     const light = accents.blue.tones.light;
     expect(light.mark.l).toBeCloseTo(0.63, 2);
-    expect(light.solid.l).toBeCloseTo(0.53, 2);
-    expect(light.ink.l).toBeCloseTo(0.45, 2);
+    // The light fill, ink and soft tones are pinned to the October 2026
+    // mockup (`--accent` #1666CC, `--accent-text` #0F56AE): the same family as
+    // the logo hue, a little deeper and 2–5° toward violet.
+    expect(light.solid.l).toBeCloseTo(0.525, 3);
+    expect(light.ink.l).toBeCloseTo(0.466, 3);
     expect(accents.blue.tones.dark.ink.l).toBeCloseTo(0.72, 2);
-    expect(accents.blue.tones.light.solid.h).toBeCloseTo(seed.h, 1);
+    expect(Math.abs(light.solid.h - seed.h)).toBeLessThan(5);
   });
 
   it("keeps Ember visibly distinct from the danger red", () => {
@@ -365,8 +368,14 @@ describe("palette identity", () => {
       "foreground",
     ]) {
       const color = colors[role]!;
-      expect(color.c, role).toBeLessThanOrEqual(0.01);
-      if (color.c > 0) expect(color.h, role).toBe(255);
+      // Foreground is the mockup ink #161A21 (chroma 0.015, hue 261.6).
+      const maxChroma = role === "foreground" ? 0.016 : 0.01;
+      expect(color.c, role).toBeLessThanOrEqual(maxChroma);
+      if (color.c > 0 && role !== "foreground") expect(color.h, role).toBe(255);
+      if (role === "foreground") {
+        expect(color.h, role).toBeGreaterThanOrEqual(255);
+        expect(color.h, role).toBeLessThanOrEqual(263);
+      }
     }
   });
 

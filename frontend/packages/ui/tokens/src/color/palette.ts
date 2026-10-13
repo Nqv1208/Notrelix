@@ -97,7 +97,7 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     hoverStrong: n(0.933, 0.007), // #E6E9EE
     border: n(0.933, 0.007), // #E6E9EE
     input: n(0.87, 0.008),
-    text: n(0.22, 0.008),
+    text: oklch(0.217, 0.015, 261.6), // #161A21
     textMuted: oklch(0.458, 0.026, 259.2), // #4F5866
     textMeta: oklch(0.514, 0.023, 255), // #5F6875
     line: oklch(0.919, 0.008, 255), // #E1E5EA
@@ -200,6 +200,8 @@ interface AccentRecipe {
   readonly inkHue?: number;
   /** Light-appearance mark lightness when the default fails 3:1 on a surface. */
   readonly lightMarkL?: number;
+  /** Light-appearance tones pinned to exact mockup values. */
+  readonly lightTones?: Partial<AccentTones>;
 }
 
 function buildAccent(id: AccentId, recipe: AccentRecipe): AccentDefinition {
@@ -233,6 +235,7 @@ function buildAccent(id: AccentId, recipe: AccentRecipe): AccentDefinition {
         subtle: tone(0.95, 0.03, hue),
         onSubtle: tone(0.42, chroma, inkHue),
         ring: recipe.lightFill ? tone(0.55, chroma, inkHue) : lightSolid,
+        ...recipe.lightTones,
       },
       dark: {
         mark: tone(0.72, chroma, hue),
@@ -265,6 +268,16 @@ export const accents: Record<AccentId, AccentDefinition> = {
     seedHex: logoHex.blue,
     hue: blueSeed.h,
     chroma: blueSeed.c,
+    // Mockup light accent: `--accent` #1666CC, `--accent-soft` #E7F0FC,
+    // `--accent-text` #0F56AE, `--accent-ink` white.
+    lightTones: {
+      solid: oklch(0.525, 0.175, 257.4),
+      onSolid: neutrals.light.raised,
+      ink: oklch(0.466, 0.155, 257.1),
+      subtle: oklch(0.952, 0.019, 255.5),
+      onSubtle: oklch(0.466, 0.155, 257.1),
+      ring: oklch(0.525, 0.175, 257.4),
+    },
   }),
   /** Coral — from #FC744C. */
   coral: buildAccent("coral", {
@@ -363,28 +376,43 @@ export const statuses: Record<
   Record<ThemeAppearance, StatusTones>
 > = {
   success: buildStatus({ hue: 150, chroma: 0.14 }),
-  warning: buildStatus({
-    hue: 78,
-    chroma: 0.16,
-    lightFill: true,
-    textHue: 62,
-  }),
-  danger: withText(buildStatus({ hue: 27, chroma: 0.21 }), {
-    light: oklch(0.535, 0.194, 18), // #C42340 (mockup)
-    dark: oklch(0.716, 0.18, 13.8), // #FF6B81 (mockup)
+  warning: withTones(
+    buildStatus({
+      hue: 78,
+      chroma: 0.16,
+      lightFill: true,
+      textHue: 62,
+    }),
+    {
+      // Mockup `--warn-soft` #FFF4D6 with `--warn-text` #8A5A00.
+      light: {
+        subtle: oklch(0.968, 0.041, 90.3),
+        onSubtle: oklch(0.508, 0.108, 73.3),
+        text: oklch(0.508, 0.108, 73.3),
+      },
+    },
+  ),
+  danger: withTones(buildStatus({ hue: 27, chroma: 0.21 }), {
+    // Mockup `--danger` #C42340 / #FF6B81 and `--danger-soft` #FDECEF.
+    light: {
+      subtle: oklch(0.957, 0.019, 5.3),
+      onSubtle: oklch(0.535, 0.194, 18),
+      text: oklch(0.535, 0.194, 18),
+    },
+    dark: { text: oklch(0.716, 0.18, 13.8) },
   }),
   info: buildStatus({ hue: 238, chroma: 0.13 }),
 };
 
-/** Replaces the status text tone in the named appearances (mockup values). */
-function withText(
+/** Replaces status tones in the named appearances (mockup values). */
+function withTones(
   tones: Record<ThemeAppearance, StatusTones>,
-  text: Partial<Record<ThemeAppearance, Oklch>>,
+  overrides: Partial<Record<ThemeAppearance, Partial<StatusTones>>>,
 ): Record<ThemeAppearance, StatusTones> {
   const result = { ...tones };
   for (const appearance of THEME_APPEARANCES) {
-    const override = text[appearance];
-    if (override) result[appearance] = { ...tones[appearance], text: override };
+    const override = overrides[appearance];
+    if (override) result[appearance] = { ...tones[appearance], ...override };
   }
   return result;
 }
