@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { fillTableCopy } from "./main-table.copy";
+import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
   TableArchivedNotice,
   TableBulkBar,
@@ -49,6 +50,11 @@ export interface MainTableSurfaceProps {
   canArchive: boolean;
   /** Saved column widths by column id (the view config); absent ids use the design width. */
   columnWidths?: TableColumnWidths;
+  /**
+   * "Thêm nhóm" / "Thêm trạng thái" under the last group: creates a new
+   * option of the grouped field. Absent when the viewer may not add one.
+   */
+  addGroup?: Omit<TableAddGroupProps, "copy">;
   /** A width settled by a drag release or a key press. */
   onColumnWidthChange?: (columnId: string, width: number) => void;
   /** Back to the design width of a column. */
@@ -102,6 +108,7 @@ export function MainTableSurface({
   canEdit,
   canCreate,
   canArchive,
+  addGroup,
   columnWidths,
   onColumnWidthChange,
   onColumnWidthReset,
@@ -329,6 +336,7 @@ export function MainTableSurface({
               </div>
             );
           })}
+          {addGroup ? <TableAddGroup copy={copy} {...addGroup} /> : null}
           {noResults ? (
             <TableNoResults copy={copy} onClear={onClearFilter} />
           ) : groups.length === 0 ? (

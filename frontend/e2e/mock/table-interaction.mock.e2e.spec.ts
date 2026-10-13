@@ -198,4 +198,39 @@ test.describe("Board table interaction (owner)", () => {
     await again.dblclick();
     await expect(again).toHaveAttribute("aria-valuenow", "340");
   });
+
+  test("adding a status creates a group in the table and a lane in the Kanban", async ({
+    page,
+  }) => {
+    await openTable(page);
+    const groups = page.getByRole("rowgroup");
+    await expect(groups).toHaveCount(3);
+    const control = page.getByRole("button", { name: "Thêm trạng thái" });
+    // A quiet full-width row under the last group.
+    const last = (await groups.last().boundingBox())!;
+    const box = (await control.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(last.y + last.height - 1);
+    expect(box.height).toBeCloseTo(36, 0);
+    const grid = (await page.locator("[data-table-scroll]").boundingBox())!;
+    expect(box.width).toBeGreaterThan(grid.width - 4);
+
+    await control.click();
+    await page
+      .getByRole("textbox", { name: "Tên trạng thái" })
+      .fill("Kiểm thử");
+    await page.getByRole("radio", { name: "Hoàn thành" }).click();
+    await page.getByRole("button", { name: "Thêm trạng thái" }).last().click();
+    const added = page.getByRole("rowgroup", { name: "Kiểm thử" });
+    await expect(added).toBeVisible();
+    await expect(groups).toHaveCount(4);
+    await expect(groups.last()).toHaveAccessibleName("Kiểm thử");
+
+    await page.getByRole("tab", { name: "Kanban" }).click();
+    await expect(
+      page
+        .getByRole("region", { name: /Kiểm thử/ })
+        .or(page.getByText("Kiểm thử", { exact: true }))
+        .first(),
+    ).toBeVisible();
+  });
 });

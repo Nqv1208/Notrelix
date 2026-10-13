@@ -30,6 +30,7 @@ import {
 } from "@notrelix/work-management-testing";
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
+import { statusOptionFormCatalog } from "../../../status-option/status-option-form.catalog";
 import { mainTableCatalog } from "../main-table.catalog";
 import { ARCHIVE_UNDO_MS, MainTableView } from "../main-table-view";
 
@@ -105,13 +106,52 @@ function fakeServices(access: BoardAccess) {
     }),
     duplicateCard: vi.fn(async () => undefined),
   };
+  const fieldOptions = {
+    addOption: vi.fn(
+      async (input: {
+        fieldId: string;
+        name: string;
+        color: string;
+        category?: string;
+      }) => {
+        board = {
+          ...board,
+          board: {
+            ...board.board,
+            fieldDefinitions: board.board.fieldDefinitions.map((field) =>
+              field.id === input.fieldId
+                ? {
+                    ...field,
+                    version: (field.version ?? 1) + 1,
+                    options: [
+                      ...field.options,
+                      {
+                        id: `option-${field.options.length + 1}`,
+                        label: input.name,
+                        color: input.color,
+                        position: "zz",
+                        ...(input.category
+                          ? { category: input.category as "done" }
+                          : {}),
+                      },
+                    ],
+                  }
+                : field,
+            ),
+          },
+        };
+      },
+    ),
+    updateOption: vi.fn(async () => undefined),
+  };
   const services = {
     boards,
+    fieldOptions,
     access: { getBoardAccess: vi.fn(async () => access) },
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
   } as unknown as WorkManagementServices;
-  return { services, cards, boards };
+  return { services, cards, boards, fieldOptions };
 }
 
 function Providers({
@@ -124,7 +164,12 @@ function Providers({
   return (
     <WorkManagementTestScope services={services}>
       <I18nProvider
-        catalogs={[mainTableCatalog, kanbanLaneCatalog, itemSheetCatalog]}
+        catalogs={[
+          mainTableCatalog,
+          kanbanLaneCatalog,
+          itemSheetCatalog,
+          statusOptionFormCatalog,
+        ]}
         initialLocale="vi"
       >
         {children}
@@ -376,6 +421,46 @@ describe("MainTableView on the ERP board", () => {
         }),
       ),
     );
+  });
+
+  it("adds a status as a new group at the end of the table", async () => {
+    const { fieldOptions } = renderTable(erpOwnerAccess());
+    await ready();
+    expect(screen.getAllByRole("rowgroup")).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "Thêm trạng thái" }));
+    const name = screen.getByRole("textbox", { name: "Tên trạng thái" });
+    fireEvent.change(name, { target: { value: "Kiểm thử" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Hoàn thành" }));
+    fireEvent.submit(name.closest("form")!);
+    await waitFor(() =>
+      expect(fieldOptions.addOption).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Kiểm thử",
+          category: "done",
+          expectedVersion: expect.any(Number),
+        }),
+        expect.anything(),
+      ),
+    );
+    // The new status is an empty group of the table, after the others.
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole("rowgroup")
+          .map((g) => g.getAttribute("aria-label")),
+      ).toContain("Kiểm thử"),
+    );
+    expect(
+      screen.queryByRole("textbox", { name: "Tên trạng thái" }),
+    ).toBeNull();
+  });
+
+  it("gives a commenter no add-status control", async () => {
+    renderTable(erpCommenterAccess());
+    await ready();
+    expect(
+      screen.queryByRole("button", { name: "Thêm trạng thái" }),
+    ).toBeNull();
   });
 
   it("opens the item sheet through the route item", async () => {

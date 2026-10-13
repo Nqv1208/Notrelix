@@ -1018,6 +1018,7 @@
       "surfaceKind": "data",
       "pureEntry": "src/components/views/table/main-table-surface.tsx",
       "coveredSources": [
+        "src/components/views/table/table-add-group.tsx",
         "src/components/views/table/table-bulk-bar.tsx",
         "src/components/views/table/table-column-resize.tsx",
         "src/components/views/table/table-group-section.tsx",
@@ -1267,6 +1268,10 @@
         },
         {
           "id": "resize",
+          "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
+        },
+        {
+          "id": "add-group",
           "testFile": "src/components/views/table/__tests__/main-table-surface.interaction.component.test.tsx"
         }
       ]

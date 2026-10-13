@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 import {
   ERP_TABLE_ITEM,
   erpTableArchivedProps,
@@ -287,6 +293,75 @@ describe("MainTableSurface", () => {
       "color-mix(in_oklch,var(--row-accent)_22%",
     );
     expect(within(target).queryByText("Mở")).toBeNull();
+  });
+
+  it("FUI[wm.table.main:add-group] adds a status from a quiet row under the last group", async () => {
+    const onSubmit = vi.fn(async () => undefined);
+    const base = erpTableProps();
+    renderTable({
+      ...base,
+      addGroup: { ...base.addGroup!, onSubmit },
+    });
+    const last = screen.getAllByRole("rowgroup").at(-1)!;
+    const control = screen.getByRole("button", { name: "Thêm trạng thái" });
+    // The control follows the last group and is not part of any group.
+    expect(
+      last.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(last.contains(control)).toBe(false);
+    expect(
+      within(last).queryByRole("button", { name: "Thêm trạng thái" }),
+    ).toBeNull();
+
+    fireEvent.click(control);
+    const name = screen.getByRole("textbox", { name: "Tên trạng thái" });
+    // A name the board already has is refused and nothing is sent.
+    fireEvent.change(name, { target: { value: "cần làm" } });
+    fireEvent.submit(name.closest("form")!);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toBeTruthy();
+
+    fireEvent.change(name, { target: { value: "  Kiểm thử  " } });
+    fireEvent.click(screen.getByRole("radio", { name: "Hoàn thành" }));
+    fireEvent.submit(name.closest("form")!);
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Kiểm thử", category: "done" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("textbox", { name: "Tên trạng thái" }),
+      ).toBeNull(),
+    );
+  });
+
+  it("keeps the form open with its values when the group cannot be added", async () => {
+    const onSubmit = vi.fn(async () => {
+      throw new Error("refused");
+    });
+    const base = erpTableProps();
+    renderTable({
+      ...base,
+      addGroup: { ...base.addGroup!, kind: "group", onSubmit },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm nhóm" }));
+    const name = screen.getByRole("textbox", { name: "Tên nhóm" });
+    // A Select field has no status group to choose.
+    expect(screen.queryByRole("radio", { name: "Hoàn thành" })).toBeNull();
+    fireEvent.change(name, { target: { value: "Backlog" } });
+    fireEvent.submit(name.closest("form")!);
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(
+      (screen.getByRole("textbox", { name: "Tên nhóm" }) as HTMLInputElement)
+        .value,
+    ).toBe("Backlog");
+  });
+
+  it("shows no add-group control to a viewer who cannot edit", () => {
+    renderTable(erpTableReadOnlyProps());
+    expect(
+      screen.queryByRole("button", { name: "Thêm trạng thái" }),
+    ).toBeNull();
   });
 
   it("FUI[wm.table.main:resize] resizes a column by pointer, by key and back to its default", () => {

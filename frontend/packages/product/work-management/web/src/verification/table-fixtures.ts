@@ -36,6 +36,7 @@ import {
   mainTableCopy,
   type MainTableCopy,
 } from "../components/views/table/main-table.copy";
+import { statusOptionFormCopy } from "../components/status-option/status-option-form.copy";
 import type { MainTableSurfaceProps } from "../components/views/table/main-table-surface";
 import type { MainTableToolbarProps } from "../components/views/table/table-toolbar";
 import {
@@ -212,6 +213,14 @@ export function erpTableProps(
     canEdit,
     canCreate,
     canArchive: canEdit,
+    addGroup: canEdit
+      ? {
+          formCopy: statusOptionFormCopy(locale),
+          kind: "status",
+          existingNames: statusOptions.map((option) => option.name),
+          onSubmit: noop,
+        }
+      : undefined,
     columnWidths: options.columnWidths ?? {},
     shown: projection.visibleCount,
     hidden: projection.hiddenCount,

@@ -12,6 +12,7 @@ import {
   dropUnknownFilterIds,
   useArchiveCard,
   useBoardAccess,
+  useAddFieldOption,
   useBoardTable,
   useDuplicateCard,
   useUpdateCard,
@@ -49,6 +50,7 @@ import {
   tableStatusOptions,
   type TableStatusOption,
 } from "./table-model";
+import { useStatusOptionFormCopy } from "../../status-option/use-status-option-form-copy";
 import { useMainTableCopy } from "./use-main-table-copy";
 
 type ParamChange = (
@@ -170,6 +172,8 @@ export function MainTableView({
   });
   const { access } = useBoardAccess(boardId, workspaceId);
   const capabilities = boardCapabilities(access?.myLevel);
+  const addOption = useAddFieldOption(boardId, workspaceId);
+  const optionFormCopy = useStatusOptionFormCopy();
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const updateCard = useUpdateCard(boardId, workspaceId);
   const archiveCard = useArchiveCard(boardId, workspaceId, {
@@ -257,6 +261,7 @@ export function MainTableView({
 
   const isStatusGrouping =
     !table.groupByField || table.groupByField.id === table.statusField?.id;
+  const groupField = table.groupByField ?? table.statusField;
   const hiddenByArchive = useMemo(
     () => new Set(pendingArchive),
     [pendingArchive],
@@ -465,6 +470,35 @@ export function MainTableView({
           }}
           groups={groups}
           statusOptions={statusOptions}
+          addGroup={
+            capabilities.canEditFields && groupField
+              ? {
+                  formCopy: optionFormCopy,
+                  kind: isStatusGrouping ? "status" : "group",
+                  existingNames: groupField.options.map(
+                    (option) => option.label,
+                  ),
+                  pending: addOption.isPending,
+                  onSubmit: async (draft) => {
+                    try {
+                      await addOption.mutateAsync({
+                        fieldId: groupField.id,
+                        name: draft.name,
+                        color: draft.color,
+                        category: isStatusGrouping ? draft.category : undefined,
+                      });
+                    } catch (error) {
+                      toast.error(
+                        fillTableCopy(copy.failed.addGroup, {
+                          name: draft.name,
+                        }),
+                      );
+                      throw error;
+                    }
+                  },
+                }
+              : undefined
+          }
           columnWidths={table.columnWidths}
           onColumnWidthChange={table.setColumnWidth}
           onColumnWidthReset={table.resetColumnWidth}

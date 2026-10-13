@@ -86,6 +86,16 @@ export const en = {
     newItemPlaceholder: "Item title…",
     addSubmit: "Add",
     addCancel: "Cancel",
+    addStatus: "Add status",
+    addGroup: "Add group",
+    groupForm: {
+      title: "New group",
+      nameLabel: "Group name",
+      namePlaceholder: "Group name…",
+      submit: "Add group",
+      errorEmpty: "Enter a group name.",
+      errorDuplicate: "A group named “{{name}}” already exists.",
+    },
   },
   row: {
     select: "Select {{key}}",
@@ -168,6 +178,7 @@ export const en = {
     archive: "Couldn't archive “{{title}}”.",
     create: "Couldn't add “{{title}}”.",
     save: "Couldn't save the change to “{{title}}”.",
+    addGroup: "Couldn't add “{{name}}”.",
   },
 };
 
@@ -245,6 +256,16 @@ export const vi: MainTableCopy = {
     newItemPlaceholder: "Nhập tên việc…",
     addSubmit: "Thêm",
     addCancel: "Huỷ",
+    addStatus: "Thêm trạng thái",
+    addGroup: "Thêm nhóm",
+    groupForm: {
+      title: "Nhóm mới",
+      nameLabel: "Tên nhóm",
+      namePlaceholder: "Nhập tên nhóm…",
+      submit: "Thêm nhóm",
+      errorEmpty: "Nhập tên nhóm.",
+      errorDuplicate: "Đã có nhóm tên “{{name}}”.",
+    },
   },
   row: {
     select: "Chọn {{key}}",
@@ -327,6 +348,7 @@ export const vi: MainTableCopy = {
     archive: "Không lưu trữ được “{{title}}”.",
     create: "Không thêm được “{{title}}”.",
     save: "Không lưu được thay đổi của “{{title}}”.",
+    addGroup: "Không thêm được “{{name}}”.",
   },
 };
 
