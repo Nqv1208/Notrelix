@@ -145,6 +145,8 @@ export interface MockColumnRecord {
   isHidden?: boolean;
   /** Options of a Status or Select field, in position order. */
   options?: MockFieldOptionRecord[];
+  /** Field aggregate version (an option write's `expectedVersion`); absent = 1. */
+  version?: number;
 }
 
 /** A board member (`WorkManagement.Boards.GetMembers` / `/full` members). */

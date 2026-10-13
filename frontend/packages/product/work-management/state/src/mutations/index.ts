@@ -10,6 +10,7 @@ export * from "./use-delete-column";
 export * from "./use-delete-group";
 export * from "./use-delete-kanban-column";
 export * from "./use-duplicate-card";
+export * from "./use-field-option";
 export * from "./use-duplicate-group";
 export * from "./use-move-card";
 export * from "./use-move-row";

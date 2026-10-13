@@ -11,6 +11,7 @@ export * from "./api/board-api-mappers";
 export * from "./api/board-access.api";
 export * from "./api/checklist.api";
 export * from "./api/field.api";
+export * from "./api/field-option.api";
 export * from "./api/group.api";
 export * from "./api/item.api";
 export * from "./api/item-comments.api";

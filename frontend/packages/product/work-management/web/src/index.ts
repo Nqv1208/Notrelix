@@ -54,6 +54,16 @@ export {
 } from "./components/views/kanban/kanban-toolbar.copy";
 export { useKanbanToolbarCopy } from "./components/views/kanban/use-kanban-toolbar-copy";
 
+// Status option form (name, colour, group of a Status or Select option)
+export * from "./components/status-option/status-option-form";
+export * from "./components/status-option/status-option-palette";
+export { statusOptionFormCatalog } from "./components/status-option/status-option-form.catalog";
+export {
+  statusOptionFormCopy,
+  type StatusOptionFormCopy,
+} from "./components/status-option/status-option-form.copy";
+export { useStatusOptionFormCopy } from "./components/status-option/use-status-option-form-copy";
+
 // Table view
 export * from "./components/views/table/main-table-view";
 export * from "./components/views/table/main-table-surface";

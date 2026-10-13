@@ -170,6 +170,10 @@ export const endpoints = {
       `/boards/${boardId}/fields/${fieldId}`,
     move: (boardId: string, fieldId: string) =>
       `/boards/${boardId}/fields/${fieldId}/move`,
+    options: (boardId: string, fieldId: string) =>
+      `/boards/${boardId}/fields/${fieldId}/options`,
+    option: (boardId: string, fieldId: string, optionId: string) =>
+      `/boards/${boardId}/fields/${fieldId}/options/${optionId}`,
   },
   boardViews: {
     detail: (boardId: string) => `/boards/${boardId}/views`,

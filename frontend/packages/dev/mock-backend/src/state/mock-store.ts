@@ -23,6 +23,7 @@ import type {
   MockPageRecord,
   MockBoardViewRecord,
   MockColumnRecord,
+  MockFieldOptionRecord,
   MockLabelRecord,
   MockChecklistRecord,
   MockChecklistItemRecord,
@@ -1427,6 +1428,86 @@ export class MockStore {
     };
     this.columnsById.set(columnId, updated);
     return true;
+  }
+
+  /**
+   * Adds an option to a Status or Select field and bumps the field version
+   * (the backend's `AddFieldOption`): appended after the last option, or
+   * between the named neighbours. `stale` = the expected version is behind.
+   */
+  addFieldOption(
+    columnId: string,
+    input: {
+      name: string;
+      color: string;
+      category?: MockFieldOptionRecord["category"];
+      expectedVersion: number;
+    },
+  ):
+    | { result: "ok"; option: MockFieldOptionRecord }
+    | { result: "not-found" | "invalid" | "stale" } {
+    const col = this.columnsById.get(columnId);
+    if (!col) return { result: "not-found" };
+    if (col.fieldType !== "status" && col.fieldType !== "select") {
+      return { result: "invalid" };
+    }
+    if ((col.version ?? 1) !== input.expectedVersion) {
+      return { result: "stale" };
+    }
+    const options = [...(col.options ?? [])].sort((a, b) =>
+      a.position < b.position ? -1 : a.position > b.position ? 1 : 0,
+    );
+    const last = options.at(-1)?.position;
+    const option: MockFieldOptionRecord = {
+      id: this.nextId("opt"),
+      name: input.name,
+      color: input.color,
+      // Appending "0" to the last key sorts after it and before any longer key.
+      position: last === undefined ? "a0" : `${last}0`,
+      ...(col.fieldType === "status"
+        ? { category: input.category ?? "in_progress" }
+        : {}),
+    };
+    this.columnsById.set(columnId, {
+      ...col,
+      options: [...options, option],
+      version: (col.version ?? 1) + 1,
+    });
+    return { result: "ok", option };
+  }
+
+  /** Renames or recolours an option and bumps the field version. */
+  updateFieldOption(
+    columnId: string,
+    optionId: string,
+    patch: {
+      name?: string;
+      color?: string;
+      category?: MockFieldOptionRecord["category"];
+      expectedVersion: number;
+    },
+  ): "ok" | "not-found" | "stale" {
+    const col = this.columnsById.get(columnId);
+    const option = col?.options?.find((candidate) => candidate.id === optionId);
+    if (!col || !option) return "not-found";
+    if ((col.version ?? 1) !== patch.expectedVersion) return "stale";
+    this.columnsById.set(columnId, {
+      ...col,
+      options: (col.options ?? []).map((candidate) =>
+        candidate.id === optionId
+          ? {
+              ...candidate,
+              name: patch.name ?? candidate.name,
+              color: patch.color ?? candidate.color,
+              ...(col.fieldType === "status" && patch.category
+                ? { category: patch.category }
+                : {}),
+            }
+          : candidate,
+      ),
+      version: (col.version ?? 1) + 1,
+    });
+    return "ok";
   }
 
   deleteColumn(columnId: string): boolean {

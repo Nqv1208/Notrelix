@@ -14,6 +14,8 @@
  *   boards.columns.update  — PATCH /boards/:boardId/fields/:columnId
  *   boards.columns.delete  — DELETE /boards/:boardId/fields/:columnId
  *   boards.columns.move — POST /boards/:boardId/fields/:fieldId/move
+ *   boards.options.add     — POST /boards/:boardId/fields/:fieldId/options
+ *   boards.options.update  — PATCH /boards/:boardId/fields/:fieldId/options/:optionId
  *   boards.labels.list     — GET /boards/:boardId/labels
  *   boards.labels.create   — POST /boards/:boardId/labels
  *   boards.labels.update   — PATCH /boards/:boardId/labels/:labelId
@@ -64,6 +66,47 @@ type GeneratedBoardAccessDto =
 type FullBoardField = NonNullable<GeneratedFullBoardDto["columns"]>[number];
 type FullBoardGroup = NonNullable<GeneratedFullBoardDto["lists"]>[number];
 type FullBoardItem = NonNullable<FullBoardGroup["boardItems"]>[number];
+
+/** 400 with field errors, as the real API answers a validation failure. */
+function optionBadRequest(errors: Record<string, string[]>) {
+  return {
+    status: 400,
+    body: { message: "Validation failed", code: "VALIDATION_ERROR", errors },
+  };
+}
+
+const OPTION_CATEGORIES = ["todo", "in_progress", "review", "done"] as const;
+
+function optionCategory(
+  value: string | null | undefined,
+): "todo" | "in_progress" | "review" | "done" | undefined {
+  return OPTION_CATEGORIES.find((category) => category === value);
+}
+
+/** The backend validator's rules for an option write (name, colour, version, category). */
+function optionInputErrors(data: {
+  name?: string;
+  color?: string;
+  category?: string | null;
+  expectedVersion?: number;
+}): Record<string, string[]> | null {
+  const errors: Record<string, string[]> = {};
+  if (!data.name?.trim() || data.name.length > 200) {
+    errors.name = ["Name is required (200 characters at most)."];
+  }
+  if (!data.color || data.color.length > 20) {
+    errors.color = ["Color is required (20 characters at most)."];
+  }
+  if (!data.expectedVersion || data.expectedVersion <= 0) {
+    errors.expectedVersion = ["ExpectedVersion must be a positive value."];
+  }
+  if (data.category != null && !optionCategory(data.category)) {
+    errors.category = [
+      "Category must be one of: todo, in_progress, review, done.",
+    ];
+  }
+  return Object.keys(errors).length > 0 ? errors : null;
+}
 
 /** Backend field type names (`FieldType` enum) for the mock column types. */
 const FIELD_TYPE_NAMES: Record<string, string> = {
@@ -210,7 +253,7 @@ function projectField(
     position: positionKey(index + 1),
     isSystem: fieldType === "Status",
     isDeleted: false,
-    version: 1,
+    version: column.version ?? 1,
     ...(fieldType === "Status" || fieldType === "Select"
       ? {
           options: (column.options ?? []).map((option) => ({
@@ -750,6 +793,105 @@ export const boardsOperations = [
         data.nextSiblingId,
       );
       if (!moved) return notFound("Column not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── POST /boards/:boardId/fields/:fieldId/options ──────────────────────
+
+  defineMockOperation<
+    { boardId: string; fieldId: string },
+    {
+      name?: string;
+      color?: string;
+      category?: string | null;
+      expectedVersion?: number;
+    },
+    string
+  >({
+    id: "boards.options.add",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.AddFieldOption",
+    } as any,
+    method: "POST",
+    route: "/boards/:boardId/fields/:fieldId/options",
+    async handle({ params, body, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return optionBadRequest({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const data = body ?? {};
+      const invalid = optionInputErrors(data);
+      if (invalid) return optionBadRequest(invalid);
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const column = store.getColumn(params.fieldId);
+      if (!column || column.boardId !== params.boardId) {
+        return notFound("Field not found");
+      }
+      const added = store.addFieldOption(params.fieldId, {
+        name: data.name!.trim(),
+        color: data.color!,
+        category: optionCategory(data.category),
+        expectedVersion: data.expectedVersion!,
+      });
+      switch (added.result) {
+        case "not-found":
+          return notFound("Field not found");
+        case "invalid":
+          return optionBadRequest({
+            fieldId: ["Only a Status or Select field has options."],
+          });
+        case "stale":
+          return preconditionFailed();
+        case "ok":
+          return ok<string>(added.option.id);
+      }
+    },
+  }),
+
+  // ─── PATCH /boards/:boardId/fields/:fieldId/options/:optionId ───────────
+
+  defineMockOperation<
+    { boardId: string; fieldId: string; optionId: string },
+    {
+      name?: string;
+      color?: string;
+      category?: string | null;
+      expectedVersion?: number;
+    },
+    void
+  >({
+    id: "boards.options.update",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.UpdateFieldOption",
+    } as any,
+    method: "PATCH",
+    route: "/boards/:boardId/fields/:fieldId/options/:optionId",
+    async handle({ params, body, store, request }) {
+      if (!request.headers.get("Idempotency-Key")) {
+        return optionBadRequest({
+          "Idempotency-Key": ["The header is required."],
+        });
+      }
+      const data = body ?? {};
+      const invalid = optionInputErrors(data);
+      if (invalid) return optionBadRequest(invalid);
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const column = store.getColumn(params.fieldId);
+      if (!column || column.boardId !== params.boardId) {
+        return notFound("Field not found");
+      }
+      const updated = store.updateFieldOption(params.fieldId, params.optionId, {
+        name: data.name!.trim(),
+        color: data.color!,
+        category: optionCategory(data.category),
+        expectedVersion: data.expectedVersion!,
+      });
+      if (updated === "not-found") return notFound("Option not found");
+      if (updated === "stale") return preconditionFailed();
       return ok<void>(undefined);
     },
   }),

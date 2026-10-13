@@ -11,6 +11,7 @@ import { createCardApi } from "./api/item.api";
 import { createGroupApi } from "./api/group.api";
 import { createListApi } from "./api/list.api";
 import { createColumnApi } from "./api/field.api";
+import { createFieldOptionApi } from "./api/field-option.api";
 import { createLabelApi } from "./api/label.api";
 import { createChecklistApi } from "./api/checklist.api";
 import { createCommentApi } from "./api/item-comments.api";
@@ -22,6 +23,7 @@ export interface WorkManagementServices {
   readonly groups: ReturnType<typeof createGroupApi>;
   readonly lists: ReturnType<typeof createListApi>;
   readonly columns: ReturnType<typeof createColumnApi>;
+  readonly fieldOptions: ReturnType<typeof createFieldOptionApi>;
   readonly labels: ReturnType<typeof createLabelApi>;
   readonly checklists: ReturnType<typeof createChecklistApi>;
   readonly comments: ReturnType<typeof createCommentApi>;
@@ -37,6 +39,7 @@ export function createWorkManagementServices(
     groups: createGroupApi(client),
     lists: createListApi(client),
     columns: createColumnApi(client),
+    fieldOptions: createFieldOptionApi(client),
     labels: createLabelApi(client),
     checklists: createChecklistApi(client),
     comments: createCommentApi(client),

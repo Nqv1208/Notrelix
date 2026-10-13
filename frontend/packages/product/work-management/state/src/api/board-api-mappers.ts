@@ -564,6 +564,9 @@ function mapBoardColumnDto(
     ...(normalizeName(rawType) === "status"
       ? { semanticRole: "status" as const }
       : {}),
+    ...("version" in dto && typeof dto.version === "number" && dto.version > 0
+      ? { version: dto.version }
+      : {}),
   };
 }
 

@@ -42,6 +42,11 @@ export interface FieldDefinition {
   isHidden: boolean;
   isSystemField: boolean;
   semanticRole?: FieldSemanticRole;
+  /**
+   * The field's aggregate version from the board read: an option write sends
+   * it as `expectedVersion`. Absent on older reads.
+   */
+  version?: number;
 }
 
 export interface FieldValue {
