@@ -11,6 +11,9 @@ import { expect, test, type Page } from "@playwright/test";
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
+const faults = process.env.VITE_MOCK_FAULTS ?? "";
+/** The fault run: the mock answers 500 to ERP-149's status write. */
+const statusFault = faults.includes("/board-items/mock-erp-item-149/status");
 const BOARD = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
 const NOW = new Date("2026-10-12T10:40:00+07:00");
 const LANES = ["Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành"] as const;
@@ -82,8 +85,8 @@ async function dragCardToLane(page: Page, cardTitle: string, laneName: string) {
 for (const viewport of VIEWPORTS) {
   test.describe(`status Kanban at ${viewport.name} px (owner)`, () => {
     test.skip(
-      persona !== "owner" || scenario !== "default",
-      "Owner checks need the default owner world",
+      persona !== "owner" || scenario !== "default" || faults !== "",
+      "Owner checks need the default owner world without faults",
     );
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
@@ -158,6 +161,66 @@ for (const viewport of VIEWPORTS) {
       expect(new URL(page.url()).searchParams.has("filter")).toBe(false);
     });
 
+    test("reorders a card inside its lane and keeps the order after the board is read again", async ({
+      page,
+    }) => {
+      test.skip(viewport.width < 1024, "Lanes scroll sideways on a phone");
+      await openBoard(page);
+      const todo = lane(page, "Cần làm");
+      const titles = () =>
+        todo
+          .locator("[data-card-id]")
+          .evaluateAll((buttons) =>
+            buttons.map((button) => button.getAttribute("aria-label")),
+          );
+      const third = "Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng";
+      const first = (await titles())[0]!;
+      const from = (await todo
+        .getByRole("button", { name: third, exact: true })
+        .boundingBox())!;
+      const to = (await todo
+        .getByRole("button", { name: first, exact: true })
+        .boundingBox())!;
+      await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(
+        from.x + from.width / 2,
+        from.y + from.height / 2 - 12,
+        {
+          steps: 4,
+        },
+      );
+      await page.mouse.move(to.x + to.width / 2, to.y + 4, { steps: 20 });
+      await page.mouse.up();
+      await expect.poll(async () => (await titles())[0]).toBe(third);
+
+      await page.getByRole("tab", { name: "Bảng" }).click();
+      await expect(lane(page, "Cần làm")).toHaveCount(0);
+      await page.getByRole("tab", { name: "Kanban" }).click();
+      await expect.poll(async () => (await titles())[0]).toBe(third);
+      await expect.poll(() => laneCounts(page)).toEqual(["6", "3", "2", "5"]);
+    });
+
+    test("keeps keyboard focus out of the board the sheet covers", async ({
+      page,
+    }) => {
+      test.skip(viewport.width >= 768, "The sheet covers the board on a phone");
+      await openBoard(page);
+      await page.getByRole("button", { name: ERP_142, exact: true }).click();
+      await expect(page.getByRole("dialog", { name: ERP_142 })).toBeVisible();
+      for (let step = 0; step < 25; step += 1) {
+        await page.keyboard.press("Tab");
+        const inCoveredBoard = await page.evaluate(() => {
+          const active = document.activeElement;
+          return Boolean(
+            active?.closest("[data-kanban-board]") &&
+            !active.closest("[role='dialog']"),
+          );
+        });
+        expect(inCoveredBoard).toBe(false);
+      }
+    });
+
     test("opens the item sheet and returns focus to the card when it closes", async ({
       page,
     }) => {
@@ -208,6 +271,80 @@ for (const viewport of VIEWPORTS) {
         sheet.getByRole("button", { name: /^Trạng thái: / }),
       ).toHaveAttribute("aria-disabled", "true");
       expect(errors).toEqual([]);
+    });
+  });
+
+  test.describe(`status Kanban at ${viewport.name} px (failed write)`, () => {
+    test.skip(
+      persona !== "owner" || !statusFault,
+      "Needs VITE_MOCK_FAULTS=/board-items/mock-erp-item-149/status=500",
+    );
+    test.use({ viewport: { width: viewport.width, height: viewport.height } });
+
+    test("puts ERP-149 back in Cần làm and says so when its status write fails", async ({
+      page,
+    }) => {
+      await openBoard(page);
+      if (viewport.width >= 1024) {
+        await dragCardToLane(page, ERP_149, "Đang làm");
+      } else {
+        await page.getByRole("button", { name: ERP_149, exact: true }).click();
+        const sheet = page.getByRole("dialog", { name: ERP_149 });
+        await sheet
+          .getByRole("button", { name: /^Trạng thái: Cần làm/ })
+          .click();
+        await page.getByRole("menuitem", { name: "Đang làm" }).click();
+      }
+      await expect(
+        page.getByText(
+          "Không chuyển được “Viết tài liệu quy trình nhập hoá đơn đầu vào”. Việc đã về lại Cần làm.",
+        ),
+      ).toBeVisible();
+      if (viewport.width < 1024) {
+        // The sheet covers the board on a phone; close it to read the lanes.
+        await page.keyboard.press("Escape");
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+      }
+      await expect.poll(() => laneCounts(page)).toEqual(["6", "3", "2", "5"]);
+      await expect(
+        lane(page, "Cần làm").getByRole("button", {
+          name: ERP_149,
+          exact: true,
+        }),
+      ).toBeAttached();
+    });
+  });
+
+  test.describe(`status Kanban at ${viewport.name} px (viewer)`, () => {
+    test.skip(
+      persona !== "viewer",
+      "Needs the server started with VITE_MOCK_PERSONA=viewer",
+    );
+    test.use({ viewport: { width: viewport.width, height: viewport.height } });
+
+    test("gives a viewer a read-only board and sheet", async ({ page }) => {
+      await openBoard(page);
+      await expect(page.getByRole("note")).toContainText(
+        "Bạn có quyền xem board này",
+      );
+      await expect(
+        page.getByRole("button", { name: /^Thêm vào / }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "Thêm công việc" }),
+      ).toHaveCount(0);
+      if (viewport.width >= 1024) {
+        await dragCardToLane(page, ERP_149, "Đang làm");
+        await expect.poll(() => laneCounts(page)).toEqual(["6", "3", "2", "5"]);
+      }
+      await page.getByRole("button", { name: ERP_142, exact: true }).click();
+      const sheet = page.getByRole("dialog", { name: ERP_142 });
+      await expect(
+        sheet.getByRole("button", { name: /^Trạng thái: / }),
+      ).toHaveAttribute("aria-disabled", "true");
+      await expect(
+        sheet.getByRole("textbox", { name: /bình luận/i }),
+      ).toBeDisabled();
     });
   });
 }
