@@ -843,6 +843,13 @@ export class MockStore {
         level: "commenter",
         grantedByUserId: ERP_PEOPLE.HP.id,
       },
+      // The viewer persona (a workspace guest) can only view this board.
+      {
+        boardId,
+        userId: mockIds.users.viewer,
+        level: "viewer",
+        grantedByUserId: ERP_PEOPLE.HP.id,
+      },
     ]);
     this.boardAudienceByBoardId.set(boardId, {
       ...ERP_AUDIENCE,
@@ -1690,8 +1697,85 @@ export class MockStore {
     return newCard;
   }
 
+  /** Archives an item: it leaves the board read and keeps its data. */
   archiveCard(cardId: string): boolean {
-    return this.cardsById.has(cardId);
+    const card = this.cardsById.get(cardId);
+    if (!card) return false;
+    this.cardsById.set(cardId, {
+      ...card,
+      isArchived: true,
+      version: (card.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    });
+    return true;
+  }
+
+  /**
+   * `WorkManagement.BoardItems.Move`, like the server: the item's version must
+   * match `expectedVersion` ("stale" otherwise); it is placed between the
+   * given neighbours of the target group (both `null` appends) and its
+   * version goes up.
+   */
+  moveItem(
+    cardId: string,
+    groupId: string,
+    placement: {
+      readonly expectedVersion: number;
+      readonly previousSiblingId: string | null;
+      readonly nextSiblingId: string | null;
+    },
+  ):
+    | {
+        readonly result: "ok";
+        readonly version: number;
+        readonly card: MockCardRecord;
+      }
+    | { readonly result: "not-found" | "invalid" | "stale" } {
+    const card = this.cardsById.get(cardId);
+    if (!card) return { result: "not-found" };
+    const group = this.listsById.get(groupId);
+    if (!group || group.boardId !== card.boardId) return { result: "invalid" };
+    if ((card.version ?? 1) !== placement.expectedVersion) {
+      return { result: "stale" };
+    }
+    const others = this.getCards(groupId).filter(
+      (other) => other.id !== cardId,
+    );
+    const previous = placement.previousSiblingId
+      ? others.find((other) => other.id === placement.previousSiblingId)
+      : undefined;
+    const next = placement.nextSiblingId
+      ? others.find((other) => other.id === placement.nextSiblingId)
+      : undefined;
+    if (
+      (placement.previousSiblingId && !previous) ||
+      (placement.nextSiblingId && !next)
+    ) {
+      return { result: "invalid" };
+    }
+    const at = (index: number) => others[index]?.position;
+    const afterPrevious = previous
+      ? at(others.indexOf(previous) + 1)
+      : undefined;
+    const beforeNext = next ? at(others.indexOf(next) - 1) : undefined;
+    const between = (low: number, high: number) => (low + high) / 2;
+    const position =
+      previous && next
+        ? between(previous.position, next.position)
+        : previous
+          ? afterPrevious !== undefined
+            ? between(previous.position, afterPrevious)
+            : previous.position + 1
+          : next
+            ? beforeNext !== undefined
+              ? between(beforeNext, next.position)
+              : next.position - 1
+            : (others.at(-1)?.position ?? 0) + 1;
+    this.moveCard(cardId, groupId, position);
+    const version = (card.version ?? 1) + 1;
+    const moved = { ...this.cardsById.get(cardId)!, version };
+    this.cardsById.set(cardId, moved);
+    return { result: "ok", version, card: moved };
   }
 
   /**
@@ -1718,6 +1802,7 @@ export class MockStore {
     const done = option.category === "done";
     this.cardsById.set(cardId, {
       ...card,
+      version: (card.version ?? 1) + 1,
       completedAt: done ? (card.completedAt ?? this.clock.isoNow()) : null,
       updatedAt: this.clock.isoNow(),
     });

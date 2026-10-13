@@ -75,4 +75,22 @@ describe("MFB-FZ-00: Mock Configuration and Env Parsing", () => {
       MockConfigurationError,
     );
   });
+
+  it("reads per-path faults from VITE_MOCK_FAULTS and rejects unknown faults", () => {
+    expect(
+      parseMockConfigFromEnv({
+        VITE_MOCK_FAULTS:
+          "/board-items/mock-erp-item-149/status=500, /boards/x/full=network",
+      }).faultProfile,
+    ).toEqual({
+      "/board-items/mock-erp-item-149/status": "500",
+      "/boards/x/full": "network",
+    });
+    expect(() =>
+      parseMockConfigFromEnv({ VITE_MOCK_FAULTS: "/a=teapot" }),
+    ).toThrow(/VITE_MOCK_FAULTS/);
+    expect(() =>
+      parseMockConfigFromEnv({ VITE_MOCK_FAULTS: "no-separator" }),
+    ).toThrow(/VITE_MOCK_FAULTS/);
+  });
 });

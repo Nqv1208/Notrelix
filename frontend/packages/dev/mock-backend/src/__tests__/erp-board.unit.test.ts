@@ -232,4 +232,152 @@ describe("ERP board in the mock world", () => {
       itemKey: "ERP-154",
     });
   });
+
+  describe("writes behave like the real API", () => {
+    const BASE = "http://localhost:8000/api/v1";
+    function rawFetch(persona: MockPersona = "owner") {
+      const store = new MockStore({ ...defaultConfig, persona });
+      return { store, fetch: createMockFetch(store) };
+    }
+    function erpCard(store: MockStore, key: string) {
+      return store
+        .getLists(boardId)
+        .flatMap((list) => store.getCards(list.id))
+        .find((card) => card.itemKey === key)!;
+    }
+    const json = (body: unknown, key?: string): RequestInit => ({
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(key ? { "Idempotency-Key": key } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+
+    it("status: 204 with a key, 400 without one, 403 for a commenter", async () => {
+      const owner = rawFetch();
+      const item = erpCard(owner.store, "ERP-149");
+      const url = `${BASE}/board-items/${item.id}/status`;
+      const noKey = await owner.fetch(
+        url,
+        json({ status: "mock-erp-status-doing" }),
+      );
+      expect(noKey.status).toBe(400);
+      const done = await owner.fetch(
+        url,
+        json({ status: "mock-erp-status-doing" }, "status-key-1"),
+      );
+      expect(done.status).toBe(204);
+
+      const commenter = rawFetch("commenter");
+      const theirs = erpCard(commenter.store, "ERP-149");
+      const denied = await commenter.fetch(
+        `${BASE}/board-items/${theirs.id}/status`,
+        json({ status: "mock-erp-status-doing" }, "status-key-2"),
+      );
+      expect(denied.status).toBe(403);
+    });
+
+    it("a viewer (a guest with a view entry) reads the board and cannot write", async () => {
+      const { client, store } = clientFor("viewer");
+      const access = await createBoardAccessApi(client).getBoardAccess(boardId);
+      expect(access.myLevel).toBe("viewer");
+      const item = erpCard(store, "ERP-149");
+      await expect(
+        createCardApi(client).updateStatus(item.id, "mock-erp-status-doing"),
+      ).rejects.toMatchObject({ kind: "forbidden" });
+    });
+
+    it("a commenter's status write is refused and changes nothing", async () => {
+      const { client, store } = clientFor("commenter");
+      const item = erpCard(store, "ERP-149");
+      const before = store.getFieldValues(item.id);
+      await expect(
+        createCardApi(client).updateStatus(item.id, "mock-erp-status-doing"),
+      ).rejects.toMatchObject({ kind: "forbidden" });
+      expect(store.getFieldValues(item.id)).toEqual(before);
+    });
+
+    it("move: keeps the order given by the neighbours, checks the version and answers with the new one", async () => {
+      const { client, store } = clientFor();
+      const cards = createCardApi(client);
+      const group = store.getLists(boardId)[0]!;
+      const [first, second, third] = store.getCards(group.id);
+      const moved = await cards.moveCard({
+        cardId: third!.id,
+        listId: group.id,
+        expectedVersion: 1,
+        previousSiblingId: first!.id,
+        nextSiblingId: second!.id,
+      });
+      expect(moved.version).toBe(2);
+      expect(
+        store
+          .getCards(group.id)
+          .slice(0, 3)
+          .map((card) => card.id),
+      ).toEqual([first!.id, third!.id, second!.id]);
+      // The same item version again is stale now.
+      await expect(
+        cards.moveCard({
+          cardId: third!.id,
+          listId: group.id,
+          expectedVersion: 1,
+          previousSiblingId: null,
+          nextSiblingId: first!.id,
+        }),
+      ).rejects.toBeTruthy();
+    });
+
+    it("move: 400 without a version or a key, 403 for a commenter", async () => {
+      const owner = rawFetch();
+      const group = owner.store.getLists(boardId)[0]!;
+      const item = owner.store.getCards(group.id)[0]!;
+      const post = (body: unknown, key?: string): RequestInit => ({
+        ...json(body, key),
+        method: "POST",
+      });
+      const url = `${BASE}/board-items/${item.id}/move`;
+      expect(
+        (await owner.fetch(url, post({ groupId: group.id }, "move-key-1")))
+          .status,
+      ).toBe(400);
+      expect(
+        (
+          await owner.fetch(
+            url,
+            post({ groupId: group.id, expectedVersion: 1 }),
+          )
+        ).status,
+      ).toBe(400);
+      const commenter = rawFetch("commenter");
+      const theirGroup = commenter.store.getLists(boardId)[0]!;
+      const theirs = commenter.store.getCards(theirGroup.id)[0]!;
+      const denied = await commenter.fetch(
+        `${BASE}/board-items/${theirs.id}/move`,
+        post({ groupId: theirGroup.id, expectedVersion: 1 }, "move-key-2"),
+      );
+      expect(denied.status).toBe(403);
+    });
+
+    it("archive: the item leaves the board read; a commenter cannot archive", async () => {
+      const { client, store } = clientFor();
+      const item = erpCard(store, "ERP-149");
+      await createCardApi(client).archiveCard(item.id);
+      const full = await createBoardApi(client).getFullBoard(boardId, {
+        workspaceId,
+      });
+      const lanes = groupCardsByStatus({
+        fieldDefinitions: full.board.fieldDefinitions,
+        groups: full.groups,
+      });
+      expect(lanes.map((lane) => lane.total)).toEqual([5, 3, 2, 5]);
+
+      const commenter = clientFor("commenter");
+      const theirs = erpCard(commenter.store, "ERP-151");
+      await expect(
+        createCardApi(commenter.client).archiveCard(theirs.id),
+      ).rejects.toBeTruthy();
+    });
+  });
 });

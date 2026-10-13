@@ -85,6 +85,10 @@ export interface MockCardRecord {
   assigneeUserIds?: string[];
   /** Child progress of an item whose children are not seeded as cards. */
   childProgress?: { done: number; total: number } | null;
+  /** Item aggregate version (a move's `expectedVersion`); absent = 1. */
+  version?: number;
+  /** Archived items leave the board read; they are not deleted. */
+  isArchived?: boolean;
 }
 
 export interface MockPageRecord {

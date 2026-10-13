@@ -172,6 +172,14 @@ const VALID_OVERLAYS = new Set<string>([
   "many-cards",
 ]);
 
+const VALID_FAULTS = new Set<string>([
+  "network",
+  "401",
+  "409",
+  "500",
+  "validation",
+]);
+
 export function parseMockConfigFromEnv(
   env: Record<string, string | undefined>,
 ): Partial<MockBackendConfig> {
@@ -272,6 +280,22 @@ export function parseMockConfigFromEnv(
       );
     }
     partial.seed = seed;
+  }
+
+  // VITE_MOCK_FAULTS — "path=fault" pairs separated by commas, e.g.
+  // "/board-items/mock-erp-item-149/status=500"; fail fast on anything else.
+  if (env["VITE_MOCK_FAULTS"] !== undefined && env["VITE_MOCK_FAULTS"] !== "") {
+    const faults: MockFaultProfile = {};
+    for (const entry of env["VITE_MOCK_FAULTS"].split(",")) {
+      const [path, fault] = entry.trim().split("=");
+      if (!path || !fault || !VALID_FAULTS.has(fault)) {
+        throw new MockConfigurationError(
+          `Invalid VITE_MOCK_FAULTS entry "${entry.trim()}". Use path=fault with fault one of: ${Array.from(VALID_FAULTS).join(", ")}`,
+        );
+      }
+      faults[path] = fault as MockFaultProfile[string];
+    }
+    partial.faultProfile = { ...(partial.faultProfile ?? {}), ...faults };
   }
 
   return partial;

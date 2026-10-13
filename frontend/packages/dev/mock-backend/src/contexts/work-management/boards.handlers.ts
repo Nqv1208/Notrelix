@@ -189,7 +189,7 @@ function projectItemSummary(
     position: positionKey(index),
     createdAt: card.createdAt,
     updatedAt: card.updatedAt,
-    version: 1,
+    version: card.version ?? 1,
     ...projectItemReadValues(card, store),
   };
 }
@@ -260,7 +260,7 @@ function projectFullBoard(
       version: 1,
       boardItems: store
         .getCards(list.id)
-        .filter((card) => !card.parentItemId)
+        .filter((card) => !card.parentItemId && !card.isArchived)
         .map((card, cardIndex) => projectItemSummary(card, cardIndex, store)),
     })),
     members: store.getBoardMembers(board.id).flatMap((member) => {
@@ -303,6 +303,18 @@ const SPACE_LEVEL: Record<string, AccessLevel> = {
  * entry, except the mock's unplaced boards (which every member can open).
  * `null` = no access, answered NotFound like a missing board.
  */
+/**
+ * Whether the caller may change the items of a board, after the board
+ * access read: editors and managers may, commenters and viewers may not
+ * (the server's UpdateItem and MoveItem actions).
+ */
+export function canWriteBoardItems(boardId: string, store: MockStore): boolean {
+  const board = store.getBoard(boardId);
+  if (!board) return false;
+  const access = projectBoardAccess(board, store);
+  return access?.myLevel === "editor" || access?.myLevel === "manager";
+}
+
 function projectBoardAccess(
   board: MockBoardRecord,
   store: MockStore,

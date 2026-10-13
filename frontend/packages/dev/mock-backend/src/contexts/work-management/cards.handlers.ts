@@ -38,10 +38,31 @@ import type {
   CommentDtoApi,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
-import { ok, notFound } from "../../transport/create-response";
+import {
+  forbidden,
+  noContent,
+  notFound,
+  ok,
+} from "../../transport/create-response";
+import { preconditionFailed } from "../workspace/space-target";
 import type { MockStore } from "../../state/mock-store";
 import type { MockCardRecord } from "../../state/records";
-import { projectItemReadValues } from "./boards.handlers";
+import { canWriteBoardItems, projectItemReadValues } from "./boards.handlers";
+
+/** 400 with field errors, as the real API answers a validation failure. */
+function badRequest(errors: Record<string, string[]>) {
+  return {
+    status: 400,
+    body: { message: "Validation failed", code: "VALIDATION_ERROR", errors },
+  };
+}
+
+/** The real write endpoints require an `Idempotency-Key` header (else 400). */
+function missingIdempotencyKey(request: { headers: Headers }) {
+  return request.headers.get("Idempotency-Key")
+    ? null
+    : badRequest({ "Idempotency-Key": ["The header is required."] });
+}
 
 /**
  * The item detail: the hand-written fields plus the generated item read
@@ -237,9 +258,13 @@ export const cardsOperations = [
     } as any,
     method: "POST",
     route: "/board-items/:id/archive",
-    async handle({ params, store }) {
-      const archived = store.archiveCard(params.id);
-      if (!archived) return notFound("Card not found");
+    async handle({ params, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      store.archiveCard(params.id);
       return ok<void>(undefined);
     },
   }),
@@ -271,21 +296,52 @@ export const cardsOperations = [
     } as any,
     method: "POST",
     route: "/board-items/:id/move",
-    async handle({ params, body, store }) {
-      const data = (body ?? {}) as { groupId?: string; position?: number };
-      if (!data.groupId) {
-        return {
-          status: 400,
-          body: { message: "groupId required", code: "BAD_REQUEST" },
-        };
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const data = (body ?? {}) as {
+        groupId?: string;
+        expectedVersion?: number;
+        previousSiblingId?: string | null;
+        nextSiblingId?: string | null;
+      };
+      if (!data.groupId)
+        return badRequest({ groupId: ["The group is required."] });
+      if (!data.expectedVersion || data.expectedVersion <= 0) {
+        return badRequest({
+          expectedVersion: ["ExpectedVersion must be a positive value."],
+        });
       }
-      const moved = store.moveCard(params.id, data.groupId, data.position ?? 0);
-      if (!moved) return notFound("Card not found");
-      return ok({
-        id: params.id,
-        listId: data.groupId,
-        position: data.position ?? 0,
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      // MoveItem: editors and managers only.
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      const moved = store.moveItem(params.id, data.groupId, {
+        expectedVersion: data.expectedVersion,
+        previousSiblingId: data.previousSiblingId ?? null,
+        nextSiblingId: data.nextSiblingId ?? null,
       });
+      switch (moved.result) {
+        case "not-found":
+          return notFound("Card not found");
+        case "invalid":
+          return badRequest({
+            groupId: ["Not a group or neighbour of this board."],
+          });
+        case "stale":
+          return preconditionFailed();
+        case "ok":
+          // BoardItemSlimDto with the new version.
+          return ok({
+            id: moved.card.id,
+            groupId: moved.card.listId,
+            name: moved.card.title,
+            position: String(moved.card.position),
+            memberIds: moved.card.assigneeUserIds ?? [],
+            labelIds: [],
+            version: moved.version,
+          });
+      }
     },
   }),
 
@@ -325,26 +381,24 @@ export const cardsOperations = [
     } as any,
     method: "PATCH",
     route: "/board-items/:id/status",
-    async handle({ params, body, store }) {
+    async handle({ params, body, store, request }) {
+      const missingKey = missingIdempotencyKey(request);
+      if (missingKey) return missingKey;
+      const item = store.getCard(params.id);
+      if (!item) return notFound("Card not found");
+      // UpdateItem: editors and managers only.
+      if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const status = (body as { status?: string | null } | undefined)?.status;
-      if (!status) {
-        return {
-          status: 400,
-          body: { message: "status required", code: "BAD_REQUEST" },
-        };
-      }
+      if (!status) return badRequest({ status: ["The status is required."] });
       const result = store.updateItemStatus(params.id, status);
       if (result === "not-found") return notFound("Card not found");
       if (result === "invalid") {
-        return {
-          status: 400,
-          body: {
-            message: "Not an option of the board's Status field",
-            code: "BAD_REQUEST",
-          },
-        };
+        return badRequest({
+          status: ["Not an option of the board's Status field."],
+        });
       }
-      return ok<void>(undefined);
+      // The real endpoint answers 204 No Content.
+      return noContent();
     },
   }),
 

@@ -56,16 +56,17 @@ That path does not import `@notrelix/dev-mock-backend`, boot application service
 
 ## Environment Variables
 
-| Variable             | Type      | Allowed Values                                                                    | Default                    | Description                                      |
-| :------------------- | :-------- | :-------------------------------------------------------------------------------- | :------------------------- | :----------------------------------------------- |
-| `VITE_MOCK_API`      | `boolean` | `true`, `false`                                                                   | `false`                    | Enables offline mock backend runtime in dev mode |
-| `VITE_MOCK_PRESET`   | `enum`    | `default`, `fast`, `slow`, `demo`, `qa-stress`                                    | `default`                  | Config preset bundle                             |
-| `VITE_MOCK_PERSONA`  | `enum`    | `owner`, `admin`, `member`, `viewer`, `commenter`                                 | `owner`                    | Active actor persona                             |
-| `VITE_MOCK_STATE`    | `enum`    | `default`, `new-user`, `empty-workspace`, `permission-limited`, `expired-session` | `default`                  | Initial business scenario                        |
-| `VITE_MOCK_DENSITY`  | `enum`    | `tiny`, `normal`, `large`, `stress`                                               | `normal`                   | Data density for boards/cards/pages              |
-| `VITE_MOCK_OVERLAYS` | `list`    | `unicode`, `long-titles`, `many-columns`, `many-cards`                            | `[]`                       | Composable state modifiers                       |
-| `VITE_MOCK_LATENCY`  | `enum`    | `instant`, `fast`, `normal`, `slow`                                               | `instant` (tests) / `fast` | Simulated network delay                          |
-| `VITE_MOCK_SEED`     | `number`  | integer                                                                           | `1001`                     | PRNG seed for deterministic data                 |
+| Variable             | Type      | Allowed Values                                                                          | Default                    | Description                                                                                           |
+| :------------------- | :-------- | :-------------------------------------------------------------------------------------- | :------------------------- | :---------------------------------------------------------------------------------------------------- |
+| `VITE_MOCK_API`      | `boolean` | `true`, `false`                                                                         | `false`                    | Enables offline mock backend runtime in dev mode                                                      |
+| `VITE_MOCK_PRESET`   | `enum`    | `default`, `fast`, `slow`, `demo`, `qa-stress`                                          | `default`                  | Config preset bundle                                                                                  |
+| `VITE_MOCK_PERSONA`  | `enum`    | `owner`, `admin`, `member`, `viewer`, `commenter`                                       | `owner`                    | Active actor persona                                                                                  |
+| `VITE_MOCK_STATE`    | `enum`    | `default`, `new-user`, `empty-workspace`, `permission-limited`, `expired-session`       | `default`                  | Initial business scenario                                                                             |
+| `VITE_MOCK_DENSITY`  | `enum`    | `tiny`, `normal`, `large`, `stress`                                                     | `normal`                   | Data density for boards/cards/pages                                                                   |
+| `VITE_MOCK_OVERLAYS` | `list`    | `unicode`, `long-titles`, `many-columns`, `many-cards`                                  | `[]`                       | Composable state modifiers                                                                            |
+| `VITE_MOCK_LATENCY`  | `enum`    | `instant`, `fast`, `normal`, `slow`                                                     | `instant` (tests) / `fast` | Simulated network delay                                                                               |
+| `VITE_MOCK_SEED`     | `number`  | integer                                                                                 | `1001`                     | PRNG seed for deterministic data                                                                      |
+| `VITE_MOCK_FAULTS`   | `list`    | `path=fault` pairs, comma-separated; fault `network`, `401`, `409`, `500`, `validation` | none                       | Forces an error on one API path (without `/api/v1`), e.g. `/board-items/mock-erp-item-149/status=500` |
 
 _Note: Any invalid environment value fails immediately at startup with `MockConfigurationError`._
 
