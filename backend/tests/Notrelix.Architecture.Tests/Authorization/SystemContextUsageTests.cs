@@ -34,6 +34,7 @@ public class SystemContextUsageTests
         "TenantBootstrapStore.cs",
         "ResourceLocator.cs",
         "PostgresPageAuthorizationFacts.cs",
+        "BoardChildAuthorizationFactsAdapter.cs",
         "EmailTemplateMaterialization.cs",
         "EmailVerificationTokenIssuer.cs",
         "ActiveVerificationTokenLocker.cs",

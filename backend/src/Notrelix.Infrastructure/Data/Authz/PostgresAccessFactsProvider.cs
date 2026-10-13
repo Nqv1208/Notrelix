@@ -7,28 +7,38 @@ using Notrelix.Application.Common.Requests.Gates;
 using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Features.Billing.Public.Subscription;
 using Notrelix.Application.Features.Documents.Public.PageAuthorization;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
+using Notrelix.Infrastructure.CrossContext.Governance.WorkManagement;
 
 namespace Notrelix.Infrastructure.Data.Authz;
 
 public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
 {
     private const string Sql = AccessFactsQuery.Sql;
+    private const string BoardKind = "work-management.board";
 
     private readonly ApplicationDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
     private readonly IPageAuthorizationFacts _pageAuthorizationFacts;
     private readonly IBillingSubscriptionFacts _billingSubscriptionFacts;
+    private readonly IBoardChildAuthorizationFacts _boardChildFacts;
 
+    /// <param name="boardChildFacts">
+    /// The Work Management-published Board-child relation; when not supplied, the
+    /// Work Management adapter over the same request context is used.
+    /// </param>
     public PostgresAccessFactsProvider(
         ApplicationDbContext dbContext,
         TimeProvider timeProvider,
         IPageAuthorizationFacts pageAuthorizationFacts,
-        IBillingSubscriptionFacts billingSubscriptionFacts)
+        IBillingSubscriptionFacts billingSubscriptionFacts,
+        IBoardChildAuthorizationFacts? boardChildFacts = null)
     {
         _dbContext = dbContext;
         _timeProvider = timeProvider;
         _pageAuthorizationFacts = pageAuthorizationFacts;
         _billingSubscriptionFacts = billingSubscriptionFacts;
+        _boardChildFacts = boardChildFacts ?? new BoardChildAuthorizationFactsAdapter(dbContext);
     }
 
     public async Task<AccessFacts> ResolveAsync(
@@ -62,6 +72,14 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             page = await _pageAuthorizationFacts.ResolveAsync(resource.ResourceId, cancellationToken);
         }
 
+        // GOV-033: a Board child resource is decided on its parent Board, read
+        // through the Work Management-published relation (never Work child
+        // tables in the shared SQL).
+        var boardChild = resource is not null && resource.Kind.Value != BoardKind
+            ? await _boardChildFacts.ResolveAsync(resource.Kind.Value, resource.ResourceId, cancellationToken)
+            : BoardChildScope.NotBoardChild;
+        var boardId = resource?.Kind.Value == BoardKind ? resource.ResourceId : boardChild.BoardId;
+
         var connection = _dbContext.Database.GetDbConnection();
         if (connection.State != ConnectionState.Open)
         {
@@ -87,6 +105,8 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
             Add(command, "feature_code", feature?.FeatureCode, NpgsqlDbType.Text);
             Add(command, "feature_amount", feature?.Amount ?? 0, NpgsqlDbType.Integer);
             Add(command, "now", _timeProvider.GetUtcNow(), NpgsqlDbType.TimestampTz);
+            Add(command, "board_id", boardId, NpgsqlDbType.Uuid);
+            Add(command, "board_child", boardChild.IsBoardChild, NpgsqlDbType.Boolean);
             Add(command, "page_space_id",
                 page is not null && page.WorkspaceId == context.WorkspaceId ? page.SpaceId : null,
                 NpgsqlDbType.Uuid);
@@ -119,6 +139,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 SpaceExists = reader.GetBoolean(15),
                 SpaceRole = NullableString(reader, 16),
                 SpaceIsOpen = reader.GetBoolean(17),
+                ParentBoardId = boardChild.IsBoardChild ? boardChild.BoardId : null,
             };
         }
 

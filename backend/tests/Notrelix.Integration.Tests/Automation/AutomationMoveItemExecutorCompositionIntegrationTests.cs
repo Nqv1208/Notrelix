@@ -268,6 +268,19 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
     {
         var graph = await SeedGraphAsync();
         var execution = await SeedExecutionAsync(graph);
+        // Board children are decided on their Board (GOV-033): an ordinary
+        // member of a Workspace-visible Board is now an Editor and may move
+        // items. The denied principal is therefore made a board Observer
+        // (Viewer) on a Private Board; the protected property is unchanged —
+        // the canonical decision denies and nothing else may bypass it.
+
+        await using (var restrict = _db.CreateContext(SystemTenant()))
+        {
+            var restricted = await restrict.Boards.SingleAsync(b => b.Id == graph.BoardId);
+            restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
+            restrict.BoardMembers.Add(BoardMember.Create(graph.BoardId, graph.DeniedUserId, BoardRole.Observer, DateTimeOffset.UtcNow));
+            await restrict.SaveChangesAsync();
+        }
 
         var outcome = await RunCompositionAsync(graph, graph.DeniedUserId, execution.Id);
 

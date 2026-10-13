@@ -1,0 +1,67 @@
+using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
+
+namespace Notrelix.Infrastructure.CrossContext.Governance.WorkManagement;
+
+/// <summary>
+/// Work Management-owned implementation of the Board-child relation consumed
+/// by the Governance access facts (GOV-033). One indexed lookup per request
+/// through the Work port, on the request's data session; soft-deleted children
+/// resolve too (the resource locator also bypasses filters).
+/// </summary>
+public sealed class BoardChildAuthorizationFactsAdapter : IBoardChildAuthorizationFacts
+{
+    private readonly IWorkManagementDbContext _context;
+
+    public BoardChildAuthorizationFactsAdapter(IWorkManagementDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<BoardChildScope> ResolveAsync(string resourceKind, Guid resourceId, CancellationToken cancellationToken)
+    {
+        Guid? boardId;
+        switch (resourceKind)
+        {
+            case "work-management.board-item":
+                boardId = await _context.BoardItems.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.board-group":
+                boardId = await _context.BoardGroups.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.board-field":
+                boardId = await _context.BoardFields.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.board-view":
+                boardId = await _context.BoardViews.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.label":
+                boardId = await _context.Labels.IgnoreQueryFilters().AsNoTracking()
+                    .Where(x => x.Id == resourceId).Select(x => (Guid?)x.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.checklist":
+                boardId = await (
+                    from checklist in _context.Checklists.IgnoreQueryFilters().AsNoTracking()
+                    join item in _context.BoardItems.IgnoreQueryFilters().AsNoTracking() on checklist.ItemId equals item.Id
+                    where checklist.Id == resourceId
+                    select (Guid?)item.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            case "work-management.checklist-item":
+                boardId = await (
+                    from checklistItem in _context.ChecklistItems.IgnoreQueryFilters().AsNoTracking()
+                    join checklist in _context.Checklists.IgnoreQueryFilters().AsNoTracking() on checklistItem.ChecklistId equals checklist.Id
+                    join item in _context.BoardItems.IgnoreQueryFilters().AsNoTracking() on checklist.ItemId equals item.Id
+                    where checklistItem.Id == resourceId
+                    select (Guid?)item.BoardId).FirstOrDefaultAsync(cancellationToken);
+                break;
+            default:
+                return BoardChildScope.NotBoardChild;
+        }
+
+        return new BoardChildScope(true, boardId);
+    }
+}

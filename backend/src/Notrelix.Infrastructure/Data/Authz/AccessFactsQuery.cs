@@ -12,7 +12,12 @@ namespace Notrelix.Infrastructure.Data.Authz;
 /// Page's Space supplied as <c>@page_space_id</c> from the Documents-published
 /// page fact); <c>space_path</c> is its ancestor-or-self path from the closure
 /// index. Columns 14..17 expose the Space facts; every role→level meaning stays
-/// in AccessPolicyEngine. ResourceVisibilityQuery encodes the same decision for
+/// in AccessPolicyEngine. GOV-033: <c>@board_id</c> is the Board the request is
+/// decided on — the Board itself, or the parent Board of a Board child resource
+/// (<c>@board_child</c>) supplied from the Work Management-published relation;
+/// the Board's lifecycle, audience, membership, Space and grants then answer for
+/// the child, and an explicit grant on the child itself still counts. Only
+/// work.boards and work.board_members are read here (WG-DEBT-006 unchanged). ResourceVisibilityQuery encodes the same decision for
 /// collections and is pinned to the engine by the PostgreSQL parity suite.
 /// </remarks>
 public static class AccessFactsQuery
@@ -26,8 +31,8 @@ public static class AccessFactsQuery
         target_space AS MATERIALIZED (
           SELECT CASE
             WHEN @resource_type = 'workspaces.space' THEN @resource_id
-            WHEN @resource_type = 'work-management.board' THEN (
-              SELECT b.space_id FROM work.boards b WHERE b.id = @resource_id
+            WHEN @board_id IS NOT NULL THEN (
+              SELECT b.space_id FROM work.boards b WHERE b.id = @board_id
                 AND b.workspace_id = @workspace_id AND b.deleted_at IS NULL LIMIT 1)
             WHEN @resource_type = 'documents.page' THEN @page_space_id
           END AS id),
@@ -49,25 +54,27 @@ public static class AccessFactsQuery
              WHERE wm.account_id = @account_id AND wm.workspace_id = @workspace_id
                AND wm.user_id = @user_id AND wm.status = 'Active' LIMIT 1),
           CASE
-            WHEN @resource_type = 'work-management.board' THEN EXISTS (
-              SELECT 1 FROM work.boards b WHERE b.id = @resource_id
+            WHEN @resource_type = 'work-management.board' OR @board_child THEN
+              (@resource_type = 'work-management.board' OR @resource_was_located) AND EXISTS (
+              SELECT 1 FROM work.boards b WHERE b.id = @board_id
                 AND b.workspace_id = @workspace_id AND b.deleted_at IS NULL AND b.is_archived = false)
             WHEN @resource_type = 'workspaces.workspace' THEN EXISTS (
               SELECT 1 FROM workspace.workspaces w WHERE w.id = @resource_id AND w.deleted_at IS NULL)
             ELSE @resource_was_located
           END,
           CASE
-            WHEN @resource_type = 'work-management.board' THEN (
-              SELECT b.visibility FROM work.boards b WHERE b.id = @resource_id
+            WHEN @board_id IS NOT NULL THEN (
+              SELECT b.visibility FROM work.boards b WHERE b.id = @board_id
                 AND b.workspace_id = @workspace_id AND b.deleted_at IS NULL AND b.is_archived = false LIMIT 1)
           END,
-          CASE WHEN @resource_type = 'work-management.board' THEN (
+          CASE WHEN @board_id IS NOT NULL THEN (
             SELECT bm.role FROM work.board_members bm
-              WHERE bm.board_id = @resource_id AND bm.user_id = @user_id LIMIT 1) END,
+              WHERE bm.board_id = @board_id AND bm.user_id = @user_id LIMIT 1) END,
           EXISTS (
             SELECT 1 FROM governance.resource_permissions rp
              WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
-               AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
+               AND ((rp.resource_type = @resource_type AND rp.resource_id = @resource_id)
+                    OR (@board_id IS NOT NULL AND rp.resource_type = 'work-management.board' AND rp.resource_id = @board_id))
                AND ((rp.subject_type = 'User' AND rp.subject_id = @user_id)
                     OR (rp.subject_type = 'Team' AND rp.subject_id IN (SELECT team_id FROM user_teams)))
                AND rp.deleted_at IS NULL),
@@ -105,7 +112,8 @@ public static class AccessFactsQuery
               WHEN 'Commenter' THEN 2 WHEN 'Viewer' THEN 1 ELSE 0 END
             FROM governance.resource_permissions rp
              WHERE rp.account_id = @account_id AND rp.workspace_id = @workspace_id
-               AND rp.resource_type = @resource_type AND rp.resource_id = @resource_id
+               AND ((rp.resource_type = @resource_type AND rp.resource_id = @resource_id)
+                    OR (@board_id IS NOT NULL AND rp.resource_type = 'work-management.board' AND rp.resource_id = @board_id))
                AND ((rp.subject_type = 'User' AND rp.subject_id = @user_id)
                     OR (rp.subject_type = 'Team' AND rp.subject_id IN (SELECT team_id FROM user_teams)))
                AND rp.deleted_at IS NULL

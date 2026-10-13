@@ -35,6 +35,14 @@ public sealed record AccessFacts(
 
     /// <summary>No Private Space lies on the path from the Workspace root to the target Space.</summary>
     public bool SpaceIsOpen { get; init; }
+
+    /// <summary>
+    /// For a Board child resource (Item, Group, Field, View, Label, Checklist,
+    /// Checklist item), the Board it is decided on (GOV-033): the resource,
+    /// audience, membership, grant and Space facts above are then the Board's.
+    /// Null for any other resource.
+    /// </summary>
+    public Guid? ParentBoardId { get; init; }
 }
 
 public sealed record AccessPermissionRule(int Priority, string Effect);

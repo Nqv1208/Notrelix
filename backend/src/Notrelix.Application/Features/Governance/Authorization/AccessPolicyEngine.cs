@@ -178,7 +178,9 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
-        if (permission.Resource?.Kind.Value == "work-management.board")
+        // A Board child resource is decided on its parent Board (GOV-033): the
+        // facts are the Board's, so the Board policy applies to the child's action.
+        if (permission.Resource?.Kind.Value == "work-management.board" || facts.ParentBoardId is not null)
         {
             if (!facts.ResourceExists)
             {

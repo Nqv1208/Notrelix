@@ -486,13 +486,22 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MoveBoardItem_WorkspaceMember_IsDenied_UntilItemScopeDecision()
+    public async Task MoveBoardItem_BoardObserver_IsDenied_ByTheBoardDecision()
     {
-        // Board-item resources have no audience facts in the canonical query,
-        // so the canonical pipeline denies ordinary members for MoveItem. This
-        // freezes the current observable contract; granting members item
-        // moves is a separate product decision, not a pipeline change.
+        // Board children are decided on their Board (GOV-033): an ordinary
+        // member of a Workspace-visible Board is now an Editor and may move
+        // items. The denied principal is therefore made a board Observer
+        // (Viewer) on a Private Board; the protected property is unchanged —
+        // the canonical decision denies and nothing else may bypass it.
         var (accountId, _, _, boardId, memberId) = await SeedBoardStackAsync();
+
+        await using (var restrict = _db.CreateContext(SystemTenant()))
+        {
+            var restricted = await restrict.Boards.SingleAsync(b => b.Id == boardId);
+            restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
+            restrict.BoardMembers.Add(BoardMember.Create(boardId, memberId, BoardRole.Observer, DateTimeOffset.UtcNow));
+            await restrict.SaveChangesAsync();
+        }
 
         using var provider = CreateProvider(accountId, memberId);
         var itemId = await ResolveBoardItemIdAsync(boardId);
@@ -507,7 +516,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
                 .Send(new MoveBoardItemCommand(itemId, groupId, 1));
 
             await act.Should().ThrowAsync<AppForbidden>(
-                "the canonical pipeline currently denies member item moves; no second evaluator may bypass it");
+                "a Viewer on the Board cannot move its items; no second evaluator may bypass the canonical decision");
         }
     }
 

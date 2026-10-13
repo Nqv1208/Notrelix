@@ -250,10 +250,22 @@ public sealed class AutomationWorkActionChainIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task AutomationMoveItem_ActiveMember_CanonicalPolicyDenies_NoDedupNoMutationNoEvent()
     {
-        // The canonical MoveItem decision currently denies an active workspace
-        // member over a board-item resource. The public target action must
-        // honor that exact decision: no dedup record, no mutation, no event.
+        // The public target action must honor the canonical MoveItem decision
+        // exactly: no dedup record, no mutation, no event.
+        // Board children are decided on their Board (GOV-033): an ordinary
+        // member of a Workspace-visible Board is now an Editor and may move
+        // items. The denied principal is therefore made a board Observer
+        // (Viewer) on a Private Board; the protected property is unchanged —
+        // the canonical decision denies and nothing else may bypass it.
         var graph = await SeedChainAsync();
+
+        await using (var restrict = _db.CreateContext(SystemTenant()))
+        {
+            var restricted = await restrict.Boards.SingleAsync(b => b.Id == graph.BoardId);
+            restricted.ChangeVisibility(BoardVisibility.Private, restricted.CreatedBy!.Value, DateTimeOffset.UtcNow);
+            restrict.BoardMembers.Add(BoardMember.Create(graph.BoardId, graph.MemberUserId, BoardRole.Observer, DateTimeOffset.UtcNow));
+            await restrict.SaveChangesAsync();
+        }
         var (port, workContext) = CreatePort(graph);
         var executionId = Guid.CreateVersion7();
 
