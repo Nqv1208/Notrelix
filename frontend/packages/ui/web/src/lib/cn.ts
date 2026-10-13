@@ -40,6 +40,9 @@ export const TEXT_ROLES = [
   "mark-3xs",
   "avatar-sm",
   "avatar-md",
+  "avatar-xs",
+  "calendar-title",
+  "hint",
 ] as const;
 
 /**

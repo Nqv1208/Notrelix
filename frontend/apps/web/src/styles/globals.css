@@ -142,6 +142,18 @@
   --text-avatar-md--line-height: var(--type-avatar-md-line-height);
   --text-avatar-md--font-weight: var(--type-avatar-md-weight);
   --text-avatar-md--letter-spacing: var(--type-avatar-md-tracking);
+  --text-avatar-xs: var(--type-avatar-xs-size);
+  --text-avatar-xs--line-height: var(--type-avatar-xs-line-height);
+  --text-avatar-xs--font-weight: var(--type-avatar-xs-weight);
+  --text-avatar-xs--letter-spacing: var(--type-avatar-xs-tracking);
+  --text-hint: var(--type-hint-size);
+  --text-hint--line-height: var(--type-hint-line-height);
+  --text-hint--font-weight: var(--type-hint-weight);
+  --text-hint--letter-spacing: var(--type-hint-tracking);
+  --text-calendar-title: var(--type-calendar-title-size);
+  --text-calendar-title--line-height: var(--type-calendar-title-line-height);
+  --text-calendar-title--font-weight: var(--type-calendar-title-weight);
+  --text-calendar-title--letter-spacing: var(--type-calendar-title-tracking);
   --text-prose: var(--type-prose-size);
   --text-prose--line-height: var(--type-prose-line-height);
   --text-prose--font-weight: var(--type-prose-weight);
@@ -314,6 +326,20 @@
   --color-mark-violet: var(--mark-violet);
   --color-mark-violet-foreground: var(--mark-violet-foreground);
 
+  /* Calendar view: day column tints, status event fills, overdue fill and the drop tooltip (Final-Calendar). */
+  --color-calendar-weekend: var(--calendar-weekend);
+  --color-calendar-outside: var(--calendar-outside);
+  --color-calendar-today: var(--calendar-today);
+  --color-calendar-event-todo: var(--calendar-event-todo);
+  --color-calendar-event-doing: var(--calendar-event-doing);
+  --color-calendar-event-review: var(--calendar-event-review);
+  --color-calendar-event-done: var(--calendar-event-done);
+  --color-calendar-event-overdue: var(--calendar-event-overdue);
+  --color-calendar-dot-review: var(--calendar-dot-review);
+  --color-calendar-faint: var(--calendar-faint);
+  --color-calendar-tip: var(--calendar-tip);
+  --color-calendar-tip-foreground: var(--calendar-tip-foreground);
+
   /* Transitional aliases (current consumers only; new code uses surface/state roles). */
   --color-app-header: var(--app-header);
   --color-app-shell: var(--app-shell);
@@ -343,6 +369,8 @@
   --shadow-card: var(--elevation-card);
   --shadow-card-hover: var(--elevation-card-hover);
   --shadow-sheet: var(--elevation-sheet);
+  --shadow-segment: var(--elevation-segment);
+  --shadow-popover: var(--elevation-popover);
   --shadow-bar: var(--elevation-bar);
 
   /* Motion: 150–200 ms, ease-out; collapses under reduced motion. */

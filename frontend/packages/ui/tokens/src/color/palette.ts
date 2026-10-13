@@ -869,6 +869,71 @@ export const railTones: Record<ThemeAppearance, RailTones> = {
   },
 };
 
+// ─── Calendar ────────────────────────────────────────────────────────────
+
+export interface CalendarTones {
+  /** Saturday and Sunday columns. */
+  readonly weekend: Oklch;
+  /** Days outside the shown month. */
+  readonly outside: Oklch;
+  /** The column of today. */
+  readonly today: Oklch;
+  /** Event fills by work status; the Cần làm fill also carries a border. */
+  readonly eventTodo: Oklch;
+  readonly eventDoing: Oklch;
+  readonly eventReview: Oklch;
+  readonly eventDone: Oklch;
+  /** Overdue event fill (translucent over the panel in dark). */
+  readonly eventOverdue: Oklch;
+  /** Chờ duyệt dot. */
+  readonly dotReview: Oklch;
+  /** Out-of-month day numbers and grips. */
+  readonly faint: Oklch;
+  /** Drop tooltip and its text. */
+  readonly tip: Oklch;
+  readonly onTip: Oklch;
+}
+
+const calendarLight: CalendarTones = {
+  weekend: oklch(0.97, 0.004, 271.4), // #F4F5F8
+  outside: oklch(0.988, 0.002, 247.8), // #FAFBFC
+  today: oklch(0.964, 0.014, 254.6), // #EDF4FD
+  eventTodo: oklch(1, 0, 89.9), // #FFFFFF
+  eventDoing: oklch(0.94, 0.022, 256.7), // #E2ECFA
+  eventReview: oklch(0.957, 0.036, 87.8), // #FBF0D6
+  eventDone: oklch(0.944, 0.021, 156.8), // #E2F1E7
+  eventOverdue: oklch(0.957, 0.019, 5.3), // #FDECEF
+  dotReview: oklch(0.728, 0.151, 79.4), // #D99A00
+  faint: oklch(0.657, 0.02, 258.4), // #8A929E
+  tip: oklch(0.217, 0.015, 261.6), // #161A21
+  onTip: oklch(0.966, 0.005, 258.3), // #F2F4F7
+};
+
+/*
+ * Final-Calendar `--weekend`, `--muted-day`, `--today-soft`, `--lane-*`,
+ * `--faint` and the drop tooltip, on the CSS emit grid so they render the
+ * mockup hex. Dark overdue is the mockup `rgba(255,107,129,.14)`. High
+ * contrast reuses the light values.
+ */
+export const calendarTones: Record<ThemeAppearance, CalendarTones> = {
+  light: calendarLight,
+  dark: {
+    weekend: oklch(0.202, 0.014, 253.2), // #12171D
+    outside: oklch(0.194, 0.014, 258.4), // #11151B
+    today: oklch(0.249, 0.052, 261.3), // #13213A
+    eventTodo: oklch(0.262, 0.021, 257.3), // #1E252F
+    eventDoing: oklch(0.281, 0.067, 262), // #16284A
+    eventReview: oklch(0.282, 0.027, 81.2), // #30281A
+    eventDone: oklch(0.284, 0.04, 163.2), // #153024
+    eventOverdue: oklch(0.716, 0.18, 13.8, 0.14), // rgba(255,107,129,.14)
+    dotReview: oklch(0.834, 0.141, 85.4), // #F2C14E
+    faint: oklch(0.572, 0.023, 255), // #6F7986
+    tip: oklch(0.314, 0.023, 256.4), // #2A323D
+    onTip: oklch(0.966, 0.005, 258.3), // #F2F4F7
+  },
+  "high-contrast": calendarLight,
+};
+
 /** Chart series order (identity colors, never status). */
 export const CHART_SERIES: readonly IdentityId[] = [
   "blue",

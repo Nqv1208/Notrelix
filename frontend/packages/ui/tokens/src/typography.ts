@@ -50,6 +50,8 @@ export const fontSizeDense = {
   "13p5": 0.84375,
   "8": 0.5,
   "8p5": 0.53125,
+  "7p5": 0.46875,
+  "17": 1.0625,
   "9p5": 0.59375,
   "11p5": 0.71875,
   "12p5": 0.78125,
@@ -269,6 +271,30 @@ export const textRoles = {
     size: "9p5",
     lineHeight: 1,
     weight: weights.bold,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Initials in an 18px person avatar (Calendar events, mockup 7.5px / 700). */
+  "avatar-xs": {
+    size: "7p5",
+    lineHeight: 1,
+    weight: weights.bold,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Hint line under an input (mockup 11px). */
+  hint: {
+    size: "11",
+    lineHeight: 1,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Range heading of the Calendar bar (mockup 17px / 650). */
+  "calendar-title": {
+    size: "17",
+    lineHeight: 1.540625,
+    weight: 650,
     letterSpacing: "0em",
     family: "sans",
   },

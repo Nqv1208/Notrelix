@@ -535,3 +535,81 @@ describe("board lane, label and priority colours", () => {
     }
   });
 });
+
+/**
+ * Calendar (Final-Calendar): the day column tints (`--weekend`, `--muted-day`,
+ * `--today-soft`), the status event fills (`--lane-*`), `--faint`, the review
+ * dot and the drop tooltip, light and dark as the mockup. High contrast reuses
+ * the light values.
+ */
+const CALENDAR_VALUES: Record<"light" | "dark", Record<string, string>> = {
+  light: {
+    "calendar-weekend": "#f4f5f8",
+    "calendar-outside": "#fafbfc",
+    "calendar-today": "#edf4fd",
+    "calendar-event-todo": "#ffffff",
+    "calendar-event-doing": "#e2ecfa",
+    "calendar-event-review": "#fbf0d6",
+    "calendar-event-done": "#e2f1e7",
+    "calendar-event-overdue": "#fdecef",
+    "calendar-dot-review": "#d99a00",
+    "calendar-faint": "#8a929e",
+    "calendar-tip": "#161a21",
+    "calendar-tip-foreground": "#f2f4f7",
+  },
+  dark: {
+    "calendar-weekend": "#12171d",
+    "calendar-outside": "#11151b",
+    "calendar-today": "#13213a",
+    "calendar-event-todo": "#1e252f",
+    "calendar-event-doing": "#16284a",
+    "calendar-event-review": "#30281a",
+    "calendar-event-done": "#153024",
+    "calendar-dot-review": "#f2c14e",
+    "calendar-faint": "#6f7986",
+    "calendar-tip": "#2a323d",
+    "calendar-tip-foreground": "#f2f4f7",
+  },
+};
+
+describe("calendar colours", () => {
+  for (const appearance of ["light", "dark"] as const) {
+    it.each(Object.entries(CALENDAR_VALUES[appearance]))(
+      `${appearance} --%s renders %s`,
+      (role, hex) => {
+        expect(emittedHex(appearance, role)).toBe(hex);
+      },
+    );
+  }
+
+  it("renders the dark overdue fill as the mockup's rgba(255,107,129,.14)", () => {
+    const value = resolveThemeVariables("dark", "blue")[
+      "--calendar-event-overdue"
+    ];
+    expect(value).toMatch(/^oklch\(0\.716 0\.18 13\.8 \/ 0\.14\)$/);
+  });
+
+  it("high contrast reuses the light calendar tints", () => {
+    for (const role of Object.keys(CALENDAR_VALUES.light)) {
+      expect(emittedHex("high-contrast", role)).toBe(emittedHex("light", role));
+    }
+  });
+
+  it("maps every calendar role and elevation to the web globals", () => {
+    const globals = readFileSync(
+      resolve(here, "../../../../../apps/web/src/styles/globals.css"),
+      "utf8",
+    );
+    for (const role of Object.keys(CALENDAR_VALUES.light).concat(
+      "calendar-event-overdue",
+    )) {
+      expect(globals, role).toContain(`--color-${role}: var(--${role});`);
+    }
+    expect(globals).toContain("--shadow-segment: var(--elevation-segment);");
+    for (const role of ["avatar-xs", "calendar-title", "hint"]) {
+      expect(globals, role).toContain(
+        `--text-${role}: var(--type-${role}-size);`,
+      );
+    }
+  });
+});

@@ -23,10 +23,12 @@
   --type-scale-10: 0.625rem;
   --type-scale-11: 0.6875rem;
   --type-scale-13: 0.8125rem;
+  --type-scale-17: 1.0625rem;
   --type-scale-20: 1.25rem;
   --type-scale-10p5: 0.65625rem;
   --type-scale-13p5: 0.84375rem;
   --type-scale-8p5: 0.53125rem;
+  --type-scale-7p5: 0.46875rem;
   --type-scale-9p5: 0.59375rem;
   --type-scale-11p5: 0.71875rem;
   --type-scale-12p5: 0.78125rem;
@@ -160,6 +162,21 @@
   --type-avatar-md-weight: 700;
   --type-avatar-md-tracking: 0em;
   --type-avatar-md-family: var(--font-family-sans);
+  --type-avatar-xs-size: var(--type-scale-7p5);
+  --type-avatar-xs-line-height: 1rem;
+  --type-avatar-xs-weight: 700;
+  --type-avatar-xs-tracking: 0em;
+  --type-avatar-xs-family: var(--font-family-sans);
+  --type-hint-size: var(--type-scale-11);
+  --type-hint-line-height: 1rem;
+  --type-hint-weight: 400;
+  --type-hint-tracking: 0em;
+  --type-hint-family: var(--font-family-sans);
+  --type-calendar-title-size: var(--type-scale-17);
+  --type-calendar-title-line-height: 1.540625rem;
+  --type-calendar-title-weight: 650;
+  --type-calendar-title-tracking: 0em;
+  --type-calendar-title-family: var(--font-family-sans);
   --type-prose-size: var(--type-scale-md);
   --type-prose-line-height: 1.75rem;
   --type-prose-weight: 400;
@@ -376,6 +393,18 @@
   --badge-working-bg: oklch(0.968 0.041 90.3);
   --badge-working-text: oklch(0.508 0.108 73.3);
   --border: oklch(0.933 0.007 255);
+  --calendar-dot-review: oklch(0.728 0.151 79.4);
+  --calendar-event-doing: oklch(0.94 0.022 256.7);
+  --calendar-event-done: oklch(0.944 0.021 156.8);
+  --calendar-event-overdue: oklch(0.957 0.019 5.3);
+  --calendar-event-review: oklch(0.957 0.036 87.8);
+  --calendar-event-todo: oklch(1 0 89.9);
+  --calendar-faint: oklch(0.657 0.02 258.4);
+  --calendar-outside: oklch(0.988 0.002 247.8);
+  --calendar-tip: oklch(0.217 0.015 261.6);
+  --calendar-tip-foreground: oklch(0.966 0.005 258.3);
+  --calendar-today: oklch(0.964 0.014 254.6);
+  --calendar-weekend: oklch(0.97 0.004 271.4);
   --card: oklch(0.997 0.001 255);
   --card-foreground: oklch(0.217 0.015 261.6);
   --chart-1: oklch(0.652 0.19 253.2);
@@ -529,6 +558,8 @@
   --elevation-card: 0 1px 2px 0 oklch(0.217 0.022 260.5 / 0.08);
   --elevation-card-hover: 0 3px 10px 0 oklch(0.217 0.022 260.5 / 0.12);
   --elevation-sheet: -18px 0 40px 0 oklch(0.208 0.04 265.8 / 0.14);
+  --elevation-popover: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.16);
+  --elevation-segment: 0 1px 2px 0 oklch(0.208 0.04 265.8 / 0.12);
   --elevation-bar: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.3);
 }
 
@@ -554,6 +585,18 @@
   --badge-working-bg: oklch(0.29 0.05 78);
   --badge-working-text: oklch(0.86 0.124 78);
   --border: oklch(0.286 0.022 255);
+  --calendar-dot-review: oklch(0.834 0.141 85.4);
+  --calendar-event-doing: oklch(0.281 0.067 262);
+  --calendar-event-done: oklch(0.284 0.04 163.2);
+  --calendar-event-overdue: oklch(0.716 0.18 13.8 / 0.14);
+  --calendar-event-review: oklch(0.282 0.027 81.2);
+  --calendar-event-todo: oklch(0.262 0.021 257.3);
+  --calendar-faint: oklch(0.572 0.023 255);
+  --calendar-outside: oklch(0.194 0.014 258.4);
+  --calendar-tip: oklch(0.314 0.023 256.4);
+  --calendar-tip-foreground: oklch(0.966 0.005 258.3);
+  --calendar-today: oklch(0.249 0.052 261.3);
+  --calendar-weekend: oklch(0.202 0.014 253.2);
   --card: oklch(0.216 0.016 255);
   --card-foreground: oklch(0.933 0.007 255);
   --chart-1: oklch(0.652 0.19 253.2);
@@ -707,6 +750,8 @@
   --elevation-card: 0 1px 2px 0 oklch(0 0 0 / 0.4);
   --elevation-card-hover: 0 3px 10px 0 oklch(0 0 0 / 0.5);
   --elevation-sheet: -18px 0 40px 0 oklch(0 0 0 / 0.5);
+  --elevation-popover: 0 12px 32px 0 oklch(0 0 0 / 0.5);
+  --elevation-segment: 0 1px 2px 0 oklch(0.208 0.04 265.8 / 0.12);
   --elevation-bar: 0 12px 32px 0 oklch(0 0 0 / 0.5);
 }
 
@@ -732,6 +777,18 @@
   --badge-working-bg: oklch(0.93 0.04 78);
   --badge-working-text: oklch(0.35 0.078 62);
   --border: oklch(0.45 0.01 255);
+  --calendar-dot-review: oklch(0.728 0.151 79.4);
+  --calendar-event-doing: oklch(0.94 0.022 256.7);
+  --calendar-event-done: oklch(0.944 0.021 156.8);
+  --calendar-event-overdue: oklch(0.957 0.019 5.3);
+  --calendar-event-review: oklch(0.957 0.036 87.8);
+  --calendar-event-todo: oklch(1 0 89.9);
+  --calendar-faint: oklch(0.657 0.02 258.4);
+  --calendar-outside: oklch(0.988 0.002 247.8);
+  --calendar-tip: oklch(0.217 0.015 261.6);
+  --calendar-tip-foreground: oklch(0.966 0.005 258.3);
+  --calendar-today: oklch(0.964 0.014 254.6);
+  --calendar-weekend: oklch(0.97 0.004 271.4);
   --card: oklch(1 0 255);
   --card-foreground: oklch(0.13 0.01 255);
   --chart-1: oklch(0.652 0.19 253.2);
@@ -885,5 +942,7 @@
   --elevation-card: 0 1px 2px 0 oklch(0.217 0.022 260.5 / 0.08);
   --elevation-card-hover: 0 3px 10px 0 oklch(0.217 0.022 260.5 / 0.12);
   --elevation-sheet: -18px 0 40px 0 oklch(0.208 0.04 265.8 / 0.14);
+  --elevation-popover: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.16);
+  --elevation-segment: 0 1px 2px 0 oklch(0.208 0.04 265.8 / 0.12);
   --elevation-bar: 0 12px 32px 0 oklch(0.208 0.04 265.8 / 0.3);
 }

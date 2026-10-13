@@ -26,6 +26,7 @@ import {
   STATUS_IDS,
   WORK_STATUS_IDS,
   accents,
+  calendarTones,
   identity,
   labelTones,
   markTones,
@@ -232,6 +233,20 @@ export function buildAppearanceColors(
   roles["rail-badge"] = rail.badge;
   roles["rail-badge-foreground"] = rail.onBadge;
   roles["rail-focus-ring"] = rail.focusRing;
+
+  const calendar = calendarTones[appearance];
+  roles["calendar-weekend"] = calendar.weekend;
+  roles["calendar-outside"] = calendar.outside;
+  roles["calendar-today"] = calendar.today;
+  roles["calendar-event-todo"] = calendar.eventTodo;
+  roles["calendar-event-doing"] = calendar.eventDoing;
+  roles["calendar-event-review"] = calendar.eventReview;
+  roles["calendar-event-done"] = calendar.eventDone;
+  roles["calendar-event-overdue"] = calendar.eventOverdue;
+  roles["calendar-dot-review"] = calendar.dotReview;
+  roles["calendar-faint"] = calendar.faint;
+  roles["calendar-tip"] = calendar.tip;
+  roles["calendar-tip-foreground"] = calendar.onTip;
 
   CHART_SERIES.forEach((id, index) => {
     roles[`chart-${index + 1}`] = identity[id].fill;

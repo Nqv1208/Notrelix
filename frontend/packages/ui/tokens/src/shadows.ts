@@ -17,6 +17,8 @@ export const ELEVATION_ROLES = [
   "card",
   "card-hover",
   "sheet",
+  "popover",
+  "segment",
   "bar",
 ] as const;
 export type ElevationRole = (typeof ELEVATION_ROLES)[number];
@@ -35,6 +37,8 @@ const lightElevation: Record<ElevationRole, string> = {
   card: `0 1px 2px 0 ${lightBoard(0.08)}`,
   "card-hover": `0 3px 10px 0 ${lightBoard(0.12)}`,
   sheet: `-18px 0 40px 0 ${lightSheet(0.14)}`,
+  popover: `0 12px 32px 0 ${lightSheet(0.16)}`,
+  segment: `0 1px 2px 0 ${lightSheet(0.12)}`,
   bar: `0 12px 32px 0 ${lightSheet(0.3)}`,
 };
 
@@ -50,6 +54,8 @@ export const elevation: Record<
     card: `0 1px 2px 0 ${darkShadow(0.4)}`,
     "card-hover": `0 3px 10px 0 ${darkShadow(0.5)}`,
     sheet: `-18px 0 40px 0 ${darkShadow(0.5)}`,
+    popover: `0 12px 32px 0 ${darkShadow(0.5)}`,
+    segment: `0 1px 2px 0 ${lightSheet(0.12)}`,
     bar: `0 12px 32px 0 ${darkShadow(0.5)}`,
   },
   "high-contrast": lightElevation,
