@@ -168,6 +168,10 @@
   --color-brand-subtle-foreground: var(--brand-subtle-foreground);
   --color-link: var(--link);
   --color-icon: var(--icon);
+  --color-meta-foreground: var(--meta-foreground);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-key: var(--key);
 
   /* State set. */
   --color-state-hover: var(--state-hover);
@@ -251,6 +255,8 @@
   --color-rail-active-foreground: var(--rail-active-foreground);
   --color-rail-hover: var(--rail-hover);
   --color-rail-separator: var(--rail-separator);
+  --color-rail-outline: var(--rail-outline);
+  --color-rail-scrim: var(--rail-scrim);
   --color-rail-badge: var(--rail-badge);
   --color-rail-badge-foreground: var(--rail-badge-foreground);
   --color-rail-focus-ring: var(--rail-focus-ring);

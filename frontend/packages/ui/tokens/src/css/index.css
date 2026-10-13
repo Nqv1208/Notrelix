@@ -85,7 +85,7 @@
   --type-compact-tracking: 0em;
   --type-compact-family: var(--font-family-sans);
   --type-rail-label-size: var(--type-scale-10p5);
-  --type-rail-label-line-height: 0.875rem;
+  --type-rail-label-line-height: 0.9375rem;
   --type-rail-label-weight: 500;
   --type-rail-label-tracking: 0em;
   --type-rail-label-family: var(--font-family-sans);
@@ -367,6 +367,7 @@
   --info-subtle-foreground: oklch(0.42 0.09 238);
   --info-text: oklch(0.5 0.108 238);
   --input: oklch(0.87 0.008 255);
+  --key: oklch(0.954 0.005 255);
   --label-data: oklch(0.944 0.023 250.1);
   --label-data-foreground: oklch(0.419 0.124 255.1);
   --label-doc: oklch(0.949 0.006 264.5);
@@ -379,6 +380,8 @@
   --label-test-foreground: oklch(0.432 0.178 290.6);
   --label-training: oklch(0.942 0.018 170.1);
   --label-training-foreground: oklch(0.442 0.06 171.6);
+  --line: oklch(0.919 0.008 255);
+  --line-strong: oklch(0.877 0.011 255);
   --mark-blue: oklch(0.549 0.168 256);
   --mark-blue-foreground: oklch(1 0 0);
   --mark-coral: oklch(0.553 0.174 38.3);
@@ -391,6 +394,7 @@
   --mark-sage-foreground: oklch(1 0 0);
   --mark-violet: oklch(0.54 0.184 278.3);
   --mark-violet-foreground: oklch(1 0 0);
+  --meta-foreground: oklch(0.514 0.023 255);
   --muted: oklch(0.964 0.005 255);
   --muted-foreground: oklch(0.458 0.026 259.2);
   --popover: oklch(1 0 255);
@@ -404,6 +408,8 @@
   --rail-focus-ring: oklch(1 0 0);
   --rail-foreground: oklch(0.786 0.027 259);
   --rail-hover: oklch(1 0 0 / 0.08);
+  --rail-outline: oklch(1 0 0 / 0.35);
+  --rail-scrim: oklch(0.208 0.04 265.8 / 0.14);
   --rail-separator: oklch(1 0 0 / 0.14);
   --secondary: oklch(0.964 0.005 255);
   --secondary-foreground: oklch(0.22 0.008 255);
@@ -526,6 +532,7 @@
   --info-subtle-foreground: oklch(0.83 0.094 238);
   --info-text: oklch(0.76 0.13 238);
   --input: oklch(0.36 0.01 255);
+  --key: oklch(0.284 0.022 255);
   --label-data: oklch(0.306 0.065 254.1);
   --label-data-foreground: oklch(0.819 0.085 252);
   --label-doc: oklch(0.298 0.023 256.4);
@@ -538,6 +545,8 @@
   --label-test-foreground: oklch(0.816 0.096 297);
   --label-training: oklch(0.319 0.045 172.2);
   --label-training-foreground: oklch(0.832 0.064 170.7);
+  --line: oklch(0.284 0.022 255);
+  --line-strong: oklch(0.333 0.024 255);
   --mark-blue: oklch(0.549 0.168 256);
   --mark-blue-foreground: oklch(1 0 0);
   --mark-coral: oklch(0.553 0.174 38.3);
@@ -550,6 +559,7 @@
   --mark-sage-foreground: oklch(1 0 0);
   --mark-violet: oklch(0.54 0.184 278.3);
   --mark-violet-foreground: oklch(1 0 0);
+  --meta-foreground: oklch(0.68 0.023 255);
   --muted: oklch(0.253 0.02 255);
   --muted-foreground: oklch(0.764 0.021 255);
   --popover: oklch(0.235 0.009 255);
@@ -563,6 +573,8 @@
   --rail-focus-ring: oklch(1 0 0);
   --rail-foreground: oklch(0.673 0.028 259);
   --rail-hover: oklch(1 0 0 / 0.08);
+  --rail-outline: oklch(1 0 0 / 0.35);
+  --rail-scrim: oklch(0 0 0 / 0.42);
   --rail-separator: oklch(1 0 0 / 0.14);
   --secondary: oklch(0.253 0.02 255);
   --secondary-foreground: oklch(0.933 0.007 255);
@@ -685,6 +697,7 @@
   --info-subtle-foreground: oklch(0.35 0.075 238);
   --info-text: oklch(0.4 0.086 238);
   --input: oklch(0.4 0.01 255);
+  --key: oklch(0.92 0.006 255);
   --label-data: oklch(0.944 0.023 250.1);
   --label-data-foreground: oklch(0.419 0.124 255.1);
   --label-doc: oklch(0.949 0.006 264.5);
@@ -697,6 +710,8 @@
   --label-test-foreground: oklch(0.432 0.178 290.6);
   --label-training: oklch(0.942 0.018 170.1);
   --label-training-foreground: oklch(0.412 0.06 171.6);
+  --line: oklch(0.45 0.01 255);
+  --line-strong: oklch(0.4 0.01 255);
   --mark-blue: oklch(0.549 0.168 256);
   --mark-blue-foreground: oklch(1 0 0);
   --mark-coral: oklch(0.553 0.174 38.3);
@@ -709,6 +724,7 @@
   --mark-sage-foreground: oklch(1 0 0);
   --mark-violet: oklch(0.54 0.184 278.3);
   --mark-violet-foreground: oklch(1 0 0);
+  --meta-foreground: oklch(0.33 0.01 255);
   --muted: oklch(0.95 0.004 255);
   --muted-foreground: oklch(0.33 0.01 255);
   --popover: oklch(1 0 255);
@@ -722,6 +738,8 @@
   --rail-focus-ring: oklch(1 0 0);
   --rail-foreground: oklch(1 0 0);
   --rail-hover: oklch(1 0 0 / 0.08);
+  --rail-outline: oklch(1 0 0 / 0.35);
+  --rail-scrim: oklch(0 0 0 / 0.42);
   --rail-separator: oklch(1 0 0 / 0.14);
   --secondary: oklch(0.95 0.004 255);
   --secondary-foreground: oklch(0.13 0.01 255);

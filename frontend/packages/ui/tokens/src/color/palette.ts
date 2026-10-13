@@ -60,6 +60,14 @@ export interface NeutralRoles {
   readonly input: Oklch;
   readonly text: Oklch;
   readonly textMuted: Oklch;
+  /** Quieter than `textMuted`: meta lines, group labels, counts, hints. */
+  readonly textMeta: Oklch;
+  /** Hairline on a sidebar or panel (search field, chip, key). */
+  readonly line: Oklch;
+  /** Control outline one step stronger than `line` (keys, buttons). */
+  readonly lineStrong: Oklch;
+  /** Keyboard key chip fill. */
+  readonly key: Oklch;
   readonly disabled: Oklch;
   readonly textDisabled: Oklch;
   /** Text placed on saturated fills (white-ish). */
@@ -91,6 +99,10 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     input: n(0.87, 0.008),
     text: n(0.22, 0.008),
     textMuted: oklch(0.458, 0.026, 259.2), // #4F5866
+    textMeta: oklch(0.514, 0.023, 255), // #5F6875
+    line: oklch(0.919, 0.008, 255), // #E1E5EA
+    lineStrong: oklch(0.877, 0.011, 255), // #D2D7DE
+    key: oklch(0.954, 0.005, 255), // #EEF0F3
     disabled: n(0.94, 0.004),
     textDisabled: n(0.66, 0.006),
     onFill: n(0.99, 0.002),
@@ -108,6 +120,10 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     input: n(0.36, 0.01),
     text: n(0.933, 0.007), // #E6E9EE
     textMuted: n(0.764, 0.021), // #AAB3C0
+    textMeta: oklch(0.68, 0.023, 255), // #8F99A7
+    line: oklch(0.284, 0.022, 255), // #232B35
+    lineStrong: oklch(0.333, 0.024, 255), // #2E3743
+    key: oklch(0.284, 0.022, 255), // #232B35
     disabled: n(0.24, 0.006),
     textDisabled: n(0.5, 0.008),
     onFill: n(0.99, 0.002),
@@ -125,6 +141,10 @@ export const neutrals: Record<ThemeAppearance, NeutralRoles> = {
     input: n(0.4, 0.01),
     text: n(0.13, 0.01),
     textMuted: n(0.33, 0.01),
+    textMeta: n(0.33, 0.01),
+    line: n(0.45, 0.01),
+    lineStrong: n(0.4, 0.01),
+    key: n(0.92, 0.006),
     disabled: n(0.93, 0.004),
     textDisabled: n(0.5, 0.008),
     onFill: n(1, 0),
@@ -711,6 +731,10 @@ export interface RailTones {
   readonly hover: Oklch;
   /** Separator line (translucent white over the rail). */
   readonly separator: Oklch;
+  /** Dashed outline of the "add workspace" entry (translucent white). */
+  readonly outline: Oklch;
+  /** Dim over the layout while the rail overlays it. */
+  readonly scrim: Oklch;
   /** Unread badge fill and its text. */
   readonly badge: Oklch;
   readonly onBadge: Oklch;
@@ -726,6 +750,7 @@ const railShared = {
   activeInk: railWhite,
   hover: oklch(1, 0, 0, 0.08),
   separator: oklch(1, 0, 0, 0.14),
+  outline: oklch(1, 0, 0, 0.35),
   badge: oklch(0.596, 0.23, 16.8), // #E8174B, white 4.52:1
   onBadge: railWhite,
   focusRing: railWhite, // ≥ 13:1 on every rail surface and its hover tint
@@ -741,16 +766,19 @@ export const railTones: Record<ThemeAppearance, RailTones> = {
   light: {
     surface: oklch(0.241, 0.031, 256.9), // #16202E
     ink: oklch(0.786, 0.027, 259), // #AFBACB
+    scrim: oklch(0.208, 0.04, 265.8, 0.14), // rgba(15,23,42,.14)
     ...railShared,
   },
   dark: {
     surface: oklch(0.127, 0.009, 253.7), // #05070A
     ink: oklch(0.673, 0.028, 259), // #8C97A8
+    scrim: oklch(0, 0, 0, 0.42), // rgba(0,0,0,.42)
     ...railShared,
   },
   "high-contrast": {
     surface: oklch(0, 0, 0),
     ink: railWhite,
+    scrim: oklch(0, 0, 0, 0.42),
     ...railShared,
   },
 };

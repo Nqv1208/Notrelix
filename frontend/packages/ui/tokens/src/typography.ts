@@ -157,7 +157,7 @@ export const textRoles = {
   /** Label under a system rail entry (mockup 10.5px / 500). */
   "rail-label": {
     size: "10p5",
-    lineHeight: 0.875,
+    lineHeight: 0.9375,
     weight: weights.medium,
     letterSpacing: "0em",
     family: "sans",

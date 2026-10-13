@@ -137,6 +137,10 @@ export function buildAppearanceColors(
     "surface-raised": nr.raised,
 
     // Text and icon
+    "meta-foreground": nr.textMeta,
+    line: nr.line,
+    "line-strong": nr.lineStrong,
+    key: nr.key,
     "text-strong": nr.text,
     "text-muted": nr.textMuted,
     icon: nr.textMuted,
@@ -209,6 +213,8 @@ export function buildAppearanceColors(
   roles["rail-active-foreground"] = rail.activeInk;
   roles["rail-hover"] = rail.hover;
   roles["rail-separator"] = rail.separator;
+  roles["rail-outline"] = rail.outline;
+  roles["rail-scrim"] = rail.scrim;
   roles["rail-badge"] = rail.badge;
   roles["rail-badge-foreground"] = rail.onBadge;
   roles["rail-focus-ring"] = rail.focusRing;
