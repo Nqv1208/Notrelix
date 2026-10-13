@@ -89,9 +89,10 @@ test("Sidebar lists the five primary items and opens the Reports placeholder", a
     page.getByRole("heading", { level: 1, name: "Báo cáo" }),
   ).toBeVisible();
   await expect(page.getByText("Báo cáo chưa khả dụng")).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Đường dẫn" }).getByText("Báo cáo"),
-  ).toBeVisible();
+  // The desktop design has no top bar, so no breadcrumb either.
+  await expect(page.getByRole("navigation", { name: "Đường dẫn" })).toHaveCount(
+    0,
+  );
 });
 
 test("The workspace chip opens the system rail; Escape closes it and returns focus to the chip", async ({
@@ -181,7 +182,8 @@ test("The sidebar still collapses and expands while the system rail is pinned", 
 
   const container = page.locator('[data-slot="sidebar-container"]');
   const main = page.locator("#workspace-main");
-  const toggle = page.getByRole("button", { name: "Hiện hoặc ẩn điều hướng" });
+  // The desktop design has no top bar; the shortcut toggles the sidebar.
+  const toggle = { click: () => page.keyboard.press("ControlOrMeta+b") };
   const railBox = await rail(page).boundingBox();
   const railRight = railBox!.x + railBox!.width;
 

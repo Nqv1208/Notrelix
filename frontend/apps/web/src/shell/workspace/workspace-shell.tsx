@@ -69,9 +69,10 @@ import {
 } from "./workspace-destinations";
 
 /**
- * The workspace shell (WX-SHELL-001…005): one sidebar, the topbar, the
- * command palette, the shortcut sheet and one scroll container. The app
- * composes Work Management and Docs data into the workspace surfaces.
+ * The workspace shell (WX-SHELL-001…005): one sidebar, the topbar (narrow
+ * screens only), the command palette, the shortcut sheet and one scroll
+ * container. The app composes Work Management and Docs data into the
+ * workspace surfaces.
  */
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const { workspaceId, workspace } = useWorkspaceContext();
@@ -221,6 +222,24 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     if (!activeSpaceId) return;
     reveal(spaceAncestors(spaceIndex, activeSpaceId).map((node) => node.id));
   }, [activeSpaceId, reveal, spaceIndex]);
+  // A Board page opens the Space that holds it (and its ancestors), so the
+  // current Board shows in the tree as in Final-Board.
+  const activeBoardId = location?.section === "board" ? location.boardId : null;
+  const activeBoardSpaceId = useMemo(
+    () =>
+      activeBoardId
+        ? (placements.data?.find((placement) => placement.id === activeBoardId)
+            ?.spaceId ?? null)
+        : null,
+    [activeBoardId, placements.data],
+  );
+  useEffect(() => {
+    if (!activeBoardSpaceId) return;
+    reveal([
+      activeBoardSpaceId,
+      ...spaceAncestors(spaceIndex, activeBoardSpaceId).map((node) => node.id),
+    ]);
+  }, [activeBoardSpaceId, reveal, spaceIndex]);
   // Archived Spaces leave the sidebar; their pages stay reachable by link.
   // An archived Space never has active children (WSP-022).
   const sidebarSpaces = useMemo<SpaceTreeState>(() => {
@@ -524,16 +543,22 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         onSignOut={() => logout.mutate()}
       />
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        <WorkspaceTopbarSurface
-          copy={copy}
-          navigation={navigation}
-          breadcrumb={breadcrumb}
-          appearance={appearance}
-          commandShortcut={commandShortcut}
-          onOpenCommand={() => setPaletteOpen(true)}
-          onToggleTheme={toggleTheme}
-          notifications={<NotificationBell />}
-        />
+        {/* The desktop design has no top bar: the workspace starts at the top
+            edge and search, notifications and appearance live in the sidebar,
+            the rail and the account pages. Narrow screens keep the bar, which
+            owns the navigation drawer trigger. */}
+        {isMobile ? (
+          <WorkspaceTopbarSurface
+            copy={copy}
+            navigation={navigation}
+            breadcrumb={breadcrumb}
+            appearance={appearance}
+            commandShortcut={commandShortcut}
+            onOpenCommand={() => setPaletteOpen(true)}
+            onToggleTheme={toggleTheme}
+            notifications={<NotificationBell />}
+          />
+        ) : null}
         {/* The one scroll container of the workspace shell (WX-SHELL-004). */}
         <main id="workspace-main" className="min-h-0 flex-1 overflow-y-auto">
           {children}
