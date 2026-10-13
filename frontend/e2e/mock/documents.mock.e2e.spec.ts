@@ -23,10 +23,61 @@ test("renders a production Documents route through mock transport", async ({
   await page.goto(
     "/workspaces/mock-workspace-primary/docs/mock-doc-product-spec",
   );
-  await expect(page.getByText("Product specification").first()).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText(
+    "Product specification",
+  );
   await expect(
-    page.getByRole("textbox", { name: "Type '/' for commands..." }).first(),
-  ).toHaveValue("Block 1");
+    page.getByRole("textbox", { name: "Type / to insert a block" }).first(),
+  ).toHaveText("Block 1");
+  expect(
+    errors.filter((message) => message.includes("MockUnhandledOperationError")),
+  ).toEqual([]);
+});
+
+test("edits and checks off a document of the Accounting department", async ({
+  page,
+}) => {
+  test.skip(scenario !== "default", "Needs the default world data.");
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+
+  await page.goto(
+    "/workspaces/mock-workspace-primary/docs/mock-doc-invoice-process",
+  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Nhập hoá đơn đầu vào",
+  );
+
+  // The department tree under Docs shows the open page as the current one.
+  await expect(
+    page.getByRole("link", { name: "Nhập hoá đơn đầu vào" }).first(),
+  ).toHaveAttribute("aria-current", "page");
+
+  // A heading edit is saved: the producer answers and the page shows its text.
+  const heading = page.getByRole("heading", { name: "Phạm vi áp dụng" });
+  await heading.click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" mới");
+  await page.getByRole("heading", { level: 1 }).click();
+  await expect(page.getByRole("status")).toContainText("Saved");
+  await expect(
+    page.getByRole("heading", { name: "Phạm vi áp dụng mới" }),
+  ).toBeVisible();
+
+  // A checklist item toggles through the producer.
+  const item = page.getByRole("checkbox", {
+    name: /Đào tạo nhóm Công nợ/,
+  });
+  await expect(item).toHaveAttribute("aria-checked", "false");
+  await item.click();
+  await expect(item).toHaveAttribute("aria-checked", "true");
+
+  // The File menu opens and closes on Escape.
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  await expect(page.getByRole("menu", { name: "File" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu", { name: "File" })).toHaveCount(0);
+
   expect(
     errors.filter((message) => message.includes("MockUnhandledOperationError")),
   ).toEqual([]);
