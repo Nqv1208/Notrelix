@@ -9,6 +9,7 @@ import {
   erpTableNoResultsProps,
   erpTableProps,
   erpTableReadOnlyProps,
+  erpTableResizedProps,
   erpTableSelectedProps,
 } from "../../../verification/table-fixtures";
 import {
@@ -34,6 +35,7 @@ function TableSurfaceStory({ base }: { base: MainTableSurfaceProps }) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
     base.collapsedGroupIds,
   );
+  const [widths, setWidths] = useState(base.columnWidths ?? {});
   const [notice, setNotice] = useState(base.archivedNotice ?? null);
   const allIds = base.groups.flatMap((group) => group.rows.map((r) => r.id));
 
@@ -41,6 +43,17 @@ function TableSurfaceStory({ base }: { base: MainTableSurfaceProps }) {
     <div className="h-[820px] min-h-0 bg-background">
       <MainTableSurface
         {...base}
+        columnWidths={widths}
+        onColumnWidthChange={(id, width) =>
+          setWidths((current) => ({ ...current, [id]: width }))
+        }
+        onColumnWidthReset={(id) =>
+          setWidths((current) =>
+            Object.fromEntries(
+              Object.entries(current).filter(([key]) => key !== id),
+            ),
+          )
+        }
         selectedIds={selected}
         collapsedGroupIds={collapsed}
         archivedNotice={
@@ -86,6 +99,12 @@ export const SelectedRows: Story = {
 /** Board sua-o: the status list of one row is open. */
 export const EditingCell: Story = {
   render: () => <TableSurfaceStory base={erpTableEditingProps()} />,
+  tags: ["fui-surface--wm.table.main", "fui-state--Default"],
+};
+
+/** The saved view widens the title and assignee columns; the handles resize. */
+export const ResizedColumns: Story = {
+  render: () => <TableSurfaceStory base={erpTableResizedProps()} />,
   tags: ["fui-surface--wm.table.main", "fui-state--Default"],
 };
 

@@ -70,6 +70,7 @@ export const en = {
   },
   header: {
     selectAll: "Select all",
+    resize: "Resize column {{name}}",
     sortedAscending: "sorted ascending",
     sortedDescending: "sorted descending",
   },
@@ -88,8 +89,6 @@ export const en = {
   },
   row: {
     select: "Select {{key}}",
-    open: "Open",
-    openLabel: "Open details of {{key}}",
     unassigned: "Unassigned",
     dueNone: "Not set",
     dueToday: "Today",
@@ -126,7 +125,6 @@ export const en = {
     summary: "{{shown}} items shown · {{hidden}} hidden by filters",
     showDone: "Show finished items",
     move: "move",
-    edit: "edit cell",
     open: "open details",
     select: "select row",
   },
@@ -230,6 +228,7 @@ export const vi: MainTableCopy = {
   },
   header: {
     selectAll: "Chọn tất cả",
+    resize: "Đổi độ rộng cột {{name}}",
     sortedAscending: "sắp xếp tăng dần",
     sortedDescending: "sắp xếp giảm dần",
   },
@@ -249,8 +248,6 @@ export const vi: MainTableCopy = {
   },
   row: {
     select: "Chọn {{key}}",
-    open: "Mở",
-    openLabel: "Mở chi tiết {{key}}",
     unassigned: "Chưa giao",
     dueNone: "Chưa đặt",
     dueToday: "Hôm nay",
@@ -287,7 +284,6 @@ export const vi: MainTableCopy = {
     summary: "{{shown}} công việc đang hiện · {{hidden}} ẩn bởi bộ lọc",
     showDone: "Hiện việc đã xong",
     move: "di chuyển",
-    edit: "sửa ô",
     open: "mở chi tiết",
     select: "chọn dòng",
   },

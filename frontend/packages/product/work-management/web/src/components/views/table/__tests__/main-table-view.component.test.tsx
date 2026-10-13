@@ -322,7 +322,7 @@ describe("MainTableView on the ERP board", () => {
     fireEvent.keyDown(screen.getByRole("button", { name: "Sắp xếp Hạn ↑" }), {
       key: "Enter",
     });
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "Ưu tiên" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /^Ưu tiên/ }));
     await waitFor(() =>
       expect(boards.saveBoardView).toHaveBeenCalledWith(
         expect.any(String),
@@ -335,9 +335,47 @@ describe("MainTableView on the ERP board", () => {
     );
     expect(
       screen
-        .getByRole("columnheader", { name: "Ưu tiên" })
+        .getByRole("columnheader", { name: /^Ưu tiên/ })
         .getAttribute("aria-sort"),
     ).toBe("ascending");
+  });
+
+  it("saves a resized column with the view and drops it again on reset", async () => {
+    const { boards } = renderTable(erpOwnerAccess());
+    await ready();
+    const handle = screen.getByRole("separator", {
+      name: "Đổi độ rộng cột Tên công việc",
+    });
+    fireEvent.keyDown(handle, { key: "ArrowRight", shiftKey: true });
+    await waitFor(() =>
+      expect(boards.saveBoardView).toHaveBeenLastCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          viewConfig: expect.objectContaining({
+            columnWidths: { title: 372 },
+          }),
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole("separator", { name: "Đổi độ rộng cột Tên công việc" })
+          .getAttribute("aria-valuenow"),
+      ).toBe("372"),
+    );
+    fireEvent.keyDown(
+      screen.getByRole("separator", { name: "Đổi độ rộng cột Tên công việc" }),
+      { key: "Home" },
+    );
+    await waitFor(() =>
+      expect(boards.saveBoardView).toHaveBeenLastCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          viewConfig: expect.objectContaining({ columnWidths: {} }),
+        }),
+      ),
+    );
   });
 
   it("opens the item sheet through the route item", async () => {
@@ -346,7 +384,7 @@ describe("MainTableView on the ERP board", () => {
     await ready();
     fireEvent.click(
       within(row("ERP-142")!).getByRole("button", {
-        name: "Mở chi tiết ERP-142",
+        name: /Chuyển dữ liệu khách hàng/,
       }),
     );
     expect(onItem).toHaveBeenCalledWith(erpItemId("ERP-142"));

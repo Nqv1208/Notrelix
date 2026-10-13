@@ -11,7 +11,7 @@ import { useBoardView } from "./use-board-view";
  * The table of a board. It reads the board the same way the Kanban does
  * (status or Select lanes with the route filter and search applied, and the
  * writes a lane needs) and adds what is saved with the table view: the sort,
- * the hidden columns and the row density.
+ * the hidden columns, the column widths and the row density.
  *
  * The saved view config is the view's own settings (`GET/PUT /boards/{id}/views`);
  * selection, collapsed groups and "hide finished" are local to the open table.
@@ -57,6 +57,30 @@ export function useBoardTable(
     [updateViewConfig],
   );
 
+  const columnWidths = viewConfig.columnWidths;
+  const setColumnWidth = useCallback(
+    (columnId: string, width: number) =>
+      updateViewConfig({
+        columnWidths: {
+          ...viewConfig.columnWidths,
+          [columnId]: Math.round(width),
+        },
+      }),
+    [updateViewConfig, viewConfig.columnWidths],
+  );
+  const resetColumnWidth = useCallback(
+    (columnId: string) => {
+      updateViewConfig({
+        columnWidths: Object.fromEntries(
+          Object.entries(viewConfig.columnWidths).filter(
+            ([id]) => id !== columnId,
+          ),
+        ),
+      });
+    },
+    [updateViewConfig, viewConfig.columnWidths],
+  );
+
   return {
     ...lanes,
     isLoading: lanes.isLoading || viewLoading,
@@ -66,6 +90,9 @@ export function useBoardTable(
     setColumnVisible,
     density,
     setDensity,
+    columnWidths,
+    setColumnWidth,
+    resetColumnWidth,
   };
 }
 

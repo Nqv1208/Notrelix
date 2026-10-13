@@ -129,6 +129,8 @@ export interface TableScenarioOptions {
   sort?: TableSort;
   density?: TableDensity;
   hiddenColumnIds?: readonly string[];
+  /** Saved column widths by column id. */
+  columnWidths?: Readonly<Record<string, number>>;
   filter?: KanbanFilterState;
   searchQuery?: string;
   selected?: readonly string[];
@@ -210,6 +212,7 @@ export function erpTableProps(
     canEdit,
     canCreate,
     canArchive: canEdit,
+    columnWidths: options.columnWidths ?? {},
     shown: projection.visibleCount,
     hidden: projection.hiddenCount,
     canShowDone: hideDone && projection.doneHiddenCount > 0,
@@ -218,6 +221,19 @@ export function erpTableProps(
     initialEditing: options.initialEditing,
     ...tableNoopCallbacks,
   };
+}
+
+/** Columns the person widened: the title and the assignee. */
+export const TABLE_RESIZED_COLUMN_WIDTHS = { title: 440, assignee: 232 };
+
+/** The saved view has custom column widths. */
+export function erpTableResizedProps(
+  options: TableScenarioOptions = {},
+): MainTableSurfaceProps {
+  return erpTableProps({
+    ...options,
+    columnWidths: TABLE_RESIZED_COLUMN_WIDTHS,
+  });
 }
 
 /** `chon-nhieu`: ERP-142 and ERP-146 are selected. */

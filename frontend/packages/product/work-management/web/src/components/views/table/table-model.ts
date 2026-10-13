@@ -57,6 +57,8 @@ export interface TableGroupModel {
   readonly id: string;
   readonly name: string;
   readonly category: WorkStatusCategory | null;
+  /** The colour the person gave the option; null when it has none. */
+  readonly color: string | null;
   readonly total: number;
   readonly overdueCount: number;
   readonly rows: readonly TableRowModel[];
@@ -213,6 +215,7 @@ export function buildTableGroup(
     readonly optionId: string | null;
     readonly name: string;
     readonly category: KanbanStatusLane["category"];
+    readonly color: string | null;
     readonly total: number;
     readonly overdueCount: number;
     readonly cards: readonly Card[];
@@ -224,6 +227,7 @@ export function buildTableGroup(
     id: lane.optionId ?? "none",
     name,
     category: lane.category,
+    color: lane.color,
     total: lane.total,
     overdueCount: lane.overdueCount,
     rows: lane.cards.map((card) => buildTableRow(card, options)),

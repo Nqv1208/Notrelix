@@ -1,5 +1,4 @@
-import type { KeyboardEvent } from "react";
-import { ArrowUpRight } from "lucide-react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import { cn, Popover, PopoverContent, PopoverTrigger } from "@notrelix/ui-web";
 import {
   ITEM_LABEL_TONE_CLASS,
@@ -7,11 +6,7 @@ import {
 } from "../../shared/item-display";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
 import { STATUS_TINT_CLASS, tablePanelClass } from "./table-chrome";
-import {
-  stickyOffsets,
-  tableGridTemplate,
-  type TableColumnSpec,
-} from "./table-columns";
+import type { TableColumnSpec } from "./table-columns";
 import type { TableRowModel, TableStatusOption } from "./table-model";
 import { StatusDot, TableCheckbox } from "./table-parts";
 import { TableStatusPicker } from "./table-status-picker";
@@ -20,6 +15,8 @@ export interface TableRowProps {
   row: TableRowModel;
   copy: MainTableCopy;
   columns: readonly TableColumnSpec[];
+  /** Accent of the row's group: the left edge takes its colour. */
+  accent: string;
   statusOptions: readonly TableStatusOption[];
   selected: boolean;
   /** The item whose side sheet is open. */
@@ -53,21 +50,18 @@ const PRIORITY_CLASS = {
 
 function Cell({
   className,
-  style,
   selected,
   children,
 }: {
   className?: string;
-  style?: React.CSSProperties;
   selected: boolean;
   children?: React.ReactNode;
 }) {
   return (
     <div
       role="cell"
-      style={style}
       className={cn(
-        "relative box-border flex h-(--table-row-height) min-w-0 items-center gap-[7px] border-b border-border px-2.5 whitespace-nowrap",
+        "relative box-border flex h-(--table-row-height) min-w-0 items-center gap-[7px] overflow-hidden border-b border-border px-2.5 whitespace-nowrap",
         selected
           ? "bg-row-selected"
           : cn(tablePanelClass, "group-hover/row:bg-state-hover"),
@@ -80,16 +74,18 @@ function Cell({
 }
 
 /**
- * One row of the table. The key, title and selection cells stay in place
- * while the other columns scroll. Hover or keyboard focus inside the row
- * shows "Mở". The status pill opens the status list; the title and "Mở"
- * open the item. The row itself takes the arrow keys, Enter (edit the
- * status), Space (open the item) and X (select) from the table.
+ * One row of the table. Its left edge carries the group's colour: faint at
+ * rest, full on hover, keyboard focus and while its item is open. A click on
+ * the row (or the title) opens the item; the status pill opens the status
+ * list and the checkbox selects, neither opens the item. The row itself takes
+ * the arrow keys, Enter and Space (open the item) and X (select) from the
+ * table.
  */
 export function TableRow({
   row,
   copy,
   columns,
+  accent,
   statusOptions,
   selected,
   active,
@@ -103,19 +99,13 @@ export function TableRow({
   onStatusChange,
   onKeyDown,
 }: TableRowProps) {
-  const offsets = stickyOffsets(columns);
   const keyLabel = row.key ?? row.title;
 
   const render = (column: TableColumnSpec) => {
     switch (column.id) {
       case "key":
         return (
-          <Cell
-            key="key"
-            selected={selected}
-            className="sticky z-2"
-            style={{ left: offsets.key }}
-          >
+          <Cell key="key" selected={selected}>
             <span className="font-mono text-metadata leading-[1.45] text-meta-foreground">
               {row.key}
             </span>
@@ -123,29 +113,15 @@ export function TableRow({
         );
       case "title":
         return (
-          <Cell
-            key="title"
-            selected={selected}
-            className="sticky z-2 border-r border-r-line-strong"
-            style={{ left: offsets.title }}
-          >
+          <Cell key="title" selected={selected}>
             <button
               type="button"
               onClick={onOpen}
               title={row.title}
               data-row-open=""
-              className="min-w-0 truncate text-left text-nav text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
+              className="min-w-0 truncate text-left text-nav text-foreground focus-visible:outline-2 focus-visible:outline-ring"
             >
               {row.title}
-            </button>
-            <button
-              type="button"
-              onClick={onOpen}
-              aria-label={fillTableCopy(copy.row.openLabel, { key: keyLabel })}
-              className="ml-auto hidden h-6.5 flex-none items-center gap-1 rounded-sm border border-line-strong bg-popover px-2 text-metadata font-medium text-muted-foreground group-hover/row:inline-flex group-focus-within/row:inline-flex dark:bg-card"
-            >
-              {copy.row.open}
-              <ArrowUpRight className="size-3" aria-hidden="true" />
             </button>
           </Cell>
         );
@@ -354,14 +330,41 @@ export function TableRow({
       aria-current={active ? "true" : undefined}
       data-row-id={row.id}
       onKeyDown={onKeyDown}
+      onClick={(event) => {
+        // Controls inside the row (status pill, checkbox, the title button)
+        // do their own thing; a status list in a portal also bubbles here.
+        if (!event.currentTarget.contains(event.target as Node)) return;
+        if (
+          (event.target as HTMLElement).closest(
+            "button, input, [role=checkbox]",
+          )
+        )
+          return;
+        onOpen();
+      }}
+      data-accent-active={active ? "true" : undefined}
       className={cn(
-        "group/row grid min-w-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-        editing && "relative z-5",
-        active && "shadow-[inset_3px_0_0_var(--primary)]",
+        "group/row relative grid min-w-full cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+        editing && "z-5",
       )}
-      style={{ gridTemplateColumns: tableGridTemplate(columns) }}
+      style={
+        {
+          gridTemplateColumns: "var(--table-grid)",
+          "--row-accent": accent,
+        } as CSSProperties
+      }
     >
-      <Cell selected={selected} className="sticky left-0 z-2 pr-0 pl-3.5">
+      <span
+        aria-hidden="true"
+        data-row-accent=""
+        className={cn(
+          "pointer-events-none absolute inset-y-0 left-0 z-1 w-1.5 transition-colors duration-200 ease-out",
+          "bg-[color-mix(in_oklch,var(--row-accent)_22%,transparent)]",
+          "group-hover/row:bg-(--row-accent) group-focus-within/row:bg-(--row-accent)",
+          active && "bg-(--row-accent)",
+        )}
+      />
+      <Cell selected={selected} className="pr-0 pl-3.5">
         <TableCheckbox
           checked={selected}
           label={fillTableCopy(copy.row.select, { key: keyLabel })}

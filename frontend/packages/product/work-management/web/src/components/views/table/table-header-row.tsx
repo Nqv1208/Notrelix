@@ -1,11 +1,12 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { TableSort } from "@notrelix/work-management-core";
-import type { MainTableCopy } from "./main-table.copy";
+import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
+import { TableColumnResizeHandle } from "./table-column-resize";
 import {
-  stickyOffsets,
-  tableGridTemplate,
+  columnWidth,
   type TableColumnSpec,
+  type TableColumnWidths,
 } from "./table-columns";
 import { TableCheckbox } from "./table-parts";
 
@@ -13,36 +14,41 @@ const HEAD_CELL =
   "relative box-border flex h-9 min-w-0 items-center gap-1.5 border-b border-line-strong bg-table-group px-2.5 text-caption font-semibold whitespace-nowrap text-meta-foreground";
 
 /**
- * The sticky header row: the select-all checkbox, then one cell per column.
- * The sorted column reads in the ink colour with an arrow; the key, title and
- * selection cells stay in place while the rest scrolls sideways.
+ * The header row, sticky at the top while the rows scroll: the select-all
+ * checkbox, then one cell per column. The sorted column reads in the ink
+ * colour with an arrow. Every column ends in a resize handle.
  */
 export function TableHeaderRow({
   copy,
   columns,
+  widths,
   sort,
   allChecked,
   canSelect,
   onToggleAll,
+  onWidthPreview,
+  onWidthCommit,
+  onWidthReset,
 }: {
   copy: MainTableCopy;
   columns: readonly TableColumnSpec[];
+  /** Effective widths (saved widths with the live drag applied). */
+  widths: TableColumnWidths;
   sort: TableSort;
   allChecked: boolean | "mixed";
   canSelect: boolean;
   onToggleAll: (selectAll: boolean) => void;
+  onWidthPreview: (columnId: string, width: number | null) => void;
+  onWidthCommit: (columnId: string, width: number) => void;
+  onWidthReset: (columnId: string) => void;
 }) {
-  const offsets = stickyOffsets(columns);
   return (
     <div
       role="row"
       className="sticky top-0 z-3 grid min-w-full"
-      style={{ gridTemplateColumns: tableGridTemplate(columns) }}
+      style={{ gridTemplateColumns: "var(--table-grid)" }}
     >
-      <div
-        role="columnheader"
-        className={cn(HEAD_CELL, "sticky left-0 z-2 pr-0 pl-3.5")}
-      >
+      <div role="columnheader" className={cn(HEAD_CELL, "pr-0 pl-3.5")}>
         <TableCheckbox
           checked={allChecked}
           label={copy.header.selectAll}
@@ -52,14 +58,9 @@ export function TableHeaderRow({
       </div>
       {columns.map((column) => {
         const sorted = sort.key === column.id;
-        const sticky =
-          column.id === "key"
-            ? { left: offsets.key }
-            : column.id === "title"
-              ? { left: offsets.title }
-              : undefined;
         const Icon = column.Icon;
         const Arrow = sort.direction === "asc" ? ArrowUp : ArrowDown;
+        const name = copy.columns[column.id];
         return (
           <div
             key={column.id}
@@ -71,27 +72,28 @@ export function TableHeaderRow({
                   : "descending"
                 : undefined
             }
-            style={sticky}
-            className={cn(
-              HEAD_CELL,
-              sticky && "sticky z-2",
-              column.id === "title" && "border-r border-r-line-strong",
-              sorted && "text-foreground",
-            )}
+            className={cn(HEAD_CELL, sorted && "text-foreground")}
           >
             {Icon ? (
               <Icon
-                className="size-3.25 text-meta-foreground"
+                className="size-3.25 flex-none text-meta-foreground"
                 aria-hidden="true"
               />
             ) : null}
-            {copy.columns[column.id]}
+            <span className="min-w-0 truncate">{name}</span>
             {sorted ? (
               <Arrow
-                className="size-3.25 text-state-selected-foreground"
+                className="size-3.25 flex-none text-state-selected-foreground"
                 aria-hidden="true"
               />
             ) : null}
+            <TableColumnResizeHandle
+              label={fillTableCopy(copy.header.resize, { name })}
+              width={columnWidth(column, widths)}
+              onPreview={(width) => onWidthPreview(column.id, width)}
+              onCommit={(width) => onWidthCommit(column.id, width)}
+              onReset={() => onWidthReset(column.id)}
+            />
           </div>
         );
       })}

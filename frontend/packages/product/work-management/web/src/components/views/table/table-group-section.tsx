@@ -29,7 +29,7 @@ export function TableGroupHeader({
     >
       <span
         role="cell"
-        className="sticky left-0 inline-flex items-center gap-2 pl-2.5 text-nav font-semibold text-foreground"
+        className="inline-flex items-center gap-2 pl-2.5 text-nav font-semibold text-foreground"
       >
         <button
           type="button"
@@ -112,7 +112,7 @@ export function TableAddRow({
     >
       <span
         role="cell"
-        className="sticky left-0 inline-flex items-center gap-1.5 pl-13.5 leading-[1.45]"
+        className="inline-flex items-center gap-1.5 pl-13.5 leading-[1.45]"
       >
         {open ? (
           <form

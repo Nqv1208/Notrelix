@@ -15,7 +15,7 @@ export type TableColumnId = TableSortKey;
 
 export interface TableColumnSpec {
   readonly id: TableColumnId;
-  /** Track width in px (the mockup grid). */
+  /** Default track width in px (the mockup grid); the view may override it. */
   readonly width: number;
   /** Glyph before the header label; Mã and Cập nhật have none. */
   readonly Icon?: LucideIcon;
@@ -26,7 +26,7 @@ export interface TableColumnSpec {
 /**
  * The twelve columns of the table, in display order. The first nine are
  * shown by default ("Cột 9/12"); start, created and completed are opt-in.
- * Widths are the mockup grid `84 340 140 184 132 96 120 136 120` plus the
+ * Widths are the defaults (the mockup grid) `84 340 140 184 132 96 120 136 120`, plus the
  * 40 px selection column that the table adds in front.
  */
 export const TABLE_COLUMNS: readonly TableColumnSpec[] = [
@@ -55,23 +55,45 @@ export function visibleTableColumns(
   );
 }
 
-/** `grid-template-columns` for the selection column and the given columns. */
-export function tableGridTemplate(columns: readonly TableColumnSpec[]): string {
-  return [TABLE_SELECT_WIDTH, ...columns.map((column) => column.width)]
-    .map((width) => `${width}px`)
-    .join(" ");
+/** Narrowest a column can be dragged to. */
+export const TABLE_MIN_COLUMN_WIDTH = 72;
+/** Widest a column can be dragged to. */
+export const TABLE_MAX_COLUMN_WIDTH = 640;
+/** Keyboard step of the resize handle; Shift takes the large step. */
+export const TABLE_RESIZE_STEP = 8;
+export const TABLE_RESIZE_LARGE_STEP = 32;
+
+/** A saved width clamped to what a column can be. */
+export function clampColumnWidth(width: number): number {
+  return Math.min(
+    TABLE_MAX_COLUMN_WIDTH,
+    Math.max(TABLE_MIN_COLUMN_WIDTH, Math.round(width)),
+  );
 }
 
-/**
- * Left offsets of the sticky columns: the selection column at 0, the key
- * after it and the title after the key (or after the selection column when
- * the key is hidden).
- */
-export function stickyOffsets(columns: readonly TableColumnSpec[]): {
-  key: number;
-  title: number;
-} {
-  const key = TABLE_SELECT_WIDTH;
-  const keyColumn = columns.find((column) => column.id === "key");
-  return { key, title: key + (keyColumn ? keyColumn.width : 0) };
+/** Saved widths by column id (the view config's `columnWidths`). */
+export type TableColumnWidths = Readonly<Record<string, number>>;
+
+/** The width of a column: the saved one when valid, else the design width. */
+export function columnWidth(
+  column: TableColumnSpec,
+  widths: TableColumnWidths,
+): number {
+  const saved = widths[column.id];
+  return typeof saved === "number" && Number.isFinite(saved)
+    ? clampColumnWidth(saved)
+    : column.width;
+}
+
+/** `grid-template-columns` for the selection column and the given columns. */
+export function tableGridTemplate(
+  columns: readonly TableColumnSpec[],
+  widths: TableColumnWidths = {},
+): string {
+  return [
+    TABLE_SELECT_WIDTH,
+    ...columns.map((column) => columnWidth(column, widths)),
+  ]
+    .map((width) => `${width}px`)
+    .join(" ");
 }

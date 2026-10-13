@@ -35,8 +35,7 @@ export function TableFooter({
       <span>
         <span className={tableKeyClass}>↑</span>{" "}
         <span className={tableKeyClass}>↓</span> {f.move} ·{" "}
-        <span className={tableKeyClass}>Enter</span> {f.edit} ·{" "}
-        <span className={tableKeyClass}>Space</span> {f.open} ·{" "}
+        <span className={tableKeyClass}>Enter</span> {f.open} ·{" "}
         <span className={tableKeyClass}>X</span> {f.select}
       </span>
     </div>
@@ -46,7 +45,7 @@ export function TableFooter({
 /** One note in the middle of the grid, as a row so the table keeps valid children. */
 function TableNote({ children }: { children: React.ReactNode }) {
   return (
-    <div role="row" className="sticky left-0 box-border w-[min(100%,1100px)]">
+    <div role="row" className="box-border w-[min(100%,1100px)]">
       <div role="cell">
         <div
           role="status"

@@ -465,6 +465,9 @@ export function MainTableView({
           }}
           groups={groups}
           statusOptions={statusOptions}
+          columnWidths={table.columnWidths}
+          onColumnWidthChange={table.setColumnWidth}
+          onColumnWidthReset={table.resetColumnWidth}
           selectedIds={selectedIds}
           collapsedGroupIds={collapsed}
           openItemId={selectedItemId}

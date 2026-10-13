@@ -27,4 +27,28 @@ export const STATUS_DOT_CLASS: Readonly<Record<WorkStatusCategory, string>> = {
   done: "bg-work-status-done",
 };
 
+/**
+ * Accent of a group (the left edge of its rows): the colour the person gave
+ * the option, else the colour of its Status category, else the neutral rule.
+ */
+export function groupAccent(group: {
+  readonly color: string | null;
+  readonly category: WorkStatusCategory | null;
+}): string {
+  const own = group.color?.trim();
+  if (own) return own;
+  switch (group.category) {
+    case "todo":
+      return "var(--work-status-todo)";
+    case "in_progress":
+      return "var(--work-status-doing)";
+    case "review":
+      return "var(--work-status-review)";
+    case "done":
+      return "var(--work-status-done)";
+    default:
+      return "var(--line-strong)";
+  }
+}
+
 export const NEUTRAL_DOT_CLASS = "bg-muted-foreground";

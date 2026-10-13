@@ -9,6 +9,7 @@ import {
   erpTableNoResultsProps,
   erpTableProps,
   erpTableReadOnlyProps,
+  erpTableResizedProps,
   erpTableSelectedProps,
 } from "../../../../verification/table-fixtures";
 import { mainTableCopy } from "../main-table.copy";
@@ -22,6 +23,7 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => undefined;
   Element.prototype.hasPointerCapture = () => false;
   Element.prototype.releasePointerCapture = () => undefined;
+  Element.prototype.setPointerCapture = () => undefined;
 });
 
 const copy = mainTableCopy("vi");
@@ -41,6 +43,8 @@ function spied(props: MainTableSurfaceProps): MainTableSurfaceProps {
     onBulkStatus: vi.fn(),
     onBulkDue: vi.fn(),
     onBulkArchive: vi.fn(),
+    onColumnWidthChange: vi.fn(),
+    onColumnWidthReset: vi.fn(),
   };
 }
 
@@ -48,6 +52,21 @@ function renderTable(props: MainTableSurfaceProps) {
   const spy = spied(props);
   const view = renderPureUi(<MainTableSurface {...spy} />);
   return { props: spy, view };
+}
+
+/** jsdom has no PointerEvent: a mouse event with a pointer id stands in. */
+function pointer(
+  target: Element,
+  type: "pointerdown" | "pointermove" | "pointerup" | "pointercancel",
+  init: { button?: number; clientX?: number; pointerId: number },
+) {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    button: init.button ?? 0,
+    clientX: init.clientX ?? 0,
+  });
+  Object.defineProperty(event, "pointerId", { value: init.pointerId });
+  fireEvent(target, event);
 }
 
 const row = (key: string) =>
@@ -208,7 +227,7 @@ describe("MainTableSurface", () => {
     expect(screen.queryByRole("listbox")).toBeNull();
   });
 
-  it("FUI[wm.table.main:keyboard] moves between rows and edits, opens and selects from the keyboard", () => {
+  it("FUI[wm.table.main:keyboard] moves between rows, opens with Enter or Space and selects from the keyboard", () => {
     const { props } = renderTable(erpTableProps());
     const first = row("ERP-151");
     first.focus();
@@ -227,22 +246,116 @@ describe("MainTableSurface", () => {
     fireEvent.keyDown(first, { key: " " });
     expect(props.onOpenItem).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-151"));
     fireEvent.keyDown(first, { key: "Enter" });
-    expect(
-      screen.getByRole("listbox", { name: "Đổi trạng thái" }),
-    ).toBeTruthy();
+    expect(props.onOpenItem).toHaveBeenCalledTimes(2);
+    // The row owns Enter only when it has the focus itself: Enter on the
+    // status pill belongs to the pill.
+    expect(screen.queryByRole("listbox")).toBeNull();
   });
 
-  it("FUI[wm.table.main:open] opens the item from its title and from Mở", () => {
+  it("FUI[wm.table.main:open] opens the item from the row and its title, not from the pill or the checkbox", () => {
     const { props } = renderTable(erpTableProps());
     const target = row("ERP-151");
+    expect(
+      within(target).queryByRole("button", { name: /^Mở chi tiết/ }),
+    ).toBeNull();
     fireEvent.click(
       within(target).getByRole("button", { name: /Cấu hình quyền truy cập/ }),
     );
-    fireEvent.click(
-      within(target).getByRole("button", { name: "Mở chi tiết ERP-151" }),
-    );
+    expect(props.onOpenItem).toHaveBeenCalledTimes(1);
+    fireEvent.click(within(target).getByRole("cell", { name: "ERP-151" }));
     expect(props.onOpenItem).toHaveBeenCalledTimes(2);
     expect(props.onOpenItem).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-151"));
+    fireEvent.click(
+      within(target).getByRole("button", {
+        name: "Đổi trạng thái của ERP-151",
+      }),
+    );
+    fireEvent.click(
+      within(target).getByRole("checkbox", { name: "Chọn ERP-151" }),
+    );
+    expect(props.onOpenItem).toHaveBeenCalledTimes(2);
+  });
+
+  it("FUI[wm.table.main:hover] gives the row a left edge in its group colour that deepens on hover", () => {
+    renderTable(erpTableProps());
+    const target = row("ERP-151");
+    const edge = target.querySelector<HTMLElement>("[data-row-accent]")!;
+    expect(edge).toBeTruthy();
+    expect(target.style.getPropertyValue("--row-accent")).not.toBe("");
+    expect(edge.className).toContain("group-hover/row:bg-(--row-accent)");
+    expect(edge.className).toContain(
+      "color-mix(in_oklch,var(--row-accent)_22%",
+    );
+    expect(within(target).queryByText("Mở")).toBeNull();
+  });
+
+  it("FUI[wm.table.main:resize] resizes a column by pointer, by key and back to its default", () => {
+    const { props, view } = renderTable(erpTableProps());
+    const grid = () =>
+      view.container
+        .querySelector<HTMLElement>('[role="table"]')!
+        .style.getPropertyValue("--table-grid");
+    expect(grid()).toBe(
+      "40px 84px 340px 140px 184px 132px 96px 120px 136px 120px",
+    );
+    const handle = screen.getByRole("separator", {
+      name: "Đổi độ rộng cột Tên công việc",
+    });
+    expect(handle.getAttribute("aria-valuenow")).toBe("340");
+
+    // The pointer resizes live and saves the width on release only.
+    pointer(handle, "pointerdown", { button: 0, clientX: 500, pointerId: 1 });
+    pointer(handle, "pointermove", { clientX: 560, pointerId: 1 });
+    expect(grid()).toContain("40px 84px 400px 140px");
+    expect(props.onColumnWidthChange).not.toHaveBeenCalled();
+    pointer(handle, "pointermove", { clientX: -900, pointerId: 1 });
+    expect(grid()).toContain("40px 84px 72px 140px");
+    pointer(handle, "pointermove", { clientX: 580, pointerId: 1 });
+    pointer(handle, "pointerup", { clientX: 580, pointerId: 1 });
+    expect(props.onColumnWidthChange).toHaveBeenCalledWith("title", 420);
+
+    // The keyboard: Arrow keys by 8 px, Shift by 32 px, Home resets.
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(props.onColumnWidthChange).toHaveBeenLastCalledWith("title", 348);
+    fireEvent.keyDown(handle, { key: "ArrowLeft", shiftKey: true });
+    expect(props.onColumnWidthChange).toHaveBeenLastCalledWith("title", 308);
+    fireEvent.keyDown(handle, { key: "Home" });
+    expect(props.onColumnWidthReset).toHaveBeenCalledWith("title");
+    fireEvent.doubleClick(handle);
+    expect(props.onColumnWidthReset).toHaveBeenCalledTimes(2);
+
+    // A cancelled drag leaves the width as it was.
+    pointer(handle, "pointerdown", { button: 0, clientX: 500, pointerId: 2 });
+    pointer(handle, "pointermove", { clientX: 560, pointerId: 2 });
+    pointer(handle, "pointercancel", { pointerId: 2 });
+    expect(grid()).toContain("40px 84px 340px 140px");
+  });
+
+  it("applies the saved column widths to the header and the rows", () => {
+    const { view } = renderTable(erpTableResizedProps());
+    expect(
+      view.container
+        .querySelector<HTMLElement>('[role="table"]')!
+        .style.getPropertyValue("--table-grid"),
+    ).toBe("40px 84px 440px 140px 232px 132px 96px 120px 136px 120px");
+    expect(
+      screen
+        .getByRole("separator", { name: "Đổi độ rộng cột Người phụ trách" })
+        .getAttribute("aria-valuenow"),
+    ).toBe("232");
+  });
+
+  it("keeps every column in the same scroll: nothing is docked to the left", () => {
+    const { view } = renderTable(erpTableProps());
+    const docked = Array.from(
+      view.container.querySelectorAll<HTMLElement>(
+        '[role="cell"], [role="columnheader"]',
+      ),
+    ).filter((cell) => cell.className.split(" ").includes("sticky"));
+    expect(docked).toEqual([]);
+    expect(screen.getAllByRole("row")[0]!.className.split(" ")).toContain(
+      "sticky",
+    );
   });
 
   it("FUI[wm.table.main:group] collapses a group and adds an item in it", () => {
@@ -351,7 +464,7 @@ describe("MainTableSurface", () => {
     renderTable(erpTableProps({ openItemId: ERP_TABLE_ITEM("ERP-142") }));
     expect(
       screen
-        .getByRole("columnheader", { name: "Hạn" })
+        .getByRole("columnheader", { name: /^Hạn/ })
         .getAttribute("aria-sort"),
     ).toBe("ascending");
     expect(row("ERP-142").getAttribute("aria-current")).toBe("true");
@@ -377,7 +490,7 @@ describe("MainTableSurface", () => {
     expect(
       screen.getByText("11 items shown · 5 hidden by filters"),
     ).toBeTruthy();
-    expect(screen.getByRole("columnheader", { name: "Due" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: /^Due/ })).toBeTruthy();
     expect(copy.footer.showDone).toBe("Hiện việc đã xong");
   });
 });

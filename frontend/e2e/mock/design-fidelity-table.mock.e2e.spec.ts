@@ -87,8 +87,6 @@ const MOCK = {
     updated: { x: 1307 },
   },
   add: { y: 475.4, height: 35, iconX: 79, iconSize: 14 },
-  /** Final-Table state=binh-thuong, the hovered row ERP-144. */
-  open: { x: 425.8, y: 595.9, width: 52.2, height: 26, radius: "6px" },
   /** state=sua-o: the status list under ERP-144's pill. */
   list: {
     box: { x: 495, y: 623.4, width: 234, height: 176, radius: "10px" },
@@ -287,7 +285,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(await style(add, "border-radius")).toBe("7px");
   });
 
-  test("grid: frame, sticky header and the nine columns", async ({ page }) => {
+  test("grid: frame, sticky header row and the nine columns", async ({ page }) => {
     await openTable(page);
     const grid = page.locator("[data-table-scroll]");
     expectRect(await rel(page, grid), MOCK.grid, "grid frame");
@@ -395,10 +393,9 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(await style(title, "font-size")).toBe(TYPE.title.size);
     expect(await style(title, "font-weight")).toBe(TYPE.title.weight);
     expect(await colour(title, "color")).toBe(COLOUR.ink);
-    expect(await style(columns.nth(2), "border-right-width")).toBe("1px");
-    expect(await colour(columns.nth(2), "border-right-color")).toBe(
-      COLOUR.lineStrong,
-    );
+    // No docking rule: the title cell has no right border (the columns are
+    // not docked, they scroll together).
+    expect(await style(columns.nth(2), "border-right-width")).toBe("0px");
 
     const pill = columns.nth(3).getByRole("button");
     expectRect(await rel(page, pill), r.pill, "status pill");
@@ -503,22 +500,27 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(Math.abs(second.y - (r.first.y + r.pitch))).toBeLessThanOrEqual(1);
   });
 
-  test("hovered row shows Mở at the mockup position", async ({ page }) => {
+  test("hovered row keeps its geometry and shows no Mở button", async ({
+    page,
+  }) => {
     await openTable(page);
     const target = row(page, "ERP-144");
-    const open = target.getByRole("button", { name: "Mở chi tiết ERP-144" });
-    await expect(open).toBeHidden();
+    const before = await rel(page, target);
+    await expect(target.getByRole("button", { name: /^Mở chi tiết/ })).toHaveCount(
+      0,
+    );
     await target.hover();
-    await expect(open).toBeVisible();
-    expectRect(await rel(page, open), MOCK.open, "Mở");
-    expect(await style(open, "border-radius")).toBe(MOCK.open.radius);
-    expect(await style(open, "font-size")).toBe("12px");
-    expect(await style(open, "font-weight")).toBe("500");
-    expect(await colour(open, "border-top-color")).toBe(COLOUR.lineStrong);
+    await expect(target.getByRole("button", { name: /^Mở chi tiết/ })).toHaveCount(
+      0,
+    );
+    expectRect(await rel(page, target), before, "hovered row");
     // Hover tints the row's cells.
     expect(await colour(cells(target).nth(1), "background-color")).toBe(
       "rgb(241, 243, 246)",
     );
+    // The title stays plain text, with no underline.
+    const title = target.locator("[data-row-open]");
+    expect(await style(title, "text-decoration-line")).toBe("none");
   });
 
   test("selecting rows: selected tint, mixed header checkbox and the bulk bar", async ({
@@ -683,7 +685,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(Math.abs(clearBox.width - n.button.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(clearBox.height - n.button.height)).toBeLessThanOrEqual(1);
     expect(await style(clear, "border-radius")).toBe(n.button.radius);
-    // The note is centred in the grid (1100 px wide, sticky at its left edge).
+    // The note is centred in the grid (1100 px wide).
     expect(
       Math.abs(clearBox.x + clearBox.width / 2 - (n.x + n.width / 2)),
     ).toBeLessThanOrEqual(1);

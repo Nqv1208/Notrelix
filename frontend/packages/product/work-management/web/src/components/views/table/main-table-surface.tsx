@@ -10,7 +10,13 @@ import {
   TableBulkBar,
   type TableBulkBarProps,
 } from "./table-bulk-bar";
-import { visibleTableColumns } from "./table-columns";
+import { groupAccent } from "./table-chrome";
+import {
+  clampColumnWidth,
+  tableGridTemplate,
+  visibleTableColumns,
+  type TableColumnWidths,
+} from "./table-columns";
 import { TableAddRow, TableGroupHeader } from "./table-group-section";
 import { TableHeaderRow } from "./table-header-row";
 import type { TableGroupModel, TableStatusOption } from "./table-model";
@@ -41,6 +47,12 @@ export interface MainTableSurfaceProps {
   canCreate: boolean;
   /** The viewer may archive items. */
   canArchive: boolean;
+  /** Saved column widths by column id (the view config); absent ids use the design width. */
+  columnWidths?: TableColumnWidths;
+  /** A width settled by a drag release or a key press. */
+  onColumnWidthChange?: (columnId: string, width: number) => void;
+  /** Back to the design width of a column. */
+  onColumnWidthReset?: (columnId: string) => void;
   /** Cards shown and hidden by search, filter and "hide finished". */
   shown: number;
   hidden: number;
@@ -76,9 +88,8 @@ export interface MainTableSurfaceProps {
  * every write it asks for comes through props; the container owns the data,
  * the selection and the writes.
  *
- * Keyboard: arrow keys, Home and End move between rows, Enter edits the
- * status of the focused row, Space opens its item, X selects it and Escape
- * clears the selection.
+ * Keyboard: arrow keys, Home and End move between rows, Enter or Space opens
+ * the focused row's item, X selects it and Escape clears the selection.
  */
 export function MainTableSurface({
   toolbar,
@@ -91,6 +102,9 @@ export function MainTableSurface({
   canEdit,
   canCreate,
   canArchive,
+  columnWidths,
+  onColumnWidthChange,
+  onColumnWidthReset,
   shown,
   hidden,
   canShowDone,
@@ -118,6 +132,15 @@ export function MainTableSurface({
   const [tabStopId, setTabStopId] = useState<string | null>(null);
   const [addRequest, setAddRequest] = useState({ groupId: "", count: 0 });
   const gridRef = useRef<HTMLDivElement>(null);
+  // The width the pointer is dragging a column to; the saved width applies
+  // once the drag is released.
+  const [preview, setPreview] = useState<{
+    id: string;
+    width: number;
+  } | null>(null);
+  const widths: TableColumnWidths = preview
+    ? { ...columnWidths, [preview.id]: clampColumnWidth(preview.width) }
+    : (columnWidths ?? {});
 
   const visibleRowIds = groups.flatMap((group) =>
     collapsedGroupIds.has(group.id) ? [] : group.rows.map((row) => row.id),
@@ -169,11 +192,6 @@ export function MainTableSurface({
         focusRow(visibleRowIds.at(-1));
         break;
       case "Enter":
-        if (canEdit) {
-          event.preventDefault();
-          setEditingId(rowId);
-        }
-        break;
       case " ":
         event.preventDefault();
         onOpenItem(rowId);
@@ -188,6 +206,9 @@ export function MainTableSurface({
 
   const style = {
     "--table-row-height": ROW_HEIGHT[toolbar.density],
+  } as CSSProperties;
+  const gridStyle = {
+    "--table-grid": tableGridTemplate(columns, widths),
   } as CSSProperties;
 
   return (
@@ -232,15 +253,22 @@ export function MainTableSurface({
         <div
           role="table"
           aria-label={fillTableCopy(copy.tableLabel, { board: boardTitle })}
+          style={gridStyle}
           className="w-max min-w-full text-nav font-normal text-foreground"
         >
           <TableHeaderRow
             copy={copy}
             columns={columns}
+            widths={widths}
             sort={toolbar.sort}
             allChecked={allChecked}
             canSelect={allRowIds.length > 0}
             onToggleAll={onSelectAllChange}
+            onWidthPreview={(id, width) =>
+              setPreview(width === null ? null : { id, width })
+            }
+            onWidthCommit={(id, width) => onColumnWidthChange?.(id, width)}
+            onWidthReset={(id) => onColumnWidthReset?.(id)}
           />
           {groups.map((group) => {
             const collapsed = collapsedGroupIds.has(group.id);
@@ -260,6 +288,7 @@ export function MainTableSurface({
                         row={row}
                         copy={copy}
                         columns={columns}
+                        accent={groupAccent(group)}
                         statusOptions={statusOptions}
                         selected={selectedIds.has(row.id)}
                         active={openItemId === row.id}
