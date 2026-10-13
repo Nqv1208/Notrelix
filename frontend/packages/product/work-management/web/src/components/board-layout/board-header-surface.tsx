@@ -136,6 +136,10 @@ const PERSON_TONE_CLASS: Readonly<Record<BoardHeaderPersonTone, string>> = {
 
 const VISIBLE_FACES = 3;
 
+/** Settings and Share: 34 px outline buttons of the mockup header. */
+const HEADER_BUTTON_CLASS =
+  "h-8.5 gap-1.5 rounded-[7px] border-line-strong bg-popover px-3 text-compact font-medium text-foreground shadow-none hover:bg-state-hover-strong";
+
 function countForm(one: string, other: string, count: number): string {
   return count === 1 ? one : other;
 }
@@ -295,7 +299,7 @@ function SpaceCrumb({
   onOpenSpace: (() => void) | undefined;
 }) {
   const className =
-    "self-start truncate rounded-sm text-metadata text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring";
+    "self-start truncate rounded-sm text-crumb text-meta-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring";
   if (space.href) {
     return (
       <a
@@ -319,7 +323,7 @@ function SpaceCrumb({
     );
   }
   return (
-    <span className="truncate text-metadata text-muted-foreground">
+    <span className="truncate text-crumb text-meta-foreground">
       {space.name}
     </span>
   );
@@ -363,7 +367,7 @@ export function BoardHeaderSurface({
           <span
             aria-hidden="true"
             className={cn(
-              "flex size-8.5 shrink-0 items-center justify-center rounded-lg text-metadata font-bold",
+              "flex size-8.5 shrink-0 items-center justify-center rounded-[9px] text-metadata font-bold",
               MARK_TONE_CLASS[space.markTone],
             )}
           >
@@ -374,7 +378,7 @@ export function BoardHeaderSurface({
           {space ? (
             <SpaceCrumb space={space} onOpenSpace={onOpenSpace} />
           ) : null}
-          <h1 className="truncate text-page-title text-foreground">{title}</h1>
+          <h1 className="truncate text-board-title text-foreground">{title}</h1>
         </div>
 
         {access && visibility ? (
@@ -384,9 +388,9 @@ export function BoardHeaderSurface({
               onClick={onOpenShare}
               aria-disabled={shareReason ? true : undefined}
               aria-describedby={shareReason ? shareReasonId : undefined}
-              className="inline-flex h-6 max-w-full items-center gap-1 rounded-md border border-border bg-surface-panel px-2 text-metadata font-medium text-muted-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default"
+              className="inline-flex h-6.5 max-w-full items-center gap-[5px] rounded-sm border border-line bg-popover px-2 text-metadata font-medium tracking-normal text-muted-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default"
             >
-              <ChipIcon aria-hidden="true" className="size-3.5 shrink-0" />
+              <ChipIcon aria-hidden="true" className="size-3.25 shrink-0" />
               <span className="truncate">
                 {accessChipLabel(visibility, space, access.guestCount, copy)}
               </span>
@@ -409,7 +413,7 @@ export function BoardHeaderSurface({
                   key={person.id}
                   aria-hidden="true"
                   className={cn(
-                    "-ml-1.5 grid size-6.5 place-items-center rounded-full text-caption font-bold ring-2 ring-background",
+                    "-ml-1.5 grid size-6.5 place-items-center rounded-full text-mark-sm ring-2 ring-background",
                     PERSON_TONE_CLASS[person.tone],
                   )}
                 >
@@ -419,7 +423,7 @@ export function BoardHeaderSurface({
               {overflow > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="-ml-1.5 grid h-6.5 min-w-6.5 place-items-center rounded-full bg-state-hover px-1 text-caption font-bold text-muted-foreground ring-2 ring-background"
+                  className="-ml-1.5 grid h-7.5 min-w-10.5 place-items-center rounded-md bg-state-hover-strong px-2 text-crumb font-medium text-muted-foreground ring-2 ring-background"
                 >
                   {fillBoardHeaderCopy(h.moreAvatars, { count: overflow })}
                 </span>
@@ -437,7 +441,10 @@ export function BoardHeaderSurface({
                 onClick={onOpenSettings}
                 aria-disabled={settingsReason ? true : undefined}
                 aria-describedby={settingsReason ? settingsReasonId : undefined}
-                className="aria-disabled:cursor-default aria-disabled:text-muted-foreground"
+                className={cn(
+                  HEADER_BUTTON_CLASS,
+                  "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
+                )}
               >
                 <Settings aria-hidden="true" />
                 {h.settings}
@@ -450,7 +457,10 @@ export function BoardHeaderSurface({
                 onClick={onOpenShare}
                 aria-disabled={shareReason ? true : undefined}
                 aria-describedby={shareReason ? shareReasonId : undefined}
-                className="aria-disabled:cursor-default aria-disabled:text-muted-foreground"
+                className={cn(
+                  HEADER_BUTTON_CLASS,
+                  "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
+                )}
               >
                 {h.share}
               </Button>
@@ -467,7 +477,7 @@ export function BoardHeaderSurface({
                 aria-label={h.moreOptions}
                 className={cn(
                   !access ? "ml-auto" : undefined,
-                  "text-muted-foreground hover:text-foreground",
+                  "rounded-[7px] text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
                 )}
               >
                 <MoreHorizontal aria-hidden="true" />
@@ -497,7 +507,7 @@ export function BoardHeaderSurface({
       {banner ? (
         <div
           role="note"
-          className="mx-4 mt-3 flex items-center gap-2.5 rounded-lg bg-brand-subtle px-3 py-2 text-body font-medium text-brand-subtle-foreground sm:mx-6"
+          className="mx-4 mt-3 flex items-center gap-2.5 rounded-[9px] bg-brand-subtle px-3 py-[9px] text-compact leading-[1.45] font-medium text-brand-subtle-foreground sm:mx-6"
         >
           <Eye aria-hidden="true" className="size-4 shrink-0" />
           {banner}

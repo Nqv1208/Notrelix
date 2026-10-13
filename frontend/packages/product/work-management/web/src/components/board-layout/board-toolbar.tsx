@@ -44,8 +44,8 @@ export function BoardToolbar({
   return (
     <div className="flex flex-col">
       <BoardHeaderSurface title={boardTitle} copy={copy} {...header} />
-      <div className="flex items-end gap-0.5 border-b border-border px-4 pt-2.5 sm:px-6">
-        <div className="min-w-0 overflow-x-auto">
+      <div className="flex min-h-12 items-end gap-0.5 border-b border-line px-4 pt-2.5 sm:px-6">
+        <div className="-mb-px min-w-0 overflow-x-auto">
           <ViewTabs
             activeView={activeView}
             onViewChange={onViewChange}

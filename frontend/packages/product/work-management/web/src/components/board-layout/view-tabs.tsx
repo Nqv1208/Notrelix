@@ -63,9 +63,9 @@ export function ViewTabs({ activeView, onViewChange, copy }: ViewTabsProps) {
               // paint borders (also under `dark:`) through group variants, so
               // the underline goes through the same variants to win; the
               // primitive's pseudo-element underline is not used.
-              className="h-9 flex-none gap-1.5 rounded-t-md border-0 border-b-2 border-transparent px-3 py-0 text-body font-medium text-muted-foreground after:hidden hover:bg-state-hover hover:text-foreground data-[state=active]:font-semibold data-[state=active]:text-foreground dark:data-[state=active]:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary"
+              className="h-9 flex-none gap-[7px] rounded-none border-0 border-b-2 border-transparent px-3 py-0 text-nav text-muted-foreground after:hidden hover:bg-state-hover hover:text-foreground data-[state=active]:font-semibold data-[state=active]:text-foreground dark:data-[state=active]:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary"
             >
-              <Icon className="size-3.5" aria-hidden="true" />
+              <Icon className="size-4" aria-hidden="true" />
               {copy.views[view.type]}
             </TabsTrigger>
           );
@@ -89,7 +89,7 @@ export function AddViewMenu({
           variant="ghost"
           size="icon-sm"
           aria-label={copy.addView}
-          className="mb-0.5 text-muted-foreground hover:text-foreground"
+          className="-mb-px h-9 w-10 rounded-none text-muted-foreground hover:text-foreground"
         >
           <Plus aria-hidden="true" />
         </Button>
