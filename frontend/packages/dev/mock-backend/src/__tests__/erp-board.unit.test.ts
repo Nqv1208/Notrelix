@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createNotrelixClient, endpoints } from "@notrelix/contracts";
-import {
-  groupCardsByStatus,
-  type GeneratedBoardAccessDto,
-  type GeneratedFullBoardDto,
-} from "@notrelix/work-management-core";
+import { groupCardsByStatus } from "@notrelix/work-management-core";
 import {
   createBoardAccessApi,
   createBoardApi,
   createCardApi,
+  type GeneratedBoardAccessDto,
+  type GeneratedFullBoardDto,
 } from "../../../../product/work-management/state/src/index";
 import { defaultConfig, type MockPersona } from "../config/mock-config";
 import { MockStore } from "../state/mock-store";

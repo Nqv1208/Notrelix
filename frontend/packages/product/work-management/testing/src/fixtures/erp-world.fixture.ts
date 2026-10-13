@@ -13,13 +13,15 @@
 import type {
   BoardAccess,
   FullBoardResponse,
+} from "@notrelix/work-management-core";
+import type {
   GeneratedBoardAccessDto,
   GeneratedFullBoardDto,
-} from "@notrelix/work-management-core";
+} from "@notrelix/work-management-state";
 import {
   mapBoardAccessDto,
   mapFullBoardDto,
-} from "@notrelix/work-management-core";
+} from "@notrelix/work-management-state";
 
 /** Monday 12/10/2026 10:40 in Asia/Ho_Chi_Minh. */
 export const ERP_NOW = "2026-10-12T10:40:00+07:00";

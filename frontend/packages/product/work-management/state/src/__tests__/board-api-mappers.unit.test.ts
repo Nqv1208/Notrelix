@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
-import type { FullBoardDtoApi } from "../types";
+import type { FullBoardDtoApi } from "@notrelix/work-management-core";
 import {
   findPriorityField,
   findStatusField,
   groupCardsByStatus,
+  priorityFromOptionName,
+} from "@notrelix/work-management-core";
+import {
   mapBoardAccessDto,
   mapCardDto,
   mapFullBoardDto,
-  priorityFromOptionName,
   type GeneratedBoardAccessDto,
   type GeneratedBoardItemDto,
   type GeneratedFullBoardDto,
-} from "./board-api-mappers";
+} from "../api/board-api-mappers";
 
 const STATUS_FIELD = "f-status";
 const PRIORITY_FIELD = "f-priority";

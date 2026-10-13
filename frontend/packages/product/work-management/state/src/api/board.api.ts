@@ -10,7 +10,7 @@ import type {
   ViewConfig,
   ViewMode,
 } from "@notrelix/work-management-core";
-import { mapBoardDto, mapFullBoardDto } from "@notrelix/work-management-core";
+import { mapBoardDto, mapFullBoardDto } from "./board-api-mappers";
 
 export const defaultTableViewConfig: ViewConfig = {
   groupBy: "list",

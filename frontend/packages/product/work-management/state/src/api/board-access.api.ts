@@ -1,10 +1,8 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
-import type {
-  BoardAccess,
-  GeneratedBoardAccessDto,
-} from "@notrelix/work-management-core";
-import { mapBoardAccessDto } from "@notrelix/work-management-core";
+import type { BoardAccess } from "@notrelix/work-management-core";
+import type { GeneratedBoardAccessDto } from "./board-api-mappers";
+import { mapBoardAccessDto } from "./board-api-mappers";
 
 /**
  * The caller's access to one board and who else can open it

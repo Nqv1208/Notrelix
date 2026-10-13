@@ -1282,9 +1282,6 @@ importers:
 
   packages/product/work-management/core:
     dependencies:
-      '@notrelix/contracts':
-        specifier: workspace:*
-        version: link:../../../foundation/contracts
       '@notrelix/kernel':
         specifier: workspace:*
         version: link:../../../foundation/kernel
@@ -1394,6 +1391,9 @@ importers:
       '@notrelix/work-management-core':
         specifier: workspace:*
         version: link:../core
+      '@notrelix/work-management-state':
+        specifier: workspace:*
+        version: link:../state
     devDependencies:
       '@notrelix/eslint-config':
         specifier: workspace:*

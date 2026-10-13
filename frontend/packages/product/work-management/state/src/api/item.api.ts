@@ -21,7 +21,7 @@ import {
   mapActivityResponse,
   mapAttachmentDtoToCardFile,
   mapCardDto,
-} from "@notrelix/work-management-core";
+} from "./board-api-mappers";
 
 type CreateItemOp = "WorkManagement.BoardItems.Create";
 type CreateItemBody = OperationRequestBody<CreateItemOp>;

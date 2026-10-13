@@ -22,11 +22,10 @@
  * Plan: 06-HANDLERS-PROJECTIONS.md §Work Management split
  */
 
+import type { OperationResponse } from "@notrelix/contracts";
 import type {
   BoardDtoApi,
   BoardViewDtoApi,
-  GeneratedBoardAccessDto,
-  GeneratedFullBoardDto,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
 import {
@@ -56,6 +55,11 @@ function visibleSpaceId(
     ? null
     : spaceId;
 }
+
+type GeneratedFullBoardDto =
+  OperationResponse<"WorkManagement.Boards.GetOverview">;
+type GeneratedBoardAccessDto =
+  OperationResponse<"WorkManagement.Boards.GetAccess">;
 
 type FullBoardField = NonNullable<GeneratedFullBoardDto["columns"]>[number];
 type FullBoardGroup = NonNullable<GeneratedFullBoardDto["lists"]>[number];

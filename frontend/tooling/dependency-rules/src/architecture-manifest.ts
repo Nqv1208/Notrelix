@@ -205,7 +205,7 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/product/work-management/core",
     layer: "product-core",
     freezeScope: "core-production",
-    allowedInternalImports: ["@notrelix/contracts", "@notrelix/kernel"],
+    allowedInternalImports: ["@notrelix/kernel"],
   },
   {
     packageName: "@notrelix/work-management-state",
@@ -265,7 +265,10 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     relativePath: "packages/product/work-management/testing",
     layer: "product-testing",
     freezeScope: "verification",
-    allowedInternalImports: ["@notrelix/work-management-core"],
+    allowedInternalImports: [
+      "@notrelix/work-management-core",
+      "@notrelix/work-management-state",
+    ],
   },
 
   // ── Product: Docs ──────────────────────────────────────────────────

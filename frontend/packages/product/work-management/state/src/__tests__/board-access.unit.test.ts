@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { NotrelixClient } from "@notrelix/contracts";
 import { assertNotrelixQueryKey } from "@notrelix/query";
-import type { GeneratedBoardAccessDto } from "@notrelix/work-management-core";
 import { createBoardAccessApi } from "../api/board-access.api";
+import type { GeneratedBoardAccessDto } from "../api/board-api-mappers";
 import { wmQueryKeys } from "../queries/keys";
 import { boardAccessQueryOptions } from "../queries/use-board-access";
 import { createWorkManagementServices } from "../services";
@@ -15,7 +15,9 @@ const accessDto: GeneratedBoardAccessDto = {
   peopleCount: 32,
   guestCount: 1,
   peopleCountComplete: false,
-  sources: [{ kind: "space", id: "space-cn", name: "Phòng Công nghệ", count: 24 }],
+  sources: [
+    { kind: "space", id: "space-cn", name: "Phòng Công nghệ", count: 24 },
+  ],
 };
 
 function recordingClient(response: unknown) {
@@ -34,9 +36,8 @@ function recordingClient(response: unknown) {
 describe("board access read", () => {
   it("reads GET /boards/{id}/access and maps the summary", async () => {
     const { client, calls } = recordingClient(accessDto);
-    const access = await createBoardAccessApi(client).getBoardAccess(
-      "board-erp",
-    );
+    const access =
+      await createBoardAccessApi(client).getBoardAccess("board-erp");
 
     expect(calls).toEqual(["/boards/board-erp/access"]);
     expect(access).toMatchObject({

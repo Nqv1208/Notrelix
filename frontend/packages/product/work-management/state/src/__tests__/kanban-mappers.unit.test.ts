@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FullBoardDtoApi } from "@notrelix/work-management-core";
-import { mapFullBoardDto } from "@notrelix/work-management-core";
+import { mapFullBoardDto } from "../api/board-api-mappers";
 
 const dto: FullBoardDtoApi = {
   id: "board-1",

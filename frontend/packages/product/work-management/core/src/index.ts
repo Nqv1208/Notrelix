@@ -13,12 +13,13 @@ export * from "./types/group-types";
 export * from "./types/item-types";
 export * from "./types/label-types";
 export * from "./types/shared-types";
+export * from "./types/board-access-types";
 
 // Schemas
 export * from "./schemas";
 
 // Utils
-export * from "./utils/board-api-mappers";
+export * from "./utils/status-lanes";
 export * from "./utils/fractional-index";
 export * from "./utils/board-cache-updaters";
 
