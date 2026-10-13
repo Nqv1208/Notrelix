@@ -3,7 +3,7 @@ import {
   Archive,
   Briefcase,
   Building2,
-  ChevronRight,
+  ChevronDown,
   Folder,
   FolderKanban,
   Lock,
@@ -13,13 +13,10 @@ import {
 import {
   Button,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
-  SidebarGroupLabel,
   Skeleton,
   cn,
 } from "@notrelix/ui-web";
-import { libraryWindow } from "../../core/model/library";
 import {
   buildSpaceIndex,
   childrenOf,
@@ -32,7 +29,11 @@ import {
   type MarkToneId,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
-import { isPlainClick, type ShellNavigation } from "../shell/shell-models";
+import {
+  isPlainClick,
+  SIDEBAR_SECTION_LABEL_CLASS,
+  type ShellNavigation,
+} from "../shell/shell-models";
 import { IdentityMark } from "../shell/shell-link";
 import type { WorkspaceSpacesCopy } from "./workspace-spaces.copy";
 
@@ -75,15 +76,20 @@ export interface SpaceTreeNavProps {
   readonly windowThreshold?: number;
 }
 
-/** Fixed row height (`--size-row-dense`, 32 px), used by windowing. */
-const ROW_HEIGHT = 32;
+/**
+ * Row boxes of Final-Space `.side` (px): a top-level Space row is 32 high,
+ * every nested row (Board, sub-Space) 30; rows sit 2 px apart.
+ */
+const TOP_ROW_HEIGHT = 32;
+const NESTED_ROW_HEIGHT = 30;
+const ROW_GAP = 2;
 /** Height of the windowed scroll region (`max-h-96`). */
 const WINDOW_HEIGHT = 384;
-/** Inline start of a top-level row and the step per level (px). */
-const ROW_START = 8;
+/** Rows rendered beyond the visible ones on each side while windowed. */
+const WINDOW_OVERSCAN = 8;
+/** Inline start of a nested row's content, and the step per further level (px). */
+const NESTED_START = 39;
 const INDENT = 20;
-/** Chip width plus gap, so a Board's name lines up with its Space's name. */
-const CHIP_OFFSET = 26;
 export const SPACE_TREE_WINDOW_THRESHOLD = 150;
 
 export const SPACE_TYPE_ICON: Readonly<Record<SpaceType, LucideIcon>> = {
@@ -191,12 +197,46 @@ function visibleTreeEntries(
   return entries;
 }
 
-function spaceInset(level: number): number {
-  return ROW_START + (level - 1) * INDENT;
+/** Inline start of the content of a row at this level (below the top level). */
+function nestedInset(level: number): number {
+  return NESTED_START + (level - 2) * INDENT;
+}
+
+function rowHeight(entry: TreeEntry): number {
+  return entry.level === 1 ? TOP_ROW_HEIGHT : NESTED_ROW_HEIGHT;
+}
+
+/** Top offsets and the total height of the rows laid out with {@link ROW_GAP}. */
+function rowLayout(rows: readonly TreeEntry[]) {
+  const tops: number[] = [];
+  let offset = 0;
+  for (const row of rows) {
+    tops.push(offset);
+    offset += rowHeight(row) + ROW_GAP;
+  }
+  return { tops, total: offset };
+}
+
+/** The window of rows around a scroll position (rows differ in height). */
+function windowRange(
+  rows: readonly TreeEntry[],
+  tops: readonly number[],
+  scrollTop: number,
+): { readonly start: number; readonly end: number } {
+  if (rows.length === 0) return { start: 0, end: 0 };
+  const bottom = scrollTop + WINDOW_HEIGHT;
+  let first = 0;
+  while (first < rows.length - 1 && tops[first + 1]! <= scrollTop) first += 1;
+  let last = first;
+  while (last < rows.length - 1 && tops[last + 1]! < bottom) last += 1;
+  return {
+    start: Math.max(0, first - WINDOW_OVERSCAN),
+    end: Math.min(rows.length, last + 1 + WINDOW_OVERSCAN),
+  };
 }
 
 const ROW_CLASS =
-  "flex h-(--size-row-dense) w-full min-w-0 items-center gap-2 rounded-md pr-1 text-left text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-focus-ring";
+  "flex w-full min-w-0 items-center rounded-[7px] text-left outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-focus-ring";
 const ACTIVE_ROW_CLASS =
   "bg-state-selected font-semibold text-state-selected-foreground hover:bg-state-selected hover:text-state-selected-foreground";
 
@@ -226,8 +266,8 @@ function navigateOnPlainClick(
 
 function PrivateMarker({ label }: { label: string }) {
   return (
-    <span className="flex shrink-0 items-center text-muted-foreground">
-      <Lock aria-hidden="true" className="size-3.5" />
+    <span className="flex shrink-0 items-center text-meta-foreground">
+      <Lock aria-hidden="true" className="size-3.25 stroke-[1.8]" />
       <span className="sr-only">, {label}</span>
     </span>
   );
@@ -249,77 +289,81 @@ function SpaceRow({
     section: "space",
     spaceId: node.id,
   };
+  const top = entry.level === 1;
   return (
-    <a
-      role="treeitem"
-      href={navigation.getHref(destination)}
-      data-tree-key={entry.key}
-      data-space-id={node.id}
-      aria-level={entry.level}
-      aria-posinset={entry.posInSet}
-      aria-setsize={entry.setSize}
-      aria-expanded={entry.expandable ? entry.expanded : undefined}
-      aria-selected={active}
-      aria-current={active ? "page" : undefined}
-      tabIndex={focusable ? 0 : -1}
-      onFocus={() => onFocusEntry(entry)}
-      onKeyDown={(event) => onKeyDown(event, entry)}
-      onClick={(event) => {
-        const toggle = (event.target as Element).closest("[data-tree-toggle]");
-        if (toggle) {
-          event.preventDefault();
-          onToggle(entry);
-          return;
+    <div role="none" className="flex w-full items-center gap-0.5">
+      <a
+        role="treeitem"
+        href={navigation.getHref(destination)}
+        data-tree-key={entry.key}
+        data-space-id={node.id}
+        aria-level={entry.level}
+        aria-posinset={entry.posInSet}
+        aria-setsize={entry.setSize}
+        aria-expanded={entry.expandable ? entry.expanded : undefined}
+        aria-selected={active}
+        aria-current={active ? "page" : undefined}
+        tabIndex={focusable ? 0 : -1}
+        onFocus={() => onFocusEntry(entry)}
+        onKeyDown={(event) => onKeyDown(event, entry)}
+        onClick={(event) =>
+          navigateOnPlainClick(event, destination, navigation, onNavigated)
         }
-        navigateOnPlainClick(event, destination, navigation, onNavigated);
-      }}
-      style={{ paddingInlineStart: `${spaceInset(entry.level)}px` }}
-      className={cn(
-        ROW_CLASS,
-        "font-medium text-sidebar-foreground",
-        active && ACTIVE_ROW_CLASS,
-        node.isArchived && "text-muted-foreground",
-      )}
-    >
-      <IdentityMark
-        name={node.name}
-        markTone={entry.tone}
-        size="sm"
+        style={
+          top
+            ? undefined
+            : { paddingInlineStart: `${nestedInset(entry.level)}px` }
+        }
         className={cn(
-          "rounded-sm leading-none",
-          entry.level === 1 ? "size-4.5" : "size-4",
-        )}
-      />
-      <span className="min-w-0 flex-1 truncate" title={node.name}>
-        {node.name}
-      </span>
-      {node.visibility === "Private" ? (
-        <PrivateMarker label={copy.tree.private} />
-      ) : null}
-      {node.isArchived ? (
-        <span className="flex shrink-0 items-center text-muted-foreground">
-          <Archive aria-hidden="true" className="size-3.5" />
-          <span className="sr-only">, {copy.tree.archived}</span>
-        </span>
-      ) : null}
-      <span
-        data-tree-toggle={entry.expandable ? "" : undefined}
-        aria-hidden="true"
-        className={cn(
-          "flex size-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground",
-          entry.expandable && "hover:bg-state-hover hover:text-foreground",
+          ROW_CLASS,
+          "min-w-0 flex-1",
+          top
+            ? "h-8 gap-2.25 px-2.5 text-nav text-sidebar-foreground"
+            : "h-7.5 gap-2 pr-2.5 text-compact text-muted-foreground",
+          active && ACTIVE_ROW_CLASS,
+          node.isArchived && "text-muted-foreground",
         )}
       >
-        {entry.expandable ? (
-          <ChevronRight
+        <IdentityMark
+          name={node.name}
+          markTone={entry.tone}
+          size="sm"
+          className={cn(
+            "leading-none font-bold",
+            top
+              ? "size-5 rounded-[6px] text-mark-xs"
+              : "size-4 rounded-[5px] text-mark-2xs",
+          )}
+        />
+        <span className="min-w-0 flex-1 truncate" title={node.name}>
+          {node.name}
+        </span>
+        {node.visibility === "Private" ? (
+          <PrivateMarker label={copy.tree.private} />
+        ) : null}
+        {node.isArchived ? (
+          <span className="flex shrink-0 items-center text-muted-foreground">
+            <Archive aria-hidden="true" className="size-3.5" />
+            <span className="sr-only">, {copy.tree.archived}</span>
+          </span>
+        ) : null}
+      </a>
+      {entry.expandable ? (
+        <span
+          data-tree-toggle=""
+          aria-hidden="true"
+          onClick={() => onToggle(entry)}
+          className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-meta-foreground hover:bg-sidebar-accent hover:text-foreground"
+        >
+          <ChevronDown
             className={cn(
-              "size-3.5 transition-transform duration-fast",
-              entry.expanded && "rotate-90",
+              "size-3.5 stroke-[1.8] transition-transform duration-fast",
+              !entry.expanded && "-rotate-90",
             )}
           />
-        ) : null}
-      </span>
-    </a>
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -355,12 +399,10 @@ function BoardRow({
       onClick={(event) =>
         navigateOnPlainClick(event, destination, navigation, onNavigated)
       }
-      style={{
-        paddingInlineStart: `${spaceInset(entry.level - 1) + CHIP_OFFSET}px`,
-      }}
+      style={{ paddingInlineStart: `${nestedInset(entry.level)}px` }}
       className={cn(
         ROW_CLASS,
-        "pr-2 text-muted-foreground",
+        "h-7.5 gap-2 pr-2.5 text-compact text-muted-foreground",
         active && ACTIVE_ROW_CLASS,
       )}
     >
@@ -431,13 +473,9 @@ export function SpaceTreeNav({
     null;
 
   const windowed = rows.length > windowThreshold;
+  const layout = React.useMemo(() => rowLayout(rows), [rows]);
   const range = windowed
-    ? libraryWindow({
-        rowCount: rows.length,
-        rowHeight: ROW_HEIGHT,
-        scrollTop,
-        viewportHeight: WINDOW_HEIGHT,
-      })
+    ? windowRange(rows, layout.tops, scrollTop)
     : { start: 0, end: rows.length };
 
   React.useEffect(() => {
@@ -459,10 +497,11 @@ export function SpaceTreeNav({
     focusPending.current = target.key;
     const region = scrollRef.current;
     if (region && windowed) {
-      const top = position * ROW_HEIGHT;
+      const top = layout.tops[position] ?? 0;
+      const bottom = top + rowHeight(target);
       if (top < region.scrollTop) region.scrollTop = top;
-      else if (top + ROW_HEIGHT > region.scrollTop + region.clientHeight) {
-        region.scrollTop = top + ROW_HEIGHT - region.clientHeight;
+      else if (bottom > region.scrollTop + region.clientHeight) {
+        region.scrollTop = bottom - region.clientHeight;
       }
       setScrollTop(region.scrollTop);
     }
@@ -575,13 +614,13 @@ export function SpaceTreeNav({
         role="tree"
         aria-label={copy.tree.label}
         aria-describedby={hintId}
-        className="flex flex-col gap-px"
+        className="flex flex-col gap-0.5"
       >
         {windowed && range.start > 0 ? (
           <div
             role="none"
             aria-hidden="true"
-            style={{ height: range.start * ROW_HEIGHT }}
+            style={{ height: (layout.tops[range.start] ?? 0) - ROW_GAP }}
           />
         ) : null}
         {shown.map((entry) => {
@@ -605,7 +644,9 @@ export function SpaceTreeNav({
           <div
             role="none"
             aria-hidden="true"
-            style={{ height: (rows.length - range.end) * ROW_HEIGHT }}
+            style={{
+              height: layout.total - (layout.tops[range.end] ?? 0) - ROW_GAP,
+            }}
           />
         ) : null}
       </div>
@@ -632,21 +673,21 @@ export function SpaceTreeNav({
   }
 
   return (
-    <SidebarGroup className="py-1">
-      <SidebarGroupLabel className="mt-2 text-metadata font-semibold text-muted-foreground">
-        {copy.tree.title}
-      </SidebarGroupLabel>
-      {canCreateRoot ? (
-        <SidebarGroupAction
-          type="button"
-          onClick={onCreateSpace}
-          aria-label={copy.tree.create}
-          title={copy.tree.create}
-          className="mt-2 focus-visible:ring-focus-ring"
-        >
-          <Plus aria-hidden="true" />
-        </SidebarGroupAction>
-      ) : null}
+    <SidebarGroup className="p-0">
+      <div className={SIDEBAR_SECTION_LABEL_CLASS}>
+        <span>{copy.tree.title}</span>
+        {canCreateRoot ? (
+          <button
+            type="button"
+            onClick={onCreateSpace}
+            aria-label={copy.tree.create}
+            title={copy.tree.create}
+            className="flex size-6 items-center justify-center rounded-[6px] text-meta-foreground outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <Plus aria-hidden="true" className="size-4 stroke-[1.8]" />
+          </button>
+        ) : null}
+      </div>
       <SidebarGroupContent>{body}</SidebarGroupContent>
     </SidebarGroup>
   );

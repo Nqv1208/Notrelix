@@ -250,9 +250,10 @@ describe("WorkspaceSidebarSurface", () => {
     const sub = within(tree).getByRole("treeitem", { name: /Nhóm Hạ tầng/ });
     const top = within(tree).getByRole("treeitem", { name: /Công nghệ/ });
     expect(sub.getAttribute("aria-level")).toBe("2");
-    expect(parseInt(sub.style.paddingInlineStart, 10)).toBeGreaterThan(
-      parseInt(top.style.paddingInlineStart, 10),
-    );
+    // Top-level rows take their inset from the 10 px row padding; nested
+    // rows indent their content to 39 px.
+    expect(parseInt(sub.style.paddingInlineStart, 10)).toBe(39);
+    expect(top.style.paddingInlineStart).toBe("");
   });
 
   it("FUI[workspace.sidebar:setup] keeps every workspace setup link in a footer disclosure for owners and admins, in vi and en", () => {

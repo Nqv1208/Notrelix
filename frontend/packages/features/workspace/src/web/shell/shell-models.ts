@@ -49,6 +49,13 @@ export interface ShellSidebarCounts {
   readonly inbox: number | null;
 }
 
+/**
+ * Group label in the workspace sidebar (Final-Space `.grp`): 12/600 meta text
+ * with a 10 px inline margin, 16 px above and 6 px below (4 plus the gap).
+ */
+export const SIDEBAR_SECTION_LABEL_CLASS =
+  "mx-2.5 mt-4 mb-1.5 flex min-h-6 items-center justify-between text-metadata font-semibold text-meta-foreground";
+
 /** Badge text for a count: none for `null` or 0, "99+" above 99. */
 export function sidebarCountBadge(count: number | null): string | null {
   if (count === null || !Number.isFinite(count) || count <= 0) return null;

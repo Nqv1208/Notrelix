@@ -146,7 +146,8 @@ describe("SpaceTreeNav", () => {
       spaceId: "sp-marketing",
     });
     expect(onNavigated).toHaveBeenCalledTimes(1);
-    const toggle = item(/Accounting/).querySelector("[data-tree-toggle]")!;
+    const toggle =
+      item(/Accounting/).parentElement!.querySelector("[data-tree-toggle]")!;
     fireEvent.click(toggle);
     expect(props.onExpandedChange).toHaveBeenCalledWith("sp-accounting", true);
     expect(props.navigation.onNavigate).toHaveBeenCalledTimes(1);

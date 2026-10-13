@@ -1,10 +1,9 @@
 import * as React from "react";
 import {
   BarChart3,
-  ChevronRight,
   ChevronsUpDown,
-  FileText,
-  Home,
+  File,
+  House,
   Inbox,
   Keyboard,
   LogOut,
@@ -12,8 +11,8 @@ import {
   PinOff,
   Search,
   Settings2,
+  SquareCheckBig,
   User,
-  UserRoundCheck,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -31,7 +30,6 @@ import {
   Button,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuAction,
@@ -56,6 +54,7 @@ import { IdentityMark, ResourceMark, ShellLink } from "./shell-link";
 import {
   formatCopy,
   pluralCopy,
+  SIDEBAR_SECTION_LABEL_CLASS,
   sidebarCountBadge,
   workspaceSetupLinks,
   type WorkspaceSetupLink,
@@ -109,6 +108,13 @@ export interface WorkspaceSidebarSurfaceProps {
 const ACTIVE_ITEM =
   "data-active:bg-state-selected data-active:text-state-selected-foreground data-active:font-semibold hover:bg-sidebar-accent focus-visible:ring-focus-ring";
 
+/**
+ * A 34 px navigation row (Final-Space `.side .nav`): 16 px icon, 10 px gap,
+ * 10 px inline padding, 7 px radius, 13.5/500 muted text.
+ */
+const NAV_ROW =
+  "h-8.5 gap-2.5 rounded-[7px] px-2.5 py-0 text-nav text-muted-foreground [&_svg]:stroke-[1.8]";
+
 type CountKind = "myWork" | "inbox";
 
 interface NavItem {
@@ -139,10 +145,10 @@ function CountBadge({
     <span
       aria-hidden="true"
       className={cn(
-        "ml-auto shrink-0 text-metadata font-medium tabular-nums",
+        "ml-auto flex h-4.25 shrink-0 items-center text-metadata font-medium tabular-nums",
         kind === "inbox"
-          ? "rounded-full bg-brand-solid px-1.5 font-semibold text-brand-solid-foreground"
-          : "text-muted-foreground",
+          ? "rounded-full bg-brand-solid px-1.75 font-semibold text-brand-solid-foreground"
+          : "text-meta-foreground",
       )}
     >
       {text}
@@ -165,7 +171,7 @@ function PrimaryNav({
 }) {
   const closeDrawer = useCloseMobileDrawer();
   return (
-    <SidebarMenu aria-label={copy.nav.primary}>
+    <SidebarMenu aria-label={copy.nav.primary} className="gap-0.5">
       {items.map((item) => {
         const active = isDestinationActive(item.destination, location);
         const count = item.count ? counts[item.count] : null;
@@ -191,7 +197,7 @@ function PrimaryNav({
             <SidebarMenuButton
               asChild
               isActive={active}
-              className={cn("text-muted-foreground", ACTIVE_ITEM)}
+              className={cn(NAV_ROW, ACTIVE_ITEM)}
             >
               <ShellLink
                 destination={item.destination}
@@ -273,27 +279,24 @@ function WorkspaceChip({
         name: workspace.name,
       })}
       aria-expanded={systemRailOpen}
-      className="hover:bg-sidebar-accent focus-visible:ring-focus-ring"
+      className="h-13.5 gap-2.5 rounded-md p-2 hover:bg-sidebar-accent focus-visible:ring-focus-ring [&_svg]:stroke-[1.8]"
     >
       <IdentityMark
         name={workspace.name}
         markTone={workspace.mark}
-        className="size-7 rounded-lg"
+        className="size-7 rounded-md text-mark-md font-bold"
       />
       <span className="flex min-w-0 flex-1 flex-col text-left">
         <span className="truncate text-label font-semibold text-foreground">
           {workspace.name}
         </span>
         {meta ? (
-          <span className="truncate text-metadata text-muted-foreground">
+          <span className="truncate text-metadata leading-4.25 text-meta-foreground">
             {meta}
           </span>
         ) : null}
       </span>
-      <ChevronsUpDown
-        aria-hidden="true"
-        className="ml-auto text-muted-foreground"
-      />
+      <ChevronsUpDown aria-hidden="true" className="ml-auto" />
     </SidebarMenuButton>
   );
 }
@@ -310,11 +313,11 @@ function CommandRow({
     <button
       type="button"
       onClick={onOpenCommand}
-      className="flex h-(--size-row-dense) w-full items-center gap-2 rounded-md border border-sidebar-border bg-surface-panel px-2.5 text-left text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+      className="mt-1.5 mb-2.5 flex h-8.5 w-full items-center gap-2 rounded-md border border-line bg-surface-panel px-2.5 text-left text-compact text-meta-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
     >
-      <Search aria-hidden="true" className="size-4 shrink-0" />
+      <Search aria-hidden="true" className="size-4 shrink-0 stroke-[1.8]" />
       <span className="min-w-0 flex-1 truncate">{copy.sidebar.search}</span>
-      <kbd className="shrink-0 rounded-sm border border-border bg-muted px-1 font-mono text-caption text-muted-foreground">
+      <kbd className="shrink-0 rounded-[4px] border border-line-strong bg-keycap px-[5px] font-mono text-key text-muted-foreground">
         {commandShortcut}
       </kbd>
     </button>
@@ -364,13 +367,14 @@ function WorkspaceSetup({
     <Collapsible defaultOpen={inSetup} className="group/setup">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton className="text-muted-foreground hover:bg-sidebar-accent focus-visible:ring-focus-ring">
+          <SidebarMenuButton
+            className={cn(
+              NAV_ROW,
+              "hover:bg-sidebar-accent focus-visible:ring-focus-ring",
+            )}
+          >
             <Settings2 aria-hidden="true" />
             <span className="truncate">{copy.sidebar.setup}</span>
-            <ChevronRight
-              aria-hidden="true"
-              className="ml-auto transition-transform duration-fast group-data-[state=open]/setup:rotate-90"
-            />
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -430,21 +434,21 @@ function UserCard({
         <SidebarMenuButton
           size="lg"
           aria-label={formatCopy(copy.user.menu, { name })}
-          className="hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent focus-visible:ring-focus-ring"
+          className="h-13 gap-2.25 rounded-[7px] p-2 hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent focus-visible:ring-focus-ring"
         >
           <IdentityMark
             name={name}
             tone={user?.identity ?? "blue"}
             shape="round"
             imageUrl={user?.avatarUrl}
-            className="size-7"
+            className="size-6.5 text-mark-sm font-bold"
           />
           <span className="flex min-w-0 flex-1 flex-col text-left">
-            <span className="truncate text-label font-semibold text-foreground">
+            <span className="truncate text-compact leading-4.75 font-semibold text-foreground">
               {name}
             </span>
             {roleLine ? (
-              <span className="truncate text-metadata text-muted-foreground">
+              <span className="truncate text-metadata leading-4.25 text-meta-foreground">
                 {roleLine}
               </span>
             ) : null}
@@ -521,19 +525,20 @@ function PinnedList({
   if (state.status === "ready" && state.entries.length === 0) return null;
 
   return (
-    <SidebarGroup className="py-1">
-      <SidebarGroupLabel className="mt-2 text-metadata font-semibold text-muted-foreground"
-      >
-        <span>{copy.sidebar.pinned}</span>
-        {state.status === "ready" ? (
-          <span
-            aria-hidden="true"
-            className="ml-1.5 font-medium tabular-nums"
-          >
-            {state.entries.length}
-          </span>
-        ) : null}
-      </SidebarGroupLabel>
+    <SidebarGroup className="p-0">
+      <div className={SIDEBAR_SECTION_LABEL_CLASS}>
+        <span>
+          {copy.sidebar.pinned}
+          {state.status === "ready" ? (
+            <span
+              aria-hidden="true"
+              className="ml-1.5 font-medium tabular-nums"
+            >
+              {state.entries.length}
+            </span>
+          ) : null}
+        </span>
+      </div>
       <SidebarGroupContent>
         {state.status === "error" ? (
           <div className="flex items-center justify-between gap-2 px-2 py-1.5">
@@ -545,7 +550,7 @@ function PinnedList({
             </Button>
           </div>
         ) : (
-          <SidebarMenu aria-label={copy.sidebar.pinned}>
+          <SidebarMenu aria-label={copy.sidebar.pinned} className="gap-0.5">
             {state.entries.map((entry) => {
               const destination = destinationForEntry(entry);
               const active = isDestinationActive(destination, location);
@@ -555,7 +560,7 @@ function PinnedList({
                   <SidebarMenuButton
                     asChild
                     isActive={active}
-                    className={ACTIVE_ITEM}
+                    className={cn(NAV_ROW, ACTIVE_ITEM)}
                   >
                     <ShellLink
                       destination={destination}
@@ -635,13 +640,13 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
     {
       id: "home",
       label: copy.nav.home,
-      icon: Home,
+      icon: House,
       destination: { section: "home" },
     },
     {
       id: "my-work",
       label: copy.nav.myWork,
-      icon: UserRoundCheck,
+      icon: SquareCheckBig,
       destination: { section: "my-work" },
       count: "myWork",
     },
@@ -655,7 +660,7 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
     {
       id: "library",
       label: copy.nav.library,
-      icon: FileText,
+      icon: File,
       destination: { section: "library" },
     },
     {
@@ -670,10 +675,10 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
     <Sidebar
       mobileTitle={copy.nav.label}
       mobileDescription={props.workspace?.name ?? copy.switcher.loading}
-      className="border-sidebar-border"
+      className="border-line"
     >
       {isMobile ? props.mobileSystemRail : null}
-      <SidebarHeader className="gap-1.5 pb-1">
+      <SidebarHeader className="gap-0.5 p-0 px-2.5 pt-2.5">
         <SidebarMenu>
           <SidebarMenuItem>
             <WorkspaceChip {...props} />
@@ -682,8 +687,8 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
         <CommandRow {...props} />
       </SidebarHeader>
       <nav aria-label={copy.nav.label} className="contents">
-        <SidebarContent className="gap-0">
-          <SidebarGroup className="pt-1 pb-0">
+        <SidebarContent className="gap-0.5 px-2.5">
+          <SidebarGroup className="p-0">
             <SidebarGroupContent>
               <PrimaryNav
                 copy={copy}
@@ -711,7 +716,7 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
           ) : null}
         </SidebarContent>
         {setupLinks.length > 0 ? (
-          <SidebarFooter className="gap-1 pt-1">
+          <SidebarFooter className="gap-0.5 p-0 px-2.5 pt-0.5">
             <SidebarMenu>
               <WorkspaceSetup
                 copy={copy}
@@ -723,7 +728,7 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
           </SidebarFooter>
         ) : null}
       </nav>
-      <SidebarFooter className="pt-0">
+      <SidebarFooter className="p-0 px-2.5 pt-1.5 pb-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <UserCard {...props} />
