@@ -20,9 +20,9 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
-    private readonly BoardItemKeyAllocator _keys;
+    private readonly IBoardItemKeyAllocator _keys;
 
-    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, BoardItemKeyAllocator keys)
+    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IBoardItemKeyAllocator keys)
     {
         _keys = keys;
         _context = context;
@@ -46,7 +46,7 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
 
         var now = _timeProvider.UtcNow;
         // The copy is a new Item with its own key, allocated after the ordering lock.
-        var key = (await _keys.AllocateAsync(source.BoardId, 1, _requestContext.UserId, now, ct))[0];
+        var key = (await _keys.AllocateAsync(_context, source.BoardId, 1, ct))[0];
 
         var duplicate = DuplicateBoardGroupCommandHandler.CloneCard(
             source,

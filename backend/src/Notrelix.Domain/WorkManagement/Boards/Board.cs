@@ -203,6 +203,19 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardDefaultGroupSetDomainEvent(AccountId, WorkspaceId, Id, groupId, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// The display key of an Item: <c>{prefix}-{sequence}</c>, or the plain sequence
+    /// number when the Board has no prefix. Keys are unique within the Board and
+    /// never reused; the number comes from the Board's item sequence.
+    /// </summary>
+    public static string FormatItemKey(string? itemKeyPrefix, long sequence)
+    {
+        Guard.Positive(sequence);
+        return string.IsNullOrWhiteSpace(itemKeyPrefix)
+            ? sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : $"{itemKeyPrefix}-{sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+    }
+
     public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)
     {
         EnsureNotDeleted();
@@ -211,9 +224,7 @@ public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotGenerateIdentityArchived, "Cannot generate item identity for an archived board.");
         var pending = PrepareAuditUpdate(actorUserId, now);
         ItemSequence++;
-        var key = string.IsNullOrWhiteSpace(ItemKeyPrefix)
-            ? ItemSequence.ToString()
-            : $"{ItemKeyPrefix}-{ItemSequence}";
+        var key = FormatItemKey(ItemKeyPrefix, ItemSequence);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemIdentityGeneratedDomainEvent(AccountId, WorkspaceId, Id, ItemSequence, key, actorUserId, now));

@@ -19,9 +19,9 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
-    private readonly BoardItemKeyAllocator _keys;
+    private readonly IBoardItemKeyAllocator _keys;
 
-    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, BoardItemKeyAllocator keys)
+    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IBoardItemKeyAllocator keys)
     {
         _keys = keys;
         _context = context;
@@ -64,7 +64,7 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
             .ToListAsync(ct);
 
         // Every copy is a new Item with its own key, allocated after the ordering lock.
-        var keys = await _keys.AllocateAsync(board.Id, cards.Count, _requestContext.UserId, now, ct);
+        var keys = await _keys.AllocateAsync(_context, board.Id, cards.Count, ct);
         for (var i = 0; i < cards.Count; i++)
         {
             var card = cards[i];

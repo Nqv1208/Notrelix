@@ -83,7 +83,6 @@ public static class DependencyInjection
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddSingleton<Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingMetrics>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkPlacementResolver>();
-        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemKeyAllocator>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Ordering.WorkOrderingRebalancer>();
         foreach (var mapper in assembly.GetTypes().Where(type => type is { IsAbstract: false, IsClass: true }))
         {

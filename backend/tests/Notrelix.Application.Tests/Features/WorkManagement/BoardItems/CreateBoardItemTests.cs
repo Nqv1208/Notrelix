@@ -87,7 +87,7 @@ public class CreateBoardItemKeyTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public async Task Create_AssignsSequentialPrefixedKeys_AndAdvancesTheBoard()
+    public async Task Create_AssignsSequentialPrefixedKeys_WithoutTouchingTheBoardAggregate()
     {
         var (board, group) = Seed("WEB");
         var version = board.Version;
@@ -97,8 +97,22 @@ public class CreateBoardItemKeyTests : WorkManagementHandlerTestBase
         await handler.Handle(new CreateBoardItemCommand(board.Id, group.Id, "Second"), CancellationToken.None);
 
         _items.Select(i => (i.Name, i.ItemKey, i.ItemSequence)).Should().Equal(("First", "WEB-1", 1L), ("Second", "WEB-2", 2L));
-        board.ItemSequence.Should().Be(2);
-        board.Version.Should().Be(version + 2);
+        board.Version.Should().Be(version, "reserving keys does not change the Board aggregate");
+        board.DomainEvents.Should().NotContain(e => e is BoardItemIdentityGeneratedDomainEvent);
+    }
+
+    [Fact]
+    public async Task Create_OnAnArchivedBoard_IsRejected()
+    {
+        var (board, group) = Seed("WEB");
+        board.Archive(TestUserId, TestNow);
+        var handler = new CreateBoardItemCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator);
+
+        var act = () => handler.Handle(new CreateBoardItemCommand(board.Id, group.Id, "Late"), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_Board_CannotGenerateIdentityArchived);
+        _items.Should().BeEmpty();
     }
 
     [Fact]

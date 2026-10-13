@@ -17,10 +17,11 @@ namespace Notrelix.Integration.Tests.WorkManagement;
 
 /// <summary>
 /// Item keys on PostgreSQL: creates running concurrently, each in its own request
-/// transaction, draw distinct consecutive keys from the Board sequence (the board
-/// key lock serializes them), the Board sequence ends at the highest key, and a
-/// moved Item keeps its key. A duplicate key on one Board is rejected by the
-/// database as a last line of defence.
+/// transaction, draw distinct consecutive keys from the Board sequence (the row lock
+/// of the reserving UPDATE serializes them), the Board sequence ends at the highest
+/// key, the Board version is untouched so a Board edit made with the version read
+/// before the creates still succeeds, and a moved Item keeps its key. A duplicate
+/// key on one Board is rejected by the database as a last line of defence.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
@@ -78,7 +79,29 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
         keys.Select(k => k.ItemKey).Should().BeEquivalentTo(Enumerable.Range(1, creates).Select(n => $"WEB-{n}"));
         keys.Select(k => k.ItemSequence).Should().OnlyHaveUniqueItems();
         (await BoardScalarAsync(b => b.ItemSequence)).Should().Be(creates);
-        (await BoardScalarAsync(b => b.Version)).Should().Be(boardVersionBefore + creates, "each key advances the Board");
+        (await BoardScalarAsync(b => b.Version)).Should().Be(boardVersionBefore, "reserving keys does not version the Board");
+    }
+
+    [Fact]
+    public async Task ABoardRename_WithTheVersionReadBeforeItemCreates_Succeeds()
+    {
+        await using var editor = _db.CreateContext(Tenant());
+        var board = await editor.Boards.SingleAsync(b => b.Id == _boardId);
+        var versionRead = board.Version;
+
+        for (var i = 0; i < 3; i++)
+            await CreateAsync($"item {i}", _todoId);
+
+        await using var transaction = await editor.Database.BeginTransactionAsync();
+        board.Rename("Renamed Board", _userId, Now.AddMinutes(1));
+        await editor.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        await using var verify = _db.CreateContext(SystemTenant());
+        var saved = await verify.Boards.SingleAsync(b => b.Id == _boardId);
+        saved.Title.Should().Be("Renamed Board");
+        saved.Version.Should().Be(versionRead + 1);
+        saved.ItemSequence.Should().Be(3, "the rename must not write back the sequence it read before the creates");
     }
 
     [Fact]
@@ -140,7 +163,7 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
 
     private static WorkPlacementResolver Resolver(ApplicationDbContext context) => new(new PostgresWorkOrderingScopeLock(context));
 
-    private static BoardItemKeyAllocator Keys(ApplicationDbContext context) => new(context, new PostgresBoardItemKeyLock(context));
+    private static IBoardItemKeyAllocator Keys(ApplicationDbContext context) => new PostgresBoardItemKeyAllocator(context);
 
     private static IDateTimeProvider Clock() => FakeDateTimeProvider.WithFixedTime(Now);
 

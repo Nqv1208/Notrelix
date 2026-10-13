@@ -24,11 +24,11 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
-    private readonly BoardItemKeyAllocator _keys;
+    private readonly IBoardItemKeyAllocator _keys;
     private readonly IRealtimeChangeMapper<CreateBoardItemCommand, BoardItemSlimDto>? _realtime;
     private readonly IIntegrationEventCollector? _events;
 
-    public CreateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, BoardItemKeyAllocator keys, IRealtimeChangeMapper<CreateBoardItemCommand, BoardItemSlimDto>? realtime = null, IIntegrationEventCollector? events = null)
+    public CreateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, WorkPlacementResolver placement, IBoardItemKeyAllocator keys, IRealtimeChangeMapper<CreateBoardItemCommand, BoardItemSlimDto>? realtime = null, IIntegrationEventCollector? events = null)
     {
         _context = context;
         _requestContext = requestContext;
@@ -54,9 +54,9 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
             ct => GroupItemSiblings.LoadAsync(_context, group.Id, ct),
             cancellationToken);
 
-        // The key is allocated last, after the ordering lock, so the board key
-        // lock is always the innermost lock of the request.
-        var key = (await _keys.AllocateAsync(request.BoardId, 1, _requestContext.UserId, now, cancellationToken))[0];
+        // The key is reserved last, after the ordering lock, so the board row lock
+        // is always the innermost lock of the request.
+        var key = (await _keys.AllocateAsync(_context, request.BoardId, 1, cancellationToken))[0];
 
         var item = BoardItem.CreateRoot(
             _requestContext.RequireAccountId(),

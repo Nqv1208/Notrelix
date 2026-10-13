@@ -436,7 +436,7 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
 
     private static WorkPlacementResolver Resolver(ApplicationDbContext context) => new(new PostgresWorkOrderingScopeLock(context));
 
-    private static BoardItemKeyAllocator Keys(ApplicationDbContext context) => new(context, new PostgresBoardItemKeyLock(context));
+    private static IBoardItemKeyAllocator Keys(ApplicationDbContext context) => new PostgresBoardItemKeyAllocator(context);
 
     private static IDateTimeProvider Clock() => FakeDateTimeProvider.WithFixedTime(Now);
 
