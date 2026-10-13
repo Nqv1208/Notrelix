@@ -7,10 +7,16 @@ export {
   fonts,
   weights,
   fontSizeScale,
+  fontSizeDense,
   textRoles,
   numericFeatures,
 } from "./typography";
-export type { FontSizeStep, TextRole, TextRoleName } from "./typography";
+export type {
+  DenseFontSizeStep,
+  FontSizeStep,
+  TextRole,
+  TextRoleName,
+} from "./typography";
 
 export { baseUnitPx, spacing, space, sizes, layout } from "./spacing";
 

@@ -36,7 +36,7 @@ import { radius, radiusBase, radiusRoles } from "../radius";
 import { focusRing } from "../semantic";
 import { elevation, ELEVATION_ROLES } from "../shadows";
 import { layout, sizes, space } from "../spacing";
-import { fontSizeScale, fonts, textRoles } from "../typography";
+import { fontSizeDense, fontSizeScale, fonts, textRoles } from "../typography";
 import { zIndex } from "../z-index";
 
 const TONE_KEYS: readonly (keyof AccentTones)[] = [
@@ -66,6 +66,9 @@ function staticDeclarations(): string[] {
   out.push(`--font-family-sans: ${fonts.sans}`);
   out.push(`--font-family-mono: ${fonts.mono}`);
   for (const [step, rem] of Object.entries(fontSizeScale)) {
+    out.push(`--type-scale-${step}: ${rem}rem`);
+  }
+  for (const [step, rem] of Object.entries(fontSizeDense)) {
     out.push(`--type-scale-${step}: ${rem}rem`);
   }
   for (const [role, spec] of Object.entries(textRoles)) {

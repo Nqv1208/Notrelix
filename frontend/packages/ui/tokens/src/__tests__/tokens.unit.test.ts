@@ -14,6 +14,7 @@ import {
   buildTokensCss,
   durationMs,
   easing,
+  fontSizeDense,
   fontSizeScale,
   fonts,
   deltaEOk,
@@ -139,6 +140,17 @@ describe("typography", () => {
       expect(Object.keys(fontSizeScale)).toContain(spec.size);
     }
     expect(textRoles.metadata.tabular).toBe(true);
+  });
+
+  it("keeps the mockup's off-grid chrome sizes out of the modular scale", () => {
+    const dense = Object.keys(fontSizeDense);
+    for (const spec of Object.values(textRoles)) {
+      const onScale = Object.keys(fontSizeScale).includes(spec.size);
+      expect(onScale || dense.includes(spec.size), spec.size).toBe(true);
+    }
+    for (const step of dense) {
+      expect(Object.keys(fontSizeScale)).not.toContain(step);
+    }
   });
 });
 

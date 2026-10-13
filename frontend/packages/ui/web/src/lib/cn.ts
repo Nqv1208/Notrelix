@@ -24,6 +24,15 @@ export const TEXT_ROLES = [
   "caption",
   "code",
   "prose",
+  "nav",
+  "compact",
+  "rail-label",
+  "key",
+  "mark-2xs",
+  "mark-xs",
+  "mark-sm",
+  "mark-md",
+  "mark-lg",
 ] as const;
 
 /**
