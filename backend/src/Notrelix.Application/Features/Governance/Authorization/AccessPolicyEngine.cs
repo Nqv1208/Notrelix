@@ -293,15 +293,11 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// The principal's effective level on a Board and its source, over the same
     /// facts as the single read (<c>ViewBoard</c>), in GOV-025 order: a missing
     /// resource or no Workspace membership → none; workspace Owner → Owner;
-    /// a first-priority Deny rule → none. Otherwise the highest of: the explicit
-    /// resource-permission rank (User or active Team); board membership without
-    /// a grant (an Observer only reads, every other board role edits, as the
-    /// board actions allow); and, on a Workspace-visible Board only, the Space
-    /// level when placed (GOV-027) or the Workspace default for non-Guest
-    /// members when unplaced (non-management actions allowed, i.e. Editor).
-    /// On a tie the earlier source wins (explicit grant first). An Allow rule
-    /// with no other source gives Viewer. The result is none exactly when the
-    /// single read is denied; it describes access for clients and never
+    /// a first-priority Deny rule → none. Otherwise the level the engine
+    /// enforces for Board actions (<see cref="ResolveResourceLevel"/>: the
+    /// highest level among every source, a Guest capped at Editor). An Allow
+    /// rule with no other source gives Viewer. The result is none exactly when
+    /// the single read is denied; it describes access for clients and never
     /// replaces the per-action decision.
     /// </summary>
     public static EffectiveResourceAccess EvaluateEffectiveBoardAccess(AccessFacts facts)
@@ -327,37 +323,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return EffectiveResourceAccess.None;
         }
 
-        var best = EffectiveResourceAccess.None;
-        if (facts.HasExplicitResourcePermission)
-        {
-            best = Higher(best, new EffectiveResourceAccess(
-                Math.Max(facts.ActiveResourcePermissionRank ?? 0, ViewerRank), EffectiveAccessBasis.ResourcePermission));
-        }
-
-        if (facts.ResourceMemberRole is { } boardRole)
-        {
-            var memberRank = string.Equals(boardRole, "Observer", StringComparison.Ordinal) ? ViewerRank : EditorRank;
-            best = Higher(best, new EffectiveResourceAccess(memberRank, EffectiveAccessBasis.BoardMembership));
-        }
-
-        if (string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal))
-        {
-            if (facts.ResourceSpaceId is not null)
-            {
-                var spaceRank = SpaceRank(facts, role);
-                if (spaceRank > 0)
-                {
-                    var basis = string.Equals(role, "Admin", StringComparison.Ordinal)
-                        ? EffectiveAccessBasis.WorkspaceAdmin
-                        : EffectiveAccessBasis.Space;
-                    best = Higher(best, new EffectiveResourceAccess(spaceRank, basis));
-                }
-            }
-            else if (!string.Equals(role, "Guest", StringComparison.Ordinal))
-            {
-                best = Higher(best, new EffectiveResourceAccess(EditorRank, EffectiveAccessBasis.WorkspaceDefault));
-            }
-        }
+        var best = ResolveResourceLevel(facts, role);
 
         if (best.Basis == EffectiveAccessBasis.None
             && firstPriority.Any(rule => string.Equals(rule.Effect, "Allow", StringComparison.OrdinalIgnoreCase)))
@@ -440,57 +406,103 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     private readonly record struct PlacedResourceAccess(AccessDecision? Denial, int EffectiveRank);
 
     /// <summary>
-    /// GOV-025 steps 4–6 for a Board or Page (existence and Owner were decided
-    /// earlier): a Private resource needs board membership or an explicit grant
-    /// and Space roles never reach it; a Workspace-visible resource placed in a
-    /// Space inherits the Space level, which gates the action only when it is the
-    /// sole source of access (GOV-027); an unplaced Workspace-visible resource
-    /// keeps the Workspace default (Guests need explicit access). The effective
-    /// rank used for ACL management and grant ceilings is the higher of the
-    /// explicit resource-permission rank and the Space level.
+    /// GOV-025 steps 4–6 for a Board or Page (existence, Owner and explicit
+    /// permission rules were decided earlier). Visibility is unchanged: a
+    /// Private resource needs board membership or an explicit grant and Space
+    /// roles never reach it; a Workspace-visible resource placed in a Space is
+    /// reached by a Space level, an unplaced one by the Workspace default
+    /// (Guests need explicit access); no source → NotFound. The resource level
+    /// is the highest level among every source (<see cref="ResolveResourceLevel"/>),
+    /// a Workspace Guest is capped at Editor (GOV-030), and the action threshold
+    /// of GOV-027 applies to that level whatever the source → Forbidden below it.
+    /// The same level is the authority for ACL management and grant ceilings.
     /// </summary>
     private static PlacedResourceAccess EvaluatePlacedResourceAccess(
         IRequirePermission permission,
         AccessFacts facts,
         string? role)
     {
-        var restricted = !string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal);
-        var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
-        var hasDirect = facts.ResourceMemberRole is not null || facts.HasExplicitResourcePermission;
-        var effectiveRank = facts.ActiveResourcePermissionRank ?? 0;
-
-        if (restricted)
+        var level = ResolveResourceLevel(facts, role);
+        if (level.Basis == EffectiveAccessBasis.None)
         {
-            return hasDirect
-                ? new PlacedResourceAccess(null, effectiveRank)
-                : new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0);
+            return new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0);
         }
 
-        if (facts.ResourceSpaceId is not null)
-        {
-            var spaceRank = SpaceRank(facts, role);
-            if (!hasDirect)
-            {
-                if (spaceRank == 0)
-                {
-                    return new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0);
-                }
+        return level.Rank < RequiredRank(permission.Action)
+            ? new PlacedResourceAccess(
+                AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action."),
+                level.Rank)
+            : new PlacedResourceAccess(null, level.Rank);
+    }
 
-                if (spaceRank < RequiredRank(permission.Action))
+    /// <summary>
+    /// The level every access source gives on a Board or Page, and the highest
+    /// of them (ties keep the earlier source: explicit grant, board membership,
+    /// Space / workspace Admin, Workspace default):
+    /// <list type="bullet">
+    /// <item>explicit resource permission (User or active Team): its level (a
+    ///   level-less entry still reads, i.e. Viewer);</item>
+    /// <item>board membership: <see cref="BoardRoleRank"/>;</item>
+    /// <item>Workspace-visible resource placed in a Space: the Space level
+    ///   (<see cref="SpaceRank"/>, workspace Admin → Manager);</item>
+    /// <item>unplaced Workspace-visible resource: Editor for non-Guest members
+    ///   (every Board/Page action but permission management).</item>
+    /// </list>
+    /// A Workspace Guest's level is capped at Editor whatever the source
+    /// (GOV-030). No source → <see cref="EffectiveResourceAccess.None"/>.
+    /// </summary>
+    private static EffectiveResourceAccess ResolveResourceLevel(AccessFacts facts, string? role)
+    {
+        var guest = string.Equals(role, "Guest", StringComparison.Ordinal);
+        var best = EffectiveResourceAccess.None;
+
+        // The explicit rank only exists for an active grant; either fact marks the source.
+        if (facts.HasExplicitResourcePermission || facts.ActiveResourcePermissionRank > 0)
+        {
+            best = Higher(best, new EffectiveResourceAccess(
+                Math.Max(facts.ActiveResourcePermissionRank ?? 0, ViewerRank), EffectiveAccessBasis.ResourcePermission));
+        }
+
+        if (facts.ResourceMemberRole is { } boardRole)
+        {
+            best = Higher(best, new EffectiveResourceAccess(BoardRoleRank(boardRole), EffectiveAccessBasis.BoardMembership));
+        }
+
+        if (string.Equals(facts.ResourceAudience, "Workspace", StringComparison.Ordinal))
+        {
+            if (facts.ResourceSpaceId is not null)
+            {
+                var spaceRank = SpaceRank(facts, role);
+                if (spaceRank > 0)
                 {
-                    return new PlacedResourceAccess(
-                        AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action."),
-                        spaceRank);
+                    var basis = string.Equals(role, "Admin", StringComparison.Ordinal)
+                        ? EffectiveAccessBasis.WorkspaceAdmin
+                        : EffectiveAccessBasis.Space;
+                    best = Higher(best, new EffectiveResourceAccess(spaceRank, basis));
                 }
             }
-
-            return new PlacedResourceAccess(null, Math.Max(effectiveRank, spaceRank));
+            else if (!guest)
+            {
+                best = Higher(best, new EffectiveResourceAccess(EditorRank, EffectiveAccessBasis.WorkspaceDefault));
+            }
         }
 
-        return guest && !hasDirect
-            ? new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0)
-            : new PlacedResourceAccess(null, effectiveRank);
+        return guest && best.Rank > EditorRank ? best with { Rank = EditorRank } : best;
     }
+
+    /// <summary>
+    /// Board membership roles map to levels (the single mapping table):
+    /// Owner, Admin → Manager; Member → Editor; Observer → Viewer (reads only);
+    /// Guest → Viewer (no documented edit semantics; least privilege). An
+    /// unknown role reads only.
+    /// </summary>
+    private static int BoardRoleRank(string boardRole) => boardRole switch
+    {
+        "Owner" or "Admin" => ManagerRank,
+        "Member" => EditorRank,
+        "Observer" or "Guest" => ViewerRank,
+        _ => ViewerRank,
+    };
 
     /// <summary>
     /// GOV-028 for a Space resource: invisible (or missing) → NotFound; otherwise

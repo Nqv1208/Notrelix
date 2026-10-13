@@ -90,9 +90,10 @@ public sealed class EffectiveBoardAccessTests
 
     [Theory]
     [InlineData("Member", "Editor")]
-    [InlineData("Admin", "Editor")]
-    [InlineData("Owner", "Editor")]
+    [InlineData("Admin", "Manager")]
+    [InlineData("Owner", "Manager")]
     [InlineData("Observer", "Viewer")]
+    [InlineData("Guest", "Viewer")]
     public void BoardMembershipWithoutAGrant_IsLevelledByTheBoardRole(string boardRole, string level)
     {
         var access = AccessPolicyEngine.EvaluateEffectiveBoardAccess(
@@ -120,6 +121,17 @@ public sealed class EffectiveBoardAccessTests
 
         access.Basis.Should().Be(EffectiveAccessBasis.ResourcePermission);
         access.Level.Should().Be("Editor");
+    }
+
+    [Theory]
+    [InlineData(4)]
+    [InlineData(5)]
+    public void Guest_IsCappedAtEditor_WhateverTheGrant(int explicitRank)
+    {
+        var access = AccessPolicyEngine.EvaluateEffectiveBoardAccess(Facts("Guest", explicitRank: explicitRank));
+
+        access.Basis.Should().Be(EffectiveAccessBasis.ResourcePermission);
+        access.Level.Should().Be("Editor", "a Workspace Guest never holds Manager (GOV-030)");
     }
 
     [Fact]
