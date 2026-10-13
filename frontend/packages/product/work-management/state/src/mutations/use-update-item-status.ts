@@ -5,13 +5,8 @@ import {
 } from "@tanstack/react-query";
 import type { ApiRequestOptions } from "@notrelix/contracts";
 import {
-  defineOptimisticUpdate,
-  executeOptimisticCommand,
-} from "@notrelix/query";
-import {
   findStatusField,
   updateCardInFullBoard,
-  type CardDetail,
   type FullBoardResponse,
 } from "@notrelix/work-management-core";
 import { addOptimisticCard } from "../cache/optimistic-card";
@@ -22,6 +17,7 @@ import {
 } from "../cache/item-status";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
+import { cardCommandId, runCardCommand } from "./card-command";
 
 export interface UpdateItemStatusVariables {
   readonly workspaceId: string;
@@ -70,96 +66,75 @@ interface ItemCreator extends ItemStatusWriter {
 }
 
 /**
- * A command id that is unique across reloads and tabs: it doubles as the
- * idempotency key, and a key reused with another payload is a conflict.
+ * Hook-level error reporting: it runs for every write, also when a later
+ * write of the same hook has replaced the observer or the view has unmounted.
  */
-function commandId(kind: string, subject: string): string {
-  return `${kind}:${subject}:${crypto.randomUUID()}`;
+export interface CardWriteHookOptions<TVariables> {
+  readonly onError?: (error: unknown, variables: TVariables) => void;
 }
 
 /**
  * Writes an item's Status (`PATCH /board-items/{id}/status`). The board read
  * and the item detail take the option first, so the card is already in its
- * new lane; a failed write puts both back and rethrows, and both reads are
- * refetched either way.
+ * new lane; a failed write puts only this card back and rethrows, and the
+ * reads are refetched either way.
  */
 export function runItemStatusCommand(
   queryClient: QueryClient,
   cards: ItemStatusWriter,
   variables: UpdateItemStatusVariables,
 ): Promise<void> {
-  const boardKey = wmQueryKeys.fullBoard(
-    variables.workspaceId,
-    variables.boardId,
-  );
-  const detailKey = wmQueryKeys.cardDetail(
-    variables.workspaceId,
-    variables.cardId,
-  );
   const fields =
-    queryClient.getQueryData<FullBoardResponse>(boardKey)?.board
-      .fieldDefinitions ?? [];
-  const id = commandId("item-status", variables.cardId);
-  return executeOptimisticCommand({
+    queryClient.getQueryData<FullBoardResponse>(
+      wmQueryKeys.fullBoard(variables.workspaceId, variables.boardId),
+    )?.board.fieldDefinitions ?? [];
+  return runCardCommand({
     queryClient,
-    commandId: id,
-    updates: [
-      defineOptimisticUpdate<
-        FullBoardResponse | undefined,
-        UpdateItemStatusVariables
-      >(boardKey, (current, input) =>
-        applyItemStatus(current, input.cardId, input.statusOptionId),
-      ),
-      defineOptimisticUpdate<CardDetail | undefined, UpdateItemStatusVariables>(
-        detailKey,
-        (current, input) =>
-          applyItemDetailStatus(current, fields, input.statusOptionId),
-      ),
-    ],
-    mutationFn: (input, context) =>
-      cards.updateStatus(input.cardId, input.statusOptionId, {
-        correlationId: context.correlationId,
-        idempotencyKey: context.idempotencyKey,
-      }),
-    variables,
+    workspaceId: variables.workspaceId,
+    boardId: variables.boardId,
+    cardId: variables.cardId,
+    kind: "item-status",
+    applyBoard: (board) =>
+      applyItemStatus(board, variables.cardId, variables.statusOptionId) ??
+      board,
+    applyDetail: (detail) =>
+      applyItemDetailStatus(detail, fields, variables.statusOptionId) ?? detail,
+    send: (context) =>
+      cards.updateStatus(variables.cardId, variables.statusOptionId, context),
   });
 }
 
 /**
  * "Thêm vào {lane}": creates the item in a board group, then sets the lane's
- * Status (or the lane's value of the Select field the board is grouped by). The board shows the new card in the lane at once; a failure of
- * either write removes it again and rethrows (an item that was created
- * before the status write failed comes back from the refetch without it).
+ * Status (or the lane's value of the Select field the board is grouped by).
+ * The board shows the new card in the lane at once; a failure of either
+ * write removes only that card again and rethrows (an item that was created
+ * before the second write failed comes back from the refetch without it).
  */
 export function runCreateItemInLane(
   queryClient: QueryClient,
   cards: ItemCreator,
   variables: CreateItemInLaneVariables,
 ): Promise<void> {
-  const boardKey = wmQueryKeys.fullBoard(
-    variables.workspaceId,
-    variables.boardId,
-  );
-  const id = commandId("create-item", variables.boardId);
-  const optimisticId = `optimistic-${id}`;
-  return executeOptimisticCommand({
+  const optimisticId = `optimistic-${cardCommandId("create-item", variables.boardId)}`;
+  return runCardCommand({
     queryClient,
-    commandId: id,
-    updates: [
-      defineOptimisticUpdate<
-        FullBoardResponse | undefined,
-        CreateItemInLaneVariables
-      >(boardKey, (current, input) => {
-        const added = addOptimisticCard(
-          current,
-          { listId: input.listId, title: input.title },
-          optimisticId,
-        );
-        if (!added) return added;
-        const field = findStatusField(added.board.fieldDefinitions);
-        const optionId = input.statusOptionId;
-        const laneValue = input.fieldValue;
-        return updateCardInFullBoard(added, optimisticId, (card) => {
+    workspaceId: variables.workspaceId,
+    boardId: variables.boardId,
+    cardId: optimisticId,
+    kind: "create-item",
+    applyBoard: (board) => {
+      const added = addOptimisticCard(
+        board,
+        { listId: variables.listId, title: variables.title },
+        optimisticId,
+      );
+      if (!added) return board;
+      const field = findStatusField(added.board.fieldDefinitions);
+      const optionId = variables.statusOptionId;
+      const laneValue = variables.fieldValue;
+      return (
+        updateCardInFullBoard(added, optimisticId, (card) => {
           const withStatus =
             field && optionId ? withItemStatus(card, field, optionId) : card;
           return {
@@ -173,66 +148,77 @@ export function runCreateItemInLane(
             // The legacy optimistic card guesses a priority; the server sets none.
             priority: undefined,
           };
-        });
-      }),
-    ],
-    mutationFn: async (input, context) => {
+        }) ?? added
+      );
+    },
+    send: async (context) => {
       const createdId = await cards.createCard(
-        input.boardId,
-        { listId: input.listId, title: input.title },
-        {
-          correlationId: context.correlationId,
-          idempotencyKey: context.idempotencyKey,
-        },
+        variables.boardId,
+        { listId: variables.listId, title: variables.title },
+        context,
       );
       if (!createdId) return;
-      if (input.statusOptionId) {
-        await cards.updateStatus(createdId, input.statusOptionId, {
+      if (variables.statusOptionId) {
+        const statusKey = cardCommandId("item-status", createdId);
+        await cards.updateStatus(createdId, variables.statusOptionId, {
           correlationId: context.correlationId,
-          idempotencyKey: commandId("item-status", createdId),
+          idempotencyKey: statusKey,
         });
       }
-      if (input.fieldValue && cards.updateFieldValue) {
+      if (variables.fieldValue && cards.updateFieldValue) {
         await cards.updateFieldValue({
           cardId: createdId,
-          fieldDefinitionId: input.fieldValue.fieldDefinitionId,
-          value: input.fieldValue.value,
+          fieldDefinitionId: variables.fieldValue.fieldDefinitionId,
+          value: variables.fieldValue.value,
         });
       }
     },
-    variables,
   });
 }
 
+type StatusInput = { cardId: string; statusOptionId: string };
+
 /** Status write for drag between lanes and the sheet's status pill. */
-export function useUpdateItemStatus(boardId: string, workspaceId: string) {
+export function useUpdateItemStatus(
+  boardId: string,
+  workspaceId: string,
+  options: CardWriteHookOptions<StatusInput> = {},
+) {
   const queryClient = useQueryClient();
   const { cards } = useWorkManagementServices();
   return useMutation({
-    mutationFn: (input: { cardId: string; statusOptionId: string }) =>
+    mutationFn: (input: StatusInput) =>
       runItemStatusCommand(queryClient, cards, {
         workspaceId,
         boardId,
         ...input,
       }),
+    onError: options.onError,
   });
 }
 
+type CreateInput = {
+  listId: string;
+  title: string;
+  statusOptionId: string | null;
+  fieldValue?: { fieldDefinitionId: string; value: string } | null;
+};
+
 /** Creates an item in a lane ("Thêm vào {lane}"). */
-export function useCreateItemInLane(boardId: string, workspaceId: string) {
+export function useCreateItemInLane(
+  boardId: string,
+  workspaceId: string,
+  options: CardWriteHookOptions<CreateInput> = {},
+) {
   const queryClient = useQueryClient();
   const { cards } = useWorkManagementServices();
   return useMutation({
-    mutationFn: (input: {
-      listId: string;
-      title: string;
-      statusOptionId: string | null;
-      fieldValue?: { fieldDefinitionId: string; value: string } | null;
-    }) =>
+    mutationFn: (input: CreateInput) =>
       runCreateItemInLane(queryClient, cards, {
         workspaceId,
         boardId,
         ...input,
       }),
+    onError: options.onError,
   });
 }

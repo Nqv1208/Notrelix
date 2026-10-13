@@ -35,6 +35,21 @@ export interface UseBoardKanbanOptions {
   readonly filter: KanbanLaneFilter;
   /** Whether a card is overdue (same calendar rule as the card's due wording). */
   readonly isOverdue: (card: Card) => boolean;
+  /**
+   * Called for every failed write, also when a later write of the same kind
+   * has started or the view has unmounted (hook-level, not per call).
+   */
+  readonly onWriteError?: (failure: KanbanWriteFailure) => void;
+}
+
+/** A failed Kanban write; the card is already back where it was. */
+export interface KanbanWriteFailure {
+  readonly kind: "status" | "field" | "move" | "create";
+  /** The card, or `null` for an item that was being created. */
+  readonly cardId: string | null;
+  /** The title of the item being created. */
+  readonly title?: string;
+  readonly error: unknown;
 }
 
 function optionValue(value: unknown): string | null {
@@ -120,7 +135,7 @@ export function kanbanGroupByFields(
 export function useBoardKanban(
   boardId: string,
   workspaceId: string,
-  { groupBy, filter, isOverdue }: UseBoardKanbanOptions,
+  { groupBy, filter, isOverdue, onWriteError }: UseBoardKanbanOptions,
 ) {
   const { board, groups, isLoading, error } = useFullBoard(
     boardId,
@@ -176,10 +191,27 @@ export function useBoardKanban(
     isOverdue,
   });
 
-  const updateStatus = useUpdateItemStatus(boardId, workspaceId);
-  const updateFieldValue = useUpdateFieldValue(boardId, workspaceId);
-  const moveCard = useMoveCard(boardId, workspaceId);
-  const createItemInLane = useCreateItemInLane(boardId, workspaceId);
+  const updateStatus = useUpdateItemStatus(boardId, workspaceId, {
+    onError: (error, input) =>
+      onWriteError?.({ kind: "status", cardId: input.cardId, error }),
+  });
+  const updateFieldValue = useUpdateFieldValue(boardId, workspaceId, {
+    onError: (error, input) =>
+      onWriteError?.({ kind: "field", cardId: input.cardId, error }),
+  });
+  const moveCard = useMoveCard(boardId, workspaceId, {
+    onError: (error, input) =>
+      onWriteError?.({ kind: "move", cardId: input.cardId, error }),
+  });
+  const createItemInLane = useCreateItemInLane(boardId, workspaceId, {
+    onError: (error, input) =>
+      onWriteError?.({
+        kind: "create",
+        cardId: null,
+        title: input.title,
+        error,
+      }),
+  });
 
   return {
     board,

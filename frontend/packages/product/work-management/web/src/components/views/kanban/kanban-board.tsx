@@ -10,13 +10,22 @@ import {
 import type { KanbanStatusLane } from "@notrelix/work-management-core";
 import { pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanColumn } from "./kanban-column";
-import { getKanbanLaneDrop, type KanbanLaneDrop } from "./kanban-dnd";
+import {
+  getKanbanLaneDrop,
+  type KanbanGroupOrder,
+  type KanbanLaneDrop,
+} from "./kanban-dnd";
 import { KanbanEmptyState } from "./kanban-empty-state";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
 export interface KanbanBoardProps {
   /** Lanes in option order, filter applied (`total` is the lane total). */
   lanes: readonly KanbanStatusLane[];
+  /**
+   * The board groups in board order (all cards): a reorder names its new
+   * neighbours in the group's whole order, so the server keeps the order.
+   */
+  groupOrder?: readonly KanbanGroupOrder[];
   copy: KanbanLaneCopy;
   cardCopy?: KanbanCardCopy;
   /** Reference time for card due wording; read once by the container. */
@@ -54,6 +63,7 @@ function laneKey(lane: KanbanStatusLane): string {
  */
 export function KanbanBoard({
   lanes,
+  groupOrder,
   copy,
   cardCopy,
   now,
@@ -76,7 +86,7 @@ export function KanbanBoard({
   const none = useSensors();
 
   function handleDragEnd(event: DragEndEvent) {
-    const drop = getKanbanLaneDrop(event, lanes);
+    const drop = getKanbanLaneDrop(event, lanes, groupOrder);
     if (drop) onDropCard(drop);
   }
 

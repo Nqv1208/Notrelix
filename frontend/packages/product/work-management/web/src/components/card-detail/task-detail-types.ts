@@ -93,12 +93,3 @@ export interface TaskDetailCallbacks {
   /** Moves the item to another board group ("Chuyển nhóm"). */
   readonly onMoveToGroup?: (cardId: string, groupId: string) => void;
 }
-
-export const defaultTaskDetailCapabilities: TaskDetailCapabilities = {
-  canCreateCard: true,
-  canMoveCard: true,
-  canRenameGroup: true,
-  canDelete: true,
-  canEditFields: true,
-  canComment: true,
-};

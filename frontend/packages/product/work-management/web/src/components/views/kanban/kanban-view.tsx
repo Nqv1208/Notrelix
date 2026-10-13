@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { useIsMobile } from "@notrelix/ui-web";
 import {
   dropUnknownFilterIds,
   useBoardAccess,
@@ -15,12 +16,13 @@ import {
   useCardActivity,
   useCardComments,
   useCardFiles,
+  useArchiveCard,
   useCreateCardUpdate,
-  useDeleteCard,
   useDeleteCardUpdate,
   useDuplicateCard,
   useUpdateCard,
   useUpdateCardUpdate,
+  type KanbanWriteFailure,
 } from "@notrelix/work-management-state";
 import {
   generatePosition,
@@ -51,7 +53,8 @@ import type { KanbanLaneCopy } from "./kanban-lane.copy";
 import { KanbanSkeleton } from "./kanban-skeleton";
 import { KanbanToolbar } from "./kanban-toolbar";
 import { KanbanUnavailableState } from "./kanban-unavailable-state";
-import { boardCapabilities, buildCardLink } from "./kanban-view-helpers";
+import { buildCardLink } from "./kanban-view-helpers";
+import { boardCapabilities } from "../../shared/board-capabilities";
 import { useKanbanCardCopy } from "./use-kanban-card-copy";
 import { useKanbanLaneCopy } from "./use-kanban-lane-copy";
 import { useKanbanToolbarCopy } from "./use-kanban-toolbar-copy";
@@ -149,15 +152,56 @@ export function KanbanView({
     [now],
   );
 
+  // Where each card was when its write started: a failure toast names the
+  // lane the card goes back to. Read by hook-level error handlers, which run
+  // for every failed write (also after a later write or an unmount).
+  const writeOrigins = useRef(
+    new Map<string, { title: string; lane: string }>(),
+  );
+  const laneCopyRef = useRef(laneCopy);
+  laneCopyRef.current = laneCopy;
+  const onWriteError = useCallback((failure: KanbanWriteFailure) => {
+    const copy = laneCopyRef.current;
+    if (failure.kind === "create") {
+      toast.error(fillCopy(copy.createFailed, { title: failure.title ?? "" }));
+      return;
+    }
+    const cardId = failure.cardId ?? "";
+    const origin = writeOrigins.current.get(cardId);
+    writeOrigins.current.delete(cardId);
+    const message =
+      failure.kind === "field"
+        ? fillCopy(copy.saveFailed, { title: origin?.title ?? "" })
+        : fillCopy(copy.moveFailed, {
+            title: origin?.title ?? "",
+            lane: origin?.lane ?? "",
+          });
+    // One toast per card: a second failure of the same card replaces it.
+    toast.error(message, { id: `kanban-write-${cardId}` });
+  }, []);
+
   const kanban = useBoardKanban(boardId, workspaceId, {
     groupBy: groupByValue,
     filter: parsedFilter,
     isOverdue,
+    onWriteError,
   });
   const { access } = useBoardAccess(boardId, workspaceId);
   const capabilities = boardCapabilities(access?.myLevel);
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
-  const deleteCard = useDeleteCard(boardId, workspaceId);
+  const archiveCard = useArchiveCard(boardId, workspaceId, {
+    onError: (_error, cardId) =>
+      toast.error(
+        fillCopy(laneCopyRef.current.archiveFailed, {
+          title: writeOrigins.current.get(cardId)?.title ?? "",
+        }),
+        { id: `kanban-write-${cardId}` },
+      ),
+  });
+  // Below the tablet width the sheet covers the board: the board behind is
+  // taken out of the tab order and the accessibility tree while it is open.
+  const isNarrow = useIsMobile();
+  const boardCovered = Boolean(selectedItemId) && isNarrow;
 
   const { board, filterChoices } = kanban;
   // The filter as it applies: ids the board no longer has are dropped, and
@@ -218,31 +262,29 @@ export function KanbanView({
     for (const card of lane.cards) lanesByCard.set(card.id, lane);
   }
 
-  const moveFailed = (cardId: string) => {
+  /** Remembers where the card is before a write, for its failure toast. */
+  const noteOrigin = (cardId: string) => {
     const card = allCards.find((candidate) => candidate.id === cardId);
     const lane = lanesByCard.get(cardId);
-    toast.error(
-      fillCopy(laneCopy.moveFailed, {
-        title: card?.title ?? "",
-        lane: lane ? laneName(lane, laneCopy, isStatusGrouping) : "",
-      }),
-    );
+    writeOrigins.current.set(cardId, {
+      title: card?.title ?? "",
+      lane: lane ? laneName(lane, laneCopy, isStatusGrouping) : "",
+    });
   };
 
   /** Writes a lane's value for a card: Status, or the grouping Select field. */
   const writeLaneValue = (cardId: string, optionId: string) => {
+    noteOrigin(cardId);
     if (isStatusGrouping) {
-      kanban.updateStatus.mutate(
-        { cardId, statusOptionId: optionId },
-        { onError: () => moveFailed(cardId) },
-      );
+      kanban.updateStatus.mutate({ cardId, statusOptionId: optionId });
       return;
     }
     if (!kanban.groupByField) return;
-    kanban.updateFieldValue.mutate(
-      { cardId, fieldDefinitionId: kanban.groupByField.id, value: optionId },
-      { onError: () => moveFailed(cardId) },
-    );
+    kanban.updateFieldValue.mutate({
+      cardId,
+      fieldDefinitionId: kanban.groupByField.id,
+      value: optionId,
+    });
   };
 
   const handleDrop = (drop: KanbanLaneDrop) => {
@@ -251,10 +293,14 @@ export function KanbanView({
       writeLaneValue(drop.cardId, drop.optionId);
       return;
     }
-    kanban.moveCard.mutate(
-      { cardId: drop.cardId, listId: drop.listId, position: drop.position },
-      { onError: () => moveFailed(drop.cardId) },
-    );
+    noteOrigin(drop.cardId);
+    kanban.moveCard.mutate({
+      cardId: drop.cardId,
+      listId: drop.listId,
+      position: drop.position,
+      previousSiblingId: drop.previousSiblingId,
+      nextSiblingId: drop.nextSiblingId,
+    });
   };
 
   const handleCreateItem = (lane: KanbanStatusLane, title: string) => {
@@ -264,17 +310,12 @@ export function KanbanView({
       !isStatusGrouping && kanban.groupByField && lane.optionId
         ? { fieldDefinitionId: kanban.groupByField.id, value: lane.optionId }
         : null;
-    kanban.createItemInLane.mutate(
-      {
-        listId,
-        title,
-        statusOptionId: isStatusGrouping ? lane.optionId : null,
-        fieldValue,
-      },
-      {
-        onError: () => toast.error(fillCopy(laneCopy.createFailed, { title })),
-      },
-    );
+    kanban.createItemInLane.mutate({
+      listId,
+      title,
+      statusOptionId: isStatusGrouping ? lane.optionId : null,
+      fieldValue,
+    });
   };
 
   const handleSheetFieldValue = (payload: UpdateFieldValueInput) => {
@@ -284,29 +325,33 @@ export function KanbanView({
       payload.fieldDefinitionId === kanban.statusField?.id &&
       typeof payload.value === "string"
     ) {
-      kanban.updateStatus.mutate(
-        { cardId: payload.cardId, statusOptionId: payload.value },
-        { onError: () => moveFailed(payload.cardId) },
-      );
+      noteOrigin(payload.cardId);
+      kanban.updateStatus.mutate({
+        cardId: payload.cardId,
+        statusOptionId: payload.value,
+      });
       return;
     }
+    noteOrigin(payload.cardId);
     kanban.updateFieldValue.mutate(payload);
   };
 
   const handleMoveToGroup = (cardId: string, groupId: string) => {
     const target = kanban.groups.find((group) => group.id === groupId);
     if (!target) return;
-    const lastPosition = [...target.cards]
+    const last = [...target.cards]
+      .filter((card) => card.id !== cardId)
       .sort((a, b) => a.position - b.position)
-      .at(-1)?.position;
-    kanban.moveCard.mutate(
-      {
-        cardId,
-        listId: groupId,
-        position: generatePosition(lastPosition, undefined),
-      },
-      { onError: () => moveFailed(cardId) },
-    );
+      .at(-1);
+    noteOrigin(cardId);
+    // "Chuyển nhóm" appends the item to the end of the chosen group.
+    kanban.moveCard.mutate({
+      cardId,
+      listId: groupId,
+      position: generatePosition(last?.position, undefined),
+      previousSiblingId: last?.id ?? null,
+      nextSiblingId: null,
+    });
   };
 
   const handleCopyLink = (cardId: string) => {
@@ -344,7 +389,11 @@ export function KanbanView({
       tabIndex={-1}
       className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none focus:outline-hidden"
     >
-      <div className="px-4 pt-3 sm:px-6">
+      <div
+        className="px-4 pt-3 sm:px-6"
+        inert={boardCovered || undefined}
+        aria-hidden={boardCovered || undefined}
+      >
         <KanbanToolbar
           copy={toolbarCopy}
           searchQuery={kanban.search.query}
@@ -372,9 +421,14 @@ export function KanbanView({
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-4 pt-3 pb-6 sm:px-6">
+      <div
+        className="min-h-0 flex-1 overflow-auto px-4 pt-3 pb-6 sm:px-6"
+        inert={boardCovered || undefined}
+        aria-hidden={boardCovered || undefined}
+      >
         <KanbanBoard
           lanes={kanban.lanes}
+          groupOrder={kanban.groups}
           copy={laneCopy}
           cardCopy={cardCopy}
           now={now}
@@ -408,7 +462,10 @@ export function KanbanView({
           onMoveToGroup={handleMoveToGroup}
           onUpdateFieldValue={handleSheetFieldValue}
           onDuplicate={(cardId) => duplicateCard.mutate(cardId)}
-          onArchive={(cardId) => deleteCard.mutate(cardId)}
+          onArchive={(cardId) => {
+            noteOrigin(cardId);
+            archiveCard.mutate(cardId);
+          }}
         />
       ) : null}
     </div>

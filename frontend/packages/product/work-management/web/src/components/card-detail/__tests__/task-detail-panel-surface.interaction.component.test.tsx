@@ -504,3 +504,16 @@ describe("item sheet fields on the generated board read", () => {
     );
   });
 });
+
+describe("comment actions on touch screens", () => {
+  it("keeps the comment actions button visible without hover on a coarse pointer", () => {
+    renderSheet(viCopy);
+    const triggers = screen.getAllByRole("button", {
+      name: viCopy.comment.actions,
+    });
+    expect(triggers.length).toBeGreaterThan(0);
+    for (const trigger of triggers) {
+      expect(trigger.className).toContain("pointer-coarse:opacity-100");
+    }
+  });
+});

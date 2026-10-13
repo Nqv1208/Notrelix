@@ -33,6 +33,11 @@ export interface Card {
   _count: { comments: number; attachments: number; checklistItems: number };
   createdAt: string;
   updatedAt?: string;
+  /**
+   * The item aggregate version from the board read; a move sends it as
+   * `expectedVersion`. Absent on reads that do not carry it.
+   */
+  version?: number | null;
   /** Board item key such as "ERP-142", or a plain number on a board without a prefix. */
   itemKey?: string | null;
   /** Parent item id when this item is a child item; child items are not top-level cards. */

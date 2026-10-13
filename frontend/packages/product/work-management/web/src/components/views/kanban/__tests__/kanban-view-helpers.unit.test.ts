@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Card } from "@notrelix/work-management-core";
-import { boardCapabilities, buildCardLink } from "../kanban-view-helpers";
+import { buildCardLink } from "../kanban-view-helpers";
+import { boardCapabilities } from "../../../shared/board-capabilities";
 import { isKanbanCardOverdue } from "../kanban-filter";
 
 /** 12/10/2026 10:40 in the runtime's own time zone. */

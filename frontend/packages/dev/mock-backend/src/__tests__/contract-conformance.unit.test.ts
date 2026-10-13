@@ -208,7 +208,9 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     await cardApi.moveCard({
       cardId: createdCard.id,
       listId: "list-todo",
-      position: 5,
+      expectedVersion: fetchedCard.version ?? 1,
+      previousSiblingId: null,
+      nextSiblingId: null,
     });
     const fullBoardAfterMove = await boardApi.getFullBoard(boardId, {
       workspaceId: mockIds.workspaces.primary,

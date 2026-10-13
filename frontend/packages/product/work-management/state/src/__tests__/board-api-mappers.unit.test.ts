@@ -221,6 +221,7 @@ describe("mapFullBoardDto over the generated board read", () => {
   const dto = generatedBoard([
     item("i-2", "a1", {
       itemKey: "ERP-142",
+      version: 7,
       statusOptionId: DOING,
       priorityOptionId: "p-urgent",
       dueAt: "2026-10-10T10:00:00Z",
@@ -270,6 +271,7 @@ describe("mapFullBoardDto over the generated board read", () => {
       boardId: "board-1",
       workspaceId: "workspace-1",
       itemKey: "ERP-142",
+      version: 7,
       parentItemId: null,
       statusOptionId: DOING,
       status: DOING,

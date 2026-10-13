@@ -77,6 +77,7 @@ type AnyItemSummary = CardSummaryDtoApi | GeneratedItemSummary;
 
 /** Item values the generated read carries in place of `fieldValues`. */
 interface ItemReadValues {
+  readonly version: number | null;
   readonly itemKey: string | null;
   readonly parentItemId: string | null;
   readonly statusOptionId: string | null;
@@ -218,6 +219,7 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
     },
     createdAt: dto.createdAt ?? EPOCH_ISO,
     updatedAt: dto.updatedAt ?? undefined,
+    version: values.version,
     itemKey: values.itemKey,
     parentItemId: values.parentItemId,
     statusOptionId: status || null,
@@ -514,6 +516,7 @@ function mapCardSummaryDto(
     updatedAt:
       (legacy ? undefined : (dto as GeneratedItemSummary).updatedAt) ??
       undefined,
+    version: values.version,
     itemKey: values.itemKey,
     parentItemId: values.parentItemId,
     statusOptionId,
@@ -633,6 +636,7 @@ function itemTitle(dto: AnyItemSummary | BoardItemReadDto): string {
 
 type ItemReadSource = Pick<
   GeneratedItemSummary,
+  | "version"
   | "itemKey"
   | "parentItemId"
   | "statusOptionId"
@@ -648,6 +652,7 @@ function readItemValues(dto: object): ItemReadValues {
   const generated = dto as ItemReadSource;
   const progress = generated.childProgress;
   return {
+    version: typeof generated.version === "number" ? generated.version : null,
     itemKey: generated.itemKey ?? null,
     parentItemId: generated.parentItemId ?? null,
     statusOptionId: generated.statusOptionId ?? null,

@@ -65,7 +65,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     }),
     useBoardAccess: () => ({ access: null, isLoading: true, error: null }),
     useDuplicateCard: mutation,
-    useDeleteCard: mutation,
+    useArchiveCard: mutation,
   };
 });
 

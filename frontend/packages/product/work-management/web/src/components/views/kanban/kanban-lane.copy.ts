@@ -31,6 +31,8 @@ export const en = {
   empty: "No items yet",
   moveFailed: "Couldn't move “{{title}}”. It is back in {{lane}}.",
   createFailed: "Couldn't add “{{title}}”.",
+  saveFailed: "Couldn't save the change to “{{title}}”.",
+  archiveFailed: "Couldn't archive “{{title}}”.",
   linkCopied: "Item link copied",
   linkCopyFailed: "Couldn't copy the item link",
 };
@@ -60,6 +62,8 @@ export const vi: KanbanLaneCopy = {
   empty: "Chưa có việc",
   moveFailed: "Không chuyển được “{{title}}”. Việc đã về lại {{lane}}.",
   createFailed: "Không thêm được “{{title}}”.",
+  saveFailed: "Không lưu được thay đổi của “{{title}}”.",
+  archiveFailed: "Không lưu trữ được “{{title}}”.",
   linkCopied: "Đã sao chép liên kết",
   linkCopyFailed: "Không sao chép được liên kết",
 };

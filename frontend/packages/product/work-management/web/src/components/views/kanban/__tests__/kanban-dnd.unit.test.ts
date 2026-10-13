@@ -94,6 +94,28 @@ describe("getKanbanLaneDrop", () => {
     expect(drop?.kind === "reorder" && drop.position < a1.position).toBe(true);
   });
 
+  it("names the new neighbours in the group's whole order, so the server keeps the order", () => {
+    // Group g1 in board order: a1, a2, b1 (b1 sits in another lane).
+    const groups = [
+      { id: "g1", cards: [a1, a2, b1] },
+      { id: "g2", cards: [a3] },
+    ];
+    // a2 dropped on a1 (moving up): before a1, nothing before it.
+    expect(getKanbanLaneDrop(overCard(a2, a1), lanes, groups)).toMatchObject({
+      kind: "reorder",
+      cardId: "a2",
+      previousSiblingId: null,
+      nextSiblingId: "a1",
+    });
+    // a1 dropped on a2 (moving down): after a2, before b1 of the other lane.
+    expect(getKanbanLaneDrop(overCard(a1, a2), lanes, groups)).toMatchObject({
+      kind: "reorder",
+      cardId: "a1",
+      previousSiblingId: "a2",
+      nextSiblingId: "b1",
+    });
+  });
+
   it("does nothing for a same-lane drop on a card of another group, on itself, or on the lane", () => {
     expect(getKanbanLaneDrop(overCard(a1, a3), lanes)).toBeNull();
     expect(getKanbanLaneDrop(overCard(a1, a1), lanes)).toBeNull();

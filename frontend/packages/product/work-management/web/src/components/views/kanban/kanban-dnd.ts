@@ -22,7 +22,16 @@ export type KanbanLaneDrop =
       readonly cardId: string;
       readonly listId: string;
       readonly position: number;
+      /** The new neighbours in the group's whole order (`null` = none). */
+      readonly previousSiblingId: string | null;
+      readonly nextSiblingId: string | null;
     };
+
+/** A board group's cards in board order, across every lane. */
+export interface KanbanGroupOrder {
+  readonly id: string;
+  readonly cards: readonly Pick<Card, "id" | "position">[];
+}
 
 /** Droppable id of a lane (`optionId: null` is the lane without a value). */
 export function kanbanLaneDropId(optionId: string | null): string {
@@ -44,6 +53,7 @@ function laneOf(
 export function getKanbanLaneDrop(
   event: DragEndEvent,
   lanes: readonly KanbanStatusLane[],
+  groups?: readonly KanbanGroupOrder[],
 ): KanbanLaneDrop | null {
   if (!event.over) return null;
   if (event.active.data.current?.type !== "kanban-card") return null;
@@ -86,7 +96,22 @@ export function getKanbanLaneDrop(
   );
   // Moving down places the card after the one it is dropped on, moving up
   // places it before.
-  const insertAt = activeIndex < overLaneIndex ? overIndex + 1 : overIndex;
+  const movingDown = activeIndex < overLaneIndex;
+  const insertAt = movingDown ? overIndex + 1 : overIndex;
+  // The server orders the whole group, cards of other lanes included: the
+  // neighbours are taken from the group's full order when it is known.
+  const groupOrder = groups
+    ?.find((group) => group.id === active.listId)
+    ?.cards.filter((card) => card.id !== active.id)
+    .slice()
+    .sort((a, b) => a.position - b.position);
+  const fullOver = groupOrder?.findIndex((card) => card.id === overCard.id);
+  const before = groupOrder
+    ? groupOrder[movingDown ? fullOver! : fullOver! - 1]
+    : groupCards[insertAt - 1];
+  const after = groupOrder
+    ? groupOrder[movingDown ? fullOver! + 1 : fullOver!]
+    : groupCards[insertAt];
   return {
     kind: "reorder",
     cardId: active.id,
@@ -95,5 +120,7 @@ export function getKanbanLaneDrop(
       groupCards[insertAt - 1]?.position,
       groupCards[insertAt]?.position,
     ),
+    previousSiblingId: before?.id ?? null,
+    nextSiblingId: after?.id ?? null,
   };
 }

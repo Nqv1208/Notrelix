@@ -65,7 +65,12 @@ function detailOf(board: FullBoardResponse, id: string): CardDetail {
 
 function fakeServices(
   access: BoardAccess,
-  overrides: { updateStatus?: () => Promise<void> } = {},
+  overrides: {
+    updateStatus?: (
+      cardId: string,
+      optionId: string,
+    ) => Promise<void> | undefined;
+  } = {},
 ) {
   // The fake server keeps written statuses, so refetches see them.
   let board = erpBoardScenario();
@@ -73,17 +78,26 @@ function fakeServices(
     getCard: vi.fn(async (id: string) => detailOf(board, id)),
     getCardFiles: vi.fn(async () => []),
     getCardActivity: vi.fn(async () => []),
-    updateStatus: vi.fn(
-      overrides.updateStatus ??
-        (async (id: string, optionId: string) => {
-          board = applyItemStatus(board, id, optionId) ?? board;
-        }),
-    ),
+    updateStatus: vi.fn(async (id: string, optionId: string) => {
+      // An override answers for the cards it names; the others persist.
+      const answer = overrides.updateStatus?.(id, optionId);
+      if (answer) return answer;
+      board = applyItemStatus(board, id, optionId) ?? board;
+    }),
     createCard: vi.fn(async () => "item-new"),
     moveCard: vi.fn(async () => undefined),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(async () => undefined),
     deleteCard: vi.fn(async () => undefined),
+    archiveCard: vi.fn(async (id: string) => {
+      board = {
+        ...board,
+        groups: board.groups.map((group) => ({
+          ...group,
+          cards: group.cards.filter((item) => item.id !== id),
+        })),
+      };
+    }),
     duplicateCard: vi.fn(async () => undefined),
   };
   const services = {
@@ -297,6 +311,7 @@ describe("KanbanView on the ERP board", () => {
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith(
         "Không chuyển được “Viết tài liệu quy trình nhập hoá đơn đầu vào”. Việc đã về lại Cần làm.",
+        { id: `kanban-write-${erpItemId("ERP-149")}` },
       ),
     );
     expect(laneCount("Cần làm")).toBe("6");
@@ -415,5 +430,109 @@ describe("KanbanView on the ERP board", () => {
       "7",
       "3",
     ]);
+  });
+
+  it("reports a failed status write even after another write has started, and keeps the other card's change", async () => {
+    let failFirst!: (error: Error) => void;
+    const first = new Promise<void>((_resolve, reject) => (failFirst = reject));
+    renderKanban(
+      erpOwnerAccess(),
+      { initialItem: erpItemId("ERP-149") },
+      {
+        updateStatus: (cardId) =>
+          cardId === erpItemId("ERP-149") ? first : undefined,
+      },
+    );
+    const pickDoing = async (title: string) => {
+      const dialog = await screen.findByRole("dialog", { name: title });
+      const pill = await waitFor(() => {
+        const button = within(dialog).getByRole("button", {
+          name: /^Trạng thái: Cần làm/,
+        });
+        expect(button.getAttribute("aria-disabled")).not.toBe("true");
+        return button;
+      });
+      fireEvent.keyDown(pill, { key: "Enter" });
+      fireEvent.click(screen.getByRole("menuitem", { name: "Đang làm" }));
+      return dialog;
+    };
+    const dialog = await pickDoing(
+      "Viết tài liệu quy trình nhập hoá đơn đầu vào",
+    );
+    // The next item in lane order, then a second status write.
+    fireEvent.keyDown(dialog, { key: "j" });
+    await pickDoing("Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng");
+    await waitFor(() => expect(laneCount("Đang làm")).toBe("5"));
+
+    failFirst(new Error("forbidden"));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "Không chuyển được “Viết tài liệu quy trình nhập hoá đơn đầu vào”. Việc đã về lại Cần làm.",
+        { id: `kanban-write-${erpItemId("ERP-149")}` },
+      ),
+    );
+    await waitFor(() => expect(laneCount("Đang làm")).toBe("4"));
+    expect(
+      within(lane("Đang làm")).getByRole("button", {
+        name: "Chuẩn bị dữ liệu mẫu cho buổi đào tạo người dùng",
+      }),
+    ).toBeTruthy();
+  });
+
+  it("archives the item from the sheet (it is not deleted)", async () => {
+    const { cards } = renderKanban(erpOwnerAccess(), {
+      initialItem: erpItemId("ERP-142"),
+    });
+    const dialog = await screen.findByRole("dialog", {
+      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+    });
+    const more = await waitFor(() =>
+      within(dialog).getByRole("button", { name: "Thêm" }),
+    );
+    fireEvent.keyDown(more, { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ" }));
+    await waitFor(() =>
+      expect(cards.archiveCard).toHaveBeenCalledWith(
+        erpItemId("ERP-142"),
+        expect.objectContaining({ idempotencyKey: expect.any(String) }),
+      ),
+    );
+    expect(cards.deleteCard).not.toHaveBeenCalled();
+    await waitFor(() => expect(laneCount("Đang làm")).toBe("2"));
+  });
+
+  it("takes the covered board out of the tab order on a narrow screen while the sheet is open", async () => {
+    const width = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 320,
+    });
+    try {
+      renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-142") });
+      await screen.findByRole("dialog", {
+        name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+      });
+      const board = document.querySelector("[data-kanban-board]")!;
+      const covered = Array.from(board.children).filter((child) =>
+        child.hasAttribute("inert"),
+      );
+      expect(covered).toHaveLength(2);
+      for (const element of covered) {
+        expect(element.getAttribute("aria-hidden")).toBe("true");
+      }
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: width,
+      });
+    }
+  });
+
+  it("leaves the board usable beside the sheet on a wide screen", async () => {
+    renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-142") });
+    await screen.findByRole("dialog", {
+      name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP",
+    });
+    expect(document.querySelector("[data-kanban-board] [inert]")).toBeNull();
   });
 });

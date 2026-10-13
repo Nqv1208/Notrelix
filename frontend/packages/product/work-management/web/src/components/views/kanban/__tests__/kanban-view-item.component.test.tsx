@@ -103,7 +103,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCardComments: list,
     useUpdateCard: mutation,
     useDuplicateCard: mutation,
-    useDeleteCard: () => ({ mutate: cardQuery.deleteMutate }),
+    useArchiveCard: () => ({ mutate: cardQuery.deleteMutate }),
     useCreateCardUpdate: mutation,
     useUpdateCardUpdate: mutation,
     useDeleteCardUpdate: mutation,
@@ -269,7 +269,7 @@ describe("KanbanView item detail through selectedItemId", () => {
     expect(onSelectedItemChange).not.toHaveBeenCalled();
   });
 
-  it("deleting from the sheet clears item, and a restored id does not reopen from cache", async () => {
+  it("archiving from the sheet clears item, and a restored id does not reopen from cache", async () => {
     cardQuery.current = { card: existingCard(), isLoading: false, error: null };
     const onSelectedItemChange = vi.fn();
     const { rerender } = renderView({

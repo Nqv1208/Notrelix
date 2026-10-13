@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
 import {
+  useArchiveCard,
+  useBoardAccess,
   useCard,
   useCardActivity,
   useCardComments,
   useCardFiles,
   useCreateCardUpdate,
-  useDeleteCard,
   useDeleteCardUpdate,
   useDuplicateCard,
   useUpdateCard,
@@ -17,7 +18,8 @@ import {
 import type { Board, CardDetail } from "@notrelix/work-management-core";
 import { useIsMobile } from "@notrelix/ui-web";
 import { TaskDetailPanelSurface } from "./task-detail-panel-surface";
-import { defaultTaskDetailCapabilities } from "./task-detail-types";
+import type { TaskDetailCapabilities } from "./task-detail-types";
+import { boardCapabilities } from "../shared/board-capabilities";
 import { useItemSheetCopy } from "./use-item-sheet-copy";
 import type { ItemSheetCopy } from "./item-sheet.copy";
 
@@ -120,6 +122,9 @@ function TaskDetailPanelContent({
   onClose: () => void;
 }) {
   const { card, isLoading, error } = useCard(cardId, board.workspaceId);
+  // The viewer's level on this board; read-only until it is known.
+  const { access } = useBoardAccess(board.id, board.workspaceId);
+  const capabilities = boardCapabilities(access?.myLevel);
 
   if (isLoading)
     return (
@@ -127,7 +132,7 @@ function TaskDetailPanelContent({
         status="loading"
         board={board}
         card={null}
-        capabilities={defaultTaskDetailCapabilities}
+        capabilities={capabilities}
         callbacks={emptyCallbacks(onClose)}
         copy={copy}
         now={now}
@@ -140,7 +145,7 @@ function TaskDetailPanelContent({
         status="error"
         board={board}
         card={null}
-        capabilities={defaultTaskDetailCapabilities}
+        capabilities={capabilities}
         callbacks={emptyCallbacks(onClose)}
         copy={copy}
         now={now}
@@ -152,6 +157,7 @@ function TaskDetailPanelContent({
     <TaskDetailReadyContainer
       board={board}
       card={card as CardDetail}
+      capabilities={capabilities}
       copy={copy}
       now={now}
       asDialog={asDialog}
@@ -163,6 +169,7 @@ function TaskDetailPanelContent({
 function TaskDetailReadyContainer({
   board,
   card,
+  capabilities,
   copy,
   now,
   asDialog,
@@ -170,6 +177,7 @@ function TaskDetailReadyContainer({
 }: {
   board: Board;
   card: CardDetail;
+  capabilities: TaskDetailCapabilities;
   copy: ItemSheetCopy;
   now: Date;
   asDialog: boolean;
@@ -179,7 +187,7 @@ function TaskDetailReadyContainer({
   const activity = useCardActivity(card.id, card.workspaceId);
   const updates = useCardComments(card.id, card.workspaceId);
   const updateCard = useUpdateCard(card.boardId, card.workspaceId);
-  const deleteCard = useDeleteCard(card.boardId, card.workspaceId);
+  const archiveCard = useArchiveCard(card.boardId, card.workspaceId);
   const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId);
   const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId);
   const createUpdate = useCreateCardUpdate(card.id, card.workspaceId);
@@ -191,7 +199,7 @@ function TaskDetailReadyContainer({
       status="ready"
       board={board}
       card={card}
-      capabilities={defaultTaskDetailCapabilities}
+      capabilities={capabilities}
       copy={copy}
       now={now}
       asDialog={asDialog}
@@ -209,8 +217,9 @@ function TaskDetailReadyContainer({
         onRenameTitle: (cardId, patch) => updateCard.mutate({ cardId, patch }),
         onToggleWatch: () => undefined,
         onDuplicate: (cardId) => duplicateCard.mutate(cardId),
+        // "Lưu trữ" archives the item (it can be restored); it is not a delete.
         onArchive: (cardId) => {
-          deleteCard.mutate(cardId);
+          archiveCard.mutate(cardId);
           onClose();
         },
         onUpdateFieldValue: (payload) => updateFieldValue.mutate(payload),

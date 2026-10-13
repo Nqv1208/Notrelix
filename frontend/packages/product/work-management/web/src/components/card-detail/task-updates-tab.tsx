@@ -108,7 +108,10 @@ function CommentItem({
           <span className="font-semibold text-foreground">
             {update.author.name}
           </span>
-          <time dateTime={update.createdAt} className="text-xs text-muted-foreground">
+          <time
+            dateTime={update.createdAt}
+            className="text-xs text-muted-foreground"
+          >
             {time}
           </time>
           {canEdit || canDelete ? (
@@ -119,7 +122,7 @@ function CommentItem({
                   variant="ghost"
                   size="icon-sm"
                   aria-label={t.actions}
-                  className="ml-auto size-6 text-muted-foreground opacity-0 group-hover/comment:opacity-100 focus-visible:opacity-100"
+                  className="ml-auto size-6 text-muted-foreground opacity-0 group-hover/comment:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 pointer-coarse:opacity-100"
                 >
                   <MoreHorizontal aria-hidden="true" className="size-3.5" />
                 </Button>

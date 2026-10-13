@@ -16,7 +16,6 @@ import type {
   UpdateFieldValueInput,
   UploadCardFileInput,
 } from "@notrelix/work-management-core";
-import type { MoveCardInput } from "@notrelix/work-management-core";
 import {
   mapActivityResponse,
   mapAttachmentDtoToCardFile,
@@ -32,6 +31,7 @@ type UpdateItemBody = OperationRequestBody<UpdateItemOp>;
 
 type MoveItemOp = "WorkManagement.BoardItems.Move";
 type MoveItemBody = OperationRequestBody<MoveItemOp>;
+type MoveItemResponse = OperationResponse<MoveItemOp, 200>;
 
 type UpdateFieldValueOp = "WorkManagement.BoardItems.UpdateFieldValue";
 type UpdateFieldValueBody = OperationRequestBody<UpdateFieldValueOp>;
@@ -78,31 +78,48 @@ export function createCardApi(client: NotrelixClient) {
       await api.delete<void>(endpoints.boardItems.detail(cardId));
     },
 
-    async archiveCard(cardId: string): Promise<void> {
-      await api.post<void>(endpoints.boardItems.archive(cardId));
+    async archiveCard(
+      cardId: string,
+      options?: ApiRequestOptions,
+    ): Promise<void> {
+      await api.post<void>(
+        endpoints.boardItems.archive(cardId),
+        undefined,
+        options ?? { idempotencyKey: crypto.randomUUID() },
+      );
     },
 
     async duplicateCard(cardId: string): Promise<void> {
       await api.post<void>(endpoints.boardItems.duplicate(cardId));
     },
 
+    /**
+     * `POST /board-items/{id}/move`: the target group, the item version the
+     * move is based on and the new neighbours (both `null` appends).
+     * Returns the item's new version.
+     */
     async moveCard(
-      payload: MoveCardInput,
+      move: {
+        cardId: string;
+        listId: string;
+        expectedVersion: number;
+        previousSiblingId: string | null;
+        nextSiblingId: string | null;
+      },
       options?: ApiRequestOptions,
-    ): Promise<void> {
+    ): Promise<{ version?: number }> {
       const body: MoveItemBody = {
-        groupId: payload.listId, // mapping listId to groupId
-        // Neighbor ids arrive with WM-V3-FE-001; omitting both appends to the group.
+        groupId: move.listId,
+        expectedVersion: move.expectedVersion,
+        previousSiblingId: move.previousSiblingId,
+        nextSiblingId: move.nextSiblingId,
       };
-      if (options) {
-        await api.post<void>(
-          endpoints.boardItems.move(payload.cardId),
-          body,
-          options,
-        );
-        return;
-      }
-      await api.post<void>(endpoints.boardItems.move(payload.cardId), body);
+      const moved = await api.post<MoveItemResponse | null | undefined>(
+        endpoints.boardItems.move(move.cardId),
+        body,
+        options ?? { idempotencyKey: crypto.randomUUID() },
+      );
+      return { version: moved?.version ?? undefined };
     },
 
     async updateFieldValue(payload: UpdateFieldValueInput): Promise<void> {
