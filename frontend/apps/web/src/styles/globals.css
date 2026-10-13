@@ -114,6 +114,34 @@
   --text-mark-lg--line-height: var(--type-mark-lg-line-height);
   --text-mark-lg--font-weight: var(--type-mark-lg-weight);
   --text-mark-lg--letter-spacing: var(--type-mark-lg-tracking);
+  --text-board-title: var(--type-board-title-size);
+  --text-board-title--line-height: var(--type-board-title-line-height);
+  --text-board-title--font-weight: var(--type-board-title-weight);
+  --text-board-title--letter-spacing: var(--type-board-title-tracking);
+  --text-sheet-title: var(--type-sheet-title-size);
+  --text-sheet-title--line-height: var(--type-sheet-title-line-height);
+  --text-sheet-title--font-weight: var(--type-sheet-title-weight);
+  --text-sheet-title--letter-spacing: var(--type-sheet-title-tracking);
+  --text-crumb: var(--type-crumb-size);
+  --text-crumb--line-height: var(--type-crumb-line-height);
+  --text-crumb--font-weight: var(--type-crumb-weight);
+  --text-crumb--letter-spacing: var(--type-crumb-tracking);
+  --text-micro: var(--type-micro-size);
+  --text-micro--line-height: var(--type-micro-line-height);
+  --text-micro--font-weight: var(--type-micro-weight);
+  --text-micro--letter-spacing: var(--type-micro-tracking);
+  --text-mark-3xs: var(--type-mark-3xs-size);
+  --text-mark-3xs--line-height: var(--type-mark-3xs-line-height);
+  --text-mark-3xs--font-weight: var(--type-mark-3xs-weight);
+  --text-mark-3xs--letter-spacing: var(--type-mark-3xs-tracking);
+  --text-avatar-sm: var(--type-avatar-sm-size);
+  --text-avatar-sm--line-height: var(--type-avatar-sm-line-height);
+  --text-avatar-sm--font-weight: var(--type-avatar-sm-weight);
+  --text-avatar-sm--letter-spacing: var(--type-avatar-sm-tracking);
+  --text-avatar-md: var(--type-avatar-md-size);
+  --text-avatar-md--line-height: var(--type-avatar-md-line-height);
+  --text-avatar-md--font-weight: var(--type-avatar-md-weight);
+  --text-avatar-md--letter-spacing: var(--type-avatar-md-tracking);
   --text-prose: var(--type-prose-size);
   --text-prose--line-height: var(--type-prose-line-height);
   --text-prose--font-weight: var(--type-prose-weight);
@@ -175,6 +203,7 @@
 
   /* State set. */
   --color-state-hover: var(--state-hover);
+  --color-state-hover-strong: var(--state-hover-strong);
   --color-state-selected: var(--state-selected);
   --color-state-selected-foreground: var(--state-selected-foreground);
   --color-state-disabled: var(--state-disabled);
@@ -301,6 +330,9 @@
   --shadow-raised: var(--elevation-raised);
   --shadow-overlay: var(--elevation-overlay);
   --shadow-modal: var(--elevation-modal);
+  --shadow-card: var(--elevation-card);
+  --shadow-card-hover: var(--elevation-card-hover);
+  --shadow-sheet: var(--elevation-sheet);
 
   /* Motion: 150–200 ms, ease-out; collapses under reduced motion. */
   --ease-out: var(--motion-ease-out);

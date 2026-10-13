@@ -33,6 +33,13 @@ export const TEXT_ROLES = [
   "mark-sm",
   "mark-md",
   "mark-lg",
+  "board-title",
+  "sheet-title",
+  "crumb",
+  "micro",
+  "mark-3xs",
+  "avatar-sm",
+  "avatar-md",
 ] as const;
 
 /**

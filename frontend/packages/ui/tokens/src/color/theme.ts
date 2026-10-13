@@ -147,6 +147,7 @@ export function buildAppearanceColors(
 
     // State set
     "state-hover": nr.hover,
+    "state-hover-strong": nr.hoverStrong,
     "state-disabled": nr.disabled,
     "state-disabled-foreground": nr.textDisabled,
 

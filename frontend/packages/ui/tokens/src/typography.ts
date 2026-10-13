@@ -48,6 +48,12 @@ export const fontSizeDense = {
   "11": 0.6875,
   "13": 0.8125,
   "13p5": 0.84375,
+  "8": 0.5,
+  "8p5": 0.53125,
+  "9p5": 0.59375,
+  "11p5": 0.71875,
+  "12p5": 0.78125,
+  "20": 1.25,
 } as const;
 
 export type FontSizeStep = keyof typeof fontSizeScale;
@@ -205,6 +211,62 @@ export const textRoles = {
   /** Initials in a 40px mark (rail workspace tile). */
   "mark-lg": {
     size: "13",
+    lineHeight: 1,
+    weight: weights.bold,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Board and item title in the page header (mockup 21px / 650). */
+  "board-title": {
+    size: "xl",
+    lineHeight: 1.70625,
+    weight: 650,
+    letterSpacing: "-0.01em",
+    family: "sans",
+  },
+  /** Title of the item side sheet (mockup 20px / 650). */
+  "sheet-title": {
+    size: "20",
+    lineHeight: 1.6875,
+    weight: 650,
+    letterSpacing: "-0.01em",
+    family: "sans",
+  },
+  /** Breadcrumb and secondary lines (mockup 12.5px). */
+  crumb: {
+    size: "12p5",
+    lineHeight: 1.1328,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Board card tag and progress count (mockup 11.5px). */
+  micro: {
+    size: "11p5",
+    lineHeight: 1.0422,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Initials in an 18px mark (item sheet breadcrumb). */
+  "mark-3xs": {
+    size: "8",
+    lineHeight: 1,
+    weight: weights.bold,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Initials in a 20px person avatar (item sheet properties). */
+  "avatar-sm": {
+    size: "8p5",
+    lineHeight: 1,
+    weight: weights.bold,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Initials in a 26px person avatar (item sheet comments). */
+  "avatar-md": {
+    size: "9p5",
     lineHeight: 1,
     weight: weights.bold,
     letterSpacing: "0em",
