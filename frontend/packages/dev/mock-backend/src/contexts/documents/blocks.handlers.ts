@@ -60,6 +60,7 @@ export const blocksOperations = [
         type: data.type ?? "paragraph",
         properties: data.properties ?? "{}",
         parentBlockId: data.parentBlockId ?? null,
+        position: data.position,
       });
       // also create history
       store.createPageHistory(

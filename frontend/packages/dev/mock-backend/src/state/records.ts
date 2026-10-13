@@ -101,6 +101,10 @@ export interface MockPageRecord {
   spaceId?: string | null;
   /** Page aggregate version (move-to-space `expectedVersion`); absent = 1. */
   version?: number;
+  /** Sibling order among pages of one parent; absent = 0. */
+  position?: number;
+  /** Date the document takes effect; absent = none. */
+  deadline?: string | null;
   createdAt: string;
   updatedAt: string;
 }

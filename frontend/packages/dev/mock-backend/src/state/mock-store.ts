@@ -63,6 +63,13 @@ import {
   erpStatusOptionId,
   hanoiInstant,
 } from "./mock-erp-board";
+import {
+  INVOICE_BLOCKS,
+  INVOICE_COMMENTS,
+  INVOICE_DOC_ID,
+  INVOICE_FOLDER_ID,
+  INVOICE_HISTORY,
+} from "./mock-docs-invoice";
 
 export class MockSeedInvariantError extends Error {
   constructor(message: string) {
@@ -560,6 +567,7 @@ export class MockStore {
 
     this.seedRoadmapStatuses();
     this.seedErpBoard(primaryWsId);
+    this.seedInvoiceDoc(primaryWsId);
 
     // Extras for card-main-0001
     if (this.cardsById.has("card-main-0001")) {
@@ -733,6 +741,61 @@ export class MockStore {
         this.updateFieldValue(card.id, "col-0001", optionId);
       }
     }
+  }
+
+  /**
+   * The Accounting document of the 2026-10 Docs mockup (see
+   * `mock-docs-invoice.ts`): a folder page and the page inside it, with
+   * blocks that mention ERP board items, two comments and the edit history.
+   */
+  private seedInvoiceDoc(workspaceId: string): void {
+    const created = "2026-10-05T07:20:00.000Z";
+    this.insertPage({
+      id: INVOICE_FOLDER_ID,
+      workspaceId,
+      title: "Quy trình",
+      icon: "Folder",
+      spaceId: mockIds.spaces.accounting,
+      position: 0,
+      createdAt: created,
+      updatedAt: created,
+    });
+    this.insertPage({
+      id: INVOICE_DOC_ID,
+      workspaceId,
+      title: "Nhập hoá đơn đầu vào",
+      icon: "FileText",
+      parentId: INVOICE_FOLDER_ID,
+      spaceId: mockIds.spaces.accounting,
+      position: 0,
+      deadline: "2026-11-01T00:00:00.000Z",
+      createdAt: created,
+      updatedAt: "2026-10-11T09:40:00.000Z",
+    });
+    INVOICE_BLOCKS.forEach((block, index) => {
+      this.createBlock(INVOICE_DOC_ID, {
+        type: block.type as MockBlockRecord["type"],
+        properties: JSON.stringify(block.properties),
+        position: (index + 1) * 1000,
+      });
+    });
+    for (const comment of INVOICE_COMMENTS) {
+      this.createPageComment(
+        INVOICE_DOC_ID,
+        comment.userId,
+        comment.body,
+        comment.at,
+      );
+    }
+    [...INVOICE_HISTORY].reverse().forEach((entry) => {
+      this.createPageHistory(
+        INVOICE_DOC_ID,
+        entry.userId,
+        entry.action,
+        entry.detail,
+        entry.at,
+      );
+    });
   }
 
   /**
@@ -2621,7 +2684,7 @@ export class MockStore {
       pageId,
       type: data.type || "paragraph",
       properties: data.properties || "{}",
-      position: data.position || 0,
+      position: data.position ?? 0,
       version: 1,
       createdByUserId: mockIds.users.owner,
       createdAt: this.clock.isoNow(),
@@ -2656,6 +2719,7 @@ export class MockStore {
     pageId: string,
     userId: string,
     contentMd: string,
+    createdAt?: string,
   ): MockPageCommentRecord {
     const id = this.nextId("pcomment");
     const comment: MockPageCommentRecord = {
@@ -2663,7 +2727,7 @@ export class MockStore {
       pageId,
       userId,
       contentMd,
-      createdAt: this.clock.isoNow(),
+      createdAt: createdAt ?? this.clock.isoNow(),
     };
     this.pageCommentsById.set(id, comment);
     return comment;
@@ -2695,6 +2759,7 @@ export class MockStore {
     userId: string,
     action: string,
     details?: string,
+    createdAt?: string,
   ): MockPageHistoryRecord {
     const id = this.nextId("phist");
     const history: MockPageHistoryRecord = {
@@ -2703,7 +2768,7 @@ export class MockStore {
       actorId: userId,
       action,
       resourceTitle: details,
-      createdAt: this.clock.isoNow(),
+      createdAt: createdAt ?? this.clock.isoNow(),
     };
     this.pageHistoryById.set(id, history);
     return history;
