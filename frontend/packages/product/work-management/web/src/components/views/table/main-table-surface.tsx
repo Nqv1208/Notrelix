@@ -1,496 +1,343 @@
-import { useMemo } from "react";
 import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
+import { fillTableCopy } from "./main-table.copy";
 import {
-  EyeOff,
-  Filter,
-  Group,
-  ListPlus,
-  MoreHorizontal,
-  Plus,
-  Search,
-  SortAsc,
-} from "lucide-react";
-import { Button, Input } from "@notrelix/ui-web";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@notrelix/ui-web";
-import type {
-  Board,
-  BoardGroup,
-  BoardTableColumn,
-  Card,
-  FieldDefinition,
-  FilterConfig,
-  SortConfig,
-  UpdateCardInput,
-} from "@notrelix/work-management-core";
-import { generatePosition } from "@notrelix/work-management-core";
-import { getMainTableGridTemplate } from "./table-utils";
-import { TableGroupSection } from "./table-group-section";
+  TableArchivedNotice,
+  TableBulkBar,
+  type TableBulkBarProps,
+} from "./table-bulk-bar";
+import { visibleTableColumns } from "./table-columns";
+import { TableAddRow, TableGroupHeader } from "./table-group-section";
 import { TableHeaderRow } from "./table-header-row";
-import { TableScrollContainer } from "./table-scroll-container";
-import { TableStickyHeader } from "./table-sticky-header";
+import type { TableGroupModel, TableStatusOption } from "./table-model";
+import { TableRow } from "./table-row";
+import { TableEmpty, TableFooter, TableNoResults } from "./table-states";
+import { MainTableToolbar, type MainTableToolbarProps } from "./table-toolbar";
 
-export type TableFieldValueUpdate = {
-  cardId: string;
-  fieldDefinitionId: string;
-  value: unknown;
-};
+/** Row heights of the two densities (the mockup `--row-h`). */
+const ROW_HEIGHT = { comfortable: "40px", compact: "32px" } as const;
 
-export type TableMoveRow = {
-  cardId: string;
-  listId: string;
-  position: number;
-};
+export interface MainTableSurfaceProps {
+  /**
+   * The toolbar's props: copy, search, filter, sort, columns, density, and
+   * whether items can be added. "Thêm công việc" opens the first group's add
+   * field, so the surface supplies `onAddItem`.
+   */
+  toolbar: Omit<MainTableToolbarProps, "onAddItem">;
+  boardTitle: string;
+  groups: readonly TableGroupModel[];
+  statusOptions: readonly TableStatusOption[];
+  selectedIds: ReadonlySet<string>;
+  collapsedGroupIds: ReadonlySet<string>;
+  /** The item whose side sheet is open. */
+  openItemId?: string | null;
+  /** The viewer may change status and due date of items. */
+  canEdit: boolean;
+  /** The viewer may add items. */
+  canCreate: boolean;
+  /** The viewer may archive items. */
+  canArchive: boolean;
+  /** Cards shown and hidden by search, filter and "hide finished". */
+  shown: number;
+  hidden: number;
+  /** Finished items are hidden and can be shown again. */
+  canShowDone: boolean;
+  /** Search or filter leave nothing to show. */
+  noResults: boolean;
+  /** The notice after archiving; "Hoàn tác" shows when `onUndo` is given. */
+  archivedNotice?: {
+    count: number;
+    onUndo?: () => void;
+    onClose: () => void;
+  } | null;
+  onRowSelectedChange: (id: string, selected: boolean) => void;
+  onSelectAllChange: (selectAll: boolean) => void;
+  onClearSelection: () => void;
+  onGroupToggle: (groupId: string) => void;
+  onOpenItem: (id: string) => void;
+  onStatusChange: (id: string, optionId: string) => void;
+  onCreateItem: (groupId: string, title: string) => void;
+  onClearFilter: () => void;
+  onShowDone: () => void;
+  onBulkStatus: TableBulkBarProps["onStatus"];
+  onBulkDue: TableBulkBarProps["onDue"];
+  onBulkArchive: TableBulkBarProps["onArchive"];
+  /** Opens the status list of a row when the table first renders (stories, tests). */
+  initialEditing?: { rowId: string; highlightStatusId?: string | null };
+}
 
-export type MainTableSurfaceProps = {
-  board: Board;
-  columns: BoardTableColumn[];
-  groups: BoardGroup[];
-  fieldDefinitions: FieldDefinition[];
-  selectedCardIds: string[];
-  selectedCardIdSet: ReadonlySet<string>;
-  isAllSelected: boolean;
-  activeDetailCardId?: string | null;
-  searchQuery: string;
-  hiddenFieldIds: string[];
-  onSearchChange: (query: string) => void;
-  onNewTaskIntent: () => void;
-  onCreateGroup: () => void;
-  onCreateColumn: () => void;
-  onClearFilters: () => void;
-  onSetFilters: (filters: FilterConfig[]) => void;
-  onClearSort: () => void;
-  onSetSort: (sort: SortConfig[]) => void;
-  onSetGroupBy: (groupBy: string) => void;
-  onResetTableView: () => void;
-  onToggleFieldVisible: (fieldId: string, visible: boolean) => void;
-  onDeleteSelectedCards: () => void;
-  onToggleAll: () => void;
-  onResizeColumn: (columnId: string, width: number) => void;
-  onHideColumn: (columnId: string) => void;
-  onRenameColumn: (columnId: string, name: string) => void;
-  onDeleteColumn: (columnId: string) => void;
-  onSetCardSelected: (cardId: string, selected: boolean) => void;
-  onOpenDetail: (cardId: string) => void;
-  onToggleGroup: (groupId: string) => void;
-  onCreateTask: (groupId: string, title: string, position: number) => void;
-  onRenameGroup: (groupId: string, title: string) => void;
-  onUpdateGroupColor: (groupId: string, color: string) => void;
-  onDuplicateGroup: (groupId: string) => void;
-  onDeleteGroup: (groupId: string) => void;
-  onDuplicateCard: (cardId: string) => void;
-  onDeleteCard: (cardId: string) => void;
-  onUpdateCard: (cardId: string, patch: UpdateCardInput) => void;
-  onUpdateFieldValue: (update: TableFieldValueUpdate) => void;
-  onMoveRow: (move: TableMoveRow) => void;
-};
-
+/**
+ * The Board table (pure surface): toolbar, the grid with its sticky header,
+ * the groups of rows, the footer and the bulk bar. Everything it shows and
+ * every write it asks for comes through props; the container owns the data,
+ * the selection and the writes.
+ *
+ * Keyboard: arrow keys, Home and End move between rows, Enter edits the
+ * status of the focused row, Space opens its item, X selects it and Escape
+ * clears the selection.
+ */
 export function MainTableSurface({
-  board,
-  columns,
+  toolbar,
+  boardTitle,
   groups,
-  fieldDefinitions,
-  selectedCardIds,
-  selectedCardIdSet,
-  isAllSelected,
-  activeDetailCardId,
-  searchQuery,
-  hiddenFieldIds,
-  onSearchChange,
-  onNewTaskIntent,
-  onCreateGroup,
-  onCreateColumn,
-  onClearFilters,
-  onSetFilters,
-  onClearSort,
-  onSetSort,
-  onSetGroupBy,
-  onResetTableView,
-  onToggleFieldVisible,
-  onDeleteSelectedCards,
-  onToggleAll,
-  onResizeColumn,
-  onHideColumn,
-  onRenameColumn,
-  onDeleteColumn,
-  onSetCardSelected,
-  onOpenDetail,
-  onToggleGroup,
-  onCreateTask,
-  onRenameGroup,
-  onUpdateGroupColor,
-  onDuplicateGroup,
-  onDeleteGroup,
-  onDuplicateCard,
-  onDeleteCard,
-  onUpdateCard,
-  onUpdateFieldValue,
-  onMoveRow,
+  statusOptions,
+  selectedIds,
+  collapsedGroupIds,
+  openItemId,
+  canEdit,
+  canCreate,
+  canArchive,
+  shown,
+  hidden,
+  canShowDone,
+  noResults,
+  archivedNotice,
+  onRowSelectedChange,
+  onSelectAllChange,
+  onClearSelection,
+  onGroupToggle,
+  onOpenItem,
+  onStatusChange,
+  onCreateItem,
+  onClearFilter,
+  onShowDone,
+  onBulkStatus,
+  onBulkDue,
+  onBulkArchive,
+  initialEditing,
 }: MainTableSurfaceProps) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+  const { copy } = toolbar;
+  const columns = visibleTableColumns(toolbar.hiddenColumnIds);
+  const [editingId, setEditingId] = useState<string | null>(
+    initialEditing?.rowId ?? null,
   );
-  const gridTemplate = useMemo(
-    () => getMainTableGridTemplate(columns),
-    [columns],
+  const [tabStopId, setTabStopId] = useState<string | null>(null);
+  const [addRequest, setAddRequest] = useState({ groupId: "", count: 0 });
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  const visibleRowIds = groups.flatMap((group) =>
+    collapsedGroupIds.has(group.id) ? [] : group.rows.map((row) => row.id),
   );
-  const tableWidth = useMemo(
-    () => columns.reduce((sum, column) => sum + column.width, 112),
-    [columns],
-  );
+  const allRowIds = groups.flatMap((group) => group.rows.map((row) => row.id));
+  const selectedCount = allRowIds.filter((id) => selectedIds.has(id)).length;
+  const allChecked: boolean | "mixed" =
+    selectedCount === 0
+      ? false
+      : selectedCount === allRowIds.length
+        ? true
+        : "mixed";
+  const tabStop =
+    tabStopId && visibleRowIds.includes(tabStopId)
+      ? tabStopId
+      : (visibleRowIds[0] ?? null);
 
-  function handleDragEnd(event: DragEndEvent) {
-    const activeType = event.active.data.current?.type;
-    const overType = event.over?.data.current?.type;
-    if (!event.over || activeType !== "card") return;
+  const focusRow = (id: string | undefined) => {
+    if (!id) return;
+    const row = gridRef.current?.querySelector<HTMLElement>(
+      `[data-row-id="${CSS.escape(id)}"]`,
+    );
+    row?.focus();
+  };
 
-    const activeCard = event.active.data.current?.card as Card | undefined;
-    const targetGroupId =
-      overType === "card"
-        ? (event.over.data.current?.card as Card | undefined)?.listId
-        : overType === "group"
-          ? String(event.over.id)
-          : undefined;
-    if (!activeCard || !targetGroupId) return;
+  const onRowKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    rowId: string,
+  ) => {
+    // Keys typed in a control of the row (the status list, a checkbox) are
+    // theirs; the row takes only the keys pressed on the row itself.
+    if (event.target !== event.currentTarget) return;
+    const index = visibleRowIds.indexOf(rowId);
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        focusRow(visibleRowIds[Math.min(index + 1, visibleRowIds.length - 1)]);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        focusRow(visibleRowIds[Math.max(index - 1, 0)]);
+        break;
+      case "Home":
+        event.preventDefault();
+        focusRow(visibleRowIds[0]);
+        break;
+      case "End":
+        event.preventDefault();
+        focusRow(visibleRowIds.at(-1));
+        break;
+      case "Enter":
+        if (canEdit) {
+          event.preventDefault();
+          setEditingId(rowId);
+        }
+        break;
+      case " ":
+        event.preventDefault();
+        onOpenItem(rowId);
+        break;
+      case "x":
+      case "X":
+        event.preventDefault();
+        onRowSelectedChange(rowId, !selectedIds.has(rowId));
+        break;
+    }
+  };
 
-    const targetGroup = groups.find((group) => group.id === targetGroupId);
-    if (!targetGroup) return;
-    const overCard =
-      overType === "card"
-        ? (event.over.data.current?.card as Card | undefined)
-        : undefined;
-    const orderedCards = targetGroup.cards
-      .filter((card) => card.id !== activeCard.id)
-      .sort((a, b) => a.position - b.position);
-    const overIndex = overCard
-      ? orderedCards.findIndex((card) => card.id === overCard.id)
-      : orderedCards.length;
-    const before = orderedCards[overIndex - 1]?.position;
-    const after = orderedCards[overIndex]?.position;
-
-    onMoveRow({
-      cardId: activeCard.id,
-      listId: targetGroupId,
-      position: generatePosition(before, after),
-    });
-  }
+  const style = {
+    "--table-row-height": ROW_HEIGHT[toolbar.density],
+  } as CSSProperties;
 
   return (
     <section
-      className="flex h-full min-h-0 flex-col overflow-hidden bg-card"
-      aria-label={`${board.title} main table`}
+      aria-label={fillTableCopy(copy.tableLabel, { board: boardTitle })}
       data-slot="main-table-surface"
+      data-density={toolbar.density}
+      style={style}
+      onKeyDown={(event) => {
+        if (
+          event.key === "Escape" &&
+          selectedCount > 0 &&
+          editingId === null &&
+          event.currentTarget.contains(event.target as Node)
+        ) {
+          onClearSelection();
+        }
+      }}
+      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body"
     >
-      <MainTableToolbar
-        fieldDefinitions={fieldDefinitions}
-        firstGroupId={groups[0]?.id}
-        hiddenFieldIds={hiddenFieldIds}
-        searchQuery={searchQuery}
-        selectedCardCount={selectedCardIds.length}
-        onClearFilters={onClearFilters}
-        onClearSort={onClearSort}
-        onCreateColumn={onCreateColumn}
-        onCreateGroup={onCreateGroup}
-        onDeleteSelectedCards={onDeleteSelectedCards}
-        onNewTaskIntent={onNewTaskIntent}
-        onResetTableView={onResetTableView}
-        onSearchChange={onSearchChange}
-        onSetFilters={onSetFilters}
-        onSetGroupBy={onSetGroupBy}
-        onSetSort={onSetSort}
-        onToggleFieldVisible={onToggleFieldVisible}
-      />
-      <div className="min-h-0 flex-1">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <TableScrollContainer>
-            <div
-              aria-label="Board table rows"
-              className="min-h-full"
-              style={{ minWidth: tableWidth }}
-            >
-              <TableStickyHeader>
-                <TableHeaderRow
-                  columns={columns}
-                  gridTemplate={gridTemplate}
-                  isAllSelected={isAllSelected}
-                  onDeleteColumn={onDeleteColumn}
-                  onHideColumn={onHideColumn}
-                  onRenameColumn={onRenameColumn}
-                  onResizeColumn={onResizeColumn}
-                  onToggleAll={onToggleAll}
-                />
-              </TableStickyHeader>
-              <div data-slot="table-body">
-                {groups.map((group) => (
-                  <TableGroupSection
-                    key={group.id}
-                    board={board}
-                    group={group}
-                    columns={columns}
-                    gridTemplate={gridTemplate}
-                    selectedCardIdSet={selectedCardIdSet}
-                    activeDetailCardId={activeDetailCardId}
-                    onSetCardSelected={onSetCardSelected}
-                    onOpenDetail={onOpenDetail}
-                    onToggleGroup={onToggleGroup}
-                    onCreateTask={onCreateTask}
-                    onRenameGroup={onRenameGroup}
-                    onUpdateGroupColor={onUpdateGroupColor}
-                    onDuplicateGroup={onDuplicateGroup}
-                    onDeleteGroup={onDeleteGroup}
-                    onDuplicateCard={onDuplicateCard}
-                    onDeleteCard={onDeleteCard}
-                    onUpdateCard={onUpdateCard}
-                    onUpdateFieldValue={onUpdateFieldValue}
-                  />
-                ))}
-                <AddGroupAction onCreateGroup={onCreateGroup} />
-              </div>
-            </div>
-          </TableScrollContainer>
-        </DndContext>
-      </div>
-    </section>
-  );
-}
-
-function MainTableToolbar({
-  fieldDefinitions,
-  firstGroupId,
-  hiddenFieldIds,
-  searchQuery,
-  selectedCardCount,
-  onClearFilters,
-  onClearSort,
-  onCreateColumn,
-  onCreateGroup,
-  onDeleteSelectedCards,
-  onNewTaskIntent,
-  onResetTableView,
-  onSearchChange,
-  onSetFilters,
-  onSetGroupBy,
-  onSetSort,
-  onToggleFieldVisible,
-}: {
-  fieldDefinitions: FieldDefinition[];
-  firstGroupId?: string;
-  hiddenFieldIds: string[];
-  searchQuery: string;
-  selectedCardCount: number;
-  onClearFilters: () => void;
-  onClearSort: () => void;
-  onCreateColumn: () => void;
-  onCreateGroup: () => void;
-  onDeleteSelectedCards: () => void;
-  onNewTaskIntent: () => void;
-  onResetTableView: () => void;
-  onSearchChange: (query: string) => void;
-  onSetFilters: (filters: FilterConfig[]) => void;
-  onSetGroupBy: (groupBy: string) => void;
-  onSetSort: (sort: SortConfig[]) => void;
-  onToggleFieldVisible: (fieldId: string, visible: boolean) => void;
-}) {
-  return (
-    <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 bg-card px-4 py-2 sm:px-6">
-      <div className="relative w-full max-w-xs">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={searchQuery}
-          onChange={(event) => onSearchChange(event.target.value)}
-          className="h-8 pl-8"
-          placeholder="Search tasks"
-          aria-label="Search tasks"
+      <div className="px-4 sm:px-6">
+        <MainTableToolbar
+          {...toolbar}
+          canAdd={toolbar.canAdd && canCreate}
+          onAddItem={() => {
+            const first = groups[0];
+            if (!first) return;
+            if (collapsedGroupIds.has(first.id)) onGroupToggle(first.id);
+            setAddRequest((current) => ({
+              groupId: first.id,
+              count: current.count + 1,
+            }));
+          }}
         />
       </div>
 
-      <Button
-        size="sm"
-        variant="outline"
-        className="bg-card"
-        onClick={onNewTaskIntent}
-        disabled={!firstGroupId}
+      <div
+        ref={gridRef}
+        data-table-scroll=""
+        className="mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card"
       >
-        <Plus className="size-4" />
-        New task
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="bg-card"
-        onClick={onCreateGroup}
-      >
-        <ListPlus className="size-4" />
-        New group
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="bg-card"
-        onClick={onCreateColumn}
-      >
-        <Plus className="size-4" />
-        Column
-      </Button>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="ghost">
-            <Filter className="size-4" /> Filter
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-52">
-          <DropdownMenuLabel>Quick filters</DropdownMenuLabel>
-          <DropdownMenuItem onClick={onClearFilters}>
-            Clear filters
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {["status-working", "status-stuck", "status-done"].map((status) => (
-            <DropdownMenuItem
-              key={status}
-              onClick={() =>
-                onSetFilters([
-                  { fieldId: "status", operator: "is", value: status },
-                ])
-              }
-            >
-              {status.replace("status-", "")}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="ghost">
-            <SortAsc className="size-4" /> Sort
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-52">
-          <DropdownMenuItem onClick={onClearSort}>Clear sort</DropdownMenuItem>
-          {[
-            "title",
-            "status",
-            "priority",
-            "dueDate",
-            "progress",
-            "createdAt",
-          ].map((fieldId) => (
-            <DropdownMenuItem
-              key={fieldId}
-              onClick={() => onSetSort([{ fieldId, direction: "asc" }])}
-            >
-              {fieldId}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="ghost">
-            <EyeOff className="size-4" /> Hide
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          {fieldDefinitions.map((field) => (
-            <DropdownMenuCheckboxItem
-              key={field.id}
-              checked={!hiddenFieldIds.includes(field.id)}
-              onCheckedChange={(checked) =>
-                onToggleFieldVisible(field.id, Boolean(checked))
-              }
-            >
-              {field.name}
-            </DropdownMenuCheckboxItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="ghost">
-            <Group className="size-4" /> Group by
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
-          {["list", "status", "priority", "assignee"].map((groupBy) => (
-            <DropdownMenuItem
-              key={groupBy}
-              onClick={() => onSetGroupBy(groupBy)}
-            >
-              {groupBy}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            aria-label="More table actions"
-          >
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onResetTableView}>
-            Reset table view
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {selectedCardCount > 0 ? (
-        <Button
-          size="sm"
-          variant="outline"
-          className="ml-auto bg-card text-destructive"
-          onClick={onDeleteSelectedCards}
+        <div
+          role="table"
+          aria-label={fillTableCopy(copy.tableLabel, { board: boardTitle })}
+          className="w-max min-w-full text-nav font-normal text-foreground"
         >
-          Delete {selectedCardCount}
-        </Button>
-      ) : null}
-    </div>
-  );
-}
+          <TableHeaderRow
+            copy={copy}
+            columns={columns}
+            sort={toolbar.sort}
+            allChecked={allChecked}
+            canSelect={allRowIds.length > 0}
+            onToggleAll={onSelectAllChange}
+          />
+          {groups.map((group) => {
+            const collapsed = collapsedGroupIds.has(group.id);
+            return (
+              <div role="rowgroup" aria-label={group.name} key={group.id}>
+                <TableGroupHeader
+                  copy={copy}
+                  group={group}
+                  collapsed={collapsed}
+                  onToggle={() => onGroupToggle(group.id)}
+                />
+                {collapsed
+                  ? null
+                  : group.rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        row={row}
+                        copy={copy}
+                        columns={columns}
+                        statusOptions={statusOptions}
+                        selected={selectedIds.has(row.id)}
+                        active={openItemId === row.id}
+                        tabStop={tabStop === row.id}
+                        canEdit={canEdit}
+                        editing={editingId === row.id}
+                        highlightStatusId={
+                          initialEditing?.rowId === row.id
+                            ? initialEditing.highlightStatusId
+                            : undefined
+                        }
+                        onSelectedChange={(selected) =>
+                          onRowSelectedChange(row.id, selected)
+                        }
+                        onOpen={() => onOpenItem(row.id)}
+                        onEditingChange={(editing) =>
+                          setEditingId(editing ? row.id : null)
+                        }
+                        onStatusChange={(optionId) =>
+                          onStatusChange(row.id, optionId)
+                        }
+                        onKeyDown={(event) => {
+                          setTabStopId(row.id);
+                          onRowKeyDown(event, row.id);
+                        }}
+                      />
+                    ))}
+                {collapsed || !canCreate ? null : (
+                  <TableAddRow
+                    copy={copy}
+                    group={group}
+                    openRequest={
+                      addRequest.groupId === group.id ? addRequest.count : 0
+                    }
+                    onCreate={(title) => onCreateItem(group.id, title)}
+                  />
+                )}
+              </div>
+            );
+          })}
+          {noResults ? (
+            <TableNoResults copy={copy} onClear={onClearFilter} />
+          ) : groups.length === 0 ? (
+            <TableEmpty copy={copy} />
+          ) : null}
+        </div>
+      </div>
 
-function AddGroupAction({ onCreateGroup }: { onCreateGroup: () => void }) {
-  return (
-    <div className="sticky left-0 flex min-h-12 items-center border-b border-border/50 bg-table-bg px-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-muted-foreground hover:text-foreground"
-        onClick={onCreateGroup}
-      >
-        <Plus className="size-4" />
-        Add group
-      </Button>
-    </div>
+      <div className="px-4 sm:px-6">
+        <TableFooter
+          copy={copy}
+          shown={shown}
+          hidden={hidden}
+          canShowDone={canShowDone}
+          onShowDone={onShowDone}
+        />
+      </div>
+
+      {selectedCount > 0 ? (
+        <TableBulkBar
+          copy={copy}
+          count={selectedCount}
+          statusOptions={statusOptions}
+          canEdit={canEdit}
+          canArchive={canArchive}
+          onStatus={onBulkStatus}
+          onDue={onBulkDue}
+          onArchive={onBulkArchive}
+          onClear={onClearSelection}
+        />
+      ) : archivedNotice ? (
+        <TableArchivedNotice
+          copy={copy}
+          count={archivedNotice.count}
+          onUndo={archivedNotice.onUndo}
+          onClose={archivedNotice.onClose}
+        />
+      ) : null}
+    </section>
   );
 }

@@ -472,7 +472,7 @@ export function KanbanView({
   );
 }
 
-interface SelectedItemProps {
+export interface SelectedItemProps {
   board: Board;
   cardId: string;
   capabilities: TaskDetailCapabilities;
@@ -497,7 +497,7 @@ interface SelectedItemProps {
  * stays in the query cache). While the next card of K/J loads, the sheet
  * keeps showing the previous one, so it stays mounted and keeps focus.
  */
-function KanbanSelectedItem({
+export function KanbanSelectedItem({
   board,
   cardId,
   onClose,

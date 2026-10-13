@@ -28,6 +28,8 @@ export function applyCardPatch<T extends Card>(
       patch.priority === null ? undefined : (patch.priority ?? card.priority),
     dueDate:
       patch.dueDate === null ? undefined : (patch.dueDate ?? card.dueDate),
+    // The board read carries the due date as `dueAt`; keep it in step.
+    dueAt: patch.dueDate === undefined ? card.dueAt : patch.dueDate,
     startDate:
       patch.startDate === null
         ? undefined

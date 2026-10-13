@@ -23,6 +23,7 @@ import {
   kanbanCardCatalog,
   kanbanLaneCatalog,
   kanbanToolbarCatalog,
+  mainTableCatalog,
 } from "@notrelix/work-management-web";
 
 /**
@@ -41,6 +42,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   kanbanCardCatalog,
   kanbanLaneCatalog,
   kanbanToolbarCatalog,
+  mainTableCatalog,
   itemSheetCatalog,
   boardHeaderCatalog,
   notificationBellCatalog,

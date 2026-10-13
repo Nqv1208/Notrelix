@@ -22,6 +22,7 @@ export * from "./schemas";
 export * from "./utils/status-lanes";
 export * from "./utils/fractional-index";
 export * from "./utils/board-cache-updaters";
+export * from "./utils/table-projection";
 
 // Kanban types
 export * from "./types/kanban-types";

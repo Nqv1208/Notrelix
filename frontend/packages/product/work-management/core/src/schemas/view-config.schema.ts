@@ -19,6 +19,7 @@ export const viewConfigSchema = z.object({
   collapsedGroups: z.record(z.string(), z.boolean()).default({}),
   filters: z.array(filterConfigSchema),
   sortBy: z.array(sortConfigSchema),
+  density: z.enum(["compact", "comfortable"]).default("comfortable"),
   searchQuery: z.string().optional(),
 });
 

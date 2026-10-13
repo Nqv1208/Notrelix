@@ -52,7 +52,13 @@ export function BoardWorkspaceViewContent({
   ...kanbanParams
 }: BoardScreenProps) {
   if (view.type === "table")
-    return <MainTableView boardId={boardId} workspaceId={workspaceId} />;
+    return (
+      <MainTableView
+        boardId={boardId}
+        workspaceId={workspaceId}
+        {...kanbanParams}
+      />
+    );
   if (view.type === "kanban")
     return (
       <BoardFullDataView

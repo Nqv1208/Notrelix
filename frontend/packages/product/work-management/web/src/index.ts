@@ -56,13 +56,14 @@ export { useKanbanToolbarCopy } from "./components/views/kanban/use-kanban-toolb
 
 // Table view
 export * from "./components/views/table/main-table-view";
-export * from "./components/views/table/table-add-task-row";
-export * from "./components/views/table/table-cell";
-export * from "./components/views/table/table-group-section";
-export * from "./components/views/table/table-header-row";
-export * from "./components/views/table/table-row";
-export * from "./components/views/table/table-scroll-container";
-export * from "./components/views/table/table-sticky-header";
+export * from "./components/views/table/main-table-surface";
+export * from "./components/views/table/table-toolbar";
+export { mainTableCatalog } from "./components/views/table/main-table.catalog";
+export {
+  mainTableCopy,
+  type MainTableCopy,
+} from "./components/views/table/main-table.copy";
+export { useMainTableCopy } from "./components/views/table/use-main-table-copy";
 
 // Timeline view
 export * from "./components/views/timeline/board-timeline-view";

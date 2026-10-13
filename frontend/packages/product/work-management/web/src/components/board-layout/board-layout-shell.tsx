@@ -18,7 +18,7 @@ export function BoardLayoutShell({
   children,
 }: BoardLayoutShellProps) {
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full min-w-0 flex flex-col bg-background">
       <BoardToolbar
         boardTitle={boardTitle}
         activeView={activeView}

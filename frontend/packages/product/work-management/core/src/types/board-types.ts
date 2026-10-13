@@ -28,6 +28,9 @@ export interface Board {
 
 export type ViewMode = "table" | "kanban" | "calendar" | "timeline";
 
+/** Row height of the table: "comfortable" 40 px (the default), "compact" 32 px. */
+export type TableDensity = "compact" | "comfortable";
+
 export interface ViewConfig {
   groupBy: "list" | "status" | "priority" | "assignee" | string;
   hiddenFields: string[];
@@ -36,6 +39,7 @@ export interface ViewConfig {
   collapsedGroups: Record<string, boolean>;
   filters: FilterConfig[];
   sortBy: SortConfig[];
+  density: TableDensity;
   searchQuery?: string;
 }
 
