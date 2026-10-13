@@ -47,10 +47,10 @@ export function BoardToolbar({
       <BoardHeaderSurface title={boardTitle} copy={copy} {...header} />
       <div
         className={cn(
-          "flex items-end gap-0.5 border-b border-line px-4 pt-2.5 sm:px-6",
-          // Final-Board sizes the tab strip 2 px taller than the Table,
-          // Calendar and Timeline mockups do (its tab is content-box).
-          activeView === "kanban" ? "min-h-12" : "min-h-11.5",
+          // One height for every view, so switching views moves nothing: the
+          // mockups differ by 2 px (Final-Board's tab is content-box, the
+          // others' border-box) and the Board's 48 px is the one used.
+          "flex min-h-12 items-end gap-0.5 border-b border-line px-4 pt-2.5 sm:px-6",
         )}
       >
         <div className="-mb-px min-w-0 overflow-x-auto">

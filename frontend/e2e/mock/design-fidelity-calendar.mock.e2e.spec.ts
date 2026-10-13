@@ -51,17 +51,18 @@ const MOCK = {
     primary: { x: 1010, y: 117, width: 150, height: 32 },
   },
   frame: {
-    calendar: { x: 24, y: 159, width: 848, height: 721 },
+    /** Height 721 in the mockup; the unified 48 px tab strip leaves 719. */
+    calendar: { x: 24, y: 159, width: 848, height: 719 },
     weekdays: { x: 25, y: 160, width: 846, height: 33 },
     column: { width: 121, height: 32 },
     columnX: [25, 146, 267, 388, 508, 629, 750],
-    weekTops: [193, 331, 468, 605, 743],
-    weeksHeight: 686,
+    weekTops: [193, 331, 468, 605, 741],
+    weeksHeight: 684,
   },
   number: { first: { x: 33, y: 201, width: 17, height: 18 } },
   today: {
     circle: { x: 33, y: 473, width: 24, height: 24 },
-    marker: { x: 63, y: 477, width: 49, height: 17 },
+    marker: { x: 63, y: 476, width: 49, height: 17 },
   },
   event: {
     done: { x: 271, y: 226, width: 113, height: 24 },
@@ -93,17 +94,17 @@ const MOCK = {
   /** Final-Calendar tao-nhanh: the popover on 22/10. */
   quick: { x: 392, width: 113, height: 67 },
   /** Final-Calendar khong-ket-qua: the card over the empty grid. */
-  noResults: { x: 257, y: 484, width: 382, height: 144 },
+  noResults: { x: 257, y: 483, width: 382, height: 144 },
   /** Final-Calendar range=tuan. */
   week: {
-    frame: { x: 25, y: 193, width: 846, height: 686 },
+    frame: { x: 25, y: 193, width: 846, height: 684 },
     today: { x: 33, y: 198, width: 24, height: 24 },
   },
   /** Final-Calendar range=ngay. */
   day: {
     heading: { x: 200, y: 121, width: 177, height: 25 },
     primary: { x: 24, y: 157, width: 150, height: 32 },
-    calendar: { x: 24, y: 199, width: 848, height: 681 },
+    calendar: { x: 24, y: 199, width: 848, height: 679 },
     overdue: { x: 25, y: 200, width: 846, height: 77 },
     overdueItem: { x: 37, y: 234, width: 822, height: 33 },
     slotHeight: 44,
@@ -166,13 +167,35 @@ async function main(page: Page): Promise<Rect> {
   return box;
 }
 
-/** A locator's box relative to the main area's top-left. */
-async function rel(page: Page, locator: Locator): Promise<Rect> {
+/**
+ * The tab strip is 48 px on every view so switching views moves nothing: that
+ * is Final-Board's height, while Final-Table, Final-Calendar and Final-Timeline
+ * draw it 46 px high. Boxes under the strip (from the mockup's content start,
+ * y = 107) therefore sit 2 px lower than in this mockup; they are shifted back
+ * before they are compared with the mockup numbers.
+ */
+const STRIP_EXTRA = 2;
+const CONTENT_START = 107;
+
+/**
+ * A locator's box relative to the main area's top-left. A box anchored to the
+ * window's bottom edge (a toast, the bulk bar) does not move with the strip:
+ * pass `{ fixedToBottom: true }` to keep its raw position.
+ */
+async function rel(
+  page: Page,
+  locator: Locator,
+  { fixedToBottom = false }: { fixedToBottom?: boolean } = {},
+): Promise<Rect> {
   const [origin, box] = await Promise.all([main(page), locator.boundingBox()]);
   if (!box) throw new Error("element has no box");
+  const y = box.y - origin.y;
   return {
     x: box.x - origin.x,
-    y: box.y - origin.y,
+    y:
+      !fixedToBottom && y >= CONTENT_START + STRIP_EXTRA - 1
+        ? y - STRIP_EXTRA
+        : y,
     width: box.width,
     height: box.height,
   };
@@ -347,7 +370,7 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     for (const [index, top] of f.weekTops.entries()) {
       const box = await rel(page, weeks.nth(index));
       expectRect(box, { x: 25, y: top, width: 846 }, `week ${index + 1}`);
-      expect(box.height).toBeGreaterThanOrEqual(136);
+      expect(box.height).toBeGreaterThanOrEqual(135);
       expect(box.height).toBeLessThanOrEqual(138);
     }
     const last = await rel(page, weeks.nth(4));

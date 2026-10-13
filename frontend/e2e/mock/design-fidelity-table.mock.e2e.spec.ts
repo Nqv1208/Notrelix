@@ -16,7 +16,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * Two known, intended differences are written down where they matter:
  *  - the mockup's `chon-nhieu` state overflows its 900 px frame by 2 px, so
  *    its grid is 700 px high and its bulk bar sits 2 px low; `da-luu-tru` and
- *    the app fit the window (grid 697.6 px, bar bottom 22 px above the edge);
+ *    the app fit the window (grid 697.6 px in the mockup, 695.6 under the unified 48 px tab strip, bar bottom 22 px above the edge);
  *  - the mock world's people and label colours come from the identity
  *    palette, not the mockup's hand-picked colours.
  *
@@ -50,8 +50,8 @@ const MOCK = {
     columns: { x: 812, y: 117.4, width: 102, height: 32 },
     primary: { x: 1009.8, y: 117.4, width: 150.2, height: 32 },
   },
-  /** `da-luu-tru` frames the main area at 900 px: grid 697.6 px high. */
-  grid: { x: 24, y: 159.4, width: 1136, height: 697.6, radius: "12px" },
+  /** `da-luu-tru` frames the main area at 900 px: grid 697.6 px high in the mockup, 695.6 with the 48 px strip. */
+  grid: { x: 24, y: 159.4, width: 1136, height: 695.6, radius: "12px" },
   head: { y: 160.4, height: 36, background: "rgb(243, 245, 248)" },
   /** Header cells of the nine default columns, left edge and width. */
   headCells: [
@@ -177,13 +177,35 @@ async function main(page: Page): Promise<Rect> {
   return box;
 }
 
-/** A locator's box relative to the main area's top-left. */
-async function rel(page: Page, locator: Locator): Promise<Rect> {
+/**
+ * The tab strip is 48 px on every view so switching views moves nothing: that
+ * is Final-Board's height, while Final-Table, Final-Calendar and Final-Timeline
+ * draw it 46 px high. Boxes under the strip (from the mockup's content start,
+ * y = 107) therefore sit 2 px lower than in this mockup; they are shifted back
+ * before they are compared with the mockup numbers.
+ */
+const STRIP_EXTRA = 2;
+const CONTENT_START = 107;
+
+/**
+ * A locator's box relative to the main area's top-left. A box anchored to the
+ * window's bottom edge (a toast, the bulk bar) does not move with the strip:
+ * pass `{ fixedToBottom: true }` to keep its raw position.
+ */
+async function rel(
+  page: Page,
+  locator: Locator,
+  { fixedToBottom = false }: { fixedToBottom?: boolean } = {},
+): Promise<Rect> {
   const [origin, box] = await Promise.all([main(page), locator.boundingBox()]);
   if (!box) throw new Error("element has no box");
+  const y = box.y - origin.y;
   return {
     x: box.x - origin.x,
-    y: box.y - origin.y,
+    y:
+      !fixedToBottom && y >= CONTENT_START + STRIP_EXTRA - 1
+        ? y - STRIP_EXTRA
+        : y,
     width: box.width,
     height: box.height,
   };
@@ -285,7 +307,9 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(await style(add, "border-radius")).toBe("7px");
   });
 
-  test("grid: frame, sticky header row and the nine columns", async ({ page }) => {
+  test("grid: frame, sticky header row and the nine columns", async ({
+    page,
+  }) => {
     await openTable(page);
     const grid = page.locator("[data-table-scroll]");
     expectRect(await rel(page, grid), MOCK.grid, "grid frame");
@@ -506,13 +530,13 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     await openTable(page);
     const target = row(page, "ERP-144");
     const before = await rel(page, target);
-    await expect(target.getByRole("button", { name: /^Mở chi tiết/ })).toHaveCount(
-      0,
-    );
+    await expect(
+      target.getByRole("button", { name: /^Mở chi tiết/ }),
+    ).toHaveCount(0);
     await target.hover();
-    await expect(target.getByRole("button", { name: /^Mở chi tiết/ })).toHaveCount(
-      0,
-    );
+    await expect(
+      target.getByRole("button", { name: /^Mở chi tiết/ }),
+    ).toHaveCount(0);
     expectRect(await rel(page, target), before, "hovered row");
     // Hover tints the row's cells.
     expect(await colour(cells(target).nth(1), "background-color")).toBe(
@@ -549,7 +573,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     const bar = page.getByRole("toolbar", {
       name: "Thao tác với 2 công việc đã chọn",
     });
-    const box = await rel(page, bar);
+    const box = await rel(page, bar, { fixedToBottom: true });
     const b = MOCK.bulk;
     expect(Math.abs(box.height - b.height)).toBeLessThanOrEqual(1);
     // Centred on the main area; its bottom edge 22 px above the window edge.
@@ -742,13 +766,15 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     await expect(notice).toBeVisible();
     const n = MOCK.notice;
     expectRect(
-      await rel(page, notice),
+      await rel(page, notice, { fixedToBottom: true }),
       { x: n.x, y: n.y, width: n.width, height: n.height },
       "notice",
     );
     expect(await style(notice, "border-radius")).toBe("12px");
     expectRect(
-      await rel(page, notice.getByRole("button", { name: "Hoàn tác" })),
+      await rel(page, notice.getByRole("button", { name: "Hoàn tác" }), {
+        fixedToBottom: true,
+      }),
       n.undo,
       "Hoàn tác",
     );
