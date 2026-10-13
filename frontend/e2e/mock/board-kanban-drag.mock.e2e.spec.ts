@@ -162,6 +162,66 @@ test.describe("Kanban drag", () => {
     ]);
   });
 
+  test("after a drop the card never shows in its old lane, not even for a frame", async ({
+    page,
+  }) => {
+    await openBoard(page);
+    await pickUp(page, ERP_149);
+    const first = await box(card(page, ERP_142));
+    const second = await box(card(page, ERP_144));
+    await page.mouse.move(
+      first.x + 120,
+      (first.y + first.height + second.y) / 2,
+      { steps: 14 },
+    );
+    await expect(
+      lane(page, "Đang làm").locator("article[data-dragging]"),
+    ).toHaveCount(1);
+    const target = await box(lane(page, "Đang làm"));
+    // One sample per animation frame, from the drop until the board is
+    // settled: the lane the card itself is in and where the lifted copy is
+    // while it settles (it must head for the new place, never the old one).
+    await page.evaluate((title) => {
+      const samples: { lane: string; copyX: number | null }[] = [];
+      (window as unknown as { __frames: typeof samples }).__frames = samples;
+      const tick = () => {
+        const where = Array.from(document.querySelectorAll("article"))
+          .filter((node) => !node.closest("[data-kanban-drag-overlay]"))
+          .find((node) => node.querySelector("h3")?.textContent === title)
+          ?.closest("section,[role=region]")
+          ?.getAttribute("aria-label");
+        const copy = document
+          .querySelector("[data-kanban-drag-overlay]")
+          ?.getBoundingClientRect();
+        samples.push({
+          lane: where ?? "none",
+          copyX: copy ? copy.x + copy.width / 2 : null,
+        });
+        if (samples.length < 90) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, ERP_149);
+    await page.mouse.up();
+    await page.waitForTimeout(1600);
+    const frames = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __frames: { lane: string; copyX: number | null }[];
+          }
+        ).__frames,
+    );
+    expect(frames.length).toBeGreaterThan(20);
+    expect(frames.filter((frame) => frame.lane === "Cần làm")).toEqual([]);
+    expect(frames.at(-1)?.lane).toBe("Đang làm");
+    const outside = frames.filter(
+      (frame) =>
+        frame.copyX !== null &&
+        (frame.copyX < target.x || frame.copyX > target.x + target.width),
+    );
+    expect(outside).toEqual([]);
+  });
+
   test("a drop inside the lane reorders it", async ({ page }) => {
     await openBoard(page);
     const todo = lane(page, "Cần làm");

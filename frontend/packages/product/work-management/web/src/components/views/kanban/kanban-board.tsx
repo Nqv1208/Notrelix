@@ -132,6 +132,10 @@ export function KanbanBoard({
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
+  // The arrangement of a card just dropped, kept on screen until the lanes
+  // as stored show it too: the write lands in the cache a moment after the
+  // drop, and without this the card would sit back in its old place until then.
+  const [settling, setSettling] = useState<DragState | null>(null);
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, {
@@ -151,15 +155,16 @@ export function KanbanBoard({
   // While a card is dragged the lanes show the arrangement the drag made, not
   // the lanes as stored.
   const shownLanes = useMemo(() => {
-    if (!drag) return lanes;
+    const shown = drag ?? settling;
+    if (!shown) return lanes;
     return lanes.map((lane) => {
-      const ids = drag.arrangement.get(laneKey(lane)) ?? [];
+      const ids = shown.arrangement.get(laneKey(lane)) ?? [];
       const cards = ids
         .map((id) => cardsById.get(id))
         .filter((card): card is Card => card !== undefined);
       return { ...lane, cards };
     });
-  }, [lanes, drag, cardsById]);
+  }, [lanes, drag, settling, cardsById]);
 
   function handleDragStart(event: DragStartEvent) {
     if (event.active.data.current?.type !== KANBAN_CARD_TYPE) return;
@@ -243,7 +248,10 @@ export function KanbanBoard({
       cardId: current.cardId,
       groups: groupOrder,
     });
-    if (drop) onDropCard(drop);
+    if (drop) {
+      setSettling({ ...current, arrangement });
+      onDropCard(drop);
+    }
   }
 
   const toggle = (setter: typeof setCollapsed) => (key: string, on: boolean) =>
@@ -261,6 +269,29 @@ export function KanbanBoard({
   useEffect(() => {
     if (drag && !cardsById.has(drag.cardId)) setDrag(null);
   }, [drag, cardsById]);
+  // The stored lanes now show the dropped card where the drag put it (or the
+  // write was refused and put it back, or never arrived): stop holding it.
+  useEffect(() => {
+    if (!settling) return;
+    const stored = arrangeKanbanLanes(lanes);
+    const key = laneKeyOfCard(settling.arrangement, settling.cardId);
+    const same = (
+      a: readonly string[] | undefined,
+      b: readonly string[] | undefined,
+    ) =>
+      a !== undefined &&
+      b !== undefined &&
+      a.length === b.length &&
+      a.every((id, i) => id === b[i]);
+    const landed =
+      key !== undefined && same(stored.get(key), settling.arrangement.get(key));
+    if (landed) {
+      setSettling(null);
+      return;
+    }
+    const timer = window.setTimeout(() => setSettling(null), 1500);
+    return () => window.clearTimeout(timer);
+  }, [settling, lanes]);
   const overlayCard = drag ? cardsById.get(drag.cardId) : undefined;
   const currentLaneKey = drag
     ? laneKeyOfCard(drag.arrangement, drag.cardId)
