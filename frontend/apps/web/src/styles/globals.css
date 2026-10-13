@@ -158,6 +158,38 @@
   --text-prose--line-height: var(--type-prose-line-height);
   --text-prose--font-weight: var(--type-prose-weight);
   --text-prose--letter-spacing: var(--type-prose-tracking);
+  --text-dialog-title: var(--type-dialog-title-size);
+  --text-dialog-title--line-height: var(--type-dialog-title-line-height);
+  --text-dialog-title--font-weight: var(--type-dialog-title-weight);
+  --text-dialog-title--letter-spacing: var(--type-dialog-title-tracking);
+  --text-avatar-lg: var(--type-avatar-lg-size);
+  --text-avatar-lg--line-height: var(--type-avatar-lg-line-height);
+  --text-avatar-lg--font-weight: var(--type-avatar-lg-weight);
+  --text-avatar-lg--letter-spacing: var(--type-avatar-lg-tracking);
+  --text-doc-title: var(--type-doc-title-size);
+  --text-doc-title--line-height: var(--type-doc-title-line-height);
+  --text-doc-title--font-weight: var(--type-doc-title-weight);
+  --text-doc-title--letter-spacing: var(--type-doc-title-tracking);
+  --text-doc-heading: var(--type-doc-heading-size);
+  --text-doc-heading--line-height: var(--type-doc-heading-line-height);
+  --text-doc-heading--font-weight: var(--type-doc-heading-weight);
+  --text-doc-heading--letter-spacing: var(--type-doc-heading-tracking);
+  --text-doc-prose: var(--type-doc-prose-size);
+  --text-doc-prose--line-height: var(--type-doc-prose-line-height);
+  --text-doc-prose--font-weight: var(--type-doc-prose-weight);
+  --text-doc-prose--letter-spacing: var(--type-doc-prose-tracking);
+  --text-doc-list: var(--type-doc-list-size);
+  --text-doc-list--line-height: var(--type-doc-list-line-height);
+  --text-doc-list--font-weight: var(--type-doc-list-weight);
+  --text-doc-list--letter-spacing: var(--type-doc-list-tracking);
+  --text-doc-check: var(--type-doc-check-size);
+  --text-doc-check--line-height: var(--type-doc-check-line-height);
+  --text-doc-check--font-weight: var(--type-doc-check-weight);
+  --text-doc-check--letter-spacing: var(--type-doc-check-tracking);
+  --text-doc-callout: var(--type-doc-callout-size);
+  --text-doc-callout--line-height: var(--type-doc-callout-line-height);
+  --text-doc-callout--font-weight: var(--type-doc-callout-weight);
+  --text-doc-callout--letter-spacing: var(--type-doc-callout-tracking);
 
   /* shadcn color vocabulary → token roles. */
   --color-background: var(--background);
@@ -340,6 +372,22 @@
   --color-calendar-tip: var(--calendar-tip);
   --color-calendar-tip-foreground: var(--calendar-tip-foreground);
 
+  /* Document page (Final-Docs): page sheet, body ink, comment highlight, notice and status chip tints. */
+  --color-doc-page: var(--doc-page);
+  --color-doc-panel: var(--doc-panel);
+  --color-doc-file-word: var(--doc-file-word);
+  --color-doc-file-pdf: var(--doc-file-pdf);
+  --color-doc-file-text: var(--doc-file-text);
+  --color-doc-body: var(--doc-body);
+  --color-doc-highlight: var(--doc-highlight);
+  --color-doc-notice: var(--doc-notice);
+  --color-doc-chip-todo: var(--doc-chip-todo);
+  --color-doc-chip-doing: var(--doc-chip-doing);
+  --color-doc-chip-review: var(--doc-chip-review);
+  --color-doc-chip-done: var(--doc-chip-done);
+  --color-doc-dot-review: var(--doc-dot-review);
+  --color-modal-scrim: var(--modal-scrim);
+
   /* Transitional aliases (current consumers only; new code uses surface/state roles). */
   --color-app-header: var(--app-header);
   --color-app-shell: var(--app-shell);
@@ -371,6 +419,7 @@
   --shadow-sheet: var(--elevation-sheet);
   --shadow-segment: var(--elevation-segment);
   --shadow-popover: var(--elevation-popover);
+  --shadow-dialog: var(--elevation-dialog);
   --shadow-bar: var(--elevation-bar);
 
   /* Motion: 150–200 ms, ease-out; collapses under reduced motion. */

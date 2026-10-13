@@ -27,6 +27,7 @@ import {
   WORK_STATUS_IDS,
   accents,
   calendarTones,
+  docTones,
   identity,
   labelTones,
   markTones,
@@ -247,6 +248,22 @@ export function buildAppearanceColors(
   roles["calendar-faint"] = calendar.faint;
   roles["calendar-tip"] = calendar.tip;
   roles["calendar-tip-foreground"] = calendar.onTip;
+
+  const doc = docTones[appearance];
+  roles["doc-page"] = doc.page;
+  roles["doc-panel"] = doc.panel;
+  roles["doc-file-word"] = doc.fileWord;
+  roles["doc-file-pdf"] = doc.filePdf;
+  roles["doc-file-text"] = doc.fileText;
+  roles["doc-body"] = doc.body;
+  roles["doc-highlight"] = doc.highlight;
+  roles["doc-notice"] = doc.notice;
+  roles["doc-chip-todo"] = doc.chipTodo;
+  roles["doc-chip-doing"] = doc.chipDoing;
+  roles["doc-chip-review"] = doc.chipReview;
+  roles["doc-chip-done"] = doc.chipDone;
+  roles["doc-dot-review"] = doc.dotReview;
+  roles["modal-scrim"] = doc.modalScrim;
 
   CHART_SERIES.forEach((id, index) => {
     roles[`chart-${index + 1}`] = identity[id].fill;

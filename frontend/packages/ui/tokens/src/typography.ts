@@ -55,6 +55,9 @@ export const fontSizeDense = {
   "9p5": 0.59375,
   "11p5": 0.71875,
   "12p5": 0.78125,
+  "14p5": 0.90625,
+  "15": 0.9375,
+  "15p5": 0.96875,
   "20": 1.25,
 } as const;
 
@@ -303,6 +306,70 @@ export const textRoles = {
     lineHeight: 1.75,
     weight: weights.regular,
     letterSpacing: "-0.003em",
+    family: "sans",
+  },
+  /** Document title (Final-Docs h1, 32px). */
+  "doc-title": {
+    size: "4xl",
+    lineHeight: 2.5,
+    weight: 650,
+    letterSpacing: "-0.015em",
+    family: "sans",
+  },
+  /** Document section heading (Final-Docs h2, 20px). */
+  "doc-heading": {
+    size: "20",
+    lineHeight: 1.6875,
+    weight: 650,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Document paragraph (Final-Docs `.prose`, 15.5px / 1.7). */
+  "doc-prose": {
+    size: "15p5",
+    lineHeight: 1.646875,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Document ordered list item (15.5px / 1.75). */
+  "doc-list": {
+    size: "15p5",
+    lineHeight: 1.6953125,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Document checklist item (15px). */
+  "doc-check": {
+    size: "15",
+    lineHeight: 1.359375,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Document callout (14.5px / 1.6). */
+  "doc-callout": {
+    size: "14p5",
+    lineHeight: 1.45,
+    weight: weights.regular,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Dialog title (Final-Docs share dialog, 18px). */
+  "dialog-title": {
+    size: "lg",
+    lineHeight: 1.51875,
+    weight: 650,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Initials in a 30px person avatar (share dialog people). */
+  "avatar-lg": {
+    size: "10p5",
+    lineHeight: 1,
+    weight: weights.bold,
+    letterSpacing: "0em",
     family: "sans",
   },
 } as const satisfies Record<string, TextRole>;

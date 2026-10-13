@@ -934,6 +934,67 @@ export const calendarTones: Record<ThemeAppearance, CalendarTones> = {
   "high-contrast": calendarLight,
 };
 
+/**
+ * Document page surfaces (Final-Docs `.nx`): the page sheet, body ink, the
+ * comment highlight, the info notice, the lane tints behind status chips in
+ * the embedded task table and the review dot. One fill per appearance,
+ * authored on the CSS emit grid so they render the mockup hex.
+ */
+export interface DocTones {
+  readonly page: Oklch;
+  readonly panel: Oklch;
+  readonly fileWord: Oklch;
+  readonly filePdf: Oklch;
+  readonly fileText: Oklch;
+  readonly body: Oklch;
+  readonly highlight: Oklch;
+  readonly notice: Oklch;
+  readonly chipTodo: Oklch;
+  readonly chipDoing: Oklch;
+  readonly chipReview: Oklch;
+  readonly chipDone: Oklch;
+  readonly dotReview: Oklch;
+  readonly modalScrim: Oklch;
+}
+
+const docLight: DocTones = {
+  page: oklch(1, 0, 89.9), // #FFFFFF
+  panel: oklch(1, 0, 89.9), // #FFFFFF
+  fileWord: oklch(0.461, 0.12, 258.7), // #2B579A
+  filePdf: oklch(0.535, 0.194, 18), // #C42340
+  fileText: oklch(0.458, 0.026, 259.2), // #4F5866
+  body: oklch(0.295, 0.018, 258.4), // #272D36
+  highlight: oklch(0.952, 0.057, 93.2), // #FCEFC4
+  notice: oklch(0.965, 0.014, 258.3), // #EEF4FD
+  chipTodo: oklch(0.949, 0.006, 264.5), // #ECEEF2
+  chipDoing: oklch(0.94, 0.022, 256.7), // #E2ECFA
+  chipReview: oklch(0.957, 0.036, 87.8), // #FBF0D6
+  chipDone: oklch(0.944, 0.021, 156.8), // #E2F1E7
+  dotReview: oklch(0.728, 0.151, 79.4), // #D99A00
+  modalScrim: oklch(0.208, 0.04, 265.8, 0.38), // rgba(15,23,42,.38)
+};
+
+export const docTones: Record<ThemeAppearance, DocTones> = {
+  light: docLight,
+  dark: {
+    page: oklch(0.199, 0.014, 258.4), // #12161C
+    panel: oklch(0.216, 0.016, 256.8), // #151A21
+    fileWord: oklch(0.461, 0.12, 258.7), // #2B579A
+    filePdf: oklch(0.535, 0.194, 18), // #C42340
+    fileText: oklch(0.458, 0.026, 259.2), // #4F5866
+    body: oklch(0.881, 0.012, 259.8), // #D3D8E0
+    highlight: oklch(0.834, 0.141, 85.4, 0.22), // rgba(242,193,78,.22)
+    notice: oklch(0.722, 0.148, 252.3, 0.1), // rgba(90,169,255,.1)
+    chipTodo: oklch(0.262, 0.021, 257.3), // #1E252F
+    chipDoing: oklch(0.281, 0.067, 262), // #16284A
+    chipReview: oklch(0.282, 0.027, 81.2), // #30281A
+    chipDone: oklch(0.284, 0.04, 163.2), // #153024
+    dotReview: oklch(0.834, 0.141, 85.4), // #F2C14E
+    modalScrim: oklch(0, 0, 0, 0.6), // rgba(0,0,0,.6)
+  },
+  "high-contrast": docLight,
+};
+
 /** Chart series order (identity colors, never status). */
 export const CHART_SERIES: readonly IdentityId[] = [
   "blue",
