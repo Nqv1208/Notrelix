@@ -26,7 +26,6 @@ namespace Notrelix.Application.Features.Governance.Authorization;
 public sealed class ResourceAccessSummaryService : IResourceAccessSummary
 {
     private const string BoardKind = "work-management.board";
-    private const int ManagerRank = 4;
 
     private readonly IExecutionContextReader _executionContext;
     private readonly IAccessFactsProvider _facts;
@@ -55,17 +54,17 @@ public sealed class ResourceAccessSummaryService : IResourceAccessSummary
     }
 
     /// <summary>
-    /// The single Board read the summary is decided for: the facts and the
-    /// decision are those of a <c>ViewBoard</c> request on the Board.
+    /// A Board request the summary is decided for: <c>ViewBoard</c> for the
+    /// summary itself, <c>ManageBoardPermission</c> for disclosing grants. The
+    /// facts and the decision are those the engine produces for that request.
     /// </summary>
-    private sealed record BoardReadProbe(Guid BoardId) : IRequirePermission
+    private sealed record BoardProbe(Guid BoardId, PermissionAction Action) : IRequirePermission
     {
-        public PermissionAction Action => PermissionAction.ViewBoard;
         public ResourceRef? Resource => ResourceRef.Create(ResourceKind.Create(BoardKind), BoardId);
     }
 
-    private static readonly RequestDescriptor BoardReadDescriptor = new(
-        typeof(BoardReadProbe),
+    private static readonly RequestDescriptor BoardProbeDescriptor = new(
+        typeof(BoardProbe),
         ApplicationRequestKind.Query,
         ApplicationPrincipalKind.Authenticated,
         ApplicationScopeKind.Resource,
@@ -88,9 +87,9 @@ public sealed class ResourceAccessSummaryService : IResourceAccessSummary
             throw new SecurityMisconfigurationException("The board access summary requires user, account and workspace context.");
         }
 
-        var probe = new BoardReadProbe(boardId);
-        var facts = await _facts.ResolveAsync(BoardReadDescriptor, context, probe, cancellationToken);
-        if (_policy.Evaluate(BoardReadDescriptor, context, facts, probe).Kind != AccessDecisionKind.Allowed)
+        var probe = new BoardProbe(boardId, PermissionAction.ViewBoard);
+        var facts = await _facts.ResolveAsync(BoardProbeDescriptor, context, probe, cancellationToken);
+        if (_policy.Evaluate(BoardProbeDescriptor, context, facts, probe).Kind != AccessDecisionKind.Allowed)
         {
             return null;
         }
@@ -126,7 +125,12 @@ public sealed class ResourceAccessSummaryService : IResourceAccessSummary
             sourceKind = AccessSourceKinds.Guest;
         }
 
-        var canManage = effective.Rank >= ManagerRank;
+        // Grants are disclosed exactly to a caller the engine lets manage the
+        // Board's permissions (the GetResourcePermissions gate), decided over
+        // that action's own facts (permission rules are action-specific).
+        var manageProbe = new BoardProbe(boardId, PermissionAction.ManageBoardPermission);
+        var manageFacts = await _facts.ResolveAsync(BoardProbeDescriptor, context, manageProbe, cancellationToken);
+        var canManage = _policy.Evaluate(BoardProbeDescriptor, context, manageFacts, manageProbe).Kind == AccessDecisionKind.Allowed;
         var spaceVisible = spaceId is { } placedIn
             && (await _visibility.VisibleSpaceIdsAsync(workspaceId, userId, cancellationToken)).Contains(placedIn);
 

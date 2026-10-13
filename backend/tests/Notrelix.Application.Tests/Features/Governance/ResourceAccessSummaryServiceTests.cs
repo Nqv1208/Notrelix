@@ -232,6 +232,60 @@ public sealed class ResourceAccessSummaryServiceTests
     }
 
     [Fact]
+    public async Task ManageRights_ComeFromEvaluatingManageBoardPermission_NotFromTheRank()
+    {
+        // A Commenter-level grantee whom an explicit permission rule allows to
+        // manage the Board's permissions may see the grants; the rank alone
+        // (Commenter) would hide them.
+        var commenter = Facts("Member", audience: "Private", explicitRank: 2);
+        _facts.Facts = commenter;
+        _facts.ByAction[Notrelix.Domain.Governance.Permissions.PermissionAction.ManageBoardPermission] =
+            commenter with { PermissionRules = [new AccessPermissionRule(0, "Allow")] };
+        _entries.Entries = new ResourceAccessEntries(
+            [new ResourceGrantEntry("User", Caller, 2, Grantor, null), new ResourceGrantEntry("User", Quan, 1, Grantor, null)],
+            [Reach(AccessReachSources.User, Caller), Reach(AccessReachSources.User, Quan)],
+            null);
+
+        var summary = await SummarizeAsync();
+
+        summary!.MyLevel.Should().Be(AccessLevels.Commenter);
+        summary.Sources.Should().Contain(new AccessSourceCount(AccessSourceKinds.User, Quan, "Lê Quang", 1));
+        _facts.Actions.Should().Contain(Notrelix.Domain.Governance.Permissions.PermissionAction.ManageBoardPermission);
+    }
+
+    [Fact]
+    public async Task ADenyRuleOnManageBoardPermission_HidesGrants_EvenFromAManagerRank()
+    {
+        var manager = Facts("Member", audience: "Private", explicitRank: 4);
+        _facts.Facts = manager;
+        _facts.ByAction[Notrelix.Domain.Governance.Permissions.PermissionAction.ManageBoardPermission] =
+            manager with { PermissionRules = [new AccessPermissionRule(0, "Deny")] };
+        _entries.Entries = new ResourceAccessEntries(
+            [new ResourceGrantEntry("User", Caller, 4, Grantor, null), new ResourceGrantEntry("User", Quan, 1, Grantor, null)],
+            [Reach(AccessReachSources.User, Caller), Reach(AccessReachSources.User, Quan)],
+            null);
+
+        var summary = await SummarizeAsync();
+
+        summary!.Sources.Should().Equal(new AccessSourceCount(AccessSourceKinds.User, null, null, 2));
+    }
+
+    [Fact]
+    public async Task GuestWithAManagerGrant_IsReportedAsEditor_AndSeesNoGrantNames()
+    {
+        _facts.Facts = Facts("Guest", audience: "Private", explicitRank: 4);
+        _entries.Entries = new ResourceAccessEntries(
+            [new ResourceGrantEntry("User", Caller, 4, Grantor, null), new ResourceGrantEntry("User", Quan, 1, Grantor, null)],
+            [Reach(AccessReachSources.User, Caller, isGuest: true), Reach(AccessReachSources.User, Quan)],
+            null);
+
+        var summary = await SummarizeAsync();
+
+        summary!.MyLevel.Should().Be(AccessLevels.Editor, "the reported level is the enforced level: a Guest is capped at Editor");
+        summary.Sources.Should().NotContain(s => s.Name != null);
+    }
+
+    [Fact]
     public async Task TeamGrant_IsTheTeamSource_WithItsGrantor()
     {
         _facts.Facts = Facts("Member", audience: "Private", explicitRank: 3);
@@ -378,15 +432,27 @@ public sealed class ResourceAccessSummaryServiceTests
     private sealed class FakeFacts : IAccessFactsProvider
     {
         public AccessFacts? Facts { get; set; }
+
+        /// <summary>Facts for a specific action (permission rules are action-specific).</summary>
+        public Dictionary<Notrelix.Domain.Governance.Permissions.PermissionAction, AccessFacts> ByAction { get; } = [];
         public object? LastRequest { get; private set; }
         public RequestDescriptor? LastDescriptor { get; private set; }
+        public List<Notrelix.Domain.Governance.Permissions.PermissionAction> Actions { get; } = [];
 
         public Task<AccessFacts> ResolveAsync(
             RequestDescriptor descriptor, ExecutionContextSnapshot context, object request, CancellationToken cancellationToken)
         {
-            LastDescriptor = descriptor;
-            LastRequest = request;
-            return Task.FromResult(Facts ?? throw new InvalidOperationException("facts not arranged"));
+            var action = ((IRequirePermission)request).Action;
+            Actions.Add(action);
+            if (action == Notrelix.Domain.Governance.Permissions.PermissionAction.ViewBoard)
+            {
+                LastDescriptor = descriptor;
+                LastRequest = request;
+            }
+
+            return Task.FromResult(ByAction.TryGetValue(action, out var specific)
+                ? specific
+                : Facts ?? throw new InvalidOperationException("facts not arranged"));
         }
     }
 
