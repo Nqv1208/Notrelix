@@ -69,7 +69,7 @@ export function KanbanAddCard({
         ref={openerRef}
         type="button"
         onClick={() => setIsOpen(true)}
-        className="flex h-8 w-full items-center gap-1.5 rounded-lg px-2 text-metadata font-medium text-muted-foreground transition-colors hover:bg-state-hover hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="flex h-8.5 w-full items-center gap-1.5 rounded-[9px] px-2 text-compact text-muted-foreground transition-colors hover:bg-popover hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         <Plus aria-hidden="true" className="size-4" />
         {fillCopy(copy.addTo, values)}
@@ -79,7 +79,7 @@ export function KanbanAddCard({
 
   return (
     <form
-      className="flex flex-col gap-2 rounded-xl bg-card p-2 shadow-xs"
+      className="flex flex-col gap-2 rounded-[11px] bg-popover p-2 shadow-card"
       onSubmit={(event) => {
         event.preventDefault();
         submit();

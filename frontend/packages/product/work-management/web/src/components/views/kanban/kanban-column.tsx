@@ -145,13 +145,13 @@ export function KanbanColumn({
         ref={setRefs}
         aria-label={name}
         data-lane-count={count}
-        className={cn("flex w-11 shrink-0 flex-col rounded-2xl p-1", tint)}
+        className={cn("flex w-11 shrink-0 flex-col rounded-xl p-1", tint)}
       >
         <button
           type="button"
           onClick={() => onCollapsedChange(false)}
           aria-label={fillCopy(copy.expand, { lane: name })}
-          className="flex flex-col items-center gap-2 rounded-xl py-2 text-label font-semibold text-foreground hover:bg-state-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="flex flex-col items-center gap-2 rounded-lg py-2 text-nav font-semibold text-foreground hover:bg-state-hover focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           <span
             aria-hidden="true"
@@ -162,7 +162,7 @@ export function KanbanColumn({
           </span>
           <span
             aria-hidden="true"
-            className="grid h-5.5 min-w-5.5 place-items-center rounded-full bg-card px-1.5 text-caption font-semibold text-muted-foreground"
+            className="grid h-5.5 min-w-5.5 place-items-center rounded-[11px] bg-popover px-1.5 text-caption font-semibold text-muted-foreground"
           >
             {count}
           </span>
@@ -177,7 +177,7 @@ export function KanbanColumn({
       aria-label={name}
       data-lane-count={count}
       className={cn(
-        "flex shrink-0 flex-col gap-2 rounded-2xl p-2 transition-shadow duration-150",
+        "flex shrink-0 flex-col gap-2 rounded-xl p-2 transition-shadow duration-150",
         kanbanColumnWidthClass,
         tint,
         isOver && "ring-2 ring-inset ring-primary",
@@ -188,12 +188,12 @@ export function KanbanColumn({
           aria-hidden="true"
           className={cn("size-2.25 shrink-0 rounded-full", dot)}
         />
-        <h2 className="min-w-0 truncate text-label font-semibold text-foreground">
+        <h2 className="min-w-0 truncate text-nav font-semibold text-foreground">
           {name}
         </h2>
         <span
           aria-hidden="true"
-          className="grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-full bg-card px-1.5 text-caption font-semibold text-muted-foreground"
+          className="grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] bg-popover px-1.5 text-caption font-semibold text-muted-foreground"
         >
           {count}
         </span>
@@ -203,7 +203,7 @@ export function KanbanColumn({
             <Button
               variant="ghost"
               size="icon-sm"
-              className="ml-auto"
+              className="ml-auto size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong"
               aria-label={fillCopy(copy.laneOptions, { lane: name })}
             >
               <MoreHorizontal aria-hidden="true" className="size-4" />
@@ -222,24 +222,26 @@ export function KanbanColumn({
         items={visibleCards.map((card) => card.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="flex flex-col gap-2">
-          {visibleCards.map((card) => (
-            <KanbanCard
-              key={card.id}
-              card={card}
-              now={now}
-              timeZone={timeZone}
-              copy={cardCopy}
-              selected={card.id === selectedItemId}
-              dragDisabled={!canDrag}
-              onOpenDetails={onOpenDetails}
-            />
-          ))}
-        </div>
+        {visibleCards.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {visibleCards.map((card) => (
+              <KanbanCard
+                key={card.id}
+                card={card}
+                now={now}
+                timeZone={timeZone}
+                copy={cardCopy}
+                selected={card.id === selectedItemId}
+                dragDisabled={!canDrag}
+                onOpenDetails={onOpenDetails}
+              />
+            ))}
+          </div>
+        ) : null}
       </SortableContext>
 
       {count === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-2 py-3.5 text-center text-metadata text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-line-strong px-2 py-3.5 text-center text-crumb text-meta-foreground">
           {filterActive ? copy.emptyFiltered : copy.empty}
         </p>
       ) : null}
@@ -252,7 +254,7 @@ export function KanbanColumn({
               lane.cards[KANBAN_LANE_VISIBLE_CARDS]?.id ?? null;
             setExpanded(true);
           }}
-          className="h-7.5 rounded-lg bg-card px-2 text-left text-metadata font-medium text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="h-7.5 rounded-md bg-popover px-2 text-left text-crumb font-medium text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           {pluralCopy(
             { one: copy.showMore_one, other: copy.showMore_other },

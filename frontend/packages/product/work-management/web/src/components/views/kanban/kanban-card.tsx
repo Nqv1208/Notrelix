@@ -12,37 +12,13 @@ import {
 } from "./kanban-card.copy";
 import {
   ITEM_LABEL_TONE_CLASS,
+  identityMarkClass,
   itemDueState,
   itemLabelTone,
   type ItemDueState,
 } from "../../shared/item-display";
 
 const defaultCopy = kanbanCardCopy("en");
-
-/** The identity tones of the design tokens, as literal classes for Tailwind. */
-const IDENTITY_MARK_CLASSES = [
-  "bg-identity-blue text-identity-blue-foreground",
-  "bg-identity-coral text-identity-coral-foreground",
-  "bg-identity-gold text-identity-gold-foreground",
-  "bg-identity-sage text-identity-sage-foreground",
-  "bg-identity-ember text-identity-ember-foreground",
-] as const;
-
-/**
- * A stable identity tone per person; the API's raw member colour is not used.
- * Local copy of `IdentityMark`/`identityToneFor` in features/workspace
- * (`web/shell/shell-link.tsx`, `core/model/navigation.ts`), the shared origin.
- */
-function identityMarkClass(seed: string): string {
-  let hash = 0;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) | 0;
-  }
-  return (
-    IDENTITY_MARK_CLASSES[Math.abs(hash) % IDENTITY_MARK_CLASSES.length] ??
-    IDENTITY_MARK_CLASSES[0]
-  );
-}
 
 function markFor(member: CardMember): string {
   const initials = member.initials.trim() || Array.from(member.name)[0] || "?";
@@ -52,7 +28,7 @@ function markFor(member: CardMember): string {
 const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
   today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
-  date: "font-medium text-muted-foreground",
+  date: "font-medium text-meta-foreground",
 };
 
 /**
@@ -162,14 +138,14 @@ export function KanbanCard({
       onPointerDown={onPointerDown}
       aria-current={selected ? "true" : undefined}
       className={cn(
-        "group relative flex cursor-pointer flex-col gap-2 rounded-xl bg-card p-3 shadow-xs transition-shadow hover:shadow-md",
-        selected && "shadow-md ring-2 ring-inset ring-primary",
+        "group relative flex cursor-pointer flex-col gap-[9px] rounded-[11px] bg-popover p-3 shadow-card transition-shadow hover:shadow-card-hover",
+        selected && "shadow-card-hover ring-2 ring-inset ring-primary",
         isDragging && "z-dropdown opacity-60",
       )}
     >
       <button
         type="button"
-        className="absolute inset-0 z-10 rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="absolute inset-0 z-10 rounded-[11px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         aria-label={card.title}
         aria-describedby={describedBy || undefined}
         data-card-id={card.id}
@@ -185,7 +161,7 @@ export function KanbanCard({
       {hasTop ? (
         <div
           id={`${descriptionId}-top`}
-          className="flex min-w-0 items-center gap-1.5 text-metadata text-muted-foreground"
+          className="flex min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
         >
           {label && labelTone ? (
             <>
@@ -193,7 +169,7 @@ export function KanbanCard({
               <span
                 data-label-tone={labelTone}
                 className={cn(
-                  "inline-flex h-5.5 min-w-0 items-center truncate rounded-md px-2 text-caption font-semibold",
+                  "inline-flex h-5.5 min-w-0 items-center truncate rounded-sm px-2 text-micro font-semibold",
                   ITEM_LABEL_TONE_CLASS[labelTone],
                 )}
               >
@@ -202,14 +178,16 @@ export function KanbanCard({
             </>
           ) : null}
           {itemKey ? (
-            <span className="ml-auto shrink-0 font-mono">{itemKey}</span>
+            <span className="ml-auto shrink-0 font-mono text-metadata leading-[1.45]">
+              {itemKey}
+            </span>
           ) : null}
         </div>
       ) : null}
 
       <h3
         className={cn(
-          "line-clamp-3 break-words text-label font-medium",
+          "line-clamp-3 break-words text-nav leading-[1.4]",
           isDone ? "text-muted-foreground" : "text-foreground",
         )}
       >
@@ -219,15 +197,15 @@ export function KanbanCard({
       {progress ? (
         <div
           data-child-progress=""
-          className="flex items-center gap-2 text-caption tabular-nums text-muted-foreground"
+          className="flex items-center gap-2 text-micro tabular-nums text-meta-foreground"
         >
           <span
             aria-hidden="true"
-            className="block h-1.25 flex-1 overflow-hidden rounded-full bg-muted"
+            className="block h-1.25 flex-1 overflow-hidden rounded-[3px] bg-state-hover-strong"
           >
             <span
               data-progress-fill=""
-              className="block h-full rounded-full bg-primary"
+              className="block h-full rounded-[3px] bg-primary"
               style={{ width: `${progressPercent}%` }}
             />
           </span>
@@ -246,13 +224,13 @@ export function KanbanCard({
       {hasMeta ? (
         <div
           id={`${descriptionId}-meta`}
-          className="flex min-w-0 flex-wrap items-center gap-1.5 text-metadata text-muted-foreground"
+          className="flex min-w-0 flex-wrap items-center gap-1.5 text-metadata text-meta-foreground"
         >
           {due && dueText ? (
             <span
               data-due={due.kind}
               className={cn(
-                "inline-flex h-5.5 items-center rounded-md px-1.5",
+                "inline-flex h-5.5 items-center gap-1 rounded-sm px-1.5",
                 DUE_CLASS[due.kind],
               )}
             >
@@ -266,7 +244,7 @@ export function KanbanCard({
             <span
               data-priority={priority}
               className={cn(
-                "inline-flex items-center gap-1 font-semibold",
+                "inline-flex items-center gap-1 leading-[1.45] font-semibold",
                 priority === "urgent"
                   ? "text-danger-text"
                   : "text-priority-high-text",
@@ -286,7 +264,7 @@ export function KanbanCard({
               <span
                 aria-hidden="true"
                 className={cn(
-                  "flex size-5.5 items-center justify-center rounded-full text-caption font-semibold select-none",
+                  "flex size-5.5 items-center justify-center rounded-full text-mark-xs select-none",
                   identityMarkClass(assignee.userId || assignee.id),
                 )}
               >

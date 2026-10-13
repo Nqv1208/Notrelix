@@ -5,6 +5,33 @@
  * one the runtime time zone is used, the same default everywhere.
  */
 
+// ─── Person mark tone ───────────────────────────────────────────────────────
+
+/** The identity tones of the design tokens, as literal classes for Tailwind. */
+const IDENTITY_MARK_CLASSES = [
+  "bg-identity-blue text-identity-blue-foreground",
+  "bg-identity-coral text-identity-coral-foreground",
+  "bg-identity-gold text-identity-gold-foreground",
+  "bg-identity-sage text-identity-sage-foreground",
+  "bg-identity-ember text-identity-ember-foreground",
+] as const;
+
+/**
+ * A stable identity tone per person; the API's raw member colour is not used.
+ * Local copy of `IdentityMark`/`identityToneFor` in features/workspace
+ * (`web/shell/shell-link.tsx`, `core/model/navigation.ts`), the shared origin.
+ */
+export function identityMarkClass(seed: string): string {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) | 0;
+  }
+  return (
+    IDENTITY_MARK_CLASSES[Math.abs(hash) % IDENTITY_MARK_CLASSES.length] ??
+    IDENTITY_MARK_CLASSES[0]
+  );
+}
+
 // ─── Label tone ─────────────────────────────────────────────────────────────
 
 /** The six label tones of the design tokens (`--label-<tone>`). */
