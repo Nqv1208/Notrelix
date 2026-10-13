@@ -9,7 +9,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Dupl
 [IdempotencyOperation("work-management.board-groups.duplicate-board-group.v1")]
 public record DuplicateBoardGroupCommand(Guid GroupId) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // Duplicating a group edits Board content (Editor), not Board management.
+    public PermissionAction Action => PermissionAction.CreateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
 }
 

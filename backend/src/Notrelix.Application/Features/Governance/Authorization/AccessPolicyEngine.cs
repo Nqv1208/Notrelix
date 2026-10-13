@@ -473,7 +473,8 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return new PlacedResourceAccess(AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found."), 0);
         }
 
-        return level.Rank < RequiredRank(permission.Action)
+        var boardDecided = permission.Resource?.Kind.Value == "work-management.board" || facts.ParentBoardId is not null;
+        return level.Rank < RequiredRank(permission.Action, boardDecided)
             ? new PlacedResourceAccess(
                 AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action."),
                 level.Rank)
@@ -604,7 +605,21 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         return Math.Max(fromSpaceRole, fromOpenSpace);
     }
 
-    /// <summary>GOV-027 action thresholds for access that comes from a Space level.</summary>
+    /// <summary>
+    /// GOV-027 action thresholds, applied to the level from every source.
+    /// <c>ManageBoard</c> decided on a Board (the Board or one of its children) is
+    /// Board management — settings and title, visibility, moving, archiving,
+    /// deleting or restoring the Board, and its members — and needs Manager;
+    /// Editors only edit content, so Board content commands declare the content
+    /// action they perform (groups: CreateItem/UpdateItem; labels, forms,
+    /// templates, relations: CreateField/UpdateField/DeleteField; default view and
+    /// saved filters: UpdateBoardView/CreateBoardView). Page edits that declare
+    /// <c>ManageBoard</c> on a Page keep the Editor threshold.
+    /// </summary>
+    private static int RequiredRank(PermissionAction action, bool boardDecided) =>
+        action == PermissionAction.ManageBoard && boardDecided ? ManagerRank : RequiredRank(action);
+
+    /// <summary>GOV-027 action thresholds by action.</summary>
     private static int RequiredRank(PermissionAction action) => action switch
     {
         PermissionAction.ViewBoard or PermissionAction.ViewPage

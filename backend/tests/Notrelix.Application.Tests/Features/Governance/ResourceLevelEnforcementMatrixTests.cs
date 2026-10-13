@@ -36,7 +36,8 @@ public sealed class ResourceLevelEnforcementMatrixTests
         (PermissionAction.UpdateItem, 3),
         (PermissionAction.CreateItem, 3),
         (PermissionAction.CreateField, 3),
-        (PermissionAction.ManageBoard, 3),
+        // Managing the Board needs Manager (Editors only edit content).
+        (PermissionAction.ManageBoard, 4),
         (PermissionAction.ManageBoardPermission, 4),
     ];
 

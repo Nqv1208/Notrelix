@@ -15,7 +15,9 @@ public record CreateApprovalRequestCommand(
 {
     internal const string BoardKind = "work-management.board";
 
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // Requesting an approval adds Board content (Editor), not Board management.
+
+    public PermissionAction Action => PermissionAction.CreateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create(BoardKind), TargetResourceId);
 }
 

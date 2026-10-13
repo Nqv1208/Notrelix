@@ -94,11 +94,17 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
         var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
         var colleague = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Colleague");
         var board = await _host.SeedBoardAsync(stack, "Shared", BoardVisibility.Private);
+        var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Deliverable");
         await _host.SeedResourcePermissionAsync(stack, BoardKind, board, PermissionSubjectType.User, guest, PermissionLevel.Manager);
 
         using var provider = CreateProvider(stack, guest);
 
-        await UpdateBoardAsync(provider, board, "Edited by the guest");
+        // Editor level: the Guest edits content. Renaming the Board is Board
+        // management (Manager), which a Guest never holds (previously the rename
+        // was the Editor probe here).
+        await UpdateItemAsync(provider, item, "Edited by the guest");
+        await FluentActions.Awaiting(() => UpdateBoardAsync(provider, board, "Renamed by the guest"))
+            .Should().ThrowAsync<AppForbidden>();
         await FluentActions.Awaiting(() => OrgTreeTestHost.QueryAsync(provider, new GetResourcePermissionsQuery(BoardKind, board)))
             .Should().ThrowAsync<AppForbidden>("a Guest never manages permissions (GOV-030)");
         await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider,
@@ -115,10 +121,15 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
         var space = await _host.SeedSpaceAsync(stack, "Engineering", SpaceVisibility.Private, stack.OwnerId,
             transition: s => s.AddMember(SpaceMemberSubjectType.User, editor, SpaceRole.Member, stack.OwnerId, OrgTreeTestHost.BaseTime));
         var board = await _host.SeedBoardAsync(stack, "Sprint", spaceId: space);
+        var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Story");
 
         using var provider = CreateProvider(stack, editor);
 
-        await UpdateBoardAsync(provider, board, "Sprint 42");
+        // Editor level: content edits pass, Board management does not (previously
+        // the Board rename was the Editor probe here).
+        await UpdateItemAsync(provider, item, "Story 42");
+        await FluentActions.Awaiting(() => UpdateBoardAsync(provider, board, "Sprint 42"))
+            .Should().ThrowAsync<AppForbidden>("renaming the Board is Board management");
         await FluentActions.Awaiting(() => OrgTreeTestHost.QueryAsync(provider, new GetResourcePermissionsQuery(BoardKind, board)))
             .Should().ThrowAsync<AppForbidden>();
         (await OrgTreeTestHost.QueryAsync(provider, new GetBoardAccessQuery(board))).MyLevel.Should().Be("editor");
@@ -150,6 +161,12 @@ public sealed class ResourceLevelEnforcementIntegrationTests : IAsyncLifetime
         var access = await FluentActions.Awaiting(() => OrgTreeTestHost.SendAsync(provider, new GetBoardAccessQuery(board)))
             .Should().ThrowAsync<AppNotFound>();
         access.Which.GetType().Should().Be(full.Which.GetType());
+    }
+
+    private async Task UpdateItemAsync(ServiceProvider provider, Guid itemId, string title)
+    {
+        var version = await _host.ReadAsync(c => c.BoardItems.Where(i => i.Id == itemId).Select(i => i.Version).SingleAsync());
+        await OrgTreeTestHost.SendAsync(provider, new Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem.UpdateBoardItemCommand(itemId, title, null, null, version));
     }
 
     private async Task UpdateBoardAsync(ServiceProvider provider, Guid boardId, string title)

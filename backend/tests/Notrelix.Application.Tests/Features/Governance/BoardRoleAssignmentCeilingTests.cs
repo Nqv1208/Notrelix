@@ -6,10 +6,10 @@ namespace Notrelix.Application.Tests.Features.Governance;
 
 /// <summary>
 /// Board roles carry levels (Owner/Admin → Manager), so assigning a role is a
-/// grant: a caller may not add or change a board member to a role whose level
-/// exceeds the caller's own effective level on the Board, and a caller below
-/// Manager may not raise their own role. Managers and workspace Owners are
-/// unaffected; roles at or below the caller's level keep working.
+/// grant bounded by the caller's own level. Managing members is Board
+/// management, which needs Manager: below Manager no one adds members or
+/// changes their roles (including their own). Managers and workspace Owners
+/// keep full rights, up to the ceiling of their own level.
 /// </summary>
 public sealed class BoardRoleAssignmentCeilingTests
 {
@@ -39,24 +39,26 @@ public sealed class BoardRoleAssignmentCeilingTests
     [InlineData(BoardRole.Member)]
     [InlineData(BoardRole.Observer)]
     [InlineData(BoardRole.Guest)]
-    public void Editor_KeepsAssigningRolesAtOrBelowTheirLevel_ToOthers(BoardRole role)
+    public void Editor_CannotManageMembers_EvenAtOrBelowTheirLevel(BoardRole role)
     {
+        // Previously an Editor could assign roles at or below Editor. Managing
+        // members is Board management, which now needs Manager.
         var editor = Facts("Member");
 
-        Add(editor, Colleague, role).Should().Be(AccessDecisionKind.Allowed);
-        Change(editor, Colleague, role).Should().Be(AccessDecisionKind.Allowed);
+        Add(editor, Colleague, role).Should().Be(AccessDecisionKind.Forbidden);
+        Change(editor, Colleague, role).Should().Be(AccessDecisionKind.Forbidden);
     }
 
     [Fact]
-    public void Observer_CannotRaiseTheirOwnRole_EvenWithinTheirLevel()
+    public void Observer_CannotChangeAnyRole()
     {
-        // Workspace default gives Editor, but the board role Observer is
-        // read-only on items; changing it to Member would lift that limit.
+        // Workspace default gives Editor, still below the Manager needed to
+        // manage members; previously the non-raising changes were allowed.
         var observer = Facts("Member", boardRole: "Observer");
 
         Change(observer, Caller, BoardRole.Member).Should().Be(AccessDecisionKind.Forbidden);
-        Change(observer, Caller, BoardRole.Observer).Should().Be(AccessDecisionKind.Allowed, "not a raise");
-        Change(observer, Colleague, BoardRole.Member).Should().Be(AccessDecisionKind.Allowed, "others at or below the caller's level");
+        Change(observer, Caller, BoardRole.Observer).Should().Be(AccessDecisionKind.Forbidden);
+        Change(observer, Colleague, BoardRole.Member).Should().Be(AccessDecisionKind.Forbidden);
     }
 
     [Fact]
@@ -79,21 +81,25 @@ public sealed class BoardRoleAssignmentCeilingTests
     }
 
     [Fact]
-    public void Guest_WithAManagerGrant_IsCapped_AndCannotAssignManagerRoles()
+    public void Guest_WithAManagerGrant_IsCapped_AndCannotManageMembers()
     {
+        // A Guest is capped at Editor, below the Manager needed to manage
+        // members (previously a Guest could add members up to Editor).
         var guest = Facts("Guest", explicitRank: 4);
 
         Add(guest, Colleague, BoardRole.Admin).Should().Be(AccessDecisionKind.Forbidden);
-        Add(guest, Colleague, BoardRole.Member).Should().Be(AccessDecisionKind.Allowed);
+        Add(guest, Colleague, BoardRole.Member).Should().Be(AccessDecisionKind.Forbidden);
     }
 
     [Fact]
     public void ACallerCannotChangeAMemberWhoHoldsAHigherGrant()
     {
-        var editor = Facts("Member") with { TargetPermissionRank = 4 };
+        var manager = Facts("Member", audience: "Private", explicitRank: 4) with { TargetPermissionRank = 5 };
 
-        Change(editor, Colleague, BoardRole.Observer).Should().Be(AccessDecisionKind.Forbidden,
-            "the target's existing Manager grant raises the ceiling, as for resource permissions");
+        Change(manager, Colleague, BoardRole.Observer).Should().Be(AccessDecisionKind.Forbidden,
+            "the target's existing Owner-level grant raises the ceiling above the Manager's level");
+        Change(Facts("Member") with { TargetPermissionRank = 4 }, Colleague, BoardRole.Observer)
+            .Should().Be(AccessDecisionKind.Forbidden);
     }
 
     private static AccessDecisionKind Add(AccessFacts facts, Guid userId, BoardRole role)

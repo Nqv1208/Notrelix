@@ -32,9 +32,11 @@ public sealed class BoardChildAccessMatrixTests
         ("work-management.board-item", PermissionAction.AssignItem, true),
         ("work-management.board-field", PermissionAction.UpdateField, false),
         ("work-management.board-field", PermissionAction.DeleteField, false),
-        ("work-management.board-group", PermissionAction.ManageBoard, false),
+        // Group and label commands declare the content action they perform
+        // (ManageBoard on a Board is Manager-only Board management).
+        ("work-management.board-group", PermissionAction.UpdateItem, false),
         ("work-management.board-view", PermissionAction.UpdateBoardView, false),
-        ("work-management.label", PermissionAction.ManageBoard, false),
+        ("work-management.label", PermissionAction.UpdateField, false),
         ("work-management.checklist", PermissionAction.UpdateItem, false),
         ("work-management.checklist-item", PermissionAction.UpdateItem, false),
     ];

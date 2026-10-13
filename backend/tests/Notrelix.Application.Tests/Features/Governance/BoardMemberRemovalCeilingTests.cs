@@ -5,11 +5,11 @@ using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMe
 namespace Notrelix.Application.Tests.Features.Governance;
 
 /// <summary>
-/// Acting on another member is bounded like assigning a role: a caller below
-/// Manager cannot remove (or demote) a board member whose level — the higher of
-/// their board role and any explicit grant — exceeds the caller's own level on
-/// the Board. Managers and workspace Owners are unaffected; members at or below
-/// the caller's level can still be removed, and a caller can leave the Board.
+/// Removing members is Board management, which needs Manager: below Manager no
+/// one removes a member (including leaving the Board, previously allowed at or
+/// below the caller's level). A Manager removes members up to the ceiling of
+/// their own level (the target's level is the higher of their board role and
+/// any explicit grant); workspace Owners remove anyone.
 /// </summary>
 public sealed class BoardMemberRemovalCeilingTests
 {
@@ -25,16 +25,21 @@ public sealed class BoardMemberRemovalCeilingTests
     public static TheoryData<string, string?, int?, AccessDecisionKind> Removals() => new()
     {
         // caller source, target board role, target explicit grant rank, expected
+        // Below Manager every removal is refused (previously members at or below
+        // the Editor's level could be removed).
         { "editor", "Owner", null, AccessDecisionKind.Forbidden },
         { "editor", "Admin", null, AccessDecisionKind.Forbidden },
         { "editor", "Member", 4, AccessDecisionKind.Forbidden },
-        { "editor", "Member", null, AccessDecisionKind.Allowed },
-        { "editor", "Observer", null, AccessDecisionKind.Allowed },
-        { "editor", "Guest", null, AccessDecisionKind.Allowed },
-        { "editor", null, null, AccessDecisionKind.Allowed },
+        { "editor", "Member", null, AccessDecisionKind.Forbidden },
+        { "editor", "Observer", null, AccessDecisionKind.Forbidden },
+        { "editor", "Guest", null, AccessDecisionKind.Forbidden },
+        { "editor", null, null, AccessDecisionKind.Forbidden },
         { "guest with a Manager grant", "Owner", null, AccessDecisionKind.Forbidden },
+        { "guest with a Manager grant", "Observer", null, AccessDecisionKind.Forbidden },
         { "manager", "Owner", null, AccessDecisionKind.Allowed },
         { "manager", "Admin", 4, AccessDecisionKind.Allowed },
+        { "manager", "Member", null, AccessDecisionKind.Allowed },
+        { "manager", "Member", 5, AccessDecisionKind.Forbidden },
         { "workspace owner", "Owner", 5, AccessDecisionKind.Allowed },
     };
 
@@ -48,11 +53,12 @@ public sealed class BoardMemberRemovalCeilingTests
     }
 
     [Fact]
-    public void AnEditor_CanLeaveTheBoard()
+    public void AnEditor_CannotRemoveThemselvesEither()
     {
+        // Leaving is removing a member: Board management, Manager only.
         var facts = CallerFacts("editor") with { ResourceMemberRole = "Member", TargetBoardMemberRole = "Member" };
 
-        Remove(facts, Caller).Should().Be(AccessDecisionKind.Allowed);
+        Remove(facts, Caller).Should().Be(AccessDecisionKind.Forbidden);
     }
 
     [Fact]

@@ -7,7 +7,8 @@ namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.UpdateLab
 public record UpdateLabelCommand(Guid LabelId, string? Name, string? Color)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // A label is part of the Board schema: an Editor change, not Board management.
+    public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.label"), LabelId);
 }
 

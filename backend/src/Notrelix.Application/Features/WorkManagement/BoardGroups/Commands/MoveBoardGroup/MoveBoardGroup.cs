@@ -13,7 +13,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Move
 public record MoveBoardGroupCommand(Guid GroupId, long ExpectedVersion, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // Moving a group edits Board content (Editor), not Board management.
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
 }
 

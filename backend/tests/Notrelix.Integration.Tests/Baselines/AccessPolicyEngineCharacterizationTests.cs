@@ -743,7 +743,11 @@ public sealed class AccessPolicyEngineCharacterizationTests
     [Fact]
     public void PlacedBoard_InAnOpenSpace_KeepsTheWorkspaceMemberDefault_ButNotForGuests()
     {
-        ResourceDecision(Placed("Member", spaceIsOpen: true), PermissionAction.ManageBoard, BoardKind).Should().Be(AccessDecisionKind.Allowed);
+        // The open-Space default is Editor: content edits pass. Managing the Board
+        // (ManageBoard on a Board) now needs Manager, so it is refused for this
+        // default; previously ManageBoard was an Editor action and was Allowed here.
+        ResourceDecision(Placed("Member", spaceIsOpen: true), PermissionAction.CreateItem, BoardKind).Should().Be(AccessDecisionKind.Allowed);
+        ResourceDecision(Placed("Member", spaceIsOpen: true), PermissionAction.ManageBoard, BoardKind).Should().Be(AccessDecisionKind.Forbidden);
         ResourceDecision(Placed("Guest", spaceIsOpen: true), PermissionAction.ViewBoard, BoardKind).Should().Be(AccessDecisionKind.NotFound);
     }
 
@@ -751,8 +755,12 @@ public sealed class AccessPolicyEngineCharacterizationTests
     [InlineData("Viewer", PermissionAction.ViewBoard, AccessDecisionKind.Allowed)]
     [InlineData("Viewer", PermissionAction.CreateComment, AccessDecisionKind.Forbidden)]
     [InlineData("Viewer", PermissionAction.ManageBoard, AccessDecisionKind.Forbidden)]
-    [InlineData("Member", PermissionAction.ManageBoard, AccessDecisionKind.Allowed)]
+    // A Space Member is an Editor: content passes, Board management (ManageBoard
+    // on a Board, now Manager) is refused; previously ManageBoard was Allowed here.
+    [InlineData("Member", PermissionAction.CreateItem, AccessDecisionKind.Allowed)]
+    [InlineData("Member", PermissionAction.ManageBoard, AccessDecisionKind.Forbidden)]
     [InlineData("Member", PermissionAction.ManageBoardPermission, AccessDecisionKind.Forbidden)]
+    [InlineData("Admin", PermissionAction.ManageBoard, AccessDecisionKind.Allowed)]
     [InlineData("Admin", PermissionAction.ManageBoardPermission, AccessDecisionKind.Allowed)]
     public void PlacedBoard_SpaceRoleLevels_GateTheAction_WhenTheyAreTheOnlyAccess(string spaceRole, PermissionAction action, AccessDecisionKind expected)
     {

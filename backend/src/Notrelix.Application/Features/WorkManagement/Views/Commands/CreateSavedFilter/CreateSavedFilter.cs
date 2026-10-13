@@ -7,7 +7,8 @@ namespace Notrelix.Application.Features.WorkManagement.Views.Commands.CreateSave
 public record CreateSavedFilterCommand(Guid BoardId, string Name, List<FilterRule>? Rules = null, Guid? ViewId = null)
     : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // A saved filter is a view (Editor), not Board management.
+    public PermissionAction Action => PermissionAction.CreateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 

@@ -26,7 +26,11 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         "work.board_members",
     };
 
-    /// <summary>Pinned action of every active (non-retired) P3 request.</summary>
+    /// <summary>
+    /// Pinned action of every active (non-retired) P3 request. ManageBoard on a
+    /// Board is Board management and needs Manager; group and label commands
+    /// edit Board content, so they pin the content action they perform (Editor).
+    /// </summary>
     private static readonly IReadOnlyDictionary<string, PermissionAction> Matrix = new Dictionary<string, PermissionAction>(StringComparer.Ordinal)
     {
         ["Boards.GetBoardQuery"] = PermissionAction.ViewBoard,
@@ -76,13 +80,13 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["BoardFields.RemoveFieldOptionCommand"] = PermissionAction.UpdateField,
         ["BoardFields.MoveFieldOptionCommand"] = PermissionAction.UpdateField,
 
-        ["BoardGroups.CreateBoardGroupCommand"] = PermissionAction.ManageBoard,
-        ["BoardGroups.UpdateBoardGroupCommand"] = PermissionAction.ManageBoard,
-        ["BoardGroups.MoveBoardGroupCommand"] = PermissionAction.ManageBoard,
-        ["BoardGroups.DuplicateBoardGroupCommand"] = PermissionAction.ManageBoard,
-        ["BoardGroups.ArchiveBoardGroupCommand"] = PermissionAction.ManageBoard,
-        ["BoardGroups.UnarchiveBoardGroupCommand"] = PermissionAction.ManageBoard,
-        ["BoardGroups.DeleteBoardGroupCommand"] = PermissionAction.ManageBoard,
+        ["BoardGroups.CreateBoardGroupCommand"] = PermissionAction.CreateItem,
+        ["BoardGroups.UpdateBoardGroupCommand"] = PermissionAction.UpdateItem,
+        ["BoardGroups.MoveBoardGroupCommand"] = PermissionAction.UpdateItem,
+        ["BoardGroups.DuplicateBoardGroupCommand"] = PermissionAction.CreateItem,
+        ["BoardGroups.ArchiveBoardGroupCommand"] = PermissionAction.UpdateItem,
+        ["BoardGroups.UnarchiveBoardGroupCommand"] = PermissionAction.UpdateItem,
+        ["BoardGroups.DeleteBoardGroupCommand"] = PermissionAction.UpdateItem,
 
         ["Checklists.GetChecklistsQuery"] = PermissionAction.ViewBoard,
         ["Checklists.CreateChecklistCommand"] = PermissionAction.UpdateItem,
@@ -98,9 +102,9 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["BoardSchema.GetBoardSchemaQuery"] = PermissionAction.ViewBoard,
 
         ["Labels.GetLabelsQuery"] = PermissionAction.ViewBoard,
-        ["Labels.CreateLabelCommand"] = PermissionAction.ManageBoard,
-        ["Labels.UpdateLabelCommand"] = PermissionAction.ManageBoard,
-        ["Labels.DeleteLabelCommand"] = PermissionAction.ManageBoard,
+        ["Labels.CreateLabelCommand"] = PermissionAction.CreateField,
+        ["Labels.UpdateLabelCommand"] = PermissionAction.UpdateField,
+        ["Labels.DeleteLabelCommand"] = PermissionAction.DeleteField,
         ["Labels.AddLabelToBoardItemCommand"] = PermissionAction.UpdateItem,
         ["Labels.RemoveLabelFromBoardItemCommand"] = PermissionAction.UpdateItem,
     };

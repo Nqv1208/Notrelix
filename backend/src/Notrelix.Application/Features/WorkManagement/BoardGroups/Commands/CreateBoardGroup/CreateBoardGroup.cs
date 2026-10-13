@@ -8,7 +8,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Crea
 [IdempotencyOperation("work-management.board-groups.create-board-group.v1")]
 public record CreateBoardGroupCommand(Guid BoardId, string Title, string? Color = null, Guid? PreviousSiblingId = null, Guid? NextSiblingId = null) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public PermissionAction Action => PermissionAction.ManageBoard;
+    // Adding a group edits Board content (Editor), not Board management.
+    public PermissionAction Action => PermissionAction.CreateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 

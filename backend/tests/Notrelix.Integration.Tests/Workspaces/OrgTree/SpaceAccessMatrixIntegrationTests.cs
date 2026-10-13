@@ -190,9 +190,17 @@ public sealed class SpaceAccessMatrixIntegrationTests : IAsyncLifetime
 
         using (var member = _host.CreateProvider(org.Stack.AccountId, org.TeamMember))
         {
-            await UpdateBoardAsync(member, org.AccountingBoard, "Ledger 2027");
+            // Renaming the Board is Board management, which needs Manager; a Space
+            // Member is an Editor (content only). Previously this rename passed.
+            var rename = () => UpdateBoardAsync(member, org.AccountingBoard, "Ledger 2027");
+            await rename.Should().ThrowAsync<AppForbidden>("a Space Member edits content, not the Board's settings");
             (await OrgTreeTestHost.QueryAsync(member, new GetSpaceTreeQuery(org.Stack.WorkspaceId)))
                 .Single(n => n.Id == org.Accounting).AccessLevel.Should().Be("Editor");
+        }
+
+        using (var spaceAdmin = _host.CreateProvider(org.Stack.AccountId, org.AccountingAdmin))
+        {
+            await UpdateBoardAsync(spaceAdmin, org.AccountingBoard, "Ledger 2027");
         }
 
         using (var grantee = _host.CreateProvider(org.Stack.AccountId, org.ItEngineer))

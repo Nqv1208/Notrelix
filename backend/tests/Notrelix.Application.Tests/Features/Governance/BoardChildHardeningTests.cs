@@ -56,7 +56,8 @@ public sealed class BoardChildHardeningTests
     [Fact]
     public void ABoardChild_KeepsItsOwnVocabulary()
     {
-        var editor = Facts("Member", audience: "Private", explicitRank: 3) with { ParentBoardId = BoardId, IsBoardChild = true };
+        // A Manager, since ManageBoard on a Board child is Board management.
+        var editor = Facts("Member", audience: "Private", explicitRank: 4) with { ParentBoardId = BoardId, IsBoardChild = true };
 
         foreach (var action in new[]
                  {

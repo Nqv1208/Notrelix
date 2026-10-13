@@ -5,6 +5,9 @@ using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetRe
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.DeleteBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardVisibility;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
@@ -60,7 +63,11 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
         await FluentActions.Awaiting(() => OrgTreeTestHost.QueryAsync(provider, new GetResourcePermissionsQuery(BoardKind, board)))
             .Should().ThrowAsync<AppForbidden>("no path to Manager remains");
 
-        await OrgTreeTestHost.SendIdempotentAsync(provider, new AddBoardMemberCommand(board, colleague, BoardRole.Member));
+        // Managing members is Board management (Manager): previously an Editor
+        // could add a member at or below Editor; now it is refused too.
+        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new AddBoardMemberCommand(board, colleague, BoardRole.Member)))
+            .Should().ThrowAsync<AppForbidden>();
+        (await _host.ReadAsync(c => c.BoardMembers.CountAsync(m => m.BoardId == board))).Should().Be(0, "a refused add changes nothing");
     }
 
     [Fact]
@@ -102,7 +109,10 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
             await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardMemberRoleCommand(board, boardOwner, BoardRole.Observer)))
                 .Should().ThrowAsync<AppForbidden>();
 
-            await OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, plain));
+            // Removing members is Board management (Manager): previously an Editor
+            // could remove a member at or below Editor; now it is refused too.
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, plain)))
+                .Should().ThrowAsync<AppForbidden>();
         }
 
         using (var provider = CreateProvider(stack, manager))
@@ -111,7 +121,51 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
         }
 
         var remaining = await _host.ReadAsync(c => c.BoardMembers.Where(m => m.BoardId == board).Select(m => m.UserId).ToListAsync());
-        remaining.Should().BeEquivalentTo([granted]);
+        remaining.Should().BeEquivalentTo([granted, plain], "only the Manager's removal took effect");
+    }
+
+    [Fact]
+    public async Task OnlyAManagerManagesTheBoard_EditorsAndGuestsEditContentOnly()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
+        var colleague = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Colleague");
+        var manager = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Manager");
+        var board = await _host.SeedBoardAsync(stack, "Roadmap"); // unplaced, Workspace-visible: members are Editors
+        var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Ship it");
+        await _host.SeedResourcePermissionAsync(stack, BoardKind, board, PermissionSubjectType.User, guest, PermissionLevel.Manager);
+        await _host.SeedResourcePermissionAsync(stack, BoardKind, board, PermissionSubjectType.User, manager, PermissionLevel.Manager);
+
+        foreach (var editor in new[] { member, guest })
+        {
+            using var provider = CreateProvider(stack, editor);
+
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new ArchiveBoardCommand(board)))
+                .Should().ThrowAsync<AppForbidden>("archiving the Board is a Manager action");
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new DeleteBoardCommand(board)))
+                .Should().ThrowAsync<AppForbidden>();
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardVisibilityCommand(board, BoardVisibility.Private)))
+                .Should().ThrowAsync<AppForbidden>();
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new AddBoardMemberCommand(board, colleague, BoardRole.Observer)))
+                .Should().ThrowAsync<AppForbidden>("managing members is a Manager action");
+
+            await UpdateItemAsync(provider, item, $"Edited by {editor}");
+        }
+
+        var unchanged = await _host.ReadAsync(async c =>
+        {
+            var b = await c.Boards.IgnoreQueryFilters().SingleAsync(x => x.Id == board);
+            var members = await c.BoardMembers.CountAsync(m => m.BoardId == board);
+            return (b.IsArchived, b.IsDeleted, b.Visibility, members);
+        });
+        unchanged.Should().Be((false, false, BoardVisibility.Workspace, 0), "refused management changes nothing");
+
+        using (var provider = CreateProvider(stack, manager))
+        {
+            await OrgTreeTestHost.SendIdempotentAsync(provider, new AddBoardMemberCommand(board, colleague, BoardRole.Observer));
+            await OrgTreeTestHost.SendIdempotentAsync(provider, new ArchiveBoardCommand(board));
+        }
     }
 
     [Fact]
