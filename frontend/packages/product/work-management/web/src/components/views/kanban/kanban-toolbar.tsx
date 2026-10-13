@@ -1,12 +1,12 @@
 import { Plus, Search, X } from "lucide-react";
 import {
   Button,
+  cn,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-  Input,
 } from "@notrelix/ui-web";
 import {
   KANBAN_FILTER_PRIORITIES,
@@ -18,6 +18,11 @@ import {
   type KanbanFilterOption,
   type KanbanToolbarFilterOptions,
 } from "./kanban-filter-menu";
+import {
+  kanbanOutlineButtonClass,
+  kanbanPillClass,
+  kanbanPrimaryButtonClass,
+} from "./kanban-chrome";
 import type { KanbanToolbarCopy } from "./kanban-toolbar.copy";
 
 /** A field the board can be grouped by: the Status field or a Select field. */
@@ -133,18 +138,15 @@ export function KanbanToolbar({
   return (
     <div data-kanban-toolbar="">
       <div className="flex flex-wrap items-center gap-1.5 py-2.5">
-        <label className="relative block w-50 max-w-full">
-          <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
+        <label className="flex h-8 w-50 max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring">
+          <Search className="size-4 shrink-0" aria-hidden="true" />
+          <input
             type="search"
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={copy.search.placeholder}
             aria-label={copy.search.label}
-            className="h-8 pl-8"
+            className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
           />
         </label>
 
@@ -156,19 +158,19 @@ export function KanbanToolbar({
         />
 
         {segments.length > 0 ? (
-          <span className="inline-flex h-8 min-w-0 max-w-full items-center rounded-md bg-state-selected pl-2.5 text-sm font-semibold text-state-selected-foreground">
+          <span className="inline-flex h-8 min-w-0 max-w-full items-center rounded-[7px] bg-state-selected pl-2.5 text-compact font-semibold text-state-selected-foreground">
             <span className="min-w-0 truncate">
               {segments.join(copy.separator)}
             </span>
             <button
               type="button"
-              className="grid h-8 w-7 shrink-0 place-items-center rounded-r-md hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-ring"
+              className="grid h-8 w-7 shrink-0 place-items-center rounded-r-[7px] hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
               aria-label={fill(copy.filter.clear, {
                 filters: segments.join(copy.filter.listSeparator),
               })}
               onClick={() => onFilterChange(emptyKanbanFilter())}
             >
-              <X className="size-3.5" aria-hidden="true" />
+              <X className="size-3.25" aria-hidden="true" />
             </button>
           </span>
         ) : null}
@@ -178,7 +180,7 @@ export function KanbanToolbar({
             <Button
               variant="ghost"
               size="sm"
-              className="min-w-0 text-muted-foreground"
+              className={cn("min-w-0", kanbanPillClass)}
               disabled={!groupBy}
             >
               {copy.groupBy.label}
@@ -211,7 +213,11 @@ export function KanbanToolbar({
         <span className="flex-1" />
 
         {canAdd ? (
-          <Button size="sm" onClick={onAddItem}>
+          <Button
+            size="sm"
+            className={kanbanPrimaryButtonClass}
+            onClick={onAddItem}
+          >
             <Plus className="size-4" aria-hidden="true" />
             {copy.addItem}
           </Button>
@@ -221,7 +227,7 @@ export function KanbanToolbar({
       {noResults ? (
         <div
           role="status"
-          className="mb-2 flex flex-wrap items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-sm text-muted-foreground"
+          className="mb-2 flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-popover px-3 py-2.5 text-compact text-muted-foreground"
         >
           <span>
             <b className="font-semibold text-foreground">
@@ -239,6 +245,7 @@ export function KanbanToolbar({
           <Button
             variant="outline"
             size="sm"
+            className={kanbanOutlineButtonClass}
             onClick={() => {
               onFilterChange(emptyKanbanFilter());
               if (searchQuery !== "") onSearchChange("");

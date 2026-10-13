@@ -115,6 +115,7 @@ function BoardFullDataView({
   return (
     <BoardWorkspaceSurface
       status="ready"
+      flush={mode === "kanban"}
       viewContent={
         mode === "kanban" ? (
           <KanbanView

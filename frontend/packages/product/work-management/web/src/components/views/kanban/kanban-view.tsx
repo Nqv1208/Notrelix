@@ -390,7 +390,7 @@ export function KanbanView({
       className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none focus:outline-hidden"
     >
       <div
-        className="px-4 pt-3 sm:px-6"
+        className="px-4 sm:px-6"
         inert={boardCovered || undefined}
         aria-hidden={boardCovered || undefined}
       >
@@ -422,7 +422,7 @@ export function KanbanView({
       </div>
 
       <div
-        className="min-h-0 flex-1 overflow-auto px-4 pt-3 pb-6 sm:px-6"
+        className="min-h-0 flex-1 overflow-auto px-4 pt-1 pb-6 sm:px-6"
         inert={boardCovered || undefined}
         aria-hidden={boardCovered || undefined}
       >

@@ -13,6 +13,7 @@ import {
   KANBAN_FILTER_PRIORITIES,
   type KanbanFilterState,
 } from "./kanban-filter";
+import { kanbanPillClass } from "./kanban-chrome";
 import type { KanbanToolbarCopy } from "./kanban-toolbar.copy";
 
 /** One choosable filter value: a status option, a person or a label. */
@@ -100,7 +101,7 @@ export function KanbanFilterMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
+        <Button variant="ghost" size="sm" className={kanbanPillClass}>
           <Filter className="size-4" aria-hidden="true" />
           {copy.trigger}
         </Button>
