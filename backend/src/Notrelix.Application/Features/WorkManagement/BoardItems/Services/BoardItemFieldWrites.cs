@@ -17,6 +17,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 /// <see cref="WorkItemSemanticFields.ResolveStatusField"/>) keeps the Item's
 /// completion in step with the chosen option's category.</item>
 /// </list>
+/// Changing the category of a Status option keeps completion in step the same
+/// way for every active Item holding that option
+/// (<see cref="SyncCompletionForOptionAsync"/>).
 /// </summary>
 public static class BoardItemFieldWrites
 {
@@ -45,6 +48,47 @@ public static class BoardItemFieldWrites
         {
             var optionId = WorkItemSemanticFields.ReadOptionId(value);
             var category = statusField.Options.FirstOrDefault(option => option.Id == optionId)?.Category;
+            item.SyncCompletionWithStatus(category, actorUserId, now);
+        }
+    }
+
+    /// <summary>
+    /// After the category of <paramref name="optionId"/> on <paramref name="field"/>
+    /// changed: when <paramref name="field"/> is the Board's Status field, every
+    /// active (not deleted, not archived) Item whose status is that option is
+    /// completed or reopened by the option's new category, exactly as writing that
+    /// status would. Runs in the caller's transaction.
+    /// </summary>
+    public static async Task SyncCompletionForOptionAsync(
+        IWorkManagementDbContext context, BoardField field, Guid optionId, Guid actorUserId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var statusField = await LoadStatusFieldAsync(context, field.BoardId, cancellationToken);
+        if (statusField is null || statusField.Id != field.Id)
+        {
+            return;
+        }
+
+        var category = field.Options.FirstOrDefault(option => option.Id == optionId)?.Category;
+        var values = await context.BoardItemValues
+            .AsNoTracking()
+            .Where(value => value.FieldId == field.Id)
+            .Select(value => new { value.ItemId, value.Value })
+            .ToListAsync(cancellationToken);
+        var itemIds = values
+            .Where(value => WorkItemSemanticFields.ReadOptionId(value.Value) == optionId)
+            .Select(value => value.ItemId)
+            .Distinct()
+            .ToList();
+        if (itemIds.Count == 0)
+        {
+            return;
+        }
+
+        var items = await context.BoardItems
+            .Where(item => itemIds.Contains(item.Id) && item.BoardId == field.BoardId && item.DeletedAt == null && !item.IsArchived)
+            .ToListAsync(cancellationToken);
+        foreach (var item in items)
+        {
             item.SyncCompletionWithStatus(category, actorUserId, now);
         }
     }
