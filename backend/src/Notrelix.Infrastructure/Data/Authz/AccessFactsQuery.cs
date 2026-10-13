@@ -11,7 +11,8 @@ namespace Notrelix.Infrastructure.Data.Authz;
 /// resource is (a Space resource) or is placed in (a Board's <c>space_id</c>, a
 /// Page's Space supplied as <c>@page_space_id</c> from the Documents-published
 /// page fact); <c>space_path</c> is its ancestor-or-self path from the closure
-/// index. Columns 14..17 expose the Space facts; every role→level meaning stays
+/// index. Columns 14..17 expose the Space facts, column 18 the target user's
+/// board role; every role→level meaning stays
 /// in AccessPolicyEngine. GOV-033: <c>@board_id</c> is the Board the request is
 /// decided on — the Board itself, or the parent Board of a Board child resource
 /// (<c>@board_child</c>) supplied from the Work Management-published relation;
@@ -160,6 +161,9 @@ public static class AccessFactsQuery
               AND (m.role = 'Admin'
                    OR NOT EXISTS (SELECT 1 FROM space_path pp WHERE pp.depth < a.depth AND pp.visibility = 'Private'))),
           EXISTS (SELECT 1 FROM space_path)
-            AND NOT EXISTS (SELECT 1 FROM space_path WHERE visibility = 'Private')
+            AND NOT EXISTS (SELECT 1 FROM space_path WHERE visibility = 'Private'),
+          CASE WHEN @board_id IS NOT NULL AND @target_subject_type = 'User' AND @target_subject_id IS NOT NULL THEN (
+            SELECT tbm.role FROM work.board_members tbm
+              WHERE tbm.board_id = @board_id AND tbm.user_id = @target_subject_id LIMIT 1) END
     """;
 }

@@ -141,6 +141,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 SpaceIsOpen = reader.GetBoolean(17),
                 ParentBoardId = boardChild.IsBoardChild ? boardChild.BoardId : null,
                 IsBoardChild = boardChild.IsBoardChild,
+                TargetBoardMemberRole = NullableString(reader, 18),
             };
         }
 

@@ -49,6 +49,12 @@ public sealed record AccessFacts(
     /// resolved; a Board child without <see cref="ParentBoardId"/> is NotFound.
     /// </summary>
     public bool IsBoardChild { get; init; }
+
+    /// <summary>
+    /// The board membership role of the request's target user on the Board the
+    /// request is decided on (see <see cref="IRequirePermissionTarget"/>), or null.
+    /// </summary>
+    public string? TargetBoardMemberRole { get; init; }
 }
 
 public sealed record AccessPermissionRule(int Priority, string Effect);

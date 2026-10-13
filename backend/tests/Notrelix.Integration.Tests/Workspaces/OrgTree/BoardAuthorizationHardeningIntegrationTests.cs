@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetRe
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
 using Notrelix.Domain.Governance.Permissions;
@@ -74,6 +75,43 @@ public sealed class BoardAuthorizationHardeningIntegrationTests : IAsyncLifetime
 
         await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardMemberRoleCommand(board, observer, BoardRole.Member)))
             .Should().ThrowAsync<AppForbidden>();
+    }
+
+    [Fact]
+    public async Task Editor_CannotRemoveOrDemoteBoardMembersAboveTheirOwnLevel()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var editor = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Editor");
+        var boardOwner = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "BoardOwner");
+        var granted = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Granted");
+        var plain = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Plain");
+        var manager = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Manager");
+        var board = await _host.SeedBoardAsync(stack, "Roadmap"); // Workspace default → Editor
+        await _host.SeedBoardMemberAsync(board, boardOwner, BoardRole.Owner);
+        await _host.SeedBoardMemberAsync(board, granted, BoardRole.Member);
+        await _host.SeedBoardMemberAsync(board, plain, BoardRole.Member);
+        await _host.SeedResourcePermissionAsync(stack, BoardKind, board, PermissionSubjectType.User, granted, PermissionLevel.Manager);
+        await _host.SeedResourcePermissionAsync(stack, BoardKind, board, PermissionSubjectType.User, manager, PermissionLevel.Manager);
+
+        using (var provider = CreateProvider(stack, editor))
+        {
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, boardOwner)))
+                .Should().ThrowAsync<AppForbidden>("a board Owner holds Manager, above the caller's Editor level");
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, granted)))
+                .Should().ThrowAsync<AppForbidden>("the target's explicit Manager grant is above the caller's level");
+            await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider, new UpdateBoardMemberRoleCommand(board, boardOwner, BoardRole.Observer)))
+                .Should().ThrowAsync<AppForbidden>();
+
+            await OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, plain));
+        }
+
+        using (var provider = CreateProvider(stack, manager))
+        {
+            await OrgTreeTestHost.SendIdempotentAsync(provider, new RemoveBoardMemberCommand(board, boardOwner));
+        }
+
+        var remaining = await _host.ReadAsync(c => c.BoardMembers.Where(m => m.BoardId == board).Select(m => m.UserId).ToListAsync());
+        remaining.Should().BeEquivalentTo([granted]);
     }
 
     [Fact]

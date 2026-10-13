@@ -389,9 +389,11 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// <summary>
     /// Grant ceiling: the caller's authority (their effective level, Owner for a
     /// workspace Owner) must reach the requested level and any higher level the
-    /// target already holds. A caller below Manager may not raise their own board
-    /// role (assigning a board role is a grant of its level, see
-    /// <see cref="BoardRoleLevels"/>): that would lift limits such as Observer's.
+    /// target already holds (explicit grant or board role, see
+    /// <see cref="BoardRoleLevels"/>). A caller below Manager may not raise their
+    /// own board role (assigning a board role is a grant of its level): that would
+    /// lift limits such as Observer's. Any other request acting on a target user
+    /// (removing a board member) needs authority reaching the target's level.
     /// </summary>
     private static AccessDecision GrantAwareAllow(object request, AccessFacts facts, string? role, int effectiveRank, Guid? actorId)
     {
@@ -406,11 +408,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You cannot raise your own access level.");
             }
 
-            var ceiling = grant.RequestedPermissionRank;
-            if (facts.TargetPermissionRank is { } existingRank && existingRank > ceiling)
-            {
-                ceiling = existingRank;
-            }
+            var ceiling = Math.Max(grant.RequestedPermissionRank, TargetRank(facts));
 
             return ceiling > 0 && authority >= ceiling
                 ? AccessDecision.Allow()
@@ -430,8 +428,20 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to revoke this permission level.");
         }
 
+        if (request is IRequirePermissionTarget { TargetSubjectId: not null })
+        {
+            var targetRank = TargetRank(facts);
+            return targetRank == 0 || EffectiveGrantAuthority(effectiveRank, role) >= targetRank
+                ? AccessDecision.Allow()
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to change this member's access.");
+        }
+
         return AccessDecision.Allow();
     }
+
+    /// <summary>The target user's existing level: the higher of their explicit grant and board role.</summary>
+    private static int TargetRank(AccessFacts facts) =>
+        Math.Max(facts.TargetPermissionRank ?? 0, BoardRoleLevels.RankOf(facts.TargetBoardMemberRole));
 
     private static int EffectiveGrantAuthority(int effectiveRank, string? role) =>
         string.Equals(role, "Owner", StringComparison.Ordinal)
