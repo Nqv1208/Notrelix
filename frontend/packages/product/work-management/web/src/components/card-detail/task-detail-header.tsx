@@ -47,7 +47,11 @@ import {
   type UpdateCardInput,
   type UpdateFieldValueInput,
 } from "@notrelix/work-management-core";
-import { ITEM_LABEL_TONE_CLASS, itemLabelTone } from "../shared/item-display";
+import {
+  ITEM_LABEL_TONE_CLASS,
+  identityMarkClass,
+  itemLabelTone,
+} from "../shared/item-display";
 import { describeSheetDue, type SheetDueTone } from "./item-sheet-format";
 import { fillSheetCopy, type ItemSheetCopy } from "./item-sheet.copy";
 import type {
@@ -101,7 +105,7 @@ const PRIORITY_CLASS: Readonly<Record<Priority, string>> = {
 };
 
 const PILL_CLASS =
-  "inline-flex h-7.5 max-w-full items-center gap-1.5 rounded-lg border border-border bg-popover px-2.5 text-sm font-medium text-foreground transition-colors hover:bg-state-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:hover:bg-popover";
+  "inline-flex h-7.5 max-w-full items-center gap-[7px] rounded-md border border-line-strong bg-popover px-2.5 text-compact font-medium text-foreground transition-colors hover:bg-state-hover-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:hover:bg-popover";
 
 /**
  * Board fields the sheet edits. Status and priority are resolved by their
@@ -167,15 +171,15 @@ export function TaskDetailHeader({
     capabilities.canCreateCard || capabilities.canDelete || canMove;
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-1 border-b border-border pr-2.5 pl-4.5">
+    <header className="flex h-12.25 shrink-0 items-center gap-1.5 border-b border-line pr-2.5 pl-4.5">
       <nav
         aria-label={copy.head.crumb}
-        className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground"
+        className="flex min-w-0 items-center gap-[7px] text-crumb text-meta-foreground"
       >
         {departmentMark ? (
           <span
             className={cn(
-              "grid size-4.5 shrink-0 place-items-center rounded-md text-caption font-bold",
+              "grid size-4.5 shrink-0 place-items-center rounded-sm text-mark-3xs",
               MARK_TONE_CLASS[departmentMark.tone],
             )}
           >
@@ -186,7 +190,7 @@ export function TaskDetailHeader({
         {card.itemKey ? (
           <>
             <span aria-hidden="true">/</span>
-            <span className="shrink-0 font-mono text-foreground">
+            <span className="shrink-0 font-mono text-muted-foreground">
               {card.itemKey}
             </span>
           </>
@@ -225,7 +229,7 @@ export function TaskDetailHeader({
             aria-label={copy.head.openFullPage}
             aria-disabled="true"
             aria-describedby={fullPageReasonId}
-            className="text-muted-foreground aria-disabled:opacity-50"
+            className="rounded-[7px] text-meta-foreground aria-disabled:opacity-50"
           >
             <Maximize2 aria-hidden="true" />
           </Button>
@@ -244,7 +248,7 @@ export function TaskDetailHeader({
               variant="ghost"
               size="icon-sm"
               aria-label={copy.head.more}
-              className="text-muted-foreground"
+              className="rounded-[7px] text-meta-foreground hover:bg-state-hover-strong"
             >
               <MoreHorizontal aria-hidden="true" />
             </Button>
@@ -308,7 +312,7 @@ function HeadIconButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="text-muted-foreground hover:text-foreground [&_svg]:size-4"
+      className="rounded-[7px] text-meta-foreground hover:bg-state-hover-strong hover:text-foreground [&_svg]:size-4"
     >
       {children}
     </Button>
@@ -366,7 +370,7 @@ export function TaskDetailTitle({
   return (
     <h2
       id={titleId}
-      className="m-0 text-xl leading-snug font-semibold tracking-tight text-balance text-foreground"
+      className="m-0 text-sheet-title text-balance text-foreground"
     >
       {editable ? (
         <span
@@ -422,7 +426,7 @@ function PropertyPill({
         <ChevronDown
           data-pill-chevron=""
           aria-hidden="true"
-          className="size-3.5 shrink-0"
+          className="size-3.25 shrink-0"
         />
       ) : null}
     </button>
@@ -461,7 +465,7 @@ export function TaskDetailProperties({
   const statusOption = fields.status?.options.find(
     (option) => option.id === statusId,
   );
-  const category = card.statusCategory ?? null;
+  const category = card.statusCategory ?? statusOption?.category ?? null;
   const statusPill = (props: Partial<PillProps> = {}) => (
     <PropertyPill
       {...props}
@@ -478,7 +482,7 @@ export function TaskDetailProperties({
       <span
         aria-hidden="true"
         className={cn(
-          "size-2 shrink-0 rounded-full",
+          "size-2.25 shrink-0 rounded-full",
           category ? STATUS_DOT_CLASS[category] : "bg-muted-foreground",
         )}
       />
@@ -499,7 +503,12 @@ export function TaskDetailProperties({
       {firstMember ? (
         <>
           <Avatar className="size-5">
-            <AvatarFallback className="bg-foreground text-caption font-bold text-background">
+            <AvatarFallback
+              className={cn(
+                "text-avatar-sm",
+                identityMarkClass(firstMember.userId || firstMember.id),
+              )}
+            >
               {firstMember.initials}
             </AvatarFallback>
           </Avatar>
@@ -542,7 +551,7 @@ export function TaskDetailProperties({
       srLabel={t.priority}
       className={priority ? PRIORITY_CLASS[priority] : "text-muted-foreground"}
     >
-      <Flag aria-hidden="true" className="size-3.5 shrink-0" />
+      <Flag aria-hidden="true" className="size-3.25 shrink-0" />
       {priority ? t.priorities[priority] : t.noPriority}
     </PropertyPill>
   );
@@ -661,7 +670,7 @@ export function TaskDetailProperties({
           <span className="sr-only">{`${t.labels}: `}</span>
           <span
             className={cn(
-              "rounded-sm px-1.5 text-xs font-semibold",
+              "inline-flex h-5.5 items-center rounded-sm px-2 text-micro font-semibold",
               ITEM_LABEL_TONE_CLASS[itemLabelTone(label)],
             )}
           >

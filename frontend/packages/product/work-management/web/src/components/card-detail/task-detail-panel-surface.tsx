@@ -160,8 +160,8 @@ export function TaskDetailPanelSurface({
             onArchive={callbacks.onArchive}
             onMoveToGroup={callbacks.onMoveToGroup}
           />
-          <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5.5 pt-4.5 pb-5.5">
-            <div className="flex flex-col gap-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-5.5 overflow-y-auto px-5.5 pt-4.5 pb-5.5">
+            <div className="flex flex-col gap-5.5">
               <TaskDetailTitle
                 key={card.id}
                 card={card}

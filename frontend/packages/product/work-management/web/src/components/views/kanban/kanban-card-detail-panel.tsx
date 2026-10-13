@@ -37,8 +37,10 @@ interface KanbanCardDetailPanelProps {
 
 /**
  * Non-modal 560 px item sheet over the right edge of the board: no scrim, no
- * focus trap, the board behind stays interactive. It is absolutely placed, so
- * the Kanban view root must be the positioned ancestor.
+ * focus trap, the board behind stays interactive. Below the desktop width it
+ * is absolutely placed over the board, so the Kanban view root must be the
+ * positioned ancestor; from the desktop width it spans the full height of the
+ * window edge, over the board header, as in the mockup.
  */
 export function KanbanCardDetailPanel({
   board,
@@ -57,7 +59,7 @@ export function KanbanCardDetailPanel({
   if (!card) return null;
 
   return (
-    <div className="absolute inset-y-0 right-0 z-20 flex w-full max-w-full border-l border-border bg-popover shadow-overlay sm:w-140">
+    <div className="absolute inset-y-0 right-0 z-20 flex w-full max-w-full border-l border-line bg-popover shadow-sheet sm:w-140.25 lg:fixed">
       <TaskDetailPanelSurface
         status="ready"
         board={board}

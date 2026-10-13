@@ -10,8 +10,10 @@ import {
   DropdownMenuTrigger,
   Skeleton,
   Textarea,
+  cn,
 } from "@notrelix/ui-web";
 import type { CardDetail, CardUpdate } from "@notrelix/work-management-core";
+import { identityMarkClass } from "../shared/item-display";
 import { describeSheetTime } from "./item-sheet-format";
 import type { ItemSheetCopy } from "./item-sheet.copy";
 import type {
@@ -97,20 +99,25 @@ function CommentItem({
   const t = copy.comment;
 
   return (
-    <article className="group/comment flex gap-2.5 py-1.5 text-sm">
-      <Avatar className="mt-0.5 size-6.5 shrink-0">
-        <AvatarFallback className="bg-foreground text-caption font-bold text-background">
+    <article className="group/comment flex gap-2.5 py-1.5 text-body leading-[1.45]">
+      <Avatar className="size-6.5 shrink-0">
+        <AvatarFallback
+          className={cn(
+            "text-avatar-md",
+            identityMarkClass(update.author.userId || update.author.id),
+          )}
+        >
           {update.author.initials}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-1.5">
+        <div className="flex items-baseline">
           <span className="font-semibold text-foreground">
             {update.author.name}
           </span>
           <time
             dateTime={update.createdAt}
-            className="text-xs text-muted-foreground"
+            className="ml-1.5 text-metadata text-meta-foreground"
           >
             {time}
           </time>
@@ -176,7 +183,7 @@ function CommentItem({
             </div>
           </div>
         ) : (
-          <p className="m-0 mt-0.5 leading-relaxed whitespace-pre-wrap text-foreground">
+          <p className="m-0 mt-[3px] leading-[1.55] whitespace-pre-wrap text-foreground">
             {update.body}
           </p>
         )}

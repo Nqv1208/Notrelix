@@ -43,7 +43,7 @@ export function TaskDetailTabs({
       <section>
         <SectionHeading>{t.description}</SectionHeading>
         {card.descriptionMd?.trim() ? (
-          <p className="m-0 max-w-prose text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+          <p className="m-0 max-w-[68ch] text-body leading-[1.65] whitespace-pre-wrap text-foreground">
             {card.descriptionMd}
           </p>
         ) : (
@@ -75,7 +75,7 @@ export function TaskDetailTabs({
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="m-0 mb-2 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+    <h3 className="m-0 mb-2 flex items-center gap-2 text-compact font-semibold text-muted-foreground">
       {children}
     </h3>
   );
@@ -106,7 +106,7 @@ function ChildItemsSection({
       <SectionHeading>
         {t.childItems}
         {counted ? (
-          <span className="font-normal text-muted-foreground">
+          <span className="font-normal text-meta-foreground">
             {fillSheetCopy(t.childProgress, counted)}
           </span>
         ) : null}
@@ -116,22 +116,24 @@ function ChildItemsSection({
           {items.map((item) => (
             <li
               key={item.id}
-              className="-mx-1.5 flex min-h-8.5 items-center gap-2.5 rounded-md px-1.5 text-sm"
+              className="-mx-1.5 flex min-h-8.5 items-center gap-2.5 rounded-[7px] px-1.5 text-body hover:bg-state-hover-strong"
             >
               <span
                 aria-hidden="true"
                 className={cn(
-                  "grid size-4 shrink-0 place-items-center rounded border",
+                  "grid size-4 shrink-0 place-items-center rounded-[4px] border-[1.5px]",
                   item.done
                     ? "border-work-status-done bg-work-status-done text-background"
-                    : "border-border",
+                    : "border-line-strong",
                 )}
               >
-                {item.done ? <Check className="size-3" strokeWidth={3} /> : null}
+                {item.done ? (
+                  <Check className="size-2.75" strokeWidth={3} />
+                ) : null}
               </span>
               <span
                 className={
-                  item.done ? "text-muted-foreground line-through" : undefined
+                  item.done ? "text-meta-foreground line-through" : undefined
                 }
               >
                 {item.title}
@@ -193,7 +195,7 @@ function ActivitySection({
         role="tablist"
         aria-label={t.activity}
         onKeyDown={handleKeyDown}
-        className="mb-3 flex gap-0.5 border-b border-border"
+        className="mb-3 flex gap-0.5 border-b border-line"
       >
         {tabs.map(([value, label]) => {
           const selected = tab === value;
@@ -208,7 +210,7 @@ function ActivitySection({
               tabIndex={selected ? 0 : -1}
               onClick={() => select(value)}
               className={cn(
-                "-mb-px h-8 border-b-2 px-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                "-mb-px h-8 border-b-2 px-2.5 text-compact font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                 selected
                   ? "border-primary font-semibold text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",

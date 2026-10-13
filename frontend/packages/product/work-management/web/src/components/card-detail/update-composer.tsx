@@ -83,10 +83,10 @@ export function UpdateComposer({
   }
 
   return (
-    <div className="flex shrink-0 items-end gap-2 border-t border-border bg-popover px-4.5 py-3">
+    <div className="flex shrink-0 items-end gap-2 border-t border-line bg-popover px-4.5 py-3">
       <Popover open={mentionOpen} onOpenChange={setMentionOpen}>
         <PopoverAnchor asChild>
-          <div className="flex min-h-10 flex-1 items-center gap-2 rounded-lg border border-border bg-background pr-2 pl-3 focus-within:ring-2 focus-within:ring-focus-ring">
+          <div className="flex min-h-10.5 flex-1 items-center gap-2 rounded-[9px] border border-line-strong bg-background pr-2 pl-3 focus-within:ring-2 focus-within:ring-focus-ring">
             <Textarea
               value={body}
               rows={1}
@@ -101,9 +101,9 @@ export function UpdateComposer({
                 }
               }}
               onKeyDown={handleKeyDown}
-              className="max-h-32 min-h-0 flex-1 resize-none border-0 bg-transparent px-0 py-2 text-sm shadow-none focus-visible:ring-0"
+              className="max-h-32 min-h-0 flex-1 resize-none border-0 bg-transparent px-0 py-2 text-body shadow-none focus-visible:ring-0"
             />
-            <kbd className="shrink-0 rounded border border-border bg-muted px-1.5 font-mono text-xs leading-5 text-muted-foreground">
+            <kbd className="shrink-0 rounded-[4px] border border-line-strong bg-keycap px-1.25 text-key leading-[18px] text-muted-foreground">
               {t.shortcut}
             </kbd>
           </div>

@@ -43,11 +43,11 @@ export function TaskActivityTab({
       {activity.map((item) => (
         <li
           key={item.id}
-          className="flex items-center gap-2 py-1.5 text-xs text-muted-foreground"
+          className="flex items-center gap-2 py-1.5 text-crumb text-meta-foreground"
         >
           <span
             aria-hidden="true"
-            className="size-1.5 shrink-0 rounded-full bg-muted-foreground"
+            className="size-2.25 shrink-0 rounded-full bg-work-status-doing"
           />
           <span>
             <span className="font-medium text-foreground">{item.actor}</span>{" "}
