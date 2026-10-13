@@ -312,7 +312,7 @@ describe("NotrelixSystemRailSurface", () => {
     }
   });
 
-  it("FUI[workspace.system-rail:all-inbox] disables the all-workspace inbox with a visible reason until it is available", () => {
+  it("FUI[workspace.system-rail:all-inbox] keeps the all-workspace inbox inert with its reason in the tooltip and description until it is available", () => {
     for (const locale of LOCALES) {
       const copy = systemRailCopyFixture(locale);
       const { props, view } = renderRail(systemRailOverlayScenario(locale));
@@ -320,13 +320,19 @@ describe("NotrelixSystemRailSurface", () => {
       const allInbox = within(nav).getByRole("button", {
         name: copy.allInbox.label,
       }) as HTMLButtonElement;
-      expect(allInbox.disabled).toBe(true);
-      // Global search shows the same reason text, so find this one by id.
+      // It looks active like the design, stays focusable and does nothing.
+      expect(allInbox.disabled).toBe(false);
+      expect(allInbox.getAttribute("aria-disabled")).toBe("true");
+      expect(allInbox.getAttribute("title")).toContain(
+        copy.allInbox.unavailable,
+      );
+      // Global search carries the same reason text, so find this one by id.
       const reasonId = allInbox.getAttribute("aria-describedby") ?? "";
       const reason = within(nav).getByText(copy.allInbox.unavailable, {
         selector: `#${CSS.escape(reasonId)}`,
       });
       expect(reason.id).toBe(reasonId);
+      expect(reason.className).toContain("sr-only");
       fireEvent.click(allInbox);
       expect(props.onOpenAllInbox).not.toHaveBeenCalled();
       view.unmount();
@@ -339,6 +345,7 @@ describe("NotrelixSystemRailSurface", () => {
         name: new RegExp(`^${copy.allInbox.label}`),
       }) as HTMLButtonElement;
       expect(enabled.disabled).toBe(false);
+      expect(enabled.getAttribute("aria-disabled")).toBeNull();
       expect(enabled.getAttribute("aria-describedby")).toBeNull();
       expect(screen.queryByText(copy.allInbox.unavailable)).toBeNull();
       fireEvent.click(enabled);
@@ -347,7 +354,7 @@ describe("NotrelixSystemRailSurface", () => {
     }
   });
 
-  it("FUI[workspace.system-rail:search] disables global search with a visible reason until a handler exists, then opens it", () => {
+  it("FUI[workspace.system-rail:search] keeps global search inert with its reason in the tooltip and description until a handler exists, then opens it", () => {
     for (const locale of LOCALES) {
       const copy = systemRailCopyFixture(locale);
       const { view } = renderRail(systemRailOverlayScenario(locale));
@@ -355,8 +362,10 @@ describe("NotrelixSystemRailSurface", () => {
       const search = within(nav).getByRole("button", {
         name: copy.search.label,
       }) as HTMLButtonElement;
-      expect(search.getAttribute("title")).toBe(copy.search.title);
-      expect(search.disabled).toBe(true);
+      expect(search.getAttribute("title")).toContain(copy.search.unavailable);
+      expect(search.disabled).toBe(false);
+      expect(search.getAttribute("aria-disabled")).toBe("true");
+      fireEvent.click(search);
       const reason = within(nav).getByText(copy.search.unavailable, {
         selector: `#${CSS.escape(search.getAttribute("aria-describedby") ?? "")}`,
       });
@@ -371,6 +380,7 @@ describe("NotrelixSystemRailSurface", () => {
         name: copy.search.label,
       }) as HTMLButtonElement;
       expect(enabled.disabled).toBe(false);
+      expect(enabled.getAttribute("aria-disabled")).toBeNull();
       expect(enabled.getAttribute("aria-describedby")).toBeNull();
       fireEvent.click(enabled);
       expect(onOpenGlobalSearch).toHaveBeenCalledTimes(1);
@@ -472,8 +482,12 @@ describe("NotrelixSystemRailSurface", () => {
           workspaceName(copy, workspace),
         ),
         copy.create.label,
-        copy.settings.label,
+        // Inert entries stay focusable so their reason is reachable.
+        copy.allInbox.label,
+        copy.search.label,
+        // The pin control sits in the free space above Settings.
         copy.pin.label,
+        copy.settings.label,
       ]);
       for (const element of focusable) {
         expect(element.getAttribute("tabindex")).not.toBe("-1");
