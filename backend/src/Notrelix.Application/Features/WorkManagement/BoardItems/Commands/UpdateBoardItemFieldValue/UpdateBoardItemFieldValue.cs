@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 
@@ -54,7 +55,8 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
         var jsonString = System.Text.Json.JsonSerializer.Serialize(request.Value);
         var fieldValue = FieldValue.Create(JsonValue.Create(jsonString));
 
-        item.UpdateFieldValue(field, fieldValue, _currentUser.UserId, now);
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, cancellationToken);
+        BoardItemFieldWrites.Write(item, field, fieldValue, statusField, _currentUser.UserId, now);
 
         var memberIds = await _context.BoardItemMembers
             .Where(m => m.ItemId == item.Id)

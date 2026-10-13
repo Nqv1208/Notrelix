@@ -6,10 +6,10 @@ using Notrelix.Domain.WorkManagement.Items;
 namespace Notrelix.Domain.Tests.WorkManagement.Items;
 
 /// <summary>
-/// A system field's definition is protected, not the Item values it holds: an
-/// Item's value of a system field (the board's Status, Due Date, Assignee) is
-/// written like any other value, while deleting the system field is still
-/// rejected.
+/// A system field's definition is protected, not the Item's Status: an Item's
+/// value of the system Status field is written like any other value, while the
+/// other system fields (Title, Due Date, Assignee) are written only through the
+/// Item's own path, and deleting a system field is still rejected.
 /// </summary>
 public class SystemFieldValueTests
 {
@@ -44,15 +44,21 @@ public class SystemFieldValueTests
         item.Version.Should().Be(version + 1);
     }
 
-    [Fact]
-    public void WritingAValueOfASystemDateField_Succeeds()
+    [Theory]
+    [InlineData("Title", FieldType.Text, "\"Renamed\"")]
+    [InlineData("Due Date", FieldType.Date, "\"2026-10-18T00:00:00.0000000+07:00\"")]
+    [InlineData("Assignee", FieldType.Person, "\"00000000-0000-0000-0000-0000000000a1\"")]
+    public void ARawValueOfAnotherSystemField_IsRejected_ItsOwnPathIsAuthoritative(string name, FieldType type, string json)
     {
-        var due = BoardField.Create(Account, Workspace, Board, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), Actor, Now, isSystem: true);
+        var field = BoardField.Create(Account, Workspace, Board, name, type, FieldSettings.Empty(), FractionalIndex.Create("a3"), Actor, Now, isSystem: true);
         var item = Item();
+        var version = item.Version;
 
-        item.UpdateFieldValue(due, FieldValue.Create(JsonValue.Create("\"2026-10-18T00:00:00.0000000+07:00\"")), Actor, Now.AddMinutes(1));
+        var act = () => item.UpdateFieldValue(field, FieldValue.Create(JsonValue.Create(json)), Actor, Now.AddMinutes(1));
 
-        item.FieldValues.Should().ContainSingle(v => v.FieldId == due.Id);
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateSystem);
+        item.FieldValues.Should().BeEmpty("the title, due date and assignees live on the Item, not in a parallel value");
+        item.Version.Should().Be(version);
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
@@ -63,6 +64,8 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         if (unsupportedType is not null)
             return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{unsupportedType.Name}'.", ApplicationErrorType.Validation));
 
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, card.BoardId, ct);
+
         foreach (var (columnId, value) in request.Values)
         {
             if (columnId == card.BoardId)
@@ -84,7 +87,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "priority":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
-                        card.UpdateFieldValue(column, fv, _requestContext.UserId, now);
+                        BoardItemFieldWrites.Write(card, column, fv, statusField, _requestContext.UserId, now);
                         break;
                     }
                 case "due_date":
@@ -133,7 +136,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "multi_select":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
-                        card.UpdateFieldValue(column, fv, _requestContext.UserId, now);
+                        BoardItemFieldWrites.Write(card, column, fv, statusField, _requestContext.UserId, now);
                         break;
                     }
                 default:

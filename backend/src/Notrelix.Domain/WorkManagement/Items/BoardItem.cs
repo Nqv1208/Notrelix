@@ -175,8 +175,13 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateDeleted, "Cannot update value for a deleted field.");
 
         // A system field's definition is protected by the field itself (it cannot be
-        // deleted); the Item's value of that field (its Status, Due Date, Assignee)
-        // is ordinary Item data and is written like any other value.
+        // deleted). The Item's Status is ordinary Item data written here; the other
+        // system fields mirror state the Item owns directly (its name, DueAt, its
+        // assignee members), so a raw value would be a parallel truth and is rejected.
+        if (field.IsSystem && field.Type != FieldType.Status)
+            throw new BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateSystem,
+                $"The system field '{field.Name}' is written through the Item's own path, not as a field value.");
 
         if (field.Type is FieldType.Formula or FieldType.Rollup)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotWriteComputed, "Cannot manually write to a computed field (Formula or Rollup).");
@@ -337,6 +342,21 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
+    }
+
+    /// <summary>
+    /// Keeps completion in step with the Item's Status: a status in the done
+    /// <paramref name="category"/> completes the Item at <paramref name="changedAt"/>
+    /// (an already completed Item keeps its completion time); any other category,
+    /// or no status, reopens it. The category is supplied by the caller from the
+    /// Board's Status field.
+    /// </summary>
+    public void SyncCompletionWithStatus(WorkStatusCategory? category, Guid changedBy, DateTimeOffset changedAt)
+    {
+        if (category == WorkStatusCategory.Done)
+            Complete(changedAt, changedBy, changedAt);
+        else
+            Reopen(changedBy, changedAt);
     }
 
     public void Reopen(Guid reopenedBy, DateTimeOffset reopenedAt)

@@ -38,6 +38,7 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
     private Guid _optionId;
     private Guid _statusFieldId;
     private Guid _doneOptionId;
+    private Guid _dueDateFieldId;
 
     public WorkItemFieldValueIntegrationTests(PostgresTestContainer db)
     {
@@ -62,13 +63,15 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
         status.AddDefaultStatusOptions(_userId, Now);
         (_workspaceId, _itemId, _textFieldId, _selectFieldId, _optionId) = (workspace.Id, item.Id, text.Id, select.Id, option.Id);
         (_statusFieldId, _doneOptionId) = (status.Id, status.Options.Single(o => o.Category == WorkStatusCategory.Done).Id);
+        var dueDate = BoardField.Create(_accountId, workspace.Id, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _userId, Now, isSystem: true);
+        _dueDateFieldId = dueDate.Id;
 
         await using var seed = _db.CreateContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(board);
         seed.BoardGroups.Add(group);
         seed.BoardItems.Add(item);
-        seed.BoardFields.AddRange(text, select, status);
+        seed.BoardFields.AddRange(text, select, status, dueDate);
         await seed.SaveChangesAsync();
     }
 
@@ -111,6 +114,25 @@ public sealed class WorkItemFieldValueIntegrationTests : IAsyncLifetime
             .Handle(new UpdateBoardItemStatusCommand(_itemId, _doneOptionId.ToString()), CancellationToken.None));
 
         (await StoredValuesAsync(_statusFieldId)).Should().ContainSingle().Which.Should().Contain(_doneOptionId.ToString());
+        (await ItemColumnAsync("completed_at")).Should().NotBeNull("a done-category status completes the Item");
+    }
+
+    [Fact]
+    public async Task TheSystemDueDateField_WritesTheItemsDueAt_AndStoresNoValue()
+    {
+        await SetValueAsync(_dueDateFieldId, "2026-10-18T00:00:00.0000000+07:00");
+
+        (await ItemColumnAsync("due_at")).Should().Be(new DateTimeOffset(2026, 10, 17, 17, 0, 0, TimeSpan.Zero));
+        (await StoredValuesAsync(_dueDateFieldId)).Should().BeEmpty("BoardItem.DueAt is the authoritative due date");
+    }
+
+    private async Task<DateTimeOffset?> ItemColumnAsync(string column)
+    {
+        await using var connection = _db.CreateConnection();
+        await connection.OpenAsync();
+        await using var command = new Npgsql.NpgsqlCommand($"SELECT {column} FROM work.board_items WHERE id = '{_itemId}'", connection);
+        var value = await command.ExecuteScalarAsync();
+        return value is DateTime utc ? new DateTimeOffset(DateTime.SpecifyKind(utc, DateTimeKind.Utc)) : value as DateTimeOffset?;
     }
 
     private Task SetValueAsync(Guid fieldId, object value) =>

@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue;
 
@@ -41,8 +42,8 @@ public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueComm
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == item.BoardId, ct);
         if (field is null) throw new NotFoundException(nameof(BoardField), request.FieldId);
 
-        var emptyValue = FieldValue.Empty();
-        item.UpdateFieldValue(field, emptyValue, _currentUser.UserId, _timeProvider.UtcNow);
+        var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, ct);
+        BoardItemFieldWrites.Write(item, field, FieldValue.Empty(), statusField, _currentUser.UserId, _timeProvider.UtcNow);
         return Result.Success();
     }
 }
