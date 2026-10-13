@@ -111,7 +111,10 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "navigation",
       "pureEntry": "src/web/shell/workspace-sidebar-surface.tsx",
-      "coveredSources": ["src/web/shell/shell-link.tsx"],
+      "coveredSources": [
+        "src/web/shell/shell-link.tsx",
+        "src/web/shell/sidebar-docs-tree.tsx"
+      ],
       "stories": [
         {
           "id": "workspace-shell--sidebar-default",
@@ -169,6 +172,28 @@
           "id": "workspace-shell--sidebar-edge-data",
           "state": "EdgeData",
           "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "workspace-shell--sidebar-docs-tree",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "mobile",
+              "theme": "light"
+            },
+            {
+              "viewport": "tablet",
+              "theme": "light"
+            },
             {
               "viewport": "desktop",
               "theme": "light"
@@ -253,6 +278,10 @@
         },
         {
           "id": "keyboard",
+          "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
+        },
+        {
+          "id": "docs-tree",
           "testFile": "src/web/shell/__tests__/workspace-shell.interaction.component.test.tsx"
         }
       ]

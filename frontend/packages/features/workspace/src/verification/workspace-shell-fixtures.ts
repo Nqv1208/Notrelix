@@ -319,3 +319,34 @@ export function breadcrumbFixture(
     labels: workspaceBreadcrumbLabels(copy),
   });
 }
+
+/** The document tree of the Docs row on a document page (Final-Docs `binh-thuong`). */
+export function sidebarDocsTreeFixture(
+  expand: boolean = true,
+): import("../web/shell/shell-models").SidebarDocsTree {
+  return {
+    departments: [
+      {
+        id: "space-kt",
+        name: "Kế toán",
+        markTone: "gold",
+        pages: [
+          {
+            id: "page-process",
+            title: "Quy trình",
+            children: [
+              {
+                id: "page-invoice",
+                title: "Nhập hoá đơn đầu vào",
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    activeDocId: "page-invoice",
+    expandedIds: new Set(expand ? ["space-kt", "page-process"] : []),
+    onExpandedChange: () => undefined,
+  };
+}

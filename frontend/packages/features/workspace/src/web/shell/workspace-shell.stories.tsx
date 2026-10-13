@@ -13,6 +13,7 @@ import {
   sidebarEmptyScenario,
   sidebarErrorScenario,
   sidebarLoadingScenario,
+  sidebarDocsTreeFixture,
   sidebarMockupScenario,
 } from "../../verification/workspace-shell-fixtures";
 import {
@@ -75,6 +76,21 @@ export const SidebarDefault: Story = {
     <ShellFrame openMobile>
       <WorkspaceSidebarSurface
         {...sidebarMockupScenario()}
+        spaces={sidebarDepartmentsFixture()}
+        {...sidebarCallbacks}
+      />
+    </ShellFrame>
+  ),
+  tags: ["fui-surface--workspace.sidebar", "fui-state--Default"],
+};
+
+export const SidebarDocsTree: Story = {
+  render: () => (
+    <ShellFrame openMobile>
+      <WorkspaceSidebarSurface
+        {...sidebarMockupScenario()}
+        location={{ section: "doc", docId: "page-invoice" }}
+        docsTree={sidebarDocsTreeFixture()}
         spaces={sidebarDepartmentsFixture()}
         {...sidebarCallbacks}
       />

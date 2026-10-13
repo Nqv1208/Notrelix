@@ -215,3 +215,31 @@ export function workspaceBreadcrumbLabels(
     teamDetails: copy.breadcrumb.teamDetails,
   };
 }
+
+/** A document page row of the sidebar's document tree. */
+export interface SidebarDocPage {
+  readonly id: string;
+  readonly title: string;
+  readonly children: readonly SidebarDocPage[];
+}
+
+/** A department with the document pages placed in it (the current document's). */
+export interface SidebarDocsDepartment {
+  readonly id: string;
+  readonly name: string;
+  readonly markTone: MarkToneId;
+  readonly pages: readonly SidebarDocPage[];
+}
+
+/**
+ * The document tree under the Docs row (Final-Docs `.tree`): shown on a
+ * document page, for the department that holds it.
+ */
+export interface SidebarDocsTree {
+  readonly departments: readonly SidebarDocsDepartment[];
+  /** The open document (the one row drawn as selected). */
+  readonly activeDocId: string | null;
+  /** Expanded node ids (departments and pages); the host persists them. */
+  readonly expandedIds: ReadonlySet<string>;
+  readonly onExpandedChange: (id: string, expanded: boolean) => void;
+}

@@ -11,6 +11,7 @@ import {
   shellMembersFixture,
   shellNavigationFixture,
   sidebarDefaultScenario,
+  sidebarDocsTreeFixture,
   sidebarLoadingScenario,
   sidebarMockupScenario,
 } from "../../../verification/workspace-shell-fixtures";
@@ -254,6 +255,42 @@ describe("WorkspaceSidebarSurface", () => {
     // rows indent their content to 39 px.
     expect(parseInt(sub.style.paddingInlineStart, 10)).toBe(39);
     expect(top.style.paddingInlineStart).toBe("");
+  });
+
+  it("FUI[workspace.sidebar:docs-tree] opens the department's document tree under Docs and marks the open page", () => {
+    const { props } = renderSidebar(
+      {
+        location: { section: "doc", docId: "page-invoice" },
+        docsTree: sidebarDocsTreeFixture(),
+      },
+      sidebarMockupScenario(),
+    );
+
+    // A document page keeps the Docs row selected.
+    expect(
+      screen
+        .getByRole("link", { name: "Tài liệu" })
+        .getAttribute("aria-current"),
+    ).toBe("page");
+    const group = screen.getByRole("group", { name: "Tài liệu" });
+    const open = within(group).getByRole("link", {
+      name: "Nhập hoá đơn đầu vào",
+    });
+    expect(open.getAttribute("aria-current")).toBe("page");
+    expect(open.getAttribute("href")).toBe(
+      "/workspaces/ws-product/docs/page-invoice",
+    );
+    fireEvent.click(within(group).getByRole("link", { name: "Quy trình" }), {
+      button: 0,
+    });
+    expect(props.navigation.onNavigate).toHaveBeenCalledWith({
+      section: "doc",
+      docId: "page-process",
+    });
+    const collapse = within(group).getByRole("button", {
+      name: "Thu gọn Kế toán",
+    });
+    expect(collapse.getAttribute("aria-expanded")).toBe("true");
   });
 
   it("FUI[workspace.sidebar:setup] keeps every workspace setup link in a footer disclosure for owners and admins, in vi and en", () => {

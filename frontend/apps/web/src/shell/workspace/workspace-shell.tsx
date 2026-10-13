@@ -45,6 +45,7 @@ import {
   type ShellNavigation,
   type ShellPaletteSelection,
   type ShellShortcutId,
+  type SidebarDocsTree,
   type SpaceBoardLink,
   type SpaceTreeState,
   type SystemRailWorkspace,
@@ -57,6 +58,7 @@ import { SidebarProvider, cn, useIsMobile, useTheme } from "@notrelix/ui-web";
 import { useWorkspaceBoards } from "@notrelix/work-management-state";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useBoardPlacements } from "./board-placement-bridge";
+import { buildSidebarDocs } from "./docs-sidebar-tree";
 import { CreateWorkspaceDialog } from "./create-workspace-dialog";
 import { useSystemRailPreference } from "./use-system-rail-preference";
 import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
@@ -240,6 +242,51 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       ...spaceAncestors(spaceIndex, activeBoardSpaceId).map((node) => node.id),
     ]);
   }, [activeBoardSpaceId, reveal, spaceIndex]);
+  // An open document shows its department's document tree under the Docs row
+  // (Final-Docs): the pages placed in the department's Spaces, nested by parent.
+  const activeDocId = location?.section === "doc" ? location.docId : null;
+  const [docsExpanded, setDocsExpanded] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const docsTreeModel = useMemo(
+    () =>
+      buildSidebarDocs({
+        pages: pages.data ?? [],
+        spaces: spaceTree.data ?? [],
+        spaceIndex,
+        activeDocId,
+      }),
+    [activeDocId, pages.data, spaceIndex, spaceTree.data],
+  );
+  const docsRevealKey = docsTreeModel?.reveal.join("|") ?? "";
+  useEffect(() => {
+    if (!docsTreeModel) return;
+    setDocsExpanded((current) => {
+      const next = new Set(current);
+      for (const id of docsTreeModel.reveal) next.add(id);
+      return next.size === current.size ? current : next;
+    });
+    // `docsRevealKey` covers the reveal list.
+  }, [docsRevealKey]);
+  const docsTree = useMemo<SidebarDocsTree | null>(
+    () =>
+      docsTreeModel
+        ? {
+            departments: docsTreeModel.departments,
+            activeDocId,
+            expandedIds: docsExpanded,
+            onExpandedChange: (id, expanded) =>
+              setDocsExpanded((current) => {
+                const next = new Set(current);
+                if (expanded) next.add(id);
+                else next.delete(id);
+                return next;
+              }),
+          }
+        : null,
+    [activeDocId, docsExpanded, docsTreeModel],
+  );
+
   // Archived Spaces leave the sidebar; their pages stay reachable by link.
   // An archived Space never has active children (WSP-022).
   const sidebarSpaces = useMemo<SpaceTreeState>(() => {
@@ -520,6 +567,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           })
         }
         onRetryNavigation={retryPins}
+        docsTree={docsTree}
         spaces={{
           copy: spacesCopy,
           state: sidebarSpaces,

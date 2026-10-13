@@ -50,6 +50,7 @@ import {
   type WorkspaceDestination,
 } from "../../core/model/navigation";
 import { SpaceTreeNav, type SpaceTreeNavProps } from "../spaces/space-tree-nav";
+import { SidebarDocsTreeNav } from "./sidebar-docs-tree";
 import { IdentityMark, ResourceMark, ShellLink } from "./shell-link";
 import {
   formatCopy,
@@ -63,6 +64,7 @@ import {
   type ShellNavigation,
   type ShellSidebarCounts,
   type ShellUser,
+  type SidebarDocsTree,
 } from "./shell-models";
 import type { WorkspaceShellCopy } from "./workspace-shell.copy";
 
@@ -80,6 +82,11 @@ export interface WorkspaceSidebarSurfaceProps {
    * the departments only when there is at least one pin (or pins failed).
    */
   readonly pinned: NavigationListState;
+  /**
+   * The document tree under the Docs row, shown while a document is open;
+   * omitted elsewhere.
+   */
+  readonly docsTree?: SidebarDocsTree | null;
   /** The department (Space) tree (OT-5); omitted by hosts without Spaces. */
   readonly spaces?: Omit<SpaceTreeNavProps, "navigation" | "onNavigated">;
   readonly user: ShellUser | null;
@@ -162,18 +169,23 @@ function PrimaryNav({
   counts,
   location,
   navigation,
+  docsTree,
 }: {
   copy: WorkspaceShellCopy;
   items: readonly NavItem[];
   counts: ShellSidebarCounts;
   location: WorkspaceDestination | null;
   navigation: ShellNavigation;
+  docsTree?: SidebarDocsTree | null;
 }) {
   const closeDrawer = useCloseMobileDrawer();
   return (
     <SidebarMenu aria-label={copy.nav.primary} className="gap-0.5">
       {items.map((item) => {
-        const active = isDestinationActive(item.destination, location);
+        // A document page belongs to the Docs destination.
+        const active =
+          isDestinationActive(item.destination, location) ||
+          (item.id === "library" && location?.section === "doc");
         const count = item.count ? counts[item.count] : null;
         const badge = sidebarCountBadge(count);
         const label =
@@ -213,6 +225,16 @@ function PrimaryNav({
                 ) : null}
               </ShellLink>
             </SidebarMenuButton>
+            {item.id === "library" && docsTree ? (
+              <div className="mt-0.5">
+                <SidebarDocsTreeNav
+                  copy={copy}
+                  navigation={navigation}
+                  tree={docsTree}
+                  onNavigated={closeDrawer}
+                />
+              </div>
+            ) : null}
           </SidebarMenuItem>
         );
       })}
@@ -696,6 +718,7 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
                 counts={props.counts}
                 location={location}
                 navigation={navigation}
+                docsTree={props.docsTree}
               />
             </SidebarGroupContent>
           </SidebarGroup>
