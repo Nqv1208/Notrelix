@@ -1592,6 +1592,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createCardApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    capability: "WorkManagement.BoardItems.UpdateStatus",
+    operationId: "WorkManagement.BoardItems.UpdateStatus",
+    mutation: true,
+  },
+  {
     context: "Work Management",
     capability: "WorkManagement.BoardItems.AddLabel",
     consumerSymbol: "TODO",

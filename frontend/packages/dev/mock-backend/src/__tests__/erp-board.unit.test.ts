@@ -178,4 +178,60 @@ describe("ERP board in the mock world", () => {
       "Hoàn thành",
     ]);
   });
+
+  it("writes an item's status through PATCH /board-items/{id}/status and marks Done items completed", async () => {
+    const { client, store } = clientFor();
+    const cards = createCardApi(client);
+    const boards = createBoardApi(client);
+    const itemId = (key: string) =>
+      store
+        .getLists(boardId)
+        .flatMap((list) => store.getCards(list.id))
+        .find((card) => card.itemKey === key)!.id;
+    const lanesOf = async () => {
+      const full = await boards.getFullBoard(boardId, { workspaceId });
+      return groupCardsByStatus({
+        fieldDefinitions: full.board.fieldDefinitions,
+        groups: full.groups,
+      });
+    };
+
+    await cards.updateStatus(itemId("ERP-149"), "mock-erp-status-doing");
+    let lanes = await lanesOf();
+    expect(lanes.map((lane) => lane.total)).toEqual([5, 4, 2, 5]);
+    expect(lanes[1]!.cards.some((card) => card.itemKey === "ERP-149")).toBe(
+      true,
+    );
+    expect(store.getCard(itemId("ERP-149"))!.completedAt ?? null).toBeNull();
+
+    await cards.updateStatus(itemId("ERP-149"), "mock-erp-status-done");
+    expect(store.getCard(itemId("ERP-149"))!.completedAt).toEqual(
+      expect.any(String),
+    );
+    await cards.updateStatus(itemId("ERP-149"), "mock-erp-status-todo");
+    expect(store.getCard(itemId("ERP-149"))!.completedAt ?? null).toBeNull();
+    lanes = await lanesOf();
+    expect(lanes.map((lane) => lane.total)).toEqual([6, 3, 2, 5]);
+  });
+
+  it("rejects a status that is not an option of the board's Status field", async () => {
+    const { client, store } = clientFor();
+    const card = store.getCards(store.getLists(boardId)[0]!.id)[0]!;
+    await expect(
+      createCardApi(client).updateStatus(card.id, "not-an-option"),
+    ).rejects.toThrow();
+  });
+
+  it("returns the created item so a lane can set its status next", async () => {
+    const { client, store } = clientFor();
+    const groupId = store.getLists(boardId)[0]!.id;
+    const id = await createCardApi(client).createCard(boardId, {
+      listId: groupId,
+      title: "Rà soát quyền kế toán",
+    });
+    expect(store.getCard(id!)).toMatchObject({
+      title: "Rà soát quyền kế toán",
+      itemKey: "ERP-154",
+    });
+  });
 });

@@ -11,6 +11,7 @@
  *   cards.duplicate         — POST /board-items/:id/duplicate (returns string cardId)
  *   cards.move              — POST /board-items/:id/move
  *   cards.fieldValues       — PATCH /board-items/:id/field-values
+ *   cards.status            — PATCH /board-items/:id/status
  *   cards.attachments       — GET /board-items/:id/attachments
  *   cards.activity          — GET /board-items/:id/activity
  *   cards.labels.list       — GET /board-items/:id/labels
@@ -152,11 +153,20 @@ export const cardsOperations = [
       };
       const list = store.getList(data.groupId || "fallback");
       if (!list) return notFound("List not found");
-      const _newCard = store.createCardByListId(data.groupId || "fallback", {
+      const created = store.createCardByListId(data.groupId || "fallback", {
         title: data.title,
         position: data.position,
       });
-      return ok<void>(undefined);
+      // BoardItemSlimDto: the client reads the new item's id.
+      return ok({
+        id: created.id,
+        groupId: created.listId,
+        name: created.title,
+        position: String(created.position),
+        memberIds: created.assigneeUserIds ?? [],
+        labelIds: [],
+        version: 1,
+      });
     },
   }),
 
@@ -301,6 +311,39 @@ export const cardsOperations = [
         data.value,
       );
       if (!updated) return notFound("Card not found");
+      return ok<void>(undefined);
+    },
+  }),
+
+  // ─── PATCH /board-items/:id/status ──────────────────────────────────────────────
+
+  defineMockOperation<{ id: string }, { status?: string | null }, void>({
+    id: "wm.boardItems.status.update",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.UpdateStatus",
+    } as any,
+    method: "PATCH",
+    route: "/board-items/:id/status",
+    async handle({ params, body, store }) {
+      const status = (body as { status?: string | null } | undefined)?.status;
+      if (!status) {
+        return {
+          status: 400,
+          body: { message: "status required", code: "BAD_REQUEST" },
+        };
+      }
+      const result = store.updateItemStatus(params.id, status);
+      if (result === "not-found") return notFound("Card not found");
+      if (result === "invalid") {
+        return {
+          status: 400,
+          body: {
+            message: "Not an option of the board's Status field",
+            code: "BAD_REQUEST",
+          },
+        };
+      }
       return ok<void>(undefined);
     },
   }),

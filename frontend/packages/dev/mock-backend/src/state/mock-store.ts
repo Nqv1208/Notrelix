@@ -1694,6 +1694,36 @@ export class MockStore {
     return this.cardsById.has(cardId);
   }
 
+  /**
+   * `WorkManagement.BoardItems.UpdateStatus`: sets the item's option of its
+   * board's Status column, like the server. Moving into a Done-category
+   * option marks the item completed; moving out clears it. Returns
+   * "not-found" for an unknown item and "invalid" when the board has no
+   * Status column or the option is not one of it.
+   */
+  updateItemStatus(
+    cardId: string,
+    optionId: string,
+  ): "ok" | "not-found" | "invalid" {
+    const card = this.cardsById.get(cardId);
+    if (!card) return "not-found";
+    const statusColumn = this.getColumns(card.boardId).find(
+      (column) => column.fieldType === "status",
+    );
+    const option = statusColumn?.options?.find(
+      (candidate) => candidate.id === optionId,
+    );
+    if (!statusColumn || !option) return "invalid";
+    this.updateFieldValue(cardId, statusColumn.id, optionId);
+    const done = option.category === "done";
+    this.cardsById.set(cardId, {
+      ...card,
+      completedAt: done ? (card.completedAt ?? this.clock.isoNow()) : null,
+      updatedAt: this.clock.isoNow(),
+    });
+    return "ok";
+  }
+
   updateFieldValue(
     cardId: string,
     fieldDefinitionId: string,
